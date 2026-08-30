@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
 import { cn } from "@/lib/utils";
 

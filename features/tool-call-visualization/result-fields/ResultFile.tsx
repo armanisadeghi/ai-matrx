@@ -21,10 +21,10 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { formatFileSize } from "@/features/files/utils/format";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@/features/files/handler/types";
 import type { ResultFileRef } from "./shape";
 
@@ -82,12 +82,11 @@ export const ResultFile: React.FC<ResultFileProps> = ({ file, density = "inline"
 
     // Resolve a live URL for "open" — only needed for URL-only refs; owned
     // file_ids route to the in-app viewer instead (no signed-URL mint here).
-    const source = useMemo<FileSource | null>(() => {
+    const source = useMemo<string | null>(() => {
         if (fileId) return null;
-        if (file.url) return { kind: "external_url", url: file.url };
-        return null;
+        return file.url ?? null;
     }, [fileId, file.url]);
-    const resolvedSrc = useFileSrc(source);
+    const resolvedSrc = useMediaResolution(source).resolution?.src ?? null;
 
     const name = useMemo(() => deriveName(file), [file]);
     const typeLabel = useMemo(() => deriveTypeLabel(file, name), [file, name]);
