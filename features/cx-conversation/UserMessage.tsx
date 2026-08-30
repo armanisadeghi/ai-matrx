@@ -20,7 +20,7 @@ import {
   messageContainsResources,
 } from "@/features/conversation/utils/resource-parsing";
 import { ResourcesContainer } from "@/features/agents/resources/ResourceDisplay";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import type {
   ConversationMessage,
