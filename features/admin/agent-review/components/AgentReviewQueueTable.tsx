@@ -7,8 +7,11 @@ import { ArrowRight, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { nextQueryState } from "@/components/official/matrx-data-table/query-control";
+import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
 import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -78,6 +81,11 @@ export default function AgentReviewQueueTable() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [clickedRow, setClickedRow] = useState<ReviewQueueRow | null>(null);
+  const table = useTableUrlState({
+    tableId: "agent-review",
+    defaultSort: { id: "updated_at", direction: "desc" },
+    defaultPageSize: 25,
+  });
 
   async function refresh() {
     setLoading(true);
@@ -238,6 +246,32 @@ export default function AgentReviewQueueTable() {
   const inboxRows = rows.filter((row) => row.status === "ready_for_human");
   const visibleRows = view === "all" ? rows : inboxRows;
 
+  function setStatusFilter(statuses?: ReviewStatus[]) {
+    table.onStateChange(
+      nextQueryState(
+        table.state,
+        {
+          columnFilters: {
+            ...table.state.columnFilters,
+            status: statuses
+              ? {
+                  kind: "select",
+                  value: statuses[0],
+                  values: statuses,
+                }
+              : undefined,
+          },
+        },
+        { resetPage: true },
+      ),
+    );
+  }
+
+  function setQueueView(nextView: "inbox" | "all") {
+    setView(nextView);
+    setStatusFilter();
+  }
+
   /** The surface's live scope, assembled at trigger time from what the list
    *  actually holds — never stale state captured at render. */
   function getSurfaceScope() {
@@ -276,14 +310,14 @@ export default function AgentReviewQueueTable() {
             <Button
               size="sm"
               variant={view === "inbox" ? "default" : "outline"}
-              onClick={() => setView("inbox")}
+              onClick={() => setQueueView("inbox")}
             >
               Ready for you ({inboxRows.length})
             </Button>
             <Button
               size="sm"
               variant={view === "all" ? "default" : "outline"}
-              onClick={() => setView("all")}
+              onClick={() => setQueueView("all")}
             >
               All activity ({rows.length})
             </Button>
@@ -301,17 +335,39 @@ export default function AgentReviewQueueTable() {
             const count = activeRows.filter((row) =>
               step.statuses.some((status) => status === row.status),
             ).length;
+            const activeStatusFilter = table.state.columnFilters.status;
+            const selectedStatuses =
+              activeStatusFilter?.kind === "select"
+                ? (activeStatusFilter.values ?? [activeStatusFilter.value])
+                : [];
+            const isActive =
+              selectedStatuses.length === step.statuses.length &&
+              step.statuses.every((status) =>
+                selectedStatuses.includes(status),
+              );
             return (
               <div key={step.label} className="contents">
                 {index > 0 ? (
                   <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-muted-foreground" />
                 ) : null}
-                <div className="min-w-0 flex-1 rounded-md border bg-card px-3 py-2">
+                <button
+                  type="button"
+                  aria-pressed={isActive}
+                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${count})`}
+                  onClick={() => {
+                    setView("all");
+                    setStatusFilter(step.statuses);
+                  }}
+                  className={cn(
+                    "min-h-11 min-w-0 flex-1 rounded-md border bg-card px-3 py-2 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isActive && "border-primary bg-accent",
+                  )}
+                >
                   <div className="text-sm font-medium">{step.label}</div>
                   <div className="mt-1 text-2xl font-semibold tabular-nums">
                     {count}
                   </div>
-                </div>
+                </button>
               </div>
             );
           })}
@@ -385,9 +441,10 @@ export default function AgentReviewQueueTable() {
                 columns={columns}
                 getRowId={(row) => row.id}
                 isLoading={loading}
-                urlState={{
-                  id: "agent-review",
-                  defaultSort: { id: "updated_at", direction: "desc" },
+                query={{
+                  mode: "controlled-local",
+                  state: table.state,
+                  onStateChange: table.onStateChange,
                 }}
                 toolbar={{
                   search: true,

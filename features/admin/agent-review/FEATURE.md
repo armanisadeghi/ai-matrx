@@ -73,9 +73,11 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 - `Agent Review First Pass` is the active recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser and stops before claiming work when that persistent profile is not signed in as an admin. Canonical credential locations are documented in the shared skill; secrets never enter automation text or queue evidence.
 - Every transition to `ready_for_human` requires recorded verifier identity, verification time, and `assignment.state='awaiting_review'`. The rollout returned all 16 legacy rows missing that evidence to `submitted`, then validated the database constraint.
 - The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
+- Each workflow count card is a real filter control: selecting it opens the all-activity view and applies the matching status filter to the canonical URL-driven table. The combined Changes card selects both agent- and human-requested changes, and the active card remains visibly pressed.
 
 ## Change log
 
+- 2026-08-30 — Wired the five workflow count cards to the canonical URL-backed table status filter, including the combined Changes statuses and active-card state; switching to Ready for you or All activity clears that workflow-card filter.
 - 2026-08-26 — Rebuilt both surfaces against the live agent-first pages: real emitters on the list and the item workspace, a working triage write target, a feedback-draft write target, and a separate `matrx-admin/agent-review-item` surface. The old manifest still described the retired human-first page (pending/changes_requested statuses, an archived toggle, per-row feedback drafts) and claimed an emitter in a file that never existed.
 - 2026-08-25 — Widened detail-page messages to 80% of the transcript, removed redundant review-thread helper copy, and promoted Original target to the same heading treatment as Your review.
 - 2026-08-25 — Compressed the detail header into fixed Back/Open doors, a fading single-line title, and one repository-to-feature hierarchy; removed the duplicate status and label/value grid.
