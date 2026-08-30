@@ -140,6 +140,11 @@ is the same class of lie this feature exists to kill.
   `deleted`, `missing`, `signed-out`, or `ok`. A fully rendered `denied` path is
   expected authorization and becomes yellow/Silent; resolver `error` leaves
   `unknown` red, and every other resolved state remains red.
+- **A record-unavailable read is deterministic and is never automatically
+  retried.** The shared React Query provider refuses replay for
+  `RecordUnavailableError`, so one stale/deleted/denied route visit produces
+  one capture for AccessGate to reconcile. The visible Retry action remains
+  available for the user to request a fresh read.
 - **Recipients (owner ruling, 2026-08-11):** the owner **and** the org's
   owners/admins when the org is shared. First to act wins, so a request never
   dies with one person. A personal workspace routes to the owner only — no
