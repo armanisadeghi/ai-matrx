@@ -49,7 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";

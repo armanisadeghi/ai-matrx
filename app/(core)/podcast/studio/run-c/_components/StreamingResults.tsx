@@ -12,7 +12,7 @@
 // materializes piece by piece, never a lone spinner.
 
 import { ImageIcon, Clapperboard, FileText, AudioLines, ExternalLink, Sparkles } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaSlot, PodcastRunState } from "@/features/podcasts/generator/types";
 import { cn } from "@/lib/utils";
 
