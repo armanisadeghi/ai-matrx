@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-30T14:45:53.380Z",
-  "summary": "Recorded replacement candidate d3a4cd79b6 with corrected candidate-tree authority preservation.",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:48:32.282Z",
+  "summary": "CERTIFIED: schema-backed agent JSON ingress and corrected candidate-tree authority publication.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae"
+  "eventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352"
 }
