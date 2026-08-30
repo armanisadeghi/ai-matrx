@@ -22,5 +22,5 @@ export default async function MarketingCapabilitiesShim({
       marketingRoutes.siteCapabilities(address.brandSeg, address.siteSeg),
     );
   }
-  permanentRedirect(marketingRoutes.brands());
+  permanentRedirect(marketingRoutes.capabilitiesCatalog());
 }

@@ -158,6 +158,10 @@ export const marketingRoutes = {
   cost: () => "/marketing/reports/cost",
   /** Cross-client rank roll-up (was /marketing/ranks). */
   ranksRollup: () => "/marketing/reports/ranks",
+  /** Cross-client Search Console landing (site picker inside). */
+  searchConsoleRollup: () => "/marketing/reports/search-console",
+  /** Cross-client SEO capabilities catalogue (website selector inside). */
+  capabilitiesCatalog: () => "/marketing/operations/capabilities",
   connections: () => "/marketing/operations/connections",
   connectionsGoogle: () => "/marketing/operations/connections/google",
   connectionsBing: () => "/marketing/operations/connections/bing",

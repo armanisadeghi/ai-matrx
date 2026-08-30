@@ -67,6 +67,12 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Provider spend this month and last, against the org's monthly ceilings.",
     letter: "Co",
   },
+  "/marketing/reports/search-console": {
+    titlePrefix: "Search Console",
+    description:
+      "The full Search Console dataset across every client — pick a property and drill in.",
+    letter: "Sw",
+  },
   "/marketing/reports/ranks": {
     titlePrefix: "Rank Roll-up",
     description:
@@ -110,6 +116,12 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description:
       "Every pending AI proposal across your clients, in one review queue.",
     letter: "Ap",
+  },
+  "/marketing/operations/capabilities": {
+    titlePrefix: "SEO Capabilities",
+    description:
+      "The shared measurement catalogue — what's on for each website, with evidence.",
+    letter: "Cb",
   },
   "/marketing/operations/data-quality": {
     titlePrefix: "Data Quality",

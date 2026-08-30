@@ -51,6 +51,7 @@ import {
   SlidersHorizontal,
   Settings2,
   Table2,
+  Telescope,
   Target,
   TrendingUp,
   Type,
@@ -101,6 +102,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "keywords:start": Signpost,
   "keywords:performance": TrendingUp,
   "keywords:workbench": SlidersHorizontal,
+  "keywords:research": Telescope,
 
   "ai-visibility:overview": LayoutDashboard,
   "ai-visibility:claims": MessageSquareQuote,

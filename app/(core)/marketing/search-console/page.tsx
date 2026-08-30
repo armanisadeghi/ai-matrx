@@ -22,5 +22,5 @@ export default async function MarketingSearchConsoleShim({
       marketingRoutes.siteSearchConsole(address.brandSeg, address.siteSeg),
     );
   }
-  permanentRedirect(marketingRoutes.brands());
+  permanentRedirect(marketingRoutes.searchConsoleRollup());
 }

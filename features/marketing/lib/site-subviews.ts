@@ -196,7 +196,14 @@ export const MARKETING_SITE_SUBVIEWS = [
         purpose:
           "Say what a keyword IS — set its class or any dimension, with your reason.",
       },
+      {
+        id: "research",
+        label: "Research",
+        purpose:
+          "Map a keyword's parents, children and variants with AI, plus live market volume.",
+      },
     ],
+    hrefStyle: "path",
   },
   {
     // THE KEYWORD VALUE FAMILY. Five real routes, one job each, and before

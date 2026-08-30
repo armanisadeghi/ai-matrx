@@ -394,6 +394,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         iconName: "TrendingUp",
       },
       {
+        label: "Search Console",
+        href: marketingRoutes.searchConsoleRollup(),
+        description:
+          "The full Search Console dataset across every client — pick a property and drill in.",
+        iconName: "SearchCheck",
+      },
+      {
         label: "Cost",
         href: marketingRoutes.cost(),
         description:
@@ -436,6 +443,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Every pending AI proposal across your clients, in one review queue.",
         iconName: "BadgeCheck",
+      },
+      {
+        label: "SEO Capabilities",
+        href: marketingRoutes.capabilitiesCatalog(),
+        description:
+          "The shared measurement catalogue — what's on for each website, with evidence.",
+        iconName: "ClipboardCheck",
       },
       {
         label: "Data Quality",
