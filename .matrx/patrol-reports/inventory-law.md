@@ -5,7 +5,7 @@
 **Base:** `857dcd2c3b7bed591441c6a175caf72eb1397ec4`
 **Candidate:** `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` (replacement after recorded integration reversal)
 **Certification:** **CERTIFIED** — independent exact-candidate archive proof
-**Delivery:** **QUEUED** — candidate is an ancestor of `origin/main`; preserved at `refs/heads/patrol-runs/P2/20260830T142407Z`; no version tag contains it yet and no redundant release was created
+**Delivery:** **DELIVERED** — first contained in existing release `v0.4.1495`; no redundant release was created
 
 ## Outcome
 
@@ -36,9 +36,9 @@
   lint, and 9/9 tests before returning **CERTIFIED** again. Current
   `origin/main` contains the replacement behavior and both tests.
 - **29 prior catalogue units remain** after closing ranked list-shell item 1;
-  the partially advanced `PlanSitesList` action-authority adoption remains
-  open. The next unit cannot begin until this valid delivery-queued run is
-  reconciled with a containing serialized release.
+  the partially advanced `PlanSitesList` action-authority adoption is the next
+  independent unit. The prior run is now truthfully delivered in the first
+  existing containing release, `v0.4.1495`.
 - **Only genuine product decision remains unchanged:** after a comparison is
   revealed, should each agent name in the comparison header become a canonical
   new-tab agent door? Blind mode must keep every identity-bearing link, title,
@@ -166,9 +166,9 @@ Stale worklist claims closed during triage:
 
 Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang refactor. Any implementation must invoke the relevant named skill and receive adversarial certification before shipping.
 
-### Rank 1 — canonical list shell (7 open findings, 1 certified delivery queued)
+### Rank 1 — canonical list shell (7 open findings, 1 fixed and delivered)
 
-1. **FIXED + CERTIFIED; DELIVERY QUEUED — `/marketing/sites` — `SitesPortfolio.tsx`.** Replacement candidate `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` adopts `EntityListPage`, delegates to canonical `listSites`, preserves paging/search/name/status filters, all eight table/mobile presentations, editor and agent-write behavior, copy payloads, governed delete, Quick view, and all seven site actions through one authority. It is the independently recertified restoration of first candidate `01e441fdf9`, whose bytes were later reversed by the shared integration lane. The shared shell now preserves explicit `sortable:false`, so Connections cannot silently fall through to `updated_at`. Numeric KPI filters remain a focused generic-vocabulary/server-query machinery task; none is falsely advertised.
+1. **FIXED + CERTIFIED + DELIVERED (`v0.4.1495`) — `/marketing/sites` — `SitesPortfolio.tsx`.** Replacement candidate `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` adopts `EntityListPage`, delegates to canonical `listSites`, preserves paging/search/name/status filters, all eight table/mobile presentations, editor and agent-write behavior, copy payloads, governed delete, Quick view, and all seven site actions through one authority. It is the independently recertified restoration of first candidate `01e441fdf9`, whose bytes were later reversed by the shared integration lane. The shared shell now preserves explicit `sortable:false`, so Connections cannot silently fall through to `updated_at`. Numeric KPI filters remain a focused generic-vocabulary/server-query machinery task; none is falsely advertised.
 2. **`/schedules` — `ScheduleList.tsx` + `ScheduleRow.tsx`.** Build the scoped page/count/facet service required by `EntityListPage`, then replace the bespoke roster. Preserve the surface runtime scope emitter, error Retry, New schedule path, and schedule-specific status/action behavior.
 3. **`/agents/orchestras` — `OrchestrasBrowser.tsx` + `OrchestraCard.tsx`.** Add an Orchestra list config and one Orchestra action registry. Preserve Generate orchestrator/Create Orchestra dialogs, search semantics, card presentation, and the canonical `orchestratorId` identity.
 4. **`/documents` — `DocumentsHubTable.tsx`.** Move the hub onto the canonical shell and its controlled table path. Preserve document-kind routing, existing `EntityRef` behavior, copy/export actions, and the persisted view mapping; do not collapse distinct document entity tokens.
