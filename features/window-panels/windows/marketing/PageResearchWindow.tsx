@@ -62,7 +62,10 @@ import {
   type PageResearchRunSummary,
 } from "@/features/surfaces/manifests/page-research.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import {
+  getSurfaceDisplayLabel,
+  surfaceValueLabels,
+} from "@/features/surfaces/utils/surface-display";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -660,7 +663,7 @@ function PageResearchWindowInner({
       <WindowPanel
         id="page-research-window"
         overlayId="pageResearchWindow"
-        title="Research for this page"
+        title={getSurfaceDisplayLabel(PAGE_RESEARCH_SURFACE_NAME)}
         onClose={onClose}
         width={520}
         height={480}

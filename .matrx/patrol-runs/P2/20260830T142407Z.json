@@ -104,6 +104,58 @@
       ],
       "previousEventHash": "0588a09ec217952f6a220dea6afc052a5a8574c6a5b8665e387f46b45a667cd0",
       "eventHash": "788df987e7a8292aa869dec10e5ecda52286ecf2c95772f19ce0918762d463f7"
+    },
+    {
+      "sequence": 7,
+      "state": "fixing",
+      "at": "2026-08-30T14:51:24.588Z",
+      "actor": "codex-p2-eradication",
+      "summary": "Restoring the certified sites adoption onto the current shared main tip after integration reversal.",
+      "evidence": [
+        "Replacement candidate will preserve current main and reapply only seven owned site/entity-list paths."
+      ],
+      "previousEventHash": "788df987e7a8292aa869dec10e5ecda52286ecf2c95772f19ce0918762d463f7",
+      "eventHash": "a016e75707801873a16a64c1c1b73e31a7599004569eb878d3a393c1d1877402"
+    },
+    {
+      "sequence": 8,
+      "state": "certifying",
+      "at": "2026-08-30T14:51:25.199Z",
+      "actor": "codex-p2-eradication",
+      "summary": "Replacement candidate 05ad7aa37eb95e8f0f539068ff732ec87a3957d5 is integrated on origin/main and under independent recertification.",
+      "evidence": [
+        "Focused ESLint passed; 4 Jest suites / 9 tests passed; full type-check passed.",
+        "Replacement restores certified product bytes plus the two deleted focused tests without touching unrelated shared-checkout work."
+      ],
+      "previousEventHash": "a016e75707801873a16a64c1c1b73e31a7599004569eb878d3a393c1d1877402",
+      "eventHash": "ca547e17e7c56a96d573805ce26ea95c1a37fdcc587ba7f705e6da24ae1e969b"
+    },
+    {
+      "sequence": 9,
+      "state": "certified",
+      "at": "2026-08-30T14:56:30.086Z",
+      "actor": "codex-p2-certifier",
+      "summary": "CERTIFIED replacement: restored sites adoption is byte-identical to the previously certified owned batch.",
+      "evidence": [
+        "Exact-SHA isolated archive; no shared-checkout edits.",
+        "All owned site/entity-list blobs are byte-identical to previously certified 01e441fdf958ca20cafd5497cc8e007e41d77f70.",
+        "Full exact-candidate type-check passed; focused ESLint passed; 4 Jest suites / 9 tests passed; both restored focused tests are present.",
+        "No replacement-caused defect found."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5",
+        "certifierTaskId": "/root/site_list_certifier",
+        "checks": [
+          "exact candidate pnpm type-check: PASS",
+          "focused ESLint: PASS",
+          "focused Jest: 4 suites / 9 tests PASS",
+          "owned blob identity: PASS",
+          "restored test presence: PASS"
+        ]
+      },
+      "previousEventHash": "ca547e17e7c56a96d573805ce26ea95c1a37fdcc587ba7f705e6da24ae1e969b",
+      "eventHash": "e09f8675df347ca4bba825a890e1c7bc65b1abe28367ba32cb398be86735237f"
     }
   ]
 }

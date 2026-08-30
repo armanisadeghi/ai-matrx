@@ -48,10 +48,32 @@ function validateManifest(): string[] {
     }
     ids.add(patrol.patrolId);
     automationIds.add(patrol.automationId);
-    if (!existsSync(join(PATROL_PATHS.repoRoot, patrol.recipePath))) {
+    const recipePath = join(PATROL_PATHS.repoRoot, patrol.recipePath);
+    if (!existsSync(recipePath)) {
       problems.push(
         `${patrol.patrolId} recipe does not exist: ${patrol.recipePath}`,
       );
+    }
+    if (patrol.patrolId === "P5" && existsSync(recipePath)) {
+      const recipe = readFileSync(recipePath, "utf8");
+      for (const required of [
+        "canonical compact two-icon copy/export pair",
+        "one icon-only human Copy control plus one icon-only CopyForAiIcon menu",
+        "JSON inside the Copy-for-AI menu",
+      ]) {
+        if (!recipe.includes(required)) {
+          problems.push(`P5 recipe is missing manifest doctrine: ${required}`);
+        }
+      }
+      for (const obsolete of [
+        "single icon-only copy/export control",
+        "Exactly one compact top-level control",
+        "CopyButtons is always one icon",
+      ]) {
+        if (recipe.includes(obsolete)) {
+          problems.push(`P5 recipe contradicts manifest doctrine: ${obsolete}`);
+        }
+      }
     }
   }
   // No hardcoded fleet size: the list IS the definition, and a constant here

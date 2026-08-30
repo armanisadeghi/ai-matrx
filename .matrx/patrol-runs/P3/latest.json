@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P3",
-  "runId": "20260830T141852Z",
+  "runId": "20260830T143951Z",
   "state": "certifying",
-  "updatedAt": "2026-08-30T14:23:57.878Z",
-  "summary": "Provider-sync responsive toolbar repair is preserved at exact candidate 141d52a518e50714c865419f020c0aa81f028566; requesting independent four-quadrant certification.",
-  "source": "20260830T141852Z.json",
-  "eventHash": "49ff609d56c2fca1969d31194294afce11fadc3b97ce97aec9333c43c3a5e937"
+  "updatedAt": "2026-08-30T14:44:43.951Z",
+  "summary": "Reapplied exact 15-file hover repair slice is ready for adversarial certification",
+  "source": "20260830T143951Z.json",
+  "eventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069"
 }

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-30T14:23:13.308Z",
-  "summary": "Corrected candidate remains uncertified because the required isolated in-app Browser control runtime is unavailable",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:40:41.181Z",
+  "summary": "Closed P11 run with six findings fixed, exact candidate certified, and historical delivery reconciled",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679"
+  "eventHash": "0cbf5626bd9e49720e85f9bfc33b7b3febaad98a270a5b9838871e453187d875"
 }

@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "20260830T143951Z",
+  "baseSha": "a48dda0a079abac8bc27990da4b0e3c63e10da20",
+  "createdAt": "2026-08-30T14:40:03.759Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:40:03.759Z",
+      "actor": "root",
+      "summary": "P3 hover-only interaction eradication unit 1",
+      "evidence": [
+        "canonical checkout; no worktree used",
+        "detector exact 029667a044490df629fc088506558e5d1ae4b77a: 156 actionable, 3 review, 93 decoration, 201 safe",
+        "candidate was checkpoint-integrated before independent certification; ordering failure preserved"
+      ],
+      "previousEventHash": null,
+      "eventHash": "9481bfe18a8c91252954860d76e752a799d23a36a38a070d185d2140288021b9"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:40:04.374Z",
+      "actor": "root",
+      "summary": "Repair 17 verified hover-only controls across 15 files",
+      "evidence": [
+        "decorative imported Link icons excluded by corrected detector"
+      ],
+      "previousEventHash": "9481bfe18a8c91252954860d76e752a799d23a36a38a070d185d2140288021b9",
+      "eventHash": "7b5b15af75ac5338700cbf67a95386db7250c1746314f1b540ea2e6ccd0286c2"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:40:05.128Z",
+      "actor": "root",
+      "summary": "Exact 15-file owned slice ready for adversarial certification",
+      "evidence": [
+        "candidate:6eb60cb7d51bb6437fd101c7168440260c38596c",
+        "path-scoped repair base:a48dda0a079abac8bc27990da4b0e3c63e10da20",
+        "all current owned blobs matched candidate before concurrent shared edits resumed"
+      ],
+      "previousEventHash": "7b5b15af75ac5338700cbf67a95386db7250c1746314f1b540ea2e6ccd0286c2",
+      "eventHash": "a2febc6939d08c411bd9a1dbd645615922600695656bfe96998f2a65ae721fd6"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:41:32.259Z",
+      "actor": "root",
+      "summary": "Canonical preview lost the proposed hover repair bytes after a concurrent semantic rollback",
+      "evidence": [
+        "all 15 owned blobs differ from candidate and restore hover-only opacity behavior",
+        "no candidate-caused defect; exact candidate remains preserved remotely"
+      ],
+      "blocker": {
+        "prerequisite": "reapply repair onto current canonical main and serve those bytes in the canonical preview",
+        "preservedRef": "refs/remotes/origin/patrol/P3/2026-08-30-hover-repair-unit-1",
+        "preservedSha": "6eb60cb7d51bb6437fd101c7168440260c38596c"
+      },
+      "previousEventHash": "a2febc6939d08c411bd9a1dbd645615922600695656bfe96998f2a65ae721fd6",
+      "eventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:41:32.897Z",
+      "actor": "root",
+      "summary": "Resume same bounded hover repair on current canonical main",
+      "evidence": [
+        "do not certify stale candidate; produce a new exact candidate after reapplication"
+      ],
+      "previousEventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a",
+      "eventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:44:43.951Z",
+      "actor": "root",
+      "summary": "Reapplied exact 15-file hover repair slice is ready for adversarial certification",
+      "evidence": [
+        "candidate:38173c5d5011a6e594c3e9aa0eecf4c86a735527",
+        "path-scoped repair base:aa02307e8d8e5c6cff71056d6ee4079682e7bd26",
+        "shared controller absorbed the 15 repair blobs while holding index.lock; two unrelated co-committed paths excluded from owned slice",
+        "current canonical blobs match candidate on all 15 owned paths"
+      ],
+      "previousEventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf",
+      "eventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069"
+    }
+  ]
+}

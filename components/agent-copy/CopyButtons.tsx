@@ -218,11 +218,7 @@ export function CopyButtons({
       className="inline-flex"
       onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
     >
-      <CopyActionGroup
-        size={size}
-        appearance={appearance}
-        className={className}
-      >
+      <CopyActionGroup size={size} appearance={appearance} className={className}>
         {visible.copy && human !== undefined ? (
           <span className={copyActionCellClass(size)}>
             <Button

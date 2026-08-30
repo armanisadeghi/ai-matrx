@@ -15,6 +15,58 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D290 — two tables ship `organization_id NOT NULL` with no backstop trigger
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-08-30, rule
+`org_not_null_no_backstop`. Of the 89 objects in the unacked backlog, 85 have since gained a
+backstop trigger and 2 no longer exist. These two have neither, verified live against
+`pg_trigger` on 2026-08-30:
+
+- `platform.knob_override_audit` — shipped 2026-08-29 with the scoped-configuration ruling
+  (the per-change override history). New table, new gap.
+- `workflow.trigger_event`
+
+Same remainder class as D232's original eleven. The column is NOT NULL, so a write that omits
+it fails loudly rather than landing org-less — but the backstop is what makes the org derivable
+instead of the caller's problem, and every sibling table has one.
+
+**Fix:** add the standard `organization_id` backstop trigger to both, matching the pattern the
+other 85 use.
+
+---
+
+### D289 — the mandate shortcut flip would ship 6 dead RPCs: EXECUTE revoked, no `client_callable_door`
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-08-30 (the guard's `error` severity — a
+deliberate GRANT being undone, not a create without intent).
+
+Phase 6.6 generated the `agx_*_m` mandate RPC mirrors and GRANTed EXECUTE on them. Every grant
+was stripped by the DB-wide `definer_client_grant_revoked` guard, because the functions are
+SECURITY DEFINER and no `platform.client_callable_door` row was ever declared for them. Live
+state confirmed 2026-08-30: `has_function_privilege('authenticated', …, 'EXECUTE')` = **false**
+for all six, and `platform.client_callable_door` holds zero `agx%` rows.
+
+The six, all named in `lib/supabase/shortcutStorage.ts` `MANDATE_RPCS`:
+
+- `agx_create_shortcut_m`, `agx_duplicate_shortcut_m`, `agx_get_shortcuts_for_context_m`,
+  `agx_get_user_shortcuts_m`, `agx_list_non_global_shortcuts_for_admin_m`,
+  `agx_promote_shortcut_to_global_m`
+
+(The seventh, `agx_build_shortcut_menu_m`, is INVOKER and unaffected.)
+
+**Why it is not visible today:** `SHORTCUT_STORAGE_CUTOVER` is `false`, so the router still
+names the `agent.*` RPCs. The moment the flip lands — one line + release, currently gated on
+Arman — all six client calls fail with permission denied. The Phase 6.6 proofs ran locally with
+the switch ON and did not catch it, which fits the standing trap: a read-write test session
+cannot see a missing `authenticated` grant that only PostgREST enforces.
+
+**Fix:** declare the six doors (`platform.client_callable_door`, the `declared_by` pattern used
+by scoped-config's `scfg_03`/`scfg_40` rows), re-GRANT EXECUTE to `authenticated`, then prove
+each one THROUGH PostgREST with an anon/authenticated JWT — not through a service-role session.
+Do it before the flip, not with it.
+
+---
+
 ### D288 — kind-render cracks still open after the 2026-08-29 audit (grouped remainder)
 
 The 2026-08-29 "kind slips through the cracks" audit found 27 ways a `__kind` payload renders as raw JSON/generic. The four production-dominant ones were fixed same-session (readAllRows on `content_ir` warm reads; miss TTL + `refresh()` + `kind-definitions` invalidation on `kindRegistry`; splitter structural brace counting; kind preservation on structural raws + `broken-instance` route in the 0.3.0 packages) plus the in-band Errors tab / `KindEscapedNotice` tripwire. Open remainder, in expected-volume order:

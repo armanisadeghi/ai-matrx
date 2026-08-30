@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P6",
-  "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:27:20.283Z",
-  "summary": "Exact 15-file feature-surface candidate preserved remotely and awaiting independent adversarial certification.",
-  "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
-  "eventHash": "c41eb65f388d133a77f722f6f61f5494accd3f09905c735a98b848c46981eef0"
+  "runId": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:48:07.141Z",
+  "summary": "CERTIFIED exact two-file detector-gap candidate.",
+  "source": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f.json",
+  "eventHash": "6503d4c69bc100d96700733c7e3d8aacdb810a0682d8ca40317088dabf3cff1e"
 }

@@ -23,27 +23,117 @@
     {
       "sequence": 2,
       "state": "fixing",
-      "at": "2026-08-30T14:27:17.257Z",
+      "at": "2026-08-30T14:47:35.865Z",
       "actor": "/root/p6_demos_auth",
-      "summary": "Repaired 57 glyph occurrences across 15 demo/auth files; scoped detector is zero.",
+      "summary": "Repaired 57 glyph occurrences across 15 demo/auth files; scoped detector clean.",
       "evidence": [
-        "Candidate 9c21bc19692cce44f3acf5eaeccd27fec95c0e19 contains exactly 15 owned file deltas from base.",
-        "Scoped diff-check PASS; no batch-caused lint diagnostic."
+        "Initial candidate 9c21bc19692cce44f3acf5eaeccd27fec95c0e19."
       ],
       "previousEventHash": "ee2bb1b61869570eb52e067893a774382fd5c3a9f85765991ea62df6c9b23f80",
-      "eventHash": "3432bb76a1ea226c3110ceec191087743c63b1977e44ca179010f67ed2f154eb"
+      "eventHash": "8e9ae4ce66bc0a7b3bb02f504c18b0ac0c577feb330af6e46a1969359377c848"
     },
     {
       "sequence": 3,
       "state": "certifying",
-      "at": "2026-08-30T14:27:17.853Z",
+      "at": "2026-08-30T14:47:36.446Z",
       "actor": "codex-p6-controller",
-      "summary": "Exact 15-file demo/auth candidate preserved remotely and awaiting independent adversarial certification.",
+      "summary": "Initial 15-file demo/auth candidate entered adversarial certification.",
       "evidence": [
-        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch1-candidate"
+        "Remote candidate preserved."
       ],
-      "previousEventHash": "3432bb76a1ea226c3110ceec191087743c63b1977e44ca179010f67ed2f154eb",
-      "eventHash": "4bb6c874e044ce42069da9e38b86bd326801c0e210738f5b368ba24be004c2ac"
+      "previousEventHash": "8e9ae4ce66bc0a7b3bb02f504c18b0ac0c577feb330af6e46a1969359377c848",
+      "eventHash": "f4ce557cf89a119c884d771368315e496875966e0e23ba16b2a918feb49f5a9e"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:47:37.263Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "REJECTED initial candidate: unrelated context-lab EntityRef and Slack permalink behavior contaminated the boundary.",
+      "evidence": [
+        "Concrete batch defects at two context-lab organization renderers and the oauth Slack file renderer."
+      ],
+      "previousEventHash": "f4ce557cf89a119c884d771368315e496875966e0e23ba16b2a918feb49f5a9e",
+      "eventHash": "29f7334d40fb7bd2e84519f2527f45029be7b8c1c96809527cd5470129266756"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:37.900Z",
+      "actor": "codex-p6-repair",
+      "summary": "Rebuilt batch 1 from path-scoped P6 hunks and removed Slack permalink contamination.",
+      "evidence": [
+        "Retry candidate 023db6b57119ad5e88cfaebaf7def724487a230d."
+      ],
+      "previousEventHash": "29f7334d40fb7bd2e84519f2527f45029be7b8c1c96809527cd5470129266756",
+      "eventHash": "3f2c7f70c03103d5a66077653383c6d96b09f904135462c5c7441a1cd4d73997"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:38.798Z",
+      "actor": "codex-p6-controller",
+      "summary": "Batch 1 retry entered adversarial recertification.",
+      "evidence": [
+        "Remote retry preserved."
+      ],
+      "previousEventHash": "3f2c7f70c03103d5a66077653383c6d96b09f904135462c5c7441a1cd4d73997",
+      "eventHash": "d22aeac2a1e7394531b317ab84909c1888cfd24ced85eed0bc073d9230530dde"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T14:47:39.504Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "REJECTED retry: two unrelated EntityRef substitutions remained in context-lab.",
+      "evidence": [
+        "Slack behavior defect resolved; context-lab DOM contamination remained."
+      ],
+      "previousEventHash": "d22aeac2a1e7394531b317ab84909c1888cfd24ced85eed0bc073d9230530dde",
+      "eventHash": "566e7cbac583f0e60498270b005612811072fce63efb5b8c7fb73d84f0139c29"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:40.132Z",
+      "actor": "codex-p6-repair",
+      "summary": "Reset context-lab to the captured base and applied only its P6 gap-list text hunk.",
+      "evidence": [
+        "Corrected candidate d3abcf9afad3fc356465db3daa1d3e8df920660f has exactly 15 files."
+      ],
+      "previousEventHash": "566e7cbac583f0e60498270b005612811072fce63efb5b8c7fb73d84f0139c29",
+      "eventHash": "9016d34639d350a37785ecbb6926fa1104c56530cc40a1a4efc1329c3b256aa9"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:40.730Z",
+      "actor": "codex-p6-controller",
+      "summary": "Path-pure batch 1 retry 2 entered adversarial recertification.",
+      "evidence": [
+        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch1-retry2"
+      ],
+      "previousEventHash": "9016d34639d350a37785ecbb6926fa1104c56530cc40a1a4efc1329c3b256aa9",
+      "eventHash": "bfac792ecc4ef3b10f0c92fc3753213762f4cd0b88b3a885ebb05bbf2cdbc300"
+    },
+    {
+      "sequence": 10,
+      "state": "certified",
+      "at": "2026-08-30T14:47:41.315Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "CERTIFIED exact path-pure 15-file demo/auth candidate.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "d3abcf9afad3fc356465db3daa1d3e8df920660f",
+        "certifierTaskId": "/root/p6_three_batch_certifier",
+        "checks": [
+          "Exactly 15 files; diff-check PASS; detector clean.",
+          "EntityRef and Slack permalink contamination absent; type/doctrine baseline delta accepted."
+        ]
+      },
+      "previousEventHash": "bfac792ecc4ef3b10f0c92fc3753213762f4cd0b88b3a885ebb05bbf2cdbc300",
+      "eventHash": "b88ea325c45d983b5aadf60b37718e29bfa4268088ae0449b2c64a0861a36078"
     }
   ]
 }

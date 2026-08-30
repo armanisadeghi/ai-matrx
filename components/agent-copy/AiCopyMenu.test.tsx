@@ -124,7 +124,7 @@ describe("AiCopyMenu chrome", () => {
     });
 
     const trigger = container.querySelector(
-      'button[aria-label="Copy or export People"]',
+      'button[aria-label="Copy People for AI or export"]',
     );
     expect(trigger).not.toBeNull();
     expect(container.querySelectorAll("button")).toHaveLength(4);

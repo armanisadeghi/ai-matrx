@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:29:59.877Z",
-  "summary": "Restoring the manifest-owned compact two-icon CopyButtons contract without reintroducing JSON or bespoke third controls.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:41:39.502Z",
+  "summary": "Certified candidate integrated to origin/main as dd524d507a40462ff6fcfa8af5f6a10509b196c9; serialized release watch owns deployment and no redundant release was started.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce"
+  "eventHash": "2f694ceb19b464c941d1a90772b1f319cbfaef243697d373265841e2be3a16d1"
 }

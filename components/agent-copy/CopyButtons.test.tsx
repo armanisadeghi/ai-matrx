@@ -105,9 +105,7 @@ describe("CopyButtons AI variants", () => {
     expect(buttons).toHaveLength(2);
     expect(buttons.every((button) => button.textContent === "")).toBe(true);
     expect(buttons[0]?.getAttribute("aria-label")).toBe("Copy Plan tree");
-    expect(buttons[1]?.getAttribute("aria-label")).toBe(
-      "Mock Copy-for-AI menu",
-    );
+    expect(buttons[1]?.getAttribute("aria-label")).toBe("Mock Copy-for-AI menu");
     expect(
       [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
         (item) => item.textContent,

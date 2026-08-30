@@ -199,7 +199,6 @@ export const MultiSelectControl: React.FC<{
                         key={item.id}
                         type="button"
                         onClick={() => handleToggle(item.id)}
-                        aria-pressed={value.includes(item.id)}
                         className={`py-2 px-3 text-sm border rounded-lg flex items-center ${
                             value.includes(item.id)
                                 ? "border-primary bg-primary/10 text-primary"

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T142407Z",
-  "state": "reversed",
-  "updatedAt": "2026-08-30T14:51:10.201Z",
-  "summary": "REVERSED: later shared-lane merges restored the pre-adoption SitesPortfolio bytes while retaining the certified candidate only as Git ancestry.",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:56:30.086Z",
+  "summary": "CERTIFIED replacement: restored sites adoption is byte-identical to the previously certified owned batch.",
   "source": "20260830T142407Z.json",
-  "eventHash": "788df987e7a8292aa869dec10e5ecda52286ecf2c95772f19ce0918762d463f7"
+  "eventHash": "e09f8675df347ca4bba825a890e1c7bc65b1abe28367ba32cb398be86735237f"
 }

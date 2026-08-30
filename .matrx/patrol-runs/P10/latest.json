@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:29:22.802Z",
-  "summary": "Frozen exact integrated candidate d28f75c13e for independent adversarial certification.",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:48:48.931Z",
+  "summary": "Closed the certified schema-backed tranche after delivery bookkeeping.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4"
+  "eventHash": "d88a3b97efb1c705003cdf17b3a3148cb586dccbaa992b2588c3ddf329c9414a"
 }

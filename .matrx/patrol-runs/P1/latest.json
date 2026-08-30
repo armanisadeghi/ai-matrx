@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260830T141853Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:31:24.705Z",
-  "summary": "Leading HIGH repair batch preserved as clean 13-file candidate b0ae0f612e after 18 detector findings closed.",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:40:15.256Z",
+  "summary": "Closed certified HIGH repair wave after origin/main integration; next repair wave remains queued from 54-item scoreboard.",
   "source": "20260830T141853Z.json",
-  "eventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778"
+  "eventHash": "38ff66ab86f27fe4b6db748d73e376488db11eeee6896b9ee77c6f451f40ff65"
 }

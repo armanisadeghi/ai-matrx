@@ -26,6 +26,7 @@ import type {
 import {
   HrMemberEmployeeSeamProvider,
   MemberEmployeeSeam,
+  useMemberEmployeeCopyDetails,
 } from "@/features/hr/entry-points/MemberEmployeeSeam";
 
 interface MemberManagementProps {
@@ -114,8 +115,57 @@ export function MemberManagement({
       orgSlugOrId={orgSlugOrId ?? organizationId}
       userIds={(members as PanelMember[]).map((m) => m.userId)}
     >
+      <OrganizationMembersPanel
+        members={members as PanelMember[]}
+        organizationId={organizationId}
+        organizationName={organizationName}
+        userRole={userRole}
+        isOwner={isOwner}
+        isPersonal={isPersonal}
+        operationLoading={operationLoading}
+        ownerCount={ownerCount}
+        onChangeRole={handleChangeRole}
+        onRemove={handleRemove}
+      />
+    </HrMemberEmployeeSeamProvider>
+  );
+}
+
+function OrganizationMembersPanel({
+  members,
+  organizationId,
+  organizationName,
+  userRole,
+  isOwner,
+  isPersonal,
+  operationLoading,
+  ownerCount,
+  onChangeRole,
+  onRemove,
+}: {
+  members: PanelMember[];
+  organizationId: string;
+  organizationName?: string;
+  userRole: OrgRole;
+  isOwner: boolean;
+  isPersonal: boolean;
+  operationLoading: boolean;
+  ownerCount: number;
+  onChangeRole: (member: PanelMember, role: MembershipRole) => Promise<void>;
+  onRemove: (member: PanelMember) => Promise<void>;
+}) {
+  const memberEmployeeCopyDetails = useMemberEmployeeCopyDetails();
+  const enrichedMembers = members.map((member) => ({
+    ...member,
+    copyDetails: memberEmployeeCopyDetails(
+      member.userId,
+      member.user?.displayName ?? member.user?.email ?? null,
+    ),
+  }));
+
+  return (
     <MembersPanel
-      members={members as PanelMember[]}
+      members={enrichedMembers}
       renderMemberExtra={(member) => (
         <MemberEmployeeSeam
           userId={member.userId}
@@ -131,8 +181,8 @@ export function MemberManagement({
       }
       canAssignRole={(_member, role) => (role === "owner" ? isOwner : true)}
       isLastOwner={(member) => member.role === "owner" && ownerCount === 1}
-      onChangeRole={handleChangeRole}
-      onRemove={handleRemove}
+      onChangeRole={onChangeRole}
+      onRemove={onRemove}
       copyContainer={{
         noun: "organization",
         id: organizationId,
@@ -149,6 +199,5 @@ export function MemberManagement({
         ) : undefined
       }
     />
-    </HrMemberEmployeeSeamProvider>
   );
 }

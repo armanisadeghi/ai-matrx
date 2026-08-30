@@ -73,6 +73,142 @@
       ],
       "previousEventHash": "3e33972963ae9d1297fc013ac42dc89cffe558c91258831208c867f0dbf33505",
       "eventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:35:30.409Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Replacement exact candidate 029667a044 restores the manifest-owned compact two-icon pair, retains Unwired row AI variants and competitor opportunity copy, and adds semantic patrol-contract drift detection.",
+      "evidence": [
+        "Focused P5 Jest: 6 suites / 36 tests passed; P5 manifest contract test passed.",
+        "Full type-check passed.",
+        "P5 detector: 105 compliant, 26 auto-approved, 0 equivalent, 33 review, 17 excluded; detector tests 8/8 passed.",
+        "check:patrol-contracts passed and now rejects two-icon recipe drift.",
+        "Scoped ESLint: 0 errors, one unchanged barrel warning.",
+        "git diff --check passed.",
+        "In-app Browser automation remains unavailable because required node_repl js is not exposed; no browser rejection inferred."
+      ],
+      "previousEventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce",
+      "eventHash": "d0d0c5577ee01428cf9863f9bfe8cce1de869b6ce7c2660198b61f2ecd2508d4"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T14:36:30.790Z",
+      "actor": "p5-replacement-certifier",
+      "summary": "REJECTED certification request: the recorded replacement candidate used an incorrect expanded SHA and did not resolve to a Git object.",
+      "evidence": [
+        "Remote preserved ref resolves to the real immutable candidate 029667a044490df629fc088506558e5d1ae4b77a."
+      ],
+      "previousEventHash": "d0d0c5577ee01428cf9863f9bfe8cce1de869b6ce7c2660198b61f2ecd2508d4",
+      "eventHash": "372aac1037d0be78e2d36113a6b265509a5d184ee93a3f38eb47872ad45b2f0a"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T14:36:32.679Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Correcting exact candidate identity without changing product bytes.",
+      "evidence": [
+        "git rev-parse and the preserved remote ref both resolve to 029667a044490df629fc088506558e5d1ae4b77a."
+      ],
+      "previousEventHash": "372aac1037d0be78e2d36113a6b265509a5d184ee93a3f38eb47872ad45b2f0a",
+      "eventHash": "6a83e9c80b8832c7e9126db2dbbf5430966c1aec6a8757b03f6fa1baef55d212"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T14:36:33.239Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Correct exact replacement candidate 029667a044490df629fc088506558e5d1ae4b77a is ready for adversarial certification; product bytes are unchanged.",
+      "evidence": [
+        "Candidate identity verified by git rev-parse and origin/patrol/p5-copy-everywhere-2026-08-30.",
+        "All previously recorded replacement gates remain applicable because product bytes did not change."
+      ],
+      "previousEventHash": "6a83e9c80b8832c7e9126db2dbbf5430966c1aec6a8757b03f6fa1baef55d212",
+      "eventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5"
+    },
+    {
+      "sequence": 10,
+      "state": "rejected",
+      "at": "2026-08-30T14:38:01.980Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "REJECTED candidate packaging 029667a044490df629fc088506558e5d1ae4b77a: shared integration bundled the P5 replacement with unrelated patrol work, so it was not a bounded exact candidate.",
+      "evidence": [
+        "Product bytes and gates remain valid; rejection is exact-candidate contamination only."
+      ],
+      "previousEventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5",
+      "eventHash": "070201eea056214ca519a408fb79e277e86aa6918067b2ff7d919b62fbc19241"
+    },
+    {
+      "sequence": 11,
+      "state": "fixing",
+      "at": "2026-08-30T14:38:02.743Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Repackaging the same verified bytes as a clean 12-path commit from the canonical checkout without a worktree.",
+      "evidence": [
+        "Used a temporary Git index rooted at certified-layer parent 0b9729b4e6; no checkout or product edit occurred."
+      ],
+      "previousEventHash": "070201eea056214ca519a408fb79e277e86aa6918067b2ff7d919b62fbc19241",
+      "eventHash": "a2053aeb1f955914256b99620746d3b5e3572dfc2206fbc4229aff5ff2f8815b"
+    },
+    {
+      "sequence": 12,
+      "state": "certifying",
+      "at": "2026-08-30T14:38:03.621Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Clean exact candidate 292810bf1cdf1f8dba539d0c5a2e355e426d8e2f is ready for independent certification.",
+      "evidence": [
+        "Exactly 12 changed paths; parent 0b9729b4e6 contains the independently certified competitor payload layer and the core Unwired repair ancestry.",
+        "Preserved at origin/patrol/p5-copy-everywhere-2026-08-30.",
+        "Candidate P5 path bytes match the green canonical checkout."
+      ],
+      "previousEventHash": "a2053aeb1f955914256b99620746d3b5e3572dfc2206fbc4229aff5ff2f8815b",
+      "eventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a"
+    },
+    {
+      "sequence": 13,
+      "state": "certified",
+      "at": "2026-08-30T14:40:47.929Z",
+      "actor": "p5-replacement-certifier",
+      "summary": "CERTIFIED exact clean candidate 80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b: no batch-caused defect remains.",
+      "evidence": [
+        "Two-icon manifest, skill, README, primitive, and tests agree; JSON, AI variants, exports, and Unwired finish brief remain under the second icon.",
+        "rowAiVariants reaches cards, desktop rows, side panels, and windows.",
+        "Browser automation unavailable because required node_repl js was not exposed; infrastructure evidence only."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b",
+        "certifierTaskId": "/root/p5_replacement_certifier",
+        "checks": [
+          "Focused Jest 6 suites / 36 tests passed.",
+          "Full type-check passed.",
+          "Scoped ESLint 0 errors; one unchanged barrel warning.",
+          "P5 detector 105 compliant / 26 auto-approved / 0 equivalent / 33 review / 17 excluded; detector tests 8/8 passed.",
+          "check:patrol-contracts passed with semantic P5 recipe guard.",
+          "git diff --check passed."
+        ]
+      },
+      "previousEventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a",
+      "eventHash": "48994a0a2d064aac7a6301ef0acf7873b5fd4b7d91cc5883ae66fb4104e52623"
+    },
+    {
+      "sequence": 14,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:41:39.502Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Certified candidate integrated to origin/main as dd524d507a40462ff6fcfa8af5f6a10509b196c9; serialized release watch owns deployment and no redundant release was started.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P5/2026-08-30-copy-everywhere-eradication"
+      ],
+      "delivery": {
+        "candidateSha": "80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b",
+        "preservedRef": "refs/heads/patrol-runs/P5/2026-08-30-copy-everywhere-eradication"
+      },
+      "previousEventHash": "48994a0a2d064aac7a6301ef0acf7873b5fd4b7d91cc5883ae66fb4104e52623",
+      "eventHash": "2f694ceb19b464c941d1a90772b1f319cbfaef243697d373265841e2be3a16d1"
     }
   ]
 }

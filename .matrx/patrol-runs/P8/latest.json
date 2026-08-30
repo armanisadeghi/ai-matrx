@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:32:21.371Z",
-  "summary": "Corrected candidate 5d46322225 restores exact AgentComparison wrapper/theme/geometry and re-enters independent certification.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:36:48.911Z",
+  "summary": "Corrected certified candidate is integrated on origin/main and queued for the serialized release lane; no redundant release created.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae"
+  "eventHash": "30f5885d581873a3fe44c5719720a07413c9ea9b8e680e95ac3f8a5806bb90be"
 }

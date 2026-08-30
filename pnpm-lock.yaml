@@ -19,7 +19,7 @@ importers:
         version: 0.5.1
       '@ai-matrx/capture':
         specifier: latest
-        version: 0.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.4.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/content-ir':
         specifier: latest
         version: 0.9.0
@@ -805,8 +805,8 @@ packages:
     resolution: {integrity: sha512-AvLsiQrTkm1gQVH0OX0gModa8C/+1Q4k9eiI1jsvSTFFmzgCVOPbrjQFucvR6shyi75ZZUElJ25QG+95RN60Pw==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/capture@0.3.1':
-    resolution: {integrity: sha512-OZvUCepJ/EOXCqpvwv3hMHXkHGposrgT4dKfWBB48AdhWLRa92bVlcbXpyYvTFwiXHMtrXffaBOiZAvct+J12A==}
+  '@ai-matrx/capture@0.4.0':
+    resolution: {integrity: sha512-VGq62PGnj+iJ0YvlSHReCSiGwkxVXJfiuENf3pxkqgrHBp7CZexl0H6lqZmVtOPitevrtITyHxGSt6njx7PwCw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13062,7 +13062,7 @@ snapshots:
 
   '@ai-matrx/agents@0.5.1': {}
 
-  '@ai-matrx/capture@0.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/capture@0.4.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       lucide-react: 0.545.0(react@19.2.7)
       react: 19.2.7

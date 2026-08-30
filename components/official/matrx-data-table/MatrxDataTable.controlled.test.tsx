@@ -414,6 +414,7 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     );
 
     expect(markup).toContain("Mobile Alpha");
-    expect(markup).toContain('aria-label="Copy or export Record"');
+    expect(markup).toContain('aria-label="Copy Record"');
+    expect(markup).toContain('aria-label="Copy Record for AI or export"');
   });
 });
