@@ -1,16 +1,22 @@
 "use client";
 
-import { Braces, Copy } from "lucide-react";
+import * as React from "react";
+import { Braces, Check, Copy } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { writeClipboard } from "@/components/agent-copy/clipboard";
 import {
   AiCopyMenu,
   type AiCustomSource,
   type AiVariant,
 } from "@/components/agent-copy/AiCopyMenu";
 import {
+  CopyActionGroup,
+  copyActionCellClass,
+  copyActionSegmentClass,
   type CopyActionAppearance,
   type CopyActionSize,
 } from "@/components/agent-copy/CopyActionGroup";
@@ -24,10 +30,10 @@ import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-typ
 /**
  * CopyButtons — the reusable "copy this data" primitive.
  *
- * The one Copy / JSON / Copy-for-AI / Export control. Every available action
- * lives behind one canonical CopyForAiIcon trigger; pass the payloads you have
- * and hide any category with `hide`. A menu item can copy, download, or open a
- * modal/workspace.
+ * The compact two-icon Copy / Copy-for-AI pair. Human-readable Copy is the
+ * first icon. Copy JSON, faithful AI payloads, shaped AI variants, exports,
+ * and custom workspaces live behind the second CopyForAiIcon trigger, so JSON
+ * and domain actions never become a third top-level control.
  *
  * Drop this onto any row, card, or page header. Pass the human text and the
  * agent payload as values or as builder functions (functions are preferred for
@@ -56,8 +62,8 @@ export interface CopyButtonsProps {
    */
   agent?: Resolvable<AgentPayloadInput | string>;
   /**
-   * When set, adds Copy JSON as the second unified-menu action. It copies this
-   * value as pretty-printed JSON without adding another top-level control.
+   * When set, adds Copy JSON inside the Copy-for-AI menu. It copies this value
+   * as pretty-printed JSON without adding another top-level control.
    * Pass the raw record/rows wherever structured data should remain available.
    */
   json?: Resolvable<unknown>;
@@ -75,13 +81,13 @@ export interface CopyButtonsProps {
    * Default true — copying should never also select/navigate.
    */
   stopPropagation?: boolean;
-  /** Disable the action control. */
+  /** Disable both action controls. */
   disabled?: boolean;
   /** Wrapper className. */
   className?: string;
   /**
    * Download actions. Pass the items you already build for a standalone
-   * ExportMenu — they are appended to the same action menu. Omit (or
+   * ExportMenu — they are appended to the Copy-for-AI menu. Omit (or
    * `hide: ["export"]`) on cards that only need Copy + Copy-for-AI.
    */
   export?: Pick<ExportMenuProps, "items" | "sheetRows">;
@@ -90,14 +96,11 @@ export interface CopyButtonsProps {
    * builder with a page header use `hide={["export"]}`.
    */
   hide?: CopyActionId[];
-  /**
-   * @deprecated CopyButtons is always one icon now. Retained for source
-   * compatibility while older callers are migrated.
-   */
+  /** @deprecated The canonical pair is always grouped when both icons exist. */
   grouped?: boolean;
   /**
-   * Graded AI variants (e.g. a focused/short view). When set, the single
-   * "Copy for AI" button upgrades in place to an {@link AiCopyMenu} dropdown:
+   * Graded AI variants (e.g. a focused/short view). The second
+   * "Copy for AI" icon upgrades in place to an {@link AiCopyMenu} dropdown:
    * the faithful `agent` action first, then these variants. Use for
    * medium/massive data — a giant page
    * offering only an everything-dump is useless the moment data grows.
@@ -142,6 +145,7 @@ export function CopyButtons({
   agentVariant,
   groomer,
 }: CopyButtonsProps) {
+  const [copiedHuman, setCopiedHuman] = React.useState(false);
   const visible = resolveCopyActions({
     hide,
     hasCopy: human !== undefined,
@@ -156,19 +160,13 @@ export function CopyButtons({
       (exportConfig.items.length > 0 || exportConfig.sheetRows !== undefined),
   });
 
-  const humanVariant: AiVariant | null =
-    visible.copy && human !== undefined
-      ? {
-          id: "copy",
-          label: "Copy",
-          hint: "Human-readable text",
-          icon: Copy,
-          section: "copy",
-          ariaLabel: `Copy ${label}`,
-          successMessage: `${label} copied to clipboard`,
-          build: () => resolve(human),
-        }
-      : null;
+  const copyHuman = async () => {
+    if (human === undefined) return;
+    await writeClipboard(resolve(human));
+    setCopiedHuman(true);
+    setTimeout(() => setCopiedHuman(false), 1500);
+    toast.success(`${label} copied to clipboard`);
+  };
 
   const faithfulAgentVariant: AiVariant | null =
     agent === undefined
@@ -209,7 +207,6 @@ export function CopyButtons({
       ? [...derivedAiVariants, faithfulAgentVariant]
       : [faithfulAgentVariant, ...derivedAiVariants];
   const menuVariants = [
-    ...(humanVariant ? [humanVariant] : []),
     ...(visible.ai && jsonVariant ? [jsonVariant] : []),
     ...(visible.ai ? agentVariants : []),
   ];
@@ -218,20 +215,45 @@ export function CopyButtons({
 
   return (
     <div
-      className={cn("flex items-center", className)}
+      className="inline-flex"
       onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
     >
-      <AiCopyMenu
+      <CopyActionGroup
         size={size}
         appearance={appearance}
-        label={label}
-        disabled={disabled}
-        stopPropagation={false}
-        variants={menuVariants}
-        custom={visible.ai ? aiCustom : undefined}
-        groomer={visible.ai ? groomer : undefined}
-        exportConfig={visible.export ? exportConfig : undefined}
-      />
+        className={className}
+      >
+        {visible.copy && human !== undefined ? (
+          <span className={copyActionCellClass(size)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={copyActionSegmentClass(size, appearance)}
+              disabled={disabled}
+              onClick={() => void copyHuman()}
+              aria-label={`Copy ${label}`}
+              title={`Copy ${label} (human-readable)`}
+            >
+              {copiedHuman ? <Check aria-hidden /> : <Copy aria-hidden />}
+            </Button>
+          </span>
+        ) : null}
+        {visible.ai || visible.export ? (
+          <AiCopyMenu
+            size={size}
+            appearance={appearance}
+            grouped
+            label={label}
+            disabled={disabled}
+            stopPropagation={false}
+            variants={menuVariants}
+            custom={visible.ai ? aiCustom : undefined}
+            groomer={visible.ai ? groomer : undefined}
+            exportConfig={visible.export ? exportConfig : undefined}
+          />
+        ) : null}
+      </CopyActionGroup>
     </div>
   );
 }

@@ -3,8 +3,8 @@
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
   "state": "certifying",
-  "updatedAt": "2026-08-30T14:26:05.013Z",
-  "summary": "Exact candidate a48dda0a079abac8bc27990da4b0e3c63e10da20: shared MatrxDataTable row AI variants and Unwired menu consolidation are ready for adversarial certification.",
+  "updatedAt": "2026-08-30T14:36:33.239Z",
+  "summary": "Correct exact replacement candidate 029667a044490df629fc088506558e5d1ae4b77a is ready for adversarial certification; product bytes are unchanged.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "14927bd255f5b3f621af99dde79778aaeabeda17df273d556c10f4bc3f78e8c0"
+  "eventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5"
 }
