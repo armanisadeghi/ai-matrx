@@ -51,4 +51,32 @@ describe("retired Mandate producer contract", () => {
       permanent: true,
     });
   });
+
+  it("permanently redirects the pre-detach /agents/mandates URLs", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const nextConfig = require(join(REPO_ROOT, "next.config.js"));
+    const redirects: Array<{
+      source: string;
+      destination: string;
+      permanent: boolean;
+    }> = await nextConfig.redirects();
+
+    for (const [source, destination] of [
+      ["/agents/mandates", "/mandates"],
+      ["/agents/mandates/new", "/administration/mandates/new"],
+      ["/agents/mandates/:mandateKey", "/mandates/:mandateKey"],
+      ["/administration/agents/mandates", "/administration/mandates"],
+      ["/administration/agents/mandates/:path*", "/administration/mandates/:path*"],
+    ]) {
+      expect(redirects).toContainEqual({ source, destination, permanent: true });
+    }
+
+    // `/new` must be matched before the `[mandateKey]` catch-all, or creating a
+    // mandate lands on a workspace for a mandate named "new".
+    const index = (source: string) =>
+      redirects.findIndex((r) => r.source === source);
+    expect(index("/agents/mandates/new")).toBeLessThan(
+      index("/agents/mandates/:mandateKey"),
+    );
+  });
 });

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1029,
+  "routeCount": 1081,
   "routes": [
     {
       "pattern": "/",
@@ -92,11 +92,6 @@
       "pattern": "/administration/agents/lookups",
       "status": "live",
       "source": "app/(admin)/administration/agents/lookups/page.tsx"
-    },
-    {
-      "pattern": "/administration/mandates",
-      "status": "live",
-      "source": "app/(admin)/administration/mandates/page.tsx"
     },
     {
       "pattern": "/administration/agents/mcp-servers",
@@ -754,6 +749,21 @@
       "source": "app/(admin)/administration/launchpad/page.tsx"
     },
     {
+      "pattern": "/administration/mandates",
+      "status": "live",
+      "source": "app/(admin)/administration/mandates/page.tsx"
+    },
+    {
+      "pattern": "/administration/mandates/[mandateKey]",
+      "status": "live",
+      "source": "app/(admin)/administration/mandates/[mandateKey]/page.tsx"
+    },
+    {
+      "pattern": "/administration/mandates/new",
+      "status": "live",
+      "source": "app/(admin)/administration/mandates/new/page.tsx"
+    },
+    {
       "pattern": "/administration/marketing",
       "status": "live",
       "source": "app/(admin)/administration/marketing/page.tsx"
@@ -1344,21 +1354,6 @@
       "source": "app/(core)/agents/compare/page.tsx"
     },
     {
-      "pattern": "/mandates",
-      "status": "live",
-      "source": "app/(core)/mandates/page.tsx"
-    },
-    {
-      "pattern": "/mandates/[mandateKey]",
-      "status": "live",
-      "source": "app/(core)/mandates/[mandateKey]/page.tsx"
-    },
-    {
-      "pattern": "/mandates/new",
-      "status": "live",
-      "source": "app/(core)/mandates/new/page.tsx"
-    },
-    {
       "pattern": "/agents/new",
       "status": "live",
       "source": "app/(core)/agents/new/page.tsx"
@@ -1682,6 +1677,16 @@
       "pattern": "/commerce/intake/v2/instant",
       "status": "live",
       "source": "app/(core)/commerce/intake/v2/instant/page.tsx"
+    },
+    {
+      "pattern": "/commerce/intake/v3",
+      "status": "live",
+      "source": "app/(core)/commerce/intake/v3/page.tsx"
+    },
+    {
+      "pattern": "/commerce/intake/v3/instant",
+      "status": "live",
+      "source": "app/(core)/commerce/intake/v3/instant/page.tsx"
     },
     {
       "pattern": "/commerce/labels",
@@ -3151,6 +3156,16 @@
       "source": "app/(public)/loop/diagram/page.tsx"
     },
     {
+      "pattern": "/mandates",
+      "status": "live",
+      "source": "app/(core)/mandates/page.tsx"
+    },
+    {
+      "pattern": "/mandates/[mandateKey]",
+      "status": "live",
+      "source": "app/(core)/mandates/[mandateKey]/page.tsx"
+    },
+    {
       "pattern": "/maps",
       "status": "live",
       "source": "app/(core)/maps/page.tsx"
@@ -3169,6 +3184,461 @@
       "pattern": "/marketing",
       "status": "live",
       "source": "app/(core)/marketing/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/ads",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/ads/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/analytics",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/analytics/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/ai-runs",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/ai-runs/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/entities",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/entities/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/map",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/map/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/setup",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/setup/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/table",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/table/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/studio",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/studio/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/email",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/email/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/audience",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/audience/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/guidelines",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/guidelines/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/knowledge",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/knowledge/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/media",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/media/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/media/generate",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/media/generate/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/media/research",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/media/research/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/media/sources",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/media/sources/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/offerings",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/offerings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/inbox",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/inbox/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/competitors",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/competitors/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/monitoring",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/monitoring/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/reputation",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/reputation/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/intelligence/reputation/[siteId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/intelligence/reputation/[siteId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/locations",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/locations/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/locations/[locationId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/locations/[locationId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/planning",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/planning/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/planning/calendar",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/planning/calendar/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/planning/initiatives",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/planning/initiatives/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/planning/initiatives/[id]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/planning/initiatives/[id]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/pr",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/pr/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/[...rest]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/[...rest]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/ai-visibility",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/ai-visibility/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/ai-visibility/[view]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/ai-visibility/[view]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/analysis",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/analysis/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/audit",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/audit/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/authority",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/authority/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/automations",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/automations/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/backlinks",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/backlinks/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/capabilities",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/capabilities/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/changes",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/changes/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/coverage",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/coverage/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/findings",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/findings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/findings/[findingId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/findings/[findingId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/growth-loop",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/growth-loop/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/performance",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/performance/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/research",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/research/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/value",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/value/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/value/dimensions",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/value/dimensions/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/value/packs",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/value/packs/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/value/rules",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/value/rules/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/value/settings",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/value/settings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/keywords/workbench",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/keywords/workbench/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/links",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/links/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/performance",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/performance/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/rankings",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/rankings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/search-console",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/search-console/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/valuation",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/valuation/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/settings",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/settings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/socials",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/socials/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/[...rest]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/[...rest]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/links",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/links/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/logs",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/logs/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/reports",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/reports/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/reports/[reportKey]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/reports/[reportKey]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/snapshots",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/snapshots/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/urls",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/urls/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/crawls/new",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/new/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/media",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/media/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/pages",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/pages/[pageId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/[pageId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots/[snapshotId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots/[snapshotId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/settings",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/settings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/settings/access",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/settings/access/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/settings/intake",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/settings/intake/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/settings/integrations",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/settings/integrations/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/sitemaps",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/sitemaps/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/sitemaps/[sitemapId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/sitemaps/[sitemapId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/websites/[siteId]/structure",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/websites/[siteId]/structure/page.tsx"
     },
     {
       "pattern": "/marketing/admin",
@@ -3226,304 +3696,14 @@
       "source": "app/(core)/marketing/brands/page.tsx"
     },
     {
-      "pattern": "/marketing/brands/[brandId]",
+      "pattern": "/marketing/brands/[brandId]/[[...rest]]",
       "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/page.tsx"
+      "source": "app/(core)/marketing/brands/[brandId]/[[...rest]]/page.tsx"
     },
     {
-      "pattern": "/marketing/brands/[brandId]/assets",
+      "pattern": "/marketing/brands/new-website",
       "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/assets/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/discovery",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/discovery/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/local",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/local/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/local/[locationId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/local/[locationId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/settings",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/settings/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/access",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/access/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/ai-visibility",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/ai-visibility/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/ai-visibility/[view]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/ai-visibility/[view]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/analysis",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/analysis/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/audit",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/audit/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/authority",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/authority/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/automations",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/automations/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/backlinks/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/capabilities",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/capabilities/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/changes",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/changes/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/coverage",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/coverage/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/links",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/links/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/logs",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/logs/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports/[reportKey]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/reports/[reportKey]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/snapshots",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/snapshots/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/urls",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]/urls/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/crawls/new",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/new/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/discovery",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/discovery/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/findings",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/findings/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/findings/[findingId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/findings/[findingId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/growth-loop",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/growth-loop/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/intake",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/intake/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/integrations",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/integrations/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/keywords",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/keywords/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/links",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/links/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/media",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/media/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/pages",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/pages/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]/snapshots",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]/snapshots/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]/snapshots/[snapshotId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]/snapshots/[snapshotId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/performance",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/performance/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/ranks",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/ranks/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/reputation",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/reputation/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/settings",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/settings/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/sitemaps",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/sitemaps/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/sitemaps/[sitemapId]",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/sitemaps/[sitemapId]/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/structure",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/structure/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/a",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/a/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/b",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/b/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/c",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/c/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/d",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/d/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/dimensions",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/dimensions/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/discovery",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/discovery/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/guidelines",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/guidelines/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/offerings",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/offerings/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/packs",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/packs/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/rules",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/rules/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/settings",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/settings/page.tsx"
-    },
-    {
-      "pattern": "/marketing/brands/[brandId]/sites/[siteId]/value/topics",
-      "status": "live",
-      "source": "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/topics/page.tsx"
+      "source": "app/(core)/marketing/brands/new-website/page.tsx"
     },
     {
       "pattern": "/marketing/calendar",
@@ -3646,6 +3826,41 @@
       "source": "app/(core)/marketing/monitoring/page.tsx"
     },
     {
+      "pattern": "/marketing/operations/approvals",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/approvals/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/automations",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/automations/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/connections",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/connections/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/connections/bing",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/connections/bing/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/connections/google",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/connections/google/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/connections/google/read-only",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/connections/google/read-only/page.tsx"
+    },
+    {
+      "pattern": "/marketing/operations/data-quality",
+      "status": "live",
+      "source": "app/(core)/marketing/operations/data-quality/page.tsx"
+    },
+    {
       "pattern": "/marketing/outreach",
       "status": "live",
       "source": "app/(core)/marketing/outreach/page.tsx"
@@ -3674,6 +3889,16 @@
       "pattern": "/marketing/reports",
       "status": "live",
       "source": "app/(core)/marketing/reports/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/cost",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/cost/page.tsx"
+    },
+    {
+      "pattern": "/marketing/reports/ranks",
+      "status": "live",
+      "source": "app/(core)/marketing/reports/ranks/page.tsx"
     },
     {
       "pattern": "/marketing/screenshots/[screenshotId]",
@@ -3719,6 +3944,16 @@
       "pattern": "/marketing/tools",
       "status": "live",
       "source": "app/(core)/marketing/tools/page.tsx"
+    },
+    {
+      "pattern": "/marketing/tools/youtube",
+      "status": "live",
+      "source": "app/(core)/marketing/tools/youtube/page.tsx"
+    },
+    {
+      "pattern": "/marketing/tools/youtube/videos/[videoId]",
+      "status": "live",
+      "source": "app/(core)/marketing/tools/youtube/videos/[videoId]/page.tsx"
     },
     {
       "pattern": "/masterwork",
@@ -4746,6 +4981,21 @@
       "source": "app/(core)/shapes/(workspace)/[kind]/page.tsx"
     },
     {
+      "pattern": "/shapes/[kind]/examples",
+      "status": "live",
+      "source": "app/(core)/shapes/(workspace)/[kind]/examples/page.tsx"
+    },
+    {
+      "pattern": "/shapes/[kind]/gate",
+      "status": "live",
+      "source": "app/(core)/shapes/(workspace)/[kind]/gate/page.tsx"
+    },
+    {
+      "pattern": "/shapes/[kind]/inputs",
+      "status": "live",
+      "source": "app/(core)/shapes/(workspace)/[kind]/inputs/page.tsx"
+    },
+    {
       "pattern": "/shapes/[kind]/instances",
       "status": "live",
       "source": "app/(core)/shapes/(workspace)/[kind]/instances/page.tsx"
@@ -4759,6 +5009,11 @@
       "pattern": "/shapes/[kind]/stream",
       "status": "live",
       "source": "app/(core)/shapes/(workspace)/[kind]/stream/page.tsx"
+    },
+    {
+      "pattern": "/shapes/[kind]/template",
+      "status": "live",
+      "source": "app/(core)/shapes/(workspace)/[kind]/template/page.tsx"
     },
     {
       "pattern": "/shapes/[kind]/test",
@@ -5144,6 +5399,11 @@
       "pattern": "/workflows/bakeoff/sharp/[id]",
       "status": "live",
       "source": "app/(core)/workflows/bakeoff/sharp/[id]/page.tsx"
+    },
+    {
+      "pattern": "/workflows/battle",
+      "status": "live",
+      "source": "app/(core)/workflows/battle/page.tsx"
     },
     {
       "pattern": "/workflows/runs",
