@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T143951Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:58:29.329Z",
-  "summary": "Correct all repaired hide/reveal rules with an explicit desktop breakpoint",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T15:03:10.034Z",
+  "summary": "Breakpoint-gated replacement awaits exact independent certification",
   "source": "20260830T143951Z.json",
-  "eventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f"
+  "eventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86"
 }
