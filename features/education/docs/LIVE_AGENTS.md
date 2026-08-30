@@ -3,7 +3,7 @@
 **Agents resolve via MANDATES now.** No education/flashcards code names an agent id: every AI
 lane names a mandate key, and the DATABASE decides which agent fulfils it (system default → org
 binding → user binding). **Inspect or swap the live agent** behind any lane at
-`/agents/mandates` (user bindings) or `/administration/agents/mandates` (system pins). Agent
+`/agents/mandates` (user bindings) or `/administration/mandates` (system pins). Agent
 definitions, prompts, schemas and variable shapes live on the DB agents themselves, never in
 this repo.
 
@@ -30,7 +30,7 @@ UUIDs and prompt text) is deleted per WP2 — it documented ids code no longer c
 ## Rules
 
 - 🚨 A raw agent UUID in code is a platform-law violation (root `CLAUDE.md`;
-  `features/agents/mandates/FEATURE.md`). An unresolved mandate REFUSES — never a fallback id,
+  `features/mandates/FEATURE.md`). An unresolved mandate REFUSES — never a fallback id,
   never a hardcoded prompt.
 - Need a NEW AI step? Declare the mandate in aidream `services/mandates/client_mandates.py`,
   then add its key to the owning feature's `mandates.ts`.

@@ -44,18 +44,18 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
-import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
-import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
-import { ProvisionOfferList } from "@/features/agents/mandates/components/ProvisionOfferList";
-import { useMandateGoal } from "@/features/agents/mandates/useMandateGoal";
+import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
+import { MandateResolutionRibbon } from "@/features/mandates/components/MandateResolutionRibbon";
+import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
+import { useMandateGoal } from "@/features/mandates/useMandateGoal";
 import {
   fetchProvision,
   type ProvisionOffer,
-} from "@/features/agents/mandates/provisions";
+} from "@/features/mandates/provisions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { parseMandateContract } from "@/features/agents/mandates/overrides";
-import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
+import { parseMandateContract } from "@/features/mandates/overrides";
+import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
   agentHolderOfBinding,

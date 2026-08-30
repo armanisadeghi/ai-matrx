@@ -149,7 +149,7 @@ openMandate({
 ```
 
 The existing menu row is the door. A link from a working surface to
-`/agents/mandates` or `/administration/agents/mandates` is a regression.
+`/agents/mandates` or `/administration/mandates` is a regression.
 
 ## Decision table
 

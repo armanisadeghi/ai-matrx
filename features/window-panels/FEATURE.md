@@ -87,7 +87,7 @@ The rule, and why it is not a style preference:
   icon for the agents that are assigned into roles."_ A working surface that names a record
   OPENS its window; a `<Link>` to that record's route from such a surface is the regression
   this law exists to stop. The route keeps existing for browsing the whole list.
-- Worked example: `MandateWindow` (`windows/agents/MandateWindow.tsx`) — the mandate twin of
+- Worked example: `MandateWindow` (`windows/mandates/MandateWindow.tsx`) — the mandate twin of
   `AgentSettingsWindow`. Its Yours pane IS `MandateOverridePanel` (what `/agents/mandates`
   composes) and its Admin pane IS `MandateDetailView` (the console drawer, whole). The
   window's own code is the shell only: which mandates are in scope (the surface's own + its

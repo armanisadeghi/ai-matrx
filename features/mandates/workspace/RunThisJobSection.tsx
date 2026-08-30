@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/workspace/RunThisJobSection.tsx
+// features/mandates/workspace/RunThisJobSection.tsx
 //
 // RUN THIS JOB — the workspace's run affordance. The Mandate workspace could
 // state the job, the Holder, the override and the notes, but there was no way

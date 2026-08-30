@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/authoring/service.ts
+// features/mandates/authoring/service.ts
 //
 // The three user-authoring doors (aidream, 2026-08-29):
 //   POST  /mandates                       — create (origin='user', grounding 'H')

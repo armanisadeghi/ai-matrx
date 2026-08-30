@@ -42,7 +42,7 @@ import type { RefSubject } from "../stage-doors";
 import { LoopBlockerCard } from "./LoopBlockerCard";
 import { LoopHistoryFeed } from "./LoopHistoryFeed";
 import { LoopStageRail } from "./LoopStageRail";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 function stageTitle(stageId: string): string {
   const stage = STAGES.find((s) => s.id === stageId);

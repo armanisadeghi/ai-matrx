@@ -1,6 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { fetchMandatePins } from "@/features/agents/mandates/service";
+import { fetchMandatePins } from "@/features/mandates/service";
 import { listAuditionScores } from "../audition/listAuditionScores";
 import {
   MASTERWORK_SELECT_COLUMNS,

@@ -1,4 +1,4 @@
-// features/agents/mandates/browse/url-compat.ts
+// features/mandates/browse/url-compat.ts
 //
 // LEGACY DEEP-LINK SHIM — load-bearing, not a nicety. 25 MandateDoorLink call
 // sites plus 4 hand-rolled hrefs across the app link to
@@ -36,7 +36,7 @@ export function mandatesBrowseHref(feature?: string): string {
  * app domain. Never hand-build this URL.
  */
 export function adminMandateHref(mandateKeyOrId: string): string {
-  return `/administration/agents/mandates/${encodeURIComponent(mandateKeyOrId)}`;
+  return `/administration/mandates/${encodeURIComponent(mandateKeyOrId)}`;
 }
 
 /**

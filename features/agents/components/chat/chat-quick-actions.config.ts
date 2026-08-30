@@ -24,7 +24,7 @@ export interface ChatQuickAction {
 /**
  * The default new-chat agent is a MANDATE — `chat.default_new_chat` — resolved at
  * run time (system default → the user's own binding) via
- * `features/agents/mandates` (`resolveMandate` / `useMandate` /
+ * `features/mandates` (`resolveMandate` / `useMandate` /
  * `resolveMandateServer`). Swapping the "default feel" of the chat surface
  * is a rebind in the admin mandate console (or a per-user binding on
  * `/agents/mandates`), never a code change.
@@ -36,7 +36,7 @@ export const DEFAULT_NEW_CHAT_MANDATE_KEY = "chat.default_new_chat";
  * with, kept ONLY for static module-scope data that cannot resolve a mandate
  * (the ProTextarea "help" placeholder default). Everything on a runtime path
  * resolves `DEFAULT_NEW_CHAT_MANDATE_KEY` instead; adding a new read of this
- * constant is a defect (see features/agents/mandates/FEATURE.md — the manifest
+ * constant is a defect (see features/mandates/FEATURE.md — the manifest
  * seed-mirror ruling).
  */
 export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";

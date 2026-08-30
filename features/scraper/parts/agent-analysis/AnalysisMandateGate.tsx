@@ -10,8 +10,8 @@
 
 import { BrainCircuit } from "lucide-react";
 import { Card } from "@/components/official/PageTemplate";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 export function AnalysisMandateGate({
   mandateKey,

@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/coverage.ts
+// features/mandates/coverage.ts
 //
 // COVERAGE — the scoreboard FALLBACK-MANDATES.md §The cost demands: for every
 // live mandate, is somebody actually assigned to it?

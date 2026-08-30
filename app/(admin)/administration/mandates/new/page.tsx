@@ -1,7 +1,7 @@
-import { NewMandatePage } from "@/features/agents/mandates/authoring/NewMandatePage";
+import { NewMandatePage } from "@/features/mandates/authoring/NewMandatePage";
 
 /**
- * /administration/agents/mandates/new — create a mandate before its
+ * /administration/mandates/new — create a mandate before its
  * intelligence exists (origin='user'): descriptive inputs, the goal, the
  * output shape. Moved here from `/agents/mandates/new` on 2026-08-29: creating
  * a mandate declares a job for the whole platform, so it is admin work. Auth +

@@ -13,7 +13,7 @@ export const SHAPES_FEATURE_LABEL = "Shapes";
 
 /**
  * The shape-creator agent is a MANDATE — `content_ir.kind_creator` — resolved at
- * trigger time via `features/agents/mandates` (`resolveMandate` /
+ * trigger time via `features/mandates` (`resolveMandate` /
  * `useMandate`; system default → the user's own binding). Consumers stay
  * LOUD on a resolution failure (toast / not-configured state) and never
  * silently fall back to another agent. The mandate's system default is the

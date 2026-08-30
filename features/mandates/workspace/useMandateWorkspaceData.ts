@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/workspace/useMandateWorkspaceData.ts
+// features/mandates/workspace/useMandateWorkspaceData.ts
 //
 // The ONE data path for the mandate workspace — the single-mandate load both
 // hosts (the /agents/mandates/[mandateKey] route and MandateWindow's Yours

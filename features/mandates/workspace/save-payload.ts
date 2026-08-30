@@ -1,4 +1,4 @@
-// features/agents/mandates/workspace/save-payload.ts
+// features/mandates/workspace/save-payload.ts
 //
 // The PURE builder for a mandate-binding save — every rule the wholesale-
 // replace PUT makes load-bearing lives here, jest-covered, so no UI step can

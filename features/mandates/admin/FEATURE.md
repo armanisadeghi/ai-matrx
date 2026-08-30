@@ -6,15 +6,15 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agen
 
 Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before promoting this console's floating detail, test bench, comparison, or Binding controls into the proposed full individual Mandate workspace. It has no implementation authority until Arman approves it.
 
-Routes: `/administration/agents/mandates` (the LIST — `MandatesConsole.tsx`) ·
-`/administration/agents/mandates/[mandateKey]` (ONE mandate — `AdminMandateWorkspacePage.tsx`) ·
-`/administration/agents/mandates/new` (creation — `features/agents/mandates/authoring/NewMandatePage.tsx`).
+Routes: `/administration/mandates` (the LIST — `MandatesConsole.tsx`) ·
+`/administration/mandates/[mandateKey]` (ONE mandate — `AdminMandateWorkspacePage.tsx`) ·
+`/administration/mandates/new` (creation — `features/mandates/authoring/NewMandatePage.tsx`).
 Code: `service.ts` (direct supabase reads/writes on `agent.mandate` / `agent.mandate_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC).
 
 🚨 **ONE MANDATE UI (Arman, 2026-08-29) — the console is the LIST, the page is the mandate.**
 Arman lives on this route and kept seeing an experience that had diverged from the rebuilt
 one. So there is now exactly one mandate detail implementation in the product:
-`features/agents/mandates/workspace/MandateWorkspace` (the triad INPUT → GOAL → OUTPUT,
+`features/mandates/workspace/MandateWorkspace` (the triad INPUT → GOAL → OUTPUT,
 fulfillment, override, notes). `AdminMandateWorkspacePage` is a SHELL around it —
 `host="admin-route"`, which turns ON goal editing, draft-input editing and RUN THIS JOB —
 plus ONE collapsed **Admin controls** section that renders the SAME `MandateDetailView`
@@ -22,7 +22,7 @@ plus ONE collapsed **Admin controls** section that renders the SAME `MandateDeta
 **`MandateDetailPanel` is no longer on any default path from this console**: row click, the
 coverage board's named rows, the drift strip, the right-click menu and the legacy
 `?mandate=<key>` all navigate to the mandate's page (`adminMandateHref`, from
-`features/agents/mandates/browse/url-compat.ts` — never hand-build that URL). The file is
+`features/mandates/browse/url-compat.ts` — never hand-build that URL). The file is
 kept, not deleted.
 
 **And management LIVES here.** The user surface `/agents/mandates` is browse/view + the
@@ -30,7 +30,7 @@ principal's own override only — no goal editing, no draft-input editing, no ru
 New button. Mandate creation moved here from `/agents/mandates/new`. The server agrees:
 `POST /mandates`, `PATCH /mandates/{key}/goal` and `/draft-inputs` are
 `require_super_admin` (aidream `304fe1848`). User-facing half:
-`features/agents/mandates/FEATURE.md`.
+`features/mandates/FEATURE.md`.
 
 **Known gap, deliberate:** this console's `mandate_exemplar_draft` surface write target can
 no longer be served — the bench it staged into now lives on the mandate page, which mounts
@@ -125,13 +125,13 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
   is the LIST only — coverage board, goal/coverage/health columns, filters, enable/disable,
   Copy for AI, and a New Mandate button — and every door out of it (row click, the identity
   column's real link, the coverage board's named rows, the drift strip, the right-click
-  menu, the legacy `?mandate=` param) navigates to `/administration/agents/mandates/[key]`.
+  menu, the legacy `?mandate=` param) navigates to `/administration/mandates/[key]`.
   That page is `AdminMandateWorkspacePage`: the SAME `MandateWorkspace` the user route and
   the window render, with `host="admin-route"` turning on goal editing, draft-input editing
   and RUN THIS JOB, plus a collapsed **Admin controls** section rendering the SAME
   `MandateDetailView` the drawer did (health, pin, rebind, bench, bindings). `detail` and
   `window` are off the table config; `MandateDetailPanel.tsx` is kept, not deleted (R14).
-  Creation moved here (`/administration/agents/mandates/new`) from the user route, which
+  Creation moved here (`/administration/mandates/new`) from the user route, which
   lost its New button and its `new` page. Known gap, stated in the route section above: the
   `mandate_exemplar_draft` write target now always refuses, loudly, because the bench moved
   off this surface. `pnpm type-check` 0; mandates suites 15/87 green; workflow-runtime
@@ -161,7 +161,7 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 - 2026-08-29 — The ad-hoc `POST /mandates/{key}/test` transport and runtime result guard moved to the shared mandates feature so admin and core workspaces consume one implementation without pulling the admin service into the core bundle.
 - 2026-08-28 — **The coverage board, the real GOAL, the full Provision, and four
   offenders closed.**
-  - **Coverage board** (`MandateCoverageBoard.tsx` + `mandate-coverage.ts`, moved 2026-08-29 to `features/agents/mandates/coverage.ts` so the user-facing lists share it): three
+  - **Coverage board** (`MandateCoverageBoard.tsx` + `mandate-coverage.ts`, moved 2026-08-29 to `features/mandates/coverage.ts` so the user-facing lists share it): three
     counted, click-to-filter tiles — **Assigned** / **Running on fallback** /
     **Nothing assigned** — from the live `GET /mandates/coverage`, in the
     readiness-rollup shape of `SurfacesContainer`. The server names only the
@@ -172,7 +172,7 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
     An unreadable report renders the failure, never an empty board.
   - **The goal is CODE.** `agent.mandate` has no `goal` column and aidream
     exposes no write path, so goals arrive through `GET /mandates`
-    (`features/agents/mandates/catalogue.ts` → `useMandateGoal`) and every
+    (`features/mandates/catalogue.ts` → `useMandateGoal`) and every
     surface shows them read-only and says where they are edited. New Goal
     column; a blank cell distinguishes "no goal declared" from "the catalogue
     could not be read".
@@ -230,7 +230,7 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 - 2026-08-08 — THE DOOR LAW pass (Arman's ruling): `EntityRef` on every agent reference, version-history door on pins, lineage/system-twin resolution + one-click **Rebind to system twin**, identity card above the drawer's picker, and the new `unresolved pin` health state (`MandatesHealthSummary.unresolved_pin` added to the surface scope). Health column widened; `ok` no longer masks unreadable pins.
 
-- 2026-08-08 — Bindings are now EDITABLE in the console: `MandateDetail` embeds the shared `MandateOverridePanel` (`features/agents/mandates/components/`) — user + admin-org bindings incl. settings-only `config_overrides`, written via the aidream bind endpoint (`PUT/DELETE /mandates/{mandate_key}/binding`, 422 contract verdicts shown verbatim); the read-only "All overrides" roll-up stays below it.
+- 2026-08-08 — Bindings are now EDITABLE in the console: `MandateDetail` embeds the shared `MandateOverridePanel` (`features/mandates/components/`) — user + admin-org bindings incl. settings-only `config_overrides`, written via the aidream bind endpoint (`PUT/DELETE /mandates/{mandate_key}/binding`, 422 contract verdicts shown verbatim); the read-only "All overrides" roll-up stays below it.
 - 2026-08-08 — One-value-per-column pass (Arman): Label its own column; IO kinds split into separate Input / Output columns. Never re-merge values into a compound column.
 - 2026-08-08 — Console rebuilt on MatrxDataTable (was a hand-rolled `<table>` with no sort/filter/copy); expanded-row editor moved to the side-panel/window workbench; per-mandate remount keys added.
 - 2026-08-07 — Created: mandate list, pin-vs-latest drift badges, rebind editor, enable toggle, override display.

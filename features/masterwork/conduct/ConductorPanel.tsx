@@ -49,7 +49,7 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -60,7 +60,7 @@ import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/
 import {
   missingRequiredVariables,
   missingVariablesMessage,
-} from "@/features/agents/mandates/service";
+} from "@/features/mandates/service";
 import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import {
@@ -77,7 +77,7 @@ const SOURCE_FEATURE = "masterwork" as const;
  * Which agent conducts a Masterwork build is DB-managed via the
  * `masterwork.conductor` Mandate (declared in aidream
  * `mandates/client_mandates.py`, rebindable at
- * /administration/agents/mandates). No hardcoded agent id and NO SILENT
+ * /administration/mandates). No hardcoded agent id and NO SILENT
  * FALLBACK — if the Mandate can't resolve, this refuses and says so.
  */
 const CONDUCTOR_MANDATE_KEY = "masterwork.conductor";

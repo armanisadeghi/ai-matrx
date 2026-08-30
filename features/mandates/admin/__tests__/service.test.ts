@@ -4,7 +4,7 @@ import {
   isMandateTestResult,
   mandateTestResultValidationErrors,
   type MandateTestResponse,
-} from "@/features/agents/mandates/test-run";
+} from "@/features/mandates/test-run";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateVariableVerdicts,

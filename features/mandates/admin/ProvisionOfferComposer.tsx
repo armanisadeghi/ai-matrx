@@ -33,11 +33,11 @@ import { getKindInputContractBySlug } from "@/features/content-ir/registry/schem
 import {
   SCALAR_VALUE_KINDS,
   type OfferedValue,
-} from "@/features/agents/mandates/provision-shapes";
+} from "@/features/mandates/provision-shapes";
 import {
   fetchProvision,
   type ProvisionOffer,
-} from "@/features/agents/mandates/provisions";
+} from "@/features/mandates/provisions";
 
 const KindInputForm = dynamic(
   () => import("@/features/content-ir/input/KindInputForm"),

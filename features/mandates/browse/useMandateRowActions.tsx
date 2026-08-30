@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/browse/useMandateRowActions.tsx
+// features/mandates/browse/useMandateRowActions.tsx
 //
 // The ONE action list for a mandate row — table kebab, cards, rows, and
 // right-click all consume the same builder. Row CLICK opens the mandate
@@ -26,7 +26,7 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
-import { useCopyMandateAgent } from "@/features/agents/mandates/useCopyMandateAgent";
+import { useCopyMandateAgent } from "@/features/mandates/useCopyMandateAgent";
 import { mandateRoute, type MandateListRow } from "./types";
 
 export function useMandateRowActions(

@@ -1,8 +1,8 @@
 "use client";
 
-// features/agents/mandates/authoring/NewMandatePage.tsx
+// features/mandates/authoring/NewMandatePage.tsx
 //
-// /administration/agents/mandates/new — the full purpose-built creation page.
+// /administration/mandates/new — the full purpose-built creation page.
 // ADMIN-SIDE since 2026-08-29 (Arman): creating a mandate declares a job for
 // the whole platform, so it lives with the rest of mandate management, and the
 // server's POST /mandates is `require_super_admin` (aidream 304fe1848). The

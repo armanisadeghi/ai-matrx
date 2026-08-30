@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/browse/columns.tsx
+// features/mandates/browse/columns.tsx
 //
 // The MANDATES column registry for the canonical entity list. Every column
 // sorts AND filters server-side (app policy); the sort ids match

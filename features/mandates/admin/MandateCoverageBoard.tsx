@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/mandates/MandateCoverageBoard.tsx
+// features/mandates/admin/MandateCoverageBoard.tsx
 //
 // THE COVERAGE BOARD — three counted tiles that filter the list, in the shape
 // Arman rated best (SurfacesContainer's readiness rollup): a scoreboard IS the
@@ -19,7 +19,7 @@ import {
   COVERAGE_META,
   type MandateCoverageBucket,
   type MandateCoverageResponse,
-} from "@/features/agents/mandates/coverage";
+} from "@/features/mandates/coverage";
 
 /** How many named rows a strip shows before it counts the rest. */
 export const COVERAGE_NAMED_ROW_CAP = 6;

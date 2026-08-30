@@ -94,7 +94,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
   2026-06-10** (1–10 hosts, all formats, per-host names/voices; the ceiling
   came down from 20 on 2026-08-09 — see the change log). Since
   2026-08-08 every pipeline agent routes through a `podcast.*` mandate
-  (DB-managed; admin console `/administration/agents/mandates`) — adding or
+  (DB-managed; admin console `/administration/mandates`) — adding or
   swapping an agent is a rebind, not a code change.
 - `docs/BLOG_PER_EPISODE.md` — rich SEO blog article per episode (≠ transcript).
   **Live 2026-06-11:** generate from the run page (`EpisodeContentStudio`),
@@ -598,7 +598,7 @@ fixed` window titled "Marking chapters" — the page did not move — chapters
   languages stopped being one-size-fits-all.** Server (aidream, same-day):
   every pipeline agent (research, extraction, all script bands, both audio
   bands, metadata, image/video mandates, feature-image pair) resolves through a
-  `podcast.*` mandate — rebind from `/administration/agents/mandates`, never a
+  `podcast.*` mandate — rebind from `/administration/mandates`, never a
   code constant; default cast names + voices now ROTATE per episode
   (gender-aware seeded draw on both the Gemini and ElevenLabs bands;
   cast-preview draws a fresh cast per form load — kills the eternal

@@ -9,7 +9,7 @@
  * Every way of opening one mandate — row click, the coverage board's named
  * rows, the drift strip, the right-click menu, `?mandate=` — lands on the
  * SAME workspace page the rest of the product uses
- * (`/administration/agents/mandates/[key]`, the admin shell around the very
+ * (`/administration/mandates/[key]`, the admin shell around the very
  * same `MandateWorkspace` as `/agents/mandates/[key]`). The old side-panel
  * drawer is no longer on any path from here.
  *
@@ -73,12 +73,12 @@ import {
   type MandateSummary,
   type MandatesHealthSummary,
 } from "@/features/surfaces/manifests/mandates.manifest";
-import { onMandateCacheInvalidated } from "@/features/agents/mandates/service";
-import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import { parseMandateContract } from "@/features/mandates/overrides";
 import {
   fetchMandateCatalogue,
   type MandateCatalogue,
-} from "@/features/agents/mandates/catalogue";
+} from "@/features/mandates/catalogue";
 import { MandateCoverageBoard } from "./MandateCoverageBoard";
 import {
   COVERAGE_META,
@@ -87,11 +87,11 @@ import {
   fetchMandateCoverage,
   type MandateCoverageBucket,
   type MandateCoverageResponse,
-} from "@/features/agents/mandates/coverage";
+} from "@/features/mandates/coverage";
 import { readMandateBenchSnapshot } from "./bench-draft";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
-import { fetchProvisions } from "@/features/agents/mandates/provisions";
-import { adminMandateHref } from "@/features/agents/mandates/browse/url-compat";
+import { fetchProvisions } from "@/features/mandates/provisions";
+import { adminMandateHref } from "@/features/mandates/browse/url-compat";
 import {
   CreateSystemTwinButton,
   LineageChip,
@@ -727,7 +727,7 @@ export function MandatesConsole() {
       // mounts no surface runtime. So this target cannot be served from here
       // at all — it is not "not yet open".
       throw new Error(
-        "This console no longer hosts the test-case composer. The bench moved to the mandate's own page — /administration/agents/mandates/<mandate_key>, under Admin controls — and that page is not an agent surface, so an exemplar cannot be staged from here. Tell the admin to open the mandate and compose it there.",
+        "This console no longer hosts the test-case composer. The bench moved to the mandate's own page — /administration/mandates/<mandate_key>, under Admin controls — and that page is not an agent surface, so an exemplar cannot be staged from here. Tell the admin to open the mandate and compose it there.",
       );
     },
   });
@@ -1146,7 +1146,7 @@ export function MandatesConsole() {
                   {/* Declaring a job is admin work, so the New button lives
                       here — the user route has none. */}
                   <Button asChild size="sm">
-                    <Link href="/administration/agents/mandates/new">
+                    <Link href="/administration/mandates/new">
                       <Plus className="w-4 h-4" />
                       New Mandate
                     </Link>
@@ -1169,7 +1169,7 @@ export function MandatesConsole() {
             copy={{
               label: "Agent mandate",
               listLabel: "Agent mandates (this view)",
-              location: "/administration/agents/mandates",
+              location: "/administration/mandates",
               rowKind: "agent-mandate",
               listKind: "mandates",
               humanRow,

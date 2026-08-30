@@ -21,7 +21,7 @@ import { toast } from "@/lib/toast";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import { parseMandateContract } from "@/features/mandates/overrides";
 import {
   buildRebindFixBrief,
   computeRebindImpact,

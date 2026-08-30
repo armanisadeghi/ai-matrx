@@ -2028,7 +2028,17 @@ function ConfigNamespacesSection({
   const globalRowFor = (ns: string) =>
     rows.find((row) => row.namespace === ns && tierOf(row) === "global");
   const allNamespaces = [
-    ...new Set([...declared.map((d) => d.namespace), ...counts.keys()]),
+    ...new Set([
+      ...declared.map((d) => d.namespace),
+      ...counts.keys(),
+      // THE EXCLUSION VALVE (#43) is universal — every place may refuse a
+      // context-menu item the derived requirement gate offered it
+      // (THE-MODEL law 3). Declaring it on all ~100 manifests would be
+      // noise, and injecting it into every RESOLVED manifest would flood the
+      // user-facing surfaces hub (which lists a surface iff it has roles or
+      // namespaces). So it is declared HERE, where the valve is authored.
+      UNIVERSAL_MENU_NAMESPACE.namespace,
+    ]),
   ].sort((a, b) => a.localeCompare(b));
 
   return (
@@ -2044,7 +2054,11 @@ function ConfigNamespacesSection({
       ) : (
         <div className="rounded-md border border-border bg-card divide-y divide-border">
           {allNamespaces.map((ns) => {
-            const decl = declared.find((d) => d.namespace === ns) ?? null;
+            const decl =
+              declared.find((d) => d.namespace === ns) ??
+              (ns === UNIVERSAL_MENU_NAMESPACE.namespace
+                ? UNIVERSAL_MENU_NAMESPACE
+                : null);
             const tierCounts = counts.get(ns) ?? {};
             return (
               <NamespaceConfigEditorRow

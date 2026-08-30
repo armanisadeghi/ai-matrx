@@ -161,7 +161,7 @@ export const SOURCE_OPTIONS: SourceOption[] = [
 
 // Source-resolver agents are DB-managed mandates ("podcast_client.web_content_extractor",
 // "podcast_client.youtube_research") resolved in useSourceResolvers — no
-// hardcoded agent ids here. Rebind from /administration/agents/mandates.
+// hardcoded agent ids here. Rebind from /administration/mandates.
 
 export const HOST_COUNT_DEFAULT = 2;
 
@@ -333,7 +333,7 @@ export const FORMAT_OPTIONS: FormatOption[] = [
 // Two distinct stages. Pre-script runs between the source and the script and
 // is WIRED (2026-08-08): each option maps to a `post_prep_option` value and a
 // dedicated backend agent (mandates `podcast.post_prep_*` — rebind from
-// /administration/agents/mandates). Post-script (script → audio) is still
+// /administration/mandates). Post-script (script → audio) is still
 // display-only.
 
 export interface ProcessingOption {

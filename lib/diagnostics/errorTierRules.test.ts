@@ -298,7 +298,7 @@ describe("classifyTier", () => {
       const c = classifyTier(
         captured({
           source: "api-network",
-          route: "/administration/agents/mandates",
+          route: "/administration/mandates",
           relation: "GET /mandates/code-truth",
           code: "network_error",
           message,

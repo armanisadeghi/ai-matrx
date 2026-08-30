@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/workspace/Section.tsx
+// features/mandates/workspace/Section.tsx
 //
 // The workspace's section chrome (ShortcutEditorNext anatomy — eyebrow title,
 // calm body). It lived inside MandateWorkspace until a section that decides for

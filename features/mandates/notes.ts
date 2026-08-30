@@ -1,5 +1,5 @@
 /**
- * features/agents/mandates/notes.ts
+ * features/mandates/notes.ts
  *
  * MANDATE NOTES — the data layer for an admin's observations about a job.
  *

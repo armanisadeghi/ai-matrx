@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/workspace/OverrideFlow.tsx
+// features/mandates/workspace/OverrideFlow.tsx
 //
 // §4 of the mandate workspace — YOUR OVERRIDE, as Arman's stepwise doctrine
 // (2026-08-26): never everything at once.

@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/components/ProvisionOfferList.tsx
+// features/mandates/components/ProvisionOfferList.tsx
 //
 // THE PROVISION, on screen — every value a Mandate's Provision offers its
 // Holder: name, kind, guaranteed-or-optional, lazy, and the description the

@@ -51,7 +51,7 @@ import {
   selectAnswerText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 
 /**
  * WHO runs each step is a MANDATE (`agent.mandate`), never an agent id in this
@@ -59,7 +59,7 @@ import { resolveMandate } from "@/features/agents/mandates/service";
  * the user's own binding), and `runHeadlessAgent` passes the key straight
  * into `launchAgentExecution({ mandateKey })` so BOTH halves of the binding
  * (agent AND `config_overrides`) apply. Inputs ride as the provision's
- * offered values. Recipe: `features/agents/mandates/FEATURE.md`
+ * offered values. Recipe: `features/mandates/FEATURE.md`
  * §"Migrating a hardcoded call site".
  */
 

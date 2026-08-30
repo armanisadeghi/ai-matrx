@@ -817,7 +817,7 @@ export const adminCategoriesData: AdminCategory[] = [
         description:
           "DB-managed system-agent pins (agent.mandate / mandate_binding): rebind, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
         iconName: "Plug",
-        link: "/administration/agents/mandates",
+        link: "/administration/mandates",
         isNew: true,
       },
       {

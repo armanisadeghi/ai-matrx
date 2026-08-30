@@ -36,7 +36,7 @@ import type {
 } from "@/features/podcasts/types";
 
 // DB-managed mandates (declared in aidream client_slots.py; rebind from
-// /administration/agents/mandates — never a hardcoded agent id here).
+// /administration/mandates — never a hardcoded agent id here).
 const BLOG_WRITER_MANDATE_KEY = "podcast_client.blog_writer";
 const SHOW_NOTES_MANDATE_KEY = "podcast_client.show_notes";
 

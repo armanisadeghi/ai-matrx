@@ -4,7 +4,7 @@
 //
 // Generate + persist auto chapter markers for a finished episode. The
 // podcast.chapter_marker agent (DB-managed mandate, floating — rebind from
-// /administration/agents/mandates) segments the episode script into 3–12 ordered
+// /administration/mandates) segments the episode script into 3–12 ordered
 // chapters and emits them as the `media_chapters` content-IR kind; the parsed
 // list is saved under pc_episodes.metadata.chapters via
 // podcastService.saveEpisodeChapters.

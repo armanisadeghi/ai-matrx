@@ -2,7 +2,7 @@
 
 import { AppWindow, Plus } from "lucide-react";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 /** Injected route header for /agent-apps — the list/gallery entry point. */
 export function AgentAppsListHeader() {

@@ -1,4 +1,4 @@
-// features/agents/mandates/browse/service.ts
+// features/mandates/browse/service.ts
 //
 // Direct browser → Supabase (CLAUDE.md § Data flow): the entity-list service
 // triple over the mnd_* RPC set (migrations/mnd_list_scoped.sql). The RPC —

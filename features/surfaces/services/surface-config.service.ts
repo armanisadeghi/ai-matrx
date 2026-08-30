@@ -22,7 +22,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { fetchMandatePins } from "@/features/agents/mandates/service";
+import { fetchMandatePins } from "@/features/mandates/service";
 import type { SurfaceAgentRole } from "@/features/surfaces/types";
 import {
   getNamespaceHandler,

@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/browse/MandateBrowseCards.tsx
+// features/mandates/browse/MandateBrowseCards.tsx
 //
 // Cards view: one card per mandate — the job, what fulfils it, its input
 // scale, its output shape. Same menu + row-open as the table (shared actions).

@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/browse/MandateBrowseRows.tsx
+// features/mandates/browse/MandateBrowseRows.tsx
 //
 // Compact-list view: one dense line per mandate. Same menu + row-open as the
 // table and cards (shared actions object).

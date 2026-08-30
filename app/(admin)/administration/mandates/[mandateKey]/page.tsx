@@ -1,7 +1,7 @@
-import { AdminMandateWorkspacePage } from "@/features/admin/mandates/AdminMandateWorkspacePage";
+import { AdminMandateWorkspacePage } from "@/features/mandates/admin/AdminMandateWorkspacePage";
 
 /**
- * /administration/agents/mandates/[mandateKey] — the admin door onto THE
+ * /administration/mandates/[mandateKey] — the admin door onto THE
  * mandate workspace. Same component as /agents/mandates/[mandateKey]; the only
  * difference is the shell (admin chrome + the collapsed Admin controls). The
  * segment accepts the mandate KEY (dots are legal path characters) or the row

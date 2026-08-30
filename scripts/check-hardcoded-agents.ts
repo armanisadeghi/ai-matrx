@@ -2,7 +2,7 @@
 /**
  * check:hardcoded-agents — find raw AGENT IDs living in this repo.
  *
- * 🚨 THE RULE (CLAUDE.md § Platform laws; features/agents/mandates/FEATURE.md):
+ * 🚨 THE RULE (CLAUDE.md § Platform laws; features/mandates/FEATURE.md):
  * an agent's definition lives in the DATABASE; the codebase is only the
  * connection. A raw agent UUID in code is the same violation as a prompt in
  * code spelled shorter: it pins a surface to ONE agent forever, the admin

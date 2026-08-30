@@ -50,12 +50,12 @@ import {
   fetchMandateCodeTruthReport,
   type MandateCodeTruth,
   type MandateConsoleData,
-} from "@/features/admin/mandates/service";
-import { buildRow, type MandateRow } from "@/features/admin/mandates/mandate-health";
-import { MandateDetailView } from "@/features/admin/mandates/MandateDetailPanel";
-import { MandateWorkspace } from "@/features/agents/mandates/workspace/MandateWorkspace";
-import { onMandateCacheInvalidated } from "@/features/agents/mandates/service";
-import { splitMandateKey } from "@/features/agents/mandates/mandate-key";
+} from "@/features/mandates/admin/service";
+import { buildRow, type MandateRow } from "@/features/mandates/admin/mandate-health";
+import { MandateDetailView } from "@/features/mandates/admin/MandateDetailPanel";
+import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
+import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { cn } from "@/lib/utils";
 import type { MandateWindowView } from "@/features/overlays/openers/mandateWindow";

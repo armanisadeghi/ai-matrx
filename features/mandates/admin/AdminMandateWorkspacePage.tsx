@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/mandates/AdminMandateWorkspacePage.tsx
+// features/mandates/admin/AdminMandateWorkspacePage.tsx
 //
 // ONE MANDATE UI, ADMIN DOOR (Arman, 2026-08-29: "what's the point of testing
 // this UI when they're not the same?").
@@ -30,8 +30,8 @@ import {
   selectAgentLineageIndex,
   selectBuiltinAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { MandateWorkspace } from "@/features/agents/mandates/workspace/MandateWorkspace";
-import { onMandateCacheInvalidated } from "@/features/agents/mandates/service";
+import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
+import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import { buildRow, type MandateRow } from "./mandate-health";
 import { MandateDetailView } from "./MandateDetailPanel";
 import {
@@ -53,7 +53,7 @@ export function AdminMandateWorkspacePage({
     <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
       <div className="mx-auto w-full max-w-3xl px-4 pt-3 sm:px-6">
         <Link
-          href="/administration/agents/mandates"
+          href="/administration/mandates"
           className="inline-flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchMandatePins } from "@/features/agents/mandates/service";
+import { fetchMandatePins } from "@/features/mandates/service";
 import {
   AGENT_ROLE_TEMPLATES,
   type AgentRoleDefinition,

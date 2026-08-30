@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/browse/CoverageBadge.tsx
+// features/mandates/browse/CoverageBadge.tsx
 //
 // THE PER-ROW COVERAGE BADGE — the scoreboard the admin console already shows,
 // brought to the two lists people actually browse (/agents/mandates and an
@@ -31,7 +31,7 @@ import {
   fetchMandateCoverageStates,
   type MandateCoverageStateIndex,
   type MandateCoverageStatesResponse,
-} from "@/features/agents/mandates/coverage";
+} from "@/features/mandates/coverage";
 
 /** The two states a row can be filtered to. Green is quiet, so never a filter. */
 export type MandateCoverageFilterBucket = "orange" | "red";

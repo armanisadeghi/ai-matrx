@@ -3,7 +3,7 @@
 /**
  * Agent samples ("test cases") service — direct supabase reads/writes on
  * agent.exemplar, the ONE agent-level sample-input store (generalized from the
- * mandate test bench 2026-08-25; the mandate bench in features/admin/mandates
+ * mandate test bench 2026-08-25; the mandate bench in features/mandates/admin
  * reads the same table filtered by mandate_id).
  *
  * THE COMPLETE-INPUT INVARIANT: a sample's variables, human text, and canonical

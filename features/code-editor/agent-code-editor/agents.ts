@@ -8,7 +8,7 @@
  * `useAgentLauncher().launchMandate` — which applies BOTH halves of the binding
  * (agent AND `config_overrides`). Resolving a key yourself and passing the agent
  * id into a launch silently drops the settings half; never do that. Recipe:
- * `features/agents/mandates/FEATURE.md` §"Migrating a hardcoded call site".
+ * `features/mandates/FEATURE.md` §"Migrating a hardcoded call site".
  *
  * All three mandates share provision `code_editor.session`, which offers
  * `current_code` + `dynamic_context`; `codeVariableKey` names which of those

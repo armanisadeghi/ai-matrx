@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/useMandateGoal.ts
+// features/mandates/useMandateGoal.ts
 //
 // ONE mandate's GOAL, for a surface that shows one mandate.
 //

@@ -39,8 +39,8 @@ import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mand
 import {
   fetchMandateIdentities,
   type MandateIdentity,
-} from "@/features/agents/mandates/service";
-import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
+} from "@/features/mandates/service";
+import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
 export interface SurfaceMandatesSectionProps {

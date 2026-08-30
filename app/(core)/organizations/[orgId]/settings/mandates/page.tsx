@@ -22,13 +22,13 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import type { ItemMenuConfig } from "@/components/official/item/types";
-import { mandateListConfig } from "@/features/agents/mandates/browse/listConfig";
-import type { MandateListRow } from "@/features/agents/mandates/browse/types";
-import { MandateCoverageProvider } from "@/features/agents/mandates/browse/CoverageBadge";
+import { mandateListConfig } from "@/features/mandates/browse/listConfig";
+import type { MandateListRow } from "@/features/mandates/browse/types";
+import { MandateCoverageProvider } from "@/features/mandates/browse/CoverageBadge";
 import {
   MandateCoverageNotice,
   useCoverageList,
-} from "@/features/agents/mandates/browse/useCoverageList";
+} from "@/features/mandates/browse/useCoverageList";
 
 function orgMandateRoute(orgId: string, row: Pick<MandateListRow, "mandate_key">) {
   return `/organizations/${encodeURIComponent(orgId)}/settings/mandates/${encodeURIComponent(row.mandate_key)}`;

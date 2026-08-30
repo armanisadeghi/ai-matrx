@@ -1,11 +1,11 @@
 "use client";
 
-// features/agents/mandates/workspace/MandateWorkspace.tsx
+// features/mandates/workspace/MandateWorkspace.tsx
 //
 // THE mandate workspace — the ONE core component every host wraps:
 //   · the dedicated route  app/(core)/agents/mandates/[mandateKey]
-//   · the admin route      app/(admin)/administration/agents/mandates/[mandateKey]
-//   · the window panel     features/window-panels/windows/agents/MandateWindow
+//   · the admin route      app/(admin)/administration/mandates/[mandateKey]
+//   · the window panel     features/window-panels/windows/mandates/MandateWindow
 // Identical functionality by construction (Arman's rule 3, 2026-08-26);
 // divergence only where a HOST genuinely differs — the window's multi-mandate
 // scope list, and the admin shell's header offset. There is no second mandate

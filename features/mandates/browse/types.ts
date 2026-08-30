@@ -1,4 +1,4 @@
-// features/agents/mandates/browse/types.ts
+// features/mandates/browse/types.ts
 //
 // What is genuinely MANDATES-specific about the canonical entity list.
 // One row per live mandate, exactly as public.mnd_list_scoped returns it,

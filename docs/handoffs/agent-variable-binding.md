@@ -58,7 +58,7 @@ suggestion is worse than no suggestion.
 
 | What | Where | Proof |
 |---|---|---|
-| Rebind pre-flight + fix brief | `features/admin/mandates/rebind-impact.ts`, `useGuardedRebind.tsx` | 9 unit tests; browser-verified on `podcast.deep_research`; live in `release-admin: v0.4.628` |
+| Rebind pre-flight + fix brief | `features/mandates/admin/rebind-impact.ts`, `useGuardedRebind.tsx` | 9 unit tests; browser-verified on `podcast.deep_research`; live in `release-admin: v0.4.628` |
 | Code-truth API | aidream `services/agent_slots/code_truth.py`, `GET /agent-slots/code-truth` | Live in prod (401 vs 404 on a bogus path); OpenAPI types already in `types/python-generated/api-types.ts` |
 | Mapping vocabulary | `packages/matrx-ai/matrx_ai/agents/named.py` | `code_value` / `direct_value` / `unmapped`; `prompt_user` rejected server-side; full `VariableVerdictKind` enum |
 | `validate()` guard hole closed | same file | now takes `source_override`, reports `validation_target="resolved"` vs `"seed"` |
@@ -92,7 +92,7 @@ uncovered `NamedAgent` exists. Keep "not imported" distinct from "genuinely DB-o
 
 ### 2. The code-truth surface — THE ACCEPTANCE TEST *(matrx-frontend, chip fired)*
 
-Nothing consumes the endpoint yet. Build it into `/administration/agents/mandates`:
+Nothing consumes the endpoint yet. Build it into `/administration/mandates`:
 
 - Drift visible **without opening a mandate**, folded into the worst-first model in `mandate-health.ts`
   (extend it — do not start a parallel health system).

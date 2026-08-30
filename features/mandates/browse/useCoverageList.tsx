@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/browse/useCoverageList.tsx
+// features/mandates/browse/useCoverageList.tsx
 //
 // What both mandate LISTS (/agents/mandates and an organization's mandate
 // settings) share to wear coverage badges: ONE fetch, ONE filter state, and the
@@ -17,7 +17,7 @@ import type { EntityListController } from "@/lib/entity-list/config";
 import {
   COVERAGE_META,
   coverageKeysInBucket,
-} from "@/features/agents/mandates/coverage";
+} from "@/features/mandates/coverage";
 import {
   useMandateCoverageStates,
   useMandateCoverageView,

@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { AiWorkHeader } from "@/features/ai-work/components/AiWorkHeader";
 import { AiWorkComposer } from "@/features/ai-work/compose/components/AiWorkComposer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandateServer } from "@/features/agents/mandates/service.server";
+import { resolveMandateServer } from "@/features/mandates/service.server";
 
 export function generateMetadata() {
   return { title: "Start work" };

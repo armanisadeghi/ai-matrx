@@ -1549,7 +1549,7 @@ became REQUIRED server-side — `clear_notes` in `features/secrets/*`, `store` i
 `features/voice-agent/services/realtimeToolService.ts`, `country_code`/
 `search_type` in the scraper pages, `max_chars`/`top_n`/`debug` in
 `features/transcripts/service/autoLabelTranscript.ts`, `passes_user_input` and
-`blocking` in `features/admin/mandates/*`, and more).
+`blocking` in `features/mandates/admin/*`, and more).
 
 So the spec says the backend already demands values these callsites never send:
 each error is a live 422 waiting to happen, hidden only because the TS mirror is
@@ -2639,7 +2639,7 @@ bug, and nothing enforces it. Worth a guard or a shared "call when sendable" pri
 ## `retired-slot-producer.test.ts` asserts a table name no mandate service writes — 2026-08-28
 
 Pre-existing at HEAD (verified with `git show HEAD:<file> | grep`), not caused by the run-affordance
-work that found it. `features/admin/mandates/__tests__/retired-slot-producer.test.ts:21` asserts the
+work that found it. `features/mandates/admin/__tests__/retired-slot-producer.test.ts:21` asserts the
 runtime mandate sources contain `.from("mandate")`, but every one of the four files it reads goes
 through the `mandateDefinitions()` / `mandateBindings()` helpers in `lib/supabase/mandateStorage.ts`
 instead — so the string is absent and the suite fails. The CONTRACT the test guards (no reads/writes

@@ -1,12 +1,12 @@
 "use client";
 
-// features/agents/mandates/browse/listConfig.tsx
+// features/mandates/browse/listConfig.tsx
 //
 // /agents/mandates expressed as an entity-list config — the mandates browse
 // surface of the 2026-08-26 rework (Arman's vision: canonical list template,
 // real preset filters, three layouts; the detail work lives in the mandate
 // workspace, reached via the window panel (row click) or the dedicated route
-// (name anchor)). Vision + doctrine: features/agents/mandates/FEATURE.md.
+// (name anchor)). Vision + doctrine: features/mandates/FEATURE.md.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import { MANDATE_COLUMNS } from "./columns";

@@ -85,11 +85,11 @@ const FORBIDDEN_SCOPE_EXPANSION: RegExp[] = [
  */
 const DISCLOSURE_EXEMPT: Array<{ prefix: string; why: string }> = [
   {
-    prefix: "features/agents/mandates/",
+    prefix: "features/mandates/",
     why: "the mandate system itself — resolution, the override editor, the picker",
   },
   {
-    prefix: "features/admin/mandates/",
+    prefix: "features/mandates/admin/",
     why: "the mandate console: the agent is the record under review",
   },
   {

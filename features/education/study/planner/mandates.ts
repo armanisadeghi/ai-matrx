@@ -4,7 +4,7 @@
 // not agent ids: each key resolves LIVE (system default → org binding → user
 // binding) to whatever agent the DATABASE currently binds — agent identity
 // never lives in code. Swap the agent at /agents/mandates; no code change, no
-// deploy. See features/agents/mandates/FEATURE.md.
+// deploy. See features/mandates/FEATURE.md.
 
 export const STUDY_MANDATES = {
   /**

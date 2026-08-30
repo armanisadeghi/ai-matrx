@@ -257,7 +257,7 @@ export interface MandateBindingInput {
   holderVersionId?: string | null;
   /**
    * The consumption map — which of the mandate's OFFERED values this Holder
-   * consumes and through which channel (`features/agents/mandates/
+   * consumes and through which channel (`features/mandates/
    * provision-shapes.ts`). ⚠️ The server REPLACES the stored map with what is
    * sent (omitted/undefined → wiped), so an editor that owns other fields must
    * always re-send the current full map. Validated server-side at write time

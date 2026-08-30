@@ -257,7 +257,7 @@ function MandatesPanel() {
         cell: (row) => (
           <Button size="sm" variant="ghost" asChild>
             <Link
-              href={`/administration/agents/mandates?mandate=${encodeURIComponent(row.mandate_key)}`}
+              href={`/administration/mandates?mandate=${encodeURIComponent(row.mandate_key)}`}
             >
               Open
             </Link>
@@ -276,7 +276,7 @@ function MandatesPanel() {
         output contract. Rebinding, test runs, and version pins live in the{" "}
         <Link
           className="underline underline-offset-2"
-          href="/administration/agents/mandates"
+          href="/administration/mandates"
         >
           full mandates console
         </Link>

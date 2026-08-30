@@ -12,7 +12,7 @@ import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
  *
  * Super-admin-only identity lookup for a mandate's pinned agent when the pin
  * points at a row the admin's RLS scope cannot read (another user's personal
- * agent). The mandates console (/administration/agents/mandates) must never render
+ * agent). The mandates console (/administration/mandates) must never render
  * a bare unresolvable id — this returns just enough identity to open, judge,
  * and repair the pin: name, type, archived/deleted state, owner email, the
  * pinned version number, and the builtin system twin when one exists.

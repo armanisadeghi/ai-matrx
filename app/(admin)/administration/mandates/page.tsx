@@ -1,4 +1,4 @@
-import { MandatesConsole } from "@/features/admin/mandates/MandatesConsole";
+import { MandatesConsole } from "@/features/mandates/admin/MandatesConsole";
 
 export const metadata = {
   title: "Mandates",

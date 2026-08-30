@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/workflow-holders.ts
+// features/mandates/workflow-holders.ts
 //
 // WORKFLOWS AS HOLDERS. A Mandate names a job; a Workflow can hold it just as
 // an Agent can. This module answers the one question the Holder picker asks:

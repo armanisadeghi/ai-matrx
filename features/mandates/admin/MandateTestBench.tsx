@@ -49,8 +49,8 @@ import {
   MANDATES_SURFACE_NAME,
   AGENT_MANDATES_WRITE_TARGETS,
 } from "@/features/surfaces/manifests/mandates.manifest";
-import { parseMandateContract } from "@/features/agents/mandates/overrides";
-import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
+import { parseMandateContract } from "@/features/mandates/overrides";
+import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
   holderOfMandate,
@@ -91,7 +91,7 @@ import {
 import type {
   MandateTestCandidate,
   MandateTestResponse,
-} from "@/features/agents/mandates/test-run";
+} from "@/features/mandates/test-run";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**

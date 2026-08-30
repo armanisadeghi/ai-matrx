@@ -12,15 +12,15 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { invalidateMandateCache } from "@/features/agents/mandates/service";
+import { invalidateMandateCache } from "@/features/mandates/service";
 /** The ad-hoc run path + its transport shapes moved down to the shared
  * mandates feature so the (core) Mandate workspace can run a job too — ONE
- * implementation, two hosts. See features/agents/mandates/test-run.ts. */
+ * implementation, two hosts. See features/mandates/test-run.ts. */
 import {
   isMandateTestResult,
   mandateTestResultValidationErrors,
   type MandateTestResponse,
-} from "@/features/agents/mandates/test-run";
+} from "@/features/mandates/test-run";
 import {
   versionSnapshotRowToAgentDefinition,
 } from "@/features/agents/redux/agent-definition/converters";

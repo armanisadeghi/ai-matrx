@@ -6,9 +6,9 @@
  */
 
 import { isJsonObject } from "@/types/json";
-import { parseMandateContract } from "@/features/agents/mandates/overrides";
-import { splitMandateKey } from "@/features/agents/mandates/mandate-key";
-import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
+import { parseMandateContract } from "@/features/mandates/overrides";
+import { splitMandateKey } from "@/features/mandates/mandate-key";
+import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
   holderOfMandate,

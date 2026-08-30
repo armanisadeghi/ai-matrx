@@ -44,7 +44,7 @@ import { VariableInputComponent } from "@/features/agents/components/inputs/inpu
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import { parseMandateContract } from "@/features/mandates/overrides";
 import {
   contractOfMandate,
   holderOfMandate,
@@ -56,7 +56,7 @@ import { OutputPreview } from "./bench-output-preview";
 import {
   runMandateAdHocTest,
   type MandateTestResponse,
-} from "@/features/agents/mandates/test-run";
+} from "@/features/mandates/test-run";
 import {
   fetchVersionVariableDefinitions,
   saveAdHocResultAsExemplar,

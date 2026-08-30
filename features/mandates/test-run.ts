@@ -1,11 +1,11 @@
 "use client";
 
-// features/agents/mandates/test-run.ts
+// features/mandates/test-run.ts
 //
 // RUNNING A MANDATE ONCE — the ONE client path for `POST /mandates/{key}/test`,
 // plus the transport shapes and the runtime boundary that guards them.
 //
-// It lives HERE, in the mandates feature, and not in `features/admin/mandates/`
+// It lives HERE, in the mandates feature, and not in `features/mandates/admin/`
 // where it was born, because it now has two callers on two different route
 // groups: the admin bench's "Try it now" panel (`(admin)`) and the personal
 // Mandate workspace's "Run this job" section (`(core)`). A `(core)` surface
@@ -13,7 +13,7 @@
 // would drag the whole console into the core bundle — and copying the fetch
 // instead would be a second implementation of something we own. So the
 // function moved down to the shared feature both sides already depend on
-// (`features/admin/mandates/service.ts` imports from `features/agents/mandates/`
+// (`features/mandates/admin/service.ts` imports from `features/mandates/`
 // today; the arrow keeps pointing the same way).
 //
 // 🚨 SUPER ADMIN ONLY. The server declares `require_super_admin` on this

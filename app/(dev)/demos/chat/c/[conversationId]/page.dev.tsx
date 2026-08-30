@@ -4,7 +4,7 @@ import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls
 import { ChatInstanceManager } from "@/features/cx-chat/components/ChatInstanceManager";
 import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandateServer } from "@/features/agents/mandates/service.server";
+import { resolveMandateServer } from "@/features/mandates/service.server";
 
 export default async function ConversationPage({
   params,

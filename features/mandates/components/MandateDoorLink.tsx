@@ -1,4 +1,4 @@
-// features/agents/mandates/components/MandateDoorLink.tsx
+// features/mandates/components/MandateDoorLink.tsx
 //
 // THE DOOR to /agents/mandates for ONE feature domain.
 //
@@ -16,7 +16,7 @@
 //
 // Icon is BrainCircuit, always — Sparkles is banned for AI (CLAUDE.md).
 // Law: ../../../../../common-docs/policies/no-dead-ends.md
-// Contract + the list of live doors: features/agents/mandates/FEATURE.md.
+// Contract + the list of live doors: features/mandates/FEATURE.md.
 
 import Link from "next/link";
 import { BrainCircuit } from "lucide-react";

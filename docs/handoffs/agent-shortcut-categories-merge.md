@@ -43,7 +43,7 @@ enforces. *A merge therefore needs no data reshaping at all.*
 Two shortcut EDITORS consume that forked picker, and **both are live and routed** — `ShortcutForm`
 (`/agents/shortcuts` user scope, `/organizations/[orgId]/shortcuts` org scope) and
 `ShortcutEditorNext` (`/agents/[id]/shortcuts/new` and `/[shortcutId]`). Neither is dead code.
-`features/agents/mandates/FEATURE.md` already names them "both agent-shortcut forks".
+`features/mandates/FEATURE.md` already names them "both agent-shortcut forks".
 
 ## FIXED 2026-08-24 — a trap in the canonical constant
 

@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/catalogue.ts
+// features/mandates/catalogue.ts
 //
 // THE GOAL LIVES IN CODE. `agent.mandate` has no `goal` column — the goal is a
 // field of the aidream code declaration (`declare_mandate(..., goal=...)`) and

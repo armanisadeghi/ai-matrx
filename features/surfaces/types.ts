@@ -534,7 +534,7 @@ export type ValueMappingType =
  * - `unmapped`      — explicit suppression of auto-name-match for this key.
  * - `offered_value` — the NEUTRAL consume-one-offered-value type used by the
  *   Mandate consumption map (`agent.mandate_binding.consumption_map` — see
- *   `features/agents/mandates/provisions.ts`). Not a surface-binding map type:
+ *   `features/mandates/provisions.ts`). Not a surface-binding map type:
  *   the surface resolver refuses it loudly. Legacy persisted `code_value`
  *   entries normalize to this shape on read (ONE funnel, no second parser).
  */

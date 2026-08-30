@@ -14,10 +14,10 @@ describe("retired Mandate producer contract", () => {
       // and the services reach them through it. Both of the router's branches
       // are real compiled code, so this guard keeps holding across the cutover.
       "lib/supabase/mandateStorage.ts",
-      "features/admin/mandates/service.ts",
-      "features/agents/mandates/service.ts",
-      "features/agents/mandates/service.server.ts",
-      "features/agents/mandates/overrides.ts",
+      "features/mandates/admin/service.ts",
+      "features/mandates/service.ts",
+      "features/mandates/service.server.ts",
+      "features/mandates/overrides.ts",
     ]
       .map(source)
       .join("\n");
@@ -47,7 +47,7 @@ describe("retired Mandate producer contract", () => {
     });
     expect(redirects).toContainEqual({
       source: "/administration/agents/slots",
-      destination: "/administration/agents/mandates",
+      destination: "/administration/mandates",
       permanent: true,
     });
   });

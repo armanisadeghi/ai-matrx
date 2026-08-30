@@ -29,7 +29,7 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import { KIND_CREATOR_MANDATE_KEY } from "../../studio/constants";
 import { composeKindAgentIntent } from "../../studio/kind-agent-intents";
 import type { Json } from "@/types/database.types";

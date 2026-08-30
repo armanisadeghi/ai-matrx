@@ -4,8 +4,8 @@
 // ids: each key resolves LIVE (system default → org binding → user binding) to
 // whatever agent the DATABASE currently binds — agent identity never lives in
 // code. Swap the agent behind any lane at /agents/mandates (or the admin
-// console at /administration/agents/mandates); no code change, no deploy.
-// See features/agents/mandates/FEATURE.md.
+// console at /administration/mandates); no code change, no deploy.
+// See features/mandates/FEATURE.md.
 
 export const FC_MANDATES = {
   /** topic, count, difficulty, grade_level, user_request → { __kind, title, cards[] } */

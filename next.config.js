@@ -635,7 +635,7 @@ const nextConfig = {
       },
       {
         source: "/administration/agents/slots",
-        destination: "/administration/agents/mandates",
+        destination: "/administration/mandates",
         permanent: true,
       },
       {

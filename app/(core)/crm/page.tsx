@@ -3,7 +3,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 

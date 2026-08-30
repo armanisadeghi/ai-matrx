@@ -21,7 +21,7 @@ export interface AgentOption {
 
 /**
  * SEED MIRROR of the `chat.default_new_chat` mandate's system default. Runtime
- * paths resolve the mandate (see `features/agents/mandates`); this constant remains
+ * paths resolve the mandate (see `features/mandates`); this constant remains
  * only as the demo conversation page's loud-fallback and for the (currently
  * unconsumed) `useInstanceBootstrap` URL-parse fallback.
  */

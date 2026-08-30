@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { MandatesHeader } from "@/features/agents/mandates/components/MandatesHeader";
-import { MandateWorkspace } from "@/features/agents/mandates/workspace/MandateWorkspace";
+import { MandatesHeader } from "@/features/mandates/components/MandatesHeader";
+import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 
 /**
  * /agents/mandates/[mandateKey] — ONE mandate's workspace on its dedicated

@@ -25,7 +25,7 @@ import { ResultValue } from "@/features/tool-call-visualization/result-fields/Re
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import type { EmitRendererProps } from "./types";
 
 /** Cap for the inlined payload JSON — enough context, never a mega-prompt. */

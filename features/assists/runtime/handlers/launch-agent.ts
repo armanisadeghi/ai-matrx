@@ -5,7 +5,7 @@
  * click time (swappable from /agents/mandates, no deploy).
  */
 
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import {
   registerAssistAction,
   type AssistActionResult,

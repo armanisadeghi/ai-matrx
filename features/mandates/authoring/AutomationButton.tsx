@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/authoring/AutomationButton.tsx
+// features/mandates/authoring/AutomationButton.tsx
 //
 // An affordance that runs a MANDATE BY KEY — mandates all the way down. While
 // the key resolves to nothing it renders honestly disabled, naming the exact

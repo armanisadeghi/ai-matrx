@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/authoring/OutputKindPicker.tsx
+// features/mandates/authoring/OutputKindPicker.tsx
 //
 // Pick the mandate's output kind from the platform kind registry (the same
 // catalog the registry admin lists). Kinds are platform-governed vocabulary —

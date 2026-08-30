@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/mandates/authoring/DraftInputsEditor.tsx
+// features/mandates/authoring/DraftInputsEditor.tsx
 //
 // Descriptive inputs — the pre-code input list. Arman: "when the code hasn't
 // been written yet, realistically what you have is descriptions of inputs…

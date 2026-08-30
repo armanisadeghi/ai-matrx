@@ -94,9 +94,9 @@
       "source": "app/(admin)/administration/agents/lookups/page.tsx"
     },
     {
-      "pattern": "/administration/agents/mandates",
+      "pattern": "/administration/mandates",
       "status": "live",
-      "source": "app/(admin)/administration/agents/mandates/page.tsx"
+      "source": "app/(admin)/administration/mandates/page.tsx"
     },
     {
       "pattern": "/administration/agents/mcp-servers",

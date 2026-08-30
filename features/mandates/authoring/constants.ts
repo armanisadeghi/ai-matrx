@@ -1,4 +1,4 @@
-// features/agents/mandates/authoring/constants.ts
+// features/mandates/authoring/constants.ts
 //
 // The automation mandates the authoring surfaces run BY KEY — mandates all the
 // way down: the button that refines a mandate's goal is itself a mandate, so

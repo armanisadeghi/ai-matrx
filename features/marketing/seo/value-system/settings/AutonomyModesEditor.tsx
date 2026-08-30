@@ -26,8 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast";
-import { fetchMandateAssignments } from "@/features/agents/mandates/service";
-import { agentHref } from "@/features/admin/mandates/mandate-health";
+import { fetchMandateAssignments } from "@/features/mandates/service";
+import { agentHref } from "@/features/mandates/admin/mandate-health";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
   getAutonomyModes,
@@ -199,7 +199,7 @@ export function AutonomyModesEditor({
                               Mandate
                             </span>
                             <Link
-                              href={`/administration/agents/mandates?mandate=${encodeURIComponent(mandateKey)}`}
+                              href={`/administration/mandates?mandate=${encodeURIComponent(mandateKey)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               title={`Open ${mandateKey} in Mandates`}

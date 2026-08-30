@@ -15,7 +15,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
-import { resolveMandateServer } from "@/features/agents/mandates/service.server";
+import { resolveMandateServer } from "@/features/mandates/service.server";
 
 export default async function VoiceIntroPage() {
   let agentId: string;
