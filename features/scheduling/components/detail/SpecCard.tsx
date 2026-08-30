@@ -99,7 +99,7 @@ export function SpecCard({ task }: Props) {
             })}
           />
         </div>
-        <Row label="Agent">
+        <Row label="Agent" anchor="schedule_agent_id">
           {task.agentId ? (
             <EntityRef
               token="agent"
@@ -116,6 +116,7 @@ export function SpecCard({ task }: Props) {
         <button
           onClick={() => setPromptOpen((o) => !o)}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          data-surface-value="schedule_prompt"
         >
           {promptOpen ? (
             <ChevronDown className="h-3 w-3" />
@@ -133,7 +134,10 @@ export function SpecCard({ task }: Props) {
         {varEntries.length > 0 && (
           <>
             <SectionTitle icon={Code} label="Variables" />
-            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+            <div
+              className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs"
+              data-surface-value="schedule_variables"
+            >
               {varEntries.map(([k, v]) => (
                 <div key={k} className="contents">
                   <span className="font-mono text-muted-foreground">{k}</span>
@@ -147,7 +151,7 @@ export function SpecCard({ task }: Props) {
         )}
 
         <SectionTitle icon={Settings} label="Execution" />
-        <Row label="Surfaces">
+        <Row label="Surfaces" anchor="schedule_surfaces">
           <div className="flex flex-wrap gap-1">
             {task.surfaces.map((s) => (
               <Badge key={s} variant="secondary" className="text-[10px]">
@@ -156,7 +160,7 @@ export function SpecCard({ task }: Props) {
             ))}
           </div>
         </Row>
-        <Row label="Auth mode">
+        <Row label="Auth mode" anchor="schedule_auth_mode">
           <Badge variant="outline" className="capitalize text-xs">
             {task.authMode}
           </Badge>
@@ -166,14 +170,17 @@ export function SpecCard({ task }: Props) {
               : "Runs immediately when due."}
           </span>
         </Row>
-        <Row label="Max runtime">
+        <Row label="Max runtime" anchor="schedule_execution_limits">
           <span className="text-sm">{task.maxRuntimeSeconds}s</span>
         </Row>
         <Row label="Max concurrent">
           <span className="text-sm">{task.maxConcurrent}</span>
         </Row>
         {task.persistentConversationId && (
-          <Row label="Conversation">
+          <Row
+            label="Conversation"
+            anchor="schedule_persistent_conversation_id"
+          >
             <EntityRef
               token="conversation"
               id={task.persistentConversationId}
@@ -183,7 +190,7 @@ export function SpecCard({ task }: Props) {
           </Row>
         )}
         {task.tags.length > 0 && (
-          <Row label="Tags">
+          <Row label="Tags" anchor="schedule_tags">
             <div className="flex flex-wrap gap-1">
               {task.tags.map((t) => (
                 <Badge key={t} variant="outline" className="text-[10px]">
@@ -214,13 +221,18 @@ function SectionTitle({
 
 function Row({
   label,
+  anchor,
   children,
 }: {
   label: string;
+  anchor?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[6rem_1fr] sm:grid-cols-[8rem_1fr] items-center gap-2">
+    <div
+      className="grid grid-cols-[6rem_1fr] items-center gap-2 sm:grid-cols-[8rem_1fr]"
+      data-surface-value={anchor}
+    >
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="min-w-0">{children}</div>
     </div>

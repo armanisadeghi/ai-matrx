@@ -26,7 +26,7 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
   useRunStream(taskId);
 
   return (
-    <Card>
+    <Card data-surface-value="schedule_runs">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

@@ -43,14 +43,17 @@ export function TriggerCard({ task }: Props) {
     ]);
 
   return (
-    <Card className="group/trigger">
+    <Card className="group/trigger" data-surface-value="schedule_trigger">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {Icon && <Icon className="h-4 w-4 text-blue-500" />}
             <div className="min-w-0">
               <div className="text-sm font-medium">{meta?.label}</div>
-              <div className="text-xs text-muted-foreground">
+              <div
+                className="text-xs text-muted-foreground"
+                data-surface-value="schedule_trigger_summary"
+              >
                 {humanizeTrigger(trigger.type, trigger.config)}
               </div>
             </div>
@@ -97,13 +100,13 @@ export function TriggerCard({ task }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-xs">
-          <div>
+          <div data-surface-value="schedule_next_due_at">
             <div className="text-muted-foreground">Next run</div>
             <div className="font-medium mt-0.5">
               {humanizeRelative(trigger.nextDueAt ?? task.nextDueAt)}
             </div>
           </div>
-          <div>
+          <div data-surface-value="schedule_last_run_at">
             <div className="text-muted-foreground">Last fired</div>
             <div className="font-medium mt-0.5">
               {humanizeRelative(trigger.lastFiredAt ?? task.lastRunAt)}

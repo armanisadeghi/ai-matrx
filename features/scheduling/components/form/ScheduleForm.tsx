@@ -384,6 +384,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
           void submit();
         }}
         className="space-y-6"
+        data-surface-value="schedule_draft"
       >
         {/* 1. Basics */}
         <Section title="Basics">
@@ -407,6 +408,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
               surfaceName="matrx-user/schedules"
               getApplicationScope={getSchedulesScope}
               enableTextStats={false}
+              data-surface-value="schedule_draft_description"
             />
           </Field>
         </Section>
@@ -430,6 +432,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
               surfaceName="matrx-user/schedules"
               getApplicationScope={getSchedulesScope}
               enableTextStats={false}
+              data-surface-value="schedule_draft_prompt"
             />
             <div className="text-xs text-muted-foreground mt-1">
               {form.prompt.length} / 10,000

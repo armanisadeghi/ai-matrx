@@ -50,7 +50,10 @@ function ScheduleListBody() {
 
   if (status === "loading" || status === "idle") {
     return (
-      <div className="flex flex-col gap-2">
+      <div
+        className="flex flex-col gap-2"
+        data-surface-value="schedules_load_status"
+      >
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-20 w-full rounded-lg" />
         ))}
@@ -60,7 +63,7 @@ function ScheduleListBody() {
 
   if (status === "error") {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" data-surface-value="schedules_load_status">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Couldn&apos;t load schedules</AlertTitle>
         <AlertDescription className="flex items-center justify-between gap-3">
@@ -80,7 +83,10 @@ function ScheduleListBody() {
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center py-16 px-4">
+      <div
+        className="flex flex-col items-center justify-center px-4 py-16 text-center"
+        data-surface-value="schedules_summary"
+      >
         <div className="mb-4 rounded-full bg-muted p-4">
           <CalendarClock className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -101,7 +107,7 @@ function ScheduleListBody() {
   const kpis = scheduleKpis(tasks);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" data-surface-value="schedules_summary">
       {duplicateError && (
         <Alert>
           <AlertCircle className="h-4 w-4" />

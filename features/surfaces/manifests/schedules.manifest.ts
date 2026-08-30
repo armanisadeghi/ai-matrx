@@ -544,7 +544,7 @@ export const schedulesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/schedules",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitters (ScheduleList, ScheduleDetail, ScheduleForm) are wired and every value the routes load is declared. Not yet verified: DB sync (ui_surface row + manifest sync), route-prefix mapping in utils/route-to-surface.ts, data-surface-value anchors for Locate, and a live non-matching-name binding test.",
+    "Manifest + emitters (ScheduleList, ScheduleDetail, ScheduleForm), DB mirror, route-prefix mapping, and Locate anchors across roster, editor draft, open record, trigger, target, and run-history regions are wired. Remaining before verified: fresh isolated Browser proof of the live value/write/context-menu contract, including a non-matching-name binding test.",
   label: "Schedules",
   urlPattern: "/schedules",
   intro: `<surface_intro>

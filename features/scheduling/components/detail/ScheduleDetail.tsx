@@ -231,13 +231,18 @@ function ScheduleDetailBody({ taskId }: Props) {
           },
         ]}
       />
-      <div className="space-y-4">
+      <div className="space-y-4" data-surface-value="open_schedule">
         {/* Record-level copy. The plain click is the what-I-see payload (spec +
             trigger + run history with errors verbatim); the menu grades it into
             the two reasons this page gets copied. */}
         <div className="flex items-start justify-between gap-3">
           {task.description ? (
-            <p className="text-sm text-muted-foreground">{task.description}</p>
+            <p
+              className="text-sm text-muted-foreground"
+              data-surface-value="schedule_description"
+            >
+              {task.description}
+            </p>
           ) : (
             <span />
           )}
