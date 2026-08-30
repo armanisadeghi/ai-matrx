@@ -431,7 +431,7 @@ export async function fetchHrIncidentParties(
  * THE BYLINE. `hr.restricted_note` names its person `author_employment_id` — the
  * WRITER, not the subject — and `hr._project_row` used to resolve a display name
  * off `subject_employment_id` / `employment_id` only, so every note rendered
- * unsigned. hr_l3_120 gave the projection its own author branch, through the same
+ * unsigned. hr_l3_120a gave the projection its own author branch, through the same
  * `hr._subject_display_name` door the subject branch uses: `author_name` arrives
  * on the row, and it is NULL — never a uuid — when the viewer may not see that
  * person's name, which the panel renders as no byline at all.

@@ -574,7 +574,7 @@ export type HrRestrictedNote = {
   redacted_summary?: string | null;
   /**
    * The note's WRITER, resolved by the door. `hr.restricted_note` names its person
-   * `author_employment_id`, and since hr_l3_120 `hr._project_row` has an author
+   * `author_employment_id`, and since hr_l3_120a `hr._project_row` has an author
    * branch beside its subject one, so the row arrives carrying `author_name` —
    * always through `hr._subject_display_name`, which applies the viewer's own
    * directory permissions. NULL when this viewer may not see that person's name,
