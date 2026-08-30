@@ -22,6 +22,11 @@ host/                       APP-SIDE: useCameraCaptureHost (lease/photo/video vi
                             tiles open /files/f/[id])
 ```
 
+**Deterministic browser QA uses the host adapter, never decoder injection.**
+`useCameraCaptureHost` accepts development-only `qaPermissionDenied` and
+`qaImageUrl`; the image becomes a real canvas-backed `MediaStream`. Production
+callers never pass either value.
+
 ## Extensibility — typed slots, not a plugin framework
 
 Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statusChips` (survive hide-controls), `aboveModeSelector`, `modeRowTrailing`, `optionTiles` (extra grid tiles), `extraModes` (mode-row entries such as SCAN — immediate actions), `overlays`. **Worked example:** `features/commerce-intake/components/IntakeCaptureScreenV2.tsx` (QR mode, serial entry, notes, voice, Next/Break, instant Process — all slots, zero chrome forks).
@@ -34,6 +39,8 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 - Edit for persisted-only slides (fileId → blob fetch) — today Edit shows only when local pixels (`previewUrl`) exist.
 
 ## Change Log
+
+- 2026-08-30 — Added development-only denied-camera and image-stream inputs to the shared host adapter for isolated-browser acceptance.
 
 - 2026-08-30 — **C9 host adoption: product-capture swapped.** `features/product-capture/components/CaptureScreen.tsx` rebuilt on `CameraCapture` + `useCameraCaptureHost` (second production consumer of the host adapter after commerce intake; its cloud port opens the product Items sheet as the library). Remaining hand-built chrome: commerce-intake v1 only — gated on Arman's v2-vs-v3 approval (`features/commerce-intake/FEATURE.md`); `features/media-capture/components/CaptureModeBar.tsx` dies with that swap.
 

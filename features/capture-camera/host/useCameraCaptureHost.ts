@@ -41,10 +41,7 @@ import {
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
-import {
-  acquireMicStream,
-  releaseMicStream,
-} from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
 import {
   acquireCameraLease,
   type CameraLease,
@@ -82,6 +79,9 @@ export interface CameraCaptureHostOptions {
   onUpload: () => void;
   /** Current mode — drives the video-mode mic warm hold. */
   mode: CaptureCameraMode;
+  /** Development-only deterministic camera inputs for browser QA. */
+  qaPermissionDenied?: boolean;
+  qaImageUrl?: string | null;
 }
 
 export interface CameraCaptureHost {
@@ -110,6 +110,8 @@ export function useCameraCaptureHost(
     onVideo,
     onUpload,
     mode,
+    qaPermissionDenied = false,
+    qaImageUrl = null,
   } = options;
 
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -137,9 +139,41 @@ export function useCameraCaptureHost(
   useEffect(() => {
     let cancelled = false;
     let myLease: CameraLease | null = null;
+    let fixtureStream: MediaStream | null = null;
     let unsubscribe: (() => void) | null = null;
 
     void (async () => {
+      if (qaPermissionDenied) {
+        setStream(null);
+        setPermissionDenied(true);
+        setNotSupported(false);
+        return;
+      }
+      if (qaImageUrl) {
+        try {
+          const image = new Image();
+          image.decoding = "async";
+          image.src = qaImageUrl;
+          await image.decode();
+          if (cancelled) return;
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, image.naturalWidth);
+          canvas.height = Math.max(1, image.naturalHeight);
+          const context = canvas.getContext("2d");
+          if (!context) throw new Error("QA camera fixture needs a 2D canvas");
+          context.drawImage(image, 0, 0);
+          fixtureStream = canvas.captureStream(5);
+          setStream(fixtureStream);
+          setPermissionDenied(false);
+          setNotSupported(false);
+          return;
+        } catch (err) {
+          if (cancelled) return;
+          console.error("[capture-camera] QA image fixture failed", err);
+          setNotSupported(true);
+          return;
+        }
+      }
       const known = await queryCameraPermission();
       if (cancelled) return;
       if (known === "denied") {
@@ -181,13 +215,14 @@ export function useCameraCaptureHost(
     return () => {
       cancelled = true;
       unsubscribe?.();
+      fixtureStream?.getTracks().forEach((track) => track.stop());
       if (myLease) {
         myLease.release();
         if (leaseRef.current === myLease) leaseRef.current = null;
       }
       setStream(null);
     };
-  }, [deviceId]);
+  }, [deviceId, qaImageUrl, qaPermissionDenied]);
 
   const cameraBlocked = notSupported || permissionDenied;
 
@@ -367,9 +402,7 @@ export function useCameraCaptureHost(
     // Hidden while recording: a flip reacquires the lease, which would kill
     // the recording mid-take.
     onFlipCamera:
-      numberOfCameras > 1 && !cameraBlocked && !recording
-        ? switchCamera
-        : null,
+      numberOfCameras > 1 && !cameraBlocked && !recording ? switchCamera : null,
   };
 
   return {

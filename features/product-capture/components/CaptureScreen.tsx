@@ -62,10 +62,7 @@ import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-
 
 import { CameraCapture } from "@ai-matrx/capture/react";
 import type { CaptureMediaItem } from "@ai-matrx/capture/react";
-import type {
-  CaptureCameraMode,
-  CaptureOptionTile,
-} from "@ai-matrx/capture";
+import type { CaptureCameraMode, CaptureOptionTile } from "@ai-matrx/capture";
 import { useCameraCaptureHost } from "@/features/capture-camera/host/useCameraCaptureHost";
 
 import type { PendingArtifact } from "../types";
@@ -114,6 +111,11 @@ export function CaptureScreen({
 }: CaptureScreenProps) {
   const router = useRouter();
   const instantMode = mode === "instant";
+  const qaParams =
+    process.env.NODE_ENV !== "production"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const qaCamera = qaParams?.get("__qa_camera") ?? null;
   const session = useProductCaptureSession({
     initialItemId,
     lane: instantMode ? "instant" : "standard",
@@ -206,6 +208,8 @@ export function CaptureScreen({
     ),
     onUpload: useCallback(() => uploadInputRef.current?.click(), []),
     mode: mediaMode,
+    qaPermissionDenied: qaCamera === "denied",
+    qaImageUrl: qaCamera === "image" ? qaParams?.get("__qa_image") : null,
   });
 
   // ── Voice notes ──────────────────────────────────────────────────────────
@@ -394,19 +398,19 @@ export function CaptureScreen({
         blockedSheet={{
           body: host.permissionDenied ? (
             <p>
-              Camera access is blocked for this site, so asking again
-              won&apos;t help — re-enable it in the browser: tap the icon by
-              the address bar (on iPhone the &ldquo;AA&rdquo;/page menu →
-              Website Settings), allow Camera and Microphone, then reload.
-              Meanwhile your device camera and uploads work — and notes, SKU
-              and voice notes keep working.
+              Camera access is blocked for this site, so asking again won&apos;t
+              help — re-enable it in the browser: tap the icon by the address
+              bar (on iPhone the &ldquo;AA&rdquo;/page menu → Website Settings),
+              allow Camera and Microphone, then reload. Meanwhile your device
+              camera and uploads work — and notes, SKU and voice notes keep
+              working.
             </p>
           ) : (
             <p>
               The in-page camera isn&apos;t available here. Use your device
               camera instead, or upload photos and videos you already have —
-              either way they are added the moment you pick them. Notes, SKU
-              and voice notes keep working.
+              either way they are added the moment you pick them. Notes, SKU and
+              voice notes keep working.
             </p>
           ),
           actions: [
@@ -528,8 +532,8 @@ export function CaptureScreen({
                   {session.errorCount > 0 && (
                     <span className="text-red-400">
                       {session.errorCount} upload
-                      {session.errorCount === 1 ? "" : "s"} failed — tap the
-                      red thumbnail.
+                      {session.errorCount === 1 ? "" : "s"} failed — tap the red
+                      thumbnail.
                     </span>
                   )}
                 </p>
