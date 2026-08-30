@@ -13,6 +13,9 @@ describe("schedule surface context-menu contract", () => {
     const row = source("features/scheduling/components/list/ScheduleRow.tsx");
 
     expect(list.match(/<NonEditableContextMenu/g)).toHaveLength(1);
+    expect(list).toMatch(
+      /<NonEditableContextMenu[\s\S]*?<div className="contents">[\s\S]*?<ScheduleListBody \/>/,
+    );
     expect(list).toContain('surfaceName="matrx-user/schedules"');
     expect(list).toContain("resolveContextOnOpen={(target)");
     expect(list).toContain("[data-schedule-id]");
@@ -25,6 +28,9 @@ describe("schedule surface context-menu contract", () => {
     );
 
     expect(detail.match(/<NonEditableContextMenu/g)).toHaveLength(1);
+    expect(detail).toMatch(
+      /<NonEditableContextMenu[\s\S]*?<div className="contents">[\s\S]*?<ScheduleDetailBody taskId=\{taskId\} \/>/,
+    );
     expect(detail).toContain('surfaceName="matrx-user/schedules"');
     expect(detail).toContain("getApplicationScope={getSchedulesScope}");
     expect(detail).toContain('contentSource={{ type: "raw" }}');

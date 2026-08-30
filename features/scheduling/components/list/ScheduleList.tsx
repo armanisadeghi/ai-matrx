@@ -53,7 +53,11 @@ export function ScheduleList() {
           };
         }}
       >
-        <ScheduleListBody />
+        {/* Radix `asChild` must receive a DOM element that can accept its
+            context-menu handlers/ref. A function component drops those props. */}
+        <div className="contents">
+          <ScheduleListBody />
+        </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );

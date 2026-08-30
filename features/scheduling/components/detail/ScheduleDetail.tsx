@@ -117,7 +117,11 @@ export function ScheduleDetail({ taskId }: Props) {
         getApplicationScope={getSchedulesScope}
         contentSource={{ type: "raw" }}
       >
-        <ScheduleDetailBody taskId={taskId} />
+        {/* Radix `asChild` must receive a DOM element that can accept its
+            context-menu handlers/ref. A function component drops those props. */}
+        <div className="contents">
+          <ScheduleDetailBody taskId={taskId} />
+        </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
