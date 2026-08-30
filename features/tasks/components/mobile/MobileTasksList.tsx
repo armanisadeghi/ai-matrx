@@ -40,6 +40,9 @@ import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsD
 import { ActiveScopeFilterChips } from "../TaskScopeFilter";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { formatDateOnly } from "@/utils/dateOnly";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { TASKS_CONTEXT_MENU_PROPS } from "@/features/tasks/agent-context/buildTasksContextData";
+import { useTasksListSurfaceScope } from "@/features/tasks/components/TasksListSurfaceRuntime";
 
 interface MobileTasksListProps {
   onTaskSelect: (taskId: string) => void;
@@ -58,6 +61,7 @@ export default function MobileTasksList({
   const activeProject = useAppSelector(selectActiveProject);
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
+  const getApplicationScope = useTasksListSurfaceScope();
 
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
@@ -89,240 +93,247 @@ export default function MobileTasksList({
     : "All Tasks";
 
   return (
-    <div
-      className="h-full flex flex-col bg-background overflow-hidden"
-      data-surface-value="task_list"
+    <NonEditableContextMenu
+      sourceFeature={TASKS_CONTEXT_MENU_PROPS.sourceFeature}
+      surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
+      getApplicationScope={getApplicationScope}
+      contentSource={{ type: "raw" }}
     >
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-border bg-card">
-        {/* Title Bar */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <h1 className="text-2xl font-bold text-foreground">
-            {currentProjectName}
-          </h1>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowQuickAdd(!showQuickAdd)}
-              aria-label="Add task"
-              className="h-11 w-11 rounded-full"
-            >
-              <Plus size={16} />
-            </Button>
-            <MobileFilterMenu />
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="px-4 pb-2">
-          <div className="relative" data-surface-value="search_query">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-              size={16}
-            />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-              placeholder="Search tasks..."
-              className="pl-9 pr-9 h-10 bg-muted/50 text-base"
-              style={{ fontSize: "16px" }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => dispatch(setSearchQuery(""))}
-                className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
-                aria-label="Clear task search"
+      <div
+        className="h-full flex flex-col bg-background overflow-hidden"
+        data-surface-value="task_list"
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 border-b border-border bg-card">
+          {/* Title Bar */}
+          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+            <h1 className="text-2xl font-bold text-foreground">
+              {currentProjectName}
+            </h1>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowQuickAdd(!showQuickAdd)}
+                aria-label="Add task"
+                className="h-11 w-11 rounded-full"
               >
-                <X size={16} />
-              </button>
-            )}
+                <Plus size={16} />
+              </Button>
+              <MobileFilterMenu />
+            </div>
           </div>
-        </div>
 
-        {/* Quick Add (Expandable) */}
-        {showQuickAdd && (
-          <div className="px-4 pb-2 animate-in slide-in-from-top-2 duration-200">
-            <form onSubmit={handleAddTask} className="space-y-2">
+          {/* Search Bar */}
+          <div className="px-4 pb-2">
+            <div className="relative" data-surface-value="search_query">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                size={16}
+              />
               <Input
                 type="text"
-                value={newTaskTitle}
-                onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}
-                placeholder="New task..."
-                autoFocus
-                onFocus={(e) => {
-                  // Scroll into view when keyboard appears on mobile
-                  setTimeout(() => {
-                    e.target.scrollIntoView({
-                      behavior: "smooth",
-                      block: "center",
-                    });
-                  }, 300);
-                }}
-                className="h-10 text-base"
+                value={searchQuery}
+                onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                placeholder="Search tasks..."
+                className="pl-9 pr-9 h-10 bg-muted/50 text-base"
                 style={{ fontSize: "16px" }}
               />
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 justify-start"
-                  onClick={() => setShowProjectSelector(true)}
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => dispatch(setSearchQuery(""))}
+                  className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+                  aria-label="Clear task search"
                 >
-                  <span className="truncate">
-                    {selectedProjectForTask
-                      ? projects.find((p) => p.id === selectedProjectForTask)
-                          ?.name
-                      : "Select Project"}
-                  </span>
-                </Button>
-                <MatrxDynamicPanelHost
-                  open={showProjectSelector}
-                  onOpenChange={setShowProjectSelector}
-                  title="Select Project"
-                  description="Choose a project for this task"
-                  position="bottom"
-                  defaultSize={50}
-                  contentClassName="overflow-y-auto"
-                >
-                  <MobileProjectSelector
-                    selectedProjectId={selectedProjectForTask}
-                    onSelectProject={(projectId) => {
-                      setSelectedProjectForTask(projectId);
-                      setShowProjectSelector(false);
-                    }}
-                  />
-                </MatrxDynamicPanelHost>
-                <Button
-                  type="submit"
-                  disabled={
-                    !newTaskTitle.trim() ||
-                    isCreatingTask ||
-                    !selectedProjectForTask
-                  }
-                  size="sm"
-                >
-                  {isCreatingTask ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    "Add"
-                  )}
-                </Button>
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Add (Expandable) */}
+          {showQuickAdd && (
+            <div className="px-4 pb-2 animate-in slide-in-from-top-2 duration-200">
+              <form onSubmit={handleAddTask} className="space-y-2">
+                <Input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}
+                  placeholder="New task..."
+                  autoFocus
+                  onFocus={(e) => {
+                    // Scroll into view when keyboard appears on mobile
+                    setTimeout(() => {
+                      e.target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                    }, 300);
+                  }}
+                  className="h-10 text-base"
+                  style={{ fontSize: "16px" }}
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 justify-start"
+                    onClick={() => setShowProjectSelector(true)}
+                  >
+                    <span className="truncate">
+                      {selectedProjectForTask
+                        ? projects.find((p) => p.id === selectedProjectForTask)
+                            ?.name
+                        : "Select Project"}
+                    </span>
+                  </Button>
+                  <MatrxDynamicPanelHost
+                    open={showProjectSelector}
+                    onOpenChange={setShowProjectSelector}
+                    title="Select Project"
+                    description="Choose a project for this task"
+                    position="bottom"
+                    defaultSize={50}
+                    contentClassName="overflow-y-auto"
+                  >
+                    <MobileProjectSelector
+                      selectedProjectId={selectedProjectForTask}
+                      onSelectProject={(projectId) => {
+                        setSelectedProjectForTask(projectId);
+                        setShowProjectSelector(false);
+                      }}
+                    />
+                  </MatrxDynamicPanelHost>
+                  <Button
+                    type="submit"
+                    disabled={
+                      !newTaskTitle.trim() ||
+                      isCreatingTask ||
+                      !selectedProjectForTask
+                    }
+                    size="sm"
+                  >
+                    {isCreatingTask ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      "Add"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+
+        {/* Active scope-filter chips */}
+        <ActiveScopeFilterChips />
+
+        {/* Task List */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          {!canShowTasks ? (
+            <div className="flex items-center justify-center h-full p-8">
+              <div className="text-center">
+                <p className="text-muted-foreground text-sm">
+                  Select a project from the menu to get started
+                </p>
               </div>
-            </form>
-          </div>
-        )}
-      </div>
-
-      {/* Active scope-filter chips */}
-      <ActiveScopeFilterChips />
-
-      {/* Task List */}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
-        {!canShowTasks ? (
-          <div className="flex items-center justify-center h-full p-8">
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">
-                Select a project from the menu to get started
-              </p>
             </div>
-          </div>
-        ) : filteredTasks.length === 0 ? (
-          <div className="flex items-center justify-center h-full p-8">
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">
-                {searchQuery
-                  ? "No tasks found"
-                  : "No tasks yet. Create one above!"}
-              </p>
+          ) : filteredTasks.length === 0 ? (
+            <div className="flex items-center justify-center h-full p-8">
+              <div className="text-center">
+                <p className="text-muted-foreground text-sm">
+                  {searchQuery
+                    ? "No tasks found"
+                    : "No tasks yet. Create one above!"}
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {filteredTasks.map((task) => {
-              const isPastDue =
-                task.dueDate &&
-                task.dueDate < new Date().toISOString().split("T")[0] &&
-                !task.completed;
+          ) : (
+            <div className="divide-y divide-border">
+              {filteredTasks.map((task) => {
+                const isPastDue =
+                  task.dueDate &&
+                  task.dueDate < new Date().toISOString().split("T")[0] &&
+                  !task.completed;
 
-              return (
-                <div
-                  key={task.id}
-                  onClick={() => onTaskSelect(task.id)}
-                  className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors cursor-pointer"
-                >
-                  {/* Checkbox */}
-                  <Checkbox
-                    checked={task.completed}
-                    onClick={(e) => e.stopPropagation()}
-                    onCheckedChange={() =>
-                      dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
-                    }
-                    className="relative mx-[15px] after:absolute after:-inset-[15px] after:rounded-full after:content-['']"
-                    aria-label={
-                      task.completed ? "Mark incomplete" : "Mark complete"
-                    }
-                  />
+                return (
+                  <div
+                    key={task.id}
+                    onClick={() => onTaskSelect(task.id)}
+                    className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors cursor-pointer"
+                  >
+                    {/* Checkbox */}
+                    <Checkbox
+                      checked={task.completed}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={() =>
+                        dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
+                      }
+                      className="relative mx-[15px] after:absolute after:-inset-[15px] after:rounded-full after:content-['']"
+                      aria-label={
+                        task.completed ? "Mark incomplete" : "Mark complete"
+                      }
+                    />
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      title={task.title}
-                      className={`mb-1 min-w-0 truncate text-base font-medium ${
-                        task.completed
-                          ? "line-through text-muted-foreground"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {task.title}
-                    </h3>
-                    <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground">
-                      {task.projectName && showAllProjects && (
-                        <span
-                          className="min-w-0 flex-1 truncate text-primary"
-                          title={task.projectName}
-                        >
-                          ● {task.projectName}
-                        </span>
-                      )}
-                      {task.dueDate && (
-                        <span
-                          className={`shrink-0 ${
-                            isPastDue ? "text-destructive font-medium" : ""
-                          }`}
-                        >
-                          {formatDateOnly(task.dueDate, {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                      )}
-                      {task.priority && (
-                        <span className="shrink-0 capitalize">
-                          {task.priority}
-                        </span>
-                      )}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        title={task.title}
+                        className={`mb-1 min-w-0 truncate text-base font-medium ${
+                          task.completed
+                            ? "line-through text-muted-foreground"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {task.title}
+                      </h3>
+                      <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground">
+                        {task.projectName && showAllProjects && (
+                          <span
+                            className="min-w-0 flex-1 truncate text-primary"
+                            title={task.projectName}
+                          >
+                            ● {task.projectName}
+                          </span>
+                        )}
+                        {task.dueDate && (
+                          <span
+                            className={`shrink-0 ${
+                              isPastDue ? "text-destructive font-medium" : ""
+                            }`}
+                          >
+                            {formatDateOnly(task.dueDate, {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                        )}
+                        {task.priority && (
+                          <span className="shrink-0 capitalize">
+                            {task.priority}
+                          </span>
+                        )}
+                      </div>
+                      <ScopeTagsDisplay
+                        entityType="task"
+                        entityId={task.id}
+                        className="mt-1.5"
+                      />
                     </div>
-                    <ScopeTagsDisplay
-                      entityType="task"
-                      entityId={task.id}
-                      className="mt-1.5"
+
+                    {/* Chevron */}
+                    <ChevronRight
+                      size={20}
+                      className="text-muted-foreground flex-shrink-0"
                     />
                   </div>
-
-                  {/* Chevron */}
-                  <ChevronRight
-                    size={20}
-                    className="text-muted-foreground flex-shrink-0"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </NonEditableContextMenu>
   );
 }

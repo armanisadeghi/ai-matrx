@@ -98,6 +98,21 @@ describe("task lifecycle responsive contract", () => {
     expect(mobileView).toContain("<Skeleton");
   });
 
+  it("keeps the mobile list and editor on the full Tasks surface contract", () => {
+    const mobileList = source("mobile/MobileTasksList.tsx");
+    const mobileDetails = source("mobile/MobileTaskDetails.tsx");
+
+    expect(mobileList).toContain("<NonEditableContextMenu");
+    expect(mobileList).toContain("getApplicationScope={getApplicationScope}");
+    expect(mobileDetails).toContain("<SurfaceRuntimeProvider");
+    expect(mobileDetails).toContain("getWriteHandlers={getSurfaceWriteHandlers}");
+    expect(mobileDetails).toContain("<NonEditableContextMenu");
+    expect(mobileDetails).toContain("buildTasksContextData({");
+    expect(mobileDetails).toContain("surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}");
+    expect(mobileDetails).toContain("task_labels: (value: unknown)");
+    expect(mobileDetails).toContain("TASK_LABEL_OPTIONS.map");
+  });
+
   it("keeps every task editor header on the live draft copy control", () => {
     const editor = source("TaskEditor.tsx");
     const route = taskRouteSource();
