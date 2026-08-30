@@ -110,29 +110,52 @@ async def main():
                                " where pay_group_id=$1::uuid order by period_end_on", pg)
     for p in periods: print("   period", p["period_start_on"], "→", p["period_end_on"], p["state"],
                             "ENDED" if str(p["period_end_on"]) < "2026-08-30" else "NOT ENDED")
-    ended = [p for p in periods if str(p["period_end_on"]) < "2026-08-30" and p["state"] == "open"]
+    # 🚨 THE REAL SHAPE OF VERIFIER B'S BLOCKER, MEASURED. G2V-Priya Raman's `hr_admin` role
+    # assignment has `effective_from = 2026-08-27`, and hr.punch_record asks the capability AT THE
+    # PUNCH'S OWN WORK DATE — not at today. So her punch reach is False on 2026-08-26 and earlier
+    # and True from 2026-08-27. A weekly period she can punch into must therefore END on or after
+    # 2026-08-27, and to be usable it must also have ENDED (before today, 2026-08-30). Exactly one
+    # week satisfies both: 2026-08-22 → 2026-08-28. That is why no fixture had all three facts at
+    # once — it is a one-week window, not an oversight.
+    REACH_FROM = datetime.date(2026, 8, 27)
+    TODAY      = datetime.date(2026, 8, 30)
+    ended = [p for p in periods if p["period_end_on"] < TODAY and p["period_end_on"] >= REACH_FROM]
     if not ended:
-        print("no ENDED, still-open period to submit — nothing further to stage"); await conn.close(); return
+        print("no period is both ENDED and inside Priya's authority window — nothing to stage")
+        await conn.close(); return
     target = ended[-1]
-    print(f"target period   {target['id']}  {target['period_start_on']} → {target['period_end_on']}")
+    print(f"target period   {target['id']}  {target['period_start_on']} → {target['period_end_on']} "
+          f"({target['state']})  — ENDED and inside Priya's reach")
 
-    # ---- 4. PRIYA punches for them, inside the ended period --------------------------------
+    # ---- 4. PROVE Priya can punch into the ended period — WITHOUT consuming the walk's move -
+    # 🚨 THE PUNCH IS ROLLED BACK ON PURPOSE. Moving the timecard mid-batch IS the skip-walk's own
+    # action; staging it here would spend the very thing the walk exists to observe. So the reach is
+    # PROVEN through the real door on the real date and then undone, leaving the timecard exactly as
+    # the walk will find it.
     ppe = await conn.fetchval("select id from hr.pay_period_employment where pay_period_id=$1::uuid "
                               " and employment_id=$2::uuid", target["id"], emp)
     print(f"timesheet       {ppe}")
-    have = await conn.fetchval("select count(*) from hr.punch where employment_id=$1::uuid", emp)
-    if have:
-        print(f"punches         EXISTS    {have}")
-    else:
-        for kind, hour in (("in", 9), ("out", 17)):
-            at = datetime.datetime.combine(target["period_start_on"],
-                                           datetime.time(hour, 0), tzinfo=datetime.timezone.utc)
-            r = await door(PRIYA_UID,
-                "select hr.punch_record($1::uuid,$2,$3::timestamptz,"
-                "'manager_entry',$4,null,null,null,null)",
-                emp, kind, at, f"tl103-ended-{kind}-{emp[:8]}")
-            print(f"punch {kind:3}       {json.dumps(r)[:150]}")
-        print("punches         CREATED   by G2V-Priya Raman (proves the punch reach this fixture is for)")
+    at = datetime.datetime.combine(target["period_end_on"], datetime.time(9, 0),
+                                   tzinfo=datetime.timezone.utc)
+    tx = conn.transaction(); await tx.start()
+    try:
+        await conn.execute("select set_config('request.jwt.claims',$1,true)", as_admin(PRIYA_UID))
+        # the kinds are `clock_in`/`clock_out`; "in"/"out" is refused hr_punch_kind_unknown
+        r = await conn.fetchval(
+            "select hr.punch_record($1::uuid,'clock_in',$2::timestamptz,'manager_entry',$3,"
+            "null,null,null,null)", emp, at, f"tl103-reach-probe-{emp[:8]}")
+        r = json.loads(r) if isinstance(r, str) else r
+        ok = (r or {}).get("ok") is not False
+        print(f"punch reach     {'PROVEN ' if ok else 'REFUSED'}  as Priya, dated {target['period_end_on']}: "
+              f"{json.dumps(r)[:180]}")
+    finally:
+        await tx.rollback()
+    left = await conn.fetchval("select count(*) from hr.punch where employment_id=$1::uuid", emp)
+    print(f"punch reach     rolled back — punches on this employment: {left} (the walk's move is untouched)")
+    if not ok:
+        print("REACH REFUSED — the fixture's whole point is that Priya CAN punch for this person "
+              "on this date; stopping rather than staging a half-truth.")
+        raise SystemExit(1)
 
     # ---- 5. submit → the engine launches timecard_approval ----------------------------------
     st = await conn.fetchval("select state from hr.pay_period where id=$1::uuid", target["id"])
@@ -142,6 +165,22 @@ async def main():
         print("submit          ", json.dumps(r)[:300])
     else:
         print(f"submit          EXISTS    period already {st}")
+
+    # ---- 5b. attestation → approval, through the engine's own sweep -------------------------
+    # 🚨 THE ORG REQUIRES ATTESTATION FIRST. `employee_attestation_required` resolves TRUE here, so
+    # pay_period_transition launches `timecard_attestation`, not `timecard_approval`. This fixture's
+    # employee has no login, so nobody can attest — exactly the shape of the two Zzzrehire timecards
+    # already in this org, whose attestation FAILED and whose `timecard_approval` was then launched
+    # by hr.timecard_wf_apply. hr.timecard_attestation_sweep is the sanctioned instrument for that
+    # transition; the knob is NOT flipped, because a walk fixture may not change how the whole
+    # organization works.
+    have_appr = await conn.fetchval(
+        "select id from hr.workflow_instance where target_id=$1::uuid and flow_key='timecard_approval'", ppe)
+    if have_appr:
+        print(f"approval flow   EXISTS    {have_appr}")
+    else:
+        r = await door(HR_ADMIN, "select hr.timecard_attestation_sweep($1::uuid,false)", target["id"])
+        print("attestation sweep", json.dumps(r)[:300])
 
     # ---- 6. what the walk now has ----------------------------------------------------------
     rows = await conn.fetch("""
