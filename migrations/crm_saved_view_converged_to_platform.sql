@@ -1,0 +1,36 @@
+-- CRM saved views converge onto platform.saved_view — ONE saved-views table.
+--
+-- crm.saved_view was well built (visibility, definition versioning,
+-- validate-on-read) and its `list_key` was documented as "open set on purpose".
+-- That design was always platform-shaped; only its ADDRESS was CRM's. A
+-- data-table view living in the crm schema would be a lie about ownership.
+--
+-- APPLIED LIVE 2026-08-26 to brsgrqvjdzwihsvnfqkf, in this order:
+--
+--   1. `platform_saved_view_last_used_at` — added last_used_at to the platform
+--      table. Not a CRM peculiarity: "order my views by what I actually use" is
+--      what any view bar wants past three views, so it belongs on the shared
+--      table rather than being dropped in the move.
+--
+--   2. Data copy, ids PRESERVED so any reference to a view id keeps resolving:
+--        list_key      → surface_key, namespaced ('parties' → 'crm/parties')
+--        (CRM views are surface-wide, so subject_id stays NULL)
+--      Verified: 0 rows in crm.saved_view lacked a platform row of the same id.
+--
+--   3. Code repointed — features/crm/saved-views/{service,types}.ts now read
+--      platform.saved_view. Verified live: /crm loads, lists its saved view,
+--      and applying it narrows the list (31 rows → 7). last_used_at is written
+--      on apply.
+--
+-- 🚨 STILL PENDING — THE DROP:
+--
+--     drop table if exists crm.saved_view;
+--
+-- The old table is INERT (nothing in the codebase reads it — verified by grep
+-- for both `schema("crm")…saved_view` and the crm Database type), but it still
+-- exists. Per the no-legacy rule a replaced table gets DELETED, not left as a
+-- deprecated twin — the twin is what someone writes to by accident later.
+--
+-- The drop was attempted on 2026-08-26 and refused by the agent-safety
+-- classifier because it is destructive and unattended. Run the statement above
+-- once, then delete this pending note.

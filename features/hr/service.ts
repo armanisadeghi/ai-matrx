@@ -1382,6 +1382,35 @@ export function advanceHrIncident(args: {
 }
 
 /**
+ * Set a report aside as WRONG — filed in error, a duplicate, or recorded against
+ * the wrong person.
+ *
+ * 🚨 THIS IS NOT A DELETE AND THERE IS NO DELETE. SPEC-EMPLOYEES is silent on
+ * removing an incident; its own law for the sibling record is not — §4.8:
+ * *"The record is NOT deleted. Rescission is a state with a reason."* So the row
+ * stays, keeps listing and keeps opening, struck through with its reason
+ * (`hr_incident_void`, hr_l1_79). A void the reader cannot see is a deletion
+ * with better manners.
+ *
+ * The door refuses a reporter (voiding is an investigator's act — "I withdraw
+ * it" is a fact HR must see, not an erasure they must not), refuses an empty
+ * reason, refuses under a legal hold in words, and refuses anyone the §5 veto
+ * covers. It does NOT un-accuse anybody: the exclusion set is untouched, because
+ * a case voided as "filed against the wrong person" is the last record you would
+ * hand to the person it named.
+ */
+export function voidHrIncident(args: {
+  incidentId: string;
+  reason: string;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHrWrite(
+    "hr_incident_void",
+    { p_incident_id: args.incidentId, p_reason: args.reason },
+    { envelope: true, whatFailed: "Setting this record aside" },
+  );
+}
+
+/**
  * Add one party to an incident. Either `employmentId` or `externalName` is
  * required — a witness who does not work here is still a witness.
  *

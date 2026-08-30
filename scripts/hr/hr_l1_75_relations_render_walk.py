@@ -295,9 +295,34 @@ async def main():
         await ctx.close()
 
         # ── D5 · THE SAFETY SUBJECT READS THEIR OWN RECORD ────────────────────────────────────
+        #
+        # 🚨 THE WALK FILES ITS OWN SAFETY FIXTURE, THROUGH THE UI, rather than leaning on a row
+        # some earlier probe happened to leave behind. It ran green once against exactly such a
+        # leftover and went red the moment the fixture cleanup removed it — which is the walk
+        # telling the truth about a dependency it should not have had.
+        page, ctx, body, errs, _ = await open_as(
+            "TOMO", f"/hr/me?org={ORG}", "11b-tomo-files-safety.png")
+        await page.get_by_role("button", name="Make a report").click()
+        await page.wait_for_timeout(900)
+        await page.locator("#in-kind").click()
+        await page.wait_for_timeout(400)
+        await page.get_by_role("option", name="Safety", exact=True).click()
+        await page.wait_for_timeout(500)
+        await page.locator("#in-summary").fill(
+            MARK + " RENDER WALK: the forklift near-miss. A pallet came off the forks near me in "
+            "the north aisle; nobody was hurt.")
+        await page.locator("#in-subject").fill("Tomo")
+        await page.wait_for_timeout(2200)
+        await page.get_by_role("button", name="Tomo Iversen-G32").first.click()
+        await page.wait_for_timeout(400)
+        await page.get_by_role("button", name="Record it").click()
+        await page.wait_for_timeout(3500)
+        await ctx.close()
+
         safety = await conn.fetchrow(
             """select id from hr.incident
                 where organization_id = $1 and not subject_excluded
+                  and summary like '%forklift near-miss%'
                   and subject_employment_id = $2 and reporter_employment_id = $2
                   and deleted_at is null order by created_at desc limit 1""", ORG, TOMO[2])
         if safety is None:

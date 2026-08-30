@@ -39,16 +39,19 @@ import {
   PARTY_TEXT_FILTER_KEYS,
 } from "../types";
 
-export type SavedViewRow = Database["crm"]["Tables"]["saved_view"]["Row"];
-export type SavedViewInsert = Database["crm"]["Tables"]["saved_view"]["Insert"];
-export type SavedViewUpdate = Database["crm"]["Tables"]["saved_view"]["Update"];
+// Saved views live in `platform.saved_view` — ONE table for every list surface,
+// not a CRM-owned one. See features/crm/saved-views/service.ts for why.
+export type SavedViewRow = Database["platform"]["Tables"]["saved_view"]["Row"];
+export type SavedViewInsert = Database["platform"]["Tables"]["saved_view"]["Insert"];
+export type SavedViewUpdate = Database["platform"]["Tables"]["saved_view"]["Update"];
 
 /** Platform visibility values a smart view uses (the sharing control). */
 export const SAVED_VIEW_VISIBILITIES = ["personal", "internal"] as const;
 export type SavedViewVisibility = (typeof SAVED_VIEW_VISIBILITIES)[number];
 
 /**
- * Which LIST a view belongs to (`crm.saved_view.list_key`). One table serves
+ * Which LIST a view belongs to. Stamped as `platform.saved_view.surface_key`,
+ * namespaced ("crm/parties"). One table serves
  * every CRM list — a deals view must never surface on the party bar and vice
  * versa, so every read filters on this and every create stamps it. Open set on
  * purpose; each list brings its own definition shape + parser.

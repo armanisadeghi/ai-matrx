@@ -24,7 +24,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Lock, Scale } from "lucide-react";
+import { AlertTriangle, Ban, Lock, Scale } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -176,6 +176,26 @@ export function CaseSurface({
             </p>
           ) : null}
         </header>
+
+        {incident?.voided_at ? (
+          // 🚨 NEVER HIDDEN. A voided record keeps listing, keeps opening, and
+          // says on its face that it was set aside and why — SPEC-TIME's law for
+          // a voided punch, which is the same law: "a hidden void is a destroyed
+          // record". `deleted_at` stays NULL and there is no delete anywhere.
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+            <Ban className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-sm font-medium text-foreground">
+                This record has been set aside.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {incident.void_reason
+                  ? `${incident.void_reason} It is kept on file — a record of this kind is never deleted — and everyone who was named on it is still held out of it.`
+                  : "It is kept on file — a record of this kind is never deleted."}
+              </p>
+            </div>
+          </div>
+        ) : null}
 
         {underLegalHold ? (
           // The hold, its origin, and NO delete action anywhere on this page.

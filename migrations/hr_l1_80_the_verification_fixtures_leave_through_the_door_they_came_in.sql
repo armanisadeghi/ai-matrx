@@ -128,7 +128,10 @@ begin
   foreach v_org in array v_orgs loop
     perform hr._record_access_audit(
       p_organization_id => v_org,
-      p_action          => 'delete',
+      -- 'write', not 'delete': hr.access_audit's action CHECK is a closed set
+      -- ('read','list','export','reveal_field','bulk_read','print','write','denied')
+      -- and a deletion is a write. The purpose and justification carry what kind.
+      p_action          => 'write',
       p_target_token    => 'hr_incident',
       p_purpose         => 'fixture_cleanup',
       p_basis           => 'role',

@@ -64,11 +64,12 @@ describe("content_ir read adapter — reconstruction", () => {
     ]);
   });
 
-  // FOUND_DEFECTS D156: a python-owned kind whose schema is too nested for
-  // aidream's `fields_from_json_schema` stores a NULL `data[]` but a COMPLETE
-  // `emitted_json_schema`. The adapter must carry that column through verbatim
-  // — reading only `data` made 140 active kinds look contract-less.
-  it("carries an unflattened object contract but omits its unavailable parser schema", () => {
+  // FOUND_DEFECTS D156, RESOLVED 2026-08-29: a kind whose schema is too nested
+  // for aidream's all-or-nothing `fields_from_json_schema` stores a NULL
+  // `data[]` and a COMPLETE `emitted_json_schema`. That used to mean "no
+  // parser schema", which is how ~221 kinds with real components became
+  // unrenderable. The schema IS the contract — derive from it.
+  it("DERIVES the parser schema from a nested contract with NULL data", () => {
     const nested = {
       type: "object",
       required: ["ideas"],
@@ -101,14 +102,21 @@ describe("content_ir read adapter — reconstruction", () => {
     const py = entries.find((e) => e.slug === "topic_ideas");
     expect(py).toBeDefined();
     // The catalog still carries the authoritative contract verbatim.
-    expect(py!.fields).toEqual({});
     expect(py!.emittedJsonSchema).toEqual(nested);
     // No nesting is flattened on the way through.
     expect(JSON.stringify(py!.emittedJsonSchema)).toBe(JSON.stringify(nested));
-    // But NULL `data` cannot faithfully teach the streaming parser this object
-    // shape. Omission preserves any compiled floor instead of inventing an
-    // empty object schema that would turn every payload field into residue.
-    expect(schemas.topic_ideas).toBeUndefined();
+    // 🚨 AND the parser now gets a real schema for it — nesting included.
+    expect(schemas.topic_ideas).toEqual({
+      kind: "topic_ideas",
+      fields: {
+        ideas: {
+          required: true,
+          type: "array",
+          itemKinds: ["topic_ideas_idea"],
+        },
+      },
+    });
+    expect(py!.fields).toEqual(schemas.topic_ideas.fields);
     // An absent column reads as null, never undefined-by-omission.
     expect(
       entries.find((e) => e.slug === "no_schema")!.emittedJsonSchema,
@@ -116,7 +124,7 @@ describe("content_ir read adapter — reconstruction", () => {
     expect(schemas.no_schema).toEqual({ kind: "no_schema", fields: {} });
   });
 
-  it("also recognizes nullable object schemas as unflattened contracts", () => {
+  it("derives from a NULLABLE object schema too", () => {
     const { schemas } = reconstructKindRegistry(
       [
         {
@@ -133,7 +141,10 @@ describe("content_ir read adapter — reconstruction", () => {
       [],
     );
 
-    expect(schemas.nullable_object).toBeUndefined();
+    expect(schemas.nullable_object).toEqual({
+      kind: "nullable_object",
+      fields: { title: { type: "string" } },
+    });
   });
 
   it("preserves field ORDER from the data array", () => {
@@ -230,7 +241,7 @@ describe("content_ir read adapter — cold tier", () => {
     jest.resetModules();
   });
 
-  it("returns schema unavailable for a NULL-data object contract", async () => {
+  it("derives the cold-fetch schema from a NULL-data object contract", async () => {
     jest.resetModules();
 
     const query = (result: unknown) => {
@@ -273,8 +284,17 @@ describe("content_ir read adapter — cold tier", () => {
       await import("../registry/schema-source-kind-tables");
     const result = await getKindSchemaAndMetaBySlugFromTables("py_object");
 
+    // 🚨 SAME DERIVATION AS THE WARM PATH. These two used to disagree about
+    // what a NULL-data row means, and a kind that resolves one way in a sweep
+    // and another way mid-stream is the hardest render bug to see.
     expect(result).toEqual({
-      schema: null,
+      schema: {
+        kind: "py_object",
+        // `{type:"object"}` with no properties is a record of any JSON value —
+        // the honest reading, not an empty object that would turn every field
+        // of a real payload into residue.
+        fields: { nested: { type: "record", values: "json" } },
+      },
       loadingComponent: "card",
       // Lazy registry (2026-08-29): the emitted contract rides the cold
       // fetch — it is the only road it takes to the client now.

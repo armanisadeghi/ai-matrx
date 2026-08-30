@@ -22,7 +22,7 @@ import type {
 
 /**
  * Every list brings its own definition shape; the service is generic over it.
- * `listKey` scopes reads and stamps creates (`crm.saved_view.list_key`) so a
+ * `listKey` scopes reads and stamps creates (as `platform.saved_view.surface_key`) so a
  * deals view never appears on the party bar; `parse` is that list's defensive
  * jsonb validator (party: `parseSavedViewDefinition`; deals:
  * `parseDealViewDefinition`).
@@ -41,8 +41,21 @@ function pgError(error: { message?: string; code?: string }): Error {
   );
 }
 
-function crm() {
-  return supabase.schema("crm");
+/**
+ * Saved views live in `platform.saved_view` — ONE table for every list surface
+ * in the app, not a CRM-owned one. The shape here was always platform-shaped
+ * (its `list_key` was documented as an open set); only its address was CRM's.
+ *
+ * `list_key` became the namespaced `surface_key` ("crm/parties"), so a CRM view
+ * and a data-table view can never be mistaken for each other.
+ */
+function savedViewDb() {
+  return supabase.schema("platform");
+}
+
+/** `list_key` → the platform-wide surface key. */
+function surfaceKeyFor(listKey: string): string {
+  return `crm/${listKey}`;
 }
 
 /** Row → the UI shape, with the jsonb definition validated (never trusted raw). */
@@ -59,10 +72,10 @@ export async function fetchSavedViews<TDef>(
   ctx: CrmQueryContext,
   codec: SavedViewCodec<TDef>,
 ): Promise<SavedView<TDef>[]> {
-  let q = crm()
+  let q = savedViewDb()
     .from("saved_view")
     .select("*")
-    .eq("list_key", codec.listKey)
+    .eq("surface_key", surfaceKeyFor(codec.listKey))
     .is("deleted_at", null)
     .order("last_used_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -83,11 +96,11 @@ export async function fetchSavedView<TDef>(
   id: string,
   codec: SavedViewCodec<TDef>,
 ): Promise<SavedView<TDef>> {
-  const { data, error } = await crm()
+  const { data, error } = await savedViewDb()
     .from("saved_view")
     .select("*")
     .eq("id", id)
-    .eq("list_key", codec.listKey)
+    .eq("surface_key", surfaceKeyFor(codec.listKey))
     .is("deleted_at", null)
     .single();
   if (error) throw pgError(error);
@@ -104,14 +117,14 @@ export async function createSavedView<TDef>(input: {
 }): Promise<SavedView<TDef>> {
   const name = input.name.trim();
   if (!name) throw new Error("Name the view so the team can find it again");
-  const { data, error } = await crm()
+  const { data, error } = await savedViewDb()
     .from("saved_view")
     .insert({
       name,
       description: input.description?.trim() || null,
       // Serialized as-is: every codec's TDef is a plain JSON object.
       definition: input.definition as SavedViewRow["definition"],
-      list_key: input.codec.listKey,
+      surface_key: surfaceKeyFor(input.codec.listKey),
       organization_id: input.orgId,
       visibility: input.visibility,
       last_used_at: new Date().toISOString(),
@@ -151,7 +164,7 @@ export async function updateSavedView<TDef>(
   if (patch.visibility !== undefined) next.visibility = patch.visibility;
   if (Object.keys(next).length === 0) return;
 
-  const { error } = await crm()
+  const { error } = await savedViewDb()
     .from("saved_view")
     .update(next)
     .eq("id", id);
@@ -169,7 +182,7 @@ export async function updateSavedView<TDef>(
  * never swallowed silently.
  */
 export async function touchSavedView(id: string): Promise<void> {
-  const { error } = await crm()
+  const { error } = await savedViewDb()
     .from("saved_view")
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", id);
@@ -180,7 +193,7 @@ export async function touchSavedView(id: string): Promise<void> {
 
 /** Soft-delete. The query is gone from the bar; the records are untouched. */
 export async function deleteSavedView(id: string): Promise<void> {
-  const { error } = await crm()
+  const { error } = await savedViewDb()
     .from("saved_view")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);

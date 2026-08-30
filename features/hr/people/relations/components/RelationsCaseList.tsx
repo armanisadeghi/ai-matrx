@@ -74,12 +74,24 @@ export function RelationsCaseList() {
           ) : (
             <Gavel className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           )}
+          {/* A voided record STAYS ON THE LIST, struck through. Removing it
+              from the queue would be the deletion the void exists instead of. */}
           <Link
             href={hrRelationsCaseHref(row.id, orgRef, row.caseKind)}
-            className="truncate text-sm font-medium text-foreground underline-offset-2 hover:underline"
+            className={`truncate text-sm font-medium underline-offset-2 hover:underline ${
+              row.voided
+                ? "text-muted-foreground line-through"
+                : "text-foreground"
+            }`}
+            title={row.voided ? (row.voidReason ?? "Set aside") : undefined}
           >
             {row.kindLabel}
           </Link>
+          {row.voided ? (
+            <Badge variant="outline" className="shrink-0 text-xs">
+              Set aside
+            </Badge>
+          ) : null}
         </span>
       ),
     },

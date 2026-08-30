@@ -114,6 +114,8 @@ export function incidentToCase(row: HrIncidentRow): HrRelationsCase {
     // `summary` may be absent for a viewer who only gets the redacted line.
     // Absent → null → the cell renders nothing. Never a placeholder.
     summary: row.summary ?? null,
+    voided: Boolean(row.voided_at),
+    voidReason: row.void_reason ?? null,
     incident: row,
   };
 }
@@ -137,6 +139,10 @@ export function correctiveActionToCase(
     oshaRecordable: null,
     underLegalHold: (row.legal_hold_count ?? 0) > 0,
     summary: row.summary ?? null,
+    // A corrective action is not voided; it is RESCINDED, which is an outcome
+    // on its own ladder (§4.8) and already carried by `outcome`.
+    voided: false,
+    voidReason: null,
     correctiveAction: row,
   };
 }

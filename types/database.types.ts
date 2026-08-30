@@ -35821,6 +35821,9 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
           work_restrictions: string | null
           workers_comp_claim_ref: string | null
         }
@@ -35874,6 +35877,9 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
           work_restrictions?: string | null
           workers_comp_claim_ref?: string | null
         }
@@ -35927,6 +35933,9 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
           work_restrictions?: string | null
           workers_comp_claim_ref?: string | null
         }
@@ -58653,6 +58662,7 @@ export type Database = {
           description: string | null
           id: string
           is_default: boolean
+          last_used_at: string | null
           metadata: Json
           name: string
           organization_id: string
@@ -58673,6 +58683,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_default?: boolean
+          last_used_at?: string | null
           metadata?: Json
           name: string
           organization_id: string
@@ -58693,6 +58704,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_default?: boolean
+          last_used_at?: string | null
           metadata?: Json
           name?: string
           organization_id?: string
@@ -67010,7 +67022,24 @@ export type Database = {
       hr_incident_create: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_party_add: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
+      hr_incident_void: {
+        Args: { p_incident_id: string; p_reason: string }
+        Returns: Json
+      }
       hr_invite_accept: { Args: { p_token: string }; Returns: Json }
+      hr_jurisdiction_evaluate: {
+        Args: {
+          p_as_of: string
+          p_facts: Json
+          p_input: Json
+          p_jurisdiction_key: string
+          p_kind: string
+          p_organization_id: string
+          p_subject_id?: string
+          p_subject_type?: string
+        }
+        Returns: Json
+      }
       hr_jurisdiction_rule_set_status: {
         Args: { p_new_status: string; p_reason?: string; p_rule_id: string }
         Returns: Json
@@ -67457,6 +67486,18 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_resolve_rules_for_subject: {
+        Args: {
+          p_as_of: string
+          p_classes: string[]
+          p_facts: Json
+          p_jurisdiction_key?: string
+          p_organization_id: string
+          p_subject_id: string
+          p_subject_type: string
+        }
+        Returns: Json
+      }
       hr_restricted_get: {
         Args: {
           p_id: string
@@ -67671,6 +67712,30 @@ export type Database = {
       hr_wf_withdraw: {
         Args: { p_instance_id: string; p_reason?: string }
         Returns: Json
+      }
+      hr_write_calculation_snapshot: {
+        Args: {
+          p_actor_id?: string
+          p_actor_type: string
+          p_applicability_facts: Json
+          p_as_of: string
+          p_calculation_kind: string
+          p_clamps?: Json
+          p_employment_id?: string
+          p_engine_key: string
+          p_engine_version: string
+          p_inputs: Json
+          p_jurisdiction_key: string
+          p_organization_id: string
+          p_outputs: Json
+          p_prospective?: boolean
+          p_recalculation_batch_id?: string
+          p_resolution: Json
+          p_subject_id: string
+          p_subject_type: string
+          p_supersedes_id?: string
+        }
+        Returns: string
       }
       industry_assign_org: {
         Args: {
@@ -94466,6 +94531,81 @@ export type Database = {
             referencedColumns: ["run_id"]
           },
         ]
+      }
+      comparison: {
+        Row: {
+          arms: Json
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          id: string
+          metadata: Json
+          metrics: Json | null
+          organization_id: string
+          request: Json
+          shared_inputs: Json
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          verdict_at: string | null
+          verdict_by: string | null
+          verdict_notes: string | null
+          verdict_winner: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          arms?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          id?: string
+          metadata?: Json
+          metrics?: Json | null
+          organization_id: string
+          request?: Json
+          shared_inputs?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict_at?: string | null
+          verdict_by?: string | null
+          verdict_notes?: string | null
+          verdict_winner?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          arms?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          id?: string
+          metadata?: Json
+          metrics?: Json | null
+          organization_id?: string
+          request?: Json
+          shared_inputs?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict_at?: string | null
+          verdict_by?: string | null
+          verdict_notes?: string | null
+          verdict_winner?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       definition: {
         Row: {

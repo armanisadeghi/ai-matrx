@@ -30,6 +30,11 @@ import { readFileSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 
+/* turbopackIgnore: true */
+// This build-time generator deliberately walks the caller-supplied repository
+// root. It is never a request-time route, and the root cannot be statically
+// traced without pulling the entire checkout into a server bundle.
+
 /** What a route can do for a reader who arrives at it. */
 export type RouteStatus =
   /** A real surface. It can answer the link, including its query and hash. */

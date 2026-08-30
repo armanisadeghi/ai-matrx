@@ -422,6 +422,12 @@ export type HrRelationsCase = {
   underLegalHold: boolean;
   /** Whichever summary this viewer was given — full, redacted, or none. */
   summary: string | null;
+  /**
+   * Set aside as wrong (hr_l1_79). The row still LISTS — struck through, never
+   * removed: "a hidden void is a destroyed record."
+   */
+  voided: boolean;
+  voidReason: string | null;
   incident?: HrIncidentRow;
   correctiveAction?: HrCorrectiveActionRow;
 };
