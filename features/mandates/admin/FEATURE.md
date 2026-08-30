@@ -105,7 +105,7 @@ File map: `service.ts` (direct DB console bundle + typed aidream code-truth/verd
 
 Doctrine: `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`; recipe: the `no-dead-ends` skill. This console is the worked reference, because it was the surface that provoked the ruling — it named agents it would not open, and complained about a pin it would not fix.
 
-- **Every agent is reachable.** The Agent column renders `EntityRef` (`components/official/entity-ref/EntityRef.tsx`) — open / new tab / peek — with an `href` override, because system agents live under `/administration/agents/system-agents/agents/<id>` and personal agents under `/agents/<id>`. Pin cells carry a version-history door (`…/latest`; `/v/<number>` is one saved version, never the collection).
+- **Every agent is reachable.** The Agent column renders compact, icon-free text through `EntityRef` (`components/official/entity-ref/EntityRef.tsx`) — open / new tab / peek — with an `href` override, because system agents live under `/administration/agents/system-agents/agents/<id>` and personal agents under `/agents/<id>`. Pin cells carry a version-history door (`…/latest`; `/v/<number>` is one saved version, never the collection).
 - **Lineage is shown, not withheld.** `selectAgentLineageIndex` derives parent / children / **systemTwin** from the agent slice (zero extra queries). The twin may be a PARENT (personal copy of a system agent) or a CHILD (system agent promoted from a personal one) — both directions are load-bearing and covered by `features/agents/redux/agent-definition/__tests__/lineage-selectors.test.ts`.
 - **The complaint ships with the fix.** A `not a system agent` row renders the twin (linked) plus **Rebind to system twin** (rebinds to the twin tracking latest — a pin to a personal agent's version has no meaningful version to carry over). No twin → **Create system twin…**, which opens the existing Linked Agent Sync window rather than a second bespoke flow.
 - **The drawer leads with what you HAVE.** `MandateAgentIdentityCard` (currently-running agent, type badge, pin vs latest, drift, lineage chips, Versions / Linked Agent Sync / Rebind) sits above the picker. It used to open straight into a rebind picker, so an admin could not see the agent they were about to replace.
@@ -118,6 +118,8 @@ The page is the `matrx-admin/mandates` surface (`features/surfaces/manifests/man
 The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate` (`ui`, handled on the console's own provider, which owns `selectedId`) and `mandate_exemplar_draft` (`draft`, registered by `MandateTestBench` via `useSurfaceWriteHandlers`). Both are `applyPolicy: "ask"`. Read the JUDGMENT BAR block at the top of the manifest before adding a third: rebind, enable/disable, the per-principal overrides, Run all, and every health/roll-up value are deliberately NOT writable, and each has its reason written down there.
 
 ## Change Log
+
+- 2026-08-30 — Removed the repeated registry glyph from every Agent cell. Agent names remain compact text links with the canonical open, new-tab, and peek doors.
 
 - 2026-08-29 — **ONE mandate UI, and management is admin-side.** Two mandate experiences
   existed: this console's side-panel drawer and the rebuilt triad workspace on

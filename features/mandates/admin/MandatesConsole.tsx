@@ -840,6 +840,7 @@ export function MandatesConsole() {
               id={r.agentId}
               name={r.agentName}
               href={agentHref(r.agentId, r.agentType)}
+              showIcon={false}
             />
           ) : (
             <span className="text-xs text-muted-foreground">{r.agentName}</span>
