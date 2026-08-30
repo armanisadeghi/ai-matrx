@@ -97,6 +97,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-30 — Google Picker stays interactive above Files windows.** The provider injects its
+  modal at z-index 1000/1001, below Matrx floating windows; global picker-layer overrides now place
+  its scrim and dialog at the application ceiling so ordinary clicks reach Drive items and actions.
 - **2026-08-30 — Menu-hosted uploads survive the native chooser.** Local file/folder actions keep the dropdown content mounted until selection returns, then close through the host callback; this prevents Files **New** from silently discarding every chosen file.
 - **2026-08-30** — **C9 collapse: `media-client/client.ts` is now a thin construction over
   `@ai-matrx/data/files` 0.4.1** (436 → 202 lines, all injection per C22). Absorbed into the
