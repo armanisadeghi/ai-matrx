@@ -1,0 +1,70 @@
+---
+name: work-loop
+type: Skill
+title: work-loop — operate the durable autonomous task fleet
+description: "Use whenever adding work to, coordinating, or working an Autonomous Work Loop campaign: atomic claims, full in-scope autonomy, routine-blocker repair, evidence-gated closure, and independent verification."
+tags: [automation, codex, queue, qa, agents]
+timestamp: 2026-08-30T00:00:00Z
+---
+
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/work-loop/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
+
+# Work Loop
+
+Canonical contract:
+`/Users/armanisadeghi/code/common-docs/systems/improvement/work-loop/STATE.md`.
+
+## Coordinator
+
+1. Call `work_loop(action="status")`; database state is truth.
+2. Reclaiming is automatic on claim. Fill every free slot, up to three workers,
+   by calling `claim` with a unique stable holder and giving each worker the
+   returned contract unchanged.
+3. Wait for the first worker. Settle through `complete`, `retry`, or `defer`,
+   then fill the slot again. Continue while claimable work exists.
+4. Add newly supplied tasks through `add_items`; stable keys make re-adding safe.
+5. Never spend a work turn repeating inventory or producing a report while a
+   claimable item exists. Coordinator success is queue advancement.
+
+## Worker
+
+Read the entire claimed contract. Claim ownership is permission to perform all
+ordinary reversible work inside its scope: inspect, reproduce, edit, test,
+commit, push, deploy where the repo contract allows, authenticate with the
+preauthorized test identity, repair fixtures/tooling, and verify live.
+
+Use the isolated in-app Browser for application testing. Never use the user's
+browser. Close every tab you create.
+
+**There are no routine blockers.** Missing login state, stale tokens, broken
+preview, missing fixtures, failing tests, server/tool failures, deployment lag,
+unfamiliar code, and dirty unrelated files are problems to investigate and
+repair or work around. A bug found during QA becomes part of the claimed work:
+fix the root cause and retest it. Do not return a diagnosis or admin report as
+completion.
+
+Heartbeat before half the lease elapses and around any long test/build/deploy.
+If the heartbeat says ownership was lost, stop writing and do not claim success.
+
+Complete only with concrete evidence. The service will create the independent
+verifier. A verifier starts from fresh state, assumes the work is wrong, and
+returns `passed` or `rejected`; rejection automatically creates repair work.
+
+`defer` is legal only for one named human-only boundary from the contract. It
+parks that item; the coordinator immediately continues other work. Never turn a
+single deferred item into a stopped campaign.
+
+## Adding items
+
+One item is one independently claimable outcome. Include exact target,
+objective, source refs, required tools, verification checks, evidence, priority,
+and any true dependencies. Put general campaign rules in the campaign default;
+put exceptions and special authority in that line item's engagement contract.
+
+Use lower priority numbers for active regressions/retests, 100 for ordinary
+backlog, and higher numbers for opportunistic work. Do not create one schedule
+per item; one coordinator drains the shared campaign.
