@@ -41,6 +41,30 @@
       ],
       "previousEventHash": "30e411d49c412e6f27d44bcc6bcd31191f615b27daf6fed466d7e72c9d5ef655",
       "eventHash": "5e0b59d64abdf7e53d09cebe55e00c65ad9d288c8aec4a602d39557b2a516c73"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-30T15:43:10.597Z",
+      "actor": "plan-sites-independent-certifier",
+      "summary": "Independent adversarial review CERTIFIED the exact Content Plan site-action candidate.",
+      "evidence": [
+        "No concrete candidate-caused defect found in the exact git archive."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "478fc4a234136bdf2c5d938bf90b704335c6cf96",
+        "certifierTaskId": "plan_sites_certifier",
+        "checks": [
+          "Type-check PASS in exact-SHA offline archive.",
+          "Focused ESLint PASS across all seven owned product files.",
+          "Three Jest suites PASS, 9/9 tests.",
+          "Content Plan and sites dead-end detector scopes clean.",
+          "One lazyOverlay front door; no heavy implementation bypass."
+        ]
+      },
+      "previousEventHash": "5e0b59d64abdf7e53d09cebe55e00c65ad9d288c8aec4a602d39557b2a516c73",
+      "eventHash": "61a32ad5bfbf4cd5c58a18d98e76d441deb442c43dcdd42ed53d824f59f973b5"
     }
   ]
 }
