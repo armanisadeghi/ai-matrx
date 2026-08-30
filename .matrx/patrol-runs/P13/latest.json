@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P13",
+  "runId": "20260830T081317Z",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T08:21:57.900Z",
+  "summary": "Wave 1 candidate frozen for independent adversarial certification",
+  "source": "20260830T081317Z.json",
+  "eventHash": "4680d66d0a7560ce7201aac5bfcf6b1ebbc18f75eee6fc80f14c6a5a00f59237"
+}
