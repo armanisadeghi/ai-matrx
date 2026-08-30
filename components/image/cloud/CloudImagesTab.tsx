@@ -584,7 +584,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     >
       <TooltipProvider delayDuration={300}>
         <NonEditableContextMenu
-          sourceFeature="image-manager"
+        sourceFeature="files"
           surfaceName={IMAGES_SURFACE_NAME}
           getApplicationScope={getImagesScope}
           contentSource={{ type: "raw" }}
