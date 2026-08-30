@@ -14,7 +14,12 @@
  * conversion and this surface's own document styles are local.
  */
 
-import { escapeHtml, openPrintWindow } from "@ai-matrx/print/core";
+import {
+    escapeHtml,
+    openPrintWindow,
+    type PrintOutcome,
+} from "@ai-matrx/print/core";
+import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
 
 // ============================================================================
 // THINKING CONTENT REMOVAL (minimal re-implementation)
@@ -155,7 +160,11 @@ function buildMarkdownPrintDocument(bodyHtml: string, title: string): string {
 // PUBLIC API
 // ============================================================================
 
-export function printMarkdownContent(markdown: string, title = 'AI Response'): void {
+export function printMarkdownContent(markdown: string, title = 'AI Response'): PrintOutcome {
     const bodyHtml = markdownToPrintBodyHTML(markdown);
-    openPrintWindow(buildMarkdownPrintDocument(bodyHtml, title), title);
+    const outcome = openPrintWindow(buildMarkdownPrintDocument(bodyHtml, title), title);
+    // Popup blocked → the package downloaded the print file; SAY so — a
+    // silent fallback reads as "print did nothing" (QA F8, 2026-08-30).
+    notifyPrintOutcome(outcome);
+    return outcome;
 }

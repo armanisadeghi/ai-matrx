@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { printQrLabelSheet, type QrEcLevel } from "@ai-matrx/print/labels";
+import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
 import { toast } from "@/lib/toast";
 
 import type { AssetIdentifier, IntakeAsset } from "../../types";
@@ -119,7 +120,7 @@ export function PrintLabelDialog({
   const printOne = async (value: string) => {
     // A pool code prints its resolver URL; a legacy raw string prints as-is.
     const pooled = await findLabelCode(organizationId, value).catch(() => null);
-    await printQrLabelSheet(
+    const outcome = await printQrLabelSheet(
       {
         labels: [
           { qrValue: pooled ? labelUrlForCode(value) : value, caption: value },
@@ -129,6 +130,8 @@ export function PrintLabelDialog({
       undefined,
       { ecLevel },
     );
+    // Popup blocked → the sheet downloaded as .html; say so (QA F5).
+    notifyPrintOutcome(outcome);
   };
 
   const reprint = async () => {

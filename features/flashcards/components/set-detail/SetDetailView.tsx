@@ -61,6 +61,7 @@ import { fcService } from "../../data/fcService";
 import { getCardImages } from "../study/cardImages";
 import { buildDeckPrintData } from "../../utils/deckPrintData";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
 import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
@@ -1464,6 +1465,7 @@ export function SetDetailView({ setId }: { setId: string }) {
               data={printData}
               open={printOpen}
               onOpenChange={setPrintOpen}
+              onPrinted={notifyPrintOutcome}
             />
 
             {/* WP3 gap 5 — merge selected cards into one (editable preview). */}

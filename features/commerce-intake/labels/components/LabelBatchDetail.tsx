@@ -37,6 +37,7 @@ import {
   type QrEcLevel,
   type QrLabelPrintData,
 } from "@ai-matrx/print/labels";
+import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
 import {
   LabelSheetPreview,
   PrintOptionsDialog,
@@ -365,6 +366,7 @@ export function LabelBatchDetail({
         data={printData}
         open={open}
         onOpenChange={setOpen}
+        onPrinted={notifyPrintOutcome}
       />
 
       <ConfirmDialog
