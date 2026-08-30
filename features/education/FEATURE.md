@@ -1,6 +1,6 @@
 # Education Hub — FEATURE.md
 
-**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-08-21
+**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-08-29
 
 > 🚨 **START AT THE CROSS-REPO PROJECT, NOT HERE:**
 > **`/Users/armanisadeghi/code/common-docs/systems/education/STATE.md`**
@@ -69,6 +69,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 - **Relocation wired:** old `(public)/education/*` deleted; `nav-data.ts` + `features/math` back-links repoint to `quick-math`; `Target` added to `shellIconMap.ts`.
 - **A learner declining microphone permission is expected input, not a crash.** Voice-test surfaces show the browser-settings repair path inline and must not send `NotAllowedError` / `PermissionDeniedError` through `console.error`; unexpected mic failures stay loud.
 - **Study-spine product reads declare `mine`; RLS only authorizes.** `studyService` filters sessions, attempts, mastery, goals, and mutations by `created_by = requireUserId()` and streaks by `user_id`. Admin-wide RLS access must never turn a learner surface into an all-users view or make a one-row query fail cardinality.
+- **Every Education page has scroll-end runway for the ambient assistant.** The route layout owns `education-scroll-boundary scroll-page-end-space` once for the family; pages never add per-tool guesses. Natural pages use the boundary runway, while a direct `overflow-y-auto`/`overflow-auto` leaf receives it instead so exactly the real scroll owner grows. The pseudo-element adds space after content without reducing a full-height child and expands with `--keyboard-inset-height`; `ambient-assistant-dock` moves the text/voice input above overlay keyboards on large tablets and vehicle browsers.
 
 ## Related features
 
@@ -87,6 +88,7 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-08-29** — **Education page endings and the ambient assistant remain reachable.** The shared education layout now supplies the canonical scroll-end runway for summaries, kits, axis pages, tools, and every other route; the shared dock follows visual-keyboard inset on desktop-width touch displays, so focused text stays above overlay keyboards rather than being covered.
 - 2026-08-29 — C9 adoption: `BottomSheet`/`TabbedBottomSheet`, `EditableLabel`, `SegmentedControl`, `ScoreRing`, and `useScrollFade` now import from `@ai-matrx/design-system` 0.2.0 (npm); the local originals under `components/official/` and `components/ui/segmented-control.tsx` are deleted. Behavior identical (verbatim ports; host keeps the glass/pb-safe/matrx-scroll-fade CSS contracts in `app/globals.css`).
 - **2026-08-26** — **Spoken Practice surface: 8 breaking `ORPHAN_WRITE_TWIN`/`REMOVAL_BREAKS` findings → 0, no code change needed.** Four `ui.ui_surface_write_target` rows on `matrx-user/education-practice-oral` (`practice_focus`, `practice_calibration`, `practice_deck`, `practice_material`) claimed to update values the surface never declared. They were DB-mirror drift: the code manifest never contained them (git history confirms — the composite `practice_setup` target superseded field-level targets before first commit), no handler in `features/education/spoken-practice/**` serves them, so `listAgentWritableTargets()` never offers them. Their `updates_value` now points at `setup_draft` — the true read twin, emitted live by `buildSpokenPracticeScope` (`spokenPracticeScope.ts`) from the setup snapshot as `{ mode, focus, difficulty, count, deck_id, source_text }`, which covers every concept the four stale targets named. The rows themselves remain (unwired mirror drift; deleting them is an owner call — flagged, not performed).
 

@@ -83,7 +83,7 @@ export default function ScrollAssistantLauncherImpl({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed bottom-5 left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
+        "ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
         inputVariant === "multiline"
           ? "w-[min(420px,calc(100vw-2rem))]"
           : "w-[min(380px,calc(100vw-2rem))]",
