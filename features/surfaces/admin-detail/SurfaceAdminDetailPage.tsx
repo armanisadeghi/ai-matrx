@@ -2002,6 +2002,18 @@ function RoleOverridePicker({
 // Config namespaces (global/admin tier is editable)
 // ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * The `menu` namespace is offered on EVERY surface, declared or not — the
+ * exclusion valve is a property of being a place, not of a manifest opting
+ * in. Shape: `{ "excludedItemIds": ["<shortcut/mandate id>", ...] }`.
+ */
+const UNIVERSAL_MENU_NAMESPACE = {
+  namespace: "menu",
+  label: "Context menu (exclusion valve)",
+  description:
+    'Item ids this surface REFUSES even though they qualify. Menu availability is otherwise derived — an item is offered here iff every surface value it consumes has a read path on this page. Shape: {"excludedItemIds":["<id>"]}. Org and user tiers may exclude MORE; no tier can re-admit.',
+} as const;
+
 function ConfigNamespacesSection({
   surfaceName,
   configBundle,

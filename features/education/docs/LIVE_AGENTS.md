@@ -3,7 +3,7 @@
 **Agents resolve via MANDATES now.** No education/flashcards code names an agent id: every AI
 lane names a mandate key, and the DATABASE decides which agent fulfils it (system default → org
 binding → user binding). **Inspect or swap the live agent** behind any lane at
-`/agents/mandates` (user bindings) or `/administration/mandates` (system pins). Agent
+`/mandates` (user bindings) or `/administration/mandates` (system pins). Agent
 definitions, prompts, schemas and variable shapes live on the DB agents themselves, never in
 this repo.
 

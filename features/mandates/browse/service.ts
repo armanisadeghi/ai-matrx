@@ -79,7 +79,7 @@ async function mndRpc<K extends keyof MndRpcMap>(
  * WHOSE resolution the list computes.
  *
  * `mine` — the caller's own funnel (their user binding, then any of their
- * orgs', then the system default). The right answer on /agents/mandates.
+ * orgs', then the system default). The right answer on /mandates.
  *
  * `org` — the named organization's funnel, personal bindings EXCLUDED. The
  * only honest answer on an org-settings page: an org admin asking "who fulfils

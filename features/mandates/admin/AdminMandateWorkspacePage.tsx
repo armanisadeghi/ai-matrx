@@ -7,7 +7,7 @@
 //
 // The admin console's row click used to open its own drawer — a second, older
 // mandate detail implementation that diverged from the rebuilt experience on
-// /agents/mandates/[key]. It now lands here, and here renders THE SAME
+// /mandates/[key]. It now lands here, and here renders THE SAME
 // `MandateWorkspace` the (core) route and the window panel render: the triad
 // (INPUT → GOAL → OUTPUT, goal editable), RUN THIS JOB, fulfillment, override,
 // notes. Zero divergent detail implementations — this file is a SHELL.
@@ -60,7 +60,7 @@ export function AdminMandateWorkspacePage({
           All mandates
         </Link>
       </div>
-      {/* THE ONE workspace — identical to /agents/mandates/[key]. */}
+      {/* THE ONE workspace — identical to /mandates/[key]. */}
       <MandateWorkspace mandateKeyOrId={mandateKey} host="admin-route" />
       <AdminControls mandateKey={mandateKey} />
     </div>

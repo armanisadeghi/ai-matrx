@@ -13,11 +13,11 @@ nine-scenario matrix, the mapping vocabulary, the blocking rules, and Arman's ru
 first. This handoff is only the work order.
 
 **This is the second half of Mandates, not a separate feature.** The other half —
-*which* agent runs a step — is `common-docs/systems/agents/mandates/FEATURE.md`, which carries
+*which* agent runs a step — is `common-docs/systems/mandates/FEATURE.md`, which carries
 **THE UNIVERSAL LAW** (every repo, every package and sub-package, every surface; both the agent id
 AND its definition) and **the exception policy** (Arman's written approval only; exactly one
 exception exists — the conversation labeler). The cross-repo worklist of everything still
-non-conforming is `common-docs/systems/agents/mandates/ROLLOUT.md`; the sibling work order is
+non-conforming is `common-docs/systems/mandates/ROLLOUT.md`; the sibling work order is
 `aidream/docs/handoffs/content-ir-slots.md`. These two handoffs share the admin console, the
 code-truth API, and the `contract` column — coordinate before changing any of the three.
 
@@ -76,7 +76,7 @@ retained in `MandateCodeTruthReport.import_failures` and statically-recoverable 
 `code_exists_but_import_failed` rather than being misreported as DB-only. A guard
 (`tests/test_code_truth.py`) fails if a new production package holds a `NamedAgent` outside the
 known roots. **This no longer blocks the backfill — and the backfill itself is now closed** (see
-the Live state table in `common-docs/systems/agents/mandates/FEATURE.md`).
+the Live state table in `common-docs/systems/mandates/FEATURE.md`).
 
 *Original description, kept for context:*
 

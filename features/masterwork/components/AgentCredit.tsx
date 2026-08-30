@@ -31,7 +31,7 @@ export function AgentCredit({
     <Tooltip>
       <TooltipTrigger asChild>
         <Link
-          href="/agents/mandates"
+          href="/mandates"
           className="inline-flex items-center gap-1 rounded px-1 text-[10px] text-muted-foreground/70 hover:text-foreground"
           onClick={(e) => e.stopPropagation()}
         >

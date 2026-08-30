@@ -1,12 +1,12 @@
 // hooks/flashcard-app/useAiChat.ts
 //
 // The legacy flashcard-app "Ask AI" chat, routed through THE UNIVERSAL LAW
-// (common-docs/systems/agents/mandates/RUNTIME.md): every AI invocation
+// (common-docs/systems/mandates/RUNTIME.md): every AI invocation
 // resolves through a Mandate. This hook used to hold an OpenAI browser client
 // and an in-code system prompt (F12); now it runs the same
 // `flashcards.help_live` lane every study surface uses
 // (features/education/tutor/lanes/helpLive.ts) — the agent, its prompt and its
-// model live in the DATABASE and are swapped at /agents/mandates.
+// model live in the DATABASE and are swapped at /mandates.
 //
 // Live posture: the answer streams into `<LiveRunDisplay conversationId>` the
 // host mounts (no spinner while AI works); the finished answer is then written

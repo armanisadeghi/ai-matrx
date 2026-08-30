@@ -2,7 +2,7 @@
 //
 // LEGACY DEEP-LINK SHIM — load-bearing, not a nicety. 25 MandateDoorLink call
 // sites plus 4 hand-rolled hrefs across the app link to
-// `/agents/mandates?feature=<domain>` (the pre-rework contract). The reworked
+// `/mandates?feature=<domain>` (the pre-rework contract). The reworked
 // list encodes filters in the canonical entity-list URL form
 // (`?filters={"feature":{"kind":"select","values":[...]}}` — lib/entity-list/
 // urlQuery.ts). This module maps the old form onto the new one so every old
@@ -24,14 +24,14 @@ export function featureFilters(feature: string): EntityFilters {
  * every feature door should emit.
  */
 export function mandatesBrowseHref(feature?: string): string {
-  if (!feature?.trim()) return "/agents/mandates";
+  if (!feature?.trim()) return "/mandates";
   const filters = encodeURIComponent(JSON.stringify(featureFilters(feature.trim())));
-  return `/agents/mandates?filters=${filters}`;
+  return `/mandates?filters=${filters}`;
 }
 
 /**
  * ONE mandate on its own page, in the ADMIN shell. Same workspace as
- * `/agents/mandates/[key]`; the admin console links here so its rows stay
+ * `/mandates/[key]`; the admin console links here so its rows stay
  * inside the admin deployment (manage.aimatrx.com) instead of crossing to the
  * app domain. Never hand-build this URL.
  */

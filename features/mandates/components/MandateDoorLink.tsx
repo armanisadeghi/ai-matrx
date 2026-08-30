@@ -1,11 +1,11 @@
 // features/mandates/components/MandateDoorLink.tsx
 //
-// THE DOOR to /agents/mandates for ONE feature domain.
+// THE DOOR to /mandates for ONE feature domain.
 //
 // The platform's headline capability — swap the intelligence behind any step,
 // with no deploy — is worthless if the feature it powers gives its users no way
 // in. Every feature that owns mandates owns a door, and the door is ALWAYS
-// deep-linked: unfiltered, /agents/mandates is 331 mandates across 47 domains,
+// deep-linked: unfiltered, /mandates is 331 mandates across 47 domains,
 // which is a scroll, not a door.
 //
 // `feature` is the mandate key's first segment (`splitMandateKey().feature` —

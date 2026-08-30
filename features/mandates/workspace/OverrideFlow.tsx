@@ -108,7 +108,7 @@ export type WorkspacePrincipal =
 export interface OverrideFlowProps {
   data: MandateWorkspaceData;
   userId: string | null;
-  /** Whose binding this flow edits. The USER principal on /agents/mandates;
+  /** Whose binding this flow edits. The USER principal on /mandates;
    * the ORG principal on the org-scoped route (org fixed by the route, the
    * server's is_org_admin gate enforces authority). */
   principal: WorkspacePrincipal;

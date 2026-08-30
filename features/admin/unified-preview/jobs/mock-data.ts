@@ -3,7 +3,7 @@
  *
  * NON-FUNCTIONAL PREVIEW. Nothing here reads or writes the database. These
  * types are the deliverable as much as the pixels are: they are shaped like
- * THE NEW MODEL (common-docs/systems/agents/mandates/THE-MODEL.md), not like
+ * THE NEW MODEL (common-docs/systems/mandates/THE-MODEL.md), not like
  * today's `mandate.definition` row.
  *
  * What is new versus today:

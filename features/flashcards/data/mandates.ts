@@ -3,7 +3,7 @@
 // Mandate keys for the Flashcards AI lanes. These are MANDATE KEYS, not agent
 // ids: each key resolves LIVE (system default → org binding → user binding) to
 // whatever agent the DATABASE currently binds — agent identity never lives in
-// code. Swap the agent behind any lane at /agents/mandates (or the admin
+// code. Swap the agent behind any lane at /mandates (or the admin
 // console at /administration/mandates); no code change, no deploy.
 // See features/mandates/FEATURE.md.
 

@@ -630,7 +630,7 @@ const nextConfig = {
       // before the rename points at the old paths.
       {
         source: "/agents/slots",
-        destination: "/agents/mandates",
+        destination: "/mandates",
         permanent: true,
       },
       {
@@ -641,6 +641,36 @@ const nextConfig = {
       {
         source: "/api/admin/agent-slots/agent-identity",
         destination: "/api/admin/mandates/agent-identity",
+        permanent: true,
+      },
+      // Mandates detached from the agent namespace (2026-08-30): a mandate is
+      // fulfilled by an Agent, an Orchestra, or a Workflow, so it is no longer
+      // a child of /agents. Permanent redirects because every doc, handoff,
+      // bookmark, and sibling repo written before the detach points at the old
+      // paths. Order matters: the `/new` rule precedes the `[mandateKey]` one.
+      {
+        source: "/agents/mandates",
+        destination: "/mandates",
+        permanent: true,
+      },
+      {
+        source: "/agents/mandates/new",
+        destination: "/administration/mandates/new",
+        permanent: true,
+      },
+      {
+        source: "/agents/mandates/:mandateKey",
+        destination: "/mandates/:mandateKey",
+        permanent: true,
+      },
+      {
+        source: "/administration/agents/mandates",
+        destination: "/administration/mandates",
+        permanent: true,
+      },
+      {
+        source: "/administration/agents/mandates/:path*",
+        destination: "/administration/mandates/:path*",
         permanent: true,
       },
       // Short alias for the phone scanner surface (canonical: /tools/scanner).

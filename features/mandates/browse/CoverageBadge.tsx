@@ -3,7 +3,7 @@
 // features/mandates/browse/CoverageBadge.tsx
 //
 // THE PER-ROW COVERAGE BADGE — the scoreboard the admin console already shows,
-// brought to the two lists people actually browse (/agents/mandates and an
+// brought to the two lists people actually browse (/mandates and an
 // organization's mandate settings).
 //
 //   met                    quiet. Nothing is drawn — a badge on every one of

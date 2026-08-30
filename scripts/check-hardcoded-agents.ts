@@ -10,7 +10,7 @@
  * platform actually runs. The legal form is a mandate — `useMandate` /
  * `launchMandate` / `launchAgentExecution({ mandateKey })` — resolved at run
  * time. Sibling guard for prompts: scripts/check-hardcoded-prompts.ts. This is
- * the frontend half of common-docs/systems/agents/mandates/ROLLOUT.md row X4.
+ * the frontend half of common-docs/systems/mandates/ROLLOUT.md row X4.
  *
  * WHAT THIS FLAGS: a v4 UUID literal under the scanned dirs that is USED AS AN
  * AGENT ID — either (a) the literal sits in an identifier/property whose name

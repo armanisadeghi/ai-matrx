@@ -147,7 +147,7 @@ export function WarRoomAllView() {
       // Deep-linked to the `war_room` domain (the bare list is 331 mandates).
       icon: "BrainCircuit",
       label: "War Room agents",
-      onPress: () => router.push("/agents/mandates?feature=war_room"),
+      onPress: () => router.push("/mandates?feature=war_room"),
     },
   ];
 

@@ -4,7 +4,7 @@
  * doctrine. Loud: `error` set means the mandate could not resolve; the consumer
  * disables its affordance and shows the message, never falls back to a
  * hardcoded agent id. Re-resolves automatically when the mandate's cache is
- * invalidated (a binding was saved/removed via the mandate picker or /agents/mandates). */
+ * invalidated (a binding was saved/removed via the mandate picker or /mandates). */
 
 import { useEffect, useState } from "react";
 import {

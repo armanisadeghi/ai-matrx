@@ -88,7 +88,7 @@ The rule, and why it is not a style preference:
   OPENS its window; a `<Link>` to that record's route from such a surface is the regression
   this law exists to stop. The route keeps existing for browsing the whole list.
 - Worked example: `MandateWindow` (`windows/mandates/MandateWindow.tsx`) — the mandate twin of
-  `AgentSettingsWindow`. Its Yours pane IS `MandateOverridePanel` (what `/agents/mandates`
+  `AgentSettingsWindow`. Its Yours pane IS `MandateOverridePanel` (what `/mandates`
   composes) and its Admin pane IS `MandateDetailView` (the console drawer, whole). The
   window's own code is the shell only: which mandates are in scope (the surface's own + its
   family's), which is selected, which pane shows, and ONE scoped load
@@ -120,7 +120,7 @@ The rule, and why it is not a style preference:
 
 - 2026-08-26 — **`mandateWindow` — mandates handled in place.** Every mandate NAME on a
   working surface (the Agents menu's "AI doing jobs here" rows) now opens
-  this panel over the page instead of navigating to `/agents/mandates` or the admin console;
+  this panel over the page instead of navigating to `/mandates` or the admin console;
   both `<Link>`s are gone. Two panes, both canonical components: **Yours** (everyone) is
   `MandateOverridePanel` + `MandateResolutionRibbon` — principal chips, agent swap, settings
   overrides, consumption map, copy & customize — with `MandateNotesPanel` beside it for

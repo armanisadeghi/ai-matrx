@@ -6,7 +6,7 @@
  * Composed in two places by design, never forked:
  *   • at the moment of truth — the Agents header menu's mandate row, wherever
  *     an agent is doing a job on the page you are standing on (`compact`);
- *   • at review time — the mandate console drawer and `/agents/mandates`.
+ *   • at review time — the mandate console drawer and `/mandates`.
  *
  * What it stores is exactly what Arman asked for: the text, when, and who. The
  * surface it was written on and the agent holding the mandate at the time ride

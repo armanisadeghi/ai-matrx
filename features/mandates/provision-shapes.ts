@@ -19,7 +19,7 @@
  * **everything consumed must be offered** — unused offered values are NORMAL,
  * never a warning. Server truth: aidream
  * `aidream/services/mandates/provisions.py`; rulings:
- * `common-docs/systems/agents/mandates/FEATURE.md` (2026-08-22).
+ * `common-docs/systems/mandates/FEATURE.md` (2026-08-22).
  *
  * ── LOCAL DB-TYPE NOTE — the wave-1 columns predate the generated types ─────
  * `mandate.provision_key/pins/pinned_context` and `mandate_binding

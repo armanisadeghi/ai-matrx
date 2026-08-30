@@ -88,7 +88,7 @@ export async function fetchProvision(
 /**
  * Fetch MANY provisions in one round trip — the list-surface read.
  *
- * `/agents/mandates` renders hundreds of mandates, most carrying a
+ * `/mandates` renders hundreds of mandates, most carrying a
  * `provision_key`; one `fetchProvision` per card would be a 200+ request
  * storm. Keys already cached are served from the cache and only the misses
  * are queried, in chunks (PostgREST `in.(...)` rides the URL, so an unbounded

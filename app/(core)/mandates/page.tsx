@@ -4,10 +4,10 @@ import { legacyFeatureRedirect } from "@/features/mandates/browse/url-compat";
 import { MandatesBrowsePage } from "@/features/mandates/browse/MandatesBrowsePage";
 
 /**
- * /agents/mandates — every named job the platform delegates to an agent, on
+ * /mandates — every named job the platform delegates to an agent, on
  * the canonical entity-list shell (2026-08-26 rework; vision in
  * features/mandates/FEATURE.md). Manage a mandate in place (row click →
- * window panel) or on its dedicated route (/agents/mandates/[mandateKey]).
+ * window panel) or on its dedicated route (/mandates/[mandateKey]).
  * Admin pin management lives at /administration/mandates.
  *
  * Legacy deep links (`?feature=<domain>`, the pre-rework contract used by 25+

@@ -117,7 +117,7 @@ export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 // (studio_documents) via ctx_patch.
 //
 // At RUN TIME the assistant is decided by the Mandate below (system default →
-// the user's binding at /agents/mandates), resolved via `resolveMandate` in the
+// the user's binding at /mandates), resolved via `resolveMandate` in the
 // thunks and `useMandate` in the settings picker; the surface-config
 // `assistant` role (per-user/org surface choice) still wins above it.
 export const TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY =

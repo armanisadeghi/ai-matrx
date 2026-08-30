@@ -10,10 +10,10 @@
  * rows, the drift strip, the right-click menu, `?mandate=` — lands on the
  * SAME workspace page the rest of the product uses
  * (`/administration/mandates/[key]`, the admin shell around the very
- * same `MandateWorkspace` as `/agents/mandates/[key]`). The old side-panel
+ * same `MandateWorkspace` as `/mandates/[key]`). The old side-panel
  * drawer is no longer on any path from here.
  *
- * System-of-record: common-docs/systems/agents/mandates/FEATURE.md.
+ * System-of-record: common-docs/systems/mandates/FEATURE.md.
  */
 
 import React, {

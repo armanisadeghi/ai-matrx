@@ -18,7 +18,7 @@ import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
  *  - Toggle buttons on the left (icons reflect collapsed state).
  *  - Title sits inline next to the toggles; the assist strip renders nothing
  *    when there are no chips, so the chrome stays compact.
- *  - Trailing "Task agents" icon is THE DOOR to /agents/mandates?feature=tasks.
+ *  - Trailing "Task agents" icon is THE DOOR to /mandates?feature=tasks.
  */
 export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();

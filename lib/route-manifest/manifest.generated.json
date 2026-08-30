@@ -1344,19 +1344,19 @@
       "source": "app/(core)/agents/compare/page.tsx"
     },
     {
-      "pattern": "/agents/mandates",
+      "pattern": "/mandates",
       "status": "live",
-      "source": "app/(core)/agents/mandates/page.tsx"
+      "source": "app/(core)/mandates/page.tsx"
     },
     {
-      "pattern": "/agents/mandates/[mandateKey]",
+      "pattern": "/mandates/[mandateKey]",
       "status": "live",
-      "source": "app/(core)/agents/mandates/[mandateKey]/page.tsx"
+      "source": "app/(core)/mandates/[mandateKey]/page.tsx"
     },
     {
-      "pattern": "/agents/mandates/new",
+      "pattern": "/mandates/new",
       "status": "live",
-      "source": "app/(core)/agents/mandates/new/page.tsx"
+      "source": "app/(core)/mandates/new/page.tsx"
     },
     {
       "pattern": "/agents/new",

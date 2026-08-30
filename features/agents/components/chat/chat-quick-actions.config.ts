@@ -6,7 +6,7 @@
  * MANDATE (`agent.mandate.mandate_key`, resolved at render time via
  * `useMandateSet` — system default → the user's binding) and the `label` is
  * what the user sees. No agent id lives here: swapping what a chip opens is a
- * rebind on `/agents/mandates`, never a code change. A chip whose mandate
+ * rebind on `/mandates`, never a code change. A chip whose mandate
  * cannot resolve (not yet seeded, disabled) renders DISABLED with the reason —
  * never a silent fallback to a UUID.
  *
@@ -27,7 +27,7 @@ export interface ChatQuickAction {
  * `features/mandates` (`resolveMandate` / `useMandate` /
  * `resolveMandateServer`). Swapping the "default feel" of the chat surface
  * is a rebind in the admin mandate console (or a per-user binding on
- * `/agents/mandates`), never a code change.
+ * `/mandates`), never a code change.
  */
 export const DEFAULT_NEW_CHAT_MANDATE_KEY = "chat.default_new_chat";
 

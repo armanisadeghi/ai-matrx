@@ -147,7 +147,7 @@ level (`agent.mandate.auto_context_disabled`); the effective value is
 can never reopen what the Holder refused — the same rule `max_inline_chars`
 already follows as `min(agent, surface)`, extended from _how much_ to _whether
 at all_. Cross-repo system of record:
-`/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` § Context.
+`/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` § Context.
 
 ⚠️ **The DB column is still `context_slots`.** The client reads
 `agent.definition` directly, so the column flips to `context_policies` in

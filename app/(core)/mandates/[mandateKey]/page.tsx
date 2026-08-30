@@ -5,7 +5,7 @@ import { MandatesHeader } from "@/features/mandates/components/MandatesHeader";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 
 /**
- * /agents/mandates/[mandateKey] — ONE mandate's workspace on its dedicated
+ * /mandates/[mandateKey] — ONE mandate's workspace on its dedicated
  * route. The segment accepts the mandate KEY (podcast.multihost_script — dots
  * are legal path characters) or the row UUID (generic EntityRef doors pass
  * ids). The window-panel twin wraps the SAME MandateWorkspace — identical

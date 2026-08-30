@@ -82,5 +82,5 @@ export const HEALTH_META: Record<
 
 /** The dedicated per-mandate route (dots are legal path segment characters). */
 export function mandateRoute(row: Pick<MandateListRow, "mandate_key">): string {
-  return `/agents/mandates/${encodeURIComponent(row.mandate_key)}`;
+  return `/mandates/${encodeURIComponent(row.mandate_key)}`;
 }

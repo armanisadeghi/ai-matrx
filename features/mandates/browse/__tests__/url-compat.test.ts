@@ -20,8 +20,8 @@ describe("mandates browse url-compat", () => {
   });
 
   it("bare href when no feature", () => {
-    expect(mandatesBrowseHref()).toBe("/agents/mandates");
-    expect(mandatesBrowseHref("  ")).toBe("/agents/mandates");
+    expect(mandatesBrowseHref()).toBe("/mandates");
+    expect(mandatesBrowseHref("  ")).toBe("/mandates");
   });
 
   it("redirects the legacy form onto the canonical form", () => {

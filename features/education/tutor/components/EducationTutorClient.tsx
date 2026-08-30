@@ -133,7 +133,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
         </p>
         <p className="max-w-md text-xs text-muted-foreground">
           The {TUTOR_MANDATE_KEY} mandate could not resolve: {error}. Fix its
-          binding at /agents/mandates.
+          binding at /mandates.
         </p>
       </div>
     );

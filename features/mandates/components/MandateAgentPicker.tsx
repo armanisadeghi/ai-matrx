@@ -18,7 +18,7 @@
  * authority and its 422 detail is shown VERBATIM. Saving invalidates the
  * client mandate cache, so any mounted useMandate consumer re-resolves
  * automatically. The full editor (settings-only overrides, org bindings)
- * lives at /agents/mandates.
+ * lives at /mandates.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -433,7 +433,7 @@ export function MandateAgentPicker({
               Settings-only overrides (model, thinking level) and org-wide
               overrides live in{" "}
               <Link
-                href="/agents/mandates"
+                href="/mandates"
                 className="underline underline-offset-2 hover:text-foreground"
               >
                 Agent steps

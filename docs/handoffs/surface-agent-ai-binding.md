@@ -44,5 +44,5 @@ Entry: a second action in the surface Agents chrome panel (`SurfaceAgentsPanelIm
 ## Resources
 
 - Quick-bind chain: `features/surfaces/FEATURE.md` Change Log 2026-08-16/17 entries.
-- Mandate system SoR: `common-docs/systems/agents/mandates/FEATURE.md`; variable binding SoR: `common-docs/systems/agents/agent-variable-binding/FEATURE.md`.
+- Mandate system SoR: `common-docs/systems/mandates/FEATURE.md`; variable binding SoR: `common-docs/systems/agents/agent-variable-binding/FEATURE.md`.
 - Mapper agent run cost observed: ~$0.012 / proposal (gemini-3.1-pro, ~4.3k tokens).

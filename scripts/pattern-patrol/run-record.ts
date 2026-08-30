@@ -252,19 +252,20 @@ function validateEventRequirements(
         reconciliation.replacementCandidateSha ?? "",
         "rejected reconciliation replacement candidate SHA",
       );
-      const certifying = priorEvents.find(
-        (prior) =>
-          prior.sequence > escaped.sequence &&
-          prior.state === "certifying" &&
-          prior.evidence.includes(`candidate:${reconciliation.candidateSha}`),
-      );
       const rejected = priorEvents.find(
-        (prior) =>
-          certifying &&
-          prior.sequence === certifying.sequence + 1 &&
-          prior.state === "rejected",
+        (prior, index) => {
+          if (prior.state !== "rejected") return false;
+          const attempt = priorEvents[index - 1];
+          return (
+            attempt?.sequence > escaped.sequence &&
+            attempt.state === "certifying" &&
+            attempt.evidence.includes(
+              `candidate:${reconciliation.candidateSha}`,
+            )
+          );
+        },
       );
-      if (!certifying || !rejected) {
+      if (!rejected) {
         throw new Error(
           "rejected reconciliation requires later exact-candidate certification attempt and rejection",
         );

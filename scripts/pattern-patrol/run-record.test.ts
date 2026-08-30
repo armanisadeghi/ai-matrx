@@ -338,7 +338,18 @@ describe("Pattern Patrol permanent run record", () => {
     expect(validatePatrolRunRecord(reconciled)).toEqual([]);
   });
 
-  it("refuses to borrow a later candidate's rejection for an escaped candidate", () => {
+  it.each([
+    {
+      name: "accepts a blocked exact attempt followed by a rejected exact retry",
+      retryCandidate: CANDIDATE,
+      accepted: true,
+    },
+    {
+      name: "refuses to borrow a later candidate's rejection",
+      retryCandidate: "c".repeat(40),
+      accepted: false,
+    },
+  ])("$name", ({ retryCandidate, accepted }) => {
     let record = appendPatrolRunEvent(run(), {
       state: "fixing",
       at: "2026-08-14T12:01:00.000Z",
@@ -383,8 +394,8 @@ describe("Pattern Patrol permanent run record", () => {
       state: "certifying",
       at: "2026-08-14T12:06:00.000Z",
       actor: "other-certifier",
-      summary: "Reviewing a different candidate",
-      evidence: [`candidate:${"c".repeat(40)}`],
+      summary: "Reviewing a retry candidate",
+      evidence: [`candidate:${retryCandidate}`],
     });
     record = appendPatrolRunEvent(record, {
       state: "rejected",
@@ -443,7 +454,7 @@ describe("Pattern Patrol permanent run record", () => {
       summary: "Replacement delivery closed",
     });
 
-    expect(() =>
+    const reconcile = () =>
       appendPatrolRunEvent(record, {
         state: "reconciled",
         at: "2026-08-14T12:14:00.000Z",
@@ -456,8 +467,13 @@ describe("Pattern Patrol permanent run record", () => {
           replacementCandidateSha: replacement,
           checks: ["claimed rejection", "replacement delivered"],
         },
-      }),
-    ).toThrow("exact-candidate certification attempt and rejection");
+      });
+
+    if (accepted) expect(reconcile).not.toThrow();
+    else
+      expect(reconcile).toThrow(
+        "exact-candidate certification attempt and rejection",
+      );
   });
 
   it("refuses a certifier identity that also performed the fix", () => {

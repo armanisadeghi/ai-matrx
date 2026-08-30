@@ -3,7 +3,7 @@
 // features/mandates/workspace/MandateWorkspace.tsx
 //
 // THE mandate workspace — the ONE core component every host wraps:
-//   · the dedicated route  app/(core)/agents/mandates/[mandateKey]
+//   · the dedicated route  app/(core)/mandates/[mandateKey]
 //   · the admin route      app/(admin)/administration/mandates/[mandateKey]
 //   · the window panel     features/window-panels/windows/mandates/MandateWindow
 // Identical functionality by construction (Arman's rule 3, 2026-08-26);
@@ -232,7 +232,7 @@ export function MandateWorkspace({
             </code>
             {host === "window" ? (
               <Link
-                href={`/agents/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
+                href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
                 className="inline-flex items-center gap-1 text-[11.5px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               >
                 <Expand className="h-3 w-3" />

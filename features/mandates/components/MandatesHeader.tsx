@@ -2,7 +2,7 @@
 
 import { Replace } from "lucide-react";
 
-/** Shell header center content for /agents/mandates — single-view route, small
+/** Shell header center content for /mandates — single-view route, small
  * identity only (per the core-route-headers doctrine). */
 export function MandatesHeader() {
   return (

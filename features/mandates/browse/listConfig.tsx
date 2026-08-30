@@ -2,7 +2,7 @@
 
 // features/mandates/browse/listConfig.tsx
 //
-// /agents/mandates expressed as an entity-list config — the mandates browse
+// /mandates expressed as an entity-list config — the mandates browse
 // surface of the 2026-08-26 rework (Arman's vision: canonical list template,
 // real preset filters, three layouts; the detail work lives in the mandate
 // workspace, reached via the window panel (row click) or the dedicated route
@@ -93,7 +93,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   copy: {
     label: "Mandate",
     listLabel: "Mandates",
-    location: "/agents/mandates",
+    location: "/mandates",
     rowKind: "mandate-browse-row",
     listKind: "mandate-browse-list",
     rowDescription:

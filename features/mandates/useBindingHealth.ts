@@ -9,7 +9,7 @@
  * contract AND its Provision are owned by CODE — `sync_declared_mandates` /
  * `sync_declared_provisions` rewrite them on every aidream boot. So a binding
  * that was valid on Monday can stop fitting on Wednesday, and nothing told the
- * person who made it. Until this hook, `/agents/mandates` mirrored only the
+ * person who made it. Until this hook, `/mandates` mirrored only the
  * runtime's PRECEDENCE, so a binding the server had stopped honouring still
  * rendered as "Yours".
  *

@@ -2,7 +2,7 @@
 
 // features/mandates/browse/MandatesBrowsePage.tsx
 //
-// /agents/mandates — the mandates registry on the canonical entity-list shell
+// /mandates — the mandates registry on the canonical entity-list shell
 // (2026-08-26 rework). Everything mandate-specific lives in ./listConfig.tsx;
 // this file is the config plus this page's slots. No prose header — the page
 // title bar (PageHeader) carries the identity, the list carries the work.

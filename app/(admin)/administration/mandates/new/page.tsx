@@ -3,7 +3,7 @@ import { NewMandatePage } from "@/features/mandates/authoring/NewMandatePage";
 /**
  * /administration/mandates/new — create a mandate before its
  * intelligence exists (origin='user'): descriptive inputs, the goal, the
- * output shape. Moved here from `/agents/mandates/new` on 2026-08-29: creating
+ * output shape. Moved here from `/mandates/new` on 2026-08-29: creating
  * a mandate declares a job for the whole platform, so it is admin work. Auth +
  * admin gating is the `(admin)` layout's job; POST /mandates is
  * `require_super_admin` server-side.

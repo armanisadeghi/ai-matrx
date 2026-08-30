@@ -23,7 +23,7 @@
  *
  * WHAT THIS FLAGS: a file that runs a mandate — `useMandateRunner`,
  * `runMandate(`, `launchMandate(`, `resolveMandate(`, `useMandate(`, a
- * `mandateKey:` literal, or a POST to `/agents/mandates/{key}` — and which
+ * `mandateKey:` literal, or a POST to `/mandates/{key}` — and which
  * neither registers the job at runtime nor sits in a feature whose manifest
  * declares that job as an agent role.
  *

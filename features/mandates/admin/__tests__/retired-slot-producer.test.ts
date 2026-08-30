@@ -42,7 +42,7 @@ describe("retired Mandate producer contract", () => {
 
     expect(redirects).toContainEqual({
       source: "/agents/slots",
-      destination: "/agents/mandates",
+      destination: "/mandates",
       permanent: true,
     });
     expect(redirects).toContainEqual({

@@ -20,7 +20,7 @@ import {
 
 /**
  * The Mandate that decides WHICH agent writes video metadata (system default:
- * "Marketing Video Metadata Writer"; users rebind it at `/agents/mandates`).
+ * "Marketing Video Metadata Writer"; users rebind it at `/mandates`).
  * Declared server-side in aidream `services/mandates/client_mandates.py`; its
  * Provision offers `video_context` + `site_context`. The launch thunk resolves
  * it — never resolve here and pass an `agentId` (that drops the binding's

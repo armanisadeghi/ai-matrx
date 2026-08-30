@@ -1,5 +1,5 @@
 /**
- * THE DOOR LAW — the tokens the /agents/mandates and agent-shortcuts surfaces
+ * THE DOOR LAW — the tokens the /mandates and agent-shortcuts surfaces
  * name must actually resolve to doors through EntityRef:
  *
  *   agent          → registry route (/agents/{id}) + peek + new tab

@@ -21,7 +21,7 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
   const openSourceEntry = useOpenSourceEntry();
   const openRenderPreview = useOpenRenderPreview();
   const bootstrappedRef = useRef(false);
-  // The editor's coding agent is a MANDATE — swappable per user at /agents/mandates
+  // The editor's coding agent is a MANDATE — swappable per user at /mandates
   // and rebindnable in the admin console without a deploy.
   const { mandate: promptAppDev } = useMandate(PROMPT_APP_DEV_MANDATE);
   const basePath = `/agent-apps/${app.id}`;

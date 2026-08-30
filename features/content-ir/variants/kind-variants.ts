@@ -71,7 +71,7 @@ export interface KindPresentationVariant {
  * to a different platform meaning — `_context` is everything the LLM receives,
  * `_ref` is an entity pointer carrying no content. Reusing either for a
  * rendering blurs a distinction that is currently sharp.
- * See common-docs `systems/agents/mandates/VARIANT-NAMING.md` §Banned words.
+ * See common-docs `systems/mandates/VARIANT-NAMING.md` §Banned words.
  */
 export const BANNED_VARIANT_NAMES: readonly string[] = ["_context", "_ref"];
 

@@ -20,7 +20,7 @@ export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 // context it receives, and that it can list/read the user's notes, tasks,
 // projects and transcripts via the `data` tool. Admins rebind the mandate at
 // /administration/mandates; a user overrides it for themselves at
-// /agents/mandates or from the MandateAgentPicker in the tier's header.
+// /mandates or from the MandateAgentPicker in the tier's header.
 //
 // THE PERSISTED-ID DOCTRINE (why this migration needed care):
 //   1. A mandate resolves what a NEW conversation is CREATED with. It never

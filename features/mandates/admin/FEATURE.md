@@ -1,6 +1,6 @@
 # Mandates admin console
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/mandates/FEATURE.md` — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` — read it before touching this feature in ANY repo.
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-variable-binding/FEATURE.md` — read it before touching this feature in ANY repo. It governs how a mandate's variables actually reach the agent (the mapping vocabulary, the scenario matrix, and why the UI must read live code truth instead of the `contract` column).
 
@@ -25,9 +25,9 @@ coverage board's named rows, the drift strip, the right-click menu and the legac
 `features/mandates/browse/url-compat.ts` — never hand-build that URL). The file is
 kept, not deleted.
 
-**And management LIVES here.** The user surface `/agents/mandates` is browse/view + the
+**And management LIVES here.** The user surface `/mandates` is browse/view + the
 principal's own override only — no goal editing, no draft-input editing, no run panel, no
-New button. Mandate creation moved here from `/agents/mandates/new`. The server agrees:
+New button. Mandate creation moved here from `/mandates/new`. The server agrees:
 `POST /mandates`, `PATCH /mandates/{key}/goal` and `/draft-inputs` are
 `require_super_admin` (aidream `304fe1848`). User-facing half:
 `features/mandates/FEATURE.md`.
@@ -121,7 +121,7 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 - 2026-08-29 — **ONE mandate UI, and management is admin-side.** Two mandate experiences
   existed: this console's side-panel drawer and the rebuilt triad workspace on
-  `/agents/mandates/[key]`. Arman lives here and kept seeing the older one. Now the console
+  `/mandates/[key]`. Arman lives here and kept seeing the older one. Now the console
   is the LIST only — coverage board, goal/coverage/health columns, filters, enable/disable,
   Copy for AI, and a New Mandate button — and every door out of it (row click, the identity
   column's real link, the coverage board's named rows, the drift strip, the right-click

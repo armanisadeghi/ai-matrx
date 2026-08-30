@@ -38,7 +38,7 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 - **Converter generator:** `features/education/convert/generators/memoryAid.ts`.
 - **Proactive surface:** `MemoryAidButton` mounted in `features/flashcards/components/study/StudyDeck.tsx` (opt-in prop `enableMemoryAids`, default on; nothing fires until tapped).
 
-## Mandates (keys in `mandates.ts`; the DB decides which agent fulfils each — swap at `/agents/mandates`)
+## Mandates (keys in `mandates.ts`; the DB decides which agent fulfils each — swap at `/mandates`)
 
 - **`education.memory_generate`** (Study Memory Aid Generator) — `source_content, title, focus` → `memory_aid` envelope `{ __kind, title, strategy_note, mnemonics[], analogies[], memory_palace }`. Grounded strictly in the supplied material. Powers the tool + the converter target.
 - **`education.memory_hint`** (Flashcard Memory Hint) — `front, back, topic` → one `memory_hint` `{ __kind, technique, aid, explanation }`. Cheap/fast; powers the proactive StudyDeck affordance.

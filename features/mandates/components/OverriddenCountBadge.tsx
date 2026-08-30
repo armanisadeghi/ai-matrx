@@ -3,7 +3,7 @@
 /**
  * OverriddenCountBadge — the canonical "N of M overridden" pill for any
  * surface that lists mandates (or mandate-backed roles). Primary-toned when
- * at least one override is live, muted otherwise. Consumed by /agents/mandates
+ * at least one override is live, muted otherwise. Consumed by /mandates
  * and research's per-topic agents page.
  */
 

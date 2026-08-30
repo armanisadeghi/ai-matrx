@@ -75,7 +75,7 @@ export const PAGE_IMAGE_MANDATE_KEY = "marketing.page_image";
  * The premium single-run job: prompt-engineers AND renders in one run —
  * provision offers `intent_or_content`, `style`, `count`. Deliberately NOT
  * the default path, and currently SEEDLESS (declared, no system default):
- * until an agent is bound at /agents/mandates the path refuses with a typed
+ * until an agent is bound at /mandates the path refuses with a typed
  * `step: "mandate"` outcome naming this key — it never silently falls back
  * to the two-step pipeline.
  */
@@ -368,7 +368,7 @@ export function generatePageImage(args: GeneratePageImageArgs) {
 
 /** Loud, step-attributed outcome — the card toasts WHICH step failed.
  *  `step: "mandate"` = the job's mandate could not resolve (unbound / disabled),
- *  so NOTHING ran; `mandateKey` names the job to bind at /agents/mandates. */
+ *  so NOTHING ran; `mandateKey` names the job to bind at /mandates. */
 export type PageImageResult =
   | { ok: true; fileId: string }
   | { ok: false; step: "prompt" | "image"; message: string }
@@ -392,7 +392,7 @@ async function mandateGate(
       ok: false,
       step: "mandate",
       mandateKey,
-      message: `No agent is bound to the "${mandateKey}" job — bind one at /agents/mandates. ${
+      message: `No agent is bound to the "${mandateKey}" job — bind one at /mandates. ${
         error instanceof Error ? error.message : ""
       }`.trim(),
     };

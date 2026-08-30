@@ -2,7 +2,7 @@
 
 // features/mandates/browse/useCoverageList.tsx
 //
-// What both mandate LISTS (/agents/mandates and an organization's mandate
+// What both mandate LISTS (/mandates and an organization's mandate
 // settings) share to wear coverage badges: ONE fetch, ONE filter state, and the
 // service wired to narrow the page server-side when a badge is clicked.
 //

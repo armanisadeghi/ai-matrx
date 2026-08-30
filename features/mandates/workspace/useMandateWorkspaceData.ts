@@ -3,7 +3,7 @@
 // features/mandates/workspace/useMandateWorkspaceData.ts
 //
 // The ONE data path for the mandate workspace — the single-mandate load both
-// hosts (the /agents/mandates/[mandateKey] route and MandateWindow's Yours
+// hosts (the /mandates/[mandateKey] route and MandateWindow's Yours
 // pane) share, so route and window can never drift (Arman's rule 3).
 //
 // Loads, targeted (never the whole registry):

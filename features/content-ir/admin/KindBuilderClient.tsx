@@ -39,7 +39,7 @@ const KIND_ARCHITECT_MANDATE = "content_ir.kind_architect";
 
 export default function KindBuilderClient() {
   // Which agent builds a kind is a MANDATE, not a hardcoded id — swappable from
-  // the admin console or an override at /agents/mandates, no deploy.
+  // the admin console or an override at /mandates, no deploy.
   const { mandate: architect, error: architectError } = useMandate(KIND_ARCHITECT_MANDATE);
   const router = useRouter();
   const openRun = useOpenAgentRunWindow();
