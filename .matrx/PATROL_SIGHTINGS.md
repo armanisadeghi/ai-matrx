@@ -40,7 +40,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 - [x] P4 | `features/applet/**` (ModernGlass.tsx, StyledComponents.tsx) | moot — the whole applet/app-builder feature was deleted 2026-08-13 (Arman); both files are gone | resolved-by-deletion | 2026-08-13
 - [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | prior manual findings were resolved before the 2026-08-13 patrol by canonical `confirm({...})` and `TextInputDialog` replacements in `460ff2dcc`; the full scope-aware detector is clean in `v0.4.561` | resolved-before-run | 2026-08-13
 - [x] P7 | `features/admin/taxonomy/TaxonomyAdminClient.tsx`, `features/content-ir/admin/KindVariantsTab.tsx` | the 2026-08-29 full pass found two new `window.confirm` calls; both now await the canonical destructive confirm host, exact candidate `f70638875c` is independently certified and contained in release `v0.4.1441` | fixed-certified-delivered | 2026-08-30
-- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | structural-novelty pass repaired 19 callsites across 17 files in two independently certified and delivered batches; 68 mapping/skeleton cases remain open with exact missing evidence | fixed-certified-delivered; backlog-open; no-human-approval | 2026-08-29
+- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | the first 15-file eradication tranche is mapped, repaired, corrected after a concrete adversarial rejection, and independently certified as exact candidate `5d46322225`; it is on `origin/main` and queued for the serialized release lane; 53 mapping/skeleton cases remain | fixed-certified-delivery-queued; backlog-open; no-human-approval | 2026-08-30
 
 ## Cleared
 

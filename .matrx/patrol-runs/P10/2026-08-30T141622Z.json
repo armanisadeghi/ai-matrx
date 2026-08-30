@@ -138,6 +138,56 @@
       ],
       "previousEventHash": "6a305d47a9c11d7cd133efa7e7e42c96defa9c0464bf28830dc0944043a0cb22",
       "eventHash": "03362ee5812f9f44956336c62e89c82970a7bc259a9577e36d4827e6ff4387e9"
+    },
+    {
+      "sequence": 10,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:37:56.345Z",
+      "actor": "/root",
+      "summary": "Authority retry machinery repaired; freezing replacement candidate dd870bc58d that contains product and lifecycle fixes.",
+      "evidence": [
+        "candidate:dd870bc58d71e02d1781e8c6ee53216a03f3d69b",
+        "authority-retry-tests:2-pass"
+      ],
+      "blocker": {
+        "prerequisite": "Record escaped replacement candidate and independently recertify"
+      },
+      "previousEventHash": "03362ee5812f9f44956336c62e89c82970a7bc259a9577e36d4827e6ff4387e9",
+      "eventHash": "5860af1dfd062bb2aa311a484833a835909250aa86c438c3a5c0ccc3889e785c"
+    },
+    {
+      "sequence": 11,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:37:56.966Z",
+      "actor": "/root",
+      "summary": "Recorded replacement candidate dd870bc58d as escaped delivery with immutable prior history preserved.",
+      "evidence": [
+        "historical input_kind:null regression test passes",
+        "focused-product-tests:59-pass",
+        "authority-retry-tests:2-pass",
+        "full-type-check:PASS"
+      ],
+      "escape": {
+        "candidateSha": "dd870bc58d71e02d1781e8c6ee53216a03f3d69b",
+        "integratedSha": "dd870bc58d71e02d1781e8c6ee53216a03f3d69b",
+        "release": "integration-only; release not requested",
+        "reason": "The corrected product candidate and required authority retry machinery were already on origin/main before recertification; the prior rejected candidate authority is retained as first-parent history and this replacement as merge ancestry."
+      },
+      "previousEventHash": "5860af1dfd062bb2aa311a484833a835909250aa86c438c3a5c0ccc3889e785c",
+      "eventHash": "c888dbe76416d57e0e2ede1966d1670ccabcfa7103ccc9e0559a36064d507b7d"
+    },
+    {
+      "sequence": 12,
+      "state": "certifying",
+      "at": "2026-08-30T14:38:03.813Z",
+      "actor": "/root",
+      "summary": "Frozen replacement candidate dd870bc58d for independent adversarial recertification.",
+      "evidence": [
+        "prior concrete rejection repaired",
+        "authority branch preserves old and replacement candidates"
+      ],
+      "previousEventHash": "c888dbe76416d57e0e2ede1966d1670ccabcfa7103ccc9e0559a36064d507b7d",
+      "eventHash": "9297ed6358c865e8f3dbde0dcdd254e603a8e74171127a885e34a64ee30d0d64"
     }
   ]
 }

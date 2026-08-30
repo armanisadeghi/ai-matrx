@@ -117,6 +117,24 @@
       },
       "previousEventHash": "978d481028a55b1a309bab200e5043d870d80dfa227dfcfa80c19579cf9d9239",
       "eventHash": "926029bea7b799e41397c4291cbed6359b6bfa9f63afa68d3edc04d9968bd32f"
+    },
+    {
+      "sequence": 9,
+      "state": "delivered",
+      "at": "2026-08-30T14:37:27.869Z",
+      "actor": "codex-root",
+      "summary": "Certified P1 wave integrated to origin/main; serialized fleet release remains queued.",
+      "evidence": [
+        "Candidate is an ancestor of integration merge and origin/main."
+      ],
+      "delivery": {
+        "candidateSha": "6849bb0faca2f93d64a04f6c30a0c365df3e95ac",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260830T141853Z",
+        "integratedSha": "91ca1392cca66ddbf3833158658cffc91d6e5983",
+        "release": "release-queued"
+      },
+      "previousEventHash": "926029bea7b799e41397c4291cbed6359b6bfa9f63afa68d3edc04d9968bd32f",
+      "eventHash": "17c2d75a552a64c8cd5cb557ac54e475866db47b072021f074172de14b128213"
     }
   ]
 }
