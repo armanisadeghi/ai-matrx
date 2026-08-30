@@ -24,6 +24,8 @@ jest.mock("@/lib/diagnostics/capturePythonClientError", () => ({
 import { capturePythonClientError } from "@/lib/diagnostics/capturePythonClientError";
 import { getJson, postJson, requestRaw } from "@/lib/python-client";
 
+const TEST_ORG_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+
 const captureMock = jest.mocked(capturePythonClientError);
 
 describe("python-client getJson transient recovery", () => {
@@ -49,6 +51,7 @@ describe("python-client getJson transient recovery", () => {
     await expect(
       getJson<{ ok: boolean }>("/files/test/asset", {
         baseUrlOverride: "https://files.example.test",
+        organizationId: TEST_ORG_ID,
       }),
     ).resolves.toMatchObject({ data: { ok: true } });
 
@@ -68,6 +71,7 @@ describe("python-client getJson transient recovery", () => {
     await expect(
       getJson("/files/test/asset", {
         baseUrlOverride: "https://files.example.test",
+        organizationId: TEST_ORG_ID,
       }),
     ).rejects.toThrow("Failed to fetch");
 
@@ -97,6 +101,7 @@ describe("python-client caller-owned error classification", () => {
         {},
         {
           baseUrlOverride: "https://server.example.test",
+          organizationId: TEST_ORG_ID,
           captureErrors: false,
         },
       ),
@@ -121,6 +126,7 @@ describe("python-client caller-owned error classification", () => {
         {},
         {
           baseUrlOverride: "https://server.example.test",
+          organizationId: TEST_ORG_ID,
         },
       ),
     ).rejects.toMatchObject({ status: 404 });
@@ -147,6 +153,7 @@ describe("python-client caller-owned error classification", () => {
         {},
         {
           baseUrlOverride: "https://server.example.test",
+          organizationId: TEST_ORG_ID,
           expectedErrorStatuses: [403],
         },
       ),
@@ -169,6 +176,7 @@ describe("python-client caller-owned error classification", () => {
         {},
         {
           baseUrlOverride: "https://server.example.test",
+          organizationId: TEST_ORG_ID,
           expectedErrorStatuses: [403],
         },
       ),

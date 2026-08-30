@@ -29,11 +29,16 @@ import {
   parseHttpErrorBody,
   BackendApiError,
 } from "@/lib/api/errors";
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import type { RootState } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
 import { logApiTarget } from "@/lib/api/log-api-target";
@@ -340,14 +345,22 @@ export interface RequestOptions {
   /**
    * The organization this request is made in, sent as `X-Organization-Id`.
    *
-   * Bound through the ONE fail-closed kernel (`lib/api/organization-context.ts`) — the same
-   * one `callApi` uses — so a transport can never invent, default, or normalize scope on the
-   * caller's behalf: a missing or malformed value throws `OrganizationContextError` BEFORE any
-   * networking happens. Omit it for endpoints that are not org-scoped.
+   * MANDATORY, resolved automatically — never optional. Every function in
+   * this client (see `resolveRequestOrganizationId`) reads the currently
+   * selected organization out of Redux (`appContextSlice.organization_id`)
+   * the same way `callApi`'s `resolveScope` does, and runs it through the ONE
+   * fail-closed kernel (`lib/api/organization-context.ts`) so a transport can
+   * never invent, default, or silently drop scope: a request with no
+   * reachable organization throws `OrganizationContextError` BEFORE any
+   * networking happens — matching the server's `organization_required` 400
+   * gate (aidream commit 8e5ee0b93), just refused one hop earlier.
    *
-   * `callApi` resolves org from Redux itself; this option exists for the transports that do NOT
-   * go through `callApi` (the HR contract client, whose every `/hr/*` operation declares the
-   * header REQUIRED) so they bind the same value the same way instead of forking a header path.
+   * Set this explicitly ONLY when the caller has already resolved a
+   * DIFFERENT, authoritative organization than whatever is currently
+   * selected (e.g. an entity-bound launcher, a durable conversation's own
+   * org, or an interactive `ensureOrganizationContext()` ask like
+   * `cloudUpload.ts` performs before calling this client) — it then wins
+   * outright over the selected one.
    */
   organizationId?: string;
   /**
@@ -379,6 +392,39 @@ export interface ResponseMeta {
   serverRequestId: string | null;
 }
 
+/**
+ * Resolve the organization for THIS request — mandatory, fail-closed, never
+ * guessed.
+ *
+ * Mirrors `resolveScope`'s organization handling in `lib/api/call-api.ts`
+ * (the reference-compliant kernel): read the currently-selected organization
+ * out of Redux (`appContextSlice.organization_id` via `selectOrganizationId`),
+ * let an explicit `opts.organizationId` win when the caller already resolved
+ * one authoritatively, and run the result through the SAME published kernel
+ * (`requireOrganizationContext`) that validates/normalizes it for `callApi`.
+ * A caller with neither a selected org nor an override gets
+ * `OrganizationContextError("organization_context_required")` — the request
+ * never reaches the network, exactly the fail-closed behaviour the server's
+ * `organization_required` 400 gate now also enforces (aidream commit
+ * 8e5ee0b93). No fallback organization is ever chosen here.
+ *
+ * Deliberately NOT interactive: like `callApi`'s default path, this client's
+ * traffic is overwhelmingly background (fetch-on-mount, polling, retries) —
+ * opening the `OrganizationGateDialog` picker from here would surface a
+ * prompt with no user action behind it to explain why. Call sites that need
+ * the interactive ask-then-continue gate (an explicit user action with no
+ * organization selected yet) resolve it themselves first, the same way
+ * `cloudUpload.ts` does via `ensureOrganizationContext`, and pass the result
+ * as `opts.organizationId`.
+ */
+function resolveRequestOrganizationId(opts: RequestOptions): string {
+  const store = getStore();
+  const selectedOrganizationId = store
+    ? (selectOrganizationId(store.getState() as RootState) ?? null)
+    : null;
+  return requireOrganizationContext(selectedOrganizationId, opts.organizationId);
+}
+
 export async function buildHeaders(
   opts: RequestOptions,
   includeContentType: boolean,
@@ -408,11 +454,13 @@ export async function buildHeaders(
   if (opts.cloudFilesBypass)
     headers["X-Cloud-Files-Bypass"] = opts.cloudFilesBypass;
   if (includeContentType) headers["Content-Type"] = "application/json";
-  // Bound LAST and through the shared kernel, so the org header is validated and normalized
-  // exactly as `callApi` does it — never assembled by hand in a second place.
-  if (opts.organizationId !== undefined) {
-    headers = applyOrganizationContextHeader(headers, opts.organizationId);
-  }
+  // Bound LAST, mandatory, through the shared kernel — the org header is
+  // resolved, validated, and normalized exactly as `callApi` does it, and a
+  // request with no reachable organization throws here instead of firing.
+  headers = applyOrganizationContextHeader(
+    headers,
+    resolveRequestOrganizationId(opts),
+  );
 
   return { headers, requestId };
 }
@@ -890,6 +938,11 @@ export async function uploadWithProgress<T>(
       status: 401,
     });
   }
+  // Mandatory, fail-closed, same kernel as buildHeaders — this XHR transport
+  // built its own headers by hand and had never attached X-Organization-Id
+  // at all (a gap distinct from, and worse than, the rest of this file's
+  // "optional if passed" behaviour). Resolved BEFORE any XHR is opened.
+  const organizationId = resolveRequestOrganizationId(opts);
   const requestId = opts.requestId ?? newRequestId();
   const url = buildAndLogTargetUrl(
     path,
@@ -913,6 +966,7 @@ export async function uploadWithProgress<T>(
     if (opts.cloudFilesBypass)
       xhr.setRequestHeader("X-Cloud-Files-Bypass", opts.cloudFilesBypass);
     xhr.setRequestHeader("X-Request-Id", requestId);
+    xhr.setRequestHeader("X-Organization-Id", organizationId);
     xhr.setRequestHeader("Accept", "application/json");
 
     xhr.upload.addEventListener("progress", (ev) => {
@@ -1071,6 +1125,9 @@ export async function downloadBlobWithProgress(
       status: 401,
     });
   }
+  // Mandatory, fail-closed, same kernel as buildHeaders — see the note in
+  // uploadWithProgress; this transport had never attached X-Organization-Id.
+  const organizationId = resolveRequestOrganizationId(opts);
   const requestId = opts.requestId ?? newRequestId();
   const url = buildAndLogTargetUrl(
     path,
@@ -1095,6 +1152,7 @@ export async function downloadBlobWithProgress(
     if (opts.cloudFilesBypass)
       xhr.setRequestHeader("X-Cloud-Files-Bypass", opts.cloudFilesBypass);
     xhr.setRequestHeader("X-Request-Id", requestId);
+    xhr.setRequestHeader("X-Organization-Id", organizationId);
     xhr.setRequestHeader("Accept", "*/*");
 
     xhr.addEventListener("timeout", () => {
