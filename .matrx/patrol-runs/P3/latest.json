@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T143951Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:58:29.329Z",
-  "summary": "Correct all repaired hide/reveal rules with an explicit desktop breakpoint",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-30T15:03:03.348Z",
+  "summary": "Record release-before-certification escape without rewriting history",
   "source": "20260830T143951Z.json",
-  "eventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f"
+  "eventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292"
 }

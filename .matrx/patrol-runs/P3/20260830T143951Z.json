@@ -114,6 +114,42 @@
       ],
       "previousEventHash": "fefd9c2895d6010a1f308697622594e4f61e6109f069a6370e943ae5a1bed28b",
       "eventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f"
+    },
+    {
+      "sequence": 9,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T15:03:02.776Z",
+      "actor": "root",
+      "summary": "Shared release lane published the breakpoint repair before independent certification completed",
+      "evidence": [
+        "candidate c4eed060429b9941c5325d3e8ff88a10edfd90e8 is tagged v0.4.1495 and is an ancestor of origin/main",
+        "ordering failure must remain append-only; do not create another release"
+      ],
+      "blocker": {
+        "prerequisite": "independently certify exact released candidate and reconcile delivery without a redundant release",
+        "preservedRef": "refs/remotes/origin/patrol/P3/2026-08-30-hover-repair-unit-1-retry2",
+        "preservedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8"
+      },
+      "previousEventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f",
+      "eventHash": "e67cecac4b921cbf9509db4188008e93b69aa4bab1cca788adbf408b98c4cad9"
+    },
+    {
+      "sequence": 10,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T15:03:03.348Z",
+      "actor": "root",
+      "summary": "Record release-before-certification escape without rewriting history",
+      "evidence": [
+        "exact candidate preserved on durable patrol ref"
+      ],
+      "escape": {
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "integratedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "release": "v0.4.1495",
+        "reason": "shared release lane checkpointed the active candidate before certification"
+      },
+      "previousEventHash": "e67cecac4b921cbf9509db4188008e93b69aa4bab1cca788adbf408b98c4cad9",
+      "eventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292"
     }
   ]
 }
