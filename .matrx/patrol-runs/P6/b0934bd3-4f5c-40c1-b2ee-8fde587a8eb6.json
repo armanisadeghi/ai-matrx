@@ -41,6 +41,42 @@
       ],
       "previousEventHash": "4ef3ec58de44cca8615475201ab4e8938fdf096249d84290056e4eef1b524860",
       "eventHash": "24ed56906d5e3c2e52ccdb9938b2263e70767b16c4b2083ca23110c4e6e460ba"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:35:55.509Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "REJECTED candidate 0cc6358: icon replacements removed accessible selected/completed state in two controls.",
+      "evidence": [
+        "Concrete defects: MultiSelect button lacked aria-pressed; recipe completed step hid all accessible state."
+      ],
+      "previousEventHash": "24ed56906d5e3c2e52ccdb9938b2263e70767b16c4b2083ca23110c4e6e460ba",
+      "eventHash": "0e71ba5fad3727a892e56e239068beb9e71d9005d0ba960f98d48d658f89ce22"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:35:56.056Z",
+      "actor": "codex-p6-repair",
+      "summary": "Added aria-pressed to MultiSelect options and explicit screen-reader Completed text to recipe steps.",
+      "evidence": [
+        "Retry candidate 533da349ffc81fd2b9126892750a9c090142cb8f contains exactly 15 files."
+      ],
+      "previousEventHash": "0e71ba5fad3727a892e56e239068beb9e71d9005d0ba960f98d48d658f89ce22",
+      "eventHash": "f679a625fa99f4684f0c4bee255004fb496a1af49049450520f4a661adc4f835"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:35:56.602Z",
+      "actor": "codex-p6-controller",
+      "summary": "Corrected exact batch 2 candidate awaiting adversarial recertification.",
+      "evidence": [
+        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch2-retry1"
+      ],
+      "previousEventHash": "f679a625fa99f4684f0c4bee255004fb496a1af49049450520f4a661adc4f835",
+      "eventHash": "8b49742e1e8ae973b57d058e5c8a17caf4fb992871ec792688834711377c867a"
     }
   ]
 }

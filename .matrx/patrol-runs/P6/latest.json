@@ -3,8 +3,8 @@
   "patrolId": "P6",
   "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
   "state": "certifying",
-  "updatedAt": "2026-08-30T14:27:20.283Z",
-  "summary": "Exact 15-file feature-surface candidate preserved remotely and awaiting independent adversarial certification.",
+  "updatedAt": "2026-08-30T14:35:58.200Z",
+  "summary": "Corrected exact batch 3 candidate awaiting adversarial recertification.",
   "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
-  "eventHash": "c41eb65f388d133a77f722f6f61f5494accd3f09905c735a98b848c46981eef0"
+  "eventHash": "cf8278127770c3b78797d448b8383351ae2af415f600d0dc01b08ccd568c067e"
 }
