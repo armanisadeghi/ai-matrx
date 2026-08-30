@@ -5,12 +5,12 @@
 // Clicking a site opens its plan workspace at
 // /marketing/<brand>/content/plan/<site>.
 //
-// NOTE (agency restructure, 2026-08-29): `PlanSitesList` is the ORG-WIDE list
-// the flat `/marketing/content-plan` route used, and it is mounted here
-// unchanged — the canonical component, not a copy. It therefore still shows
-// every site the viewer can plan rather than only this brand's. Narrowing it
-// to the brand in the URL is a component change, out of scope for the route
-// move; tracked in the restructure handoff.
+// Brand-scoped 2026-08-30: `BrandScopedPlanSitesList` mounts the canonical
+// `PlanSitesList` (not a copy) with the brand from `useMarketingBrand()`, so
+// the list is this client's websites instead of every site the viewer can
+// plan. The component's own site DROPDOWN stays deliberately cross-org — a
+// plan applied under another org must stay reachable — and rows keep linking
+// through their own doors.
 
 import { redirect } from "next/navigation";
 

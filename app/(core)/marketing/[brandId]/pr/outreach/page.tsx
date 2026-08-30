@@ -6,14 +6,19 @@
 // `/marketing/outreach` route to a shim but never re-mounted its canonical
 // `OutreachFrontDoor` component (adversarial audit finding). It lives here in
 // the Press & PR section, per the ratified design's pr/{press-room,
-// media-lists, outreach} shape. Still org-wide inside; brand-scoping it is a
-// component change tracked in the restructure handoff.
+// media-lists, outreach} shape.
+//
+// Brand-scoped 2026-08-30: `BrandScopedOutreach` binds the canonical door to
+// `useMarketingBrand()`, so prospecting sees only this client's websites and
+// the mailbox count only this client's organization. The CRM doors that carry
+// no brand link in the data model stay org-wide and say so on the page — a
+// filter we cannot apply is never faked.
 
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { OutreachFrontDoor } from "@/features/marketing/front-doors/OutreachFrontDoor";
+import { BrandScopedOutreach } from "@/features/marketing/front-doors/BrandScopedOutreach";
 
 export const metadata: Metadata = {
   title: "Outreach",
@@ -25,7 +30,7 @@ export default function BrandOutreachPage() {
   return (
     <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
       <Suspense fallback={<LoadingSurface label="Loading outreach…" />}>
-        <OutreachFrontDoor />
+        <BrandScopedOutreach />
       </Suspense>
     </div>
   );

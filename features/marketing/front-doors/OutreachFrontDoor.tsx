@@ -18,6 +18,22 @@
  * itself opens on (`mine`), so the number a user reads here is the number they
  * see after the click. A different default would make this page lie by
  * arithmetic.
+ *
+ * 🚨 BRAND SCOPE (2026-08-30). This door is also mounted inside one client's
+ * workspace at `/marketing/<brand>/pr/outreach`, where the brand is the tenant
+ * and one client must never be shown another client's rows. Two kinds of
+ * number live on this page and they get two different treatments:
+ *
+ *   - SCOPABLE — prospecting is per-WEBSITE, and websites carry `brand_id`, so
+ *     inside a brand the site picker and the "Find prospects" door see only
+ *     that brand's sites (`useFrontDoorSite(brandId)`). The mailbox count is
+ *     per-ORGANIZATION and is narrowed the same way `EmailFrontDoor` narrows
+ *     it, so the two doors can never disagree about how many mailboxes exist.
+ *   - GENUINELY ORG-LEVEL — campaigns, the Chasebox queues, the reply inbox
+ *     and earned-placement wins are CRM records with NO brand link in the data
+ *     model. They are kept (deleting a working door to look tidy is the worse
+ *     bug) and LABELLED: inside a brand every one of them says out loud that
+ *     it counts across every client. Never fake a filter we cannot apply.
  */
 
 import { useEffect, useState } from "react";
@@ -70,9 +86,23 @@ interface OutreachSummary {
   wins: OutcomeEventRow[];
 }
 
-export function OutreachFrontDoor() {
+export function OutreachFrontDoor({
+  brandId,
+  brandName,
+  organizationId,
+  basePath,
+}: {
+  /** The client in scope. Absent = the flat, org-wide door. */
+  brandId?: string | null;
+  /** Named in the honest scope labels so "across your clients" has a subject. */
+  brandName?: string | null;
+  /** The brand's own organization — narrows the mailbox count only. */
+  organizationId?: string | null;
+  /** Where the site picker writes `?site=`; defaults to the flat route. */
+  basePath?: string;
+} = {}) {
   const ctx = useCrmContext();
-  const siteState = useFrontDoorSite();
+  const siteState = useFrontDoorSite(brandId);
   const [summary, setSummary] = useState<OutreachSummary | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -97,7 +127,9 @@ export function OutreachFrontDoor() {
         // The mailbox count comes from aidream, the one part of this page that
         // is not a Supabase read. A server that is down must not blank the
         // whole front door — the door still opens, it just carries no number.
-        const mailboxes = await listSendingIdentities()
+        const mailboxes = await listSendingIdentities(
+          organizationId ?? undefined,
+        )
           .then((rows) => rows.length)
           .catch(() => null);
         if (cancelled) return;
@@ -109,18 +141,24 @@ export function OutreachFrontDoor() {
     return () => {
       cancelled = true;
     };
-  }, [ctx, reloadToken]);
+  }, [ctx, organizationId, reloadToken]);
 
   const queues = summary?.queues ?? EMPTY_CHASEBOX_COUNTS;
   const needsYou = CHASEBOX_QUEUES.reduce((sum, q) => sum + queues[q], 0);
   const loading = summary === null;
 
+  // The honest label for every number that has no brand link in the data
+  // model. Empty outside a brand, where "across your clients" would be noise.
+  const client = brandName?.trim() || "this client";
+  const crossClient = brandId
+    ? ` Counted across your clients, not only ${client} — outreach records live in your CRM and carry no client link.`
+    : "";
+
   const doors: MarketingDoor[] = [
     {
       label: "Campaigns & sequences",
       href: "/crm/outreach-lists",
-      description:
-        "Every outreach campaign: who is enrolled, which step they are on, and what the sequence sends next.",
+      description: `Every outreach campaign: who is enrolled, which step they are on, and what the sequence sends next.${crossClient}`,
       Icon: Send,
       count: loading ? null : summary.campaigns,
       countLabel: summary?.campaigns === 1 ? "campaign" : "campaigns",
@@ -128,8 +166,7 @@ export function OutreachFrontDoor() {
     {
       label: "Needs you now",
       href: "/crm/chasebox",
-      description:
-        "The Chasebox: fresh replies, drafts awaiting approval, stalled sequences, blocked members and people worth escalating.",
+      description: `The Chasebox: fresh replies, drafts awaiting approval, stalled sequences, blocked members and people worth escalating.${crossClient}`,
       Icon: ListChecks,
       count: loading ? null : needsYou,
       countLabel: needsYou === 1 ? "item waiting" : "items waiting",
@@ -138,15 +175,15 @@ export function OutreachFrontDoor() {
     {
       label: "Replies",
       href: "/crm/inbox",
-      description:
-        "Every reply to your outreach in one inbox, with the campaign, the step it answers and the record that motivated the message.",
+      description: `Every reply to your outreach in one inbox, with the campaign, the step it answers and the record that motivated the message.${crossClient}`,
       Icon: Inbox,
     },
     {
       label: "Sending mailboxes",
       href: "/crm/sending-identities",
-      description:
-        "The right to send: your own verified mailboxes, their domain proof, warmup and delivery health — plus the bring-up checklist.",
+      description: `The right to send: your own verified mailboxes, their domain proof, warmup and delivery health — plus the bring-up checklist.${
+        organizationId ? ` Counted in ${client}'s organization.` : ""
+      }`,
       Icon: MailCheck,
       count: loading || summary.mailboxes === null ? undefined : summary.mailboxes,
       countLabel: summary?.mailboxes === 1 ? "mailbox" : "mailboxes",
@@ -157,8 +194,7 @@ export function OutreachFrontDoor() {
     doors.push({
       label: "Find prospects",
       href: `${frontDoorSitePath(siteState.site)}/backlinks?view=prospects`,
-      description:
-        "Where campaigns come from: competitor link gaps and SERP prospects for this website, each with a Start outreach door.",
+      description: `Where campaigns come from: competitor link gaps and SERP prospects for ${siteState.site.name || "this website"}, each with a Start outreach door.`,
       Icon: Target,
     });
   }
@@ -166,11 +202,15 @@ export function OutreachFrontDoor() {
   return (
     <MarketingFrontDoorPage
       title="Outreach"
-      lede="Link and PR prospecting, sequenced contact, and earned placements — the pipeline lives beside the records in your CRM. This is the way in."
+      lede={
+        brandId
+          ? `Link and PR prospecting for ${client}, plus the sequenced contact and earned placements that live beside the records in your CRM. Prospecting is per website; the CRM pipeline below is shared across your clients.`
+          : "Link and PR prospecting, sequenced contact, and earned placements — the pipeline lives beside the records in your CRM. This is the way in."
+      }
       toolbar={
         <FrontDoorSiteSelect
           state={siteState}
-          basePath="/marketing/outreach"
+          basePath={basePath ?? "/marketing/outreach"}
           label="Website for prospecting"
         />
       }
@@ -185,7 +225,11 @@ export function OutreachFrontDoor() {
 
       <MarketingDoorBoard
         title="The pipeline"
-        description="Counts are live and scoped to what you own — the same scope each surface opens on."
+        description={
+          brandId
+            ? `Counts are live and scoped to what you own — the same scope each surface opens on. Prospecting is scoped to ${client}'s websites; the CRM doors count across your clients, because outreach records carry no client link.`
+            : "Counts are live and scoped to what you own — the same scope each surface opens on."
+        }
         doors={doors}
       />
 
@@ -196,6 +240,7 @@ export function OutreachFrontDoor() {
           </h2>
           <p className="text-xs leading-snug text-muted-foreground">
             Each count opens that queue in the Chasebox.
+            {brandId ? " Counted across your clients." : ""}
           </p>
         </header>
         <div className="flex flex-wrap gap-2">
@@ -236,6 +281,7 @@ export function OutreachFrontDoor() {
           <p className="text-xs leading-snug text-muted-foreground">
             Placements our own crawl found after a pitch and credited to the
             campaign that earned them.
+            {brandId ? " Across your clients' campaigns." : ""}
           </p>
         </header>
         {loading ? (

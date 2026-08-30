@@ -5,11 +5,12 @@
 // templates and the campaigns. Lane A (opt-in list marketing) stays a
 // registered promise printed on the page; see the component header.
 //
-// NOTE (agency restructure, 2026-08-29): `EmailFrontDoor` is the canonical
-// component the flat `/marketing/email` route used and is mounted here
-// unchanged. It reads its own scope from the URL rather than from the brand in
-// the path; binding it to `useMarketingBrand()` is a component change, tracked
-// in the restructure handoff.
+// Brand-scoped 2026-08-30: `BrandScopedEmail` binds the canonical
+// `EmailFrontDoor` to `useMarketingBrand()`, so the mailbox count is this
+// client's organization and this client's template library is named and comes
+// first. Templates, campaigns and the other organizations' libraries have NO
+// brand link in the data model — they stay, and the page says out loud that
+// they reach past this client. A filter we cannot apply is never faked.
 
 import type { Metadata } from "next";
 

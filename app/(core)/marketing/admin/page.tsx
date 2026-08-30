@@ -797,7 +797,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/content/plan",
       label: "Content Plan list",
       description:
-        "PlanSitesList — every site you can plan (still org-wide; brand scoping tracked in the restructure handoff).",
+        "BrandScopedPlanSitesList → PlanSitesList — this client's websites and their plan coverage (the site dropdown inside stays cross-org on purpose).",
       filePath: "app/(core)/marketing/[brandId]/content/plan/page.tsx",
       status: "Live",
     },
@@ -887,7 +887,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/[brandId]/email",
       label: "Email",
       description:
-        "EmailFrontDoor — the mailbox, templates, and sequences outreach sends from (still reads its scope from the URL, not the brand in the path).",
+        "BrandScopedEmail → EmailFrontDoor — the mailbox, templates, and sequences outreach sends from. Mailboxes are counted in the brand's organization; templates/campaigns have no brand link and say so on the page.",
       filePath: "app/(core)/marketing/[brandId]/email/page.tsx",
       status: "Live",
     },
@@ -897,6 +897,14 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       description:
         "PressRoomWorkspace — what is newsworthy, the proof, the journalists to pitch (still self-selects a brand from `?brand=`).",
       filePath: "app/(core)/marketing/[brandId]/pr/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/[brandId]/pr/outreach",
+      label: "Outreach",
+      description:
+        "BrandScopedOutreach → OutreachFrontDoor — prospecting scoped to this client's websites and its organization's mailboxes; the CRM doors (campaigns, Chasebox, replies, wins) have no brand link and are labelled as counting across your clients.",
+      filePath: "app/(core)/marketing/[brandId]/pr/outreach/page.tsx",
       status: "Live",
     },
     {

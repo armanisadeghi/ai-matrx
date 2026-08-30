@@ -209,6 +209,8 @@ export const marketingRoutes = {
   brandContentPlan: (brandId: string) => `/marketing/${brandId}/content/plan`,
   brandEmail: (brandId: string) => `/marketing/${brandId}/email`,
   brandPress: (brandId: string) => `/marketing/${brandId}/pr`,
+  /** One client's outreach front door, inside the Press & PR section. */
+  brandOutreach: (brandId: string) => `/marketing/${brandId}/pr/outreach`,
   brandAds: (brandId: string) => `/marketing/${brandId}/ads`,
   brandSocials: (brandId: string) => `/marketing/${brandId}/socials`,
   brandCompetitors: (brandId: string) =>
