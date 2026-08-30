@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "73c40b81-9bae-4c53-a852-9c65c0a73260",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:47:41.315Z",
-  "summary": "CERTIFIED exact path-pure 15-file demo/auth candidate.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:50:45.121Z",
+  "summary": "Certified candidate preserved and queued after integration to origin/main.",
   "source": "73c40b81-9bae-4c53-a852-9c65c0a73260.json",
-  "eventHash": "b88ea325c45d983b5aadf60b37718e29bfa4268088ae0449b2c64a0861a36078"
+  "eventHash": "87661fbcb37dd043eb1aa2e83339fd43603a935d3072412504368c2fd6dd8b4b"
 }
