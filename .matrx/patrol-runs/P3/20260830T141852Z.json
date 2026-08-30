@@ -66,6 +66,22 @@
       },
       "previousEventHash": "49ff609d56c2fca1969d31194294afce11fadc3b97ce97aec9333c43c3a5e937",
       "eventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:39:29.429Z",
+      "actor": "root",
+      "summary": "Queue already-integrated certified provider-sync candidate; no new release requested",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P3/20260830T141852Z"
+      ],
+      "delivery": {
+        "candidateSha": "141d52a518e50714c865419f020c0aa81f028566",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T141852Z"
+      },
+      "previousEventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1",
+      "eventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58"
     }
   ]
 }

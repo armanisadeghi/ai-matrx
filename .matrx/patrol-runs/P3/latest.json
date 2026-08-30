@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T141852Z",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:39:24.078Z",
-  "summary": "Exact provider-sync candidate independently certified in canonical IAB matrix",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:39:29.429Z",
+  "summary": "Queue already-integrated certified provider-sync candidate; no new release requested",
   "source": "20260830T141852Z.json",
-  "eventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1"
+  "eventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58"
 }
