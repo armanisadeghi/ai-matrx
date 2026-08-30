@@ -9,8 +9,8 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { DiffViewer, type DiffEngine } from "@/components/diff/DiffViewer";
-import { DiffReview } from "@/components/diff/DiffReview";
+import { DiffViewer, type DiffEngine } from "@ai-matrx/diff/react";
+import { DiffReview } from "@ai-matrx/diff/react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

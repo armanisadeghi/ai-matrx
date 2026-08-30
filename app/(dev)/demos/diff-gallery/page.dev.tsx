@@ -16,13 +16,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // Canonical family
-import { DiffViewer } from "@/components/diff/DiffViewer";
-import { DiffReview } from "@/components/diff/DiffReview";
+import { DiffViewer } from "@ai-matrx/diff/react";
+import { DiffReview } from "@ai-matrx/diff/react";
 import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { CodeDiff } from "@/components/diff/code/CodeDiff";
-import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
-import { AnimatedDiffReveal } from "@/components/diff/text/AnimatedDiffReveal";
-import { RawJsonView } from "@/components/diff/views/RawJsonView";
+import { InlineTextDiff } from "@ai-matrx/diff/react";
+import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
+import { RawJsonView } from "@ai-matrx/diff/react";
 import { DiffBlock } from "@/components/mardown-display/blocks/diff/DiffBlock";
 // Structured entity shell (object-shaped)
 import { NoteDiffViewer } from "@/features/notes/components/diff/NoteDiffViewer";

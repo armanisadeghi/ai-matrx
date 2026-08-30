@@ -5,9 +5,9 @@ import { Layers } from "lucide-react";
 import type {
   FieldAdapter,
   FieldDiffProps,
-} from "@/components/diff/adapters/types";
+} from "@ai-matrx/diff/react";
 import type { DiffNode } from "@ai-matrx/diff/structural";
-import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
+import { InlineTextDiff } from "@ai-matrx/diff/react";
 
 interface ContextPolicyLike {
   key: string;

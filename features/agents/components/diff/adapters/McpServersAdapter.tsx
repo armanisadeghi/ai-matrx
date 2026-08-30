@@ -6,7 +6,7 @@ import type {
   FieldAdapter,
   FieldDiffProps,
   EnrichmentContext,
-} from "@/components/diff/adapters/types";
+} from "@ai-matrx/diff/react";
 
 function resolveMcp(id: string, enrichment?: EnrichmentContext): string {
   return enrichment?.resolveMcpServerId(id) ?? id;

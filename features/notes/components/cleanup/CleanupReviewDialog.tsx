@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffViewer } from "@ai-matrx/diff/react";
 import { cn } from "@/lib/utils";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { cleanContent } from "@/lib/content-cleanup/clean";

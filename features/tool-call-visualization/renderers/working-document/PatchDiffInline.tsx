@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { AnimatedDiffReveal } from "@/components/diff/text/AnimatedDiffReveal";
+import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
 import { computeTextDiff } from "@ai-matrx/diff/text";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 

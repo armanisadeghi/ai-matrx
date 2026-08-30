@@ -35,6 +35,11 @@ import "@/utils/icons/matrx-public-svg-registry";
 // server render and hydration resolve the same link element; a Server
 // Component must never import the setup module (client-reference call).
 import "@/components/icons/tap-target-setup";
+// Side-effect import: registers the app's Monaco wrapper as @ai-matrx/diff's
+// HEAVY diff renderer. The package ships a complete light diff without it, so
+// this is an upgrade (syntax highlighting + editor virtualisation for source
+// code and very large inputs), never a prerequisite.
+import "@/components/diff/heavy-renderer-setup";
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";

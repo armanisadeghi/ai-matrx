@@ -1,15 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import { createAdapterRegistry } from "@/components/diff/adapters/registry";
-import { DiffViewerShell } from "@/components/diff/views/DiffViewerShell";
+import { createAdapterRegistry } from "@ai-matrx/diff/react";
+import { DiffViewerShell } from "@ai-matrx/diff/react";
 import {
   TextFieldAdapter,
   BooleanFieldAdapter,
   TagsFieldAdapter,
   JsonObjectAdapter,
   KeyValueAdapter,
-} from "@/components/diff/adapters/defaults";
+} from "@ai-matrx/diff/react";
 import type {
   DiffTemporalMetadata,
   ViewMode,

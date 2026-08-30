@@ -13,7 +13,7 @@ import {
   DrawerDescription,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffViewer } from "@ai-matrx/diff/react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";

@@ -9,7 +9,7 @@
 // Same props, so callers are unchanged. (FEATURE.md A4.)
 
 import React from "react";
-import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffViewer } from "@ai-matrx/diff/react";
 
 interface DiffViewProps {
   originalCode: string;

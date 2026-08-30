@@ -19,7 +19,7 @@
 
 import { Check, GitCompare, Loader2, SendHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffViewer } from "@ai-matrx/diff/react";
 import {
   computeTextDiff,
   summarizeTextDiff,

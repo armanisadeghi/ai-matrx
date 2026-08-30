@@ -5,17 +5,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { AlignLeft, Braces, Columns2, FileText, List } from "lucide-react";
 import { computeDiff } from "@ai-matrx/diff/structural";
-import { createAdapterRegistry } from "@/components/diff/adapters/registry";
-import { AllChangesView } from "@/components/diff/views/AllChangesView";
-import { ChangesOnlyView } from "@/components/diff/views/ChangesOnlyView";
-import { SummaryView } from "@/components/diff/views/SummaryView";
-import { RawJsonView } from "@/components/diff/views/RawJsonView";
-import { TextDiff } from "@/components/diff/text/TextDiff";
+import { createAdapterRegistry } from "@ai-matrx/diff/react";
+import { AllChangesView } from "@ai-matrx/diff/react";
+import { ChangesOnlyView } from "@ai-matrx/diff/react";
+import { SummaryView } from "@ai-matrx/diff/react";
+import { RawJsonView } from "@ai-matrx/diff/react";
+import { TextDiff } from "@ai-matrx/diff/react";
 import {
   TextFieldAdapter,
   TagsFieldAdapter,
   JsonObjectAdapter,
-} from "@/components/diff/adapters/defaults";
+} from "@ai-matrx/diff/react";
 import type { DiffNode } from "@ai-matrx/diff/structural";
 import type { Note } from "@/features/notes/types";
 import { NOTE_DIFF_OPTIONS, NOTE_PRIORITY_FIELDS } from "./note-diff-constants";

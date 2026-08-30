@@ -13,7 +13,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
+import { InlineTextDiff } from "@ai-matrx/diff/react";
 
 export interface ChangeFieldDiff {
   /** Field name, Sentence case: "Title", "Status", "Due date", "Description". */

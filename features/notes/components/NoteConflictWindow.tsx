@@ -15,8 +15,8 @@ import {
   Bug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DiffViewer } from "@/components/diff/DiffViewer";
-import { DiffReview } from "@/components/diff/DiffReview";
+import { DiffViewer } from "@ai-matrx/diff/react";
+import { DiffReview } from "@ai-matrx/diff/react";
 import type { DiffAnalysis } from "@/features/notes/utils/diffAnalysis";
 
 // ── Types ────────────────────────────────────────────────────────────────────

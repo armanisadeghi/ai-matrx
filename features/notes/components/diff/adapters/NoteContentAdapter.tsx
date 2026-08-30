@@ -7,7 +7,7 @@ import { FileText, EyeOff, Eye, ChevronDown } from "lucide-react";
 import type {
   FieldAdapter,
   FieldDiffProps,
-} from "@/components/diff/adapters/types";
+} from "@ai-matrx/diff/react";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
 import { computeTextDiff } from "@ai-matrx/diff/text";
 import type {

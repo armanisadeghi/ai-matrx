@@ -53,7 +53,7 @@ import {
 } from "./workingDocumentSurface";
 import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
 import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
-import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffViewer } from "@ai-matrx/diff/react";
 import { useLiveWorkingDocPatch } from "@/features/agents/redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
 import { WorkingDocumentAgentDiff } from "./WorkingDocumentAgentDiff";
 import { WorkingDocumentLatestVersionDiff } from "./WorkingDocumentLatestVersionDiff";

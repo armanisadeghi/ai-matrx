@@ -15,6 +15,7 @@
 @source "../node_modules/@ai-matrx/capture/dist";
 @source "../node_modules/@ai-matrx/associations/dist";
 @source "../node_modules/@ai-matrx/media/dist";
+@source "../node_modules/@ai-matrx/diff/dist";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 

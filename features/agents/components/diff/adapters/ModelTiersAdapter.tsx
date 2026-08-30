@@ -5,7 +5,7 @@ import type {
   EnrichmentContext,
   FieldAdapter,
   FieldDiffProps,
-} from "@/components/diff/adapters/types";
+} from "@ai-matrx/diff/react";
 import {
   ModelTierIdentityList,
   readModelTierIdentities,

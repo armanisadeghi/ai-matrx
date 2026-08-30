@@ -9,7 +9,7 @@ import {
 import type {
   FieldAdapter,
   FieldDiffProps,
-} from "@/components/diff/adapters/types";
+} from "@ai-matrx/diff/react";
 
 function SettingsDiffRenderer({ node }: FieldDiffProps) {
   // Use children if available (decomposed by diff engine)

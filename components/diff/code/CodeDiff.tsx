@@ -2,16 +2,22 @@
 
 // components/diff/code/CodeDiff.tsx
 //
-// Headless HEAVY diff core for code. A clean, dependency-light wrapper around
-// Monaco's DiffEditor (the same engine VS Code uses). No Redux, no overlay,
-// no code-editor-feature coupling — unlike features/code/editor/TabDiffView,
-// which layers patch accept/reject on top. This is the reusable primitive
-// that advanced surfaces (incl. TabDiffView) can build on.
+// The HOST HALF of @ai-matrx/diff's one injection seam: the app's Monaco
+// `DiffEditor` wrapper, registered into the package by
+// `components/diff/heavy-renderer-setup.ts`. Everything tunable lives in the
+// package (`MONACO_DIFF_EDITOR_OPTIONS`, the engine-selection heuristic, the
+// view mapping, the wrap defaults) — this file is the `next/dynamic` boundary
+// and the theme lookup, and nothing else (C22).
+//
+// It stays directly importable for the few surfaces that want Monaco
+// unconditionally (RawJsonView's ancestors, the duplicate-skill resolver), and
+// remains the primitive advanced surfaces such as TabDiffView build on.
 
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import dynamic from "next/dynamic";
 import type { DiffOnMount } from "@monaco-editor/react";
 import { Skeleton } from "@ai-matrx/design-system";
+import { MONACO_DIFF_EDITOR_OPTIONS } from "@ai-matrx/diff/react";
 import { cn } from "@/lib/utils";
 
 // Monaco is ~2MB and browser-only. ONE `next/dynamic({ssr:false})` boundary
@@ -89,17 +95,11 @@ export function CodeDiff({
           onMount={onMount}
           height="100%"
           options={{
+            // Tuning is package-owned; only the per-render choices are here.
+            ...MONACO_DIFF_EDITOR_OPTIONS,
             renderSideBySide: view === "split",
             readOnly,
-            originalEditable: false,
-            renderValidationDecorations: "off",
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 13,
-            lineNumbers: "on",
             wordWrap: wordWrap ? "on" : "off",
-            automaticLayout: true,
-            guides: { indentation: true },
           }}
         />
       </div>

@@ -7,7 +7,7 @@ import {
   selectToolIdentityMap,
 } from "@/features/agents/redux/tools/tools.selectors";
 import { selectMcpCatalog } from "@/features/agents/redux/mcp/mcp.slice";
-import type { EnrichmentContext } from "@/components/diff/adapters/types";
+import type { EnrichmentContext } from "@ai-matrx/diff/react";
 import type { RootState } from "@/lib/redux/store";
 import { selectModelIdentityMap } from "@/features/ai-models/redux/modelRegistrySlice";
 

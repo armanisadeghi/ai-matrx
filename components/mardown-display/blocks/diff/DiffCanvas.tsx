@@ -11,7 +11,7 @@
  */
 
 import React from "react";
-import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
+import { InlineTextDiff } from "@ai-matrx/diff/react";
 
 export default function DiffCanvas({
   oldValue,

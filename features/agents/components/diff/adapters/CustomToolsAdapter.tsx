@@ -5,8 +5,8 @@ import { Hammer } from "lucide-react";
 import type {
   FieldAdapter,
   FieldDiffProps,
-} from "@/components/diff/adapters/types";
-import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
+} from "@ai-matrx/diff/react";
+import { InlineTextDiff } from "@ai-matrx/diff/react";
 
 interface CustomToolLike {
   name: string;

@@ -6,7 +6,7 @@ import type {
   FieldAdapter,
   FieldDiffProps,
   EnrichmentContext,
-} from "@/components/diff/adapters/types";
+} from "@ai-matrx/diff/react";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {

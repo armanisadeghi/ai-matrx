@@ -44,7 +44,7 @@ import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { VersionIdBadge } from "./VersionIdBadge";
 import { compareAgentDefinitions } from "./compare-agent-definitions";
 import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
-import { DefaultFieldAdapter } from "@/components/diff/adapters/defaults";
+import { DefaultFieldAdapter } from "@ai-matrx/diff/react";
 import { formatChangeType } from "@ai-matrx/diff/structural";
 import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";

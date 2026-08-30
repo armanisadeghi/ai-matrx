@@ -14,7 +14,7 @@
 import { useEffect, useState } from "react";
 import { GitCompare, Loader2 } from "lucide-react";
 
-import { AnimatedDiffReveal } from "@/components/diff/text/AnimatedDiffReveal";
+import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
 
 interface WorkingDocumentLatestVersionDiffProps {

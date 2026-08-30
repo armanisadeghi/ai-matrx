@@ -18,7 +18,7 @@ import {
   DiffViewer,
   type DiffEngine,
   type DiffView,
-} from "@/components/diff/DiffViewer";
+} from "@ai-matrx/diff/react";
 
 export interface DiffViewerWindowProps {
   windowInstanceId: string;

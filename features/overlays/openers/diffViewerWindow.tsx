@@ -13,7 +13,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { DiffEngine, DiffView } from "@/components/diff/DiffViewer";
+import type { DiffEngine, DiffView } from "@ai-matrx/diff/react";
 
 const OVERLAY_ID = "diffViewerWindow" as const;
 
