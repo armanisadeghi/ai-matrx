@@ -18,8 +18,8 @@
 import { APP_MANDATE_CUTOVER, pinnedHolder } from "./appHolder";
 
 describe("APP_MANDATE_CUTOVER", () => {
-  it("is OFF — the flip is a deliberate release, never a side effect", () => {
-    expect(APP_MANDATE_CUTOVER).toBe(false);
+  it("is ON — flipped 2026-08-30 on Arman's order; apps resolve through their mandate", () => {
+    expect(APP_MANDATE_CUTOVER).toBe(true);
   });
 });
 

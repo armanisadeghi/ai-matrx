@@ -55,7 +55,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
 
 /** OFF — ships dark. The flip is a one-line release (Arman's nod). */
-export const APP_MANDATE_CUTOVER = false;
+export const APP_MANDATE_CUTOVER = true;
 
 /** Human-readable name of the ACTIVE binding source, for error copy and logs. */
 export const APP_HOLDER_LABEL = APP_MANDATE_CUTOVER
