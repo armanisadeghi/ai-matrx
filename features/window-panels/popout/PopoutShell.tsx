@@ -9,6 +9,7 @@
  * document/window/container values via `usePopout()`.
  */
 import { useMemo, type ReactNode } from "react";
+import { PortalContainerProvider } from "@ai-matrx/design-system";
 import {
   PopoutContext,
   type PopoutContextValue,
@@ -37,6 +38,18 @@ export function PopoutShell({
   );
 
   return (
-    <PopoutContext.Provider value={value}>{children}</PopoutContext.Provider>
+    <PopoutContext.Provider value={value}>
+      {/*
+       * Host wiring for the @ai-matrx/design-system portal seam: package
+       * primitives (Popover) read PortalContainerProvider instead of the
+       * host's usePopoutContainer, so a popover opened inside a popped-out
+       * window mounts into the popout's <body> — not the parent document.
+       * A Dialog nested deeper re-provides its own container (nearest
+       * provider wins), preserving the dialog > popout > body priority.
+       */}
+      <PortalContainerProvider container={value.popoutContainer}>
+        {children}
+      </PortalContainerProvider>
+    </PopoutContext.Provider>
   );
 }
