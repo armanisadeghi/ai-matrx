@@ -20,6 +20,9 @@ importers:
       '@ai-matrx/associations':
         specifier: latest
         version: 0.5.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ai-matrx/browser-audio':
+        specifier: latest
+        version: 0.3.0(react@19.2.7)
       '@ai-matrx/capture':
         specifier: latest
         version: 0.5.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -34,7 +37,7 @@ importers:
         version: 0.4.1
       '@ai-matrx/design-system':
         specifier: latest
-        version: 0.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.4.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/diff':
         specifier: latest
         version: 0.1.0
@@ -825,6 +828,15 @@ packages:
       react:
         optional: true
 
+  '@ai-matrx/browser-audio@0.3.0':
+    resolution: {integrity: sha512-iFPrQLjvbjcskWiJJtJajZQKeKiBpNTETPBK9gBJs8Xq05AAqokP6dNIcxN5w1Iw9jQ1AZcRRG/+jtN+narmyw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: 19.2.7
+    peerDependenciesMeta:
+      react:
+        optional: true
+
   '@ai-matrx/capture@0.5.0':
     resolution: {integrity: sha512-zUBOV3E0OGyVRkx96cPn2GyhnntN5eZv7eUgm4LT2Rrzb2Fw1HhgrGd8sa8lv9d65eShiUMvBBnY1vcqV26VDw==}
     engines: {node: '>=20'}
@@ -851,6 +863,13 @@ packages:
 
   '@ai-matrx/design-system@0.3.1':
     resolution: {integrity: sha512-4XduIzSIae5/ftSTFGMBrZOzOX95k0/IWQNIONObDpwprw2Yw3qLwJxHhgcPZPn0sPZRNZdk8v+J7mBajYG4gw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: 19.2.7
+      react-dom: 19.2.7
+
+  '@ai-matrx/design-system@0.4.0':
+    resolution: {integrity: sha512-9TH67AWHrhP3S6mDyMFJ+ONMo3XXHj/Va3kDFAyUQDztckWvM5xtb78pTZ8WpocYU0rHfEMhur74dLR4qI3iYA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13111,6 +13130,10 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
+  '@ai-matrx/browser-audio@0.3.0(react@19.2.7)':
+    optionalDependencies:
+      react: 19.2.7
+
   '@ai-matrx/capture@0.5.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       react: 19.2.7
@@ -13130,6 +13153,27 @@ snapshots:
   '@ai-matrx/data@0.4.1': {}
 
   '@ai-matrx/design-system@0.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@ai-matrx/kit': 0.7.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-label': 2.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-popover': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-select': 2.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-separator': 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-slot': 1.3.0(@types/react@19.2.17)(react@19.2.7)
+      '@radix-ui/react-visually-hidden': 1.2.11(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      cmdk: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      tailwind-merge: 3.6.0
+      vaul: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+
+  '@ai-matrx/design-system@0.4.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/kit': 0.7.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -25011,7 +25055,7 @@ snapshots:
 
   md5.js@1.3.5:
     dependencies:
-      hash-base: 3.0.5
+      hash-base: 3.1.2
       inherits: 2.0.4
       safe-buffer: 5.2.1
 
