@@ -1,10 +1,11 @@
 ---
 name: agent-copy
 description: >-
-  Add the canonical two icon-only copy controls to any surface that shows data
+  Add the canonical single icon-only copy/export control to any surface that shows data
   (rows, cards, lists, detail/record pages) using `components/agent-copy`:
-  normal Copy and one Copy-for-AI dropdown containing JSON, AI variants, and
-  any custom/Groomer workspace. Build payloads as WHAT THE USER SEES (rendered
+  one CopyForAiIcon menu containing Copy, Copy JSON, Copy for AI, AI variants,
+  downloads, destinations, and any custom/Groomer workspace. Build payloads as
+  WHAT THE USER SEES (rendered
   view, live form state, errors, KPIs), sized to the data. Use when wiring copy
   actions, consolidating duplicate Copy/JSON/AI/Groomer controls, continuing
   the app-wide rollout, reviewing or upgrading a Copy-for-AI payload, or
@@ -18,8 +19,8 @@ description: >-
 
 # agent-copy — copy data (human + AI) anywhere
 
-A reusable primitive for putting **Copy** (human-readable) and **Copy for AI**
-(xml-ish agent payload) buttons on any row, card, list, or record. It is the
+A reusable primitive for putting **Copy**, **Copy JSON**, **Copy for AI**, and
+export actions behind one icon on any row, card, list, or record. It is the
 orchestration glue between raw page data and an AI agent: today it copies to the
 clipboard so a human pastes into an agent; the end state (see Roadmap) is the
 agent reading that context directly and acting on the page.
@@ -71,7 +72,7 @@ this page the moment they click this?"_ — then hand the agent exactly that.
   `location`/`description`/`context`) and a `<data format="json">` body.
   `attributes` carry counts (`rows`, `blockers`, `total_messages`) — the
   payload self-describes so a future agent can decide what to fetch.
-- **`<CopyButtons>`** — the UI. Renders the buttons, owns clipboard (with
+- **`<CopyButtons>`** — the UI. Renders one responsive action control, owns clipboard (with
   legacy fallback) + success toasts + click-propagation stopping. You pass
   `human` (readable text) and `agent` (an `AgentPayloadInput`, a prebuilt
   string, or a builder fn) + a `label`. Sizes: `"xs"` (h-5 — dense items,
@@ -79,16 +80,15 @@ this page the moment they click this?"_ — then hand the agent exactly that.
   target). **Every size is icon-only.** Pass `human`/`agent` as **functions** —
   resolved at click time.
 - **Copy exists at EVERY granularity** — field/entry, item, row, list, record,
-  page. Never display data the user can't copy. Dense surfaces hide the pair
+  page. Never display data the user can't copy. Dense surfaces hide the control
   until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
-- **Exactly two compact top-level copy controls:** one icon-only Copy control
-  and one icon-only Copy-for-AI control. Large or visibly labeled copy buttons
-  are banned. Normal Copy stays plain unless multiple human-readable formats exist, then
-  that same icon owns their dropdown. Pass structured data as `json`; it is an
-  item in the Copy-for-AI dropdown, never a standalone third icon. Scalars
-  skip JSON. Copy-for-AI is NEVER just JSON in an envelope. **`CopyButtons`
-  is the one control** — pass `export` for Download, `hide` to drop any
-  segment (cards: omit `export` or `hide={["export"]}`). A menu item may
+- **Exactly one compact top-level control:** the canonical `CopyForAiIcon`
+  opens one menu ordered Copy → Copy JSON → Copy for AI → shaped AI variants →
+  downloads/destinations. Large or visibly labeled top-level copy buttons are
+  banned. Scalars skip JSON. Copy-for-AI is NEVER just JSON in an envelope.
+  **`CopyButtons` is the one control** — pass `export` for downloads and
+  destinations, `hide` to drop any category (cards: omit `export` or
+  `hide={["export"]}`). A menu item may
   `onSelect` / `modal` instead of copying. Do not also render `ExportMenu`
   beside it.
 - **`CopyForAiIcon` is canonical.** `Sparkles`, `Sparkle`, bot, face, star, or
@@ -108,9 +108,9 @@ page's usage, never a global rule:
 
 | Data                                                                                | Control                                                      | Menu contents                                              |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
-| **Small / bounded** (one record, short list)                                        | icon-only pair; AI icon is plain only when it has one action | faithful payload; add JSON to its dropdown when structured |
-| **Medium** (focused list, digestible page)                                          | icon-only pair; `aiVariants` dropdown                        | JSON + 2–5 shaped variants + Everything                    |
-| **Massive** (can reach ~10k+ chars: conversations, big tables, multi-section pages) | icon-only pair; AI dropdown + **custom workspace**           | JSON + variants + Everything + tunable custom/Groomer      |
+| **Small / bounded** (one record, short list)                                        | one icon; direct only when exactly one action exists | Copy + JSON when structured + faithful AI                  |
+| **Medium** (focused list, digestible page)                                          | one icon menu                                        | Copy + JSON + faithful AI + 2–5 shaped variants            |
+| **Massive** (can reach ~10k+ chars: conversations, big tables, multi-section pages) | one icon menu + **custom workspace**                 | Copy + JSON + AI variants + downloads + tunable custom     |
 
 - **A single button on a payload that can reach ~10k chars is a defect** —
   thousands of tokens the user can't see or control.

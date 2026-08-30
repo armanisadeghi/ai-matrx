@@ -1248,6 +1248,19 @@ function MatrxDataTableCore<T>({
                           mime: "text/csv",
                         }),
                       },
+                      {
+                        id: "xlsx",
+                        label: "Excel (.xlsx)",
+                        onSelect: async () => {
+                          const { downloadTableAsXlsx } =
+                            await import("./tableXlsx");
+                          downloadTableAsXlsx({
+                            rows: processed,
+                            columns: visibleColumns,
+                            label: copy.listLabel ?? copy.label,
+                          });
+                        },
+                      },
                     ],
                     sheetRows: () =>
                       rowsToRecordsFromColumns(processed, visibleColumns),
@@ -1298,6 +1311,44 @@ function MatrxDataTableCore<T>({
                       scope: "selected",
                     })
                   }
+                  export={{
+                    items: [
+                      jsonExportItem(
+                        () =>
+                          selectedRows.map((row) =>
+                            copy.agentRow ? copy.agentRow(row) : row,
+                          ),
+                        "JSON (selected rows)",
+                      ),
+                      {
+                        id: "csv",
+                        label: "CSV (selected rows)",
+                        build: () => ({
+                          content: rowsToCsvFromColumns(
+                            selectedRows,
+                            visibleColumns,
+                          ),
+                          extension: "csv",
+                          mime: "text/csv",
+                        }),
+                      },
+                      {
+                        id: "xlsx",
+                        label: "Excel (.xlsx)",
+                        onSelect: async () => {
+                          const { downloadTableAsXlsx } =
+                            await import("./tableXlsx");
+                          downloadTableAsXlsx({
+                            rows: selectedRows,
+                            columns: visibleColumns,
+                            label: `${copy.listLabel ?? copy.label} selected`,
+                          });
+                        },
+                      },
+                    ],
+                    sheetRows: () =>
+                      rowsToRecordsFromColumns(selectedRows, visibleColumns),
+                  }}
                 />
               ) : null}
               {selection.actions?.(selectedRows, selection.selectedIds)}

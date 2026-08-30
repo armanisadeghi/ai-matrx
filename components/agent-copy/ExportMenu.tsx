@@ -14,7 +14,6 @@
  * passing the data it already has.
  */
 
-import { useState } from "react";
 import { Download, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,18 +22,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "@/lib/toast";
 import {
   copyActionCellClass,
   copyActionSegmentClass,
   type CopyActionAppearance,
   type CopyActionSize,
 } from "@/components/agent-copy/CopyActionGroup";
-import {
-  downloadFile,
-  exportFilename,
-  type ExportItem,
-} from "@/components/agent-copy/export";
+import type { ExportItem } from "@/components/agent-copy/export";
+import { useExportActions } from "@/components/agent-copy/useExportActions";
 import { cn } from "@/lib/utils";
 
 export interface ExportMenuProps {
@@ -68,71 +63,13 @@ export function ExportMenu({
   className,
   sheetRows,
 }: ExportMenuProps) {
-  const [sendingToSheet, setSendingToSheet] = useState(false);
+  const { runExportItem, sendToSheet, sendingToSheet } = useExportActions({
+    label,
+    sheetRows,
+  });
   if (!items.length && !sheetRows) return null;
   const groupSize = size === "sm" && !grouped ? "sm" : size;
   const isIcon = grouped || size !== "sm";
-
-  const handle = (item: ExportItem) => {
-    if (item.onSelect) {
-      item.onSelect();
-      return;
-    }
-    if (!item.build) return;
-    const { content, extension, mime } = item.build();
-    downloadFile(exportFilename(label, extension), content, mime);
-    toast.success(`${label} exported (${extension.toUpperCase()})`);
-  };
-
-  const sendToSheet = async () => {
-    if (!sheetRows || sendingToSheet) return;
-    const rows = sheetRows();
-    if (!rows.length) {
-      toast.info("Nothing to send — this view is empty.");
-      return;
-    }
-    setSendingToSheet(true);
-    try {
-      const { sendRowsToGoogleSheet } =
-        await import("@/features/google-workspace/export/sendToGoogle");
-      const result = await sendRowsToGoogleSheet(rows, label);
-      if (!result.ok && result.reason === "failed") {
-        toast.error("Could not create the Google Sheet", {
-          description: result.message,
-        });
-        return;
-      }
-      if (!result.ok) {
-        toast.info("Connect Google to send this to a Sheet", {
-          description:
-            "Takes about ten seconds, and only for files you choose or that we create.",
-          action: {
-            label: "Connect",
-            onClick: () =>
-              window.open(result.settingsHref, "_blank", "noopener"),
-          },
-        });
-        return;
-      }
-      toast.success(`Created "${result.name}" in your Google Drive`, {
-        action: result.openUrl
-          ? {
-              label: "Open",
-              onClick: () =>
-                window.open(result.openUrl as string, "_blank", "noopener"),
-            }
-          : undefined,
-      });
-    } catch (cause) {
-      toast.error(
-        cause instanceof Error
-          ? cause.message
-          : "Could not create the Google Sheet.",
-      );
-    } finally {
-      setSendingToSheet(false);
-    }
-  };
 
   const menu = (
     <DropdownMenu>
@@ -167,7 +104,10 @@ export function ExportMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {items.map((item) => (
-          <DropdownMenuItem key={item.id} onSelect={() => handle(item)}>
+          <DropdownMenuItem
+            key={item.id}
+            onSelect={() => void runExportItem(item)}
+          >
             {item.label}
           </DropdownMenuItem>
         ))}

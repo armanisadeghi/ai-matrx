@@ -7,34 +7,31 @@ no page reimplements them.
 
 **Pieces:**
 
-- `CopyButtons` — **the one control.** Pass `human`, `agent`, and `export`;
+- `CopyButtons` — **the one control and one icon.** Pass `human`, `agent`, and `export`;
   hide any segment with `hide={["copy"|"ai"|"export"]}` (cards omit Download
   by not passing `export`, or `hide={["export"]}` when sharing a builder).
-  Two or more visible segments become one even-width `CopyActionGroup` —
-  do not also render `ExportMenu` beside it. A menu item copies, or opens a
+  every available action appears behind one `CopyForAiIcon` trigger — do not
+  also render `ExportMenu` beside it. Menu order is Copy, Copy JSON, Copy for
+  AI, shaped AI variants, then downloads and destinations. A menu item copies, or opens a
   modal (`onSelect` / hosted `modal` on an `AiVariant`; `onSelect` on an
   export item). `groomer` and `aiCustom` already host their own workspaces.
-  On phone/tablet, the group has no shared frame or dividers: only the quiet
-  18px icon controls show, each with a non-shrinking 44px tap target. Compact
-  segmented chrome returns at `lg+`. **Naturally unframed action rails use
-  `appearance="bare"`** to remove desktop group chrome and every hover/active
-  fill or focus ring; keyboard focus remains visible through icon color. The
-  default remains segmented.
+  On phone/tablet, the quiet 18px icon keeps a non-shrinking 44px tap target;
+  desktop uses the requested compact size. **Naturally unframed action rails
+  use `appearance="bare"`** to remove hover/active fill or focus ring; keyboard
+  focus remains visible through icon color.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
-  structured data; it is an AI-menu item, never a fourth button. The AI
-  chevron sits beside the icon; every cell is sized for that pair.
+  structured data; it is the second menu item, never another button.
 - `CopyForAiIcon` — the canonical text-free AI-copy mark: overlapping copy
   sheets containing a connected intelligence node. Keep this semantic shape
   across surfaces; do not substitute a bot, face, star, or sparkle.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
-- `CopyActionGroup` — even-width, non-shrinking cells; visually unboxed on
-  touch layouts and segmented on desktop. Used by `CopyButtons` whenever two
-  or more segments are visible.
+- `CopyActionGroup` — legacy segmented chrome retained only for intentionally
+  standalone export-only controls. `CopyButtons` no longer renders it.
 - `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
   `textExportItem`, `rowsToCsv`) — the **Download** dropdown. Prefer
-  `CopyButtons export={{ items, sheetRows }}` so it sits in the group.
+  `CopyButtons export={{ items, sheetRows }}` so it sits in the one menu.
   Standalone `ExportMenu` stays valid for surfaces that export without copy.
   **Every data surface offers export, not just clipboard copy** — a list/table
   gets JSON + CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it

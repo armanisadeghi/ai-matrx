@@ -12,6 +12,7 @@ import { upsertShortcuts } from "../slice";
 import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -74,9 +75,7 @@ export const bulkCreateShortcuts = createAsyncThunk<
     }),
   );
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("shortcut")
+  const { data, error } = await shortcutTable(supabase)
     .insert(rows)
     .select();
   if (error) throw pgErrorToError(error);
@@ -106,9 +105,7 @@ export const bulkUpdateShortcuts = createAsyncThunk<
     id: r.id,
   }));
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("shortcut")
+  const { data, error } = await shortcutTable(supabase)
     .upsert(rows, { onConflict: "id" })
     .select();
   if (error) throw pgErrorToError(error);

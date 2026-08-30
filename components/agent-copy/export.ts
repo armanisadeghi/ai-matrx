@@ -16,7 +16,7 @@ export interface ExportItem {
    * Caller-owned modal/window. Wins over `build` — the item opens UI
    * instead of downloading.
    */
-  onSelect?: () => void;
+  onSelect?: () => void | Promise<void>;
 }
 
 export function downloadFile(

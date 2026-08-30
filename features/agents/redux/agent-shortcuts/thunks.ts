@@ -273,7 +273,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
       ? arg.placementTypes
       : ["ai-action"];
 
-  const { data, error } = await supabase.rpc("agx_build_shortcut_menu", {
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.buildMenu, {
     p_placement_types: placementTypes,
   });
 
@@ -400,8 +400,7 @@ export const fetchShortcutsForContext = createAsyncThunk<
 
     if (selectIsContextLoaded(getState(), contextKey)) return;
 
-    const { data, error } = await supabase.rpc(
-      "agx_get_shortcuts_for_context",
+    const { data, error } = await supabase.rpc(SHORTCUT_RPCS.forContext,
       {
         p_project_id: projectId ?? undefined,
         p_task_id: taskId ?? undefined,
@@ -491,9 +490,7 @@ export const fetchFullShortcut = createAsyncThunk<void, string, ThunkApi>(
   async (shortcutId, { dispatch }) => {
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { data, error } = await shortcutTable(supabase)
       .select("*")
       .eq("id", shortcutId)
       .single();
@@ -540,9 +537,7 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
 
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
 
-    const { error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error } = await shortcutTable(supabase)
       .update(agentShortcutToUpdate(dirtyPartial))
       .eq("id", shortcutId);
 
@@ -596,9 +591,7 @@ export const saveShortcutField = createAsyncThunk<
           }
         : ({ [field]: value } as Partial<AgentShortcut>);
 
-    const { error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error } = await shortcutTable(supabase)
       .update(agentShortcutToUpdate(patch))
       .eq("id", shortcutId);
 
@@ -636,9 +629,7 @@ export const createShortcut = createAsyncThunk<
     updatedAt: "",
   };
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("shortcut")
+  const { data, error } = await shortcutTable(supabase)
     .insert(agentShortcutToInsert(draft))
     .select()
     .single();
@@ -656,9 +647,7 @@ export const createShortcut = createAsyncThunk<
 export const deleteShortcut = createAsyncThunk<void, string, ThunkApi>(
   "agentShortcut/delete",
   async (shortcutId, { dispatch }) => {
-    const { error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error } = await shortcutTable(supabase)
       .delete()
       .eq("id", shortcutId);
 
@@ -686,7 +675,7 @@ export const fetchUserShortcuts = createAsyncThunk<
   void,
   ThunkApi
 >("agentShortcut/fetchUserShortcuts", async () => {
-  const { data, error } = await supabase.rpc("agx_get_user_shortcuts");
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.userShortcuts);
 
   if (error) throw pgErrorToError(error);
 
@@ -707,7 +696,7 @@ export const duplicateShortcut = createAsyncThunk<
   const shortcutId = typeof arg === "string" ? arg : arg.id;
   const targetCategoryId = typeof arg === "string" ? undefined : arg.categoryId;
 
-  const { data, error } = await supabase.rpc("agx_duplicate_shortcut", {
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.duplicate, {
     p_shortcut_id: shortcutId,
   });
 
@@ -752,8 +741,7 @@ export const promoteShortcutToGlobal = createAsyncThunk<
 >(
   "agentShortcut/promoteToGlobal",
   async ({ shortcutId, targetCategoryId, label }, { dispatch }) => {
-    const { data, error } = await supabase.rpc(
-      "agx_promote_shortcut_to_global",
+    const { data, error } = await supabase.rpc(SHORTCUT_RPCS.promoteToGlobal,
       {
         p_shortcut_id: shortcutId,
         p_target_category_id: targetCategoryId,
@@ -788,8 +776,7 @@ export const listNonGlobalShortcutsForAdmin = createAsyncThunk<
   void,
   ThunkApi
 >("agentShortcut/listNonGlobalForAdmin", async () => {
-  const { data, error } = await supabase.rpc(
-    "agx_list_non_global_shortcuts_for_admin",
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.listNonGlobalForAdmin,
   );
 
   if (error) throw pgErrorToError(error);
@@ -822,7 +809,7 @@ export const createShortcutForAgent = createAsyncThunk<
         : null),
   };
 
-  const { data, error } = await supabase.rpc("agx_create_shortcut", {
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.create, {
     p_agent_id: rpcParams.p_agent_id,
     p_category_id: rpcParams.p_category_id,
     p_label: rpcParams.p_label,
@@ -1548,6 +1535,7 @@ export {
   updateCategory,
   deleteCategory,
 } from "../agent-shortcut-categories/thunks";
+import { shortcutTable, SHORTCUT_RPCS } from "@/lib/supabase/shortcutStorage";
 
 // Content-block CRUD moved to the canonical skl thunks
 // (features/agent-connections/redux/skl/thunks.ts —
