@@ -23,5 +23,9 @@ describe("GovernedActionDialog responsive contract", () => {
     expect(globals).toContain("min-height: 2.75rem; /* 44px */");
     expect(globals).toContain("min-width: 2.75rem;");
     expect(sharedDialog).toContain('aria-label="Close"');
+    expect(sharedDialog).toContain(
+      "h-11 w-11 items-center justify-center rounded-sm",
+    );
+    expect(sharedDialog).toContain("lg:h-10 lg:w-10");
   });
 });
