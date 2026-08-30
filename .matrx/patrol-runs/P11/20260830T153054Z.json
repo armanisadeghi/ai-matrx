@@ -85,6 +85,38 @@
       },
       "previousEventHash": "e1db7b886e07b5e1b8b761a816d60cf89de00332c0841fb18ddb5a00ea3a55d7",
       "eventHash": "ae02542e0241c3479e013cddba4c90f525a08de333974db9bb151726779bf7de"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-30T15:37:21.261Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified clearance wave 1 integrated to origin/main",
+      "evidence": [
+        "Candidate fb564b058e remains an ancestor of integration b4c55f5c5c and origin/main",
+        "Release lane intentionally unchanged"
+      ],
+      "delivery": {
+        "candidateSha": "fb564b058e28fb4bbcb260a3ae26e21deac43d97",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153054Z",
+        "integratedSha": "b4c55f5c5c",
+        "release": "not-released"
+      },
+      "previousEventHash": "ae02542e0241c3479e013cddba4c90f525a08de333974db9bb151726779bf7de",
+      "eventHash": "4d15e95709dabbeac345b59460f27936e68dfc86c7ca0cb0a8105704c0af153a"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-30T15:37:27.281Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Closed first P11 eradication wave with four route files fixed and independently certified",
+      "evidence": [
+        "Four verified clearance findings fixed; zero approvals and zero exceptions",
+        "Further eradication waves continue under new permanent runs"
+      ],
+      "previousEventHash": "4d15e95709dabbeac345b59460f27936e68dfc86c7ca0cb0a8105704c0af153a",
+      "eventHash": "b84899170b5e9af25a5fa7a2bbd694475bf0a688389bd653e326de608b831f92"
     }
   ]
 }

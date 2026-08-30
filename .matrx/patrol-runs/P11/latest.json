@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "20260830T153054Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T15:36:57.958Z",
-  "summary": "Certified first eradication wave queued for immediate main integration",
+  "state": "closed",
+  "updatedAt": "2026-08-30T15:37:27.281Z",
+  "summary": "Closed first P11 eradication wave with four route files fixed and independently certified",
   "source": "20260830T153054Z.json",
-  "eventHash": "ae02542e0241c3479e013cddba4c90f525a08de333974db9bb151726779bf7de"
+  "eventHash": "b84899170b5e9af25a5fa7a2bbd694475bf0a688389bd653e326de608b831f92"
 }
