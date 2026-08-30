@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { ChevronDown, ChevronUp, Globe2, Loader2, Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
@@ -13,6 +20,8 @@ import {
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
 import KeywordResearchLauncher from "@/features/marketing/seo/keyword-research/components/KeywordResearchLauncher";
+import { parseLibrarySearchWrite } from "@/features/marketing/seo/keyword-research/keyword-research-write";
+import { useSavedKeywordResearch } from "@/features/marketing/seo/keyword-research/useSavedKeywordResearch";
 import {
   KeywordCompetitionBadge,
   KeywordIntentChip,
@@ -25,6 +34,13 @@ import type {
   KeywordMarketRow,
   KeywordWithMarket,
 } from "@/features/marketing/seo/keyword-research/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  buildKeywordResearchWindowScope,
+  KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
+} from "@/features/surfaces/manifests/keyword-research-window.manifest";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 /**
  * KeywordResearchWindow — the canonical keyword research runner in a
@@ -48,7 +64,6 @@ export interface KeywordResearchWindowProps {
    * opener already knows it. */
   siteId?: string | null;
 }
-
 export default function KeywordResearchWindow({
   isOpen,
   onClose,
@@ -103,6 +118,30 @@ function KeywordMiniRow({ row }: { row: KeywordWithMarket }) {
   );
 }
 
+/**
+ * One visible region may render several values (the launcher renders the run
+ * composite and all of its fields). Each wrapper gives Locate an exact anchor
+ * without inventing duplicate labels or adding visible chrome.
+ */
+function SurfaceValueAnchorStack({
+  names,
+  className = "min-h-0 min-w-0",
+  children,
+}: {
+  names: readonly string[];
+  className?: string;
+  children: ReactNode;
+}) {
+  return names.reduceRight<ReactNode>(
+    (child, name) => (
+      <div key={name} data-surface-value={name} className={className}>
+        {child}
+      </div>
+    ),
+    children,
+  );
+}
+
 function KeywordResearchWindowInner({
   onClose,
   initialKeyword,
@@ -117,12 +156,16 @@ function KeywordResearchWindowInner({
   const selectedSiteId = initialSiteId ?? pickedSiteId;
   const {
     clusterPhrases,
+    clusterPrimaryKeyword,
     keywords,
     loading,
+    loadError,
     search,
     setSearch,
     run,
+    volumeStage,
     runResearch,
+    reloadKeywords,
   } = useKeywordResearch(selectedSiteId);
   const [explorerOpen, setExplorerOpen] = useState(true);
 
@@ -133,8 +176,14 @@ function KeywordResearchWindowInner({
   const [persistedKeyword, setPersistedKeyword] = useState(
     initialKeyword ?? "",
   );
+  const savedResearch = useSavedKeywordResearch(
+    persistedKeyword,
+    selectedSiteId,
+  );
+  const stagedKeywordRef = useRef(initialKeyword ?? "");
   const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleKeywordChange = useCallback((keyword: string) => {
+    stagedKeywordRef.current = keyword;
     if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current);
     keywordTimerRef.current = setTimeout(
       () => setPersistedKeyword(keyword),
@@ -167,117 +216,288 @@ function KeywordResearchWindowInner({
       .slice(0, 100);
   }, [keywords, clusterPhrases]);
 
-  return (
-    <WindowPanel
-      id="keyword-research-window"
-      overlayId="keywordResearchWindow"
-      title="Keyword Research"
-      onClose={onClose}
-      width={760}
-      height={720}
-      minWidth={480}
-      minHeight={420}
-      position="center"
-      urlSyncKey="keyword_research"
-      onCollectData={collectData}
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
-    >
-      <div className="flex min-h-0 flex-1 flex-col">
-        {!initialSiteId ? (
-          <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-            <Globe2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <Select
-              value={selectedSiteId ?? undefined}
-              onValueChange={setPickedSiteId}
-            >
-              <SelectTrigger className="h-11 w-56 text-base sm:h-8 sm:text-xs">
-                <SelectValue placeholder="Select a site to research" />
-              </SelectTrigger>
-              <SelectContent>
-                {(siteOptions.data ?? []).map((site) => (
-                  <SelectItem key={site.id} value={site.id}>
-                    {site.name ?? site.domain}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* An empty picker with no explanation reads as "you have no
-                sites", which a failed read cannot establish. */}
-            {siteOptions.isError ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                We couldn&apos;t load your sites.
-                <button
-                  type="button"
-                  onClick={() => void siteOptions.refetch()}
-                  className="rounded-md border border-border px-1.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-                >
-                  Try again
-                </button>
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="shrink-0 border-b border-border px-3 py-2.5">
-          <KeywordResearchLauncher
-            run={run}
-            runResearch={runResearch}
-            siteId={selectedSiteId}
-            initialKeyword={initialKeyword}
-            autoRun={autoRun}
-            feedMaxHeightClassName="max-h-[45dvh]"
-            onKeywordChange={handleKeywordChange}
-          />
-        </div>
+  const siteOptionsError = siteOptions.isError
+    ? siteOptions.error instanceof Error
+      ? siteOptions.error.message
+      : String(siteOptions.error)
+    : null;
 
-        {/* Compact explorer — the run's cluster when one landed, else the
-            library, live-filterable. Collapsible so the stream owns the
-            window during a run. */}
-        <div className="flex min-h-0 flex-1 flex-col">
-          <button
-            type="button"
-            onClick={() => setExplorerOpen((open) => !open)}
-            className="flex min-h-11 shrink-0 items-center gap-2 border-b border-border px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
+  // The provider and menu both read this function at trigger time. The
+  // launcher's input is a ref because its controlled state belongs to the
+  // shared launcher and should not rerender the explorer per keystroke.
+  const getScope = () =>
+    buildKeywordResearchWindowScope({
+      siteOptions: siteOptions.data ?? [],
+      siteOptionsLoading: siteOptions.isLoading,
+      siteOptionsError,
+      selectedSiteId,
+      initialKeyword,
+      autoRunRequested: autoRun === true,
+      librarySearch: search,
+      libraryLoading: loading,
+      libraryError: loadError,
+      loadedKeywords: keywords,
+      visibleKeywords: rows,
+      explorerOpen,
+      clusterPrimaryKeyword,
+      clusterPhrases,
+      stagedKeyword: stagedKeywordRef.current,
+      run,
+      volumeStage,
+      savedResearch: savedResearch.data ?? null,
+      savedResearchLoading: savedResearch.isLoading,
+      savedResearchError: savedResearch.isError
+        ? savedResearch.error instanceof Error
+          ? savedResearch.error.message
+          : String(savedResearch.error)
+        : null,
+    });
+
+  /**
+   * Reversible UI/staged writes only. Research itself is intentionally absent:
+   * the button is the user's paid-action consent boundary.
+   */
+  const getWriteHandlers = () => ({
+    selected_site_id: (value: unknown) => {
+      if (initialSiteId) {
+        throw new Error(
+          "selected_site_id: this window was opened for a fixed site, so its site cannot be changed here.",
+        );
+      }
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(
+          "selected_site_id expects the id of one available site as a non-empty string.",
+        );
+      }
+      const siteId = value.trim();
+      if (!(siteOptions.data ?? []).some((site) => site.id === siteId)) {
+        throw new Error(
+          `selected_site_id: ${siteId} is not present in this window's loaded site_options.`,
+        );
+      }
+      setPickedSiteId(siteId);
+    },
+    library_search: (value: unknown) => {
+      setSearch(parseLibrarySearchWrite(value));
+    },
+    explorer_open: (value: unknown) => {
+      if (typeof value !== "boolean") {
+        throw new Error("explorer_open expects a boolean.");
+      }
+      setExplorerOpen(value);
+    },
+  });
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={KEYWORD_RESEARCH_WINDOW_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
+      <WindowPanel
+        id="keyword-research-window"
+        overlayId="keywordResearchWindow"
+        title={getSurfaceDisplayLabel(KEYWORD_RESEARCH_WINDOW_SURFACE_NAME)}
+        onClose={onClose}
+        width={760}
+        height={720}
+        minWidth={480}
+        minHeight={420}
+        position="center"
+        urlSyncKey="keyword_research"
+        onCollectData={collectData}
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          surfaceName={KEYWORD_RESEARCH_WINDOW_SURFACE_NAME}
+          menuVersion={1}
+          getApplicationScope={getScope}
+          contentSource={{ type: "raw" }}
+        >
+          <SurfaceValueAnchorStack
+            names={[
+              "selection",
+              "content",
+              "context",
+              "initial_keyword",
+              "auto_run_requested",
+            ]}
+            className="flex min-h-0 min-w-0 flex-1 flex-col"
           >
-            {explorerOpen ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )}
-            {clusterPhrases && run.primaryKeyword
-              ? `Cluster: “${run.primaryKeyword}” · ${rows.length}`
-              : `Keyword library · ${rows.length}`}
-          </button>
-          {explorerOpen && (
-            <>
-              <div className="shrink-0 px-3 py-1.5">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Filter keywords"
-                    className="h-8 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    style={{ fontSize: "16px" }}
+            <div className="flex min-h-0 flex-1 flex-col">
+              {!initialSiteId ? (
+                <SurfaceValueAnchorStack
+                  names={[
+                    "site_options_status",
+                    "site_options_error",
+                    "site_options",
+                    "selected_site_id",
+                    "selected_site",
+                  ]}
+                >
+                  <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+                    <Globe2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Select
+                      value={selectedSiteId ?? undefined}
+                      onValueChange={setPickedSiteId}
+                    >
+                      <SelectTrigger className="h-11 w-56 text-base sm:h-8 sm:text-xs">
+                        <SelectValue placeholder="Select a site to research" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(siteOptions.data ?? []).map((site) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name ?? site.domain}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {/* An empty picker with no explanation reads as "you have no
+                        sites", which a failed read cannot establish. */}
+                    {siteOptions.isError ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                        We couldn&apos;t load your sites.
+                        <button
+                          type="button"
+                          onClick={() => void siteOptions.refetch()}
+                          className="rounded-md border border-border px-1.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                        >
+                          Try again
+                        </button>
+                      </span>
+                    ) : null}
+                  </div>
+                </SurfaceValueAnchorStack>
+              ) : null}
+              <SurfaceValueAnchorStack
+                names={[
+                  "research_input_keyword",
+                  "saved_research_status",
+                  "saved_research_error",
+                  "saved_research",
+                  "research_run",
+                  "run_status",
+                  "run_primary_keyword",
+                  "run_stage",
+                  "run_id",
+                  "research_artifact",
+                  "research_result",
+                  "run_error",
+                  "volume_stage",
+                  // Fixed-site openers omit the picker above. These duplicate
+                  // anchors keep its site scope locatable in that branch; when
+                  // the picker exists its earlier, tighter anchors win.
+                  "site_options_status",
+                  "site_options_error",
+                  "site_options",
+                  "selected_site_id",
+                  "selected_site",
+                ]}
+              >
+                <div className="shrink-0 border-b border-border px-3 py-2.5">
+                  <KeywordResearchLauncher
+                    run={run}
+                    runResearch={runResearch}
+                    siteId={selectedSiteId}
+                    initialKeyword={initialKeyword}
+                    autoRun={autoRun}
+                    feedMaxHeightClassName="max-h-[45dvh]"
+                    onKeywordChange={handleKeywordChange}
+                    writeTargetSurfaceName={
+                      KEYWORD_RESEARCH_WINDOW_SURFACE_NAME
+                    }
                   />
                 </div>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-                {loading ? (
-                  <div className="flex justify-center py-6">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
-                ) : rows.length === 0 ? (
-                  <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                    No keywords yet — research one above to seed the universe.
-                  </p>
-                ) : (
-                  rows.map((row) => <KeywordMiniRow key={row.id} row={row} />)
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </WindowPanel>
+              </SurfaceValueAnchorStack>
+
+              {/* Compact explorer — the run's cluster when one landed, else
+                  the library, live-filterable. Collapsible so the stream owns
+                  the window during a run. */}
+              <SurfaceValueAnchorStack
+                names={[
+                  "library_status",
+                  "library_error",
+                  "loaded_keywords_total",
+                  "loaded_keywords",
+                  "keywords_total",
+                  "visible_keywords",
+                  "explorer_open",
+                  "cluster_primary_keyword",
+                  "cluster_phrases",
+                  // The field unmounts while the explorer is collapsed; this
+                  // pane anchor remains so Locate can reopen the right region.
+                  "library_search",
+                ]}
+                className="flex min-h-0 min-w-0 flex-1 flex-col"
+              >
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <button
+                    type="button"
+                    onClick={() => setExplorerOpen((open) => !open)}
+                    className="flex min-h-11 shrink-0 items-center gap-2 border-b border-border px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
+                  >
+                    {explorerOpen ? (
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    )}
+                    {clusterPhrases && run.primaryKeyword
+                      ? `Cluster: “${run.primaryKeyword}” · ${rows.length}`
+                      : `Keyword library · ${rows.length}`}
+                  </button>
+                  {explorerOpen && (
+                    <>
+                      <div className="shrink-0 px-3 py-1.5">
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            data-surface-value="library_search"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            placeholder="Filter keywords"
+                            className="h-8 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            style={{ fontSize: "16px" }}
+                          />
+                        </div>
+                      </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+                        {loading ? (
+                          <div className="flex justify-center py-6">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : loadError ? (
+                          <div className="flex flex-col items-center gap-2 px-3 py-6 text-center text-xs text-muted-foreground">
+                            <span>
+                              We couldn&apos;t load the keyword library.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={reloadKeywords}
+                              className="min-h-11 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                            >
+                              Try again
+                            </button>
+                          </div>
+                        ) : rows.length === 0 ? (
+                          <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                            No keywords yet — research one above to seed the
+                            universe.
+                          </p>
+                        ) : (
+                          rows.map((row) => (
+                            <KeywordMiniRow key={row.id} row={row} />
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SurfaceValueAnchorStack>
+            </div>
+          </SurfaceValueAnchorStack>
+        </NonEditableContextMenu>
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }

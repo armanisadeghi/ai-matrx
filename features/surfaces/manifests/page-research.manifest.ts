@@ -23,17 +23,10 @@ import { withAllBaselines } from "./_baseline.manifest";
 export const PAGE_RESEARCH_SURFACE_NAME = "matrx-user/page-research";
 
 export type PageResearchPhase =
-  | "form"
-  | "starting"
-  | "running"
-  | "assembling"
-  | "done";
+  "form" | "starting" | "running" | "assembling" | "done";
 
 export type PageResearchAttachmentStatus =
-  | "not_started"
-  | "attaching"
-  | "attached"
-  | "failed";
+  "not_started" | "attaching" | "attached" | "failed";
 
 export type PageResearchOrganizationSource = "page" | "active" | "missing";
 
@@ -47,7 +40,6 @@ export interface PageResearchPageContext {
   organization_id: string;
   organization_source: PageResearchOrganizationSource;
 }
-
 export interface PageResearchDraftSummary {
   topic_name: string;
   keywords: string[];
