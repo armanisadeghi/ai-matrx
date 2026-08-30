@@ -58,20 +58,28 @@ async function withMandateKeys(rows: AgentApp[]): Promise<AgentApp[]> {
   ];
   if (ids.length === 0) return rows;
 
-  const { data, error } = await readAllRows(
-    supabase.schema("mandate").from("definition").select("id, mandate_key").in("id", ids),
-  );
-  if (error) {
-    // A key we could not read is reported as absent, loudly — never guessed.
+  let keyRows: { id: string; mandate_key: string | null }[];
+  try {
+    keyRows = await readAllRows<{ id: string; mandate_key: string | null }>(
+      ({ from, to }) =>
+        supabase
+          .schema("mandate")
+          .from("definition")
+          .select("id, mandate_key", { count: "exact" })
+          .in("id", ids)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "mandate.definition (app keys)" },
+    );
+  } catch (err) {
+    // A key we could not read is reported as absent, LOUDLY — never guessed.
     console.error(
       "[agent-apps] could not resolve mandate keys; signed-in app runs will refuse:",
-      error.message,
+      err instanceof Error ? err.message : String(err),
     );
     return rows;
   }
-  const keyById = new Map(
-    (data ?? []).map((row) => [String(row.id), row.mandate_key as string | null]),
-  );
+  const keyById = new Map(keyRows.map((row) => [row.id, row.mandate_key]));
   return rows.map((row) =>
     row.mandate_id
       ? { ...row, mandate_key: keyById.get(row.mandate_id) ?? null }
@@ -189,9 +197,12 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
     // Update type has no `null` variant), but the domain type allows null
     // before the field is set. A dirty patch should never carry a null org
     // id — omit it rather than send a value the column will reject.
+    // `mandate_key` is HYDRATED onto the cached row (withMandateKeys above),
+    // not a column on `app.definition` — it must never ride a write.
+    const { mandate_key: _hydratedKey, ...columnPatch } = patch;
     const dbPatch = {
-      ...patch,
-      organization_id: patch.organization_id ?? undefined,
+      ...columnPatch,
+      organization_id: columnPatch.organization_id ?? undefined,
     };
 
     const { error } = await supabase
@@ -225,9 +236,11 @@ export const saveAppField = createAsyncThunk<
   const patch: Partial<AgentApp> = {};
   assignField(patch, field, value);
   // See saveApp: organization_id is NOT NULL in the DB; never send null.
+  // Hydrated, not a column — see the note on the other write above.
+  const { mandate_key: _hydratedKey2, ...columnPatch } = patch;
   const dbPatch = {
-    ...patch,
-    organization_id: patch.organization_id ?? undefined,
+    ...columnPatch,
+    organization_id: columnPatch.organization_id ?? undefined,
   };
 
   const { error } = await supabase
@@ -290,7 +303,10 @@ export const createApp = createAsyncThunk<
     organization_id: string;
   },
   ThunkApi
->("agentApp/create", async (payload, { dispatch }) => {
+>("agentApp/create", async (fullPayload, { dispatch }) => {
+  // `mandate_key` is hydrated onto cached rows, never a column — strip it
+  // before anything reaches the insert.
+  const { mandate_key: _hydratedCreateKey, ...payload } = fullPayload;
   const insert = {
     id: payload.id ?? uuidv4(),
     component_language: payload.component_language ?? "tsx",

@@ -27,7 +27,7 @@ export function AgentAppRenderer({
     agent_version_id: app.agent_version_id,
     use_latest: app.use_latest,
     mandate_id: app.mandate_id,
-    mandate_key: "mandate_key" in app ? app.mandate_key : null,
+    mandate_key: "mandate_key" in app ? (app.mandate_key ?? null) : null,
     mandate_agent_id: "mandate_agent_id" in app ? app.mandate_agent_id : null,
     mandate_agent_version_id:
       "mandate_agent_version_id" in app
