@@ -76,9 +76,9 @@ describe("P3 hover-only interaction detector", () => {
       "responsive breakpoint",
     ],
     [
-      "hover-capable media gating",
-      `<Button className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100" />`,
-      "hover-capable media",
+      "viewport and hover-capable media gating",
+      `<Button className="opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100" />`,
+      "responsive breakpoint",
     ],
     [
       "coarse-pointer fallback",
@@ -90,10 +90,26 @@ describe("P3 hover-only interaction detector", () => {
       `<Button className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100" />`,
       "focus-visible",
     ],
+    [
+      "below-breakpoint visibility override",
+      `<Button className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 max-sm:opacity-100" />`,
+      "below-breakpoint",
+    ],
   ])("recognizes %s as already safe", (_name, source, reason) => {
     const [finding] = analyzeP3HoverSource(source);
     expect(finding.classification).toBe("safe");
     expect(finding.reason).toContain(reason);
+  });
+
+  it("rejects hover-capable-only hiding at an IAB-style 375px viewport", () => {
+    const [finding] = analyzeP3HoverSource(
+      `<Button className="opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" />`,
+    );
+    expect(finding).toMatchObject({
+      classification: "actionable",
+      tag: "Button",
+    });
+    expect(finding.reason).toContain("invisible until hover");
   });
 
   it("separates decorative imported icons from actionable controls", () => {

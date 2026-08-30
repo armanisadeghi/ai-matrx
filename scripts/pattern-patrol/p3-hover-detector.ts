@@ -272,6 +272,14 @@ function hasTouchVisibleToken(tokens: string[]): boolean {
   );
 }
 
+function hasBelowBreakpointVisibleToken(tokens: string[]): boolean {
+  return tokens.some(
+    (token) =>
+      VISIBLE_OPACITY.test(token) &&
+      /^(?:max-(?:sm|md|lg|xl|2xl)|max-\[[^\]]+\]):/.test(token),
+  );
+}
+
 function hasFocusReveal(
   tokens: string[],
   interaction: InteractionEvidence | undefined,
@@ -297,8 +305,21 @@ function safeReason(
   hidden: string[],
   interaction: InteractionEvidence | undefined,
 ): string | undefined {
-  if (hidden.every(hasHoverCapableMediaPrefix)) {
-    return "hidden state is gated to hover-capable media";
+  const hasHoverMediaHide = hidden.some(hasHoverCapableMediaPrefix);
+  if (hasHoverMediaHide) {
+    if (hidden.every((token) => RESPONSIVE_PREFIX.test(token))) {
+      return "hover-capable hiding begins at a responsive breakpoint, leaving mobile visible";
+    }
+    if (hasTouchVisibleToken(tokens)) {
+      return "coarse-pointer or hover-none visibility fallback is explicit";
+    }
+    if (hasBelowBreakpointVisibleToken(tokens)) {
+      return "below-breakpoint visibility override keeps mobile visible";
+    }
+    // Hover capability does not imply a desktop viewport. An IAB or hybrid
+    // device can satisfy hover:hover at 375px, so focus fallback alone cannot
+    // make a media-only hidden control initially discoverable.
+    return undefined;
   }
   if (hasTouchVisibleToken(tokens)) {
     return "coarse-pointer or hover-none visibility fallback is explicit";
