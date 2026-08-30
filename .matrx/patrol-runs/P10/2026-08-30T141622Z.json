@@ -263,6 +263,63 @@
       ],
       "previousEventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae",
       "eventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503"
+    },
+    {
+      "sequence": 18,
+      "state": "certified",
+      "at": "2026-08-30T14:48:32.282Z",
+      "actor": "/root/p10_certifier",
+      "summary": "CERTIFIED: schema-backed agent JSON ingress and corrected candidate-tree authority publication.",
+      "evidence": [
+        "candidate:d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "certifier:/root/p10_certifier"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "certifierTaskId": "/root/p10_certifier",
+        "checks": [
+          "61 focused tests passed",
+          "full pnpm type-check passed",
+          "scoped ESLint 0 errors; 4 unchanged warnings",
+          "five JSON assertions and three snapshot-row assertions removed with no new hatches",
+          "authority tree parity outside the two P10 projections"
+        ]
+      },
+      "previousEventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503",
+      "eventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352"
+    },
+    {
+      "sequence": 19,
+      "state": "delivered",
+      "at": "2026-08-30T14:48:39.891Z",
+      "actor": "/root",
+      "summary": "Certified candidate is already integrated on origin/main; recorded delivery without invoking the release lane.",
+      "evidence": [
+        "candidate is ancestor of origin/main",
+        "authority preserves exact candidate tree"
+      ],
+      "delivery": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-30T141622Z",
+        "integratedSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "release": "integration-only; release not requested"
+      },
+      "previousEventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352",
+      "eventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3"
+    },
+    {
+      "sequence": 20,
+      "state": "closed",
+      "at": "2026-08-30T14:48:48.931Z",
+      "actor": "/root",
+      "summary": "Closed the certified schema-backed tranche after delivery bookkeeping.",
+      "evidence": [
+        "ready schema-backed agent-definition queue exhausted",
+        "repository-wide P10 ratchet remains open"
+      ],
+      "previousEventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3",
+      "eventHash": "d88a3b97efb1c705003cdf17b3a3148cb586dccbaa992b2588c3ddf329c9414a"
     }
   ]
 }

@@ -338,6 +338,128 @@ describe("Pattern Patrol permanent run record", () => {
     expect(validatePatrolRunRecord(reconciled)).toEqual([]);
   });
 
+  it("refuses to borrow a later candidate's rejection for an escaped candidate", () => {
+    let record = appendPatrolRunEvent(run(), {
+      state: "fixing",
+      at: "2026-08-14T12:01:00.000Z",
+      actor: "worker",
+      summary: "Prepared escaped candidate",
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "infrastructure_blocked",
+      at: "2026-08-14T12:02:00.000Z",
+      actor: "worker",
+      summary: "Preview blocked",
+      blocker: { prerequisite: "preview" },
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "escaped_delivery",
+      at: "2026-08-14T12:03:00.000Z",
+      actor: "controller",
+      summary: "Candidate escaped",
+      escape: {
+        candidateSha: CANDIDATE,
+        integratedSha: CANDIDATE,
+        release: "v0.4.1",
+        reason: "released before certification",
+      },
+    });
+    const escapedEventHash = record.events.at(-1)!.eventHash;
+    record = appendPatrolRunEvent(record, {
+      state: "certifying",
+      at: "2026-08-14T12:04:00.000Z",
+      actor: "certifier",
+      summary: "Reviewing exact escaped candidate",
+      evidence: [`candidate:${CANDIDATE}`],
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "infrastructure_blocked",
+      at: "2026-08-14T12:05:00.000Z",
+      actor: "certifier",
+      summary: "Exact attempt blocked without a verdict",
+      blocker: { prerequisite: "stable browser" },
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "certifying",
+      at: "2026-08-14T12:06:00.000Z",
+      actor: "other-certifier",
+      summary: "Reviewing a different candidate",
+      evidence: [`candidate:${"c".repeat(40)}`],
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "rejected",
+      at: "2026-08-14T12:07:00.000Z",
+      actor: "other-certifier",
+      summary: "Different candidate rejected",
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "fixing",
+      at: "2026-08-14T12:08:00.000Z",
+      actor: "worker",
+      summary: "Prepared replacement",
+    });
+    const replacement = "d".repeat(40);
+    record = appendPatrolRunEvent(record, {
+      state: "certifying",
+      at: "2026-08-14T12:09:00.000Z",
+      actor: "replacement-certifier",
+      summary: "Reviewing replacement",
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "certified",
+      at: "2026-08-14T12:10:00.000Z",
+      actor: "replacement-certifier",
+      summary: "Replacement certified",
+      certification: {
+        verdict: "CERTIFIED",
+        certifierTaskId: "replacement-certifier",
+        candidateSha: replacement,
+        checks: ["focused interaction"],
+      },
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "delivery_queued",
+      at: "2026-08-14T12:11:00.000Z",
+      actor: "controller",
+      summary: "Replacement queued",
+      delivery: { candidateSha: replacement, preservedRef: "refs/test" },
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "delivered",
+      at: "2026-08-14T12:12:00.000Z",
+      actor: "controller",
+      summary: "Replacement delivered",
+      delivery: {
+        candidateSha: replacement,
+        preservedRef: "refs/test",
+        integratedSha: replacement,
+        release: "v0.4.2",
+      },
+    });
+    record = appendPatrolRunEvent(record, {
+      state: "closed",
+      at: "2026-08-14T12:13:00.000Z",
+      actor: "controller",
+      summary: "Replacement delivery closed",
+    });
+
+    expect(() =>
+      appendPatrolRunEvent(record, {
+        state: "reconciled",
+        at: "2026-08-14T12:14:00.000Z",
+        actor: "controller",
+        summary: "Claimed escaped-candidate rejection",
+        reconciliation: {
+          candidateSha: CANDIDATE,
+          escapedEventHash,
+          outcome: "exact_candidate_rejected",
+          replacementCandidateSha: replacement,
+          checks: ["claimed rejection", "replacement delivered"],
+        },
+      }),
+    ).toThrow("exact-candidate certification attempt and rejection");
+  });
+
   it("refuses a certifier identity that also performed the fix", () => {
     const fixing = appendPatrolRunEvent(run(), {
       state: "fixing",

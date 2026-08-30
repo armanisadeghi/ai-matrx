@@ -102,12 +102,15 @@ export function SiteEditorDialog({
   onOpenChange,
   site,
   onRegister,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   site: MarketingSite | null;
   /** Publish/retract the live handle above. Omit outside the sites portfolio. */
   onRegister?: (handle: SiteEditorHandleRef | null) => void;
+  /** Reconcile non-React-Query list shells after the canonical save succeeds. */
+  onSaved?: () => void;
 }) {
   if (!site) return null;
   return (
@@ -118,6 +121,7 @@ export function SiteEditorDialog({
       onOpenChange={onOpenChange}
       site={site}
       onRegister={onRegister}
+      onSaved={onSaved}
     />
   );
 }
@@ -127,11 +131,13 @@ function SiteEditorDialogBody({
   onOpenChange,
   site,
   onRegister,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   site: MarketingSite;
   onRegister?: (handle: SiteEditorHandleRef | null) => void;
+  onSaved?: () => void;
 }) {
   const updateMutation = useUpdateSiteIdentity();
   const moveMutation = useMoveSiteBrand();
@@ -197,6 +203,7 @@ function SiteEditorDialogBody({
         await moveMutation.mutateAsync({ siteId: site.id, brandId });
       }
       toast.success("Site saved");
+      onSaved?.();
       onOpenChange(false);
     } catch (error) {
       toast.error("Could not save site", {
@@ -264,8 +271,8 @@ function SiteEditorDialogBody({
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              Changing this moves the site (and its website property) to
-              another brand in the same organization.
+              Changing this moves the site (and its website property) to another
+              brand in the same organization.
             </p>
           </div>
 

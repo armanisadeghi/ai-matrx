@@ -261,7 +261,7 @@ function validateEventRequirements(
       const rejected = priorEvents.find(
         (prior) =>
           certifying &&
-          prior.sequence > certifying.sequence &&
+          prior.sequence === certifying.sequence + 1 &&
           prior.state === "rejected",
       );
       if (!certifying || !rejected) {
