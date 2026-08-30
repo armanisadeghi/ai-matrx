@@ -135,6 +135,9 @@ const DESTINATIONS: Destination[] = [
   },
 ];
 
+/** Lulu requires a phone number on every quote address; demo-only value. */
+const DEMO_PHONE_NUMBER = "+1 555 555 0100";
+
 const BULK_TIERS: BulkTier[] = [
   { quantity: 100, label: "100–499", expectedDiscountLabel: "5% volume tier" },
   { quantity: 500, label: "500–999", expectedDiscountLabel: "10% volume tier" },
@@ -248,17 +251,48 @@ export default function LuluPricingDemoPage() {
     setCatalogAttempt((n) => n + 1);
   }
 
-  // ── Shipping options, per destination country ────────────────────────────
-  const shippingKey = `${destination.countryCode}#${catalogAttempt}`;
+  const catalog = catalogState.status === "ready" ? catalogState.data : null;
+  const previewOnly = catalogState.status !== "ready";
+
+  const combination = catalog ? resolveCombination(catalog, selection) : null;
+  const podPackageId = combination?.podPackageId ?? null;
+  const pageWindow = catalog
+    ? pageWindowFor(catalog, selection)
+    : { min: null, max: null };
+
+  // ── Shipping options — the upstream needs a concrete line item, so the
+  // levels load once the configuration resolves to a package.
+  const shippingKey =
+    podPackageId !== null && selection.pageCount !== null
+      ? `${destination.countryCode}#${podPackageId}#${selection.pageCount}#q${quantity}#${catalogAttempt}`
+      : null;
   const shippingState: LuluFetchState<LuluShippingOption[]> =
-    shippingResult?.key === shippingKey
-      ? shippingResult.state
-      : { status: "loading" };
+    shippingKey === null
+      ? { status: "idle" }
+      : shippingResult?.key === shippingKey
+        ? shippingResult.state
+        : { status: "loading" };
 
   useEffect(() => {
+    if (
+      shippingKey === null ||
+      podPackageId === null ||
+      selection.pageCount === null
+    ) {
+      return;
+    }
     const controller = new AbortController();
     const key = shippingKey;
-    fetchShippingOptions(destination.countryCode, controller.signal)
+    fetchShippingOptions(
+      {
+        countryCode: destination.countryCode,
+        stateCode: destination.stateCode,
+        podPackageId,
+        pageCount: selection.pageCount,
+        quantity,
+      },
+      controller.signal,
+    )
       .then((options) => {
         if (!controller.signal.aborted) {
           setShippingResult({ key, state: { status: "ready", data: options } });
@@ -273,7 +307,14 @@ export default function LuluPricingDemoPage() {
         }
       });
     return () => controller.abort();
-  }, [shippingKey, destination.countryCode]);
+  }, [
+    shippingKey,
+    podPackageId,
+    selection.pageCount,
+    quantity,
+    destination.countryCode,
+    destination.stateCode,
+  ]);
 
   // First available level is the default until the user picks one for THIS
   // country; changing destination therefore resets the choice with no effect.
@@ -283,15 +324,6 @@ export default function LuluPricingDemoPage() {
       : shippingState.status === "ready"
         ? (shippingState.data[0]?.level ?? null)
         : null;
-
-  const catalog = catalogState.status === "ready" ? catalogState.data : null;
-  const previewOnly = catalogState.status !== "ready";
-
-  const combination = catalog ? resolveCombination(catalog, selection) : null;
-  const podPackageId = combination?.podPackageId ?? null;
-  const pageWindow = catalog
-    ? pageWindowFor(catalog, selection)
-    : { min: null, max: null };
 
   const configKey =
     podPackageId !== null && selection.pageCount !== null && shippingLevel !== null
@@ -328,6 +360,7 @@ export default function LuluPricingDemoPage() {
         postcode: destination.postcode,
         street1: destination.street1,
         stateCode: destination.stateCode,
+        phoneNumber: DEMO_PHONE_NUMBER,
       },
     };
     const timer = setTimeout(() => {
@@ -387,6 +420,7 @@ export default function LuluPricingDemoPage() {
       postcode: destination.postcode,
       street1: destination.street1,
       stateCode: destination.stateCode,
+      phoneNumber: DEMO_PHONE_NUMBER,
     };
     for (const tier of BULK_TIERS) {
       const cacheKey = `${configKey}@${tier.quantity}`;
@@ -770,12 +804,14 @@ export default function LuluPricingDemoPage() {
                       <SelectTrigger className="h-9">
                         <SelectValue
                           placeholder={
-                            shippingState.status === "loading"
-                              ? "Loading options…"
-                              : shippingState.status === "ready" &&
-                                  shippingState.data.length === 0
-                                ? "No options for this country"
-                                : "Select a level"
+                            shippingState.status === "idle"
+                              ? "Configure the book first"
+                              : shippingState.status === "loading"
+                                ? "Loading options…"
+                                : shippingState.status === "ready" &&
+                                    shippingState.data.length === 0
+                                  ? "No options for this country"
+                                  : "Select a level"
                           }
                         />
                       </SelectTrigger>

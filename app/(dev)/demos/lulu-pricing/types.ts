@@ -1,13 +1,12 @@
 /**
  * Narrow local types for the Lulu live-pricing demo.
  *
- * DELIBERATELY LOCAL AND NARROW. `/lulu/*` is not in the generated OpenAPI
- * contract yet (the aidream service is being built in parallel), so there is
- * nothing to derive from `types/python-generated/api-types.ts`. These types
- * describe ONLY what this surface actually consumes; everything crossing the
- * wire is read as `unknown` and narrowed by the tolerant readers in
- * `catalog.ts` / `lulu-api.ts`. When the contract lands, replace these with
- * `components["schemas"][…]` aliases and delete the readers.
+ * DELIBERATELY LOCAL AND NARROW: this is the surface's VIEW model, not the
+ * wire contract. The wire contract is the generated one —
+ * `types/python-generated/api-types.ts` (`PrintCatalog`,
+ * `CostCalculationResult`, `ShippingOptionsResult`) — and every call is bound
+ * to it through the typed client in `lulu-api.ts` / `catalog.ts`, which map
+ * contract types into these with direct field access (no tolerant readers).
  */
 
 // ---------------------------------------------------------------------------

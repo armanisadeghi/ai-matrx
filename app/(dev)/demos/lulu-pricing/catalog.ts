@@ -1,14 +1,21 @@
 /**
- * Tolerant reader + reactive constraint engine for the Lulu catalog.
+ * Typed catalog builder + reactive constraint engine for the Lulu catalog.
  *
- * The catalog is ingested server-side from Lulu's machine-readable Product
- * Spec Sheet, so the exact inner shape of `GET /lulu/catalog` may still move.
- * Everything here reads `unknown` and accepts a spread of plausible key names
- * rather than asserting one. NOTHING about the product matrix is hardcoded:
- * the option lists, the page windows, and every availability verdict are
- * derived from the combinations the server sends.
+ * `GET /lulu/catalog` is bound to the generated OpenAPI contract
+ * (`PrintCatalog` — the server's ingestion of Lulu's machine-readable Product
+ * Spec Sheet), so `buildCatalog` does direct field access, no tolerant
+ * readers. NOTHING about the product matrix is hardcoded here: the option
+ * lists, the page windows, and every availability verdict are derived from
+ * the products the server sends.
+ *
+ * The catalog's five UI dimensions map onto products like this: a product's
+ * `interior_color` × `print_quality` pair collapses into ONE "interior color"
+ * option (exactly how Lulu's own calculator presents it), and the hardcover
+ * linen/foil variants collapse onto their plain sibling — the demo prices the
+ * base configuration of each five-dimension combination.
  */
 
+import type { components } from "@/types/python-generated/api-types";
 import type {
   LuluBindingGroup,
   LuluBindingOption,
@@ -22,90 +29,11 @@ import type {
   PageWindow,
 } from "./types";
 
+type PrintCatalog = components["schemas"]["PrintCatalog"];
+type CatalogProduct = components["schemas"]["CatalogProduct"];
 // ---------------------------------------------------------------------------
-// Primitive readers
+// Building the view model from the contract-typed catalog
 // ---------------------------------------------------------------------------
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-/** First key present on the record whose value reads as a non-empty string. */
-function readString(
-  record: Record<string, unknown>,
-  ...keys: string[]
-): string | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value.trim();
-    }
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return String(value);
-    }
-  }
-  return null;
-}
-
-function readNumber(
-  record: Record<string, unknown>,
-  ...keys: string[]
-): number | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string" && value.trim().length > 0) {
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) return parsed;
-    }
-  }
-  return null;
-}
-
-/**
- * Read a nested option reference: `{ binding: "PB" }`, `{ binding: { id: … } }`,
- * or `{ binding_id: … }` all resolve to the same id.
- */
-function readRef(
-  record: Record<string, unknown>,
-  ...keys: string[]
-): string | null {
-  for (const key of keys) {
-    const value = record[key];
-    const nested = asRecord(value);
-    if (nested) {
-      const id = readString(nested, "id", "code", "key", "value", "slug");
-      if (id) return id;
-      continue;
-    }
-    const direct = readString(record, key);
-    if (direct) return direct;
-  }
-  return null;
-}
-
-/** Find the first array-valued alias, at the root or one level into a wrapper. */
-function locateArray(root: Record<string, unknown>, keys: string[]): unknown[] {
-  for (const key of keys) {
-    const direct = root[key];
-    if (Array.isArray(direct)) return direct;
-  }
-  for (const wrapper of ["catalog", "data", "options", "product", "products"]) {
-    const nested = asRecord(root[wrapper]);
-    if (!nested) continue;
-    for (const key of keys) {
-      const value = nested[key];
-      if (Array.isArray(value)) return value;
-    }
-  }
-  return [];
-}
 
 const IN_TO_MM = 25.4;
 
@@ -114,244 +42,170 @@ function roundTo(value: number, places: number): number {
   return Math.round(value * factor) / factor;
 }
 
-// ---------------------------------------------------------------------------
-// Option readers
-// ---------------------------------------------------------------------------
+function toNumber(value: string | null | undefined): number | null {
+  if (value == null || value.trim().length === 0) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
-function readOption(raw: unknown): LuluOption | null {
-  const record = asRecord(raw);
-  if (!record) {
-    // A bare string list is a legitimate minimal shape.
-    if (typeof raw === "string" && raw.trim().length > 0) {
-      return { id: raw.trim(), label: raw.trim(), sublabel: null };
-    }
+/**
+ * The composite "interior color" option: Lulu's calculator presents
+ * interior color × print quality as ONE choice, and so do we.
+ */
+const COLOR_ID_SEPARATOR = " · ";
+
+function colorIdFor(product: CatalogProduct): string | null {
+  if (!product.interior_color || !product.print_quality) return null;
+  return `${product.interior_color}${COLOR_ID_SEPARATOR}${product.print_quality}`;
+}
+
+/** Case Wrap and Linen Wrap are the hardcovers; everything else is soft. */
+function bindingGroupFor(binding: string): LuluBindingGroup {
+  return /wrap/i.test(binding) ? "hardcover" : "paperback";
+}
+
+/**
+ * Hardcover linen/foil variants (and print-inside-cover twins) share the five
+ * UI dimensions with a plain sibling; the plain product is the one we price.
+ */
+function isPlainProduct(product: CatalogProduct): boolean {
+  return (
+    product.linen_color == null &&
+    product.foil_color == null &&
+    product.print_inside_cover !== true
+  );
+}
+
+function toCombination(product: CatalogProduct): LuluCombination | null {
+  const colorId = colorIdFor(product);
+  if (
+    !product.trim_sku ||
+    !product.binding ||
+    !colorId ||
+    !product.paper_type ||
+    !product.lamination
+  ) {
     return null;
   }
-  const id = readString(record, "id", "code", "key", "value", "slug", "name");
-  if (!id) return null;
   return {
-    id,
-    label: readString(record, "name", "label", "title", "display_name") ?? id,
-    sublabel: readString(record, "description", "sublabel", "detail", "note"),
-  };
-}
-
-function readTrim(raw: unknown): LuluTrimOption | null {
-  const base = readOption(raw);
-  if (!base) return null;
-  const record = asRecord(raw);
-  if (!record) {
-    return {
-      ...base,
-      widthIn: null,
-      heightIn: null,
-      widthMm: null,
-      heightMm: null,
-    };
-  }
-
-  const widthIn = readNumber(record, "width_in", "width_inches", "width");
-  const heightIn = readNumber(record, "height_in", "height_inches", "height");
-  const widthMm =
-    readNumber(record, "width_mm", "width_millimeters") ??
-    (widthIn === null ? null : roundTo(widthIn * IN_TO_MM, 0));
-  const heightMm =
-    readNumber(record, "height_mm", "height_millimeters") ??
-    (heightIn === null ? null : roundTo(heightIn * IN_TO_MM, 0));
-
-  const measurement =
-    widthIn !== null && heightIn !== null
-      ? `${roundTo(widthIn, 3)} × ${roundTo(heightIn, 3)} in${
-          widthMm !== null && heightMm !== null
-            ? ` · ${widthMm} × ${heightMm} mm`
-            : ""
-        }`
-      : null;
-
-  return {
-    ...base,
-    sublabel: measurement ?? base.sublabel,
-    widthIn,
-    heightIn,
-    widthMm,
-    heightMm,
-  };
-}
-
-const HARDCOVER_HINTS = ["hard", "case", "linen", "cw", "lw"];
-
-function classifyBinding(record: Record<string, unknown> | null, option: LuluOption): LuluBindingGroup {
-  const declared = record
-    ? readString(record, "group", "binding_group", "cover_type", "category")
-    : null;
-  if (declared) {
-    const normalized = declared.toLowerCase();
-    if (normalized.includes("hard") || normalized.includes("case")) {
-      return "hardcover";
-    }
-    if (normalized.includes("soft") || normalized.includes("paper")) {
-      return "paperback";
-    }
-  }
-  const haystack = `${option.id} ${option.label}`.toLowerCase();
-  return HARDCOVER_HINTS.some((hint) =>
-    new RegExp(`\\b${hint}\\b`).test(haystack) || haystack.includes(hint),
-  )
-    ? "hardcover"
-    : "paperback";
-}
-
-function readBinding(raw: unknown): LuluBindingOption | null {
-  const base = readOption(raw);
-  if (!base) return null;
-  return { ...base, group: classifyBinding(asRecord(raw), base) };
-}
-
-// ---------------------------------------------------------------------------
-// Combinations
-// ---------------------------------------------------------------------------
-
-function readCombination(raw: unknown): LuluCombination | null {
-  const record = asRecord(raw);
-  if (!record) return null;
-
-  const trimId = readRef(record, "trim_id", "trim", "trim_size", "trim_size_id", "size");
-  const bindingId = readRef(record, "binding_id", "binding", "binding_type", "bind");
-  const colorId = readRef(
-    record,
-    "color_id",
-    "interior_color_id",
-    "interior_color",
-    "color",
-    "ink",
-  );
-  const paperId = readRef(record, "paper_id", "paper", "paper_type", "interior_paper");
-  const coverFinishId = readRef(
-    record,
-    "cover_finish_id",
-    "cover_finish",
-    "finish",
-    "lamination",
-  );
-
-  if (!trimId || !bindingId || !colorId || !paperId || !coverFinishId) return null;
-
-  return {
-    trimId,
-    bindingId,
+    trimId: product.trim_sku,
+    bindingId: product.binding,
     colorId,
-    paperId,
-    coverFinishId,
-    minPages: readNumber(record, "min_pages", "page_count_min", "min_page_count", "pages_min"),
-    maxPages: readNumber(record, "max_pages", "page_count_max", "max_page_count", "pages_max"),
-    podPackageId: readString(record, "pod_package_id", "package_id", "sku", "id"),
+    paperId: product.paper_type,
+    coverFinishId: product.lamination,
+    minPages: product.min_page_count ?? null,
+    maxPages: product.max_page_count ?? null,
+    podPackageId: product.pod_package_id,
   };
 }
 
-const EMPTY_CATALOG: LuluCatalog = {
-  source: null,
-  retrievedAt: null,
-  trims: [],
-  bindings: [],
-  colors: [],
-  papers: [],
-  coverFinishes: [],
-  combinations: [],
-};
+export function buildCatalog(raw: PrintCatalog): LuluCatalog {
+  const products = raw.products ?? [];
 
-/** Build the option list for a dimension, falling back to what combinations reference. */
-function withDerivedOptions<T extends LuluOption>(
-  declared: T[],
-  combinations: LuluCombination[],
-  pick: (combination: LuluCombination) => string,
-  make: (id: string) => T,
-): T[] {
-  const byId = new Map<string, T>();
-  for (const option of declared) byId.set(option.id, option);
-  for (const combination of combinations) {
-    const id = pick(combination);
-    if (!byId.has(id)) byId.set(id, make(id));
+  // One combination per distinct five-dimension key, plain variant preferred.
+  const combinationsByKey = new Map<
+    string,
+    { combination: LuluCombination; plain: boolean }
+  >();
+  for (const product of products) {
+    const combination = toCombination(product);
+    if (!combination) continue;
+    const key = [
+      combination.trimId,
+      combination.bindingId,
+      combination.colorId,
+      combination.paperId,
+      combination.coverFinishId,
+    ].join("|");
+    const plain = isPlainProduct(product);
+    const existing = combinationsByKey.get(key);
+    if (!existing || (plain && !existing.plain)) {
+      combinationsByKey.set(key, { combination, plain });
+    }
   }
-  return [...byId.values()];
-}
-
-export function readCatalog(raw: unknown): LuluCatalog {
-  const root = asRecord(raw);
-  if (!root) return EMPTY_CATALOG;
-
-  const combinations = locateArray(root, [
-    "combinations",
-    "products",
-    "packages",
-    "skus",
-    "variants",
-    "product_combinations",
-  ])
-    .map(readCombination)
-    .filter((entry): entry is LuluCombination => entry !== null);
-
-  const trims = withDerivedOptions(
-    locateArray(root, ["trims", "trim_sizes", "sizes"])
-      .map(readTrim)
-      .filter((entry): entry is LuluTrimOption => entry !== null),
-    combinations,
-    (combination) => combination.trimId,
-    (id) => ({
-      id,
-      label: id,
-      sublabel: null,
-      widthIn: null,
-      heightIn: null,
-      widthMm: null,
-      heightMm: null,
-    }),
+  const combinations = [...combinationsByKey.values()].map(
+    (entry) => entry.combination,
   );
 
-  const bindings = withDerivedOptions(
-    locateArray(root, ["bindings", "binding_types", "binds"])
-      .map(readBinding)
-      .filter((entry): entry is LuluBindingOption => entry !== null),
-    combinations,
-    (combination) => combination.bindingId,
-    (id) => ({
-      id,
-      label: id,
-      sublabel: null,
-      group: classifyBinding(null, { id, label: id, sublabel: null }),
-    }),
-  );
+  // Trims: the sheet's own trim list (its order is the display order), with
+  // geometry pulled from any product at that trim.
+  const productByTrim = new Map<string, CatalogProduct>();
+  for (const product of products) {
+    if (product.trim_sku && !productByTrim.has(product.trim_sku)) {
+      productByTrim.set(product.trim_sku, product);
+    }
+  }
+  const referencedTrims = new Set(combinations.map((entry) => entry.trimId));
+  const trims: LuluTrimOption[] = (raw.trims ?? [])
+    .filter((trim) => referencedTrims.has(trim.trim_sku))
+    .map((trim) => {
+      const sample = productByTrim.get(trim.trim_sku);
+      const widthIn = toNumber(sample?.trim_width_in);
+      const heightIn = toNumber(sample?.trim_height_in);
+      const widthMm =
+        toNumber(sample?.trim_width_mm) ??
+        (widthIn === null ? null : roundTo(widthIn * IN_TO_MM, 0));
+      const heightMm =
+        toNumber(sample?.trim_height_mm) ??
+        (heightIn === null ? null : roundTo(heightIn * IN_TO_MM, 0));
+      const mm =
+        widthMm !== null && heightMm !== null
+          ? ` · ${widthMm} × ${heightMm} mm`
+          : "";
+      return {
+        id: trim.trim_sku,
+        label: `${trim.book_type} — ${trim.inches_label}`,
+        sublabel: `${trim.size_class}${mm}`,
+        widthIn,
+        heightIn,
+        widthMm,
+        heightMm,
+      };
+    });
 
-  const simple = (keys: string[], pick: (c: LuluCombination) => string) =>
-    withDerivedOptions(
-      locateArray(root, keys)
-        .map(readOption)
-        .filter((entry): entry is LuluOption => entry !== null),
-      combinations,
-      pick,
-      (id) => ({ id, label: id, sublabel: null }),
-    );
+  // The remaining option lists come straight from what the combinations
+  // reference — an option that no product carries must not render.
+  const bindings: LuluBindingOption[] = [];
+  const colors: LuluOption[] = [];
+  const papers: LuluOption[] = [];
+  const coverFinishes: LuluOption[] = [];
+  const seen = new Set<string>();
+  const add = <T extends LuluOption>(list: T[], option: T) => {
+    const key = `${list === (bindings as LuluOption[]) ? "b" : list === colors ? "c" : list === papers ? "p" : "f"}:${option.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    list.push(option);
+  };
+  for (const combination of combinations) {
+    add(bindings, {
+      id: combination.bindingId,
+      label: combination.bindingId,
+      sublabel: null,
+      group: bindingGroupFor(combination.bindingId),
+    });
+    add(colors, { id: combination.colorId, label: combination.colorId, sublabel: null });
+    add(papers, { id: combination.paperId, label: combination.paperId, sublabel: null });
+    add(coverFinishes, {
+      id: combination.coverFinishId,
+      label: combination.coverFinishId,
+      sublabel: null,
+    });
+  }
+  colors.sort((a, b) => a.id.localeCompare(b.id));
+  papers.sort((a, b) => a.id.localeCompare(b.id));
+  coverFinishes.sort((a, b) => a.id.localeCompare(b.id));
 
   return {
-    source: readString(root, "source"),
-    retrievedAt: readString(root, "retrieved_at", "retrievedAt", "updated_at"),
+    source: raw.source,
+    retrievedAt: raw.retrieved_at,
     trims,
     bindings,
-    colors: simple(
-      ["colors", "interior_colors", "inks", "color_options"],
-      (combination) => combination.colorId,
-    ),
-    papers: simple(
-      ["papers", "paper_types", "interior_papers"],
-      (combination) => combination.paperId,
-    ),
-    coverFinishes: simple(
-      ["cover_finishes", "finishes", "laminations"],
-      (combination) => combination.coverFinishId,
-    ),
+    colors,
+    papers,
+    coverFinishes,
     combinations,
   };
 }
-
 // ---------------------------------------------------------------------------
 // The reactive constraint engine
 // ---------------------------------------------------------------------------

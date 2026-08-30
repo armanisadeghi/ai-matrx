@@ -2,71 +2,35 @@
  * Transport for the aidream `/lulu/*` service.
  *
  * Compute goes DIRECT to the Python backend — never through a Next.js route.
- * `/lulu/*` is not in the generated OpenAPI contract yet, so the typed client
- * (`lib/api/typed-client.ts`) has nothing to bind to; this uses the sanctioned
- * raw lane (`lib/python-client.ts`), which still owns active-server URL
- * resolution (the admin server toggle / `apiConfigSlice`), auth headers,
- * request ids, and structured HTTP error parsing. There is NO base URL in
- * this folder.
+ * `/lulu/*` is in the generated OpenAPI contract, so every call here is bound
+ * through the typed client (`lib/api/typed-client.ts`): paths, request bodies,
+ * query params, and responses are all DERIVED from
+ * `types/python-generated/api-types.ts` — when the backend contract moves,
+ * this file lights up red on `pnpm sync-types`. There is NO base URL in this
+ * folder and no tolerant multi-key readers: the mappers below do direct field
+ * access on the contract types and only reshape to this surface's view model.
  *
  * `captureErrors: false` is deliberate: this surface classifies every outcome
  * itself (awaiting-credentials vs upstream error) and renders a durable
  * recovery path, so a pending-credentials 503 must not fill Error Inspector.
  */
 
-import { getJson, postJson } from "@/lib/python-client";
+import { apiGet, apiPost } from "@/lib/api/typed-client";
 import { BackendApiError, describeBackendFailure } from "@/lib/api/errors";
+import type { components } from "@/types/python-generated/api-types";
 import type {
   LuluCatalog,
-  LuluDiscount,
-  LuluFee,
   LuluFetchState,
-  LuluLineItemCost,
-  LuluMoneyBlock,
   LuluPriceResult,
   LuluShippingOption,
 } from "./types";
-import { readCatalog } from "./catalog";
+import { buildCatalog } from "./catalog";
 
-/** The server answers 503 until Arman completes the sandbox-account step. */
+type CostCalculationResult = components["schemas"]["CostCalculationResult"];
+type ShippingOption = components["schemas"]["ShippingOption"];
+
+/** The server answers 503 until the Lulu credentials are configured. */
 const AWAITING_CREDENTIALS_STATUS = 503;
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function readString(
-  record: Record<string, unknown>,
-  ...keys: string[]
-): string | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim().length > 0) return value.trim();
-    if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  }
-  return null;
-}
-
-function readNumber(
-  record: Record<string, unknown>,
-  ...keys: string[]
-): number | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string" && value.trim().length > 0) {
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) return parsed;
-    }
-  }
-  return null;
-}
 
 // ---------------------------------------------------------------------------
 // Outcome classification
@@ -108,36 +72,24 @@ export function toFetchState<T>(error: unknown): LuluFetchState<T> {
 // ---------------------------------------------------------------------------
 
 export async function fetchCatalog(signal?: AbortSignal): Promise<LuluCatalog> {
-  const { data } = await getJson<unknown>("/lulu/catalog", {
+  const { data } = await apiGet("/lulu/catalog", {
     signal,
     captureErrors: false,
   });
-  return readCatalog(data);
+  return buildCatalog(data);
 }
 
 // ---------------------------------------------------------------------------
-// Shipping options
+// Shipping options — the upstream requires a concrete line item, so the
+// query cannot be issued until the configuration resolves to a package.
 // ---------------------------------------------------------------------------
 
-function readShippingOption(raw: unknown): LuluShippingOption | null {
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return { level: raw.trim(), label: humanizeLevel(raw.trim()), sublabel: null };
-  }
-  const record = asRecord(raw);
-  if (!record) return null;
-  const level = readString(record, "level", "shipping_level", "id", "code", "value");
-  if (!level) return null;
-  const businessDaysMin = readNumber(record, "min_delivery_days", "business_days_min");
-  const businessDaysMax = readNumber(record, "max_delivery_days", "business_days_max");
-  const transit =
-    businessDaysMin !== null && businessDaysMax !== null
-      ? `${businessDaysMin}–${businessDaysMax} business days`
-      : null;
-  return {
-    level,
-    label: readString(record, "name", "label", "display_name") ?? humanizeLevel(level),
-    sublabel: transit ?? readString(record, "description", "detail"),
-  };
+export interface ShippingOptionsQuery {
+  countryCode: string;
+  stateCode: string | null;
+  podPackageId: string;
+  pageCount: number;
+  quantity: number;
 }
 
 function humanizeLevel(level: string): string {
@@ -148,29 +100,41 @@ function humanizeLevel(level: string): string {
     .join(" ");
 }
 
+function toShippingOption(option: ShippingOption): LuluShippingOption {
+  const days =
+    option.total_days_min != null && option.total_days_max != null
+      ? option.total_days_min === option.total_days_max
+        ? `${option.total_days_min} days`
+        : `${option.total_days_min}–${option.total_days_max} days`
+      : null;
+  const cost =
+    option.cost_excl_tax != null
+      ? formatMoney(option.cost_excl_tax, option.currency ?? null)
+      : null;
+  const sublabel = [days, cost].filter(Boolean).join(" · ");
+  return {
+    level: option.level,
+    label: humanizeLevel(option.level),
+    sublabel: sublabel.length > 0 ? sublabel : null,
+  };
+}
+
 export async function fetchShippingOptions(
-  countryCode: string,
+  query: ShippingOptionsQuery,
   signal?: AbortSignal,
 ): Promise<LuluShippingOption[]> {
-  const { data } = await getJson<unknown>(
-    `/lulu/shipping-options?country_code=${encodeURIComponent(countryCode)}`,
-    { signal, captureErrors: false },
-  );
-  const root = asRecord(data);
-  const list = Array.isArray(data)
-    ? data
-    : root
-      ? asArray(
-          root.shipping_options ??
-            root.options ??
-            root.results ??
-            root.levels ??
-            root.data,
-        )
-      : [];
-  return list
-    .map(readShippingOption)
-    .filter((entry): entry is LuluShippingOption => entry !== null);
+  const { data } = await apiGet("/lulu/shipping-options", {
+    signal,
+    captureErrors: false,
+    query: {
+      country_code: query.countryCode,
+      pod_package_id: query.podPackageId,
+      page_count: query.pageCount,
+      quantity: query.quantity,
+      ...(query.stateCode ? { state_code: query.stateCode } : {}),
+    },
+  });
+  return (data.options ?? []).map(toShippingOption);
 }
 
 // ---------------------------------------------------------------------------
@@ -188,70 +152,70 @@ export interface PriceRequest {
     postcode: string;
     street1: string;
     stateCode: string | null;
+    /** Required by Lulu on every quote — no address is phone-less. */
+    phoneNumber: string;
   };
 }
 
-function readMoneyBlock(raw: unknown): LuluMoneyBlock | null {
-  const record = asRecord(raw);
-  if (!record) return null;
-  return {
-    totalCostExclTax: readString(record, "total_cost_excl_tax"),
-    totalCostInclTax: readString(record, "total_cost_incl_tax"),
-    totalTax: readString(record, "total_tax"),
-  };
+type ShippingOptionLevel =
+  components["schemas"]["PrintCostRequest"]["shipping_option"];
+
+const SHIPPING_LEVELS: readonly ShippingOptionLevel[] = [
+  "MAIL",
+  "PRIORITY_MAIL",
+  "GROUND_HD",
+  "GROUND_BUS",
+  "GROUND",
+  "EXPEDITED",
+  "EXPRESS",
+] as const;
+
+function asShippingLevel(level: string): ShippingOptionLevel {
+  const match = SHIPPING_LEVELS.find((entry) => entry === level);
+  if (!match) {
+    throw new Error(`Unknown Lulu shipping level: ${level}`);
+  }
+  return match;
 }
 
-function readDiscount(raw: unknown): LuluDiscount | null {
-  const record = asRecord(raw);
-  if (!record) return null;
+function toPriceResult(result: CostCalculationResult): LuluPriceResult {
   return {
-    amount: readString(record, "amount", "total_amount"),
-    description: readString(record, "description", "name", "label"),
-  };
-}
-
-function readLineItem(raw: unknown): LuluLineItemCost | null {
-  const record = asRecord(raw);
-  if (!record) return null;
-  return {
-    totalCostExclTax: readString(record, "total_cost_excl_tax"),
-    totalCostInclTax: readString(record, "total_cost_incl_tax"),
-    totalTax: readString(record, "total_tax"),
-    unitTierCost: readString(record, "unit_tier_cost", "unit_cost"),
-    quantity: readNumber(record, "quantity"),
-    discounts: asArray(record.discounts)
-      .map(readDiscount)
-      .filter((entry): entry is LuluDiscount => entry !== null),
-  };
-}
-
-function readFee(raw: unknown): LuluFee | null {
-  const record = asRecord(raw);
-  if (!record) return null;
-  return {
-    feeType: readString(record, "fee_type", "type", "name"),
-    totalCostExclTax: readString(record, "total_cost_excl_tax"),
-    totalCostInclTax: readString(record, "total_cost_incl_tax"),
-    totalTax: readString(record, "total_tax"),
-  };
-}
-
-export function readPriceResult(raw: unknown): LuluPriceResult {
-  const record = asRecord(raw) ?? {};
-  return {
-    currency: readString(record, "currency"),
-    lineItems: asArray(record.line_item_costs)
-      .map(readLineItem)
-      .filter((entry): entry is LuluLineItemCost => entry !== null),
-    shipping: readMoneyBlock(record.shipping_cost),
-    fulfillment: readMoneyBlock(record.fulfillment_cost),
-    fees: asArray(record.fees)
-      .map(readFee)
-      .filter((entry): entry is LuluFee => entry !== null),
-    totalCostExclTax: readString(record, "total_cost_excl_tax"),
-    totalCostInclTax: readString(record, "total_cost_incl_tax"),
-    totalTax: readString(record, "total_tax"),
-    totalDiscountAmount: readString(record, "total_discount_amount"),
+    currency: result.currency ?? null,
+    lineItems: (result.line_item_costs ?? []).map((item) => ({
+      totalCostExclTax: item.total_cost_excl_tax ?? null,
+      totalCostInclTax: item.total_cost_incl_tax ?? null,
+      totalTax: item.total_tax ?? null,
+      unitTierCost: item.unit_tier_cost ?? null,
+      quantity: item.quantity,
+      discounts: (item.discounts ?? []).map((discount) => ({
+        amount: discount.amount ?? null,
+        description: discount.description ?? null,
+      })),
+    })),
+    shipping: result.shipping_cost
+      ? {
+          totalCostExclTax: result.shipping_cost.total_cost_excl_tax ?? null,
+          totalCostInclTax: result.shipping_cost.total_cost_incl_tax ?? null,
+          totalTax: result.shipping_cost.total_tax ?? null,
+        }
+      : null,
+    fulfillment: result.fulfillment_cost
+      ? {
+          totalCostExclTax: result.fulfillment_cost.total_cost_excl_tax ?? null,
+          totalCostInclTax: result.fulfillment_cost.total_cost_incl_tax ?? null,
+          totalTax: result.fulfillment_cost.total_tax ?? null,
+        }
+      : null,
+    fees: (result.fees ?? []).map((fee) => ({
+      feeType: fee.fee_type ?? null,
+      totalCostExclTax: fee.total_cost_excl_tax ?? null,
+      totalCostInclTax: fee.total_cost_incl_tax ?? null,
+      totalTax: fee.total_tax ?? null,
+    })),
+    totalCostExclTax: result.total_cost_excl_tax ?? null,
+    totalCostInclTax: result.total_cost_incl_tax ?? null,
+    totalTax: result.total_tax ?? null,
+    totalDiscountAmount: result.total_discount_amount ?? null,
   };
 }
 
@@ -259,7 +223,7 @@ export async function fetchPrice(
   request: PriceRequest,
   signal?: AbortSignal,
 ): Promise<LuluPriceResult> {
-  const { data } = await postJson<unknown, Record<string, unknown>>(
+  const { data } = await apiPost(
     "/lulu/price",
     {
       line_items: [
@@ -274,15 +238,16 @@ export async function fetchPrice(
         city: request.address.city,
         country_code: request.address.countryCode,
         postcode: request.address.postcode,
+        phone_number: request.address.phoneNumber,
         ...(request.address.stateCode
           ? { state_code: request.address.stateCode }
           : {}),
       },
-      shipping_option: request.shippingLevel,
+      shipping_option: asShippingLevel(request.shippingLevel),
     },
     { signal, captureErrors: false },
   );
-  return readPriceResult(data);
+  return toPriceResult(data);
 }
 
 // ---------------------------------------------------------------------------
