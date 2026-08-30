@@ -163,7 +163,12 @@ function TaskEditorInner({
   return (
     <TaskEditorControllerProvider value={controller}>
       {routeHeader}
-      <div className="flex flex-col h-full min-h-0 bg-background">
+      <div
+        className="flex flex-col h-full min-h-0 bg-background"
+        style={
+          routeHeader ? { paddingTop: "var(--shell-header-h)" } : undefined
+        }
+      >
         {/* Title row — tiles get a thinner icon-only strip; full editor keeps labels. */}
         {embedded ? (
           <div

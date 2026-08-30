@@ -99,10 +99,16 @@ describe("task lifecycle responsive contract", () => {
 
     expect(editor).toContain("routeHeader?: ReactNode");
     expect(editor).toContain("{routeHeader}");
+    expect(editor).toContain(
+      'routeHeader ? { paddingTop: "var(--shell-header-h)" } : undefined',
+    );
     expect(editor).toContain("TaskEditorCopyButtons");
     expect(editor).not.toContain("TaskCopyForAiButton");
     expect(route).toContain("TaskEditorCopyButtons");
     expect(route).toContain("routeHeader={taskHeader}");
+    expect(route).toContain(
+      'className="ml-auto hidden shrink-0 items-center gap-0.5 sm:flex"',
+    );
     expect(route).not.toContain("TaskCopyForAiButton");
   });
 

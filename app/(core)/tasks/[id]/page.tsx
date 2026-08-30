@@ -82,7 +82,7 @@ export default function TaskPage() {
           {task?.title ?? "Task"}
         </h1>
         {task ? (
-          <div className="ml-auto shrink-0 flex items-center gap-0.5">
+          <div className="ml-auto hidden shrink-0 items-center gap-0.5 sm:flex">
             <ReferenceCopyButton
               referenceType="task"
               id={taskId}
