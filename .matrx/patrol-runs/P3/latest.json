@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T143951Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-30T15:03:03.348Z",
-  "summary": "Record release-before-certification escape without rewriting history",
+  "state": "certified",
+  "updatedAt": "2026-08-30T15:16:22.867Z",
+  "summary": "Breakpoint-gated hover repair independently certified across exact four-quadrant IAB proof",
   "source": "20260830T143951Z.json",
-  "eventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292"
+  "eventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77"
 }

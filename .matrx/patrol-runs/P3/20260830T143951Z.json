@@ -150,6 +150,44 @@
       },
       "previousEventHash": "e67cecac4b921cbf9509db4188008e93b69aa4bab1cca788adbf408b98c4cad9",
       "eventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292"
+    },
+    {
+      "sequence": 11,
+      "state": "certifying",
+      "at": "2026-08-30T15:03:10.034Z",
+      "actor": "root",
+      "summary": "Breakpoint-gated replacement awaits exact independent certification",
+      "evidence": [
+        "candidate:c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "owned current blobs match candidate on all 15 paths",
+        "no redundant release will be created"
+      ],
+      "previousEventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292",
+      "eventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86"
+    },
+    {
+      "sequence": 12,
+      "state": "certified",
+      "at": "2026-08-30T15:16:22.867Z",
+      "actor": "p3-hover-certifier-retry3",
+      "summary": "Breakpoint-gated hover repair independently certified across exact four-quadrant IAB proof",
+      "evidence": [
+        "mobile dark proof from /root/p3_hover_certifier_retry2 plus mobile light and desktop light/dark proof from /root/p3_hover_certifier_retry3",
+        "release-before-certification escape remains visible in prior immutable events"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "certifierTaskId": "/root/p3_hover_certifier_retry3",
+        "checks": [
+          "all 15 owned blobs matched exact candidate before and after browser proof",
+          "375x812 light and dark: actions visible at opacity 1, 44x44, no overflow or overlap; Quick Look activated",
+          "1440x900 light and dark: desktop actions hidden at rest and revealed by hover and keyboard focus; dense geometry preserved",
+          "type-check, path diff, syntax, and detector Jest 15/15 passed"
+        ]
+      },
+      "previousEventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86",
+      "eventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77"
     }
   ]
 }
