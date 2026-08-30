@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P9",
   "runId": "01a05301-8fab-7d50-87f1-ea38599319d4",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:56:09.840Z",
-  "summary": "Rejected-escape reconciliation controller is independently CERTIFIED.",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:56:19.115Z",
+  "summary": "Restored the unreleased Files batch as the final state: no behavioral defect, delivery blocked only by the generated route-manifest lockfile prohibition.",
   "source": "01a05301-8fab-7d50-87f1-ea38599319d4.json",
-  "eventHash": "450cc731254dfed6902dd8c80e31a345f2e9cb8147566f395def573bfa38b35a"
+  "eventHash": "14a0c756b3da7483e8112060fc0e7c60aebb054e8eb5cad39c4155ec34c605a1"
 }
