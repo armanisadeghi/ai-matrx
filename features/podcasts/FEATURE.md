@@ -58,7 +58,9 @@ files, with a live-streaming studio, resumable runs, and public share pages.
    canonical URL and swaps to `PodcastAudioPlayer` — often minutes before
    `podcast_complete`. A seq gap, stream-id change, codec change, decoder error,
    or unsupported MediaSource drops only the transient live preview and waits
-   for the canonical file; it never re-runs paid TTS.
+   for the canonical file; it never re-runs paid TTS. Unsupported MediaSource is
+   an informational compatibility fallback, while decoder/append failures stay
+   structured errors.
 6. Public pages render via `<InlineMediaRef>` (durable) + `PodcastAudioPlayer`.
 
 ## Tables (`pc_*`, project `brsgrqvjdzwihsvnfqkf`)
@@ -107,6 +109,8 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+
+- 2026-08-30 — **Unsupported MediaSource no longer creates a false system error.** The live MP3 player records unavailable/unsupported browser capability as the expected informational fallback to canonical audio; true SourceBuffer, append, and decode failures remain errors. Forcing tests pin both unsupported branches to zero `console.error` calls.
 
 - 2026-08-26 — **Deleting a Studio run uses the canonical anchored, non-modal
   `DeleteConfirmationPopover`.** Card actions and the universal right-click /
