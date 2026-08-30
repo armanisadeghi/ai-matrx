@@ -160,6 +160,7 @@ These are sibling features. The simple `features/transcripts/` view is shaped fo
 
 ## Change Log
 
+- **2026-08-29** — **Every session-dependent sidebar branch waits for hydration.** The list body was gated, but the header's copy/export controls still read a warm client Redux store during the first paint while the server rendered an empty store, producing React #418 on every Studio load. Those controls now join the existing hydration gate.
 - **2026-08-29** — **Studio deep links have one hydration-safe query owner.** The server page parses both `session` and `import` and passes them into `StudioRoute`; the client no longer independently reparses the import URL during hydration, preventing the import-only first render from disagreeing with its server HTML.
 - **2026-08-29** — **The `/transcripts` "Open in Studio" row action now completes the canonical bridge.** The action already linked to `/transcripts/studio?import=<id>`, but `StudioRoute` ignored `import`, so production navigation silently did nothing. `StudioRoute` now fetches the transcript, dispatches the existing idempotent `promoteTranscriptThunk`, and replaces the dead import URL with `?session=<id>`; there is still one conversion path.
 
