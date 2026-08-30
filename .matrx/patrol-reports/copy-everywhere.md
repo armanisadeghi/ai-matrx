@@ -10,6 +10,11 @@
 **Integration:** candidate preserved as an ancestor of `origin/main` by
 `dd524d507a40462ff6fcfa8af5f6a10509b196c9`
 
+A later shared merge briefly selected the stale one-icon side despite retaining
+the certified parent. Canonical reconciliation descendants `cd2167a85c`,
+`b83f6fe33c`, `2df34d5581`, and `e0a0963770` restored the certified product,
+documentation, skill, and contract-check behavior on current `origin/main`.
+
 **Delivery:** queued for the serialized release watch; no redundant release was
 started.
 
@@ -67,6 +72,9 @@ to a single-icon doctrine, rather than checking only prompt generation.
   defect remains.
 - The permanent record is valid with 14 hash-chained events and is
   `delivery_queued` on its deterministic authority ref.
+- A final origin/main check confirms the certified candidate remains an
+  ancestor and the live tree still renders the two-icon contract; ancestry
+  alone was not accepted as delivery proof.
 
 ## Infrastructure evidence
 
