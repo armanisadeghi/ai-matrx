@@ -92,14 +92,14 @@ export function KeywordIntelligenceHub({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the shared
   // list hook's query-state type is the table's, not ours; this page needs only
   // the first page of sites by clicks, which is that type's default shape.
-  const sites = useSites(LIST_STATE as any);
+  const sites = useSites(LIST_STATE as any, brandId ?? null);
 
   const rows = useMemo(
     () =>
-      [...(sites.data?.rows ?? [])]
-        .filter((site) => !brandId || site.brand_id === brandId)
-        .sort((a, b) => (b.gsc_clicks_28d ?? 0) - (a.gsc_clicks_28d ?? 0)),
-    [sites.data?.rows, brandId],
+      [...(sites.data?.rows ?? [])].sort(
+        (a, b) => (b.gsc_clicks_28d ?? 0) - (a.gsc_clicks_28d ?? 0),
+      ),
+    [sites.data?.rows],
   );
 
   return (
