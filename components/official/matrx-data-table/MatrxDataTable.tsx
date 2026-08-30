@@ -767,6 +767,15 @@ function MatrxDataTableCore<T>({
     }
   };
 
+  const discardRowEdits = (rowId: string) => {
+    setEdits((previous) => {
+      if (!previous[rowId]) return previous;
+      const next = { ...previous };
+      delete next[rowId];
+      return next;
+    });
+  };
+
   const hierarchyRows = hierarchy?.rows ?? data;
   const hierarchyGetParentId = hierarchy?.getParentId;
   // O(1) lookups for everything the drag path needs. The previous
@@ -1462,11 +1471,14 @@ function MatrxDataTableCore<T>({
                                     row={displayRow}
                                   />
                                 ) : null}
-                                {rowActions?.(row, {
+                                {rowActions?.(displayRow, {
                                   closeDetail: () => setSelectedId(null),
-                                  openDetail: () => openDetail(row),
-                                  openWindow: () => openWindow(row),
+                                  openDetail: () => openDetail(displayRow),
+                                  openWindow: () => openWindow(displayRow),
                                   closeWindow,
+                                  hasPendingEdits: Boolean(edits[id]),
+                                  discardPendingEdits: () =>
+                                    discardRowEdits(id),
                                 })}
                               </div>
                             ) : null,
@@ -1743,17 +1755,17 @@ function MatrxDataTableCore<T>({
                                 hidden — nothing in the DOM to find or tick.
                               */}
                               {(selection.isRowSelectable?.(row) ?? true) ? (
-                              <Checkbox
-                                className={CHECKBOX_TAP_AREA}
-                                checked={isChecked}
-                                aria-label={`Select this ${selectionNoun}`}
-                                // Radix hands the checkbox's own click through here;
-                                // shift-range needs the native event's modifier, so
-                                // the row toggles from onClick, not onCheckedChange.
-                                onClick={(e) =>
-                                  toggleRowSelected(index, e.shiftKey)
-                                }
-                              />
+                                <Checkbox
+                                  className={CHECKBOX_TAP_AREA}
+                                  checked={isChecked}
+                                  aria-label={`Select this ${selectionNoun}`}
+                                  // Radix hands the checkbox's own click through here;
+                                  // shift-range needs the native event's modifier, so
+                                  // the row toggles from onClick, not onCheckedChange.
+                                  onClick={(e) =>
+                                    toggleRowSelected(index, e.shiftKey)
+                                  }
+                                />
                               ) : null}
                             </td>
                           ) : null}
@@ -1865,11 +1877,14 @@ function MatrxDataTableCore<T>({
                                     row={displayRow}
                                   />
                                 ) : null}
-                                {rowActions?.(row, {
+                                {rowActions?.(displayRow, {
                                   closeDetail: () => setSelectedId(null),
-                                  openDetail: () => openDetail(row),
-                                  openWindow: () => openWindow(row),
+                                  openDetail: () => openDetail(displayRow),
+                                  openWindow: () => openWindow(displayRow),
                                   closeWindow,
+                                  hasPendingEdits: Boolean(rowEdits),
+                                  discardPendingEdits: () =>
+                                    discardRowEdits(id),
                                 })}
                                 {windowEnabled ? (
                                   <Button
@@ -2048,6 +2063,9 @@ function MatrxDataTableCore<T>({
                   openDetail: () => openDetail(selectedRow),
                   openWindow: () => openWindow(selectedRow),
                   closeWindow,
+                  hasPendingEdits: Boolean(edits[getRowId(selectedRow)]),
+                  discardPendingEdits: () =>
+                    discardRowEdits(getRowId(selectedRow)),
                 })}
               </div>
             ) : (
@@ -2108,6 +2126,8 @@ function MatrxDataTableCore<T>({
                 openDetail: () => openDetail(windowRow),
                 openWindow: () => openWindow(windowRow),
                 closeWindow,
+                hasPendingEdits: Boolean(edits[getRowId(windowRow)]),
+                discardPendingEdits: () => discardRowEdits(getRowId(windowRow)),
               }) ??
               (copy ? (
                 <DataRowInspector
@@ -2128,12 +2148,18 @@ function MatrxDataTableCore<T>({
                       openDetail: () => openDetail(windowRow),
                       openWindow: () => openWindow(windowRow),
                       closeWindow,
+                      hasPendingEdits: Boolean(edits[getRowId(windowRow)]),
+                      discardPendingEdits: () =>
+                        discardRowEdits(getRowId(windowRow)),
                     })
                   : detail?.render?.(windowRow, {
                       closeDetail: () => setSelectedId(null),
                       openDetail: () => openDetail(windowRow),
                       openWindow: () => openWindow(windowRow),
                       closeWindow,
+                      hasPendingEdits: Boolean(edits[getRowId(windowRow)]),
+                      discardPendingEdits: () =>
+                        discardRowEdits(getRowId(windowRow)),
                     })
             }
           >
@@ -2142,6 +2168,8 @@ function MatrxDataTableCore<T>({
               openDetail: () => openDetail(windowRow),
               openWindow: () => openWindow(windowRow),
               closeWindow,
+              hasPendingEdits: Boolean(edits[getRowId(windowRow)]),
+              discardPendingEdits: () => discardRowEdits(getRowId(windowRow)),
             })}
           </DataRowWindow>
         ) : null}

@@ -18,7 +18,9 @@
  *     AI calls about real companies at the top and the deterministic furniture
  *     at the bottom. Disagreement on a confident judgment is the single most
  *     informative thing this surface can collect.
- *   - **Two buttons.** Right, or Wrong. Everything else is optional.
+ *   - **Confirm or refine.** Confirm accepts the visible values; each axis can
+ *     be corrected inline, while Edit details keeps the full reasoning and
+ *     free-text training-signal path one click away.
  *   - **No abstract taxonomy questions, ever.** The reader sees a real domain
  *     from their own search results and a plain sentence about it. They never
  *     see the word "axis".
@@ -27,21 +29,29 @@
  *     how that expert thinks.
  *
  * The list itself is the canonical `MatrxDataTable` (every column sorts and
- * filters). "Right" stays a one-click row action, with the free-text "why"
- * moved into a popover so the row stays a table row. "Wrong" opens the
+ * filters). Confirm stays a one-click row action, with the free-text "why"
+ * moved into a popover so the row stays a table row. Edit details opens the
  * canonical WindowPanel onto the full `CompetitorClassificationEditor` — never
  * a side drawer.
  */
 
 import { useMemo, useState } from "react";
-import { ArrowUpRight, Check, Loader2, X } from "lucide-react";
+import { ArrowUpRight, Check, Loader2, Pencil } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type {
+  CellEditsMap,
+  MatrxColumnDef,
+} from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Popover,
   PopoverContent,
@@ -53,12 +63,75 @@ import type { CompetitorRow } from "./data";
 import { saveCompetitorClassification } from "./data";
 import { axesOf, buildRuling } from "./groundTruth";
 import {
+  COMPETITOR_AXIS_CHOICES,
   CompetitorClassificationEditor,
+  ENTITY_ROLE_EDIT_OPTIONS,
   derivedCompetitorLabel,
 } from "./CompetitorIdentification";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SOURCE = "ground_truth_queue";
+
+function options(
+  values: readonly string[],
+): Array<{ value: string; label: string }> {
+  return values.map((value) => ({
+    value,
+    label: value.replaceAll("_", " "),
+  }));
+}
+
+const BUSINESS_OPTIONS = options(COMPETITOR_AXIS_CHOICES.business_overlap);
+const MARKET_OPTIONS = options(COMPETITOR_AXIS_CHOICES.market_overlap);
+const PEER_OPTIONS = options(COMPETITOR_AXIS_CHOICES.peer_scale);
+const POSTURE_OPTIONS = options(COMPETITOR_AXIS_CHOICES.posture);
+
+function valueBadge(value: string | null) {
+  return value ? (
+    <Badge variant="secondary">{value.replaceAll("_", " ")}</Badge>
+  ) : (
+    <span className="text-muted-foreground">—</span>
+  );
+}
+
+function classificationPatch(
+  row: CompetitorRow,
+  fields: Record<string, unknown>,
+) {
+  const stringValue = (key: string, fallback: string | null) => {
+    if (!Object.hasOwn(fields, key)) return fallback;
+    const value = fields[key];
+    if (value === null || typeof value === "string") return value;
+    throw new Error(`The ${key.replaceAll("_", " ")} edit is invalid.`);
+  };
+  const booleanValue = (key: string, fallback: boolean | null) => {
+    if (!Object.hasOwn(fields, key)) return fallback;
+    const value = fields[key];
+    if (typeof value === "boolean") return value;
+    throw new Error(`The ${key.replaceAll("_", " ")} edit is invalid.`);
+  };
+  const labelsValue = () => {
+    if (!Object.hasOwn(fields, "custom_labels")) return row.custom_labels;
+    const value = fields.custom_labels;
+    if (
+      Array.isArray(value) &&
+      value.every((item) => typeof item === "string")
+    ) {
+      return value;
+    }
+    throw new Error("The labels edit is invalid.");
+  };
+
+  return {
+    business_overlap: stringValue("business_overlap", row.business_overlap),
+    market_overlap: stringValue("market_overlap", row.market_overlap),
+    entity_role: stringValue("entity_role", row.entity_role),
+    peer_scale: stringValue("peer_scale", row.peer_scale),
+    posture: stringValue("posture", row.posture),
+    use_for_link_gap: booleanValue("use_for_link_gap", row.use_for_link_gap),
+    custom_labels: labelsValue(),
+  };
+}
 
 /** How sure the machine was. Deterministic rows carry 100 by construction. */
 function confidenceOf(row: CompetitorRow): number {
@@ -110,15 +183,17 @@ function headlineReason(row: CompetitorRow): string {
   );
 }
 
-/** The one-click "Right" action, with the free-text "why" tucked into a
+/** The one-click Confirm action, with the free-text "why" tucked into a
  *  popover so it stays available without needing an always-visible textarea
  *  in every row. */
 function AgreeAction({
   row,
   onSaved,
+  onConfirmed,
 }: {
   row: CompetitorRow;
   onSaved: () => Promise<void>;
+  onConfirmed: () => void;
 }) {
   const [why, setWhy] = useState("");
   const [busy, setBusy] = useState(false);
@@ -147,6 +222,7 @@ function AgreeAction({
           labelOf: derivedCompetitorLabel,
         }),
       );
+      onConfirmed();
       setOpen(false);
       setWhy("");
       await onSaved();
@@ -174,7 +250,7 @@ function AgreeAction({
           ) : (
             <Check className="size-3.5" />
           )}
-          Right
+          Confirm
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -195,13 +271,18 @@ function AgreeAction({
           placeholder="Say it however you would say it out loud."
         />
         <div className="flex justify-end">
-          <Button size="sm" disabled={busy} onClick={() => void agree()} className="gap-1.5">
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => void agree()}
+            className="gap-1.5"
+          >
             {busy ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
               <Check className="size-3.5" />
             )}
-            Confirm right
+            Confirm classification
           </Button>
         </div>
       </PopoverContent>
@@ -224,6 +305,29 @@ export function GroundTruthQueue({
     [competitors],
   );
   const ruled = competitors.length - pending.length;
+  const labelOptions = useMemo(
+    () =>
+      Array.from(new Set(competitors.flatMap((row) => row.custom_labels))).map(
+        (label) => ({ value: label, label }),
+      ),
+    [competitors],
+  );
+
+  const saveEdits = async (edits: CellEditsMap, rows: CompetitorRow[]) => {
+    const rowsById = new Map(rows.map((row) => [row.id, row]));
+    for (const [rowId, fields] of Object.entries(edits)) {
+      const row = rowsById.get(rowId);
+      if (!row) {
+        throw new Error("That competitor is no longer in this review queue.");
+      }
+      await saveCompetitorClassification(
+        rowId,
+        classificationPatch(row, fields),
+        false,
+      );
+    }
+    await onSaved();
+  };
 
   const columns = useMemo<MatrxColumnDef<CompetitorRow>[]>(
     () => [
@@ -248,14 +352,67 @@ export function GroundTruthQueue({
       },
       {
         accessorKey: "entity_role",
-        header: "Proposed classification",
+        header: "Organization type",
         filter: "select",
+        filterOptions: ENTITY_ROLE_EDIT_OPTIONS,
+        editable: "select",
+        editOptions: ENTITY_ROLE_EDIT_OPTIONS,
+        width: 180,
+        cell: (row) => {
+          const label = ENTITY_ROLE_EDIT_OPTIONS.find(
+            (option) => option.value === row.entity_role,
+          )?.label;
+          return valueBadge(label ?? row.entity_role);
+        },
+      },
+      {
+        accessorKey: "business_overlap",
+        header: "Revenue overlap",
+        filter: "select",
+        filterOptions: BUSINESS_OPTIONS,
+        editable: "select",
+        editOptions: BUSINESS_OPTIONS,
+        width: 150,
+        cell: (row) => valueBadge(row.business_overlap),
+      },
+      {
+        accessorKey: "market_overlap",
+        header: "Market reach",
+        filter: "select",
+        filterOptions: MARKET_OPTIONS,
+        editable: "select",
+        editOptions: MARKET_OPTIONS,
+        width: 150,
+        cell: (row) => valueBadge(row.market_overlap),
+      },
+      {
+        accessorKey: "peer_scale",
+        header: "Peer scale",
+        filter: "select",
+        filterOptions: PEER_OPTIONS,
+        editable: "select",
+        editOptions: PEER_OPTIONS,
+        width: 145,
+        cell: (row) => valueBadge(row.peer_scale),
+      },
+      {
+        accessorKey: "posture",
+        header: "What to do",
+        filter: "select",
+        filterOptions: POSTURE_OPTIONS,
+        editable: "select",
+        editOptions: POSTURE_OPTIONS,
+        width: 135,
+        cell: (row) => valueBadge(row.posture),
+      },
+      {
+        id: "classification",
+        header: "Proposed classification",
+        filter: "text",
+        accessorFn: (row) => derivedCompetitorLabel(row),
         width: 190,
         cell: (row) => (
-          <Badge
-            className="max-w-full truncate whitespace-nowrap"
-            title={derivedCompetitorLabel(row)}
-          >
+          <Badge className="max-w-full truncate whitespace-nowrap">
             {derivedCompetitorLabel(row)}
           </Badge>
         ),
@@ -284,7 +441,22 @@ export function GroundTruthQueue({
         cell: (row) => {
           const reason = headlineReason(row);
           return reason ? (
-            <span className="line-clamp-2 leading-5">{reason}</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  tabIndex={0}
+                  className="line-clamp-2 cursor-help rounded leading-5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {reason}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                className="max-h-72 max-w-lg overflow-y-auto whitespace-pre-wrap text-sm leading-5"
+              >
+                {reason}
+              </TooltipContent>
+            </Tooltip>
           ) : (
             <span className="text-muted-foreground">—</span>
           );
@@ -294,6 +466,7 @@ export function GroundTruthQueue({
         accessorKey: "use_for_link_gap",
         header: "Link-gap seed",
         filter: "boolean",
+        editable: "boolean",
         cell: (row) =>
           row.use_for_link_gap ? (
             <Badge variant="secondary">Would chase their links</Badge>
@@ -301,8 +474,28 @@ export function GroundTruthQueue({
             <span className="text-muted-foreground">—</span>
           ),
       },
+      {
+        accessorKey: "custom_labels",
+        header: "Labels",
+        filter: "text",
+        editable: "tags",
+        editOptions: labelOptions,
+        width: 200,
+        cell: (row) =>
+          row.custom_labels.length ? (
+            <div className="flex flex-wrap gap-1">
+              {row.custom_labels.map((label) => (
+                <Badge key={label} variant="outline">
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
     ],
-    [],
+    [labelOptions],
   );
 
   return (
@@ -321,6 +514,7 @@ export function GroundTruthQueue({
           data={pending}
           columns={columns}
           getRowId={(row) => row.id}
+          edit={{ enabled: true, onSave: saveEdits }}
           // MSR-19/20: "Wrong" opens the canonical WindowPanel onto the full
           // axis editor — never a side drawer. `onOpen` is required or the
           // opener falls through to `onRowOpen` instead of opening the window
@@ -330,22 +524,36 @@ export function GroundTruthQueue({
           window={{
             title: (row) => row.display_name || row.display_domain,
             renderView: (row) => (
-              <CompetitorClassificationEditor row={row} onSaved={onSaved} source={SOURCE} />
+              <CompetitorClassificationEditor
+                row={row}
+                onSaved={onSaved}
+                source={SOURCE}
+              />
             ),
             enabled: true,
             onOpen: () => {},
           }}
           rowActions={(row, controls) => (
-            <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-              <AgreeAction row={row} onSaved={onSaved} />
+            <div
+              className="flex items-center gap-1.5"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <AgreeAction
+                row={row}
+                onSaved={onSaved}
+                onConfirmed={controls.discardPendingEdits}
+              />
               <Button
                 size="sm"
                 variant="outline"
                 className="gap-1.5"
-                onClick={() => controls.openWindow()}
+                onClick={() => {
+                  controls.openWindow();
+                  controls.discardPendingEdits();
+                }}
               >
-                <X className="size-3.5" />
-                Wrong
+                <Pencil className="size-3.5" />
+                Edit details
               </Button>
             </div>
           )}

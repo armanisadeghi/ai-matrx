@@ -36,8 +36,10 @@ artifact, and active run.
 Identification is equally primary: the user types a known business name, web lookup
 returns likely official sites with external doors, and one click adds the selected
 identity for classification. Proposed rows open a full axis editor for business overlap,
-market overlap, entity role, posture, link-gap eligibility, and free-text custom labels.
-The visible type is always `derivedCompetitorLabel(...)`; no stored type exists.
+market overlap, entity role, peer scale, posture, link-gap eligibility, and free-text
+custom labels. The Review table exposes and edits those same values inline; its explicit
+Confirm action stamps the visible row as ground truth. The visible type is always
+`derivedCompetitorLabel(...)`; no stored type exists.
 
 **AI and deterministic output are proposals.** Proposed rows emit canonical
 `platform.assists` chips on this surface. Accepting the chip uses the declared
@@ -69,8 +71,10 @@ build a stage that stalls on an unread approval. `reviewDeadlineNote()` owns tha
 **The queue leads with our best work.** `GroundTruthQueue` sorts by the classifier's own
 confidence, DESCENDING: leading with the most confident calls is what makes the first ruling cost a
 second, and a correction on a high-confidence row is the most informative signal in the system.
-Two buttons — Right, Wrong. **Never ask an abstract taxonomy question**; show a real domain from
-their own search results and a plain sentence about it.
+**Confirm acts on the visible row, including unsaved inline corrections.** Edit details opens the
+same full editor in a WindowPanel. Truncated machine reasoning reveals its complete text on hover
+and keyboard focus. **Never ask an abstract taxonomy question**; show a real domain from their own
+search results and a plain sentence about it.
 
 **What a ruling must capture** is defined once, in `groundTruth.ts`: the axes set, the label they
 would have used, whether OUR proposal was right, and *in their words* why. The machine's proposal
@@ -81,6 +85,12 @@ is frozen BESIDE the ruling — without both versions "were we right?" is unansw
 classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
+
+- 2026-08-30 — Review now exposes every editable classification value inline:
+  business overlap, market overlap, entity role, peer scale, posture, link-gap
+  eligibility, and custom labels. Confirm consumes the visible draft and clears it only
+  after the ruling write succeeds; Edit details preserves the full WindowPanel editor.
+  Two-line machine reasoning now reveals its complete text on hover or keyboard focus.
 
 - 2026-08-26 — Replaced the title-only route header, body hero, KPI tiles, and in-body site
   selector with the canonical `EntityModeHeader`: brand dropdown, six URL-addressable

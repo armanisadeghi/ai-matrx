@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-08-29`
+**Last updated:** `2026-08-30`
 
 ---
 
@@ -94,7 +94,7 @@ tables (AI Models, relationships, …) can cut over to one contract.
   shape to their direct database query. Never filter only the visible page.
 - **Select filters are type-to-search and MULTI-select (OR semantics)** — toggling options builds a `values` set; single-`value` writers stay valid. Whenever a column has blank cells, the options automatically include **"(empty)" / "(not empty)"** sentinels (composable with real values: "A or (empty)"). An explicit `filter: "select"` lists ALL distinct values (auto-inference still caps at 24 before falling back to text). **Text filters have Contains / (empty) / (not empty) modes.** **Sorting always puts empty cells last**, both directions. Active filters show a clear **X**; toolbar has **Clear all**.
 - **Row click → `SidePanelSurface` by default, or `WindowPanel` when `window.openOnRowClick` is set.** The window-first mode turns the trailing action and the window header into explicit “Open in side panel” doors. Desktop side panels use `MatrxDynamicPanelHost`; mobile uses Drawer. Never a blocking `Sheet` / split-pane.
-- **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
+- **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. `rowActions` receive the visible row with pending cell edits merged; after an action persists that row, call `discardPendingEdits()` so Save cannot replay the draft as a second write. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
 - **The TABLE owns the detail scroll — a custom body must never re-own it.** `SidePanelSurface` and `DataRowWindow` hand children a bounded cell, and every custom `detail.render` / `viewContent` / `editContent` is now wrapped in a scrolling container by the primitive. Write detail bodies as plain content (`space-y-3 p-3`); do **not** add an `h-full … overflow-y-auto` root. Custom bodies used to have to know this and mostly didn't, so their content silently cut off at the fold with no scrollbar across ~16 surfaces (fixed at this layer 2026-08-12).
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
 - **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). Domain-specific
@@ -286,6 +286,12 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-30 — Row actions now receive the visible row with pending inline
+  edits merged. `MatrxDataTableRecordControls.hasPendingEdits` and
+  `discardPendingEdits()` let an explicit row action persist that visible state
+  and remove only its draft after success, preventing a later Save from
+  replaying the same values through a weaker write path.
 
 - 2026-08-29 — Made every desktop body cell a hard wrapping boundary. Long
   unbroken values now wrap within the column even when a consumer accidentally

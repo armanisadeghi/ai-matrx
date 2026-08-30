@@ -450,6 +450,17 @@ export interface MatrxDataTableRecordControls {
   openWindow: () => void;
   /** Close the row's table-owned WindowPanel, if open. */
   closeWindow: () => void;
+  /** Whether this row currently has visible, unpersisted inline edits. */
+  hasPendingEdits: boolean;
+  /**
+   * Discard this row's pending inline edits.
+   *
+   * Row actions that persist the already-merged visible row (for example an
+   * explicit Confirm action) call this only after that write succeeds. This
+   * prevents the floating Save pill from later replaying the same draft as a
+   * different, weaker write.
+   */
+  discardPendingEdits: () => void;
 }
 
 export interface MatrxDataTableWindowConfig<T> {
