@@ -19,7 +19,13 @@
  */
 
 import { useEffect, useMemo } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import {
+  EntityDoorControls,
+  ENTITY_DOOR_CONTROL_CLASS,
+} from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Select,
   SelectContent,
@@ -44,6 +50,15 @@ import type {
   ContextItemRow,
   ContextItemValueType,
 } from "@/features/scopes/types";
+import {
+  contextItemHref,
+  contextItemsHref,
+  orgHref,
+  orgScopesHref,
+  scopeHref,
+  scopeSeg,
+  scopeTypeHref,
+} from "@/features/scopes/lib/scopeRoutes";
 
 /** Append/overwrite only makes sense for a cell that IS text. */
 const TEXT_COMPATIBLE_VALUE_TYPES: ReadonlySet<ContextItemValueType> = new Set([
@@ -84,6 +99,7 @@ export function ScopeContextTargetPicker({
   const orgId = value.orgId || activeOrgId || "";
   const scopeTypeId = value.scopeTypeId || "";
   const scopeId = value.scopeId || "";
+  const contextItemId = value.contextItemId || "";
 
   useEffect(() => {
     void dispatch(ensureScopeTree());
@@ -114,6 +130,13 @@ export function ScopeContextTargetPicker({
     selectItemsStatusForType(s, scopeTypeId || null),
   );
   const itemsLoaded = itemsStatus === "ready" || itemsStatus === "error";
+  const organization = orgs.find((org) => org.id === orgId) ?? null;
+  const scopeType =
+    scopeTypes.find((candidate) => candidate.id === scopeTypeId) ?? null;
+  const scope = scopes.find((candidate) => candidate.id === scopeId) ?? null;
+  const item =
+    items.find((candidate) => candidate.id === contextItemId) ?? null;
+  const orgSegment = organization ? scopeSeg(organization) : null;
 
   useEffect(() => {
     if (scopeTypeId) void dispatch(ensureScopeTypeItems(scopeTypeId));
@@ -132,51 +155,100 @@ export function ScopeContextTargetPicker({
     <div className="grid gap-2 sm:grid-cols-2">
       <div className="space-y-1.5">
         <Label className="text-xs">Organization</Label>
-        <Select
-          value={orgId}
-          onValueChange={(v) =>
-            emit({ orgId: v, scopeTypeId: "", scopeId: "", contextItemId: "" })
-          }
-          disabled={disabled}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Choose an organization…" />
-          </SelectTrigger>
-          <SelectContent>
-            {orgs.map((o) => (
-              <SelectItem key={o.id} value={o.id}>
-                {o.name}
-                {o.is_personal ? " (personal)" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1">
+          <Select
+            value={orgId}
+            onValueChange={(v) =>
+              emit({
+                orgId: v,
+                scopeTypeId: "",
+                scopeId: "",
+                contextItemId: "",
+              })
+            }
+            disabled={disabled}
+          >
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+              <SelectValue placeholder="Choose an organization…" />
+            </SelectTrigger>
+            <SelectContent>
+              {orgs.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.name}
+                  {o.is_personal ? " (personal)" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {organization && orgSegment ? (
+            <EntityDoorControls
+              token="organization"
+              id={organization.id}
+              name={organization.name}
+              href={orgHref(orgSegment)}
+              alwaysShowActions
+            />
+          ) : null}
+          <Link
+            href="/organizations"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Create or manage organizations"
+            aria-label="Create or manage organizations"
+            className={ENTITY_DOOR_CONTROL_CLASS}
+          >
+            <Plus className="size-3" />
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-1.5">
         <Label className="text-xs">Scope type</Label>
-        <Select
-          value={scopeTypeId}
-          onValueChange={(v) =>
-            emit({ scopeTypeId: v, scopeId: "", contextItemId: "" })
-          }
-          disabled={disabled || !orgId}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue
-              placeholder={
-                !orgId ? "Pick an organization first" : "Choose a type…"
-              }
+        <div className="flex items-center gap-1">
+          <Select
+            value={scopeTypeId}
+            onValueChange={(v) =>
+              emit({ scopeTypeId: v, scopeId: "", contextItemId: "" })
+            }
+            disabled={disabled || !orgId}
+          >
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+              <SelectValue
+                placeholder={
+                  !orgId ? "Pick an organization first" : "Choose a type…"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {scopeTypes.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.label_singular}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {scopeType && orgSegment ? (
+            <EntityDoorControls
+              token="scope_type"
+              id={scopeType.id}
+              name={scopeType.label_singular}
+              href={scopeTypeHref(orgSegment, scopeType)}
+              alwaysShowActions
             />
-          </SelectTrigger>
-          <SelectContent>
-            {scopeTypes.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.label_singular}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          ) : null}
+          {organization && orgSegment ? (
+            <Link
+              href={orgScopesHref(orgSegment)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Create or manage scope types in ${organization.name}`}
+              aria-label={`Create or manage scope types in ${organization.name}`}
+              className={ENTITY_DOOR_CONTROL_CLASS}
+            >
+              <Plus className="size-3" />
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-1.5">
@@ -184,71 +256,121 @@ export function ScopeContextTargetPicker({
           {scopeTypes.find((t) => t.id === scopeTypeId)?.label_singular ??
             "Scope"}
         </Label>
-        <Select
-          value={scopeId}
-          onValueChange={(v) => emit({ scopeId: v, contextItemId: "" })}
-          disabled={disabled || !scopeTypeId}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue
-              placeholder={
-                !scopeTypeId
-                  ? "Pick a scope type first"
-                  : scopes.length === 0
-                    ? "No scopes of this type"
-                    : "Choose a scope…"
-              }
+        <div className="flex items-center gap-1">
+          <Select
+            value={scopeId}
+            onValueChange={(v) => emit({ scopeId: v, contextItemId: "" })}
+            disabled={disabled || !scopeTypeId}
+          >
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+              <SelectValue
+                placeholder={
+                  !scopeTypeId
+                    ? "Pick a scope type first"
+                    : scopes.length === 0
+                      ? "No scopes of this type"
+                      : "Choose a scope…"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {scopes.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {scope && scopeType && orgSegment ? (
+            <EntityDoorControls
+              token="scope"
+              id={scope.id}
+              name={scope.name}
+              href={scopeHref(orgSegment, scopeType, scope)}
+              alwaysShowActions
             />
-          </SelectTrigger>
-          <SelectContent>
-            {scopes.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          ) : null}
+          {scopeType && orgSegment ? (
+            <Link
+              href={scopeTypeHref(orgSegment, scopeType)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Create or manage ${scopeType.label_plural.toLowerCase()}`}
+              aria-label={`Create or manage ${scopeType.label_plural.toLowerCase()}`}
+              className={ENTITY_DOOR_CONTROL_CLASS}
+            >
+              <Plus className="size-3" />
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-1.5">
         <Label className="text-xs">Context item</Label>
-        <Select
-          value={value.contextItemId || ""}
-          onValueChange={(itemId) => {
-            const item = items.find((i) => i.id === itemId);
-            if (item) emit({ contextItemId: item.id, item });
-          }}
-          disabled={disabled || !scopeId}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue
-              placeholder={
-                !scopeId
-                  ? "Pick a scope first"
-                  : items.length === 0
-                    ? itemsLoaded
-                      ? "No items on this scope type"
-                      : "Loading…"
-                    : "Choose a context item…"
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((i) => {
-              const compatible = isTextCompatibleContextItem(i);
-              return (
-                <SelectItem key={i.id} value={i.id} disabled={!compatible}>
-                  <span>{i.display_name}</span>
-                  {!compatible && (
-                    <span className="ml-2 text-[10px] text-muted-foreground">
-                      ({i.value_type} — text only, for now)
-                    </span>
-                  )}
-                </SelectItem>
+        <div className="flex items-center gap-1">
+          <Select
+            value={contextItemId}
+            onValueChange={(itemId) => {
+              const nextItem = items.find(
+                (candidate) => candidate.id === itemId,
               );
-            })}
-          </SelectContent>
-        </Select>
+              if (nextItem) {
+                emit({ contextItemId: nextItem.id, item: nextItem });
+              }
+            }}
+            disabled={disabled || !scopeId}
+          >
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
+              <SelectValue
+                placeholder={
+                  !scopeId
+                    ? "Pick a scope first"
+                    : items.length === 0
+                      ? itemsLoaded
+                        ? "No items on this scope type"
+                        : "Loading…"
+                      : "Choose a context item…"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {items.map((i) => {
+                const compatible = isTextCompatibleContextItem(i);
+                return (
+                  <SelectItem key={i.id} value={i.id} disabled={!compatible}>
+                    <span>{i.display_name}</span>
+                    {!compatible && (
+                      <span className="ml-2 text-[10px] text-muted-foreground">
+                        ({i.value_type} — text only, for now)
+                      </span>
+                    )}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          {item && scopeType && orgSegment ? (
+            <EntityDoorControls
+              token="context_item"
+              id={item.id}
+              name={item.display_name}
+              href={contextItemHref(orgSegment, scopeType, item)}
+              alwaysShowActions
+            />
+          ) : null}
+          {scopeType && orgSegment ? (
+            <Link
+              href={contextItemsHref(orgSegment, scopeType)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Create or manage context items for ${scopeType.label_plural}`}
+              aria-label={`Create or manage context items for ${scopeType.label_plural}`}
+              className={ENTITY_DOOR_CONTROL_CLASS}
+            >
+              <Plus className="size-3" />
+            </Link>
+          ) : null}
+        </div>
       </div>
     </div>
   );
