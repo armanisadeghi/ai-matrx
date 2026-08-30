@@ -54,6 +54,7 @@ No exception was proposed, approved, suppressed, or allowlisted.
 - Scoped diff check: **PASS**.
 - Batch 1 adversarial verdict (`/root/p9_repair_certifier`): **CERTIFIED**. AdvancedMenu interaction proof confirms disabled state + Unavailable copy + no promise; image-generation control flow is behavior-preserving.
 - Batch 2 adversarial verdict (`/root/p9_certifier_retry`): **INFRASTRUCTURE BLOCKED**, with **no batch-caused behavioral defect**. Desktop renders registry truth; mobile stays on its byte-unchanged pre-existing `MobileStack` path.
+- Reconciliation-controller adversarial review **REJECTED two concrete drafts**: the first could borrow a different candidate's rejection; the second incorrectly refused a legitimate blocked-then-retried exact candidate. Both defects were repaired. Final candidate `57d8d60d3974525dd346a9f250d82b1726470d6a` is **CERTIFIED** with 20/20 focused tests, a refused cross-candidate bypass, and an accepted exact-candidate retry.
 - Scoped lint reports only unchanged baseline errors in `AdvancedMenu.tsx` and `PageShell.tsx`; they do not reject either batch.
 - In-app Browser control was unavailable, so the committed rendered-component interaction tests are the bounded stable evidence. No user browser was used.
 
@@ -67,4 +68,4 @@ The 2026-08-29 record now truthfully ends `reconciled` with 14 append-only event
 
 ## Cadence health and candidates
 
-The preceding month is not all clean, so no longer cadence is proposed. One earlier concrete rejection was repaired; this run's infrastructure block does not count as a rejection, so mutation is not paused. No recurring unregistered class met the evidence threshold for a Candidate-bench nomination.
+The preceding month is not all clean, so no longer cadence is proposed. The two controller rejections and the earlier product rejection were concretely repaired; this run's infrastructure block does not count as a rejection, so mutation is not paused. No recurring unregistered class met the evidence threshold for a Candidate-bench nomination.
