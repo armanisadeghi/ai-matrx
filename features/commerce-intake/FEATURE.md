@@ -88,13 +88,13 @@ reverse lookup (`resolveScannedValue`) is one indexed read.
 **The claim-on-scan decision table** (`useIntakeSession.processQrCode` — the DECISION function
 changed; the 5-round-reviewed qrChain serialization plumbing did NOT):
 
-| Scan resolves to | Behavior |
-|---|---|
-| Live identifier on the CURRENT asset | No-op ("assigned") |
-| Live identifier on ANOTHER asset | Switch to/open that asset (`resumeAsset`) — never a duplicate row |
-| Pooled `available` code | Normal assign/switch flow, then `claimLabelCode` stamps `available → assigned` (state-guarded CAS + identifier back-link) |
-| `void` code | Refused with a toast |
-| Unknown value | Legacy behavior (fresh `our_qr` row) |
+| Scan resolves to                     | Behavior                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Live identifier on the CURRENT asset | No-op ("assigned")                                                                                                        |
+| Live identifier on ANOTHER asset     | Switch to/open that asset (`resumeAsset`) — never a duplicate row                                                         |
+| Pooled `available` code              | Normal assign/switch flow, then `claimLabelCode` stamps `available → assigned` (state-guarded CAS + identifier back-link) |
+| `void` code                          | Refused with a toast                                                                                                      |
+| Unknown value                        | Legacy behavior (fresh `our_qr` row)                                                                                      |
 
 The old "same code after 4 s absence = next unit as a NEW asset" is superseded — per-org
 uniqueness forbids the duplicate row by design; re-scan now opens the existing asset.
@@ -222,6 +222,10 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-29 — **Asset route identity guard.** `/commerce/intake/assets/[id]` classifies its
+  segment before rendering client readers: UUIDs reach the asset workspace, the reserved
+  `v2` segment redirects to `/commerce/intake/v2`, and every other segment returns the route's
+  not-found boundary. Literal route names can no longer reach UUID-backed commerce reads.
 - 2026-08-29 — **Mobile header actions collapse to icons.** The assets hub, answer queue,
   and asset detail keep their full labeled actions at `sm+`, while every labeled shell-header
   action uses the canonical tap target's `mobileIconOnly` mode below `sm`; accessible names
