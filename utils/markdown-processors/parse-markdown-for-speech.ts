@@ -14,9 +14,140 @@ export interface ParseMarkdownToTextOptions {
   pronunciations?: SpeechPronunciation[];
 }
 
+/**
+ * Long-form meanings retained as reference data for search, display, or future
+ * accessibility features. TTS must not use these expansions: repeatedly
+ * reading "Application Programming Interface" for API is not natural speech.
+ */
+export const COMMON_ABBREVIATION_EXPANSIONS = {
+  AI: "Artificial Intelligence",
+  API: "Application Programming Interface",
+  HTTP: "Hypertext Transfer Protocol",
+  HTTPS: "Hypertext Transfer Protocol Secure",
+  URL: "Uniform Resource Locator",
+  URI: "Uniform Resource Identifier",
+  JSON: "JavaScript Object Notation",
+  XML: "eXtensible Markup Language",
+  CSS: "Cascading Style Sheets",
+  HTML: "Hypertext Markup Language",
+  JS: "JavaScript",
+  TS: "TypeScript",
+  SQL: "Structured Query Language",
+  DB: "Database",
+  UI: "User Interface",
+  UX: "User Experience",
+  SEO: "Search Engine Optimization",
+  SDK: "Software Development Kit",
+  CLI: "Command Line Interface",
+  IDE: "Integrated Development Environment",
+  JWT: "JSON Web Token",
+  OAuth: "Open Authorization",
+  REST: "Representational State Transfer",
+  CRUD: "Create Read Update Delete",
+  MVC: "Model View Controller",
+  SPA: "Single Page Application",
+  SSR: "Server Side Rendering",
+  CSR: "Client Side Rendering",
+  PWA: "Progressive Web App",
+  DOM: "Document Object Model",
+  BOM: "Browser Object Model",
+  CDN: "Content Delivery Network",
+  CMS: "Content Management System",
+  ERP: "Enterprise Resource Planning",
+  CRM: "Customer Relationship Management",
+  SaaS: "Software as a Service",
+  PaaS: "Platform as a Service",
+  IaaS: "Infrastructure as a Service",
+  VPN: "Virtual Private Network",
+  LAN: "Local Area Network",
+  WAN: "Wide Area Network",
+  TCP: "Transmission Control Protocol",
+  UDP: "User Datagram Protocol",
+  IP: "Internet Protocol",
+  DNS: "Domain Name System",
+  FTP: "File Transfer Protocol",
+  SMTP: "Simple Mail Transfer Protocol",
+  POP3: "Post Office Protocol version 3",
+  IMAP: "Internet Message Access Protocol",
+} as const;
+
+type CommonAbbreviation = keyof typeof COMMON_ABBREVIATION_EXPANSIONS;
+
 /** Escape a string for safe use inside a RegExp. */
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const COMMON_ABBREVIATION_BY_UPPERCASE = Object.fromEntries(
+  (Object.keys(COMMON_ABBREVIATION_EXPANSIONS) as CommonAbbreviation[]).map(
+    (abbreviation) => [abbreviation.toUpperCase(), abbreviation],
+  ),
+) as Record<string, CommonAbbreviation>;
+
+const COMMON_ABBREVIATION_PATTERN = new RegExp(
+  `\\b(${Object.keys(COMMON_ABBREVIATION_EXPANSIONS)
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join("|")})\\b`,
+  "gi",
+);
+
+/** Acronyms normally spoken as words; leave them in conventional written form. */
+const SPOKEN_AS_WORD = new Set<CommonAbbreviation>([
+  "JSON",
+  "OAuth",
+  "REST",
+  "CRUD",
+  "DOM",
+  "BOM",
+  "SaaS",
+  "PaaS",
+  "IaaS",
+  "LAN",
+  "WAN",
+]);
+
+/**
+ * These acronyms are also ordinary English words when lowercased. Only their
+ * conventional acronym casing is safe to normalize.
+ */
+const CASE_SENSITIVE_WORD_ACRONYMS = new Set<CommonAbbreviation>([
+  "REST",
+  "CRUD",
+  "SPA",
+  "DOM",
+  "BOM",
+  "LAN",
+  "WAN",
+]);
+
+function spokenFormForAbbreviation(match: string): string {
+  const abbreviation = COMMON_ABBREVIATION_BY_UPPERCASE[match.toUpperCase()];
+  if (!abbreviation) return match;
+  if (
+    CASE_SENSITIVE_WORD_ACRONYMS.has(abbreviation) &&
+    match !== abbreviation
+  ) {
+    return match;
+  }
+  if (SPOKEN_AS_WORD.has(abbreviation)) return abbreviation;
+  return Array.from(abbreviation.toUpperCase()).join(" ");
+}
+
+/**
+ * Normalize technical abbreviations for both active TTS lanes.
+ *
+ * Cartesia Sonic 3.5 recommends single-space character delimiters for forced
+ * readout ("A P I"), and that plain-text form also works with the catalog's
+ * Groq/Orpheus engine, which has no SSML/pronunciation-dictionary input. Word
+ * acronyms stay conventional so models can say "json", "oh-auth", etc.
+ */
+export function normalizeSpeechAbbreviations(text: string): string {
+  if (!text) return text;
+  return text.replace(
+    COMMON_ABBREVIATION_PATTERN,
+    spokenFormForAbbreviation,
+  );
 }
 
 /**
@@ -171,58 +302,6 @@ export function parseMarkdownToText(
     "🥇": "first place medal",
     "🥈": "second place medal",
     "🥉": "third place medal",
-  };
-
-  const commonAbbreviations: { [key: string]: string } = {
-    AI: "Artificial Intelligence",
-    API: "Application Programming Interface",
-    HTTP: "Hypertext Transfer Protocol",
-    HTTPS: "Hypertext Transfer Protocol Secure",
-    URL: "Uniform Resource Locator",
-    URI: "Uniform Resource Identifier",
-    JSON: "JavaScript Object Notation",
-    XML: "eXtensible Markup Language",
-    CSS: "Cascading Style Sheets",
-    HTML: "Hypertext Markup Language",
-    JS: "JavaScript",
-    TS: "TypeScript",
-    SQL: "Structured Query Language",
-    DB: "Database",
-    UI: "User Interface",
-    UX: "User Experience",
-    SEO: "Search Engine Optimization",
-    SDK: "Software Development Kit",
-    CLI: "Command Line Interface",
-    IDE: "Integrated Development Environment",
-    JWT: "JSON Web Token",
-    OAuth: "Open Authorization",
-    REST: "Representational State Transfer",
-    CRUD: "Create Read Update Delete",
-    MVC: "Model View Controller",
-    SPA: "Single Page Application",
-    SSR: "Server Side Rendering",
-    CSR: "Client Side Rendering",
-    PWA: "Progressive Web App",
-    DOM: "Document Object Model",
-    BOM: "Browser Object Model",
-    CDN: "Content Delivery Network",
-    CMS: "Content Management System",
-    ERP: "Enterprise Resource Planning",
-    CRM: "Customer Relationship Management",
-    SaaS: "Software as a Service",
-    PaaS: "Platform as a Service",
-    IaaS: "Infrastructure as a Service",
-    VPN: "Virtual Private Network",
-    LAN: "Local Area Network",
-    WAN: "Wide Area Network",
-    TCP: "Transmission Control Protocol",
-    UDP: "User Datagram Protocol",
-    IP: "Internet Protocol",
-    DNS: "Domain Name System",
-    FTP: "File Transfer Protocol",
-    SMTP: "Simple Mail Transfer Protocol",
-    POP3: "Post Office Protocol version 3",
-    IMAP: "Internet Message Access Protocol",
   };
 
   const measurementUnits: { [key: string]: string } = {
@@ -473,13 +552,8 @@ export function parseMarkdownToText(
         return emojiMap[emoji] || "emoji";
       },
     )
-    // Replace common abbreviations (case-insensitive, whole word)
-    .replace(
-      /\b(AI|API|HTTP|HTTPS|URL|URI|JSON|XML|CSS|HTML|JS|TS|SQL|DB|UI|UX|SEO|SDK|CLI|IDE|JWT|OAuth|REST|CRUD|MVC|SPA|SSR|CSR|PWA|DOM|BOM|CDN|CMS|ERP|CRM|SaaS|PaaS|IaaS|VPN|LAN|WAN|TCP|UDP|IP|DNS|FTP|SMTP|POP3|IMAP)\b/gi,
-      (match) => {
-        return commonAbbreviations[match.toUpperCase()] || match;
-      },
-    )
+    // Initialisms become space-delimited letters; word acronyms stay natural.
+    .replace(COMMON_ABBREVIATION_PATTERN, spokenFormForAbbreviation)
     // Replace measurement units (with word boundaries and optional numbers before)
     .replace(
       /(\d+(?:\.\d+)?)\s*(lbs|lb|oz|kg|gm|mg|km|cm|mm|ft|mi|mph|kph|kmh|ml|mL|gal|qt|tbsp|tsp|sqft|sqm|sec|min|hr|hrs|ms|psi|rpm|bpm)\b/gi,
