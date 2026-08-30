@@ -43,6 +43,7 @@
 - Permanent run record verification: **PASS** with seven valid hash-chained lifecycle events through `closed`.
 - Unchanged baseline-only issue: `TaxonomyAdminClient.tsx` already reports `react-hooks/set-state-in-effect`; the P7 batch did not create or worsen it.
 - Manifest, generated registry, live local automation, permanent record, report, memory, sighting, and inbox projections agree: **MAINTENANCE / ACTIVE / CLOSED / v0.4.1441**.
+- The fleet delivery checker initially misattributed P7's explicit older-candidate delivery append to unrelated product edits committed beside it in the shared checkout. Exact machinery candidate `b9b63235b7` now keys ownership to explicit candidate SHAs; independent certification passed focused Jest 7/7 and scoped ESLint, and the P7-specific delivery diagnostic is cleared. Remaining fleet-wide delivery diagnostics belong to other patrols and are not P7 evidence.
 
 ## Adversarial certification
 
