@@ -119,6 +119,24 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-29 — **ONE mandate UI, and management is admin-side.** Two mandate experiences
+  existed: this console's side-panel drawer and the rebuilt triad workspace on
+  `/agents/mandates/[key]`. Arman lives here and kept seeing the older one. Now the console
+  is the LIST only — coverage board, goal/coverage/health columns, filters, enable/disable,
+  Copy for AI, and a New Mandate button — and every door out of it (row click, the identity
+  column's real link, the coverage board's named rows, the drift strip, the right-click
+  menu, the legacy `?mandate=` param) navigates to `/administration/agents/mandates/[key]`.
+  That page is `AdminMandateWorkspacePage`: the SAME `MandateWorkspace` the user route and
+  the window render, with `host="admin-route"` turning on goal editing, draft-input editing
+  and RUN THIS JOB, plus a collapsed **Admin controls** section rendering the SAME
+  `MandateDetailView` the drawer did (health, pin, rebind, bench, bindings). `detail` and
+  `window` are off the table config; `MandateDetailPanel.tsx` is kept, not deleted (R14).
+  Creation moved here (`/administration/agents/mandates/new`) from the user route, which
+  lost its New button and its `new` page. Known gap, stated in the route section above: the
+  `mandate_exemplar_draft` write target now always refuses, loudly, because the bench moved
+  off this surface. `pnpm type-check` 0; mandates suites 15/87 green; workflow-runtime
+  33/370 green; the console and its coverage board eyes-verified on localhost:3001.
+
 - 2026-08-29 — **Drift panel stops lying about "newest"** (`resolveDriftRemedy` in
   `mandate-health.ts`). The agent master counter bumps on every save but snapshots exist
   only for saved versions, so the live definition can be AHEAD of every snapshot — the

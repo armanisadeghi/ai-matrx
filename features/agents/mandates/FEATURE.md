@@ -269,6 +269,19 @@ commit time.
 
 ## Change Log
 
+- 2026-08-29 — **Demoted to self-service: browse/view + your own override.** Arman's
+  ruling: mandate management is admin-side, because a mandate's goal, its declared inputs
+  and running it are platform definitions, not user settings. So this route no longer
+  offers goal editing, draft-input editing, RUN THIS JOB, or a New Mandate button, and
+  `/agents/mandates/new` is gone — all of it lives under `/administration/agents/mandates`
+  now, on the SAME `MandateWorkspace` (`host="admin-route"` sets `authoring`). The triad
+  still renders here in full, read-only; the override flow, org-context line, fulfillment,
+  duplicate-and-customize and notes are untouched. Matches the server, where
+  `POST /mandates` and `PATCH /mandates/{key}/{goal,draft-inputs}` are now
+  `require_super_admin` (aidream `304fe1848`). Eyes-verified on localhost:3001: the list
+  shows no New button; `masterwork.understudy` shows INPUT/GOAL/OUTPUT with a plain goal
+  and no pencil, no Refine with AI, no run panel, and "Your override" intact.
+
 - 2026-08-29 — **The triad is the page, and mandates are user-creatable.** The workspace
   (route + window, same component) now leads with INPUT → GOAL → OUTPUT
   (`workspace/TriadSections.tsx`): the goal reads from `mandate.definition.goal` (its ONE
