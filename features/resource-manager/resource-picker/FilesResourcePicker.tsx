@@ -357,7 +357,10 @@ function FileGridTile({
       >
         <div className="relative aspect-square w-full bg-muted/40">
           <MediaThumbnail
-            mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+            mediaRef={{
+              file_id: file.id,
+              mime_type: file.mimeType ?? undefined,
+            }}
             fileName={file.fileName}
             mimeType={file.mimeType}
             thumbnailUrl={file.thumbnailUrl}

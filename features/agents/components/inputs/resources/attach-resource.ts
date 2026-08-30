@@ -309,7 +309,9 @@ export function useAttachResource(
         // Always refresh before a duplicate attach. A "ready" cache may be
         // stale after another tab or server-side variable attachment.
         await assocStore.load("conversation", conversationId, { force: true });
-        if (assocStore.getEdges("conversation", conversationId).status !== "ready") {
+        if (
+          assocStore.getEdges("conversation", conversationId).status !== "ready"
+        ) {
           toast.error("Couldn't verify existing document attachment metadata");
           return false;
         }
@@ -318,15 +320,14 @@ export function useAttachResource(
           fileId,
           resourcePreviewLabel,
         );
-        const existingEdge = assocStore.getEdges(
-          "conversation",
-          conversationId,
-        ).edges.find(
-          (edge) =>
-            edge.direction === "incoming" &&
-            edge.otherType === "file" &&
-            edge.otherId === fileId,
-        );
+        const existingEdge = assocStore
+          .getEdges("conversation", conversationId)
+          .edges.find(
+            (edge) =>
+              edge.direction === "incoming" &&
+              edge.otherType === "file" &&
+              edge.otherId === fileId,
+          );
         // Association already exists: reselect is an idempotent no-op. This
         // avoids a read/replace race that could erase a policy written by
         // another tab between refresh and mutation.

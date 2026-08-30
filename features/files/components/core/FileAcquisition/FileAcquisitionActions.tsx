@@ -206,47 +206,42 @@ export function FileAcquisitionActions({
     );
   }
 
-  const actions = ([
-    enableLocalFiles
-      ? {
-          key: "files",
-          label: "Upload files",
-          icon: FileUp,
-        }
-      : null,
-    enableLocalFolder
-      ? {
-          key: "folder",
-          label: "Upload folder",
-          icon: FolderUp,
-        }
-      : null,
-    enableExistingFiles && onChooseExisting
-      ? {
-          key: "existing",
-          label: "Choose from Files",
-          icon: FolderOpen,
-        }
-      : null,
-    enableGoogleDrive
-      ? {
-          key: "google-drive",
-          label: googleLabel,
-          icon: googleIcon,
-        }
-      : null,
-  ] satisfies Array<FileAcquisitionAction | null>).filter(
-    (action): action is FileAcquisitionAction => action !== null,
-  );
+  const actions = (
+    [
+      enableLocalFiles
+        ? {
+            key: "files",
+            label: "Upload files",
+            icon: FileUp,
+          }
+        : null,
+      enableLocalFolder
+        ? {
+            key: "folder",
+            label: "Upload folder",
+            icon: FolderUp,
+          }
+        : null,
+      enableExistingFiles && onChooseExisting
+        ? {
+            key: "existing",
+            label: "Choose from Files",
+            icon: FolderOpen,
+          }
+        : null,
+      enableGoogleDrive
+        ? {
+            key: "google-drive",
+            label: googleLabel,
+            icon: googleIcon,
+          }
+        : null,
+    ] satisfies Array<FileAcquisitionAction | null>
+  ).filter((action): action is FileAcquisitionAction => action !== null);
 
   if (presentation === "inline") {
     return (
-      <div
-        className={cn(
-          "grid w-full grid-cols-3 gap-1.5",
-          className,
-        )}
-      >
+      <div className={cn("grid w-full grid-cols-3 gap-1.5", className)}>
         {actions.map((action) => {
           const Icon = action.icon;
           const busy = action.key === "google-drive" && googleBusy;
