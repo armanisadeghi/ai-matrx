@@ -131,6 +131,10 @@ sales page after signing in.
   [`utils/supabase/middleware.ts`](../supabase/middleware.ts) so server layouts
   can rebuild the destination. Both must be set — `app/(admin)/layout.tsx` read
   `x-search-params` for months while nothing set it.
+- **Auth results render before the form.** `AuthPageContainer` puts success and
+  error messages above every auth form; errors are assertive live-region alerts.
+  Provider email-rate errors use actionable copy, never a raw diagnostic below
+  the fold.
 
 ## Tests
 
@@ -144,6 +148,10 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-30** — Moved auth result messages above every form, made errors
+  assertive alerts, and translated signup email-rate failures into actionable
+  copy instead of silently placing a raw provider message below the fold.
 
 - **2026-08-30** — Isolated East auth from pre-cutover West browser bundles
   with a new cookie epoch, validated one-shot session migration, legacy-cookie

@@ -18,6 +18,7 @@ import {
 } from "@/utils/auth/auth-destination";
 import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
 import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
+import { signupErrorMessage } from "@/utils/auth/auth-error-copy";
 
 function queueAcquisitionLink(visitorId: string | null, userId: string): void {
   if (!visitorId || !/^[A-Za-z0-9]{16,200}$/.test(visitorId)) return;
@@ -203,7 +204,7 @@ export async function signUpAction(
       return encodedRedirect(
         "error",
         "/sign-up",
-        error.message || "Authentication error occurred",
+        signupErrorMessage(error.code, error.message),
         formData,
       );
     }

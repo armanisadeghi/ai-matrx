@@ -33,14 +33,13 @@ export default function AuthPageContainer({
               {subtitle}
             </div>
           )}
+          {message && (
+            <div className="mt-4 sm:mt-6">
+              <FormMessage message={message} />
+            </div>
+          )}
           <div className="mt-4 sm:mt-6">{children}</div>
         </div>
-
-        {message && (
-          <div className="px-5 pb-4 sm:pb-6 sm:px-8">
-            <FormMessage message={message} />
-          </div>
-        )}
       </div>
     </div>
   );

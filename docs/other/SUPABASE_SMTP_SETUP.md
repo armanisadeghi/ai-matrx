@@ -11,15 +11,15 @@ Signup confirmation, password reset, and other Supabase Auth templates. Sent by
 
 ## Supabase Dashboard → Authentication → Emails → SMTP Settings
 
-| Field | Value |
-|-------|-------|
-| Custom SMTP | **Enabled** |
-| Host | `smtp.resend.com` |
-| Port | `465` |
-| Username | `resend` (literal word) |
-| Password | Resend API key **`ai-matrx-main`** (dedicated; stored in Supabase only) |
-| Sender | `AI Matrx <noreply@updates.aimatrx.com>` |
-| Encryption | SSL/TLS |
+| Field       | Value                                                                   |
+| ----------- | ----------------------------------------------------------------------- |
+| Custom SMTP | **Enabled**                                                             |
+| Host        | `smtp.resend.com`                                                       |
+| Port        | `465`                                                                   |
+| Username    | `resend` (literal word)                                                 |
+| Password    | Resend API key **`ai-matrx-main`** (dedicated; stored in Supabase only) |
+| Sender      | `AI Matrx <noreply@updates.aimatrx.com>`                                |
+| Encryption  | SSL/TLS                                                                 |
 
 ### Credential separation
 
@@ -40,6 +40,13 @@ Authentication → Email Templates: Confirm signup, Reset password, Magic Link, 
 
 Variables: `{{ .ConfirmationURL }}`, `{{ .SiteURL }}`, `{{ .RedirectTo }}`, etc.
 
+## Rate capacity
+
+Supabase Dashboard → Authentication → Rate Limits → **Rate limit for sending
+emails** must explicitly store **30 emails/hour**. A blank field falls back to
+two/hour even when custom SMTP is enabled; the third signup then fails with
+`over_email_send_rate_limit` before Resend receives anything.
+
 ## URL configuration
 
 Authentication → URL Configuration:
@@ -58,6 +65,7 @@ Reset-password template must use `{{ .ConfirmationURL }}`, not `{{ .SiteURL }}` 
 1. Supabase SMTP → Send test email.
 2. Password reset flow → confirm **Delivered** in Resend logs (sender
    `noreply@updates.aimatrx.com`).
+3. Rate Limits → reload the page and confirm the email field still reads **30**.
 
 ## Troubleshooting
 

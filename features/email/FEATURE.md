@@ -1,6 +1,6 @@
 # Email & Auth Delivery
 
-> Last verified: 2026-07-13
+> Last verified: 2026-08-30
 
 All email is **configuration-only** for auth. Application sends go through `lib/email/client.ts`.
 There are **two independent paths** with **separate Resend credentials**.
@@ -32,6 +32,8 @@ from local env; do not add to `.env.example`.
 - **SMTP:** host `smtp.resend.com`, port `465`, username `resend` (literal), password
   = the `ai-matrx-main` key.
 - **From address:** `AI Matrx <noreply@updates.aimatrx.com>`.
+- **Rate limit:** Supabase Auth → Rate Limits explicitly stores **30 emails/hour**.
+  A blank field falls back to two/hour even with custom SMTP and must never ship.
 
 **Covers:** signup confirmation, password reset (and other Supabase Auth templates).
 
@@ -63,14 +65,20 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 
 ## Code map
 
-| Area | Role |
-|------|------|
-| `lib/email/client.ts` | Resend API client + templates |
-| `lib/email/render.ts`, `lib/email/templates/` | React-email templates |
-| `app/api/email/send` | Authenticated generic send |
-| `app/api/admin/email` | Admin bulk send |
-| `app/api/contact` | Contact form (+ `ADMIN_EMAIL`) |
-| `app/api/webhooks/resend` | Resend delivery webhooks (optional `RESEND_WEBHOOK_SECRET`) |
-| `utils/email/emailService.ts` | Client-side fetch wrapper → `/api/email/send` |
+| Area                                          | Role                                                        |
+| --------------------------------------------- | ----------------------------------------------------------- |
+| `lib/email/client.ts`                         | Resend API client + templates                               |
+| `lib/email/render.ts`, `lib/email/templates/` | React-email templates                                       |
+| `app/api/email/send`                          | Authenticated generic send                                  |
+| `app/api/admin/email`                         | Admin bulk send                                             |
+| `app/api/contact`                             | Contact form (+ `ADMIN_EMAIL`)                              |
+| `app/api/webhooks/resend`                     | Resend delivery webhooks (optional `RESEND_WEBHOOK_SECRET`) |
+| `utils/email/emailService.ts`                 | Client-side fetch wrapper → `/api/email/send`               |
+
+## Change Log
+
+- **2026-08-30** — Restored the explicit 30/hour Supabase Auth email limit after
+  the blank-field two/hour fallback blocked signup attempts 3–5; signup provider
+  errors now render above the form with actionable copy.
 
 Supabase SMTP setup details: `docs/other/SUPABASE_SMTP_SETUP.md`.
