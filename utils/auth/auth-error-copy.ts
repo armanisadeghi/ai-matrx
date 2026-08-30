@@ -1,5 +1,5 @@
 const SIGNUP_EMAIL_RATE_LIMIT_MESSAGE =
-  "We couldn't send another confirmation email right now. Check whether an earlier confirmation email arrived, or wait a little while and try again.";
+  "We couldn't create this account because too many confirmation emails were requested recently. No account was created by this attempt. Please wait a few minutes, then try again.";
 
 /** Keep provider diagnostics in logs while giving signup users actionable copy. */
 export function signupErrorMessage(
