@@ -62,7 +62,10 @@ import {
   type PageResearchRunSummary,
 } from "@/features/surfaces/manifests/page-research.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import {
+  getSurfaceDisplayLabel,
+  surfaceValueLabels,
+} from "@/features/surfaces/utils/surface-display";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -106,9 +109,7 @@ type Phase =
   | { status: "assembling"; topicId: string }
   | { status: "done"; topicId: string };
 
-type ActiveEditor =
-  | { kind: "topic_name" }
-  | { kind: "keyword"; index: number };
+type ActiveEditor = { kind: "topic_name" } | { kind: "keyword"; index: number };
 
 function PageResearchWindowInner({
   onClose,
@@ -146,7 +147,9 @@ function PageResearchWindowInner({
     () =>
       keywords
         .map((keyword) => keyword.trim())
-        .filter((keyword, index, all) => keyword && all.indexOf(keyword) === index),
+        .filter(
+          (keyword, index, all) => keyword && all.indexOf(keyword) === index,
+        ),
     [keywords],
   );
   const canStart =
@@ -181,9 +184,15 @@ function PageResearchWindowInner({
       // result of this window; the run is the paid work on top. A run that
       // dies still leaves the page pointing at real research.
       setAttachment({ status: "attaching", error: null });
-      const attached = await links.attach("research_topic", topic.id, name.trim());
+      const attached = await links.attach(
+        "research_topic",
+        topic.id,
+        name.trim(),
+      );
       if (!attached.ok) {
-        const attachmentError = attached.error ?? "The association write did not return an error message.";
+        const attachmentError =
+          attached.error ??
+          "The association write did not return an error message.";
         setAttachment({ status: "failed", error: attachmentError });
         toast.error(
           `Research started, but attaching it to this page failed: ${attachmentError}`,
@@ -239,14 +248,17 @@ function PageResearchWindowInner({
     [nodeId, siteId, pageLabel, primaryKeyword, orgId],
   );
 
-  const topicId = phase.status === "form" || phase.status === "starting" ? null : phase.topicId;
+  const topicId =
+    phase.status === "form" || phase.status === "starting"
+      ? null
+      : phase.topicId;
   const latest = stream.messages.at(-1)?.message ?? null;
 
   return (
     <WindowPanel
       id="page-research-window"
       overlayId="pageResearchWindow"
-      title="Research for this page"
+      title={getSurfaceDisplayLabel(PAGE_RESEARCH_SURFACE_NAME)}
       onClose={onClose}
       width={520}
       height={480}

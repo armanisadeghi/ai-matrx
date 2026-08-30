@@ -260,7 +260,8 @@ export const EditHistorySection: React.FC = () => {
                         title={`${row.applied} applied`}
                       >
                         <Check className="h-3 w-3" aria-hidden="true" />
-                        {row.applied}
+                        <span className="sr-only">{row.applied} applied</span>
+                        <span aria-hidden="true">{row.applied}</span>
                       </span>
                     )}
                     {row.applied > 0 && row.rejected > 0 && " "}
@@ -270,7 +271,8 @@ export const EditHistorySection: React.FC = () => {
                         title={`${row.rejected} rejected`}
                       >
                         <X className="h-3 w-3" aria-hidden="true" />
-                        {row.rejected}
+                        <span className="sr-only">{row.rejected} rejected</span>
+                        <span aria-hidden="true">{row.rejected}</span>
                       </span>
                     )}
                   </span>

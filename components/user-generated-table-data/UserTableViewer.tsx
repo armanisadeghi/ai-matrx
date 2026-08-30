@@ -3055,12 +3055,12 @@ const UserTableViewer = ({
                             />
                           </div>
                           {cellData && (
-                            <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                            <div className="matrx-touch-targets flex items-center space-x-1 ml-2 flex-shrink-0">
                               {cellData.hasCleanableHtml && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                  className="opacity-100 transition-opacity h-6 w-6 p-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                                   onClick={(e) =>
                                     handleCleanupText(
                                       field.field_name,
@@ -3078,7 +3078,7 @@ const UserTableViewer = ({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                  className="opacity-100 transition-opacity h-6 w-6 p-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                                   onClick={(e) =>
                                     handleExpandText(
                                       cellData.fullText,

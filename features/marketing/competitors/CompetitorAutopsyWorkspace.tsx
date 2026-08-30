@@ -1252,8 +1252,18 @@ export default function CompetitorAutopsyWorkspace({
                           {business.rating != null ? (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                               <Star className="h-3 w-3" aria-hidden="true" />
-                              {business.rating}
-                              {business.reviews != null ? ` (${business.reviews})` : ""}
+                              <span className="sr-only">
+                                Rating {business.rating}
+                                {business.reviews != null
+                                  ? `, ${business.reviews} reviews`
+                                  : ""}
+                              </span>
+                              <span aria-hidden="true">
+                                {business.rating}
+                                {business.reviews != null
+                                  ? ` (${business.reviews})`
+                                  : ""}
+                              </span>
                             </span>
                           ) : null}
                           {business.domain ? (

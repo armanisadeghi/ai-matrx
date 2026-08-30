@@ -550,7 +550,7 @@ export default function WorkbooksLandingPage() {
                       {/* Peek + new tab ride BESIDE the anchor (never inside
                           it), so "which one is that?" costs no navigation.
                           `original_file_id` gets its own door below. */}
-                      <span className="flex shrink-0 items-center gap-0.5">
+                      <span className="matrx-touch-targets flex shrink-0 items-center gap-0.5">
                         <EntityDoorControls
                           token="workbook"
                           id={wb.id}
@@ -559,7 +559,7 @@ export default function WorkbooksLandingPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="opacity-0 group-hover/entity-ref:opacity-100 transition-opacity h-7 w-7"
+                          className="opacity-100 transition-opacity h-7 w-7 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/entity-ref:opacity-100 focus-visible:opacity-100"
                           onClick={() => handleDelete(wb)}
                           title="Delete workbook"
                         >

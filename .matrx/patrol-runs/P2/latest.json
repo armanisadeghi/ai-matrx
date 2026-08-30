@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T142407Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:24:09.094Z",
-  "summary": "Implementing disjoint site action, list service, and presentation seams before integrating SitesPortfolio.",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:42:10.159Z",
+  "summary": "CERTIFIED: canonical /marketing/sites EntityListPage adoption preserves existing behavior and one site action authority.",
   "source": "20260830T142407Z.json",
-  "eventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8"
+  "eventHash": "139df74784a5c4a8b2802124c5928b44ec836177d1fefb3b37eb54ef4093fb88"
 }

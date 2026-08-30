@@ -183,7 +183,8 @@ export const MessageFilesStrip: React.FC<MessageFilesStripProps> = ({
                       title={`${applied} applied`}
                     >
                       <Check className="h-3 w-3" aria-hidden="true" />
-                      {applied}
+                      <span className="sr-only">{applied} applied</span>
+                      <span aria-hidden="true">{applied}</span>
                     </span>
                   )}
                   {applied > 0 && rejected > 0 && " "}
@@ -193,7 +194,8 @@ export const MessageFilesStrip: React.FC<MessageFilesStripProps> = ({
                       title={`${rejected} rejected`}
                     >
                       <X className="h-3 w-3" aria-hidden="true" />
-                      {rejected}
+                      <span className="sr-only">{rejected} rejected</span>
+                      <span aria-hidden="true">{rejected}</span>
                     </span>
                   )}
                 </span>

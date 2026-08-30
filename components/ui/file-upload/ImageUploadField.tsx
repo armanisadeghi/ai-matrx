@@ -103,7 +103,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             </div>
           </div>
         ) : value ? (
-          <div className="relative h-full w-full group">
+          <div className="matrx-touch-targets relative h-full w-full group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={value}
@@ -112,8 +112,9 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
               <button
-                className="p-2 rounded-full bg-white text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="p-2 rounded-full bg-white text-gray-700 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                 onClick={handleClearImage}
+                aria-label="Clear image"
               >
                 <X className="h-5 w-5" />
               </button>

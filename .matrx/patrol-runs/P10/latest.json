@@ -3,8 +3,8 @@
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
   "state": "escaped_delivery",
-  "updatedAt": "2026-08-30T14:37:56.966Z",
-  "summary": "Recorded replacement candidate dd870bc58d as escaped delivery with immutable prior history preserved.",
+  "updatedAt": "2026-08-30T14:45:53.380Z",
+  "summary": "Recorded replacement candidate d3a4cd79b6 with corrected candidate-tree authority preservation.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "c888dbe76416d57e0e2ede1966d1670ccabcfa7103ccc9e0559a36064d507b7d"
+  "eventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae"
 }
