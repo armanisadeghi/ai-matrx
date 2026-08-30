@@ -14,8 +14,12 @@ this directory.
    it; the boy-scout rule applies — fix violators on sight. (The tables are `context.scope_types`,
    `context.scopes`, `context.context_items`, `context.context_item_values`, … — the old public
    `ctx_*` names no longer exist.)
-2. **`associationsService.ts` is the ONLY file that may call the `assoc_*` RPCs**, and
-   `categoriesService.ts` the ONLY one for `cat_*`. Same chokepoint discipline.
+2. **The `assoc_*` / `cat_*` / `ues_*` RPC families are called ONLY inside
+   `@ai-matrx/associations` (W5 swap, 2026-08-29).** The host wiring modules
+   `service/{associationsService,categoriesService,favoritesService,favoritesCore}.ts`
+   re-expose the package chokepoints under their historical names — no other file in
+   this repo may call those RPCs, and no new local implementation may appear beside
+   the package (C9).
 3. **Only `components/active-context/**` may write `appContextSlice`.** Importing
    `setOrganization` / `setScopeSelections` / `setProject` / `setTask` / `setConversation` /
    `setFullContext` / `clearContext` anywhere else is banned by
@@ -41,14 +45,26 @@ this directory.
 
 ## File map
 
-- `service/` — `scopesService.ts` (the `context.*` chokepoint), `associationsService.ts` +
-  `associationGuards.ts` + `associationHelpers.ts` + `associationEdges.ts` +
-  `associationCandidates.ts`, `categoriesService.ts`, `entityTitles.ts`, `entityRows.ts`,
-  `favoritesService.ts` + `favoritesCore.ts` (the client-injectable `ues_get_bulk` half —
-  server-side readers use it; together the two are the sole `ues_*` chokepoint), `rpcResult.ts`.
-- `redux/` — `scopesSlice.ts` (the canonical tree + `associationsByKey` + `entityScopesByKey` +
-  `categoriesByDimension` + `contextItemsByTypeId`, the lazy per-scope-type item catalogs fed by
-  `ensureScopeTypeItems`), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
+- `service/` — `scopesService.ts` (the `context.*` chokepoint — Lane F, NOT part of the
+  associations package) and `rpcResult.ts` (shared result helpers for scopes/comments)
+  are the real implementations here. Everything association-shaped is now a THIN HOST
+  WIRING over `@ai-matrx/associations/core`: `associationsService.ts`,
+  `categoriesService.ts`, `favoritesService.ts`, `favoritesCore.ts` (server-injectable
+  `ues_get_bulk`), `associationCandidates.ts`, `entityTitles.ts`, `entityRows.ts`,
+  `associationGuards.ts`, `associationEdges.ts`. Do not grow logic in a wiring module —
+  grow the package.
+- `host/` — the ONE `@ai-matrx/associations` binding: `associationsStore.ts` (store
+  singleton over supabase + `requireUserId`/`ensureOrgId` + errorSink + the
+  `ENTITY_OVERLAY`), `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
+  carrying the five UI ports: toast notifier, lazy WindowPanel shell, capture openers,
+  the `file` picker override, EntityRef/door components; dev-only
+  `assertDemandedSchema` probe), `errorSink.ts` (→ Error Inspector `associations`
+  source), `associationsHostPortsImpl.tsx` (the WindowPanel-parsing bindings behind a
+  lazy edge).
+- `redux/` — `scopesSlice.ts` (the canonical tree + `entityScopesByKey` +
+  `contextItemsByTypeId`, the lazy per-scope-type item catalogs fed by
+  `ensureScopeTypeItems` — the association/category cache fragments were DELETED in the
+  W5 swap; that cache now lives in the package store), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
   `thunks/setContextValue.ts` → the sanctioned `set_context_value` RPC),
   `templatesSlice.ts`, plus `thunks/` and `selectors/`. `appContextSlice.ts` lives at
   `lib/redux/slices/`. **Structural writes go ONLY through the mutation thunks**
@@ -59,22 +75,32 @@ this directory.
   reads, writes go through the RPCs) and folding the authoritative row straight
   into the slice — no refetch, no legacy-action mirroring.
 - `hooks/` — `useScopeTree`, `useActiveContext`, `useContextValues`, `useEntityScopes`,
-  `useTemplates`, `useAssociations` (alias `useEntityRelationships`), `useContainerLinks`,
-  `useAssociationCandidates`, `useCategories`, `useEntityTitles`. **Components consume hooks —
-  never slices, thunks, or services directly.**
+  `useTemplates` are Lane F implementations. `useAssociations` (alias
+  `useEntityRelationships`), `useContainerLinks`, `useAssociationCandidates`,
+  `useCategories`, `useEntityTitles`, `useUniversalEntitySearch`,
+  `useAssociationEntitySelect` are RE-EXPORTS of `@ai-matrx/associations/react`
+  (byte-compatible signatures). **Components consume hooks — never slices, thunks, or
+  services directly.**
 - `components/active-context/` — Surface A (the only `appContextSlice` writers): `ActiveScopePicker`,
   `ActiveScopeChips`, `ContradictionBanner`, `ActiveContextButton`, `ContextLensBar`, `LensChip`,
   `ActiveContextLensChip`, `quick-pick/` (interaction law: **row = forward, checkbox = select**).
 - `components/entity-context/` — Surface B (durable tagging only): `EntityScopeTagger`,
   `EntityTargetPicker`.
-- `components/associations/` — the container-centric association UI (see the section below).
+- The container-centric association UI (cards / list / pickers / attached-items sheet /
+  capture toolbar / `AssociationEntitySelect` / `CategorySelect` / `CategoryTagPicker`)
+  ships in `@ai-matrx/associations/react` — the local `components/associations/` originals
+  were deleted in the W5 swap.
 - `components/management/` — the canonical scope-management surfaces: `ScopesManager`
   (the `/organizations/[orgId]/scopes` page), `OrgScopeTypeSection`, `NewScopeInline`,
   `EditScopeTypeSheet`, `AddScopeModal`, `ScopeOnboarding`, `TemplateGalleryDrawer`,
   `ScopeColorPicker`, `ReorderDialog` (generic drag-reorder dialog, also used by
   window-panels + war-room), plus the pre-existing `ScopesHub` family. All run on the
   canonical tree + the mutation thunks — zero legacy-module imports.
-- `registry/` — `entityRegistry.ts`, `entityContentAdapters.ts`.
+- `registry/` — `entityRegistry.ts` is the HOST BINDING for the package's registry merge
+  engine: it keeps `ENTITY_OVERLAY` (icons/routes/candidate loaders — host material that
+  feeds the package's overlay port) + the content-role display chrome, and every resolver
+  delegates to `createEntityRegistry` from `@ai-matrx/associations/core`.
+  `entityContentAdapters.ts` stays a local implementation.
 - `utils/` — `scopeMismatch.ts` (pure decision logic + tests for the send-time gate),
   `categoryHierarchy.ts`, `slugify.ts` (key/slug rules shared app-wide),
   `scopeValuePayload.ts` (raw input → `value_*` column routing),
@@ -94,41 +120,63 @@ The canonical **"associate ANY entity to ANY entity"** primitive, owned by this 
 
 **Entity vocabulary is GENERATED, not hand-maintained.** `types/generated/entity-types.generated.ts` mirrors `platform.entity_types` 1:1 (217 tokens) via `pnpm gen:entity-types` (reads the public `entity_types_list()` RPC; `pnpm check:entity-types` screams on drift; folded into `pnpm sync-types`). It exports `EntityTypeToken` (the full FK-valid union — use it for any source/target-type argument), the runtime `isEntityTypeToken` guard + `ENTITY_TYPE_TOKENS` set, `ENTITY_TYPE_METADATA`, and curated subsets. `AssociationTargetType` (`types.ts`) is a curated "deliberate container" list proven valid at compile time with `satisfies readonly EntityTypeToken[]` — it can never drift to an unregistered token. The legacy hand-written `EntityType` union persists for existing scope-tag/favorites consumers and is converging onto `EntityTypeToken` (do not extend it — add tokens to the registry + regenerate). KNOWN HOLE: `agent_app` is in `EntityType` but is NOT a registered token (no `aga_apps` table) — a `source_type='agent_app'` write FK-violates; tracked for the association-cleanup pass.
 
-### The primitive (all under `features/scopes/`)
+### Where the primitive lives now (W5 swap, 2026-08-29)
 
-| Layer                | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Service**          | `service/associationsService.ts` — the **SOLE chokepoint** for the `assoc_*` RPCs. No other file may call them. Returns `ScopesRpcResult`, never throws. **Every method runs pre-flight guards** (`service/associationGuards.ts`) BEFORE the RPC: `checkToken` (token registered in the generated set) + `checkUuid`/`checkUuidArray` (real UUID, not a "cute" string). A bad token/id becomes a described `invalid_argument` result + a loud `console.error` — caught in the editor/console, never as an opaque PG `22P02`/`23503`.                                                                                                                                                                                               |
-| **Helpers**          | `service/associationHelpers.ts` — typed composite wrappers over the chokepoint (no new DB): `linkEdges` (batch), `linkOneToMany` (one source → many containers), `linkManyToOne` (many sources → one container), `replaceTargets` (set-semantics pass-through), `linkCreated` (wire edges onto a just-inserted row), `unlinkEdges`. Source = `EntityTypeToken`, target = `AssociationTargetType` — both compile-checked.                                                                                                                                                                                                                                                                                                           |
-| **Hook**             | `hooks/useAssociations({ type, id }) → { edges, status, add, remove, setTargets, reload }` — the public API UI consumes. Components never touch the slice, thunks, or service directly. (`useEntityRelationships` is an alias.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Component**        | The _container-centric_ association family: the **cards** (`AssociationCard(Grid)` — counts), the **list** (`AssociationList` — rows), and the **name dropdown** (`AssociationEntitySelect` — one compact control for the active entity of one token: display + inline rename + switch + unlink + "+ Add New" create-and-attach), all under `PrimaryEntityProvider` or an explicit adapter, with `AssociationPicker`/`AssociationCandidateBody` + `UniversalAssociationPicker` for attach — see §"Association cards + list" below. (The source-centric `EntityAssociator`/`AssociationAddControl` were DELETED 2026-07-03 — zero consumers; per-entity relationship viewing is `useAssociations` + a bespoke surface when needed.) |
-| **Edge classifier**  | `service/associationEdges.ts` — `isContentSourceEdge(sourceType, metadata)`: THE one predicate deciding content vs structure (membership edges, scope/scope_type/org edges, container tokens). Every "what's attached to X" consumer uses it. **Never write a per-consumer whitelist of allowed source tokens** — a whitelist silently hides every newly registered type (the war-room 7-type ceiling bug).                                                                                                                                                                                                                                                                                                                        |
-| **Titles**           | `service/entityTitles.ts` + `hooks/useEntityTitles.ts` — batched, cached `fetchEntityTitles(token, ids)` via the registry titleColumn. Display chain everywhere: `edge.label → fetched title → "Untitled <type>"` — **UUIDs never render**. Stamp `label` on every attach (some backing schemas, e.g. `rag.*`, can't be re-read client-side).                                                                                                                                                                                                                                                                                                                                                                                      |
-| **Content adapters** | `registry/entityContentAdapters.ts` — per-token `accessHint` (how an AGENT reads this type's content; server tools preferred) + optional client `read`, plus `readEntityRowGeneric` (RLS row-read fallback for any registered token). Feeds agent context legends (war-room `<access>`) and the generic `war_room_read_resource` tool.                                                                                                                                                                                                                                                                                                                                                                                             |
-| **Redux**            | `redux/scopesSlice.ts` `associationsByKey` cache (keyed `${type}:${id}`); `redux/thunks/associations.ts` (load/add/remove/setTargets); `redux/selectors/associations.ts` `selectAssociationsFor`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+The association system — service chokepoint + guards + result funnel, the
+store-agnostic cache, the seven hooks, the faces (`AssociationCard(Grid)`,
+`AssociationList`, `AssociationEntitySelect`, `AssociationPicker` +
+`AssociationCandidateBody`, `UniversalAssociationPicker`, `AttachedItemsSheet`,
+`AssociationCaptureToolbar`, `AssociationWindow`, `PrimaryEntityProvider`), the
+registry merge engine, titles, favorites/recents, categories, and the generated
+654-token entity vocabulary — **ships in `@ai-matrx/associations`** (design:
+`/Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/ASSOCIATIONS-PACKAGE-DESIGN.md`;
+consumer contract: the package README). This repo contributes only the HOST
+BINDING (`features/scopes/host/` — see the file map) and the thin service
+wiring modules.
 
-`assoc_for_entity(p_type, p_id)` returns **both directions** in one round-trip — `direction` is relative to the queried entity (`outgoing` = it is the source; `incoming` = it is the target). `EntityAssociator` lets you detach only `outgoing` edges (this entity authored them); `incoming` are read-only.
+Local rules that still bind every consumer in this repo:
 
-### Association cards + list — token-driven container UI
+- **Import surfaces:** components/hooks → `@ai-matrx/associations/react`
+  (or the re-export hooks under `hooks/`); non-React callers → the wiring
+  services under `service/` (or `getAssociationsStore()` when a write must
+  refresh the rendered cache). Never construct a second store.
+- **Direction is canonical and singular:** resource = SOURCE, container =
+  TARGET. Listing "things attached to a container" = its incoming edges.
+- **Never write a per-consumer whitelist of allowed source tokens** — the one
+  classifier is `isContentSourceEdge` (re-exported from
+  `service/associationEdges.ts`); a whitelist silently hides every newly
+  registered type (the war-room 7-type ceiling bug).
+- **Stamp `label` on every attach** (some backing schemas, e.g. `rag.*`, can't
+  be re-read client-side); display chain is `edge.label → fetched title →
+  "Untitled <type>"` — UUIDs never render.
+- **Both card body and picker render through the non-blocking window shell at
+  every breakpoint** (windowShell port → draggable WindowPanel on desktop,
+  non-modal card on mobile). A blocking Drawer/Sheet/Dialog is forbidden for
+  this association family.
+- **The card grid is mounted on the scope-type (`ScopesList`) and scope
+  (`ScopeDetailEditor`) pages**, at the BOTTOM under a "Resources" heading. It
+  is deliberately NOT on the org home (that page has `OrgResourceRoleSection`
+  over `iam.permissions`; two resource grids on one page was pure confusion).
+- **Invoke the `association-entity-select` skill** before placing or extending
+  an `AssociationEntitySelect`; bespoke adapters (war-room:
+  `features/war-room/hooks/useThreadEntitySelect.ts`) implement the exported
+  `AssociationEntitySelectAdapter` contract.
 
-The canonical, **fully generic** way to surface "what is attached to this container, and add more" on any page that owns a container entity (an org, a scope, a project, a war-room thread/room). Two faces of one system: **`AssociationCardGrid`** (count cards) and **`AssociationList`** (grouped rows — icon + resolved title + open + pin + detach, sectioned by **ContentRole**: `utility|source|destination|hybrid|container`, the knowledge-model axis owned only by `platform.entity_types.content_role` and mirrored into generated metadata; `CONTENT_ROLES` owns section copy/color only). `AssociationList` takes an optional **write adapter** (`ContainerResourcesAdapter`) for containers with their own edge semantics (war-room threads: single-active demotion, position, `pinned` — `useThreadResourcesAdapter`); the default wraps `useContainerLinks`. **Universal attach:** `UniversalAssociationPicker` — ONE search box over every listable token (`searchCandidatesAcrossTokens` client fan-out, per-token limit + concurrency cap; empty query = recents via `ues_list`) + a token chip rail narrowing to `AssociationCandidateBody` (the extracted picker body, incl. the "+ New" create-and-attach footer). A token whose backing table can't be read client-side registers a **`listCandidates` override** on its overlay entry (e.g. `data_store` → `features/rag/service/dataStoreCandidates.ts` — `rag.*` isn't PostgREST-exposed). No per-entity code in any component — hand it a token and it works:
-
-| Part                  | File                                                                                                                                            | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Registry resolver** | `registry/entityRegistry.ts` — `getEntityInfo(token)`                                                                                           | Merges the **generated** `ENTITY_TYPE_METADATA` (the DB-owned schema/table/label/category/title-column/content-role source) with a thin FE **overlay** containing only code-native values the DB cannot carry (`Icon`, plural label, client `hrefFor`, exceptional candidate loader). Handwritten `titleColumn` and `contentRole` fields are forbidden and `pnpm check:entity-types` fails if either reappears inside `ENTITY_OVERLAY`. Association-card membership is also DB-owned: `curatedTokens()` selects every active generated token with a valid `content_role` and candidate source; overlay membership no longer controls visibility. **Owner/org are CONVENTIONS, not per-token config:** `DEFAULT_OWNER_COLUMN = "created_by"` and `DEFAULT_ORG_COLUMN = "organization_id"` (verified live across every cardable table post-2026-reorg); a token overrides only if its table diverges. (The old per-token `ownerColumn: "user_id"` was the `files.user_id` 42703 bug — `files.files`/notes/tasks/etc. have no `user_id`.) The single source cards read display + query metadata from. **Canonical replacement for the hand-curated, drifting `features/organizations/resource-catalogue.ts`** — that file is DEPRECATED for display/association and survives only for the `iam.permissions` sharing surface. `release.sh` regenerates and verifies the compiled metadata after migrations, so an admin DB edit cannot ship with a stale snapshot. |
-| **Candidate reader**  | `service/associationCandidates.ts` + `hooks/useAssociationCandidates.ts`                                                                        | `listAssociationCandidates({ token, ownerId })` calls the ONE `reference_search_candidates` RPC. Access plus entity-specific equality filters come from `platform.entity_types`; `reference_candidate_predicates` maps backing-table columns to scalar values (`party` declares `record_class='contact'`). Any table with `canonical_id` is filtered to canonical rows automatically. RPC failure is loud and returns an error — there is no direct-table fallback that can bypass registry predicates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| **Container hook**    | `hooks/useContainerLinks.ts`                                                                                                                    | Reads a container's **incoming** edges via `useAssociations({ type: containerType, id })` (shared cache → one fetch per container, deduped by the thunk's in-flight map) and exposes `totalCount` / `countFor(token)` / `attachedIdsFor(token)` / `attach` / `detach`. Writes go `source=resource → target=container` (canonical direction, same as scope-tagging) through the association thunks, which reload both endpoints so counts refresh automatically.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Components**        | `components/associations/{PrimaryEntityContext,AssociationCard,AssociationCardGrid,AssociationPicker,AttachedItemsSheet,AssociationWindow}.tsx` | A page mounts `<PrimaryEntityProvider value={{ type, id, orgId, label }}>` once; `<AssociationCardGrid />` renders one `<section>` per content role (role dot + title + tagline from `CONTENT_ROLES`) containing one card per listable token in that role (or pass `tokens={[…]}` to scope it), and each `<AssociationCard token="task" />` resolves its container from context, shows the registry icon in a role-tinted chip under a role accent bar + label + live count + a plus button. Card body drills into the attached list (`AttachedItemsSheet`); "+" opens `AssociationPicker`. **Both render through the lazy `AssociationWindow` at every breakpoint: draggable/resizable on desktop, non-modal card on mobile, and the page behind stays interactive. A blocking Drawer/Sheet/Dialog is forbidden for this association family.** The picker marks attached rows, toggles the edge on click (failures TOAST — a silent no-op attach is a defect), and always offers **"+ New \<Entity\>"** create-and-attach (`createEntityRow` → attach with one retry, created-but-unlinked reported with location) for tokens with a `titleColumn` and no `listCandidates` override; typed search text seeds the new name.                                                                                                                                                                                                                                    |
-| **Name dropdown**     | `components/associations/AssociationEntitySelect.tsx` + `hooks/useAssociationEntitySelect.ts`                                                   | The canonical toolbar control for ONE token's entities on a container — the active entity's real name (registry icon), **inline rename** (click the name), a **switcher** listing every associated entity (always visible, even at 0/1 items), per-row **unlink**, and a trailing **"+ New \<Entity\>"** that creates the row, attaches it, and makes it active. When creation isn't name-driven, `createSlot` replaces the create footer with a custom creator (`createAndAttach` is optional) — e.g. the war-room Chat tab's agent picker. Redux-free, **adapter-driven** (`AssociationEntitySelectAdapter`): the default `useAssociationEntitySelectAdapter({ token, container, activeId?, onActiveChange? })` covers plain containers; surfaces with bespoke active/create semantics implement the adapter (war-room threads: `features/war-room/hooks/useThreadEntitySelect.ts`). **Invoke the `association-entity-select` skill** before placing or extending one.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| **Row writer**        | `service/entityRows.ts`                                                                                                                         | Generic registry-driven `createEntityRow(token, { title, orgId?, extraColumns? })` + `renameEntityRow(token, id, title)` — the WRITE-side sibling of the candidate reader: inserts/updates via `schema`/`table`/`titleColumn` + owner/org conventions, primes the entity-title cache (`primeEntityTitle`), never writes edges (attach via `linkCreated` / `useContainerLinks.attach`). Tables with unknown NOT NULL columns pass `extraColumns` or keep their feature's own create service and reuse only rename.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-
-**Direction is canonical and singular:** the resource is always the edge SOURCE, the container the TARGET (`task → organization`, `file → scope`). This is why `organization` is in `ASSOCIATION_TARGET_TYPES` — a container must be a valid target. Listing "things attached to a container" = its incoming edges. **The card grid is mounted on the scope-type (`ScopesList`) and scope (`ScopeDetailEditor`) pages**, at the BOTTOM of each page under a "Resources" heading, after the core content. It is deliberately NOT on the org home — that page has its own `OrgResourceRoleSection` tile grid over the `iam.permissions` inventory, and two competing resource grids on one page was pure confusion (removed 2026-07-19). Project container pages are the next surface to mount it.
-
-**The boundary (do not cross):** `platform.associations` answers _"what content/containers is this attached to?"_. It does NOT absorb `iam.permissions` (access control / sharing / RLS — `share_resource_with_org`, `has_permission`, the `shareable_resource_registry`) or `iam.memberships` (org/project membership). Those are separate single-home domains and stay. `OrgShareReviewCard` (member-contribution moderation) is the access-control surface; it reads titles through the schema-qualified `getShareableResource()` resolver (never a bare `.from("agent")` → `public.agent` PGRST205).
+**The boundary (do not cross):** `platform.associations` answers _"what
+content/containers is this attached to?"_. It does NOT absorb
+`iam.permissions` (access control / sharing / RLS) or `iam.memberships`
+(org/project membership) — a link is never a grant; the only sanctioned bridge
+is DB-side conveyance. `OrgShareReviewCard` reads titles through the
+schema-qualified `getShareableResource()` resolver.
 
 ### Data path — PUBLIC SECURITY-DEFINER RPCs
 
-`authenticated` has **no direct grant** on `platform.*`, so every read/write goes through SECURITY-DEFINER RPCs (org-filtered inside the function via `iam.has_org_access(organization_id)`): `assoc_for_entity` (read, both directions for one entity), `assoc_for_targets` (batch read by target — members of many containers/scopes), `assoc_for_sources` (batch read by source — targets of many entities, e.g. the scope tags of N rows; optional `p_target_type` filter), `assoc_add` (idempotent single edge), `assoc_remove`, `assoc_set_targets` (replace-semantics for one target type, the set-counterpart of `setEntityScopes`), `assoc_remove_for_entity` (purge both directions). Service methods: `listForEntity` / `listForTargets` / `listForSources` / `add` / `remove` / `setTargets` / `removeForEntity`. Migrations: `assoc_public_rpcs.sql`, `assoc_for_targets_rpc.sql`, `assoc_for_sources_rpc.sql`, `assoc_remove_for_entity_rpc.sql`, `assoc_m2m_mirror_triggers.sql`. (Live column is `organization_id`; the older `assoc_public_rpcs.sql` file text drifted to `org_id` — live DB is authoritative.)
+`authenticated` has **no direct grant** on `platform.*`; every operation goes
+through the 23-function demanded surface (`assoc_*` ×8, `conversation_file*`
+×3, `agent_resource_*` ×2, `cat_*` ×5, `ues_*` ×4,
+`reference_search_candidates`) — documented, typed, and probed by the package
+(`DEMANDED_RPC_NAMES`, `assertDemandedSchema`). A missing function screams as
+`demanded_schema_violation` into the Error Inspector (`associations` source).
 
 ### Transition contract — old tables are MIRRORED, not yet dropped
 
@@ -152,16 +200,16 @@ The canonical **faceted category** primitive, owned by this module. **One table*
 
 **Shape is exactly two levels:** category → subcategory (or category → class). A root has `parent_id=NULL`; a child points directly to one root. The live `_category_two_level_guard` rejects grandchildren, cycles, missing/deleted parents, cross-dimension parents, hidden cross-org parents, moving a parent beneath another row, and deleting a parent while it still has children. Cross-org children may use only a public system root. This protects every writer, including legacy direct-table/admin paths.
 
-### The primitive (all under `features/scopes/`)
+### Where the primitive lives now (W5 swap, 2026-08-29)
 
-| Layer         | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Service**   | `service/categoriesService.ts` — the **SOLE chokepoint** for the `cat_*` RPCs. No other file may call them. Returns `ScopesRpcResult`, never throws.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| **Hook**      | `hooks/useCategories({ dimension }) → { categories, status, create, update, reparent, remove, reload }` — the public API UI consumes. Components never touch the slice, thunks, or service directly.                                                                                                                                                                                                                                                                                                                                                                                                        |
-| **Redux**     | `redux/scopesSlice.ts` `categoriesByDimension` cache (keyed by `dimension`); `redux/thunks/categories.ts` (load/create/update/reparent/delete); `redux/selectors/categories.ts` `selectCategoriesFor`.                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **Hierarchy** | `utils/categoryHierarchy.ts` — the one two-level ordering/path resolver. Flat input returns in the exact original order; malformed/orphaned rows stay visible.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **Pickers**   | `CategorySelect` (one value) + `CategoryTagPicker` (many) render roots followed by indented children and show `Parent / Child` when selected; flat dimensions keep their original face. 🚨 **BOTH TAKE NEW INPUT** — type a name that does not exist and they offer `Create "…"`, write it through `useCategories().create` (org-scoped via `ensureOrgId`, at root or under a chosen root), and select it. `CategorySelect` is THE category control for the whole app: pass `dimension` and it works. Never fork a per-feature copy, and never turn `allowCreate` off without a reason a user would accept. |
-| **Types**     | `PlatformCategory` / `CategoriesEntry` / `CategoryDimension` in `types.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Layer         | What |
+| ------------- | ---- |
+| **Service**   | `@ai-matrx/associations/core` `createCategoriesService` — the sole `cat_*` chokepoint, re-exposed as `service/categoriesService.ts` (thin host wiring). No other file may call those RPCs. |
+| **Hook**      | `hooks/useCategories.ts` — a re-export of `@ai-matrx/associations/react` `useCategories({ dimension })`, same signature. Components never touch the store or service directly. |
+| **Cache**     | The package store's category facets (echo-insert on create preserved). The Redux `categoriesByDimension` fragments were DELETED in the W5 swap. |
+| **Hierarchy** | `utils/categoryHierarchy.ts` — the one two-level ordering/path resolver (host-local; the packaged pickers ship their own). Flat input returns in the exact original order; malformed/orphaned rows stay visible. |
+| **Pickers**   | `CategorySelect` (one value) + `CategoryTagPicker` (many) ship in `@ai-matrx/associations/react`. Both render roots + indented children and show `Parent / Child` when selected. 🚨 **BOTH TAKE NEW INPUT** — type a name that does not exist and they offer `Create "…"` (org-scoped via the identity port's `ensureOrgId`). `CategorySelect` is THE category control for the whole app: pass `dimension` and it works. Never fork a per-feature copy, and never turn `allowCreate` off without a reason a user would accept. |
+| **Types**     | `PlatformCategory` / `CategoriesEntry` / `CategoryDimension` re-exported from the package via `types.ts`. |
 
 ### Category is the noun; association is the verb
 
@@ -172,8 +220,6 @@ The canonical **faceted category** primitive, owned by this module. **One table*
 The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_create(...)`, `cat_update(...)`, `cat_reparent(...)`, and `cat_delete(...)`. `cat_list` returns public system + accessible-org rows. `cat_create` always creates an org-owned `is_system=false` row. Update/reparent/delete require org access; system rows require super-admin. `cat_delete` is a soft delete and refuses a parent with live children. System seeds remain migrations, never client creates. Schema/RPC record: `migrations/category_two_level_primitives.sql`; generated contract: `types/database.types.ts`.
 
 `web_entity_type` is the first product dimension intentionally authored as category + subcategory (8 roots, 34 children). The same primitive applies to every dimension; no CRM-local tree exists.
-
----
 
 ---
 
@@ -191,6 +237,24 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-29 — **Associations W5 supervised swap (C20/C9)**: the whole
+  association/category/favorites/titles system now runs on
+  `@ai-matrx/associations@latest`. Flipped: the seven hooks (re-exports of
+  `/react`), the faces incl. `AssociationEntitySelect`/`CategorySelect`/
+  `CategoryTagPicker` (import sites → the package; local originals DELETED),
+  the generated entity-token vocabulary (654 tokens; the app file is a
+  re-export, `gen/check:entity-types` now diff the INSTALLED package against
+  the live DB). New host binding under `host/` (store singleton, errorSink →
+  Error Inspector `associations` source, `AssociationsProvider` mount in
+  `app/Providers.tsx` with the five UI ports, dev-only `assertDemandedSchema`
+  probe). Deleted (C9): the Redux association/category cache fragments
+  (slice reducers + thunks + selectors, ~530 lines), the ported service
+  implementations (services became thin host wiring over `/core`),
+  `associationHelpers.ts` (zero callers), the local registry merge engine
+  (`entityRegistry.ts` now delegates; `ENTITY_OVERLAY` + content-role chrome
+  stay host material). `attach-resource.ts` (agents) rewired onto the package
+  store. Known delta: the packaged capture toolbar has no "Add document"
+  (pick-existing) chip — it was a strict subset of the universal picker.
 - 2026-08-29 — Lane F W6–W8 (context-core teardown): the eight `notYetImplemented`
   mutation stubs in `scopesService` are real implementations over the live
   SECURITY DEFINER RPC family (create/update/delete scope type + scope,

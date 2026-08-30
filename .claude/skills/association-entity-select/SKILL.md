@@ -5,6 +5,17 @@ description: Place or extend the canonical AssociationEntitySelect — the ONE c
 
 # AssociationEntitySelect — the canonical name dropdown
 
+> **W5 SWAP NOTICE (2026-08-29):** the association/category UI + hooks + service
+> implementations now ship in **`@ai-matrx/associations`** (`/react` for faces +
+> hooks, `/core` for the headless services/store). Paths in this document that
+> point at `features/scopes/components/associations/**`,
+> `features/scopes/components/Category*`, or `features/scopes/redux/**`
+> association/category fragments refer to DELETED files — import from
+> `@ai-matrx/associations/react` (hooks also re-exported under
+> `features/scopes/hooks/`), and see `features/scopes/host/` for the host
+> binding. The rules and contracts described remain in force.
+
+
 **One control, five jobs, per (token, container):** display the active entity's real name (registry icon) · inline rename (click the name) · switch via an **always-visible** dropdown (searchable past 5 items) · per-row unlink (non-active rows, edge only — never deletes the entity) · trailing **"+ New \<Entity\>"** that creates + associates + activates (typed search text doubles as the new name).
 
 Component: `features/scopes/components/associations/AssociationEntitySelect.tsx`. Redux-free; everything flows through an **adapter**. Docs: `features/scopes/FEATURE.md` §"Association cards + list".
