@@ -1,53 +1,43 @@
 # Pattern Patrol P2 — Inventory Law
 
-**Run:** 2026-08-30 ERADICATION, ranked catalogue item 1 (America/Los_Angeles)
+**Run:** 2026-08-30 ERADICATION, ranked catalogue item 12 (America/Los_Angeles)
 **Authority:** Tier C/R catalogue plus one bounded standing-authority adoption batch
-**Base:** `857dcd2c3b7bed591441c6a175caf72eb1397ec4`
-**Candidate:** `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` (replacement after recorded integration reversal)
+**Base:** `bb330ff93d2561da4edd9d3c5b5aa43f1032c114`
+**Candidate:** `478fc4a234136bdf2c5d938bf90b704335c6cf96`
 **Certification:** **CERTIFIED** — independent exact-candidate archive proof
-**Delivery:** **DELIVERED** — first contained in existing release `v0.4.1495`; no redundant release was created
+**Delivery:** **DELIVERED** — first contained in existing release `v0.4.1499`; no redundant release was created
 
 ## Outcome
 
-- **2 verified findings in this eradication unit:** the bespoke
-  `/marketing/sites` list/action duplication and the shared shell's erasure of
-  an explicit unsupported sort. **Both are fixed.** The route now consumes
-  `EntityListPage`; `listSites` remains the one server data path; eight
-  table/mobile presentations consume one column registry; and kebab, mobile,
-  and right-click consume one seven-action site authority.
-- Existing paging, search, name/status filters, KPI sorts, card/table content,
-  site editor and `site_editor_draft`, list/row copy payloads, governed delete,
-  brand-first doors, and lazy Quick view are preserved. Connections remains
-  explicitly non-sortable because the server has no honest Connections order.
-  KPI filtering is not fabricated: extending the generic filter vocabulary and
-  canonical server query is a focused missing-machinery task, not a product
-  decision.
-- Exact candidate verification: full type-check PASS, focused ESLint PASS, 4
-  Jest suites / 9 tests PASS, owned dead-end detector clean, and independent
-  adversarial verdict **CERTIFIED**. The in-app Browser runtime was unavailable;
-  the canonical preview lease stayed healthy and this infrastructure limit did
-  not reject a batch with no concrete defect.
-- A post-integration blob audit caught later shared-lane merges restoring the
-  pre-adoption `SitesPortfolio`, unconditional `sortable:true`, and deleting
-  two focused tests even though the first certified SHA remained an ancestor.
-  Permanent event 6 records that reversal. Replacement `05ad7aa37e` reapplied
-  only the seven owned paths; the independent certifier proved every owned
-  blob byte-identical to the first certified batch and repeated type-check,
-  lint, and 9/9 tests before returning **CERTIFIED** again. Current
-  `origin/main` contains the replacement behavior and both tests.
-- **29 prior catalogue units remain** after closing ranked list-shell item 1;
-  the partially advanced `PlanSitesList` action-authority adoption is the next
-  independent unit. The prior run is now truthfully delivered in the first
-  existing containing release, `v0.4.1495`.
+- **1 verified finding in this eradication unit is fixed:** the brand Content
+  Plan site list at `/marketing/<brand>/content/plan` no longer owns a private
+  site-action menu. Its rows consume the same seven-action site authority as
+  `/marketing/sites` while retaining Plan, Table, Pillar Map, Entities, Setup,
+  and conditional CMS destinations as host-only sections.
+- Existing local paging, search, column filters, saved sort/page-size/column
+  preferences, plan aggregates, row links, mobile table behavior, full-row
+  click, plan copy payloads, New site flow, and surface runtime values remain.
+  The shared site actions add real-KPI Quick view, live site, Marketing
+  workspace, human/AI copy, the canonical site editor, and governed delete.
+- Quick view never fabricates zero KPIs from the list's basic `MarketingSite`.
+  It loads one real enriched `SiteListRow` on demand through `listSites`' exact
+  id filter. The shared Quick view now has one `lazyOverlay` front door reused
+  by both list hosts, with no heavy-implementation static bypass.
+- Exact candidate verification: full type-check PASS, focused ESLint PASS, 3
+  Jest suites / 9 tests PASS, both owned dead-end detector scopes clean, diff
+  check PASS, and independent adversarial verdict **CERTIFIED**. The in-app
+  Browser runtime was unavailable; the canonical preview lease remained
+  healthy, so this infrastructure limit did not reject a batch with no concrete
+  defect.
+- **28 prior catalogue units remain** after closing ranked action-authority item
+  12. The prior `/marketing/sites` conversion remains delivered in
+  `v0.4.1495`; this Content Plan adoption first shipped in existing release
+  `v0.4.1499`.
 - **Only genuine product decision remains unchanged:** after a comparison is
   revealed, should each agent name in the comparison header become a canonical
   new-tab agent door? Blind mode must keep every identity-bearing link, title,
   peek control, and accessible label out of the DOM.
-- The permanent-record controller gained the missing `patrol:run queue` and
-  `patrol:run reverse` commands. Authority publication also now accepts a
-  rejection/reversal already present as the final remote-prefix event; without
-  that fix, correctly publishing the reversal made replacement preservation
-  impossible. The final record/authority suite passes 15/15.
+- No exception was proposed or approved.
 
 ## Prior weekly outcome — 2026-08-18
 
@@ -177,11 +167,11 @@ Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang
 8. **`/files/all` — `FileTable`/grid/list.** Do not flatten the hierarchy blindly. First decide and build the canonical shell seam for hierarchical folder navigation, then have table/grid/list consume one file/folder action registry and one server-scoped service.
 9. **`/crm` — `CrmListPage.tsx`.** Prerequisites first: add the canonical scoped page/count/facet RPC trio, shell `presentation` support, the surface-runtime slot, and the non-scope segmented-control seam. Only then replace the bespoke page. Preserve People/Companies, archive/trash semantics, inline edit, and agent surface values.
 
-### Rank 2 — one action authority per entity (9 findings)
+### Rank 2 — one action authority per entity (8 open findings, 1 delivered)
 
 10. **`AgentListDropdown.tsx`.** It now has 45 importing surfaces and still does not consume `useAgentRowActions`. Decide the singleton-host contract first (page-owned host or provider); do not instantiate dialog hosts per row/dropdown. Adapt its row shape, then feed the canonical registry without changing selection behavior.
 11. **`AgentActionModal.tsx`.** Replace its seven hard-coded actions with the same canonical agent menu used by table/cards/rows. Preserve the modal as a chooser when that is the primary click; delete only actions made redundant by the registry.
-12. **`PlanSitesList.tsx` adoption remains.** `SitesPortfolio.tsx` now owns the canonical `buildSiteMenu` authority and consumes it from table, mobile, and right-click. Adapt `PlanSitesList` to that authority next while retaining its plan-navigation-only section and singleton dialog hosts; do not fork the seven shared actions again.
+12. **FIXED + CERTIFIED + DELIVERED (`v0.4.1499`) — `/marketing/<brand>/content/plan` — `PlanSitesList.tsx`.** The list now surrounds canonical `buildSiteMenu` actions with its Plan/Table/Pillar Map/Entities/Setup and conditional CMS sections, supplies its established plan-specific copy payload, and owns singleton Quick view, site editor, delete confirmation, and governed-denial hosts. The on-demand Quick view hydrates a real `SiteListRow` through the canonical `listSites` path; no plan KPI or site KPI is fabricated.
 13. **`CrmListPage.tsx`.** Extract its inline `ItemMenuConfig` into the CRM entity registry created with the list-shell conversion; table, cards, rows, and right-click must consume the same config.
 14. **`KeywordResearchWorkbench.tsx`.** Extract the inline menu builder into a keyword-research entity action registry and reuse it from every keyword row presentation; retain workbench-only actions as an appended section.
 15. **`SiteKeywordPerformanceWorkspace.tsx`.** Extract `rowMenuConfig` into the same keyword/site-performance authority used by sibling performance surfaces; verify action availability against server capabilities.

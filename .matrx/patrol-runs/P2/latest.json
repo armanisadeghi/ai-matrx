@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T152907Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T15:37:12.090Z",
-  "summary": "Exact candidate 478fc4a234136bdf2c5d938bf90b704335c6cf96 is preserved and under independent adversarial review.",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T15:43:45.795Z",
+  "summary": "Content Plan site-action adoption delivered in existing release v0.4.1499.",
   "source": "20260830T152907Z.json",
-  "eventHash": "5e0b59d64abdf7e53d09cebe55e00c65ad9d288c8aec4a602d39557b2a516c73"
+  "eventHash": "a2c8436fe42fbd83f844529a02a8999fdd22e2d774e7c083ae9994aa43e904a0"
 }
