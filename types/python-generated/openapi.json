@@ -15898,6 +15898,148 @@
         }
       }
     },
+    "/codeberg/public/repository": {
+      "get": {
+        "tags": [
+          "Codeberg Integrations"
+        ],
+        "summary": "Public Repository",
+        "operationId": "public_repository_codeberg_public_repository_get",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Owner"
+            }
+          },
+          {
+            "name": "repository",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Repository"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodebergPublicRepository"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openverse/public/image-attribution": {
+      "get": {
+        "tags": [
+          "Openverse Integrations"
+        ],
+        "summary": "Public Image Attribution",
+        "operationId": "public_image_attribution_openverse_public_image_attribution_get",
+        "parameters": [
+          {
+            "name": "image_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36,
+              "title": "Image Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenversePublicImageAttribution"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hacker-news/public/story": {
+      "get": {
+        "tags": [
+          "Hacker News Integrations"
+        ],
+        "summary": "Public Story",
+        "operationId": "public_story_hacker_news_public_story_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HackerNewsPublicStory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tvmaze/public/show": {
       "get": {
         "tags": [
@@ -16250,6 +16392,182 @@
         }
       }
     },
+    "/ror/public/organization": {
+      "get": {
+        "tags": [
+          "ROR Integrations"
+        ],
+        "summary": "Public Organization",
+        "operationId": "public_organization_ror_public_organization_get",
+        "parameters": [
+          {
+            "name": "ror_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 9,
+              "title": "Ror Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RorPublicOrganization"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artifact-hub/public/helm-package": {
+      "get": {
+        "tags": [
+          "Artifact Hub Integrations"
+        ],
+        "summary": "Public Helm Package",
+        "operationId": "public_helm_package_artifact_hub_public_helm_package_get",
+        "parameters": [
+          {
+            "name": "repository",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Repository"
+            }
+          },
+          {
+            "name": "package",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Package"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactHubPublicHelmPackage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/terraform-registry/public/module-version": {
+      "get": {
+        "tags": [
+          "Terraform Registry Integrations"
+        ],
+        "summary": "Public Module Version",
+        "operationId": "public_module_version_terraform_registry_public_module_version_get",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Namespace"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Name"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 100,
+              "title": "Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerraformRegistryPublicModuleVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/library-of-congress/public/item": {
       "get": {
         "tags": [
@@ -16321,6 +16639,138 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NasaImagesPublicAsset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/smk/public/artwork": {
+      "get": {
+        "tags": [
+          "SMK Integrations"
+        ],
+        "summary": "Public Artwork",
+        "operationId": "public_artwork_smk_public_artwork_get",
+        "parameters": [
+          {
+            "name": "object_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "title": "Object Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmkPublicArtwork"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/world-bank-documents/public/document": {
+      "get": {
+        "tags": [
+          "World Bank Documents Integrations"
+        ],
+        "summary": "Public Document",
+        "operationId": "public_document_world_bank_documents_public_document_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorldBankPublicDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cleveland-museum/public/artwork": {
+      "get": {
+        "tags": [
+          "Cleveland Museum Integrations"
+        ],
+        "summary": "Public Artwork",
+        "operationId": "public_artwork_cleveland_museum_public_artwork_get",
+        "parameters": [
+          {
+            "name": "accession_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "title": "Accession Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClevelandPublicArtwork"
                 }
               }
             }
@@ -62131,6 +62581,80 @@
         }
       }
     },
+    "/scheduling/admin/db-jobs": {
+      "get": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Admin List Db Jobs",
+        "operationId": "admin_list_db_jobs_scheduling_admin_db_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DbJobsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduling/admin/db-jobs/{jobid}": {
+      "patch": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Admin Patch Db Job",
+        "description": "Change schedule and/or the active flag. The schedule string is validated\nby cron.alter_job itself (pg_cron accepts 5-field cron AND '30 seconds'\nstyle intervals); an invalid one comes back as a 422 with the DB's words.",
+        "operationId": "admin_patch_db_job_scheduling_admin_db_jobs__jobid__patch",
+        "parameters": [
+          {
+            "name": "jobid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Jobid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DbJobPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DbJobItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scheduling/admin/force-disable/{task_id}": {
       "post": {
         "tags": [
@@ -72682,6 +73206,134 @@
         ],
         "title": "ArtICPublicArtwork",
         "description": "Safe CC0 projection of one public Art Institute artwork record."
+      },
+      "ArtifactHubPublicHelmPackage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "artifact_hub_public_helm_package",
+            "title": "Kind",
+            "default": "artifact_hub_public_helm_package"
+          },
+          "provider": {
+            "type": "string",
+            "const": "artifact_hub",
+            "title": "Provider",
+            "default": "artifact_hub"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "package_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 36,
+            "title": "Package Id"
+          },
+          "repository": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Repository"
+          },
+          "package": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Package"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Version"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
+          },
+          "official": {
+            "type": "boolean",
+            "title": "Official"
+          },
+          "cncf": {
+            "type": "boolean",
+            "title": "Cncf"
+          },
+          "deprecated": {
+            "type": "boolean",
+            "title": "Deprecated"
+          },
+          "signed": {
+            "type": "boolean",
+            "title": "Signed"
+          },
+          "verified_publisher": {
+            "type": "boolean",
+            "title": "Verified Publisher"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Keywords"
+          },
+          "provider_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Provider Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "package_id",
+          "repository",
+          "package",
+          "version",
+          "description",
+          "official",
+          "cncf",
+          "deprecated",
+          "signed",
+          "verified_publisher",
+          "keywords",
+          "provider_page"
+        ],
+        "title": "ArtifactHubPublicHelmPackage",
+        "description": "Safe bounded projection of one public Helm package."
       },
       "Asset": {
         "properties": {
@@ -88460,6 +89112,74 @@
         ],
         "title": "Clearance"
       },
+      "ClevelandPublicArtwork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cleveland_museum_public_artwork",
+            "title": "Kind",
+            "default": "cleveland_museum_public_artwork"
+          },
+          "provider": {
+            "type": "string",
+            "const": "cleveland_museum_of_art",
+            "title": "Provider",
+            "default": "cleveland_museum_of_art"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "artwork_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Artwork Id"
+          },
+          "accession_number": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Accession Number"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "artwork_type": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Artwork Type"
+          },
+          "creation_date": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Creation Date"
+          },
+          "record_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Record Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "artwork_id",
+          "accession_number",
+          "title",
+          "artwork_type",
+          "creation_date",
+          "record_page"
+        ],
+        "title": "ClevelandPublicArtwork",
+        "description": "Safe bounded projection of one public CMA artwork record."
+      },
       "ClickCommand": {
         "properties": {
           "command": {
@@ -91456,6 +92176,149 @@
         ],
         "title": "CodeValueMapping",
         "description": "LEGACY spelling of :class:`OfferedValueMapping`.\n\nKept in the union so persisted maps still VALIDATE, but the one read funnel\n(:func:`parse_value_mapping`) normalizes every ``code_value`` to the neutral\n``offered_value`` before any consumer sees it — a persisted shape has ONE\ndeserializer, and post-funnel code never branches on ``code_value``."
+      },
+      "CodebergPublicRepository": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "codeberg_public_repository",
+            "title": "Kind",
+            "default": "codeberg_public_repository"
+          },
+          "provider": {
+            "type": "string",
+            "const": "codeberg",
+            "title": "Provider",
+            "default": "codeberg"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_policy": {
+            "type": "string",
+            "const": "public-repository-metadata",
+            "title": "Source Policy",
+            "default": "public-repository-metadata"
+          },
+          "repository_id": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Repository Id"
+          },
+          "owner_login": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Owner Login"
+          },
+          "repository_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Repository Name"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 201,
+            "minLength": 3,
+            "title": "Full Name"
+          },
+          "repository_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Repository Url"
+          },
+          "is_empty": {
+            "type": "boolean",
+            "title": "Is Empty"
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived"
+          },
+          "is_fork": {
+            "type": "boolean",
+            "title": "Is Fork"
+          },
+          "is_mirror": {
+            "type": "boolean",
+            "title": "Is Mirror"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "stars_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Stars Count"
+          },
+          "forks_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Forks Count"
+          },
+          "watchers_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Watchers Count"
+          },
+          "open_issues_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Open Issues Count"
+          },
+          "default_branch": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Default Branch"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "repository_id",
+          "owner_login",
+          "repository_name",
+          "full_name",
+          "repository_url",
+          "is_empty",
+          "is_archived",
+          "is_fork",
+          "is_mirror",
+          "stars_count",
+          "forks_count",
+          "watchers_count",
+          "open_issues_count",
+          "default_branch",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CodebergPublicRepository",
+        "description": "Safe projection of one public Codeberg repository."
       },
       "CodingSessionBridgeRestRequest": {
         "properties": {
@@ -100586,6 +101449,183 @@
         ],
         "title": "DbFieldRef",
         "description": "Fetch a single field value from one row of a system table."
+      },
+      "DbJobItem": {
+        "properties": {
+          "jobid": {
+            "type": "integer",
+            "title": "Jobid"
+          },
+          "jobname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jobname"
+          },
+          "schedule": {
+            "type": "string",
+            "title": "Schedule"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "taxonomy_node_id": {
+            "type": "string",
+            "title": "Taxonomy Node Id"
+          },
+          "taxonomy_path": {
+            "items": {
+              "$ref": "#/components/schemas/SystemTaskTaxonomyNode"
+            },
+            "type": "array",
+            "title": "Taxonomy Path"
+          },
+          "last_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DbJobLastRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobid",
+          "schedule",
+          "command",
+          "active",
+          "taxonomy_node_id",
+          "taxonomy_path"
+        ],
+        "title": "DbJobItem"
+      },
+      "DbJobLastRun": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "return_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Message"
+          }
+        },
+        "type": "object",
+        "title": "DbJobLastRun"
+      },
+      "DbJobPatchRequest": {
+        "properties": {
+          "schedule": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "taxonomy_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxonomy Node Id"
+          }
+        },
+        "type": "object",
+        "title": "DbJobPatchRequest"
+      },
+      "DbJobsResponse": {
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/DbJobItem"
+            },
+            "type": "array",
+            "title": "Jobs"
+          },
+          "taxonomy_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/SystemTaskTaxonomyNode"
+            },
+            "type": "array",
+            "title": "Taxonomy Nodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobs",
+          "taxonomy_nodes"
+        ],
+        "title": "DbJobsResponse"
       },
       "DbQueryRef": {
         "properties": {
@@ -119327,6 +120367,97 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HackerNewsPublicStory": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hacker_news_public_story",
+            "title": "Kind",
+            "default": "hacker_news_public_story"
+          },
+          "provider": {
+            "type": "string",
+            "const": "hacker_news",
+            "title": "Provider",
+            "default": "hacker_news"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_notice": {
+            "type": "string",
+            "const": "public-user-generated-metadata",
+            "title": "Source Notice",
+            "default": "public-user-generated-metadata"
+          },
+          "item_id": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Item Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "author": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Author"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "comment_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Count"
+          },
+          "hacker_news_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Hacker News Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "title",
+          "author",
+          "created_at",
+          "hacker_news_url"
+        ],
+        "title": "HackerNewsPublicStory",
+        "description": "Safe metadata projection for one public, live Hacker News story."
       },
       "HandleDialogCommand": {
         "properties": {
@@ -140019,6 +141150,137 @@
         "additionalProperties": true,
         "type": "object",
         "title": "OpenRuntimeResponse"
+      },
+      "OpenversePublicImageAttribution": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openverse_public_image_attribution",
+            "title": "Kind",
+            "default": "openverse_public_image_attribution"
+          },
+          "provider": {
+            "type": "string",
+            "const": "openverse",
+            "title": "Provider",
+            "default": "openverse"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_notice": {
+            "type": "string",
+            "const": "verify-license-before-use",
+            "title": "Source Notice",
+            "default": "verify-license-before-use"
+          },
+          "image_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 36,
+            "title": "Image Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "creator": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source"
+          },
+          "license": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "License"
+          },
+          "license_version": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "License Version"
+          },
+          "license_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "License Url"
+          },
+          "source_landing_url": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Source Landing Url"
+          },
+          "attribution": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Attribution"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_id",
+          "source",
+          "license",
+          "license_version",
+          "license_url",
+          "source_landing_url",
+          "attribution"
+        ],
+        "title": "OpenversePublicImageAttribution",
+        "description": "Safe attribution projection for one openly indexed image."
       },
       "OperationEvent": {
         "properties": {
@@ -162356,6 +163618,127 @@
         "title": "RollupPoint",
         "description": "One nightly capture from meta.table_stats_history."
       },
+      "RorPublicOrganization": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ror_public_organization",
+            "title": "Kind",
+            "default": "ror_public_organization"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ror",
+            "title": "Provider",
+            "default": "ror"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "ror_id": {
+            "type": "string",
+            "maxLength": 9,
+            "minLength": 9,
+            "title": "Ror Id"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "withdrawn"
+            ],
+            "title": "Status"
+          },
+          "organization_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Organization Types"
+          },
+          "country_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Country Codes"
+          },
+          "established_year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9999,
+                "minimum": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Established Year"
+          },
+          "domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Domains"
+          },
+          "created_date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Created Date"
+          },
+          "last_modified_date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Last Modified Date"
+          },
+          "schema_version": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Schema Version"
+          },
+          "organization_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Organization Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ror_id",
+          "display_name",
+          "status",
+          "organization_types",
+          "country_codes",
+          "domains",
+          "created_date",
+          "last_modified_date",
+          "schema_version",
+          "organization_page"
+        ],
+        "title": "RorPublicOrganization",
+        "description": "Safe bounded projection of one ROR organization record."
+      },
       "RotatePageBody": {
         "properties": {
           "rotation": {
@@ -172147,6 +173530,75 @@
         "title": "SlideSpec",
         "description": "One slide of a generated presentation."
       },
+      "SmkPublicArtwork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "smk_public_domain_artwork",
+            "title": "Kind",
+            "default": "smk_public_domain_artwork"
+          },
+          "provider": {
+            "type": "string",
+            "const": "smk",
+            "title": "Provider",
+            "default": "smk"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "record_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Record Id"
+          },
+          "object_number": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Object Number"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "object_type": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Object Type"
+          },
+          "production_period": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Production Period"
+          },
+          "record_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Record Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "record_id",
+          "object_number",
+          "title",
+          "object_type",
+          "production_period",
+          "record_page"
+        ],
+        "title": "SmkPublicArtwork",
+        "description": "Safe bounded projection of one provider-marked public-domain artwork."
+      },
       "SmsActionAuthorizationRequest": {
         "properties": {
           "confirm": {
@@ -177753,6 +179205,17 @@
             "type": "boolean",
             "title": "Handler Registered"
           },
+          "taxonomy_node_id": {
+            "type": "string",
+            "title": "Taxonomy Node Id"
+          },
+          "taxonomy_path": {
+            "items": {
+              "$ref": "#/components/schemas/SystemTaskTaxonomyNode"
+            },
+            "type": "array",
+            "title": "Taxonomy Path"
+          },
           "variables_args": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
@@ -177787,7 +179250,9 @@
           "title",
           "enabled",
           "handler_gate_pending",
-          "handler_registered"
+          "handler_registered",
+          "taxonomy_node_id",
+          "taxonomy_path"
         ],
         "title": "SystemTaskItem"
       },
@@ -177855,6 +179320,17 @@
             ],
             "title": "Enabled"
           },
+          "taxonomy_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxonomy Node Id"
+          },
           "trigger": {
             "anyOf": [
               {
@@ -177882,6 +179358,45 @@
         },
         "type": "object",
         "title": "SystemTaskPatchRequest"
+      },
+      "SystemTaskTaxonomyNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "level"
+        ],
+        "title": "SystemTaskTaxonomyNode"
       },
       "SystemTaskTriggerInfo": {
         "properties": {
@@ -177964,11 +179479,19 @@
             },
             "type": "array",
             "title": "Tasks"
+          },
+          "taxonomy_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/SystemTaskTaxonomyNode"
+            },
+            "type": "array",
+            "title": "Taxonomy Nodes"
           }
         },
         "type": "object",
         "required": [
-          "tasks"
+          "tasks",
+          "taxonomy_nodes"
         ],
         "title": "SystemTasksResponse"
       },
@@ -178781,6 +180304,18 @@
             "type": "array",
             "title": "Tags"
           },
+          "taxonomy_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxonomy Node Id",
+            "description": "Canonical platform.taxonomy_node identity. Required for kind='tool' so system work is attached to a Domain, Feature, or Sub-feature."
+          },
           "agent_task": {
             "anyOf": [
               {
@@ -179105,6 +180640,17 @@
             },
             "type": "array",
             "title": "Tags"
+          },
+          "taxonomy_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxonomy Node Id"
           },
           "next_due_at": {
             "anyOf": [
@@ -179725,6 +181271,106 @@
         ],
         "title": "TemplateVerdict",
         "description": "Whether this template can render, in the author's language."
+      },
+      "TerraformRegistryPublicModuleVersion": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "terraform_registry_public_module_version",
+            "title": "Kind",
+            "default": "terraform_registry_public_module_version"
+          },
+          "provider_service": {
+            "type": "string",
+            "const": "terraform_registry",
+            "title": "Provider Service",
+            "default": "terraform_registry"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Namespace"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 5,
+            "title": "Version"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Source Url"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 20,
+            "title": "Published At"
+          },
+          "downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Downloads"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "deprecated": {
+            "type": "boolean",
+            "title": "Deprecated"
+          },
+          "provider_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Provider Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "namespace",
+          "name",
+          "provider",
+          "version",
+          "description",
+          "source_url",
+          "published_at",
+          "downloads",
+          "verified",
+          "deprecated",
+          "provider_page"
+        ],
+        "title": "TerraformRegistryPublicModuleVersion",
+        "description": "Safe bounded projection of one public Terraform module version."
       },
       "TestNodeRequest": {
         "properties": {
@@ -193741,6 +195387,69 @@
         ],
         "title": "WorkflowCostRollup",
         "description": "Aggregated cost for one definition across a time window."
+      },
+      "WorldBankPublicDocument": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "world_bank_public_document",
+            "title": "Kind",
+            "default": "world_bank_public_document"
+          },
+          "provider": {
+            "type": "string",
+            "const": "world_bank_documents",
+            "title": "Provider",
+            "default": "world_bank_documents"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "document_id": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Document Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "document_type": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Document Type"
+          },
+          "document_date": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Document Date"
+          },
+          "record_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Record Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_id",
+          "title",
+          "document_type",
+          "document_date",
+          "record_page"
+        ],
+        "title": "WorldBankPublicDocument",
+        "description": "Safe bounded projection of one public World Bank document."
       },
       "WriteArgs": {
         "properties": {
