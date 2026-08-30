@@ -41,66 +41,6 @@
       ],
       "previousEventHash": "30e411d49c412e6f27d44bcc6bcd31191f615b27daf6fed466d7e72c9d5ef655",
       "eventHash": "5e0b59d64abdf7e53d09cebe55e00c65ad9d288c8aec4a602d39557b2a516c73"
-    },
-    {
-      "sequence": 4,
-      "state": "certified",
-      "at": "2026-08-30T15:43:10.597Z",
-      "actor": "plan-sites-independent-certifier",
-      "summary": "Independent adversarial review CERTIFIED the exact Content Plan site-action candidate.",
-      "evidence": [
-        "No concrete candidate-caused defect found in the exact git archive."
-      ],
-      "certification": {
-        "verdict": "CERTIFIED",
-        "candidateSha": "478fc4a234136bdf2c5d938bf90b704335c6cf96",
-        "certifierTaskId": "plan_sites_certifier",
-        "checks": [
-          "Type-check PASS in exact-SHA offline archive.",
-          "Focused ESLint PASS across all seven owned product files.",
-          "Three Jest suites PASS, 9/9 tests.",
-          "Content Plan and sites dead-end detector scopes clean.",
-          "One lazyOverlay front door; no heavy implementation bypass."
-        ]
-      },
-      "previousEventHash": "5e0b59d64abdf7e53d09cebe55e00c65ad9d288c8aec4a602d39557b2a516c73",
-      "eventHash": "61a32ad5bfbf4cd5c58a18d98e76d441deb442c43dcdd42ed53d824f59f973b5"
-    },
-    {
-      "sequence": 5,
-      "state": "delivery_queued",
-      "at": "2026-08-30T15:43:17.107Z",
-      "actor": "codex-p2-delivery-controller",
-      "summary": "Certified Content Plan action adoption is integrated on main and queued for the serialized release lane.",
-      "evidence": [
-        "Exact candidate is an ancestor of current origin/main.",
-        "No containing release tag exists; no redundant release was created."
-      ],
-      "delivery": {
-        "candidateSha": "478fc4a234136bdf2c5d938bf90b704335c6cf96",
-        "preservedRef": "refs/heads/patrol-runs/P2/20260830T152907Z",
-        "integratedSha": "478fc4a234136bdf2c5d938bf90b704335c6cf96"
-      },
-      "previousEventHash": "61a32ad5bfbf4cd5c58a18d98e76d441deb442c43dcdd42ed53d824f59f973b5",
-      "eventHash": "571177b9d610eec3fcaa1108c2078d137e2d799151da93d2322f23bed5f18dfc"
-    },
-    {
-      "sequence": 6,
-      "state": "delivered",
-      "at": "2026-08-30T15:43:45.795Z",
-      "actor": "codex-p2-delivery-controller",
-      "summary": "Content Plan site-action adoption delivered in existing release v0.4.1499.",
-      "evidence": [
-        "Existing v0.4.1499 is the first containing release; no redundant release was created."
-      ],
-      "delivery": {
-        "candidateSha": "478fc4a234136bdf2c5d938bf90b704335c6cf96",
-        "preservedRef": "refs/heads/patrol-runs/P2/20260830T152907Z",
-        "integratedSha": "478fc4a234136bdf2c5d938bf90b704335c6cf96",
-        "release": "v0.4.1499"
-      },
-      "previousEventHash": "571177b9d610eec3fcaa1108c2078d137e2d799151da93d2322f23bed5f18dfc",
-      "eventHash": "a2c8436fe42fbd83f844529a02a8999fdd22e2d774e7c083ae9994aa43e904a0"
     }
   ]
 }
