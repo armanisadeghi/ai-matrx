@@ -48,9 +48,11 @@ function KitCard({ kit }: { kit: StudyKit }) {
             {kit.title}
           </span>
           <span className="mt-0.5 block text-[11px] text-muted-foreground">
-            {kit.artifacts.length}{" "}
-            {kit.artifacts.length === 1 ? "study item" : "study items"} ·{" "}
-            {relativeTime(kit.createdAt)}
+            {present.length}{" "}
+            {present.length === 1 ? "study aid" : "study aid types"}
+            {kit.artifacts.length !== present.length &&
+              ` · ${kit.artifacts.length} total items`}{" "}
+            · {relativeTime(kit.createdAt)}
           </span>
         </span>
         <ArrowRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -122,7 +124,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
                 key={option.target}
                 href={option.href}
                 className={cn(
-                  "inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors hover:brightness-110 sm:min-h-7",
+                  "inline-flex min-h-10 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors hover:brightness-110 sm:min-h-7",
                   artifactTile(option.visual),
                 )}
               >

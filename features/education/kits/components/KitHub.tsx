@@ -239,10 +239,6 @@ export function KitHub({
 
   useEffect(() => {
     let active = true;
-    if (refreshKey === 0) setLoading(true);
-    setLoadError(false);
-    setStatsLoading(true);
-    setStatsFailed(false);
 
     void (async () => {
       try {
@@ -250,6 +246,7 @@ export function KitHub({
         if (!active) return;
         setKit(result);
         setLoading(false);
+        setLoadError(false);
         if (!result) {
           setStats({});
           setStatsLoading(false);
@@ -260,6 +257,7 @@ export function KitHub({
           const nextStats = await readKitArtifactStats(result.artifacts);
           if (!active) return;
           setStats(nextStats);
+          setStatsFailed(false);
         } catch (error) {
           console.error("[kits] artifact progress read failed:", error);
           if (!active) return;
@@ -416,8 +414,8 @@ export function KitHub({
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Start with the big picture, strengthen recall, then test what
-                sticks. Every result below comes from this study aid—not from a
-                made-up kit score.
+                sticks. Each progress number below comes from that study
+                aid&apos;s real activity.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
