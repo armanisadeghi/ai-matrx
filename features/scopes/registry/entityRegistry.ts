@@ -1,34 +1,29 @@
 // features/scopes/registry/entityRegistry.ts
 //
-// THE single resolver that turns an entity token into everything a generic
-// association UI needs to RENDER it and QUERY for it — with ZERO hardcoding in
-// the components themselves.
+// THE HOST BINDING for the `@ai-matrx/associations` entity registry (W5 swap,
+// 2026-08-29). The merge ENGINE lives in the package
+// (`createEntityRegistry` in `@ai-matrx/associations/core` — generated
+// `platform.entity_types` metadata merged with a host overlay); what remains
+// here is HOST MATERIAL the database and the package cannot carry:
 //
-//   const info = getEntityInfo("task");
-//   info.label / info.labelPlural / info.Icon            ← display
-//   info.schema / info.table / info.titleColumn          ← candidate query
-//   info.ownerColumn / info.orgColumn                    ← row scoping
+//   1. `ENTITY_OVERLAY` — Lucide icons, client routes (`hrefFor`), plural
+//      labels, and the exceptional candidate loaders (`data_store` → rag,
+//      `hr_employee` → hr). This literal feeds the package's `entityOverlay`
+//      port (both this module's standalone registry instance and the store in
+//      `features/scopes/host/associationsStore.ts` are constructed from it).
+//   2. The content-role display chrome (`CONTENT_ROLES` — titles, taglines,
+//      Tailwind accents) consumed by host resource surfaces.
+//   3. The `LucideIcon`-typed `EntityInfo` the 70+ existing consumers render
+//      from (`info.Icon` is never null here — `DEFAULT_ICON` fills the gap,
+//      exactly the pre-extraction behavior).
 //
-// Two inputs, merged:
-//   1. The GENERATED registry `ENTITY_TYPE_METADATA` (mirrored 1:1 from
-//      `platform.entity_types`) — the source of truth for `schema`, `table`,
-//      `label`, `scopeable`, `category`. NEVER hand-maintained.
-//   2. A thin FE-only OVERLAY below for things the DB cannot carry: Lucide
-//      `Icon` components, client routes, plural labels, and exceptional
-//      candidate loaders. Database-owned metadata is forbidden in the overlay.
+// Every resolver below (`getEntityInfo`, `tryGetEntityInfo`, `curatedTokens`,
+// …) DELEGATES to the package engine — there is no second merge
+// implementation in this repo (C9).
 //
-// OWNERSHIP + ORG ARE CONVENTIONS, NOT PER-TOKEN CONFIG. Verified live across
-// every cardable table after the 2026 schema reorg: each carries `created_by`
-// (the author/owner) and `organization_id`. So those are constants here; a
-// token only overrides them in the rare case its table diverges. This is why
-// the old per-token `ownerColumn: "user_id"` was WRONG — `files.files` (and
-// notes/tasks/projects/conversations) have NO `user_id` column, which is what
-// produced the `column files.user_id does not exist` (42703) error.
-//
-// This is the canonical replacement for the bespoke, duplicated
-// `features/organizations/resource-catalogue.ts` — that file re-lists schema /
-// table / label / icon per kind by hand and drifts from the registry. New
-// association surfaces consume THIS resolver, not that catalogue.
+// OWNERSHIP + ORG ARE CONVENTIONS, NOT PER-TOKEN CONFIG (see the package
+// registry docs): every cardable table carries `created_by` +
+// `organization_id`; a token overrides only when its table diverges.
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -76,20 +71,26 @@ import {
   Zap,
 } from "lucide-react";
 import {
-  ENTITY_TYPE_METADATA,
-  isEntityTypeToken,
-  type EntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+  createEntityRegistry,
+  resolveEntityToken,
+  isContentRole,
+  DEFAULT_OWNER_COLUMN,
+  DEFAULT_ORG_COLUMN,
+  type ContentRole,
+  type EntityInfo as PackageEntityInfo,
+} from "@ai-matrx/associations/core";
+import type {
+  EntityOverlayMap,
+  EntityTypeToken,
+} from "@ai-matrx/associations";
 import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
 import { listHrEmployeeCandidates } from "@/features/hr/entry-points/employeeCandidates";
+import { associationsErrorSink } from "@/features/scopes/host/errorSink";
 
-/**
- * The universal ownership column post-2026-reorg. Every first-class entity
- * table carries it; candidate reads scope to the current user with it.
- */
-export const DEFAULT_OWNER_COLUMN = "created_by";
-/** The universal org-scoping column. Every first-class entity table carries it. */
-export const DEFAULT_ORG_COLUMN = "organization_id";
+// Conventions + token normalisation come straight from the package.
+export { resolveEntityToken, isContentRole, DEFAULT_OWNER_COLUMN, DEFAULT_ORG_COLUMN };
+export type { ContentRole };
+
 
 // ─── Content roles ──────────────────────────────────────────────────────────
 // The knowledge-model grouping axis (common-docs/projects/knowledge-system/vision/scopeable_entities.md):
@@ -97,9 +98,6 @@ export const DEFAULT_ORG_COLUMN = "organization_id";
 // both (hybrid), operates on it without truth of its own (utility), or
 // organizes other entities (container). Resource surfaces group by this.
 // `platform.entity_types.content_role` is the only per-entity authority.
-
-export type ContentRole =
-  "utility" | "source" | "destination" | "hybrid" | "container";
 
 export interface ContentRoleMeta {
   id: ContentRole;
@@ -159,11 +157,6 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
 
 export function getContentRoleMeta(role: ContentRole): ContentRoleMeta {
   return CONTENT_ROLES.find((r) => r.id === role) ?? CONTENT_ROLES[2];
-}
-
-/** Runtime guard for the DB's free-text `content_role` column. */
-export function isContentRole(value: string | null): value is ContentRole {
-  return value !== null && CONTENT_ROLES.some((r) => r.id === value);
 }
 
 /**
@@ -583,35 +576,33 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
 /** Fallback icon when a token has no overlay entry yet. */
 const DEFAULT_ICON: LucideIcon = Boxes;
 
+// ─── The ONE engine instance ────────────────────────────────────────────────
+// Constructed from the same host overlay the store binding uses
+// (`features/scopes/host/associationsStore.ts`). Overlay entries are merged
+// per token by the package, so both instances resolve identically.
+const registry = createEntityRegistry(
+  associationsErrorSink,
+  ENTITY_OVERLAY as EntityOverlayMap,
+);
+
+/** The host overlay — feeds the package's `entityOverlay` port. */
+export function getAssociationsEntityOverlay(): EntityOverlayMap {
+  return ENTITY_OVERLAY as EntityOverlayMap;
+}
+
 /**
- * Fully-resolved entity descriptor — generated metadata + FE overlay, with safe
- * fallbacks so an un-overlaid token still renders (generic icon, derived
- * plural) even if it can't be queried for candidates yet.
+ * Fully-resolved entity descriptor as host consumers render it: the package's
+ * merged descriptor with a guaranteed Lucide `Icon` (`DEFAULT_ICON` when the
+ * overlay has none — exactly the pre-extraction behavior).
  */
-export interface EntityInfo {
-  token: EntityTypeToken;
-  label: string;
-  labelPlural: string;
-  /** Postgres schema of the backing table (from the generated registry). */
-  schema: string;
-  /** Backing table name (from the generated registry). */
-  table: string;
-  /** Title column for the picker, or null when none is registered. */
-  titleColumn: string | null;
-  /** Ownership column to scope candidate reads to the current user. */
-  ownerColumn: string;
-  /** Org-scoping column. */
-  orgColumn: string;
+export interface EntityInfo extends Omit<PackageEntityInfo, "Icon"> {
   Icon: LucideIcon;
-  hrefFor: ((id: string) => string) | null;
-  scopeable: boolean;
-  category: string | null;
-  /** Knowledge-model grouping bucket (resource surfaces group by this). */
-  contentRole: ContentRole;
-  /** Candidate-source override (rag-backed tokens etc.); null = generic read. */
-  listCandidates: EntityOverlay["listCandidates"] | null;
-  /** True when a picker can list real candidates (title column OR override). */
-  canListCandidates: boolean;
+}
+
+function withIcon(info: PackageEntityInfo): EntityInfo {
+  // The overlay above only ever registers Lucide components, so the merged
+  // Icon is a LucideIcon whenever present; DEFAULT_ICON fills the gap.
+  return { ...info, Icon: (info.Icon as LucideIcon | null) ?? DEFAULT_ICON };
 }
 
 /**
@@ -619,120 +610,14 @@ export interface EntityInfo {
  * values; pass raw strings through `tryGetEntityInfo` instead.
  */
 export function getEntityInfo(token: EntityTypeToken): EntityInfo {
-  const meta = ENTITY_TYPE_METADATA[token];
-  const overlay = ENTITY_OVERLAY[token];
-  const labelPlural = overlay?.labelPlural ?? `${meta.label}s`;
-  const titleColumn = meta.titleColumn;
-  const contentRole = isContentRole(meta.contentRole)
-    ? meta.contentRole
-    : "destination";
-  // NULL means "not classified as a knowledge resource" in the canonical
-  // registry and is the normal state for most entity types. The destination
-  // fallback keeps generic callers total; only a non-null, out-of-vocabulary
-  // value is corrupt registry data and warrants a production alarm.
-  if (meta.contentRole !== null && !isContentRole(meta.contentRole)) {
-    console.error(
-      `[entityRegistry] "${token}" has invalid content_role ` +
-        `"${meta.contentRole}" in platform.entity_types; using destination ` +
-        `as a loud recovery.`,
-    );
-  }
-  // `null` override means "this table has no such column"; `undefined` (the
-  // common case) falls back to the convention.
-  const ownerColumn =
-    overlay?.ownerColumn === undefined
-      ? DEFAULT_OWNER_COLUMN
-      : (overlay.ownerColumn ?? "");
-  const orgColumn =
-    overlay?.orgColumn === undefined
-      ? DEFAULT_ORG_COLUMN
-      : (overlay.orgColumn ?? "");
-  return {
-    token,
-    label: meta.label,
-    labelPlural,
-    schema: meta.schema,
-    table: meta.table,
-    titleColumn,
-    ownerColumn,
-    orgColumn,
-    Icon: overlay?.Icon ?? DEFAULT_ICON,
-    hrefFor: overlay?.hrefFor ?? null,
-    scopeable: meta.scopeable,
-    category: meta.category,
-    contentRole,
-    listCandidates: overlay?.listCandidates ?? null,
-    canListCandidates:
-      titleColumn !== null || overlay?.listCandidates !== undefined,
-  };
-}
-
-/**
- * Domain vocabularies that name a registered entity by a DIFFERENT string.
- *
- * A `kind` column written by another system is not automatically a canonical
- * token. The Knowledge/ingest pipeline (aidream) stamps `source_kind='cld_file'` on
- * `rag.kg_chunks` and `public.auto_ingest_batch` — the legacy name of the table
- * now called `files.files`, which IS the registry's `file`: same row, same id,
- * same `/files/f/{id}` route, same peek. A surface that hands the raw string to
- * `EntityRef` therefore loses open, new tab AND peek for exactly the file
- * batches, silently, while every other kind on the same screen works.
- *
- * This map lives HERE rather than beside a consumer because that is the whole
- * lesson of `PEEK_KEY_BY_TOKEN`: six private copies of "what is this thing
- * called" drifted independently and cost six peeks their Open door. One alias
- * table, one place to add the next one.
- *
- * Only add an entry you have VERIFIED points at the same physical row — an
- * alias that merely sounds related (`processed_document` is `docproc`, not
- * `udt_document`) fabricates a route, which is worse than no link at all.
- */
-const TOKEN_ALIASES: Record<string, EntityTypeToken> = {
-  cld_file: "file",
-};
-
-/**
- * Normalise a raw `kind`/`type` string onto its canonical entity token.
- * Returns the input unchanged when it is already canonical or unknown — the
- * caller's existing "no registry entry → plain text" path still applies.
- */
-export function resolveEntityToken(raw: string): string {
-  return TOKEN_ALIASES[raw] ?? raw;
+  return withIcon(registry.getEntityInfo(token));
 }
 
 /** Safe variant for raw strings (e.g. an edge's `otherType`). */
 export function tryGetEntityInfo(token: string): EntityInfo | null {
-  const canonical = resolveEntityToken(token);
-  return isEntityTypeToken(canonical) ? getEntityInfo(canonical) : null;
+  const info = registry.tryGetEntityInfo(token);
+  return info ? withIcon(info) : null;
 }
-
-// Reverse index: "schema.table" → canonical token (first registered token wins
-// when several tokens share a physical table, e.g. context_item/context_value).
-// Built once from the generated metadata — the ONE place a live (schema, table)
-// pair resolves back to its entity, so surfaces that only know a raw table name
-// (FK-reference panels, drift reports) render through the SAME canonical
-// icon/label/role as everything else instead of a hand-maintained table map.
-const TABLE_TO_TOKEN: Record<string, EntityTypeToken> = (() => {
-  const m: Record<string, EntityTypeToken> = {};
-  for (const token of Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]) {
-    const meta = ENTITY_TYPE_METADATA[token];
-    const key = `${meta.schema}.${meta.table}`;
-    if (!(key in m)) m[key] = token;
-  }
-  return m;
-})();
-
-const UNIQUE_TABLE_NAME_TO_TOKEN: Record<string, EntityTypeToken | null> =
-  (() => {
-    const index: Record<string, EntityTypeToken | null> = {};
-    for (const token of Object.keys(
-      ENTITY_TYPE_METADATA,
-    ) as EntityTypeToken[]) {
-      const table = ENTITY_TYPE_METADATA[token].table;
-      index[table] = table in index ? null : token;
-    }
-    return index;
-  })();
 
 /**
  * Resolve an entity descriptor from a live `(schema, table)` pair, or null when
@@ -743,62 +628,33 @@ export function tryGetEntityInfoByTable(
   schema: string,
   table: string,
 ): EntityInfo | null {
-  const token = TABLE_TO_TOKEN[`${schema}.${table}`];
-  return token ? getEntityInfo(token) : null;
+  const info = registry.tryGetEntityInfoByTable(schema, table);
+  return info ? withIcon(info) : null;
 }
 
 /** Resolve a raw table name only when it maps to exactly one registered entity. */
 export function tryGetEntityInfoByUniqueTableName(
   table: string,
 ): EntityInfo | null {
-  const token = UNIQUE_TABLE_NAME_TO_TOKEN[table];
-  return token ? getEntityInfo(token) : null;
+  const info = registry.tryGetEntityInfoByUniqueTableName(table);
+  return info ? withIcon(info) : null;
+}
+
+/**
+ * Tokens the DB classifies as knowledge resources via a valid `content_role`
+ * AND that can list candidates — the default set for association card grids,
+ * resource sections, and attach pickers.
+ */
+export function curatedTokens(): EntityTypeToken[] {
+  return registry.curatedTokens();
 }
 
 /**
  * Tokens offered as reference "Allowed types" — DB-driven via
- * `platform.entity_types.reference_pickable` (admin-managed at
- * /administration/database/relationships/entity-types), no longer gated by the FE
- * overlay. A pickable token still needs a way to list candidates: a
- * `title_column` in the registry or an FE `listCandidates` override. A
- * pickable token with neither is a config defect — it is excluded and
- * screamed about, never silently shown broken.
+ * `platform.entity_types.reference_pickable`. A pickable token with no title
+ * column and no candidate source is screamed to the errorSink and excluded,
+ * never silently shown broken.
  */
-/**
- * Tokens the DB classifies as knowledge resources via a valid `content_role`.
- * This is the default set for association card grids, resource sections, and
- * attach pickers. The reference "Allowed types" chooser deliberately uses the
- * broader `listableTokens()` set instead.
- */
-export function curatedTokens(): EntityTypeToken[] {
-  return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter(
-    (t) => {
-      const meta = ENTITY_TYPE_METADATA[t];
-      const o = ENTITY_OVERLAY[t];
-      return (
-        isContentRole(meta.contentRole) &&
-        (meta.titleColumn != null || o?.listCandidates !== undefined)
-      );
-    },
-  );
-}
-
 export function listableTokens(): EntityTypeToken[] {
-  return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter(
-    (t) => {
-      const meta = ENTITY_TYPE_METADATA[t];
-      if (!meta.referencePickable) return false;
-      const o = ENTITY_OVERLAY[t];
-      const canList =
-        meta.titleColumn != null || o?.listCandidates !== undefined;
-      if (!canList) {
-        console.error(
-          `[entityRegistry] "${t}" is reference_pickable in platform.entity_types ` +
-            `but has NO title_column and no FE candidate source — set its ` +
-            `title_column at /administration/database/relationships/entity-types.`,
-        );
-      }
-      return canList;
-    },
-  );
+  return registry.listableTokens();
 }
