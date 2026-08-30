@@ -64138,6 +64138,10 @@ export type Database = {
         }
         Returns: string
       }
+      assoc_container_side: {
+        Args: { p_source_type: string; p_target_type: string }
+        Returns: string
+      }
       assoc_for_entity: {
         Args: { p_id: string; p_type: string }
         Returns: {
