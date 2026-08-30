@@ -16128,6 +16128,50 @@
         }
       }
     },
+    "/digitalnz/public/record": {
+      "get": {
+        "tags": [
+          "DigitalNZ Integrations"
+        ],
+        "summary": "Public Record",
+        "operationId": "public_record_digitalnz_public_record_get",
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "title": "Record Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigitalNzPublicRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/semantic-scholar/public/paper": {
       "get": {
         "tags": [
@@ -16371,6 +16415,1216 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OpenSSFRepositoryScorecard"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audius/public/track": {
+      "get": {
+        "tags": [
+          "Audius Integrations"
+        ],
+        "summary": "Public Track",
+        "operationId": "public_track_audius_public_track_get",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Track Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudiusTrackStatistics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loom/public/video": {
+      "get": {
+        "tags": [
+          "Loom Integrations"
+        ],
+        "summary": "Public Video",
+        "operationId": "public_video_loom_public_video_get",
+        "parameters": [
+          {
+            "name": "share_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 32,
+              "title": "Share Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoomVideoResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/peertube/public/video": {
+      "get": {
+        "tags": [
+          "PeerTube Integrations"
+        ],
+        "summary": "Public Video",
+        "operationId": "public_video_peertube_public_video_get",
+        "parameters": [
+          {
+            "name": "video_uuid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36,
+              "title": "Video Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerTubeVideoStatistics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/soundcloud/public/track": {
+      "get": {
+        "tags": [
+          "SoundCloud Integrations"
+        ],
+        "summary": "Public Track",
+        "operationId": "public_track_soundcloud_public_track_get",
+        "parameters": [
+          {
+            "name": "user_slug",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "User Slug"
+            }
+          },
+          {
+            "name": "track_slug",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Track Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoundCloudTrackResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lemmy/public/instance": {
+      "get": {
+        "tags": [
+          "Lemmy Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_lemmy_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LemmyInstanceStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listenbrainz/public/sitewide/listening-activity": {
+      "get": {
+        "tags": [
+          "ListenBrainz Integrations"
+        ],
+        "summary": "Public Sitewide Listening Activity",
+        "operationId": "public_sitewide_listening_activity_listenbrainz_public_sitewide_listening_activity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListenBrainzSitewideListeningActivity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookwyrm/public/instance": {
+      "get": {
+        "tags": [
+          "BookWyrm Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_bookwyrm_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookWyrmInstanceStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owncast/public/instance": {
+      "get": {
+        "tags": [
+          "Owncast Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_owncast_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwncastInstanceStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pixelfed/public/instance": {
+      "get": {
+        "tags": [
+          "Pixelfed Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_pixelfed_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PixelfedInstanceStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ntfy/public/health": {
+      "get": {
+        "tags": [
+          "ntfy Integrations"
+        ],
+        "summary": "Public Health",
+        "operationId": "public_health_ntfy_public_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NtfyHealthResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nodebb/public/compatibility": {
+      "get": {
+        "tags": [
+          "NodeBB Integrations"
+        ],
+        "summary": "Public Compatibility",
+        "operationId": "public_compatibility_nodebb_public_compatibility_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeBBCommunityCompatibility"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/joplin-cloud/public/health": {
+      "get": {
+        "tags": [
+          "Joplin Cloud Integrations"
+        ],
+        "summary": "Public Health",
+        "operationId": "public_health_joplin_cloud_public_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoplinCloudHealthResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/radio-browser/public/statistics": {
+      "get": {
+        "tags": [
+          "Radio Browser Integrations"
+        ],
+        "summary": "Public Statistics",
+        "operationId": "public_statistics_radio_browser_public_statistics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadioBrowserServiceStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scratch/public/team-project": {
+      "get": {
+        "tags": [
+          "Scratch Integrations"
+        ],
+        "summary": "Public Team Project",
+        "operationId": "public_team_project_scratch_public_team_project_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScratchTeamProjectStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lucid/public/status": {
+      "get": {
+        "tags": [
+          "Lucid Software Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_lucid_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LucidStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teamwork/public/status": {
+      "get": {
+        "tags": [
+          "Teamwork.com Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_teamwork_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamworkStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gitea/public/compatibility": {
+      "get": {
+        "tags": [
+          "Gitea Integrations"
+        ],
+        "summary": "Public Compatibility",
+        "operationId": "public_compatibility_gitea_public_compatibility_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GiteaApplicationCompatibility"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shortcut/public/status": {
+      "get": {
+        "tags": [
+          "Shortcut Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_shortcut_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortcutStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/whimsical/public/status": {
+      "get": {
+        "tags": [
+          "Whimsical Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_whimsical_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhimsicalStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/framer/public/status": {
+      "get": {
+        "tags": [
+          "Framer Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_framer_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FramerServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dailymotion/public/demo-video": {
+      "get": {
+        "tags": [
+          "Dailymotion Integrations"
+        ],
+        "summary": "Public Demo Video",
+        "operationId": "public_demo_video_dailymotion_public_demo_video_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailymotionPublicDemoVideo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mattermost/public/instance": {
+      "get": {
+        "tags": [
+          "Mattermost Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_mattermost_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MattermostCompatibilityResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ensembl/public/gene": {
+      "get": {
+        "tags": [
+          "Ensembl Integrations"
+        ],
+        "summary": "Public Gene",
+        "operationId": "public_gene_ensembl_public_gene_get",
+        "parameters": [
+          {
+            "name": "gene_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^ENSG[0-9]{11}$",
+              "title": "Gene Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnsemblPublicGene"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uniprot/public/protein": {
+      "get": {
+        "tags": [
+          "UniProt Integrations"
+        ],
+        "summary": "Public Protein",
+        "operationId": "public_protein_uniprot_public_protein_get",
+        "parameters": [
+          {
+            "name": "accession",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 10,
+              "title": "Accession"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniProtPublicProtein"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/obis/public/taxon": {
+      "get": {
+        "tags": [
+          "OBIS Integrations"
+        ],
+        "summary": "Public Taxon",
+        "operationId": "public_taxon_obis_public_taxon_get",
+        "parameters": [
+          {
+            "name": "taxon_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Taxon Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OBISPublicTaxon"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pubchem/public/compound": {
+      "get": {
+        "tags": [
+          "PubChem Integrations"
+        ],
+        "summary": "Public Compound",
+        "operationId": "public_compound_pubchem_public_compound_get",
+        "parameters": [
+          {
+            "name": "cid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Cid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PubChemPublicCompound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hal-open-science/public/record": {
+      "get": {
+        "tags": [
+          "HAL Open Science Integrations"
+        ],
+        "summary": "Public Record",
+        "operationId": "public_record_hal_open_science_public_record_get",
+        "parameters": [
+          {
+            "name": "hal_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 25,
+              "title": "Hal Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HalOpenSciencePublicRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openproject/public/api-root": {
+      "get": {
+        "tags": [
+          "OpenProject Integrations"
+        ],
+        "summary": "Public Api Root",
+        "operationId": "public_api_root_openproject_public_api_root_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenProjectRootResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/harvard-dataverse/public/dataset": {
+      "get": {
+        "tags": [
+          "Harvard Dataverse Integrations"
+        ],
+        "summary": "Public Dataset",
+        "operationId": "public_dataset_harvard_dataverse_public_dataset_get",
+        "parameters": [
+          {
+            "name": "persistent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 18,
+              "maxLength": 64,
+              "title": "Persistent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HarvardDataversePublicDataset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vikunja/public/instance": {
+      "get": {
+        "tags": [
+          "Vikunja Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_vikunja_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VikunjaInstanceResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zulip/public/server": {
+      "get": {
+        "tags": [
+          "Zulip Integrations"
+        ],
+        "summary": "Public Server",
+        "operationId": "public_server_zulip_public_server_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZulipServerResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opencitations/public/work": {
+      "get": {
+        "tags": [
+          "OpenCitations Integrations"
+        ],
+        "summary": "Public Work",
+        "operationId": "public_work_opencitations_public_work_get",
+        "parameters": [
+          {
+            "name": "doi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 7,
+              "maxLength": 255,
+              "title": "Doi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCitationsPublicWork"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/osf/public/project": {
+      "get": {
+        "tags": [
+          "OSF Integrations"
+        ],
+        "summary": "Public Project",
+        "operationId": "public_project_osf_public_project_get",
+        "parameters": [
+          {
+            "name": "guid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 5,
+              "title": "Guid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OsfPublicProject"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plos/public/article": {
+      "get": {
+        "tags": [
+          "PLOS Integrations"
+        ],
+        "summary": "Public Article",
+        "operationId": "public_article_plos_public_article_get",
+        "parameters": [
+          {
+            "name": "doi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 7,
+              "maxLength": 255,
+              "title": "Doi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlosPublicArticle"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openml/public/dataset": {
+      "get": {
+        "tags": [
+          "OpenML Integrations"
+        ],
+        "summary": "Public Dataset",
+        "operationId": "public_dataset_openml_public_dataset_get",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMLPublicDataset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openalex/public/work": {
+      "get": {
+        "tags": [
+          "OpenAlex Integrations"
+        ],
+        "summary": "Public Work",
+        "operationId": "public_work_openalex_public_work_get",
+        "parameters": [
+          {
+            "name": "work_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 17,
+              "title": "Work Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAlexPublicWork"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/figshare/public/item": {
+      "get": {
+        "tags": [
+          "Figshare Integrations"
+        ],
+        "summary": "Public Item",
+        "operationId": "public_item_figshare_public_item_get",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Article Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigsharePublicItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hugging-face/public/model": {
+      "get": {
+        "tags": [
+          "Hugging Face Integrations"
+        ],
+        "summary": "Public Model",
+        "operationId": "public_model_hugging_face_public_model_get",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96,
+              "title": "Namespace"
+            }
+          },
+          {
+            "name": "repository",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96,
+              "title": "Repository"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HuggingFaceModelResult"
                 }
               }
             }
@@ -76215,6 +77469,95 @@
         "title": "AuditionCompareRequest",
         "description": "Judge a Masterwork's output against the real published exemplar (the R2\noutcome signal). Comparison verdict cites rulebook rule ids; gaps the\nreference exposes optionally land as DRAFT rules (never auto-activated)."
       },
+      "AudiusTrackStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "audius_public_track_statistics",
+            "title": "Kind",
+            "default": "audius_public_track_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "audius",
+            "title": "Provider",
+            "default": "audius"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "track_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Track Id"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Duration Seconds"
+          },
+          "released_at": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Released At"
+          },
+          "is_streamable": {
+            "type": "boolean",
+            "title": "Is Streamable"
+          },
+          "is_downloadable": {
+            "type": "boolean",
+            "title": "Is Downloadable"
+          },
+          "play_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Play Count"
+          },
+          "favorite_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Favorite Count"
+          },
+          "repost_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Repost Count"
+          },
+          "comment_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Comment Count"
+          },
+          "api_resource": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Api Resource"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "track_id",
+          "duration_seconds",
+          "released_at",
+          "is_streamable",
+          "is_downloadable",
+          "play_count",
+          "favorite_count",
+          "repost_count",
+          "comment_count",
+          "api_resource"
+        ],
+        "title": "AudiusTrackStatistics",
+        "description": "Safe factual projection of one public, listed Audius track."
+      },
       "AuthenticatorCodeOut": {
         "properties": {
           "code": {
@@ -79617,6 +80960,77 @@
           "file"
         ],
         "title": "Body_upload_vision_master_media_upload_post"
+      },
+      "BookWyrmInstanceStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bookwyrm_public_instance_statistics",
+            "title": "Kind",
+            "default": "bookwyrm_public_instance_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "bookwyrm",
+            "title": "Provider",
+            "default": "bookwyrm"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance": {
+            "type": "string",
+            "const": "bookwyrm.social",
+            "title": "Instance",
+            "default": "bookwyrm.social"
+          },
+          "software_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Software Version"
+          },
+          "users_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Total"
+          },
+          "users_active_month": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Month"
+          },
+          "users_active_half_year": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Half Year"
+          },
+          "local_posts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Local Posts"
+          },
+          "instance_page": {
+            "type": "string",
+            "const": "https://bookwyrm.social/",
+            "title": "Instance Page",
+            "default": "https://bookwyrm.social/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "software_version",
+          "users_total",
+          "users_active_month",
+          "users_active_half_year",
+          "local_posts"
+        ],
+        "title": "BookWyrmInstanceStatistics",
+        "description": "Safe factual projection of the fixed public BookWyrm instance."
       },
       "BoundAgentTruth": {
         "properties": {
@@ -101992,6 +103406,78 @@
         ],
         "title": "DailySpendPoint"
       },
+      "DailymotionPublicDemoVideo": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dailymotion_public_demo_video",
+            "title": "Kind",
+            "default": "dailymotion_public_demo_video"
+          },
+          "provider": {
+            "type": "string",
+            "const": "dailymotion",
+            "title": "Provider",
+            "default": "dailymotion"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "media_type": {
+            "type": "string",
+            "const": "video",
+            "title": "Media Type",
+            "default": "video"
+          },
+          "oembed_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Oembed Version",
+            "default": "1.0"
+          },
+          "video_id": {
+            "type": "string",
+            "const": "x7tgad0",
+            "title": "Video Id",
+            "default": "x7tgad0"
+          },
+          "title": {
+            "type": "string",
+            "const": "Midnight Sun | Iceland",
+            "title": "Title",
+            "default": "Midnight Sun | Iceland"
+          },
+          "width": {
+            "type": "integer",
+            "maximum": 4096,
+            "exclusiveMinimum": 0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "maximum": 4096,
+            "exclusiveMinimum": 0,
+            "title": "Height"
+          },
+          "video_page": {
+            "type": "string",
+            "const": "https://www.dailymotion.com/video/x7tgad0",
+            "title": "Video Page",
+            "default": "https://www.dailymotion.com/video/x7tgad0"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "width",
+          "height"
+        ],
+        "title": "DailymotionPublicDemoVideo",
+        "description": "Safe identity and embed dimensions for the official demo video."
+      },
       "DataCitePublicDoi": {
         "properties": {
           "__kind": {
@@ -106483,6 +107969,146 @@
           "term"
         ],
         "title": "DictionaryEntry"
+      },
+      "DigitalNzPublicRecord": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "digitalnz_public_record",
+            "title": "Kind",
+            "default": "digitalnz_public_record"
+          },
+          "provider": {
+            "type": "string",
+            "const": "digitalnz",
+            "title": "Provider",
+            "default": "digitalnz"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "record_id": {
+            "type": "string",
+            "maxLength": 12,
+            "minLength": 1,
+            "title": "Record Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "content_partner": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Content Partner"
+          },
+          "collection": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Categories"
+          },
+          "dates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Dates"
+          },
+          "display_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Date"
+          },
+          "rights": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rights"
+          },
+          "rights_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Rights Urls"
+          },
+          "landing_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landing Url"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "record_id",
+          "canonical_url",
+          "title",
+          "content_partner"
+        ],
+        "title": "DigitalNzPublicRecord",
+        "description": "Safe descriptive projection of one public DigitalNZ record."
       },
       "DirectChatRequest": {
         "properties": {
@@ -111420,6 +113046,114 @@
         "type": "object",
         "title": "EnrollmentUpdateRequest"
       },
+      "EnsemblPublicGene": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ensembl_public_gene",
+            "title": "Kind",
+            "default": "ensembl_public_gene"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ensembl",
+            "title": "Provider",
+            "default": "ensembl"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "gene_id": {
+            "type": "string",
+            "pattern": "^ENSG[0-9]{11}$",
+            "title": "Gene Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "species": {
+            "type": "string",
+            "const": "homo_sapiens",
+            "title": "Species",
+            "default": "homo_sapiens"
+          },
+          "object_type": {
+            "type": "string",
+            "const": "Gene",
+            "title": "Object Type",
+            "default": "Gene"
+          },
+          "biotype": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Biotype"
+          },
+          "assembly_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Assembly Name"
+          },
+          "seq_region_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Seq Region Name"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "End"
+          },
+          "strand": {
+            "type": "integer",
+            "enum": [
+              -1,
+              1
+            ],
+            "title": "Strand"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "gene_id",
+          "canonical_url",
+          "display_name",
+          "biotype",
+          "assembly_name",
+          "seq_region_name",
+          "start",
+          "end",
+          "strand",
+          "version"
+        ],
+        "title": "EnsemblPublicGene",
+        "description": "Safe factual projection of one public human Ensembl gene."
+      },
       "EnterStageRequest": {
         "properties": {
           "organization_id": {
@@ -116139,6 +117873,112 @@
         ],
         "title": "FieldRecord"
       },
+      "FigsharePublicItem": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "figshare_public_item",
+            "title": "Kind",
+            "default": "figshare_public_item"
+          },
+          "provider": {
+            "type": "string",
+            "const": "figshare",
+            "title": "Provider",
+            "default": "figshare"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "article_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Article Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 20,
+            "title": "Published At"
+          },
+          "modified_at": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 20,
+            "title": "Modified At"
+          },
+          "item_type": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Item Type"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "license_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Name"
+          },
+          "license_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "article_id",
+          "canonical_url",
+          "title",
+          "published_at",
+          "modified_at",
+          "item_type"
+        ],
+        "title": "FigsharePublicItem",
+        "description": "Safe factual projection of one public Figshare item."
+      },
       "FileAnalysisHead": {
         "properties": {
           "file_id": {
@@ -120111,6 +121951,54 @@
         "title": "ForkRequest",
         "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
       },
+      "FramerServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "framer_public_service_status",
+            "title": "Kind",
+            "default": "framer_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "framer",
+            "title": "Provider",
+            "default": "framer"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "aggregate_state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Aggregate State"
+          },
+          "resources_configured": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Resources Configured"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.framerstatus.com/",
+            "title": "Status Page",
+            "default": "https://www.framerstatus.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "aggregate_state",
+          "resources_configured"
+        ],
+        "title": "FramerServiceStatus",
+        "description": "Safe aggregate status projection for Framer's fixed status page."
+      },
       "FrontierInvocation": {
         "properties": {
           "node_id": {
@@ -121316,6 +123204,53 @@
           "processed_connections"
         ],
         "title": "GitHubWebhookResponse"
+      },
+      "GiteaApplicationCompatibility": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "gitea_public_application_compatibility",
+            "title": "Kind",
+            "default": "gitea_public_application_compatibility"
+          },
+          "provider": {
+            "type": "string",
+            "const": "gitea",
+            "title": "Provider",
+            "default": "gitea"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "api_version": {
+            "type": "string",
+            "const": "v1",
+            "title": "Api Version",
+            "default": "v1"
+          },
+          "application_version": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Application Version"
+          },
+          "instance_page": {
+            "type": "string",
+            "const": "https://gitea.com",
+            "title": "Instance Page",
+            "default": "https://gitea.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "application_version"
+        ],
+        "title": "GiteaApplicationCompatibility",
+        "description": "Safe compatibility projection for the fixed official Gitea host."
       },
       "GoogleAdsCampaignMetric": {
         "properties": {
@@ -122757,6 +124692,85 @@
         "title": "HackerNewsPublicStory",
         "description": "Safe metadata projection for one public, live Hacker News story."
       },
+      "HalOpenSciencePublicRecord": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hal_open_science_public_record",
+            "title": "Kind",
+            "default": "hal_open_science_public_record"
+          },
+          "provider": {
+            "type": "string",
+            "const": "hal_open_science",
+            "title": "Provider",
+            "default": "hal_open_science"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "hal_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]{1,15}-[0-9]{8}$",
+            "title": "Hal Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "publication_year": {
+            "type": "integer",
+            "maximum": 3000,
+            "minimum": 1000,
+            "title": "Publication Year"
+          },
+          "document_type": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Document Type"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "is_open_access": {
+            "type": "boolean",
+            "title": "Is Open Access"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hal_id",
+          "canonical_url",
+          "title",
+          "publication_year",
+          "document_type",
+          "is_open_access"
+        ],
+        "title": "HalOpenSciencePublicRecord",
+        "description": "Safe factual projection of one public HAL record."
+      },
       "HandleDialogCommand": {
         "properties": {
           "command": {
@@ -122858,6 +124872,96 @@
           "success"
         ],
         "title": "HandleDialogResult"
+      },
+      "HarvardDataversePublicDataset": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "harvard_dataverse_public_dataset",
+            "title": "Kind",
+            "default": "harvard_dataverse_public_dataset"
+          },
+          "provider": {
+            "type": "string",
+            "const": "harvard_dataverse",
+            "title": "Provider",
+            "default": "harvard_dataverse"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "persistent_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 22,
+            "title": "Persistent Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Publisher"
+          },
+          "publication_date": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 4,
+            "title": "Publication Date"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Version"
+          },
+          "version_state": {
+            "type": "string",
+            "const": "RELEASED",
+            "title": "Version State",
+            "default": "RELEASED"
+          },
+          "release_time": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 10,
+            "title": "Release Time"
+          },
+          "file_count": {
+            "type": "integer",
+            "maximum": 1000000,
+            "minimum": 0,
+            "title": "File Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "persistent_id",
+          "canonical_url",
+          "title",
+          "publisher",
+          "publication_date",
+          "version",
+          "release_time",
+          "file_count"
+        ],
+        "title": "HarvardDataversePublicDataset",
+        "description": "Safe factual projection of one public released dataset."
       },
       "HeldOutOutcome": {
         "properties": {
@@ -123313,6 +125417,132 @@
         ],
         "title": "HomebrewPublicFormula",
         "description": "Safe bounded projection of one public Homebrew/core formula."
+      },
+      "HuggingFaceModelResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hugging_face_public_model_metadata",
+            "title": "Kind",
+            "default": "hugging_face_public_model_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "hugging_face",
+            "title": "Provider",
+            "default": "hugging_face"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 96,
+            "minLength": 1,
+            "title": "Namespace"
+          },
+          "repository": {
+            "type": "string",
+            "maxLength": 96,
+            "minLength": 1,
+            "title": "Repository"
+          },
+          "model_id": {
+            "type": "string",
+            "maxLength": 193,
+            "minLength": 3,
+            "title": "Model Id"
+          },
+          "author": {
+            "type": "string",
+            "maxLength": 96,
+            "minLength": 1,
+            "title": "Author"
+          },
+          "private": {
+            "type": "boolean",
+            "const": false,
+            "title": "Private",
+            "default": false
+          },
+          "gated": {
+            "type": "boolean",
+            "const": false,
+            "title": "Gated",
+            "default": false
+          },
+          "disabled": {
+            "type": "boolean",
+            "const": false,
+            "title": "Disabled",
+            "default": false
+          },
+          "library_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Name"
+          },
+          "pipeline_tag": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pipeline Tag"
+          },
+          "revision_sha": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 40,
+            "title": "Revision Sha"
+          },
+          "created_at": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 20,
+            "title": "Created At"
+          },
+          "last_modified_at": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 20,
+            "title": "Last Modified At"
+          },
+          "model_url": {
+            "type": "string",
+            "maxLength": 230,
+            "minLength": 1,
+            "title": "Model Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "namespace",
+          "repository",
+          "model_id",
+          "author",
+          "revision_sha",
+          "created_at",
+          "last_modified_at",
+          "model_url"
+        ],
+        "title": "HuggingFaceModelResult",
+        "description": "Safe bounded projection of one public Hugging Face model repository."
       },
       "HumanLoginField": {
         "properties": {
@@ -127835,6 +130065,44 @@
         ],
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
+      },
+      "JoplinCloudHealthResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "joplin_cloud_official_service_health",
+            "title": "Kind",
+            "default": "joplin_cloud_official_service_health"
+          },
+          "provider": {
+            "type": "string",
+            "const": "joplin_cloud",
+            "title": "Provider",
+            "default": "joplin_cloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "service_url": {
+            "type": "string",
+            "const": "https://joplincloud.com/",
+            "title": "Service Url",
+            "default": "https://joplincloud.com/"
+          },
+          "healthy": {
+            "type": "boolean",
+            "const": true,
+            "title": "Healthy",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "JoplinCloudHealthResult",
+        "description": "Safe projection of the official Joplin Cloud ping response."
       },
       "JournalChunk": {
         "properties": {
@@ -132656,6 +134924,122 @@
         ],
         "title": "LegalVersionResponse"
       },
+      "LemmyInstanceStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lemmy_public_instance_statistics",
+            "title": "Kind",
+            "default": "lemmy_public_instance_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lemmy",
+            "title": "Provider",
+            "default": "lemmy"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance": {
+            "type": "string",
+            "const": "lemmy.world",
+            "title": "Instance",
+            "default": "lemmy.world"
+          },
+          "instance_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Instance Name"
+          },
+          "software_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Software Version"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Published At"
+          },
+          "updated_at": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Updated At"
+          },
+          "users": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users"
+          },
+          "posts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Posts"
+          },
+          "comments": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Comments"
+          },
+          "communities": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Communities"
+          },
+          "users_active_day": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Day"
+          },
+          "users_active_week": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Week"
+          },
+          "users_active_month": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Month"
+          },
+          "users_active_half_year": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Half Year"
+          },
+          "instance_page": {
+            "type": "string",
+            "const": "https://lemmy.world/",
+            "title": "Instance Page",
+            "default": "https://lemmy.world/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance_name",
+          "software_version",
+          "published_at",
+          "updated_at",
+          "users",
+          "posts",
+          "comments",
+          "communities",
+          "users_active_day",
+          "users_active_week",
+          "users_active_month",
+          "users_active_half_year"
+        ],
+        "title": "LemmyInstanceStatistics",
+        "description": "Safe factual projection of the fixed public Lemmy instance."
+      },
       "LibraryCatalogItemOut": {
         "properties": {
           "id": {
@@ -134596,6 +136980,94 @@
         ],
         "title": "ListToolsResponse"
       },
+      "ListenBrainzSitewideListeningActivity": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "listenbrainz_sitewide_listening_activity",
+            "title": "Kind",
+            "default": "listenbrainz_sitewide_listening_activity"
+          },
+          "provider": {
+            "type": "string",
+            "const": "listenbrainz",
+            "title": "Provider",
+            "default": "listenbrainz"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "range": {
+            "type": "string",
+            "const": "week",
+            "title": "Range",
+            "default": "week"
+          },
+          "previous_period_from_ts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Previous Period From Ts"
+          },
+          "previous_period_to_ts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Previous Period To Ts"
+          },
+          "previous_period_listens": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Previous Period Listens"
+          },
+          "current_period_from_ts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Current Period From Ts"
+          },
+          "current_period_to_ts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Current Period To Ts"
+          },
+          "current_period_listens": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Current Period Listens"
+          },
+          "last_updated_ts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Last Updated Ts"
+          },
+          "days_per_period": {
+            "type": "integer",
+            "const": 7,
+            "title": "Days Per Period",
+            "default": 7
+          },
+          "source_page": {
+            "type": "string",
+            "const": "https://listenbrainz.org/",
+            "title": "Source Page",
+            "default": "https://listenbrainz.org/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "previous_period_from_ts",
+          "previous_period_to_ts",
+          "previous_period_listens",
+          "current_period_from_ts",
+          "current_period_to_ts",
+          "current_period_listens",
+          "last_updated_ts"
+        ],
+        "title": "ListenBrainzSitewideListeningActivity",
+        "description": "Safe aggregate projection of two consecutive sitewide weekly periods."
+      },
       "LiveResourceRefInput": {
         "properties": {
           "id": {
@@ -135169,6 +137641,76 @@
         ],
         "title": "LogPattern"
       },
+      "LoomVideoResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "loom_public_video_oembed",
+            "title": "Kind",
+            "default": "loom_public_video_oembed"
+          },
+          "provider": {
+            "type": "string",
+            "const": "loom",
+            "title": "Provider",
+            "default": "loom"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "share_id": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 32,
+            "title": "Share Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 0,
+            "title": "Duration Seconds"
+          },
+          "width": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Height"
+          },
+          "embed_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Embed Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "share_id",
+          "title",
+          "duration_seconds",
+          "width",
+          "height",
+          "embed_url"
+        ],
+        "title": "LoomVideoResult",
+        "description": "Safe bounded projection of one public Loom video."
+      },
       "LoopControlRequest": {
         "properties": {
           "organization_id": {
@@ -135584,6 +138126,56 @@
         ],
         "title": "LoopStatus",
         "description": "The LOOP's lifecycle — deliberately coarser than any stage's status."
+      },
+      "LucidStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lucid_official_service_status",
+            "title": "Kind",
+            "default": "lucid_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lucid",
+            "title": "Provider",
+            "default": "lucid"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.lucid.co",
+            "title": "Status Url",
+            "default": "https://status.lucid.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LucidStatusResult",
+        "description": "Safe projection of Lucid Software's high-level service status."
       },
       "MandateBindingDeleteRequest": {
         "properties": {
@@ -138131,6 +140723,50 @@
         ],
         "title": "MatrixOrgPublicVersions",
         "description": "Safe projection of stable client-server protocol versions."
+      },
+      "MattermostCompatibilityResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mattermost_public_instance_compatibility",
+            "title": "Kind",
+            "default": "mattermost_public_instance_compatibility"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mattermost",
+            "title": "Provider",
+            "default": "mattermost"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance_url": {
+            "type": "string",
+            "const": "https://community.mattermost.com",
+            "title": "Instance Url",
+            "default": "https://community.mattermost.com"
+          },
+          "status": {
+            "type": "string",
+            "const": "OK",
+            "title": "Status",
+            "default": "OK"
+          },
+          "compatible": {
+            "type": "boolean",
+            "const": true,
+            "title": "Compatible",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MattermostCompatibilityResult",
+        "description": "Safe projection of Mattermost's fixed official-community system ping."
       },
       "McpCatalogRefreshResult": {
         "properties": {
@@ -142124,6 +144760,72 @@
         "title": "NodeAgentChatContext",
         "description": "Everything the studio needs to open a Node Agent chat for one node:\nthe resolved mandate agent + the variables to pass on POST /agents/{id}."
       },
+      "NodeBBCommunityCompatibility": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nodebb_public_community_compatibility",
+            "title": "Kind",
+            "default": "nodebb_public_community_compatibility"
+          },
+          "provider": {
+            "type": "string",
+            "const": "nodebb",
+            "title": "Provider",
+            "default": "nodebb"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance": {
+            "type": "string",
+            "const": "community.nodebb.org",
+            "title": "Instance",
+            "default": "community.nodebb.org"
+          },
+          "site_title": {
+            "type": "string",
+            "const": "NodeBB Community",
+            "title": "Site Title",
+            "default": "NodeBB Community"
+          },
+          "activitypub_enabled": {
+            "type": "boolean",
+            "title": "Activitypub Enabled"
+          },
+          "search_enabled": {
+            "type": "boolean",
+            "title": "Search Enabled"
+          },
+          "topic_search_enabled": {
+            "type": "boolean",
+            "title": "Topic Search Enabled"
+          },
+          "maintenance_mode": {
+            "type": "boolean",
+            "title": "Maintenance Mode"
+          },
+          "instance_page": {
+            "type": "string",
+            "const": "https://community.nodebb.org/",
+            "title": "Instance Page",
+            "default": "https://community.nodebb.org/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "activitypub_enabled",
+          "search_enabled",
+          "topic_search_enabled",
+          "maintenance_mode"
+        ],
+        "title": "NodeBBCommunityCompatibility",
+        "description": "Safe compatibility projection for NodeBB's fixed official community."
+      },
       "NodeContractReport": {
         "properties": {
           "node_type": {
@@ -143355,6 +146057,44 @@
         "title": "NounDirectives",
         "description": "One row of the grid — a noun (Dimension 2) and its state for every class."
       },
+      "NtfyHealthResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ntfy_official_service_health",
+            "title": "Kind",
+            "default": "ntfy_official_service_health"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ntfy",
+            "title": "Provider",
+            "default": "ntfy"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "service_url": {
+            "type": "string",
+            "const": "https://ntfy.sh/",
+            "title": "Service Url",
+            "default": "https://ntfy.sh/"
+          },
+          "healthy": {
+            "type": "boolean",
+            "const": true,
+            "title": "Healthy",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NtfyHealthResult",
+        "description": "Safe projection of the official ntfy.sh health response."
+      },
       "OAuthTokenPersistRequest": {
         "properties": {
           "tokens": {
@@ -143445,6 +146185,95 @@
         ],
         "title": "OAuthTokenPersistRequest",
         "description": "The FE OAuth callback's hand-off: the raw token-endpoint response plus\nthe non-secret exchange context the callback already holds. The callback\nkeeps the code exchange (it holds the PKCE verifier); persistence happens\nhere so tokens land only in the vault."
+      },
+      "OBISPublicTaxon": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "obis_public_taxon",
+            "title": "Kind",
+            "default": "obis_public_taxon"
+          },
+          "provider": {
+            "type": "string",
+            "const": "obis",
+            "title": "Provider",
+            "default": "obis"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "taxon_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Taxon Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "scientific_name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Scientific Name"
+          },
+          "scientific_name_authorship": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Scientific Name Authorship"
+          },
+          "taxon_rank": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Taxon Rank"
+          },
+          "taxonomic_status": {
+            "type": "string",
+            "const": "accepted",
+            "title": "Taxonomic Status",
+            "default": "accepted"
+          },
+          "accepted_name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Accepted Name"
+          },
+          "accepted_taxon_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Accepted Taxon Id"
+          },
+          "is_marine": {
+            "type": "boolean",
+            "const": true,
+            "title": "Is Marine",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "taxon_id",
+          "canonical_url",
+          "scientific_name",
+          "scientific_name_authorship",
+          "taxon_rank",
+          "accepted_name",
+          "accepted_taxon_id"
+        ],
+        "title": "OBISPublicTaxon",
+        "description": "Safe factual projection of one accepted public OBIS marine taxon."
       },
       "OauthDefaultsResponse": {
         "properties": {
@@ -144216,6 +147045,250 @@
         ],
         "title": "OneDriveSelectedFileResponse"
       },
+      "OpenAlexPublicWork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openalex_public_work",
+            "title": "Kind",
+            "default": "openalex_public_work"
+          },
+          "provider": {
+            "type": "string",
+            "const": "openalex",
+            "title": "Provider",
+            "default": "openalex"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "work_id": {
+            "type": "string",
+            "pattern": "^W[1-9][0-9]{0,15}$",
+            "title": "Work Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "publication_year": {
+            "type": "integer",
+            "maximum": 3000,
+            "minimum": 1000,
+            "title": "Publication Year"
+          },
+          "publication_date": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "title": "Publication Date"
+          },
+          "work_type": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Work Type"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "is_open_access": {
+            "type": "boolean",
+            "title": "Is Open Access"
+          },
+          "open_access_status": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Open Access Status"
+          },
+          "cited_by_count": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "title": "Cited By Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "work_id",
+          "canonical_url",
+          "title",
+          "publication_year",
+          "publication_date",
+          "work_type",
+          "is_open_access",
+          "open_access_status",
+          "cited_by_count"
+        ],
+        "title": "OpenAlexPublicWork",
+        "description": "Safe factual projection of one public OpenAlex work."
+      },
+      "OpenCitationsPublicWork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "opencitations_public_work",
+            "title": "Kind",
+            "default": "opencitations_public_work"
+          },
+          "provider": {
+            "type": "string",
+            "const": "opencitations",
+            "title": "Provider",
+            "default": "opencitations"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "doi": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 7,
+            "title": "Doi"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "meta_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "publication_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication Date"
+          },
+          "work_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Type"
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue"
+          },
+          "volume": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume"
+          },
+          "issue": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages"
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "doi",
+          "canonical_url",
+          "title"
+        ],
+        "title": "OpenCitationsPublicWork",
+        "description": "Safe bibliographic projection for one DOI-backed work."
+      },
       "OpenEdxDemoCourseResult": {
         "properties": {
           "provider": {
@@ -144368,6 +147441,176 @@
         ],
         "title": "OpenLibraryPublicWork",
         "description": "Safe metadata projection for one public Open Library work."
+      },
+      "OpenMLPublicDataset": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openml_public_dataset",
+            "title": "Kind",
+            "default": "openml_public_dataset"
+          },
+          "provider": {
+            "type": "string",
+            "const": "openml",
+            "title": "Provider",
+            "default": "openml"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "dataset_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Dataset Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "version": {
+            "type": "integer",
+            "maximum": 1000000,
+            "minimum": 1,
+            "title": "Version"
+          },
+          "format": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Format"
+          },
+          "status": {
+            "type": "string",
+            "const": "active",
+            "title": "Status",
+            "default": "active"
+          },
+          "default_target_attribute": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Target Attribute"
+          },
+          "upload_date": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 4,
+            "title": "Upload Date"
+          },
+          "license": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "License"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "canonical_url",
+          "name",
+          "version",
+          "format",
+          "upload_date",
+          "license"
+        ],
+        "title": "OpenMLPublicDataset",
+        "description": "Safe factual projection of one public OpenML dataset."
+      },
+      "OpenProjectRootResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openproject_public_api_root_compatibility",
+            "title": "Kind",
+            "default": "openproject_public_api_root_compatibility"
+          },
+          "provider": {
+            "type": "string",
+            "const": "openproject",
+            "title": "Provider",
+            "default": "openproject"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance_url": {
+            "type": "string",
+            "const": "https://community.openproject.org/",
+            "title": "Instance Url",
+            "default": "https://community.openproject.org/"
+          },
+          "instance_name": {
+            "type": "string",
+            "const": "OpenProject Community",
+            "title": "Instance Name",
+            "default": "OpenProject Community"
+          },
+          "configuration_available": {
+            "type": "boolean",
+            "title": "Configuration Available"
+          },
+          "priorities_available": {
+            "type": "boolean",
+            "title": "Priorities Available"
+          },
+          "relations_available": {
+            "type": "boolean",
+            "title": "Relations Available"
+          },
+          "statuses_available": {
+            "type": "boolean",
+            "title": "Statuses Available"
+          },
+          "time_entries_available": {
+            "type": "boolean",
+            "title": "Time Entries Available"
+          },
+          "types_available": {
+            "type": "boolean",
+            "title": "Types Available"
+          },
+          "work_packages_available": {
+            "type": "boolean",
+            "title": "Work Packages Available"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "configuration_available",
+          "priorities_available",
+          "relations_available",
+          "statuses_available",
+          "time_entries_available",
+          "types_available",
+          "work_packages_available"
+        ],
+        "title": "OpenProjectRootResult",
+        "description": "Safe bounded projection of OpenProject's public community API root."
       },
       "OpenRuntimeResponse": {
         "properties": {},
@@ -146377,6 +149620,102 @@
         "type": "object",
         "title": "OrganizationSecretUpdateRequest"
       },
+      "OsfPublicProject": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "osf_public_project",
+            "title": "Kind",
+            "default": "osf_public_project"
+          },
+          "provider": {
+            "type": "string",
+            "const": "osf",
+            "title": "Provider",
+            "default": "osf"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "guid": {
+            "type": "string",
+            "maxLength": 5,
+            "minLength": 5,
+            "title": "Guid"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category"
+          },
+          "is_public": {
+            "type": "boolean",
+            "const": true,
+            "title": "Is Public",
+            "default": true
+          },
+          "is_registration": {
+            "type": "boolean",
+            "title": "Is Registration"
+          },
+          "is_preprint": {
+            "type": "boolean",
+            "title": "Is Preprint"
+          },
+          "is_fork": {
+            "type": "boolean",
+            "title": "Is Fork"
+          },
+          "is_collection": {
+            "type": "boolean",
+            "title": "Is Collection"
+          },
+          "created_at": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 10,
+            "title": "Created At"
+          },
+          "modified_at": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 10,
+            "title": "Modified At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "guid",
+          "canonical_url",
+          "title",
+          "category",
+          "is_registration",
+          "is_preprint",
+          "is_fork",
+          "is_collection",
+          "created_at",
+          "modified_at"
+        ],
+        "title": "OsfPublicProject",
+        "description": "Safe factual projection of one public OSF project."
+      },
       "OutletContactCandidate": {
         "properties": {
           "key": {
@@ -147483,6 +150822,77 @@
           "crossed"
         ],
         "title": "OvertimeThreshold"
+      },
+      "OwncastInstanceStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "owncast_public_instance_statistics",
+            "title": "Kind",
+            "default": "owncast_public_instance_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "owncast",
+            "title": "Provider",
+            "default": "owncast"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance": {
+            "type": "string",
+            "const": "watch.owncast.online",
+            "title": "Instance",
+            "default": "watch.owncast.online"
+          },
+          "software_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Software Version"
+          },
+          "users_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Total"
+          },
+          "users_active_month": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Month"
+          },
+          "users_active_half_year": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Half Year"
+          },
+          "local_posts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Local Posts"
+          },
+          "instance_page": {
+            "type": "string",
+            "const": "https://watch.owncast.online/",
+            "title": "Instance Page",
+            "default": "https://watch.owncast.online/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "software_version",
+          "users_total",
+          "users_active_month",
+          "users_active_half_year",
+          "local_posts"
+        ],
+        "title": "OwncastInstanceStatistics",
+        "description": "Safe factual projection of Owncast's fixed official demo instance."
       },
       "PackagistReleaseResult": {
         "properties": {
@@ -150624,6 +154034,107 @@
         ],
         "title": "PdfStudioPresetSchema"
       },
+      "PeerTubeVideoStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "peertube_public_video_statistics",
+            "title": "Kind",
+            "default": "peertube_public_video_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "peertube",
+            "title": "Provider",
+            "default": "peertube"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "video_uuid": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 36,
+            "title": "Video Uuid"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Duration Seconds"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Published At"
+          },
+          "is_live": {
+            "type": "boolean",
+            "title": "Is Live"
+          },
+          "download_enabled": {
+            "type": "boolean",
+            "title": "Download Enabled"
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Views"
+          },
+          "viewers": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Viewers"
+          },
+          "downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Downloads"
+          },
+          "likes": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Likes"
+          },
+          "dislikes": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Dislikes"
+          },
+          "comments": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Comments"
+          },
+          "api_resource": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Api Resource"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "video_uuid",
+          "duration_seconds",
+          "published_at",
+          "is_live",
+          "download_enabled",
+          "views",
+          "viewers",
+          "downloads",
+          "likes",
+          "dislikes",
+          "comments",
+          "api_resource"
+        ],
+        "title": "PeerTubeVideoStatistics",
+        "description": "Safe factual projection of one public, published PeerTube video."
+      },
       "PendingCallSummary": {
         "properties": {
           "id": {
@@ -151910,6 +155421,77 @@
         "type": "object",
         "title": "PipelineProgress"
       },
+      "PixelfedInstanceStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pixelfed_public_instance_statistics",
+            "title": "Kind",
+            "default": "pixelfed_public_instance_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "pixelfed",
+            "title": "Provider",
+            "default": "pixelfed"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance": {
+            "type": "string",
+            "const": "pixelfed.social",
+            "title": "Instance",
+            "default": "pixelfed.social"
+          },
+          "software_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Software Version"
+          },
+          "users_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Total"
+          },
+          "users_active_month": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Month"
+          },
+          "users_active_half_year": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Users Active Half Year"
+          },
+          "local_posts": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Local Posts"
+          },
+          "instance_page": {
+            "type": "string",
+            "const": "https://pixelfed.social/",
+            "title": "Instance Page",
+            "default": "https://pixelfed.social/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "software_version",
+          "users_total",
+          "users_active_month",
+          "users_active_half_year",
+          "local_posts"
+        ],
+        "title": "PixelfedInstanceStatistics",
+        "description": "Safe factual projection of the fixed Pixelfed public instance."
+      },
       "PlacementPassResult": {
         "properties": {
           "result_kind": {
@@ -153099,6 +156681,76 @@
           "web_site_id"
         ],
         "title": "PlannedPagesResult"
+      },
+      "PlosPublicArticle": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "plos_public_article",
+            "title": "Kind",
+            "default": "plos_public_article"
+          },
+          "provider": {
+            "type": "string",
+            "const": "plos",
+            "title": "Provider",
+            "default": "plos"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "doi": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 7,
+            "title": "Doi"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "journal": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Journal"
+          },
+          "publication_date": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 4,
+            "title": "Publication Date"
+          },
+          "article_type": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Article Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "doi",
+          "canonical_url",
+          "title",
+          "journal",
+          "publication_date",
+          "article_type"
+        ],
+        "title": "PlosPublicArticle",
+        "description": "Safe factual projection of one PLOS article record."
       },
       "PodcastAudioProvider": {
         "type": "string",
@@ -157996,6 +161648,82 @@
         "title": "PruneResult",
         "description": "Outcome of one retention pass."
       },
+      "PubChemPublicCompound": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pubchem_public_compound",
+            "title": "Kind",
+            "default": "pubchem_public_compound"
+          },
+          "provider": {
+            "type": "string",
+            "const": "pubchem",
+            "title": "Provider",
+            "default": "pubchem"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "cid": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Cid"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "molecular_formula": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Molecular Formula"
+          },
+          "molecular_weight": {
+            "type": "string",
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Molecular Weight"
+          },
+          "inchi_key": {
+            "type": "string",
+            "pattern": "^[A-Z]{14}-[A-Z]{10}-[A-Z]$",
+            "title": "Inchi Key"
+          },
+          "iupac_name": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Iupac Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "cid",
+          "canonical_url",
+          "title",
+          "molecular_formula",
+          "molecular_weight",
+          "inchi_key",
+          "iupac_name"
+        ],
+        "title": "PubChemPublicCompound",
+        "description": "Safe factual projection of one public PubChem compound."
+      },
       "PubMedPublicSummary": {
         "properties": {
           "__kind": {
@@ -159143,6 +162871,89 @@
         ],
         "title": "RaceRequest",
         "description": "One race's locked spec — the SAME instruction to every arm.\n\n🚨 Inherits ScopedRequest, not BaseModel: the frontend's `callApi` injects\norganization/project/task onto every mutating body, and an `extra=\"forbid\"`\nmodel without the scope base 422s the moment a real UI calls it."
+      },
+      "RadioBrowserServiceStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "radio_browser_public_service_statistics",
+            "title": "Kind",
+            "default": "radio_browser_public_service_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "radio_browser",
+            "title": "Provider",
+            "default": "radio_browser"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "service_status": {
+            "type": "string",
+            "const": "OK",
+            "title": "Service Status",
+            "default": "OK"
+          },
+          "supported_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Supported Version",
+            "default": 1
+          },
+          "software_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Software Version"
+          },
+          "stations_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Stations Total"
+          },
+          "stations_broken": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Stations Broken"
+          },
+          "tags_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Tags Total"
+          },
+          "languages_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Languages Total"
+          },
+          "countries_total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Countries Total"
+          },
+          "directory_page": {
+            "type": "string",
+            "const": "https://www.radio-browser.info/",
+            "title": "Directory Page",
+            "default": "https://www.radio-browser.info/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "software_version",
+          "stations_total",
+          "stations_broken",
+          "tags_total",
+          "languages_total",
+          "countries_total"
+        ],
+        "title": "RadioBrowserServiceStatistics",
+        "description": "Safe aggregate projection of the public Radio Browser directory."
       },
       "RagKindsRequest": {
         "properties": {
@@ -171031,6 +174842,94 @@
         ],
         "title": "ScrapePageRequest"
       },
+      "ScratchTeamProjectStatistics": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "scratch_public_team_project_statistics",
+            "title": "Kind",
+            "default": "scratch_public_team_project_statistics"
+          },
+          "provider": {
+            "type": "string",
+            "const": "scratch",
+            "title": "Provider",
+            "default": "scratch"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "project_id": {
+            "type": "integer",
+            "const": 1210061611,
+            "title": "Project Id",
+            "default": 1210061611
+          },
+          "title": {
+            "type": "string",
+            "const": "Face Sensing Game",
+            "title": "Title",
+            "default": "Face Sensing Game"
+          },
+          "public": {
+            "type": "boolean",
+            "const": true,
+            "title": "Public",
+            "default": true
+          },
+          "published": {
+            "type": "boolean",
+            "const": true,
+            "title": "Published",
+            "default": true
+          },
+          "visibility": {
+            "type": "string",
+            "const": "visible",
+            "title": "Visibility",
+            "default": "visible"
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Views"
+          },
+          "loves": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Loves"
+          },
+          "favorites": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Favorites"
+          },
+          "remixes": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Remixes"
+          },
+          "project_page": {
+            "type": "string",
+            "const": "https://scratch.mit.edu/projects/1210061611/",
+            "title": "Project Page",
+            "default": "https://scratch.mit.edu/projects/1210061611/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "views",
+          "loves",
+          "favorites",
+          "remixes"
+        ],
+        "title": "ScratchTeamProjectStatistics",
+        "description": "Safe aggregate projection of one official Scratch Team project."
+      },
       "ScreenshotFailure": {
         "properties": {
           "kind": {
@@ -175459,6 +179358,56 @@
         ],
         "title": "ShellSiteIssue"
       },
+      "ShortcutStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "shortcut_official_service_status",
+            "title": "Kind",
+            "default": "shortcut_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "shortcut",
+            "title": "Provider",
+            "default": "shortcut"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.shortcut.com",
+            "title": "Status Url",
+            "default": "https://status.shortcut.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ShortcutStatusResult",
+        "description": "Safe projection of Shortcut's high-level service status."
+      },
       "SimulateProviderRetryRequest": {
         "properties": {
           "provider": {
@@ -177850,6 +181799,75 @@
           "value"
         ],
         "title": "SnapshotValueResourceRefInput"
+      },
+      "SoundCloudTrackResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "soundcloud_public_track_oembed",
+            "title": "Kind",
+            "default": "soundcloud_public_track_oembed"
+          },
+          "provider": {
+            "type": "string",
+            "const": "soundcloud",
+            "title": "Provider",
+            "default": "soundcloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "user_slug": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "User Slug"
+          },
+          "track_slug": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Track Slug"
+          },
+          "soundcloud_track_id": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Soundcloud Track Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "widget_height": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 1,
+            "title": "Widget Height"
+          },
+          "track_url": {
+            "type": "string",
+            "maxLength": 250,
+            "minLength": 1,
+            "title": "Track Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user_slug",
+          "track_slug",
+          "soundcloud_track_id",
+          "title",
+          "widget_height",
+          "track_url"
+        ],
+        "title": "SoundCloudTrackResult",
+        "description": "Safe bounded projection of one public SoundCloud track."
       },
       "SourceBulkAction": {
         "properties": {
@@ -184790,6 +188808,56 @@
         ],
         "title": "TeamsSelectedChatMessagesRequest"
       },
+      "TeamworkStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "teamwork_official_service_status",
+            "title": "Kind",
+            "default": "teamwork_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "teamwork",
+            "title": "Provider",
+            "default": "teamwork"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.teamwork.com",
+            "title": "Status Url",
+            "default": "https://status.teamwork.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TeamworkStatusResult",
+        "description": "Safe projection of Teamwork.com's official high-level service status."
+      },
       "TemplateCreate": {
         "properties": {
           "name": {
@@ -190383,6 +194451,74 @@
         ],
         "title": "UnderstudyRefreshResult",
         "description": "What one refresh did — the router's response body."
+      },
+      "UniProtPublicProtein": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "uniprot_public_protein",
+            "title": "Kind",
+            "default": "uniprot_public_protein"
+          },
+          "provider": {
+            "type": "string",
+            "const": "uniprot",
+            "title": "Provider",
+            "default": "uniprot"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "accession": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 6,
+            "title": "Accession"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "entry_name": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{1,20}_[A-Z0-9]{1,20}$",
+            "title": "Entry Name"
+          },
+          "primary_gene": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+            "title": "Primary Gene"
+          },
+          "organism_taxon_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Organism Taxon Id"
+          },
+          "sequence_length": {
+            "type": "integer",
+            "maximum": 100000000,
+            "minimum": 1,
+            "title": "Sequence Length"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "accession",
+          "canonical_url",
+          "entry_name",
+          "primary_gene",
+          "organism_taxon_id",
+          "sequence_length"
+        ],
+        "title": "UniProtPublicProtein",
+        "description": "Safe factual identity projection of one public UniProtKB entry."
       },
       "UnmappedValueMapping": {
         "properties": {
@@ -196431,6 +200567,94 @@
         ],
         "title": "ViewportBlock"
       },
+      "VikunjaInstanceResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "vikunja_public_instance_compatibility",
+            "title": "Kind",
+            "default": "vikunja_public_instance_compatibility"
+          },
+          "provider": {
+            "type": "string",
+            "const": "vikunja",
+            "title": "Provider",
+            "default": "vikunja"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance_url": {
+            "type": "string",
+            "const": "https://try.vikunja.io/",
+            "title": "Instance Url",
+            "default": "https://try.vikunja.io/"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Version"
+          },
+          "max_items_per_page": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Max Items Per Page"
+          },
+          "link_sharing_enabled": {
+            "type": "boolean",
+            "title": "Link Sharing Enabled"
+          },
+          "task_attachments_enabled": {
+            "type": "boolean",
+            "title": "Task Attachments Enabled"
+          },
+          "caldav_enabled": {
+            "type": "boolean",
+            "title": "Caldav Enabled"
+          },
+          "email_reminders_enabled": {
+            "type": "boolean",
+            "title": "Email Reminders Enabled"
+          },
+          "task_comments_enabled": {
+            "type": "boolean",
+            "title": "Task Comments Enabled"
+          },
+          "webhooks_enabled": {
+            "type": "boolean",
+            "title": "Webhooks Enabled"
+          },
+          "demo_mode_enabled": {
+            "type": "boolean",
+            "title": "Demo Mode Enabled"
+          },
+          "user_deletion_enabled": {
+            "type": "boolean",
+            "title": "User Deletion Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "max_items_per_page",
+          "link_sharing_enabled",
+          "task_attachments_enabled",
+          "caldav_enabled",
+          "email_reminders_enabled",
+          "task_comments_enabled",
+          "webhooks_enabled",
+          "demo_mode_enabled",
+          "user_deletion_enabled"
+        ],
+        "title": "VikunjaInstanceResult",
+        "description": "Safe bounded projection of Vikunja's official public demo instance."
+      },
       "VimeoPublicVideoResult": {
         "properties": {
           "provider": {
@@ -198846,6 +203070,55 @@
         ],
         "title": "WellcomePublicWork",
         "description": "Safe bounded projection of one public Wellcome catalogue work."
+      },
+      "WhimsicalStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "whimsical_official_service_status",
+            "title": "Kind",
+            "default": "whimsical_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "whimsical",
+            "title": "Provider",
+            "default": "whimsical"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.whimsical.com",
+            "title": "Status Url",
+            "default": "https://status.whimsical.com"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "operational",
+              "degraded",
+              "under_maintenance"
+            ],
+            "title": "State"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "operational"
+        ],
+        "title": "WhimsicalStatusResult",
+        "description": "Safe projection of Whimsical's high-level service status."
       },
       "WhoamiResponse": {
         "properties": {
@@ -201697,6 +205970,73 @@
           "items"
         ],
         "title": "ZoteroPublicLibraryResponse"
+      },
+      "ZulipServerResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zulip_public_server_compatibility",
+            "title": "Kind",
+            "default": "zulip_public_server_compatibility"
+          },
+          "provider": {
+            "type": "string",
+            "const": "zulip",
+            "title": "Provider",
+            "default": "zulip"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "realm_uri": {
+            "type": "string",
+            "const": "https://chat.zulip.org",
+            "title": "Realm Uri",
+            "default": "https://chat.zulip.org"
+          },
+          "realm_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Realm Name"
+          },
+          "zulip_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Zulip Version"
+          },
+          "zulip_feature_level": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Zulip Feature Level"
+          },
+          "zulip_merge_base": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Zulip Merge Base"
+          },
+          "web_public_access_enabled": {
+            "type": "boolean",
+            "title": "Web Public Access Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "realm_name",
+          "zulip_version",
+          "zulip_feature_level",
+          "zulip_merge_base",
+          "web_public_access_enabled"
+        ],
+        "title": "ZulipServerResult",
+        "description": "Safe bounded projection of the public Zulip Community server."
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {

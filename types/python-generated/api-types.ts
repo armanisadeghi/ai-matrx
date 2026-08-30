@@ -6319,6 +6319,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/digitalnz/public/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Record */
+        get: operations["public_record_digitalnz_public_record_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/semantic-scholar/public/paper": {
         parameters: {
             query?: never;
@@ -6396,6 +6413,652 @@ export interface paths {
         };
         /** Public Repository */
         get: operations["public_repository_openssf_scorecard_public_repository_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audius/public/track": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Track */
+        get: operations["public_track_audius_public_track_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/loom/public/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Video */
+        get: operations["public_video_loom_public_video_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/peertube/public/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Video */
+        get: operations["public_video_peertube_public_video_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/soundcloud/public/track": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Track */
+        get: operations["public_track_soundcloud_public_track_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lemmy/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_lemmy_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/listenbrainz/public/sitewide/listening-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Sitewide Listening Activity */
+        get: operations["public_sitewide_listening_activity_listenbrainz_public_sitewide_listening_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookwyrm/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_bookwyrm_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owncast/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_owncast_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pixelfed/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_pixelfed_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ntfy/public/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Health */
+        get: operations["public_health_ntfy_public_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nodebb/public/compatibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Compatibility */
+        get: operations["public_compatibility_nodebb_public_compatibility_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/joplin-cloud/public/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Health */
+        get: operations["public_health_joplin_cloud_public_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/radio-browser/public/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Statistics */
+        get: operations["public_statistics_radio_browser_public_statistics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scratch/public/team-project": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Team Project */
+        get: operations["public_team_project_scratch_public_team_project_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lucid/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lucid_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teamwork/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_teamwork_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gitea/public/compatibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Compatibility */
+        get: operations["public_compatibility_gitea_public_compatibility_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shortcut/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_shortcut_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/whimsical/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_whimsical_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/framer/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_framer_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dailymotion/public/demo-video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Demo Video */
+        get: operations["public_demo_video_dailymotion_public_demo_video_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mattermost/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_mattermost_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ensembl/public/gene": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Gene */
+        get: operations["public_gene_ensembl_public_gene_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uniprot/public/protein": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Protein */
+        get: operations["public_protein_uniprot_public_protein_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/obis/public/taxon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Taxon */
+        get: operations["public_taxon_obis_public_taxon_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pubchem/public/compound": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Compound */
+        get: operations["public_compound_pubchem_public_compound_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hal-open-science/public/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Record */
+        get: operations["public_record_hal_open_science_public_record_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openproject/public/api-root": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Api Root */
+        get: operations["public_api_root_openproject_public_api_root_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/harvard-dataverse/public/dataset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Dataset */
+        get: operations["public_dataset_harvard_dataverse_public_dataset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vikunja/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_vikunja_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zulip/public/server": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Server */
+        get: operations["public_server_zulip_public_server_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opencitations/public/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Work */
+        get: operations["public_work_opencitations_public_work_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/osf/public/project": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Project */
+        get: operations["public_project_osf_public_project_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plos/public/article": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Article */
+        get: operations["public_article_plos_public_article_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openml/public/dataset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Dataset */
+        get: operations["public_dataset_openml_public_dataset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openalex/public/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Work */
+        get: operations["public_work_openalex_public_work_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/figshare/public/item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Item */
+        get: operations["public_item_figshare_public_item_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hugging-face/public/model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Model */
+        get: operations["public_model_hugging_face_public_model_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29390,6 +30053,50 @@ export interface components {
             vanilla_input?: string | null;
         };
         /**
+         * AudiusTrackStatistics
+         * @description Safe factual projection of one public, listed Audius track.
+         */
+        AudiusTrackStatistics: {
+            /**
+             * Kind
+             * @default audius_public_track_statistics
+             * @constant
+             */
+            __kind?: "audius_public_track_statistics";
+            /**
+             * Provider
+             * @default audius
+             * @constant
+             */
+            provider?: "audius";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Track Id */
+            track_id: string;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Released At */
+            released_at: string;
+            /** Is Streamable */
+            is_streamable: boolean;
+            /** Is Downloadable */
+            is_downloadable: boolean;
+            /** Play Count */
+            play_count: number;
+            /** Favorite Count */
+            favorite_count: number;
+            /** Repost Count */
+            repost_count: number;
+            /** Comment Count */
+            comment_count: number;
+            /** Api Resource */
+            api_resource: string;
+        };
+        /**
          * AuthenticatorCodeOut
          * @description The current user-visible code and its remaining lifetime.
          */
@@ -30865,6 +31572,52 @@ export interface components {
              * @default vision-uploads
              */
             folder?: string;
+        };
+        /**
+         * BookWyrmInstanceStatistics
+         * @description Safe factual projection of the fixed public BookWyrm instance.
+         */
+        BookWyrmInstanceStatistics: {
+            /**
+             * Kind
+             * @default bookwyrm_public_instance_statistics
+             * @constant
+             */
+            __kind?: "bookwyrm_public_instance_statistics";
+            /**
+             * Provider
+             * @default bookwyrm
+             * @constant
+             */
+            provider?: "bookwyrm";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance
+             * @default bookwyrm.social
+             * @constant
+             */
+            instance?: "bookwyrm.social";
+            /** Software Version */
+            software_version: string;
+            /** Users Total */
+            users_total: number;
+            /** Users Active Month */
+            users_active_month: number;
+            /** Users Active Half Year */
+            users_active_half_year: number;
+            /** Local Posts */
+            local_posts: number;
+            /**
+             * Instance Page
+             * @default https://bookwyrm.social/
+             * @constant
+             */
+            instance_page?: "https://bookwyrm.social/";
         };
         /** BoundAgentTruth */
         BoundAgentTruth: {
@@ -39462,6 +40215,64 @@ export interface components {
             run_count: number;
         };
         /**
+         * DailymotionPublicDemoVideo
+         * @description Safe identity and embed dimensions for the official demo video.
+         */
+        DailymotionPublicDemoVideo: {
+            /**
+             * Kind
+             * @default dailymotion_public_demo_video
+             * @constant
+             */
+            __kind?: "dailymotion_public_demo_video";
+            /**
+             * Provider
+             * @default dailymotion
+             * @constant
+             */
+            provider?: "dailymotion";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Media Type
+             * @default video
+             * @constant
+             */
+            media_type?: "video";
+            /**
+             * Oembed Version
+             * @default 1.0
+             * @constant
+             */
+            oembed_version?: "1.0";
+            /**
+             * Video Id
+             * @default x7tgad0
+             * @constant
+             */
+            video_id?: "x7tgad0";
+            /**
+             * Title
+             * @default Midnight Sun | Iceland
+             * @constant
+             */
+            title?: "Midnight Sun | Iceland";
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /**
+             * Video Page
+             * @default https://www.dailymotion.com/video/x7tgad0
+             * @constant
+             */
+            video_page?: "https://www.dailymotion.com/video/x7tgad0";
+        };
+        /**
          * DataCitePublicDoi
          * @description Safe bounded projection of one public DataCite DOI record.
          */
@@ -41128,6 +41939,54 @@ export interface components {
             source_level?: string | null;
             /** Source Name */
             source_name?: string | null;
+        };
+        /**
+         * DigitalNzPublicRecord
+         * @description Safe descriptive projection of one public DigitalNZ record.
+         */
+        DigitalNzPublicRecord: {
+            /**
+             * Kind
+             * @default digitalnz_public_record
+             * @constant
+             */
+            __kind?: "digitalnz_public_record";
+            /**
+             * Provider
+             * @default digitalnz
+             * @constant
+             */
+            provider?: "digitalnz";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Record Id */
+            record_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Content Partner */
+            content_partner: string;
+            /** Collection */
+            collection?: string | null;
+            /** Categories */
+            categories?: string[];
+            /** Dates */
+            dates?: string[];
+            /** Display Date */
+            display_date?: string | null;
+            /** Rights */
+            rights?: string | null;
+            /** Rights Urls */
+            rights_urls?: string[];
+            /** Landing Url */
+            landing_url?: string | null;
+            /** Source Url */
+            source_url?: string | null;
         };
         /** DirectChatRequest */
         DirectChatRequest: {
@@ -43040,6 +43899,65 @@ export interface components {
             /** Display Name */
             display_name?: string | null;
         };
+        /**
+         * EnsemblPublicGene
+         * @description Safe factual projection of one public human Ensembl gene.
+         */
+        EnsemblPublicGene: {
+            /**
+             * Kind
+             * @default ensembl_public_gene
+             * @constant
+             */
+            __kind?: "ensembl_public_gene";
+            /**
+             * Provider
+             * @default ensembl
+             * @constant
+             */
+            provider?: "ensembl";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Gene Id */
+            gene_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Species
+             * @default homo_sapiens
+             * @constant
+             */
+            species?: "homo_sapiens";
+            /**
+             * Object Type
+             * @default Gene
+             * @constant
+             */
+            object_type?: "Gene";
+            /** Biotype */
+            biotype: string;
+            /** Assembly Name */
+            assembly_name: string;
+            /** Seq Region Name */
+            seq_region_name: string;
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+            /**
+             * Strand
+             * @enum {integer}
+             */
+            strand: -1 | 1;
+            /** Version */
+            version: number;
+        };
         /** EnterStageRequest */
         EnterStageRequest: {
             /**
@@ -44935,6 +45853,48 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * FigsharePublicItem
+         * @description Safe factual projection of one public Figshare item.
+         */
+        FigsharePublicItem: {
+            /**
+             * Kind
+             * @default figshare_public_item
+             * @constant
+             */
+            __kind?: "figshare_public_item";
+            /**
+             * Provider
+             * @default figshare
+             * @constant
+             */
+            provider?: "figshare";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Article Id */
+            article_id: number;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Published At */
+            published_at: string;
+            /** Modified At */
+            modified_at: string;
+            /** Item Type */
+            item_type: string;
+            /** Doi */
+            doi?: string | null;
+            /** License Name */
+            license_name?: string | null;
+            /** License Url */
+            license_url?: string | null;
+        };
         /** FileAnalysisHead */
         FileAnalysisHead: {
             /** File Id */
@@ -46473,6 +47433,40 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /**
+         * FramerServiceStatus
+         * @description Safe aggregate status projection for Framer's fixed status page.
+         */
+        FramerServiceStatus: {
+            /**
+             * Kind
+             * @default framer_public_service_status
+             * @constant
+             */
+            __kind?: "framer_public_service_status";
+            /**
+             * Provider
+             * @default framer
+             * @constant
+             */
+            provider?: "framer";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Aggregate State */
+            aggregate_state: string;
+            /** Resources Configured */
+            resources_configured: number;
+            /**
+             * Status Page
+             * @default https://www.framerstatus.com/
+             * @constant
+             */
+            status_page?: "https://www.framerstatus.com/";
+        };
         /** FrontierInvocation */
         FrontierInvocation: {
             /** Node Id */
@@ -46977,6 +47971,44 @@ export interface components {
             accepted: boolean;
             /** Processed Connections */
             processed_connections: number;
+        };
+        /**
+         * GiteaApplicationCompatibility
+         * @description Safe compatibility projection for the fixed official Gitea host.
+         */
+        GiteaApplicationCompatibility: {
+            /**
+             * Kind
+             * @default gitea_public_application_compatibility
+             * @constant
+             */
+            __kind?: "gitea_public_application_compatibility";
+            /**
+             * Provider
+             * @default gitea
+             * @constant
+             */
+            provider?: "gitea";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Api Version
+             * @default v1
+             * @constant
+             */
+            api_version?: "v1";
+            /** Application Version */
+            application_version: string;
+            /**
+             * Instance Page
+             * @default https://gitea.com
+             * @constant
+             */
+            instance_page?: "https://gitea.com";
         };
         /** GoogleAdsCampaignMetric */
         GoogleAdsCampaignMetric: {
@@ -47555,6 +48587,44 @@ export interface components {
             /** Hacker News Url */
             hacker_news_url: string;
         };
+        /**
+         * HalOpenSciencePublicRecord
+         * @description Safe factual projection of one public HAL record.
+         */
+        HalOpenSciencePublicRecord: {
+            /**
+             * Kind
+             * @default hal_open_science_public_record
+             * @constant
+             */
+            __kind?: "hal_open_science_public_record";
+            /**
+             * Provider
+             * @default hal_open_science
+             * @constant
+             */
+            provider?: "hal_open_science";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Hal Id */
+            hal_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Publication Year */
+            publication_year: number;
+            /** Document Type */
+            document_type: string;
+            /** Doi */
+            doi?: string | null;
+            /** Is Open Access */
+            is_open_access: boolean;
+        };
         /** HandleDialogCommand */
         HandleDialogCommand: {
             /**
@@ -47589,6 +48659,52 @@ export interface components {
              * @default false
              */
             handled?: boolean;
+        };
+        /**
+         * HarvardDataversePublicDataset
+         * @description Safe factual projection of one public released dataset.
+         */
+        HarvardDataversePublicDataset: {
+            /**
+             * Kind
+             * @default harvard_dataverse_public_dataset
+             * @constant
+             */
+            __kind?: "harvard_dataverse_public_dataset";
+            /**
+             * Provider
+             * @default harvard_dataverse
+             * @constant
+             */
+            provider?: "harvard_dataverse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Persistent Id */
+            persistent_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Publisher */
+            publisher: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Version */
+            version: string;
+            /**
+             * Version State
+             * @default RELEASED
+             * @constant
+             */
+            version_state?: "RELEASED";
+            /** Release Time */
+            release_time: string;
+            /** File Count */
+            file_count: number;
         };
         /**
          * HeldOutOutcome
@@ -47779,6 +48895,68 @@ export interface components {
             deprecated: boolean;
             /** Disabled */
             disabled: boolean;
+        };
+        /**
+         * HuggingFaceModelResult
+         * @description Safe bounded projection of one public Hugging Face model repository.
+         */
+        HuggingFaceModelResult: {
+            /**
+             * Kind
+             * @default hugging_face_public_model_metadata
+             * @constant
+             */
+            __kind?: "hugging_face_public_model_metadata";
+            /**
+             * Provider
+             * @default hugging_face
+             * @constant
+             */
+            provider?: "hugging_face";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Namespace */
+            namespace: string;
+            /** Repository */
+            repository: string;
+            /** Model Id */
+            model_id: string;
+            /** Author */
+            author: string;
+            /**
+             * Private
+             * @default false
+             * @constant
+             */
+            private?: false;
+            /**
+             * Gated
+             * @default false
+             * @constant
+             */
+            gated?: false;
+            /**
+             * Disabled
+             * @default false
+             * @constant
+             */
+            disabled?: false;
+            /** Library Name */
+            library_name?: string | null;
+            /** Pipeline Tag */
+            pipeline_tag?: string | null;
+            /** Revision Sha */
+            revision_sha: string;
+            /** Created At */
+            created_at: string;
+            /** Last Modified At */
+            last_modified_at: string;
+            /** Model Url */
+            model_url: string;
         };
         /** HumanLoginField */
         HumanLoginField: {
@@ -49729,6 +50907,42 @@ export interface components {
             /** Selected Version */
             selected_version?: number | null;
         };
+        /**
+         * JoplinCloudHealthResult
+         * @description Safe projection of the official Joplin Cloud ping response.
+         */
+        JoplinCloudHealthResult: {
+            /**
+             * Kind
+             * @default joplin_cloud_official_service_health
+             * @constant
+             */
+            __kind?: "joplin_cloud_official_service_health";
+            /**
+             * Provider
+             * @default joplin_cloud
+             * @constant
+             */
+            provider?: "joplin_cloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Service Url
+             * @default https://joplincloud.com/
+             * @constant
+             */
+            service_url?: "https://joplincloud.com/";
+            /**
+             * Healthy
+             * @default true
+             * @constant
+             */
+            healthy?: true;
+        };
         /** JournalChunk */
         JournalChunk: {
             /** Recording Id */
@@ -51435,6 +52649,66 @@ export interface components {
             /** Expected Keys In Config */
             expected_keys_in_config: string[];
         };
+        /**
+         * LemmyInstanceStatistics
+         * @description Safe factual projection of the fixed public Lemmy instance.
+         */
+        LemmyInstanceStatistics: {
+            /**
+             * Kind
+             * @default lemmy_public_instance_statistics
+             * @constant
+             */
+            __kind?: "lemmy_public_instance_statistics";
+            /**
+             * Provider
+             * @default lemmy
+             * @constant
+             */
+            provider?: "lemmy";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance
+             * @default lemmy.world
+             * @constant
+             */
+            instance?: "lemmy.world";
+            /** Instance Name */
+            instance_name: string;
+            /** Software Version */
+            software_version: string;
+            /** Published At */
+            published_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Users */
+            users: number;
+            /** Posts */
+            posts: number;
+            /** Comments */
+            comments: number;
+            /** Communities */
+            communities: number;
+            /** Users Active Day */
+            users_active_day: number;
+            /** Users Active Week */
+            users_active_week: number;
+            /** Users Active Month */
+            users_active_month: number;
+            /** Users Active Half Year */
+            users_active_half_year: number;
+            /**
+             * Instance Page
+             * @default https://lemmy.world/
+             * @constant
+             */
+            instance_page?: "https://lemmy.world/";
+        };
         /** LibraryCatalogItemOut */
         LibraryCatalogItemOut: {
             /** Id */
@@ -52085,6 +53359,62 @@ export interface components {
             count: number;
         };
         /**
+         * ListenBrainzSitewideListeningActivity
+         * @description Safe aggregate projection of two consecutive sitewide weekly periods.
+         */
+        ListenBrainzSitewideListeningActivity: {
+            /**
+             * Kind
+             * @default listenbrainz_sitewide_listening_activity
+             * @constant
+             */
+            __kind?: "listenbrainz_sitewide_listening_activity";
+            /**
+             * Provider
+             * @default listenbrainz
+             * @constant
+             */
+            provider?: "listenbrainz";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Range
+             * @default week
+             * @constant
+             */
+            range?: "week";
+            /** Previous Period From Ts */
+            previous_period_from_ts: number;
+            /** Previous Period To Ts */
+            previous_period_to_ts: number;
+            /** Previous Period Listens */
+            previous_period_listens: number;
+            /** Current Period From Ts */
+            current_period_from_ts: number;
+            /** Current Period To Ts */
+            current_period_to_ts: number;
+            /** Current Period Listens */
+            current_period_listens: number;
+            /** Last Updated Ts */
+            last_updated_ts: number;
+            /**
+             * Days Per Period
+             * @default 7
+             * @constant
+             */
+            days_per_period?: 7;
+            /**
+             * Source Page
+             * @default https://listenbrainz.org/
+             * @constant
+             */
+            source_page?: "https://listenbrainz.org/";
+        };
+        /**
          * LiveResourceRefInput
          * @description A live id-backed reference; snapshots are not meaningful for opaque resources.
          */
@@ -52266,6 +53596,42 @@ export interface components {
             /** Count */
             count: number;
         };
+        /**
+         * LoomVideoResult
+         * @description Safe bounded projection of one public Loom video.
+         */
+        LoomVideoResult: {
+            /**
+             * Kind
+             * @default loom_public_video_oembed
+             * @constant
+             */
+            __kind?: "loom_public_video_oembed";
+            /**
+             * Provider
+             * @default loom
+             * @constant
+             */
+            provider?: "loom";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Share Id */
+            share_id: string;
+            /** Title */
+            title: string;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Embed Url */
+            embed_url: string;
+        };
         /** LoopControlRequest */
         LoopControlRequest: {
             /**
@@ -52394,6 +53760,43 @@ export interface components {
          * @enum {string}
          */
         LoopStatus: "active" | "blocked" | "paused" | "completed" | "cancelled";
+        /**
+         * LucidStatusResult
+         * @description Safe projection of Lucid Software's high-level service status.
+         */
+        LucidStatusResult: {
+            /**
+             * Kind
+             * @default lucid_official_service_status
+             * @constant
+             */
+            __kind?: "lucid_official_service_status";
+            /**
+             * Provider
+             * @default lucid
+             * @constant
+             */
+            provider?: "lucid";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.lucid.co
+             * @constant
+             */
+            status_url?: "https://status.lucid.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** MandateBindingDeleteRequest */
         MandateBindingDeleteRequest: {
             /**
@@ -53429,6 +54832,48 @@ export interface components {
             latest_stable_version: string;
             /** Historical Version Count */
             historical_version_count: number;
+        };
+        /**
+         * MattermostCompatibilityResult
+         * @description Safe projection of Mattermost's fixed official-community system ping.
+         */
+        MattermostCompatibilityResult: {
+            /**
+             * Kind
+             * @default mattermost_public_instance_compatibility
+             * @constant
+             */
+            __kind?: "mattermost_public_instance_compatibility";
+            /**
+             * Provider
+             * @default mattermost
+             * @constant
+             */
+            provider?: "mattermost";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance Url
+             * @default https://community.mattermost.com
+             * @constant
+             */
+            instance_url?: "https://community.mattermost.com";
+            /**
+             * Status
+             * @default OK
+             * @constant
+             */
+            status?: "OK";
+            /**
+             * Compatible
+             * @default true
+             * @constant
+             */
+            compatible?: true;
         };
         /**
          * McpCatalogRefreshResult
@@ -55158,6 +56603,56 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /**
+         * NodeBBCommunityCompatibility
+         * @description Safe compatibility projection for NodeBB's fixed official community.
+         */
+        NodeBBCommunityCompatibility: {
+            /**
+             * Kind
+             * @default nodebb_public_community_compatibility
+             * @constant
+             */
+            __kind?: "nodebb_public_community_compatibility";
+            /**
+             * Provider
+             * @default nodebb
+             * @constant
+             */
+            provider?: "nodebb";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance
+             * @default community.nodebb.org
+             * @constant
+             */
+            instance?: "community.nodebb.org";
+            /**
+             * Site Title
+             * @default NodeBB Community
+             * @constant
+             */
+            site_title?: "NodeBB Community";
+            /** Activitypub Enabled */
+            activitypub_enabled: boolean;
+            /** Search Enabled */
+            search_enabled: boolean;
+            /** Topic Search Enabled */
+            topic_search_enabled: boolean;
+            /** Maintenance Mode */
+            maintenance_mode: boolean;
+            /**
+             * Instance Page
+             * @default https://community.nodebb.org/
+             * @constant
+             */
+            instance_page?: "https://community.nodebb.org/";
+        };
         /** NodeContractReport */
         NodeContractReport: {
             /** Node Type */
@@ -55650,6 +57145,42 @@ export interface components {
             } | null;
         };
         /**
+         * NtfyHealthResult
+         * @description Safe projection of the official ntfy.sh health response.
+         */
+        NtfyHealthResult: {
+            /**
+             * Kind
+             * @default ntfy_official_service_health
+             * @constant
+             */
+            __kind?: "ntfy_official_service_health";
+            /**
+             * Provider
+             * @default ntfy
+             * @constant
+             */
+            provider?: "ntfy";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Service Url
+             * @default https://ntfy.sh/
+             * @constant
+             */
+            service_url?: "https://ntfy.sh/";
+            /**
+             * Healthy
+             * @default true
+             * @constant
+             */
+            healthy?: true;
+        };
+        /**
          * OAuthTokenPersistRequest
          * @description The FE OAuth callback's hand-off: the raw token-endpoint response plus
          *     the non-secret exchange context the callback already holds. The callback
@@ -55687,6 +57218,56 @@ export interface components {
             config_id?: string | null;
             /** Endpoint Override */
             endpoint_override?: string | null;
+        };
+        /**
+         * OBISPublicTaxon
+         * @description Safe factual projection of one accepted public OBIS marine taxon.
+         */
+        OBISPublicTaxon: {
+            /**
+             * Kind
+             * @default obis_public_taxon
+             * @constant
+             */
+            __kind?: "obis_public_taxon";
+            /**
+             * Provider
+             * @default obis
+             * @constant
+             */
+            provider?: "obis";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Taxon Id */
+            taxon_id: number;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Scientific Name */
+            scientific_name: string;
+            /** Scientific Name Authorship */
+            scientific_name_authorship: string;
+            /** Taxon Rank */
+            taxon_rank: string;
+            /**
+             * Taxonomic Status
+             * @default accepted
+             * @constant
+             */
+            taxonomic_status?: "accepted";
+            /** Accepted Name */
+            accepted_name: string;
+            /** Accepted Taxon Id */
+            accepted_taxon_id: number;
+            /**
+             * Is Marine
+             * @default true
+             * @constant
+             */
+            is_marine?: true;
         };
         /**
          * OauthDefaultsResponse
@@ -56087,6 +57668,96 @@ export interface components {
             last_modified_at: string | null;
         };
         /**
+         * OpenAlexPublicWork
+         * @description Safe factual projection of one public OpenAlex work.
+         */
+        OpenAlexPublicWork: {
+            /**
+             * Kind
+             * @default openalex_public_work
+             * @constant
+             */
+            __kind?: "openalex_public_work";
+            /**
+             * Provider
+             * @default openalex
+             * @constant
+             */
+            provider?: "openalex";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Work Id */
+            work_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Publication Year */
+            publication_year: number;
+            /** Publication Date */
+            publication_date: string;
+            /** Work Type */
+            work_type: string;
+            /** Doi */
+            doi?: string | null;
+            /** Is Open Access */
+            is_open_access: boolean;
+            /** Open Access Status */
+            open_access_status: string;
+            /** Cited By Count */
+            cited_by_count: number;
+        };
+        /**
+         * OpenCitationsPublicWork
+         * @description Safe bibliographic projection for one DOI-backed work.
+         */
+        OpenCitationsPublicWork: {
+            /**
+             * Kind
+             * @default opencitations_public_work
+             * @constant
+             */
+            __kind?: "opencitations_public_work";
+            /**
+             * Provider
+             * @default opencitations
+             * @constant
+             */
+            provider?: "opencitations";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Doi */
+            doi: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Meta Id */
+            meta_id?: string | null;
+            /** Title */
+            title: string;
+            /** Publication Date */
+            publication_date?: string | null;
+            /** Work Type */
+            work_type?: string | null;
+            /** Venue */
+            venue?: string | null;
+            /** Volume */
+            volume?: string | null;
+            /** Issue */
+            issue?: string | null;
+            /** Pages */
+            pages?: string | null;
+            /** Publisher */
+            publisher?: string | null;
+        };
+        /**
          * OpenEdxDemoCourseResult
          * @description Bounded public metadata for the official sandbox demo course.
          */
@@ -56175,6 +57846,102 @@ export interface components {
             revision: number;
             /** Open Library Url */
             open_library_url: string;
+        };
+        /**
+         * OpenMLPublicDataset
+         * @description Safe factual projection of one public OpenML dataset.
+         */
+        OpenMLPublicDataset: {
+            /**
+             * Kind
+             * @default openml_public_dataset
+             * @constant
+             */
+            __kind?: "openml_public_dataset";
+            /**
+             * Provider
+             * @default openml
+             * @constant
+             */
+            provider?: "openml";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Dataset Id */
+            dataset_id: number;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: number;
+            /** Format */
+            format: string;
+            /**
+             * Status
+             * @default active
+             * @constant
+             */
+            status?: "active";
+            /** Default Target Attribute */
+            default_target_attribute?: string | null;
+            /** Upload Date */
+            upload_date: string;
+            /** License */
+            license: string;
+        };
+        /**
+         * OpenProjectRootResult
+         * @description Safe bounded projection of OpenProject's public community API root.
+         */
+        OpenProjectRootResult: {
+            /**
+             * Kind
+             * @default openproject_public_api_root_compatibility
+             * @constant
+             */
+            __kind?: "openproject_public_api_root_compatibility";
+            /**
+             * Provider
+             * @default openproject
+             * @constant
+             */
+            provider?: "openproject";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance Url
+             * @default https://community.openproject.org/
+             * @constant
+             */
+            instance_url?: "https://community.openproject.org/";
+            /**
+             * Instance Name
+             * @default OpenProject Community
+             * @constant
+             */
+            instance_name?: "OpenProject Community";
+            /** Configuration Available */
+            configuration_available: boolean;
+            /** Priorities Available */
+            priorities_available: boolean;
+            /** Relations Available */
+            relations_available: boolean;
+            /** Statuses Available */
+            statuses_available: boolean;
+            /** Time Entries Available */
+            time_entries_available: boolean;
+            /** Types Available */
+            types_available: boolean;
+            /** Work Packages Available */
+            work_packages_available: boolean;
         };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
@@ -56887,6 +58654,56 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /**
+         * OsfPublicProject
+         * @description Safe factual projection of one public OSF project.
+         */
+        OsfPublicProject: {
+            /**
+             * Kind
+             * @default osf_public_project
+             * @constant
+             */
+            __kind?: "osf_public_project";
+            /**
+             * Provider
+             * @default osf
+             * @constant
+             */
+            provider?: "osf";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Guid */
+            guid: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Category */
+            category: string;
+            /**
+             * Is Public
+             * @default true
+             * @constant
+             */
+            is_public?: true;
+            /** Is Registration */
+            is_registration: boolean;
+            /** Is Preprint */
+            is_preprint: boolean;
+            /** Is Fork */
+            is_fork: boolean;
+            /** Is Collection */
+            is_collection: boolean;
+            /** Created At */
+            created_at: string;
+            /** Modified At */
+            modified_at: string;
+        };
         /** OutletContactCandidate */
         OutletContactCandidate: {
             /** Key */
@@ -57347,6 +59164,52 @@ export interface components {
             crossed: boolean;
             /** Crosses At */
             crosses_at?: string | null;
+        };
+        /**
+         * OwncastInstanceStatistics
+         * @description Safe factual projection of Owncast's fixed official demo instance.
+         */
+        OwncastInstanceStatistics: {
+            /**
+             * Kind
+             * @default owncast_public_instance_statistics
+             * @constant
+             */
+            __kind?: "owncast_public_instance_statistics";
+            /**
+             * Provider
+             * @default owncast
+             * @constant
+             */
+            provider?: "owncast";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance
+             * @default watch.owncast.online
+             * @constant
+             */
+            instance?: "watch.owncast.online";
+            /** Software Version */
+            software_version: string;
+            /** Users Total */
+            users_total: number;
+            /** Users Active Month */
+            users_active_month: number;
+            /** Users Active Half Year */
+            users_active_half_year: number;
+            /** Local Posts */
+            local_posts: number;
+            /**
+             * Instance Page
+             * @default https://watch.owncast.online/
+             * @constant
+             */
+            instance_page?: "https://watch.owncast.online/";
         };
         /**
          * PackagistReleaseResult
@@ -58609,6 +60472,54 @@ export interface components {
             /** Tags */
             tags?: string[];
         };
+        /**
+         * PeerTubeVideoStatistics
+         * @description Safe factual projection of one public, published PeerTube video.
+         */
+        PeerTubeVideoStatistics: {
+            /**
+             * Kind
+             * @default peertube_public_video_statistics
+             * @constant
+             */
+            __kind?: "peertube_public_video_statistics";
+            /**
+             * Provider
+             * @default peertube
+             * @constant
+             */
+            provider?: "peertube";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Video Uuid */
+            video_uuid: string;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Published At */
+            published_at: string;
+            /** Is Live */
+            is_live: boolean;
+            /** Download Enabled */
+            download_enabled: boolean;
+            /** Views */
+            views: number;
+            /** Viewers */
+            viewers: number;
+            /** Downloads */
+            downloads: number;
+            /** Likes */
+            likes: number;
+            /** Dislikes */
+            dislikes: number;
+            /** Comments */
+            comments: number;
+            /** Api Resource */
+            api_resource: string;
+        };
         /** PendingCallSummary */
         PendingCallSummary: {
             /** Id */
@@ -59154,6 +61065,52 @@ export interface components {
              * @default 0
              */
             total_documents?: number;
+        };
+        /**
+         * PixelfedInstanceStatistics
+         * @description Safe factual projection of the fixed Pixelfed public instance.
+         */
+        PixelfedInstanceStatistics: {
+            /**
+             * Kind
+             * @default pixelfed_public_instance_statistics
+             * @constant
+             */
+            __kind?: "pixelfed_public_instance_statistics";
+            /**
+             * Provider
+             * @default pixelfed
+             * @constant
+             */
+            provider?: "pixelfed";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance
+             * @default pixelfed.social
+             * @constant
+             */
+            instance?: "pixelfed.social";
+            /** Software Version */
+            software_version: string;
+            /** Users Total */
+            users_total: number;
+            /** Users Active Month */
+            users_active_month: number;
+            /** Users Active Half Year */
+            users_active_half_year: number;
+            /** Local Posts */
+            local_posts: number;
+            /**
+             * Instance Page
+             * @default https://pixelfed.social/
+             * @constant
+             */
+            instance_page?: "https://pixelfed.social/";
         };
         /**
          * PlacementPassResult
@@ -59779,6 +61736,42 @@ export interface components {
             pages?: components["schemas"]["PlannedPageResult"][];
             /** Problems */
             problems?: string[];
+        };
+        /**
+         * PlosPublicArticle
+         * @description Safe factual projection of one PLOS article record.
+         */
+        PlosPublicArticle: {
+            /**
+             * Kind
+             * @default plos_public_article
+             * @constant
+             */
+            __kind?: "plos_public_article";
+            /**
+             * Provider
+             * @default plos
+             * @constant
+             */
+            provider?: "plos";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Doi */
+            doi: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Journal */
+            journal: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Article Type */
+            article_type: string;
         };
         /**
          * PodcastAudioProvider
@@ -61915,6 +63908,44 @@ export interface components {
             error?: string | null;
         };
         /**
+         * PubChemPublicCompound
+         * @description Safe factual projection of one public PubChem compound.
+         */
+        PubChemPublicCompound: {
+            /**
+             * Kind
+             * @default pubchem_public_compound
+             * @constant
+             */
+            __kind?: "pubchem_public_compound";
+            /**
+             * Provider
+             * @default pubchem
+             * @constant
+             */
+            provider?: "pubchem";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Cid */
+            cid: number;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Molecular Formula */
+            molecular_formula: string;
+            /** Molecular Weight */
+            molecular_weight: string;
+            /** Inchi Key */
+            inchi_key: string;
+            /** Iupac Name */
+            iupac_name: string;
+        };
+        /**
          * PubMedPublicSummary
          * @description Safe bounded projection of one public PubMed citation summary.
          */
@@ -62435,6 +64466,60 @@ export interface components {
              * @default 94b375b4-9e4f-4306-9ea7-032a5cd3e8d8
              */
             challenger_definition_id?: string;
+        };
+        /**
+         * RadioBrowserServiceStatistics
+         * @description Safe aggregate projection of the public Radio Browser directory.
+         */
+        RadioBrowserServiceStatistics: {
+            /**
+             * Kind
+             * @default radio_browser_public_service_statistics
+             * @constant
+             */
+            __kind?: "radio_browser_public_service_statistics";
+            /**
+             * Provider
+             * @default radio_browser
+             * @constant
+             */
+            provider?: "radio_browser";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Service Status
+             * @default OK
+             * @constant
+             */
+            service_status?: "OK";
+            /**
+             * Supported Version
+             * @default 1
+             * @constant
+             */
+            supported_version?: 1;
+            /** Software Version */
+            software_version: string;
+            /** Stations Total */
+            stations_total: number;
+            /** Stations Broken */
+            stations_broken: number;
+            /** Tags Total */
+            tags_total: number;
+            /** Languages Total */
+            languages_total: number;
+            /** Countries Total */
+            countries_total: number;
+            /**
+             * Directory Page
+             * @default https://www.radio-browser.info/
+             * @constant
+             */
+            directory_page?: "https://www.radio-browser.info/";
         };
         /** RagKindsRequest */
         RagKindsRequest: {
@@ -67202,6 +69287,74 @@ export interface components {
              */
             include_raw?: boolean;
         };
+        /**
+         * ScratchTeamProjectStatistics
+         * @description Safe aggregate projection of one official Scratch Team project.
+         */
+        ScratchTeamProjectStatistics: {
+            /**
+             * Kind
+             * @default scratch_public_team_project_statistics
+             * @constant
+             */
+            __kind?: "scratch_public_team_project_statistics";
+            /**
+             * Provider
+             * @default scratch
+             * @constant
+             */
+            provider?: "scratch";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Project Id
+             * @default 1210061611
+             * @constant
+             */
+            project_id?: 1210061611;
+            /**
+             * Title
+             * @default Face Sensing Game
+             * @constant
+             */
+            title?: "Face Sensing Game";
+            /**
+             * Public
+             * @default true
+             * @constant
+             */
+            public?: true;
+            /**
+             * Published
+             * @default true
+             * @constant
+             */
+            published?: true;
+            /**
+             * Visibility
+             * @default visible
+             * @constant
+             */
+            visibility?: "visible";
+            /** Views */
+            views: number;
+            /** Loves */
+            loves: number;
+            /** Favorites */
+            favorites: number;
+            /** Remixes */
+            remixes: number;
+            /**
+             * Project Page
+             * @default https://scratch.mit.edu/projects/1210061611/
+             * @constant
+             */
+            project_page?: "https://scratch.mit.edu/projects/1210061611/";
+        };
         /** ScreenshotFailure */
         ScreenshotFailure: {
             /** Kind */
@@ -68920,6 +71073,43 @@ export interface components {
             /** Pages Affected */
             pages_affected: number;
         };
+        /**
+         * ShortcutStatusResult
+         * @description Safe projection of Shortcut's high-level service status.
+         */
+        ShortcutStatusResult: {
+            /**
+             * Kind
+             * @default shortcut_official_service_status
+             * @constant
+             */
+            __kind?: "shortcut_official_service_status";
+            /**
+             * Provider
+             * @default shortcut
+             * @constant
+             */
+            provider?: "shortcut";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.shortcut.com
+             * @constant
+             */
+            status_url?: "https://status.shortcut.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SimulateProviderRetryRequest */
         SimulateProviderRetryRequest: {
             /**
@@ -69904,6 +72094,42 @@ export interface components {
             value: string;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * SoundCloudTrackResult
+         * @description Safe bounded projection of one public SoundCloud track.
+         */
+        SoundCloudTrackResult: {
+            /**
+             * Kind
+             * @default soundcloud_public_track_oembed
+             * @constant
+             */
+            __kind?: "soundcloud_public_track_oembed";
+            /**
+             * Provider
+             * @default soundcloud
+             * @constant
+             */
+            provider?: "soundcloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** User Slug */
+            user_slug: string;
+            /** Track Slug */
+            track_slug: string;
+            /** Soundcloud Track Id */
+            soundcloud_track_id: number;
+            /** Title */
+            title: string;
+            /** Widget Height */
+            widget_height: number;
+            /** Track Url */
+            track_url: string;
         };
         /** SourceBulkAction */
         SourceBulkAction: {
@@ -72689,6 +74915,43 @@ export interface components {
             /** Chat Id */
             chat_id: string;
         };
+        /**
+         * TeamworkStatusResult
+         * @description Safe projection of Teamwork.com's official high-level service status.
+         */
+        TeamworkStatusResult: {
+            /**
+             * Kind
+             * @default teamwork_official_service_status
+             * @constant
+             */
+            __kind?: "teamwork_official_service_status";
+            /**
+             * Provider
+             * @default teamwork
+             * @constant
+             */
+            provider?: "teamwork";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.teamwork.com
+             * @constant
+             */
+            status_url?: "https://status.teamwork.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** TemplateCreate */
         TemplateCreate: {
             /** Name */
@@ -74999,6 +77262,42 @@ export interface components {
             unconfirmed_rules: number;
             /** Rulebook Version */
             rulebook_version: number;
+        };
+        /**
+         * UniProtPublicProtein
+         * @description Safe factual identity projection of one public UniProtKB entry.
+         */
+        UniProtPublicProtein: {
+            /**
+             * Kind
+             * @default uniprot_public_protein
+             * @constant
+             */
+            __kind?: "uniprot_public_protein";
+            /**
+             * Provider
+             * @default uniprot
+             * @constant
+             */
+            provider?: "uniprot";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Accession */
+            accession: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Entry Name */
+            entry_name: string;
+            /** Primary Gene */
+            primary_gene: string;
+            /** Organism Taxon Id */
+            organism_taxon_id: number;
+            /** Sequence Length */
+            sequence_length: number;
         };
         /** UnmappedValueMapping */
         UnmappedValueMapping: {
@@ -77382,6 +79681,56 @@ export interface components {
             resize_negotiation?: "disabled";
         };
         /**
+         * VikunjaInstanceResult
+         * @description Safe bounded projection of Vikunja's official public demo instance.
+         */
+        VikunjaInstanceResult: {
+            /**
+             * Kind
+             * @default vikunja_public_instance_compatibility
+             * @constant
+             */
+            __kind?: "vikunja_public_instance_compatibility";
+            /**
+             * Provider
+             * @default vikunja
+             * @constant
+             */
+            provider?: "vikunja";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance Url
+             * @default https://try.vikunja.io/
+             * @constant
+             */
+            instance_url?: "https://try.vikunja.io/";
+            /** Version */
+            version: string;
+            /** Max Items Per Page */
+            max_items_per_page: number;
+            /** Link Sharing Enabled */
+            link_sharing_enabled: boolean;
+            /** Task Attachments Enabled */
+            task_attachments_enabled: boolean;
+            /** Caldav Enabled */
+            caldav_enabled: boolean;
+            /** Email Reminders Enabled */
+            email_reminders_enabled: boolean;
+            /** Task Comments Enabled */
+            task_comments_enabled: boolean;
+            /** Webhooks Enabled */
+            webhooks_enabled: boolean;
+            /** Demo Mode Enabled */
+            demo_mode_enabled: boolean;
+            /** User Deletion Enabled */
+            user_deletion_enabled: boolean;
+        };
+        /**
          * VimeoPublicVideoResult
          * @description Safe public metadata projection; provider-controlled HTML is excluded.
          */
@@ -78243,6 +80592,43 @@ export interface components {
             work_type: string;
             /** Record Page */
             record_page: string;
+        };
+        /**
+         * WhimsicalStatusResult
+         * @description Safe projection of Whimsical's high-level service status.
+         */
+        WhimsicalStatusResult: {
+            /**
+             * Kind
+             * @default whimsical_official_service_status
+             * @constant
+             */
+            __kind?: "whimsical_official_service_status";
+            /**
+             * Provider
+             * @default whimsical
+             * @constant
+             */
+            provider?: "whimsical";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.whimsical.com
+             * @constant
+             */
+            status_url?: "https://status.whimsical.com";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "operational" | "degraded" | "under_maintenance";
+            /** Operational */
+            operational: boolean;
         };
         /** WhoamiResponse */
         WhoamiResponse: {
@@ -79317,6 +81703,46 @@ export interface components {
             returned_count: number;
             /** Items */
             items: components["schemas"]["ZoteroPublicItem"][];
+        };
+        /**
+         * ZulipServerResult
+         * @description Safe bounded projection of the public Zulip Community server.
+         */
+        ZulipServerResult: {
+            /**
+             * Kind
+             * @default zulip_public_server_compatibility
+             * @constant
+             */
+            __kind?: "zulip_public_server_compatibility";
+            /**
+             * Provider
+             * @default zulip
+             * @constant
+             */
+            provider?: "zulip";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Realm Uri
+             * @default https://chat.zulip.org
+             * @constant
+             */
+            realm_uri?: "https://chat.zulip.org";
+            /** Realm Name */
+            realm_name: string;
+            /** Zulip Version */
+            zulip_version: string;
+            /** Zulip Feature Level */
+            zulip_feature_level: number;
+            /** Zulip Merge Base */
+            zulip_merge_base: string;
+            /** Web Public Access Enabled */
+            web_public_access_enabled: boolean;
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -91221,6 +93647,37 @@ export interface operations {
             };
         };
     };
+    public_record_digitalnz_public_record_get: {
+        parameters: {
+            query: {
+                record_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalNzPublicRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_paper_semantic_scholar_public_paper_get: {
         parameters: {
             query: {
@@ -91366,6 +93823,955 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenSSFRepositoryScorecard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_track_audius_public_track_get: {
+        parameters: {
+            query: {
+                track_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudiusTrackStatistics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_video_loom_public_video_get: {
+        parameters: {
+            query: {
+                share_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoomVideoResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_video_peertube_public_video_get: {
+        parameters: {
+            query: {
+                video_uuid: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeerTubeVideoStatistics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_track_soundcloud_public_track_get: {
+        parameters: {
+            query: {
+                user_slug: string;
+                track_slug: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoundCloudTrackResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_instance_lemmy_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LemmyInstanceStatistics"];
+                };
+            };
+        };
+    };
+    public_sitewide_listening_activity_listenbrainz_public_sitewide_listening_activity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenBrainzSitewideListeningActivity"];
+                };
+            };
+        };
+    };
+    public_instance_bookwyrm_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookWyrmInstanceStatistics"];
+                };
+            };
+        };
+    };
+    public_instance_owncast_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwncastInstanceStatistics"];
+                };
+            };
+        };
+    };
+    public_instance_pixelfed_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PixelfedInstanceStatistics"];
+                };
+            };
+        };
+    };
+    public_health_ntfy_public_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NtfyHealthResult"];
+                };
+            };
+        };
+    };
+    public_compatibility_nodebb_public_compatibility_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeBBCommunityCompatibility"];
+                };
+            };
+        };
+    };
+    public_health_joplin_cloud_public_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoplinCloudHealthResult"];
+                };
+            };
+        };
+    };
+    public_statistics_radio_browser_public_statistics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RadioBrowserServiceStatistics"];
+                };
+            };
+        };
+    };
+    public_team_project_scratch_public_team_project_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchTeamProjectStatistics"];
+                };
+            };
+        };
+    };
+    public_status_lucid_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LucidStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_teamwork_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamworkStatusResult"];
+                };
+            };
+        };
+    };
+    public_compatibility_gitea_public_compatibility_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiteaApplicationCompatibility"];
+                };
+            };
+        };
+    };
+    public_status_shortcut_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortcutStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_whimsical_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhimsicalStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_framer_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FramerServiceStatus"];
+                };
+            };
+        };
+    };
+    public_demo_video_dailymotion_public_demo_video_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailymotionPublicDemoVideo"];
+                };
+            };
+        };
+    };
+    public_instance_mattermost_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MattermostCompatibilityResult"];
+                };
+            };
+        };
+    };
+    public_gene_ensembl_public_gene_get: {
+        parameters: {
+            query: {
+                gene_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnsemblPublicGene"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_protein_uniprot_public_protein_get: {
+        parameters: {
+            query: {
+                accession: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniProtPublicProtein"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_taxon_obis_public_taxon_get: {
+        parameters: {
+            query: {
+                taxon_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OBISPublicTaxon"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_compound_pubchem_public_compound_get: {
+        parameters: {
+            query: {
+                cid: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PubChemPublicCompound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_record_hal_open_science_public_record_get: {
+        parameters: {
+            query: {
+                hal_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HalOpenSciencePublicRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_api_root_openproject_public_api_root_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenProjectRootResult"];
+                };
+            };
+        };
+    };
+    public_dataset_harvard_dataverse_public_dataset_get: {
+        parameters: {
+            query: {
+                persistent_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarvardDataversePublicDataset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_instance_vikunja_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VikunjaInstanceResult"];
+                };
+            };
+        };
+    };
+    public_server_zulip_public_server_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZulipServerResult"];
+                };
+            };
+        };
+    };
+    public_work_opencitations_public_work_get: {
+        parameters: {
+            query: {
+                doi: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenCitationsPublicWork"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_project_osf_public_project_get: {
+        parameters: {
+            query: {
+                guid: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OsfPublicProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_article_plos_public_article_get: {
+        parameters: {
+            query: {
+                doi: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlosPublicArticle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_dataset_openml_public_dataset_get: {
+        parameters: {
+            query: {
+                dataset_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMLPublicDataset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_work_openalex_public_work_get: {
+        parameters: {
+            query: {
+                work_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAlexPublicWork"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_item_figshare_public_item_get: {
+        parameters: {
+            query: {
+                article_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigsharePublicItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_model_hugging_face_public_model_get: {
+        parameters: {
+            query: {
+                namespace: string;
+                repository: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuggingFaceModelResult"];
                 };
             };
             /** @description Validation Error */
