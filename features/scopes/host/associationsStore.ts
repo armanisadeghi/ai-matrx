@@ -28,6 +28,32 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
+import { suppressSupabaseErrorCapture } from "@/lib/diagnostics/supabaseErrorCapture";
+
+const DEMANDED_SCHEMA_PROBE_SENTINELS = new Set([
+  "__not_a_uuid__",
+  "__probe__",
+]);
+
+/**
+ * The package's development-only demanded-schema check intentionally calls
+ * each RPC with impossible sentinel values. Those expected Postgres errors
+ * prove that the function exists; they are not application failures and must
+ * not fill the global Error Inspector. The package still receives the raw
+ * result and remains responsible for screaming when a function is missing.
+ */
+export function isDemandedSchemaProbeArgs(value: unknown): boolean {
+  if (typeof value === "string") {
+    return DEMANDED_SCHEMA_PROBE_SENTINELS.has(value);
+  }
+  if (Array.isArray(value)) {
+    return value.some(isDemandedSchemaProbeArgs);
+  }
+  if (value && typeof value === "object") {
+    return Object.values(value).some(isDemandedSchemaProbeArgs);
+  }
+  return false;
+}
 
 /**
  * The supabase client, narrowed to the package's structural dataSource
@@ -48,6 +74,9 @@ const client = supabase as unknown as {
 export const associationsDataSource: AssociationsDataSource = {
   rpc: (fn, args) => {
     const call = client.rpc(fn, args);
+    if (isDemandedSchemaProbeArgs(args)) {
+      return suppressSupabaseErrorCapture(call);
+    }
     if (fn !== "cmt_add") return call;
     // The cmt_add tap (W6 comments adoption): EVERY comment post — the
     // package CommentThread composer, the store service, any host caller —

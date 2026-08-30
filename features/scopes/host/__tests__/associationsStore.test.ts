@@ -22,9 +22,33 @@ jest.mock("@/utils/auth/getUserId", () => ({
   }),
 }));
 
-import { getAssociationsStore } from "../associationsStore";
+import {
+  getAssociationsStore,
+  isDemandedSchemaProbeArgs,
+} from "../associationsStore";
 
 describe("associations host store wiring", () => {
+  it("recognizes only the package's demanded-schema sentinel payloads", () => {
+    expect(
+      isDemandedSchemaProbeArgs({
+        p_source_type: "note",
+        p_source_id: "__not_a_uuid__",
+      }),
+    ).toBe(true);
+    expect(
+      isDemandedSchemaProbeArgs({
+        p_entity_type: "__probe__",
+        p_entity_ids: ["__not_a_uuid__"],
+      }),
+    ).toBe(true);
+    expect(
+      isDemandedSchemaProbeArgs({
+        p_source_type: "note",
+        p_source_id: "00000000-0000-0000-0000-000000000001",
+      }),
+    ).toBe(false);
+  });
+
   it("constructs once and exposes the package surfaces", () => {
     const store = getAssociationsStore();
     expect(store).toBe(getAssociationsStore());
