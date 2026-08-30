@@ -1,7 +1,8 @@
 import { toast } from "@/lib/toast";
 
 import type { ItemMenuEntry } from "@/components/official/item/types";
-import type { SiteListRow } from "@/features/marketing/types";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { buildSiteMenu } from "./site-actions";
 
 jest.mock("@/lib/toast", () => ({
@@ -195,5 +196,88 @@ describe("buildSiteMenu", () => {
     expect(toast.success).toHaveBeenLastCalledWith(
       "example.com copied for AI agent",
     );
+  });
+
+  it("lets a base-site host surround the canonical actions and own its copy payload", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const planSite: MarketingSite = site;
+    const openPlan = jest.fn();
+    const openCms = jest.fn();
+    const config = buildSiteMenu({
+      site: planSite,
+      copy: webCopy({
+        kind: "web-content-plan-site",
+        label: `Content plan ${planSite.domain}`,
+        description: "One site from the brand content plan.",
+        surface: `Content plan — ${planSite.domain}`,
+        data: { site: planSite, pages_planned: 12 },
+        lines: [
+          ["Site", planSite.name],
+          ["Pages planned", 12],
+        ],
+      }),
+      beforeSections: [
+        {
+          id: "plan",
+          items: [
+            {
+              id: "open-plan",
+              label: "Open content plan",
+              onSelect: openPlan,
+            },
+          ],
+        },
+      ],
+      afterSections: [
+        {
+          id: "cms",
+          items: [
+            {
+              id: "open-cms",
+              label: "Open in CMS",
+              onSelect: openCms,
+            },
+          ],
+        },
+      ],
+      onOpenWorkspace,
+      onQuickView,
+      onEditSite,
+      onDeleteSite,
+    });
+
+    expect(config.sections.map((section) => section.id)).toEqual([
+      "plan",
+      "open",
+      "copy",
+      "manage",
+      "cms",
+    ]);
+    expect(config.sections.slice(1, 4).map((section) => section.id)).toEqual([
+      "open",
+      "copy",
+      "manage",
+    ]);
+
+    select(entry(config, "open-plan"));
+    select(entry(config, "open-cms"));
+    expect(openPlan).toHaveBeenCalledTimes(1);
+    expect(openCms).toHaveBeenCalledTimes(1);
+
+    select(entry(config, "copy-summary"));
+    await Promise.resolve();
+    expect(writeText).toHaveBeenLastCalledWith(
+      ["Site: Example", "Pages planned: 12"].join("\n"),
+    );
+
+    select(entry(config, "copy-ai"));
+    await Promise.resolve();
+    const copiedForAi = writeText.mock.calls.at(-1)?.[0];
+    expect(copiedForAi).toContain("web-content-plan-site");
+    expect(copiedForAi).toContain("Content plan — example.com");
   });
 });

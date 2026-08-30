@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P2",
-  "runId": "20260830T142407Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T15:24:55.873Z",
-  "summary": "Replacement sites adoption delivered in first containing release v0.4.1495.",
-  "source": "20260830T142407Z.json",
-  "eventHash": "26a2082926074ca8bf3fa40c768261df8b33fbca8fe157ce6170024519914225"
+  "runId": "20260830T152907Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T15:29:08.855Z",
+  "summary": "Adapting PlanSitesList to the shared site-action authority while retaining plan-specific navigation and plan copy payloads.",
+  "source": "20260830T152907Z.json",
+  "eventHash": "30e411d49c412e6f27d44bcc6bcd31191f615b27daf6fed466d7e72c9d5ef655"
 }

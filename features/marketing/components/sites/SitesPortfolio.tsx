@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Plus, SearchCheck } from "lucide-react";
@@ -21,6 +20,7 @@ import {
 } from "@/features/marketing/components/sites/site-list-presentation";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
 import type { SiteEditorHandleRef } from "@/features/marketing/components/sites/SiteEditorDialog";
+import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
 import { useDeleteSite, useSiteCount } from "@/features/marketing/data/hooks";
 import {
   siteListService,
@@ -51,13 +51,6 @@ import {
 } from "@/lib/entity-list/components/EntityListPage";
 import { toast } from "@/lib/toast";
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
-
-// Quick view opens one-at-a-time on user action, so the WindowPanel machinery
-// stays behind this lazy edge (lazyOverlay pattern — code-splitting skill).
-const SitePeekWindow = dynamic(
-  () => import("@/features/marketing/components/sites/SitePeekWindow"),
-  { ssr: false },
-);
 
 function sitesListCopy(rows: SiteListRow[], total: number, managed?: number) {
   return webCopy({

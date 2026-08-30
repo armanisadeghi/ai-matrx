@@ -9,23 +9,46 @@ import {
 } from "lucide-react";
 
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type {
+  ItemMenuConfig,
+  ItemMenuSection,
+} from "@/components/official/item/types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { toast } from "@/lib/toast";
 
-export interface SiteActionCallbacks {
+export interface SiteActionCallbacks<
+  TSite extends MarketingSite = MarketingSite,
+> {
   /** Keeps workspace navigation in the consuming shell's router. */
   onOpenWorkspace: (href: string) => void;
-  onQuickView: (site: SiteListRow) => void;
-  onEditSite: (site: MarketingSite) => void;
-  onDeleteSite: (site: MarketingSite) => void;
+  onQuickView: (site: TSite) => void;
+  onEditSite: (site: TSite) => void;
+  onDeleteSite: (site: TSite) => void;
 }
 
-export interface SiteMenuContext extends SiteActionCallbacks {
-  site: SiteListRow;
+export type SiteMenuCopy = ReturnType<typeof webCopy>;
+
+interface SiteMenuContextBase<
+  TSite extends MarketingSite,
+> extends SiteActionCallbacks<TSite> {
+  site: TSite;
+  /** Host-only actions rendered before the canonical site actions. */
+  beforeSections?: ItemMenuSection[];
+  /** Host-only actions rendered after the canonical site actions. */
+  afterSections?: ItemMenuSection[];
 }
+
+/** A base site host supplies the copy payload that describes its own surface. */
+export type SiteMenuContext<TSite extends MarketingSite = MarketingSite> =
+  SiteMenuContextBase<TSite> & {
+    copy: SiteMenuCopy;
+  };
+
+type DefaultSiteMenuContext = SiteMenuContextBase<SiteListRow> & {
+  copy?: undefined;
+};
 
 async function copyToClipboard(text: string, message: string) {
   try {
@@ -69,14 +92,36 @@ export function siteRowCopy(site: SiteListRow) {
   });
 }
 
-/** The one site-action registry used by every sites-list presentation. */
-export function buildSiteMenu(ctx: SiteMenuContext): ItemMenuConfig {
+/**
+ * The one site-action registry used by every sites-list presentation.
+ *
+ * The portfolio's richer SiteListRow keeps its established default copy.
+ * Other hosts provide copy shaped for their own surface and may surround the
+ * canonical actions with host-only sections without forking those actions.
+ */
+export function buildSiteMenu(ctx: DefaultSiteMenuContext): ItemMenuConfig;
+export function buildSiteMenu<TSite extends MarketingSite>(
+  ctx: SiteMenuContext<TSite>,
+): ItemMenuConfig;
+export function buildSiteMenu(
+  ctx: DefaultSiteMenuContext | SiteMenuContext,
+): ItemMenuConfig {
+  if (ctx.copy !== undefined) {
+    return buildSiteMenuConfig(ctx, ctx.copy);
+  }
+  return buildSiteMenuConfig(ctx, siteRowCopy(ctx.site));
+}
+
+function buildSiteMenuConfig<TSite extends MarketingSite>(
+  ctx: SiteMenuContextBase<TSite>,
+  copy: SiteMenuCopy,
+): ItemMenuConfig {
   const { site } = ctx;
-  const copy = siteRowCopy(site);
 
   return {
     header: { title: site.name, description: site.domain },
     sections: [
+      ...(ctx.beforeSections ?? []),
       {
         id: "open",
         items: [
@@ -146,6 +191,7 @@ export function buildSiteMenu(ctx: SiteMenuContext): ItemMenuConfig {
           },
         ],
       },
+      ...(ctx.afterSections ?? []),
     ],
   };
 }

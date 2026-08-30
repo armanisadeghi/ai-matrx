@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P2",
+  "runId": "20260830T152907Z",
+  "baseSha": "bb330ff93d2561da4edd9d3c5b5aa43f1032c114",
+  "createdAt": "2026-08-30T15:29:08.089Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T15:29:08.089Z",
+      "actor": "codex-p2-controller",
+      "summary": "Begin ranked catalogue item 12: canonical site actions in the brand Content Plan sites list.",
+      "evidence": [
+        "Canonical shared checkout baseline is clean at bb330ff93d; type-check, focused site-action tests, and focused ESLint pass."
+      ],
+      "previousEventHash": null,
+      "eventHash": "36dec9a15a16915980fe5f880bd5c95ff0dcc00de1d6c441928891dc3306a2bf"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T15:29:08.855Z",
+      "actor": "codex-p2-controller",
+      "summary": "Adapting PlanSitesList to the shared site-action authority while retaining plan-specific navigation and plan copy payloads.",
+      "evidence": [
+        "Bounded owned scope: site-actions authority/tests plus PlanSitesList and focused tests."
+      ],
+      "previousEventHash": "36dec9a15a16915980fe5f880bd5c95ff0dcc00de1d6c441928891dc3306a2bf",
+      "eventHash": "30e411d49c412e6f27d44bcc6bcd31191f615b27daf6fed466d7e72c9d5ef655"
+    }
+  ]
+}

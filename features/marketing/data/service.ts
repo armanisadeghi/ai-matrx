@@ -358,10 +358,12 @@ export async function listSites(
   }
   const name = textFilter(state, "name");
   const domain = textFilter(state, "domain");
+  const siteId = textFilter(state, "id");
   const status = selectFilter(state, "status");
   const visibility = visibilityFilter(state);
   if (name) query = query.ilike("name", `%${name}%`);
   if (domain) query = query.ilike("domain", `%${domain}%`);
+  if (siteId) query = query.eq("id", siteId);
   if (status) query = query.eq("status", status);
   if (visibility) query = query.eq("visibility", visibility);
 
@@ -460,7 +462,11 @@ export async function listSites(
     const kpisBySite = new Map(kpiRows.map((row) => [row.site_id, row]));
     return {
       rows: ordered.map((site) =>
-        mergeSiteListRow(site, scoreBySite.get(site.id), kpisBySite.get(site.id)),
+        mergeSiteListRow(
+          site,
+          scoreBySite.get(site.id),
+          kpisBySite.get(site.id),
+        ),
       ),
       total,
     };
@@ -496,6 +502,31 @@ export async function listSites(
     ),
     total: response.count ?? 0,
   };
+}
+
+/**
+ * Load one site in the exact enriched shape consumed by the shared Quick view.
+ * Reusing `listSites` keeps health, page, and GSC metric semantics in one query
+ * and one merge implementation.
+ */
+export async function getSiteListRow(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteListRow> {
+  const result = await listSites(
+    {
+      page: 1,
+      pageSize: 1,
+      search: "",
+      anyOf: "",
+      columnFilters: { id: { kind: "text", value: siteId } },
+      sort: { id: "updated_at", direction: "desc" },
+    },
+    signal,
+  );
+  const site = result.rows.find((row) => row.id === siteId);
+  if (!site) throw new Error(`Site ${siteId} is no longer available.`);
+  return site;
 }
 
 /** Site-level daily GSC rollup for the KPI peek chart. */
@@ -1456,7 +1487,8 @@ export async function updatePageIntent(
         .eq("id", input.pageId)
         .is("deleted_at", null)
         .maybeSingle(),
-    conflictMessage: "This page changed in another session. Reload and try again.",
+    conflictMessage:
+      "This page changed in another session. Reload and try again.",
   });
 }
 
@@ -3122,7 +3154,8 @@ export async function listDismissedPages(
   const requestedSort = state.sort?.id ?? "dismissed_at";
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "deleted_at";
-  const ascending = state.sort?.direction === "asc" && requestedSort in sortColumns;
+  const ascending =
+    state.sort?.direction === "asc" && requestedSort in sortColumns;
 
   let query = db
     .from("page")
@@ -3552,7 +3585,9 @@ export async function fetchSiteAuditRollup(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<SiteAuditRollup> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .rpc("site_audit_rollup", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return parseSiteAuditRollup(assertData(response.data, response.error));
@@ -3562,7 +3597,9 @@ export async function fetchSiteAuditTrend(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<AuditTrendPoint[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .rpc("site_audit_trend", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return parseSiteAuditTrend(assertData(response.data, response.error));
@@ -3824,7 +3861,9 @@ export async function listBusinessLocations(
   brandId: string,
   signal?: AbortSignal,
 ): Promise<BusinessLocation[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("business_location")
     .select(BUSINESS_LOCATION_COLUMNS)
     .eq("brand_id", brandId)
@@ -3866,7 +3905,9 @@ export async function getBusinessLocation(
 export async function createBusinessLocation(
   input: CreateBusinessLocationInput,
 ): Promise<BusinessLocation> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("business_location")
     .insert({
       organization_id: input.organizationId,
@@ -3909,8 +3950,12 @@ export async function updateBusinessLocation(
   });
 }
 
-export async function deleteBusinessLocation(locationId: string): Promise<void> {
-  const response = await (await authenticatedWebDb(supabase))
+export async function deleteBusinessLocation(
+  locationId: string,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("business_location")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", locationId)
@@ -3923,7 +3968,9 @@ export async function deleteBusinessLocation(locationId: string): Promise<void> 
 export async function listVisibleBrandOptions(
   signal?: AbortSignal,
 ): Promise<Array<Pick<MarketingBrand, "id" | "name" | "organization_id">>> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("brand")
     .select("id, name, organization_id")
     .is("deleted_at", null)
@@ -3938,7 +3985,9 @@ export async function listVisibleBrandOptions(
 export async function listListingPublishers(
   signal?: AbortSignal,
 ): Promise<ListingPublisher[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("listing_publisher")
     .select(LISTING_PUBLISHER_COLUMNS)
     .is("deleted_at", null)
@@ -3952,7 +4001,9 @@ export async function listLocationListings(
   locationId: string,
   signal?: AbortSignal,
 ): Promise<LocationListing[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("location_listing")
     .select(LOCATION_LISTING_COLUMNS)
     .eq("location_id", locationId)
@@ -4029,7 +4080,11 @@ export async function addDiscoveredPublisher(
     existingRows,
   );
   if (match?.existing) {
-    return { publisher: match.existing, created: false, matchedBy: match.matchedBy };
+    return {
+      publisher: match.existing,
+      created: false,
+      matchedBy: match.matchedBy,
+    };
   }
 
   const db = await authenticatedWebDb(supabase);
