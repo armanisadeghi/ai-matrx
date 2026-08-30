@@ -158,10 +158,11 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
     .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .returns<JoinedAgentTaskRow[]>();
 
   if (error) throw pgErrorToError(error);
-  return ((data ?? []) as unknown as JoinedAgentTaskRow[]).map(rowToAgendaTask);
+  return (data ?? []).map(rowToAgendaTask);
 }
 
 export async function getAgentTask(id: string): Promise<AgendaTask | null> {
@@ -174,11 +175,12 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
     .eq("kind", "agent")
     .eq("id", id)
     .is("deleted_at", null)
-    .maybeSingle();
+    .maybeSingle()
+    .returns<JoinedAgentTaskRow | null>();
 
   if (error) throw pgErrorToError(error);
   if (!data) return null;
-  return rowToAgendaTask(data as unknown as JoinedAgentTaskRow);
+  return rowToAgendaTask(data);
 }
 
 // ── Writes that the HTTP /scheduler/* surface doesn't cover yet ────────────

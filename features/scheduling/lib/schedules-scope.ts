@@ -74,12 +74,12 @@ export function buildOpenScheduleValues(task: AgendaTask): ScopeFragment {
     schedule_title: task.title,
     ...(task.description ? { schedule_description: task.description } : {}),
     schedule_enabled: task.enabled,
-    ...(triggerValue
+    ...(trigger
       ? {
           schedule_trigger: triggerValue,
           schedule_trigger_summary: humanizeTrigger(
-            trigger!.type,
-            trigger!.config,
+            trigger.type,
+            trigger.config,
           ),
         }
       : {}),
