@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "2026-08-30T141811Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:20:27.020Z",
-  "summary": "Three disjoint repair units are implementing the ranked overlay family",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:51:14.447Z",
+  "summary": "Corrected three-Surface candidate is static-clean and mirror-synced but cannot earn verified readiness without the required isolated in-app Browser proof",
   "source": "2026-08-30T141811Z.json",
-  "eventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d"
+  "eventHash": "98d89b3460d0637dc1dde467023e6c07916c9eed86b01b9c0d9ee8014ee4e1d9"
 }
