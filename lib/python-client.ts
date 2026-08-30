@@ -211,7 +211,7 @@ const AUTH_TOKEN_TIMEOUT_MS = 8000;
  * on whether a guest fingerprint is available. Throws a loud, retryable error
  * if the auth-token lookup itself deadlocks (never an infinite spinner).
  */
-async function getAccessTokenOrNull(): Promise<string | null> {
+export async function getAccessTokenOrNull(): Promise<string | null> {
   try {
     const { data, error } = await promiseTimeout(
       supabase.auth.getSession(),

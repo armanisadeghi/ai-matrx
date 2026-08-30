@@ -3,56 +3,63 @@
 /**
  * features/files/components/core/FilePreview/PreviewerSwitch.tsx
  *
- * THE shared previewKind → previewer switch — the single module that maps a
- * `PreviewKind` to the right previewer body, consumed by all three preview
- * surfaces (FilePreview pane, UniversalInlineFile markdown block, code-editor
- * BinaryFileViewer).
+ * THE app's registration of its heavy file viewers, plus a thin adapter over
+ * `@ai-matrx/media/viewers`.
+ *
+ * The dispatch table, the kind vocabulary, the degradation arms, and the
+ * text / code / SVG / HTML / generic viewer BODIES now live in the package
+ * (`@ai-matrx/media` 0.4.0). What remains here is the only part that is
+ * genuinely ours: the engines a package cannot ship.
+ *
+ *   - PdfPreview / PdfDocumentRenderer — `features/pdf` (PDF.js + the
+ *     annotation layer + the surface registry + server-side extraction).
+ *   - MarkdownPreview — the remark/rehype/KaTeX stack.
+ *   - DataPreview — SheetJS + PapaParse.
+ *   - OfficePreview — server-side extraction → markdown.
+ *   - Image / Video / Audio — bound to app domain systems (the
+ *     `FileViewerControlsProvider` zoom/rotate rail, the unified
+ *     playback-session registry, the design-system slider).
+ *   - The Prism highlighter for the package's code viewer.
  *
  * Code-splitting doctrine (Fragmentation Law — see .claude/skills/code-splitting):
- * this file contains ZERO `next/dynamic`. The three consuming surfaces are all
- * client graphs that already sit behind their own edges; fanning out 23
- * per-previewer `dynamic()` loadables across 3 sites (the prior state)
- * manufactured chunk groups for no deferral win.
- *
- *   - The 7 LIGHT previewers (image / svg / video / audio / text / html /
- *     generic) are STATIC imports — trivial weight, compiled once into this
- *     module's graph.
- *   - The 4 HEAVY engines keep an in-gate async edge via `React.lazy` (the
- *     build-cheap form — no loadable-manifest entry, no new chunk groups):
- *     PdfPreview (react-pdf + pdf.js worker), MarkdownPreview
- *     (remark/rehype + KaTeX), DataPreview (SheetJS + PapaParse),
- *     CodePreview (Prism), plus the blob-arm PdfDocumentRenderer.
+ * this file still contains ZERO `next/dynamic`. The heavy engines keep the
+ * in-gate `React.lazy` form (build-cheap: no loadable-manifest entry, no new
+ * chunk groups); the light app viewers are static imports; the package's own
+ * bodies come in through the one `@ai-matrx/media/viewers` import. Registration
+ * happens once at module scope, so the registry is populated before any
+ * `MediaFileViewer` in this graph renders.
  */
 
 import { lazy, Suspense } from "react";
+import {
+  MediaFileViewer,
+  registerMediaCodeHighlighter,
+  registerMediaViewer,
+  useViewerDisplayUrl,
+  type MediaViewerProps,
+  type MediaViewerSource,
+} from "@ai-matrx/media/viewers";
 import type { PreviewKind } from "@/features/files/utils/file-types";
 import { ImagePreview } from "./previewers/ImagePreview";
-import { SvgPreview } from "./previewers/SvgPreview";
 import { VideoPreview } from "./previewers/VideoPreview";
 import { AudioPreview } from "./previewers/AudioPreview";
-import { TextPreview } from "./previewers/TextPreview";
-import { HtmlPreview } from "./previewers/HtmlPreview";
-import { GenericPreview } from "./previewers/GenericPreview";
+import { PrismCodeHighlighter } from "./previewers/PrismCodeHighlighter";
 
 // Heavy engines — in-gate async edges (React.lazy, NOT next/dynamic).
 const PdfPreview = lazy(() => import("./previewers/PdfPreview"));
 const MarkdownPreview = lazy(() => import("./previewers/MarkdownPreview"));
-// Word / PowerPoint — server-side extract → markdown render (react-markdown
-// stack stays inside this chunk, same rationale as MarkdownPreview).
 const OfficePreview = lazy(() => import("./previewers/OfficePreview"));
 const DataPreview = lazy(() => import("./previewers/DataPreview"));
-const CodePreview = lazy(() => import("./previewers/CodePreview"));
-// Blob-backed PDF arm (code editor's already-downloaded bytes). Renders the
-// CANONICAL viewer directly — absorbs the former BinaryFilePdfPreview adapter,
-// whose own nested dynamic() was a stacked-boundary violation.
+// Blob-backed PDF arm (code editor's already-downloaded bytes) — renders the
+// CANONICAL viewer directly.
 const BlobPdfPreview = lazy(
   () => import("@/features/pdf/components/viewer/PdfDocumentRenderer"),
 );
 
 /**
- * Shared loading state for the lazy previewer chunks. A single centered
- * pulsing bar — content-agnostic so all kinds feel uniform while a heavy
- * chunk finishes loading. Consumers with their own skeleton language pass
+ * Shared loading state for the lazy engine chunks. A single centered pulsing
+ * bar — content-agnostic so all kinds feel uniform while a heavy chunk
+ * finishes loading. Consumers with their own skeleton language pass
  * `loadingFallback` instead.
  */
 export function PreviewerSkeleton() {
@@ -62,6 +69,130 @@ export function PreviewerSkeleton() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// The app's engines, as package viewers. Each adapter's ONLY job is to turn
+// `MediaViewerProps` into the engine's own props — including resolving the
+// display URL, which the package hands over through `useViewerDisplayUrl`
+// (the same MediaClient resolution the package's own bodies use, so there is
+// exactly one URL story on this screen).
+// ---------------------------------------------------------------------------
+
+function fileIdOf(source: MediaViewerSource): string | null {
+  if (source.kind !== "ref") return null;
+  const { ref } = source;
+  if (typeof ref === "string") return null;
+  return ref.file_id ?? null;
+}
+
+function HostImageViewer({ source, fileName, className }: MediaViewerProps) {
+  const { url } = useViewerDisplayUrl(source);
+  return <ImagePreview url={url} fileName={fileName} className={className} />;
+}
+
+function HostVideoViewer({
+  source,
+  fileName,
+  mimeType,
+  className,
+}: MediaViewerProps) {
+  const { url } = useViewerDisplayUrl(source);
+  return (
+    <VideoPreview
+      url={url}
+      mimeType={mimeType ?? null}
+      label={fileName}
+      className={className}
+    />
+  );
+}
+
+function HostAudioViewer({
+  source,
+  fileName,
+  mimeType,
+  className,
+}: MediaViewerProps) {
+  const { url } = useViewerDisplayUrl(source);
+  return (
+    <AudioPreview
+      url={url}
+      fileName={fileName}
+      mimeType={mimeType ?? null}
+      className={className}
+    />
+  );
+}
+
+function HostPdfViewer({
+  source,
+  fileName,
+  className,
+  pageNumber,
+  onPageChange,
+}: MediaViewerProps) {
+  const { url } = useViewerDisplayUrl(source);
+  const fileId = fileIdOf(source);
+  if (!fileId) {
+    return (
+      <BlobPdfPreview
+        blobUrl={url}
+        fileName={fileName}
+        pageNumber={pageNumber}
+        onPageChange={onPageChange}
+        className={className}
+      />
+    );
+  }
+  return (
+    <PdfPreview
+      fileId={fileId}
+      remoteUrl={url}
+      pageNumber={pageNumber}
+      onPageChange={onPageChange}
+      className={className}
+    />
+  );
+}
+
+/**
+ * Fetch-based engines need a fileId (the bytes come through the Python
+ * `/files/{id}/download` endpoint, or, for Office, through the server-side
+ * extractor). A blob source has no fileId — returning `null` from an adapter
+ * would be a dead pane, so these fall through to the package's generic card,
+ * which is exactly the arm the old switch had.
+ */
+function requiresFileId(
+  Engine: (props: {
+    fileId: string;
+    fileName: string;
+    className?: string | undefined;
+  }) => React.ReactNode,
+  GenericFallback: (props: MediaViewerProps) => React.ReactNode,
+) {
+  return function FileIdEngine(props: MediaViewerProps) {
+    const fileId = fileIdOf(props.source);
+    if (!fileId) return <>{GenericFallback(props)}</>;
+    return (
+      <Engine
+        fileId={fileId}
+        fileName={props.fileName}
+        className={props.className}
+      />
+    );
+  };
+}
+
+registerMediaViewer("image", HostImageViewer as never);
+registerMediaViewer("video", HostVideoViewer as never);
+registerMediaViewer("audio", HostAudioViewer as never);
+registerMediaViewer("pdf", HostPdfViewer as never);
+registerMediaCodeHighlighter(PrismCodeHighlighter as never);
+
+// ---------------------------------------------------------------------------
+// The public adapter. Its three call sites (the FilePreview pane, the inline
+// markdown file block, the code editor's BinaryFileViewer) keep their props.
+// ---------------------------------------------------------------------------
 
 /** Where the previewer gets its bytes from. */
 export type PreviewSource =
@@ -74,11 +205,6 @@ export interface PreviewerSwitchProps {
   fileName: string;
   fileSize?: number | null;
   mimeType?: string | null;
-  /**
-   * Resolved display URL for URL-based previewers (image / svg / video /
-   * audio / html). For a `blob` source this defaults to the blob URL.
-   */
-  url?: string | null;
   className?: string;
   /** Optional controlled 1-based page for PDF files. */
   pageNumber?: number;
@@ -92,7 +218,7 @@ export interface PreviewerSwitchProps {
     viewAsTextBusy?: boolean;
     message?: string;
   };
-  /** Fallback shown while a heavy previewer chunk loads. */
+  /** Fallback shown while a heavy engine chunk loads. */
   loadingFallback?: React.ReactNode;
 }
 
@@ -102,173 +228,61 @@ export function PreviewerSwitch({
   fileName,
   fileSize,
   mimeType,
-  url,
   className,
   pageNumber,
   onPageChange,
   generic,
   loadingFallback,
 }: PreviewerSwitchProps) {
-  const mediaUrl = url ?? (source.kind === "blob" ? source.url : null);
-  const fileId = source.kind === "fileId" ? source.fileId : null;
-
-  const genericCard = (
-    <GenericPreview
-      fileName={fileName}
-      fileSize={fileSize ?? null}
-      onDownload={generic?.onDownload}
-      onViewAsText={generic?.onViewAsText}
-      viewAsTextLabel={generic?.viewAsTextLabel}
-      viewAsTextPrimary={generic?.viewAsTextPrimary}
-      viewAsTextBusy={generic?.viewAsTextBusy}
-      message={generic?.message}
-      className={className}
-    />
-  );
-
-  let body: React.ReactNode;
-  switch (previewKind) {
-    case "image":
-      body = (
-        <ImagePreview
-          url={mediaUrl}
-          fileName={fileName}
-          className={className}
-        />
-      );
-      break;
-    case "svg":
-      // SVG source view is fileId-coupled (blob fetch through the handler).
-      // A blob-sourced SVG (code editor) renders via the signed-URL <img>
-      // path, matching the editor's prior fall-through behavior.
-      body = fileId ? (
-        <SvgPreview
-          url={mediaUrl}
-          fileName={fileName}
-          fileId={fileId}
-          className={className}
-        />
-      ) : (
-        <ImagePreview
-          url={mediaUrl}
-          fileName={fileName}
-          className={className}
-        />
-      );
-      break;
-    case "video":
-      body = (
-        <VideoPreview
-          url={mediaUrl}
-          mimeType={mimeType ?? null}
-          label={fileName}
-          className={className}
-        />
-      );
-      break;
-    case "audio":
-      body = (
-        <AudioPreview
-          url={mediaUrl}
-          fileName={fileName}
-          mimeType={mimeType ?? null}
-          className={className}
-        />
-      );
-      break;
-    case "pdf":
-      body = fileId ? (
-        <PdfPreview
-          fileId={fileId}
-          remoteUrl={mediaUrl}
-          pageNumber={pageNumber}
-          onPageChange={onPageChange}
-          className={className}
-        />
-      ) : (
-        <BlobPdfPreview
-          blobUrl={mediaUrl}
-          fileName={fileName}
-          pageNumber={pageNumber}
-          onPageChange={onPageChange}
-          className={className}
-        />
-      );
-      break;
-    // Fetch-based previewers need a fileId (bytes come through the Python
-    // /files/{id}/download endpoint via useFileBlob). A blob source has no
-    // fileId — degrade to the generic card, matching the code editor's
-    // prior default arm.
-    case "markdown":
-      body = fileId ? (
-        <MarkdownPreview fileId={fileId} className={className} />
-      ) : (
-        genericCard
-      );
-      break;
-    case "data":
-    case "spreadsheet":
-      body = fileId ? (
-        <DataPreview
-          fileId={fileId}
-          fileName={fileName}
-          className={className}
-        />
-      ) : (
-        genericCard
-      );
-      break;
-    case "code":
-      body = fileId ? (
-        <CodePreview
-          fileId={fileId}
-          fileName={fileName}
-          className={className}
-        />
-      ) : (
-        genericCard
-      );
-      break;
-    // Server-extraction previewer — needs a fileId (the server reads the
-    // bytes); a blob source (code editor) degrades to the generic card.
-    case "office":
-      body = fileId ? (
-        <OfficePreview
-          fileId={fileId}
-          fileName={fileName}
-          className={className}
-        />
-      ) : (
-        genericCard
-      );
-      break;
-    case "html":
-      body = fileId ? (
-        <HtmlPreview
-          url={mediaUrl}
-          fileId={fileId}
-          fileName={fileName}
-          className={className}
-        />
-      ) : (
-        genericCard
-      );
-      break;
-    case "text":
-      body = fileId ? (
-        <TextPreview fileId={fileId} className={className} />
-      ) : (
-        genericCard
-      );
-      break;
-    case "generic":
-    default:
-      body = genericCard;
-  }
+  const viewerSource: MediaViewerSource =
+    source.kind === "fileId"
+      ? { kind: "ref", ref: { file_id: source.fileId } }
+      : { kind: "blob", blob: source.blob, url: source.url };
 
   return (
     <Suspense fallback={loadingFallback ?? <PreviewerSkeleton />}>
-      {body}
+      <MediaFileViewer
+        source={viewerSource}
+        previewKind={previewKind}
+        fileName={fileName}
+        fileSize={fileSize ?? null}
+        mimeType={mimeType ?? null}
+        className={className}
+        pageNumber={pageNumber}
+        onPageChange={onPageChange}
+        generic={generic}
+      />
     </Suspense>
   );
 }
+
+// Registered after the adapters above so the lazy chunks resolve identically.
+registerMediaViewer(
+  "markdown",
+  requiresFileId(
+    ({ fileId, className: cls }) => (
+      <MarkdownPreview fileId={fileId} className={cls} />
+    ),
+    (props) => <MediaFileViewer {...props} previewKind="generic" />,
+  ) as never,
+);
+for (const kind of ["data", "spreadsheet"] as const) {
+  registerMediaViewer(
+    kind,
+    requiresFileId(
+      ({ fileId, fileName: name, className: cls }) => (
+        <DataPreview fileId={fileId} fileName={name} className={cls} />
+      ),
+      (props) => <MediaFileViewer {...props} previewKind="generic" />,
+    ) as never,
+  );
+}
+registerMediaViewer(
+  "office",
+  requiresFileId(
+    ({ fileId, fileName: name, className: cls }) => (
+      <OfficePreview fileId={fileId} fileName={name} className={cls} />
+    ),
+    (props) => <MediaFileViewer {...props} previewKind="generic" />,
+  ) as never,
+);

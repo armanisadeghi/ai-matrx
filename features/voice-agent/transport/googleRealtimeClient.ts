@@ -1,4 +1,4 @@
-import { buildHeaders, resolveBaseUrl } from "@/lib/python-client";
+import { getAccessTokenOrNull, resolveBaseUrl } from "@/lib/python-client";
 
 export type GoogleRealtimeChannel = "live" | "music";
 export type GoogleRealtimeConnectionState =
@@ -31,15 +31,29 @@ function socketUrl(channel: GoogleRealtimeChannel): string {
   return base.toString();
 }
 
+/**
+ * Resolve JUST the Supabase JWT — deliberately NOT `lib/python-client.ts`'s
+ * `buildHeaders`. That helper is mandatory-org (fail-closed on no selected
+ * organization) because every REST/NDJSON transport it serves reaches an
+ * organization-scoped aidream endpoint. This WebSocket route
+ * (`aidream/api/routers/google_specialized.py::_authenticated_setup`) is a
+ * raw FastAPI websocket handler that never runs through `AuthMiddleware` at
+ * all (websocket upgrades bypass the ASGI HTTP middleware stack) and has NO
+ * organization concept server-side today — it only verifies the JWT. Routing
+ * token extraction through `buildHeaders` would incorrectly gate every voice
+ * session on having an organization selected, for a server call that does
+ * not use one. If this endpoint later gains organization scoping, thread it
+ * through the "setup" frame explicitly (see the file header) rather than
+ * reintroducing this coupling.
+ */
 async function accessToken(): Promise<string> {
-  const { headers } = await buildHeaders({}, false);
-  const authorization = headers.Authorization;
-  if (!authorization?.startsWith("Bearer ")) {
+  const token = await getAccessTokenOrNull();
+  if (!token) {
     throw new Error(
       "A signed-in session is required for Google realtime models.",
     );
   }
-  return authorization.slice("Bearer ".length);
+  return token;
 }
 
 /**
