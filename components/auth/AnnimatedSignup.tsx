@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Label } from "../ui/label";
-import { Input } from "../ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import {
     IconBrandGithub,
