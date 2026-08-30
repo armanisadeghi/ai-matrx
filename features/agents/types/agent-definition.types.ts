@@ -180,13 +180,7 @@ export interface VariableCustomComponent {
  *             somehow calls it on an agent they can't see)
  */
 export type AccessLevel =
-  | "owner"
-  | "admin"
-  | "editor"
-  | "viewer"
-  | "system"
-  | "public"
-  | "none";
+  "owner" | "admin" | "editor" | "viewer" | "system" | "public" | "none";
 
 /**
  * Binds a variable to a scope CONTEXT ITEM (`ctx_context_items`). When set, the variable
@@ -685,11 +679,7 @@ true satisfies typeof _agentExecutionFull;
  * "shared" and "accessLevel" fetches patch access metadata only and do NOT change this field.
  */
 export type AgentFetchStatus =
-  | "list"
-  | "execution"
-  | "customExecution"
-  | "full"
-  | "versionSnapshot";
+  "list" | "execution" | "customExecution" | "full" | "versionSnapshot";
 
 /**
  * Rank table for precedence checks. Higher number = higher precedence.
