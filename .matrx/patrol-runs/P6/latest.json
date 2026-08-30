@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "73c40b81-9bae-4c53-a852-9c65c0a73260",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T14:50:45.121Z",
-  "summary": "Certified candidate preserved and queued after integration to origin/main.",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T14:50:51.051Z",
+  "summary": "DELIVERED to origin/main as a certified ancestor; versioned release remains pending in the serialized release lane.",
   "source": "73c40b81-9bae-4c53-a852-9c65c0a73260.json",
-  "eventHash": "87661fbcb37dd043eb1aa2e83339fd43603a935d3072412504368c2fd6dd8b4b"
+  "eventHash": "8a2faabe9ad0f307d70d03769fdbdb0bde000cc00f45d11ff2c78d5270ec973b"
 }
