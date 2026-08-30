@@ -129,6 +129,33 @@
       ],
       "previousEventHash": "a016e75707801873a16a64c1c1b73e31a7599004569eb878d3a393c1d1877402",
       "eventHash": "ca547e17e7c56a96d573805ce26ea95c1a37fdcc587ba7f705e6da24ae1e969b"
+    },
+    {
+      "sequence": 9,
+      "state": "certified",
+      "at": "2026-08-30T14:56:30.086Z",
+      "actor": "codex-p2-certifier",
+      "summary": "CERTIFIED replacement: restored sites adoption is byte-identical to the previously certified owned batch.",
+      "evidence": [
+        "Exact-SHA isolated archive; no shared-checkout edits.",
+        "All owned site/entity-list blobs are byte-identical to previously certified 01e441fdf958ca20cafd5497cc8e007e41d77f70.",
+        "Full exact-candidate type-check passed; focused ESLint passed; 4 Jest suites / 9 tests passed; both restored focused tests are present.",
+        "No replacement-caused defect found."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5",
+        "certifierTaskId": "/root/site_list_certifier",
+        "checks": [
+          "exact candidate pnpm type-check: PASS",
+          "focused ESLint: PASS",
+          "focused Jest: 4 suites / 9 tests PASS",
+          "owned blob identity: PASS",
+          "restored test presence: PASS"
+        ]
+      },
+      "previousEventHash": "ca547e17e7c56a96d573805ce26ea95c1a37fdcc587ba7f705e6da24ae1e969b",
+      "eventHash": "e09f8675df347ca4bba825a890e1c7bc65b1abe28367ba32cb398be86735237f"
     }
   ]
 }

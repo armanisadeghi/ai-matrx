@@ -125,6 +125,8 @@ function build(args: {
   return buildCategoryGroups({
     placementTypes: args.placementTypes ?? ALL_PLACEMENTS,
     surfaceName: args.surfaceName ?? null,
+    availableKeys: new Set(),
+    hasSelection: false,
     shortcuts: args.shortcuts ?? [],
     categories: args.categories ?? [],
     contentBlocks: args.contentBlocks ?? [],
@@ -334,7 +336,7 @@ describe("buildCategoryGroups — placement fidelity", () => {
     expect(find(groups, "on")!.items.map((i) => i.label)).toEqual(["Live"]);
   });
 
-  it("surface-matched shortcuts are first-class; foreign-surface exclusives stay hidden; legacy context matches are flagged", () => {
+  it("offers exact-surface and global shortcuts while hiding foreign-surface shortcuts", () => {
     const groups = build({
       surfaceName: "matrx/notes",
       categories: [makeCategory({ id: "c", label: "C" })],
@@ -356,8 +358,8 @@ describe("buildCategoryGroups — placement fidelity", () => {
     });
     const items = find(groups, "c")!.items;
     const byId = new Map(items.map((i) => [i.id, i]));
-    expect(byId.get("modern")?.legacyMatch).toBe(false);
+    expect(byId.has("modern")).toBe(true);
     expect(byId.has("foreign")).toBe(false);
-    expect(byId.get("legacy")?.legacyMatch).toBe(true);
+    expect(byId.has("legacy")).toBe(true);
   });
 });

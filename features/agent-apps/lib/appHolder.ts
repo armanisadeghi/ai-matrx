@@ -49,7 +49,7 @@
 
 import { useMemo } from "react";
 
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 
 /** OFF — ships dark. The flip is a one-line release (Arman's nod). */

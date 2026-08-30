@@ -59,7 +59,6 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 | `mandate-key.ts`                               | `splitMandateKey` — the ONE lossless parser for canonical `<feature>.<mandate>` keys. Splits only the first dot, preserves later dots, and keeps legacy dotless keys visible as `(unscoped)`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `service.ts` → `fetchMandatePins(mandateKeys)` | Batch read of mandates' SYSTEM DEFAULT pins (master + pinned version + use_latest) for display/fork surfaces — NOT a run path, so version pins are fine here and no binding layer applies. Consumer: research's `useResearchAgentRoles` (the agent-roles page reads DB-truth pins instead of the hardcoded UUID maps that drifted on all 7 roles).                                                                                                                                                                                                                                                                                                                                          |
 | `overrides.ts`                                 | The override surface's data layer. READS ride RLS (fetch mandates + visible bindings + referenced agent names; `fetchMandatePickerData` for one mandate). **WRITES ride the ONE bind path: aidream `PUT/DELETE /mandates/{mandate_key}/binding`** (`putMandateBinding` / `removeMandateBinding` via `callApi`; org principals pass `organization_id` explicitly, user principals let callApi inject the ambient org — incidental there). `parseMandateContract` + `checkMandateContract` (the research-proven superset rule) are the instant client pre-flight; the server's bind-time check is the authority and its 422 detail is shown VERBATIM. Writes invalidate the resolution cache. |
-| `useMandateRunner.ts`                          | **The consumer primitive** — `useMandate` + `useRunAgent` in one: `runMandate(args)` runs the mandate's agent, `unavailable`/`mandateError` drive the disabled state. Migrating a hardcoded call site is two lines (`run({agentId: X_AGENT_ID, …})` → `runMandate({…})`). Resolves at CALL time so a binding saved seconds ago applies to the next run; the mandate's `config_overrides` (the user's binding) win per key over the feature's defaults. Deliberately unassigned automation keys use `{ optional: true }`: the render probe returns `null` without Error Inspector capture, while an actual run remains strict. |
 | `useMandateSet.ts`                             | **The set primitive** — resolve a SET of keys for one surface (a chip row, a mode strip) in ONE pass: parallel `resolveMandate` per key, per-key `MandateState`, invalidation-aware. A key that cannot resolve reports `error` for that key only; the others stay usable. Deliberately unassigned `optionalKeys` still refuse without emitting `console.error` into `system_error`. Consumers: `/chat/new` quick-action chips (`NewChatGreeting`), the response-mode strip (`useResponseModeAgents`). |
 | `notes.ts`                                     | **Notes & observations on a mandate** — `fetchMandateNotes` / `fetchMandateNotesFor` (batched, for a list) / `createMandateNote` / `deleteMandateNote` over `agent.mandate_note`. A note follows the JOB, never the pin: `mandate_id` + text + author + time, with `surface_name` and `observed_agent_id` recorded ALONGSIDE as context. Writes carry an EXPLICIT `organization_id` (`ensureOrgId`). Notes are never fed to an agent implicitly. |
 | `components/MandateNotesPanel.tsx`             | THE notes surface — composer (four fixed kinds: observation / issue / idea / praise; Cmd+Enter saves) plus the history with kind, relative time, author and the surface it was written from. Composed in exactly two places: the Agents header menu's mandate row (`compact`, the moment of truth) and the admin drawer's **Notes & observations** section (review time). Never forked. |
@@ -195,7 +194,7 @@ where deleted_at is null and metadata->>'migration_status' = 'placeholder'
   and metadata->>'side' = 'client';
 ```
 
-Recipe: React run site → `useMandateRunner`; React non-run site (a `defaultAgentId` prop, an on-click launch) → `useMandate` + gate the affordance on resolution; thunk/handler → `await resolveMandate`. Drop `<MandateAgentPicker>` wherever the user should be able to choose. Then move the mandate from aidream's `scripts/seed_mandate_placeholders.py` into a real `declare_mandate(...)` in `aidream/services/mandates/client_mandates.py` and release — `sync_declared_mandates` pops the placeholder marker, so the DB stops claiming the hardcoded path still runs.
+Recipe: React run site → `useHeadlessAgentJson` / `useLiveAgentRun` with `mandateKey` (THE MANDATE DOOR — the server resolves); React non-run site (a `defaultAgentId` prop, an on-click launch) → `useMandate` + gate the affordance on resolution; thunk/handler → `await resolveMandate`. Drop `<MandateAgentPicker>` wherever the user should be able to choose. Then move the mandate from aidream's `scripts/seed_mandate_placeholders.py` into a real `declare_mandate(...)` in `aidream/services/mandates/client_mandates.py` and release — `sync_declared_mandates` pops the placeholder marker, so the DB stops claiming the hardcoded path still runs.
 
 **Migrated (2026-08-22, ROLLOUT F8):** `/chat/new` quick-action chips (9 → `chat.quick_*` + `chat.cx_default`, via `useMandateSet`; `chat.quick_org_chart` seedless → chip disabled with the reason), the response-mode auto-selector (`RESPONSE_MODE_MANDATE_MAP` in cx-chat `local-agents.ts`, the ONE map — public-chat's byte-duplicate deleted; `chat.response_mode_data` seedless → pill disabled), scraper Fact Checker / Keyword Analysis (`scraper.fact_check` / `scraper.keyword_analysis`, both seedless → the tab renders `AnalysisMandateGate`: picker + scraper door; dead ids + `contentVariableId` deleted, variable is the provision's `content`).
 
@@ -213,17 +212,28 @@ Consequences a call site must know:
 - **A version pin still wins** over the door (an explicit "run THIS row"; the mandate path has no `is_version` channel).
 - The rule lives in `execution-system/utils/resolve-start-path.ts`; pinned by its own test plus `execution-system/thunks/__tests__/launch-mandate-config-overrides.test.ts`.
 
-`resolveMandate` / `resolveMandateServer` are therefore **display-side** on this path: naming, painting, gating an affordance, snapshotting an instance. They are still the RUN resolver for `useMandateRunner`/`useRunAgent` and for consumers that persist an agent id — the un-converged remainder (see the gaps below).
+`resolveMandate` / `resolveMandateServer` are therefore **display-side** on this path: naming, painting, gating an affordance, snapshotting an instance. They are still the RUN resolver for bare `useRunAgent` call sites (agent-id callers, no mandate involved) and for consumers that persist an agent id — the un-converged remainder (see the gaps below).
 
 **Known gap — a DURABLE conversation keeps only the agent, not the settings.** Consumers that mint a lasting chat through `createManualInstance` directly (`war_room.room` / `war_room.thread` provisioning, the master-tools `message-thread` handler) pass `mandate.agentId` and drop `configOverrides`. `createManualInstance` DOES take `mandateKey` now (that is what opens the door), so those call sites can converge by passing the key instead of a resolved id — but they persist the id into their own records, so it is a design decision, not a rename. Instance overrides live only in Redux, so even seeding them would evaporate when the conversation is reloaded from the DB — the fix is a design decision (persist per-conversation overrides vs. re-resolve the mandate each turn), not a call-site patch. Consumers that only need a DEFAULT agent id for a picker or a window (`chat.default_new_chat` tiles, `KindAgentButton`, assists `launch_agent`) are correct as they are — they never run the agent themselves.
 
-**Known gap — `useMandateRunner`/`useRunAgent` cannot live-render.** They produce
-no requestId (the stream drains into a local string), so a surface using them
-can only show a spinner — which violates the platform's no-spinner rule
+**`useMandateRunner` is DELETED (2026-08-30).** It was the last client-side
+resolver on a RUN path: it resolved the key in the browser and POSTed
+`/ai/agents/{resolvedId}` with the binding's `config_overrides` echoed back as
+the explicit layer — the exact bug the door fixed for chat. Its three call sites
+(the mandate workspace's goal refiner and input converter, the surface bind
+panel's mapping helper) now run `useHeadlessAgentJson({ mandateKey, expect: "text" })`,
+which launches through `launchAgentExecution` → the door. `useMandate` stays
+beside them for the DISPLAY half: gating the affordance while the key resolves
+to nothing.
+
+**Known gap — bare `useRunAgent` cannot live-render.** It produces no requestId
+(the stream drains into a local string), so a surface using it can only show a
+spinner — which violates the platform's no-spinner rule
 (`docs/handoffs/live-stream-everywhere.md`). A mandate run the user WATCHES goes
 through `useLiveAgentRun` (`features/agents/hooks/useLiveAgentRun.ts`, takes
-`mandateKey`) + `<LiveRunDisplay>`; keep `useMandateRunner` for genuinely invisible
-plumbing only.
+`mandateKey`) + `<LiveRunDisplay>`. The three converged sites above kept their
+button spinners (headless posture, identical behaviour); giving them live
+displays is a UI decision, not a resolution one.
 
 ## A mandate replaces a hardcoded PROMPT too, not just a hardcoded id
 
@@ -279,6 +289,29 @@ entry in `scripts/hardcoded-agents-allowlist.json`. Baseline
 commit time.
 
 ## Change Log
+
+- 2026-08-30 — **THE MANDATE-DOOR FORK CLOSED: `useMandateRunner` deleted.** The
+  one-resolver work left one client-side RUN resolver standing — `useMandateRunner`
+  resolved the key in the browser, POSTed `/ai/agents/{resolvedId}`, and echoed the
+  binding's `config_overrides` back as the request's EXPLICIT layer (the same bug
+  that was defeating chat's own bindings). Its three call sites converged onto
+  `useHeadlessAgentJson({ mandateKey, expect: "text" })` → `launchAgentExecution` →
+  `/ai/mandates/{key}`: the mandate workspace's **goal refiner** and **input
+  converter** (`workspace/TriadSections.tsx`, availability still gated by
+  `AutomationButton`'s own `useMandate` probe) and the surface bind panel's
+  **mapping helper** (`features/surfaces/components/bind/BindingSuggestionsTab.tsx`,
+  which keeps `useMandate` for the unavailable state and now reads its live
+  "writing (N)" counter off the run's own request via `selectAnswerText` instead of
+  a drained local string). The hook file is deleted, not deprecated; the
+  `check-agent-disclosure` run-signal for it went with it. **Id-persistence:** the
+  shape-assists producer (`features/content-ir/studio/shape-assists-producer.ts`)
+  stopped baking `resolveMandate(content_ir.kind_creator).agentId` into every
+  emitted chip — a 30-day chip was pinned to whoever held the job the morning it
+  was emitted — and now stores `mandateKey`, resolved at CLICK time by the
+  `launch_agent` handler, matching its four sibling producers. War Room and the
+  transcript-studio roster deliberately keep persisted ids (the PERSISTED-ID
+  DOCTRINE above: a stored id must win on rebind so existing rows are never
+  rewritten or orphaned).
 
 - 2026-08-29 — **Coverage badges on both mandate LISTS.** The green/orange/red
   scoreboard existed only on the admin console, so a person browsing
@@ -402,7 +435,8 @@ commit time.
   who answered, with no client deploy, and reverted on delete. Still un-converged and still
   resolving client-side to run: `useMandateRunner`/`useRunAgent` (4 consumers), the War Room /
   transcript-studio / content-ir sites that PERSIST an agent id, and the routing-only resolvers
-  that compute a `/chat/a/<agentId>` href.
+  that compute a `/chat/a/<agentId>` href. *(The `useMandateRunner` half of that remainder was
+  closed 2026-08-30 — see the changelog entry for that date.)*
 
 - 2026-08-27 — **The client resolvers were HOLDER-BLIND; a workflow binding resolved to the
   system default.** `resolveMandate` / `resolveMandateServer` never selected `holder_type`, so a

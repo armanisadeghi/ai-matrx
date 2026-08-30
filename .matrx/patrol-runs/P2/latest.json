@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T142407Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:51:25.199Z",
-  "summary": "Replacement candidate 05ad7aa37eb95e8f0f539068ff732ec87a3957d5 is integrated on origin/main and under independent recertification.",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:56:30.086Z",
+  "summary": "CERTIFIED replacement: restored sites adoption is byte-identical to the previously certified owned batch.",
   "source": "20260830T142407Z.json",
-  "eventHash": "ca547e17e7c56a96d573805ce26ea95c1a37fdcc587ba7f705e6da24ae1e969b"
+  "eventHash": "e09f8675df347ca4bba825a890e1c7bc65b1abe28367ba32cb398be86735237f"
 }
