@@ -259,10 +259,6 @@ export default function MobileTaskDetails({
   const subtasks = task.subtasks || [];
   const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const totalSubtasks = subtasks.length;
-  const taskLabels = Array.isArray(task.settings?.labels)
-    ? task.settings.labels
-    : [];
-
   const getApplicationScope = () => {
     const selectionStart = descriptionRef.current?.selectionStart ?? 0;
     const selectionEnd = descriptionRef.current?.selectionEnd ?? selectionStart;
@@ -431,7 +427,7 @@ export default function MobileTaskDetails({
                       priority,
                       projectId: task.projectId || null,
                       assigneeId: task.assigneeId ?? null,
-                  labels,
+                      labels,
                       status,
                       startDate: startDate || null,
                       recurrenceRule,

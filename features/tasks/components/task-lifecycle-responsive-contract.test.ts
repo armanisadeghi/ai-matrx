@@ -105,10 +105,14 @@ describe("task lifecycle responsive contract", () => {
     expect(mobileList).toContain("<NonEditableContextMenu");
     expect(mobileList).toContain("getApplicationScope={getApplicationScope}");
     expect(mobileDetails).toContain("<SurfaceRuntimeProvider");
-    expect(mobileDetails).toContain("getWriteHandlers={getSurfaceWriteHandlers}");
+    expect(mobileDetails).toContain(
+      "getWriteHandlers={getSurfaceWriteHandlers}",
+    );
     expect(mobileDetails).toContain("<NonEditableContextMenu");
     expect(mobileDetails).toContain("buildTasksContextData({");
-    expect(mobileDetails).toContain("surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}");
+    expect(mobileDetails).toContain(
+      "surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}",
+    );
     expect(mobileDetails).toContain("task_labels: (value: unknown)");
     expect(mobileDetails).toContain("TASK_LABEL_OPTIONS.map");
   });
