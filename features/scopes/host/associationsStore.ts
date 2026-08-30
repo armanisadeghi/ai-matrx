@@ -22,11 +22,34 @@
 
 import type { AssociationsStore } from "@ai-matrx/associations/core";
 import { createAssociationsStore } from "@ai-matrx/associations/core";
+import type { AssociationsDataSource } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
+
+/**
+ * The supabase client, narrowed to the package's structural dataSource
+ * contract. The thin wrapper exists because handing tsc the FULL generated
+ * `SupabaseClient<Database>` generic against the port's `DemandedRpcName`
+ * union blows the instantiation-depth budget (TS2589) — the runtime object
+ * is the client itself, untouched.
+ */
+// One deliberate unknown-cast at this boundary: relating the client's huge
+// overloaded generics to the port type directly is what triggers TS2589, so
+// we detach from the generated generics first. The methods are bound to keep
+// supabase-js `this` semantics.
+const client = supabase as unknown as {
+  rpc: AssociationsDataSource["rpc"];
+  from: NonNullable<AssociationsDataSource["from"]>;
+  schema: NonNullable<AssociationsDataSource["schema"]>;
+};
+export const associationsDataSource: AssociationsDataSource = {
+  rpc: (fn, args) => client.rpc(fn, args),
+  from: (table) => client.from(table),
+  schema: (name) => client.schema(name),
+};
 
 let store: AssociationsStore | null = null;
 
@@ -34,8 +57,8 @@ let store: AssociationsStore | null = null;
 export function getAssociationsStore(): AssociationsStore {
   if (!store) {
     store = createAssociationsStore({
-      // Structural subset — a supabase-js client satisfies rpc/from/schema.
-      dataSource: supabase,
+      // Structural subset — the supabase client behind a depth-safe wrapper.
+      dataSource: associationsDataSource,
       identity: {
         requireUserId,
         // Org for created rows/edges (CategorySelect/CategoryTagPicker

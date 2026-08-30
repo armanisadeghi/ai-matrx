@@ -134,6 +134,27 @@ export type {
   CategoriesEntry,
 } from "@ai-matrx/associations";
 
+// ─── Denormalized scope display (scope + its type) ────────────────────
+//
+// A scope joined to its scope-type's presentation fields. Returned by
+// `scopesService.getEntityScopeDetails` / `listEntityScopeTags` so display
+// surfaces (AssignedScopesDisplay, the notes scope sidebar) never join
+// ctx_scopes / ctx_scope_types themselves — the chokepoint owns those tables.
+
+export interface ScopeTypeDisplay {
+  id: string;
+  label_singular: string;
+  label_plural: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export interface ScopeWithType {
+  id: string;
+  name: string;
+  scope_type: ScopeTypeDisplay | null;
+}
+
 // ─── Tree shape (returned by the boot RPC and stored in scopesSlice) ───
 
 export interface ScopeNode {

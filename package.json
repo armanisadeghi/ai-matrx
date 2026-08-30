@@ -274,7 +274,7 @@
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
-    "@ai-matrx/associations": "^0.4.0",
+    "@ai-matrx/associations": "latest",
     "@ai-matrx/capture": "latest",
     "@ai-matrx/content-ir": "latest",
     "@ai-matrx/content-ir-react": "latest",

@@ -116,12 +116,12 @@ export function AssociationsHost({ children }: { children: ReactNode }) {
     let stale = false;
     void Promise.all([
       import("@ai-matrx/associations/core"),
-      import("@/utils/supabase/client"),
-    ]).then(async ([{ assertDemandedSchema }, { supabase }]) => {
+      import("./associationsStore"),
+    ]).then(async ([{ assertDemandedSchema }, { associationsDataSource }]) => {
       {
         try {
           if (stale) return;
-          await assertDemandedSchema(supabase);
+          await assertDemandedSchema(associationsDataSource);
         } catch (error) {
           associationsErrorSink({
             code: "demanded_schema_violation",
