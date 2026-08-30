@@ -95,6 +95,11 @@ import {
   type AgentMenuEntry,
   type AgentMenuCategoryGroup,
 } from "./useUnifiedAgentContextMenu";
+import { buildAvailableKeys } from "../model/requirement-gate";
+import { getManifest } from "@/features/surfaces/manifests/registry";
+import { BASELINE_VALUE_NAMES } from "@/features/surfaces/manifests/_baseline.manifest";
+import { useSurfaceConfig } from "@/features/surfaces/hooks/useSurfaceConfig";
+import type { MenuConfig } from "@/features/surfaces/config/namespace-registry";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import type {
   SurfaceBoundAgentEntry,
@@ -322,11 +327,95 @@ export function useContextMenuActions(
     (p) => resolvedPlacementMode[p] !== "hide",
   );
 
+  /**
+   * THE AMBIENT READS (Phase 1, 2026-08-25). The menu launches agent runs but
+   * never asked what was already true around the user: which organization is
+   * active and which scopes/context they have selected. Collected here — the
+   * engine is the one place with Redux — and landed on a single `ambient`
+   * scope key by `resolveApplicationScope`, so an agent launched from a
+   * right-click stops asking what the app already knows. ONE key, weakest
+   * layer, never overrides a surface (see the baseline manifest's
+   * `AMBIENT_VALUES`).
+   *
+   * NOT here: "is a run currently streaming". Every streaming selector in the
+   * execution system is conversation-scoped (`selectIsStreaming(conversationId)`)
+   * and the menu has no conversation. A global one is worth adding, but it is a
+   * new memoized selector over `activeRequests` that runs on every menu open —
+   * a deliberate change, not a thing to invent in passing.
+   */
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const activeScopeIds = useAppSelector(selectActiveScopeIds);
+
+  // Assemble the scope the menu acts on. Stable for this open (the shell
+  // captured selection before mount), so computing it in render is cheap.
+  //
+  // 🚨 ORDER MATTERS (Phase 6.7). This runs BEFORE the menu hook because
+  // availability is now DERIVED from it: the scope's KEYS are half of what
+  // this surface can read, and an item is offered iff every key it consumes
+  // is readable here.
+  const scope = resolveApplicationScope({
+    getApplicationScope,
+    contextData,
+    selectedText,
+    selectionRange,
+    fallbackContent,
+    surfaceName,
+    ambient: {
+      active_organization_id: activeOrganizationId ?? null,
+      active_scope_ids: activeScopeIds ?? [],
+      surface_name: surfaceName ?? null,
+    },
+  });
+
+  /**
+   * WHAT THIS SURFACE CAN READ — the derived gate's input (THE-MODEL law 3).
+   *
+   * Three sources, unioned, all of them KEY-existence and never
+   * value-population:
+   *   1. the baseline floor — the 5 generic values every menu resolves;
+   *   2. the manifest's DECLARED values (inheritance already merged by the
+   *      registry) — a surface that declares `raw_transcript_text` offers the
+   *      transcript items before a single word has been recorded;
+   *   3. the keys that actually landed in the resolved scope — the honest
+   *      catch for surfaces emitting values they never declared ("Undeclared
+   *      (runtime only)" in the Surface Context window). A read path is a read
+   *      path whether or not anyone wrote it down.
+   */
+  const availableKeys = useMemo(
+    () =>
+      buildAvailableKeys({
+        baselineValueNames: BASELINE_VALUE_NAMES,
+        declaredValueNames: surfaceName
+          ? getManifest(surfaceName)?.values.map((v) => v.name)
+          : undefined,
+        runtimeScopeKeys: Object.keys(scope),
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [surfaceName, Object.keys(scope).sort().join(" ")],
+  );
+
+  /**
+   * THE EXCLUSION VALVE (#43) — the surface's `menu` config namespace, the
+   * one sanctioned override of derived availability. Resolved through the
+   * existing layered surface-config cache (global → org → scope → user), so
+   * it costs no extra fetch: the menu already loads this bundle for agent
+   * roles.
+   */
+  const { getNamespace: getSurfaceNamespace } = useSurfaceConfig(
+    surfaceName ?? "matrx-unregistered/context-menu",
+  );
+  const menuSurfaceConfig = getSurfaceNamespace<MenuConfig>("menu");
+  const excludedItemIds = useMemo(
+    () => new Set(menuSurfaceConfig?.excludedItemIds ?? []),
+    [menuSurfaceConfig],
+  );
+
   const { categoryGroups, loading, refresh } = useUnifiedAgentContextMenu({
     placementTypes: dbPlacementTypes,
-    addedContexts,
-    excludedContexts,
     surfaceName,
+    availableKeys,
+    hasSelection: String(scope.selection ?? "").trim().length > 0,
+    excludedItemIds,
     enabled: dbPlacementTypes.length > 0,
     scope: shortcutScope,
     scopeId,

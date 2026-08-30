@@ -184,10 +184,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/agents/bundles"),
           destination("/administration/agents/executor-surfaces"),
           destination("/administration/agents/lookups"),
-          destination("/administration/mandates", [
-            "/administration/mandates/[mandateKey]",
-            "/administration/mandates/new",
-          ]),
           destination("/administration/agents/mcp-tools/new"),
         ],
       },
@@ -197,6 +193,28 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/agents/reports/agent-drift"),
           destination("/administration/agents/hindsight"),
+        ],
+      },
+    ],
+  },
+  {
+    // A mandate is a named job fulfilled by an Agent, an Orchestra, or a
+    // Workflow — so it is a PEER of Agents, not a child (detach, 2026-08-30).
+    // Management (create/rebind/enable) lives here, super-admin gated; the
+    // user route `/mandates` is browse + self-service only.
+    name: "Mandates",
+    slug: "mandates",
+    iconName: "Plug",
+    iconColor: "text-sky-600",
+    sections: [
+      {
+        name: "Mandates",
+        iconName: "Plug",
+        destinations: [
+          destination("/administration/mandates", [
+            "/administration/mandates/[mandateKey]",
+            "/administration/mandates/new",
+          ]),
         ],
       },
     ],

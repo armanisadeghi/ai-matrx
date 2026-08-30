@@ -51,7 +51,7 @@ import {
   type DraftInput,
 } from "../authoring/service";
 import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
-import { useMandateRunner } from "../useMandateRunner";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { Section } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -99,7 +99,10 @@ export function TriadInputSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<DraftInput[]>(draftInputs);
   const [saving, setSaving] = useState(false);
-  const convert = useMandateRunner(KIND_CONVERTER_MANDATE_KEY, { optional: true });
+  // THE MANDATE DOOR: the key goes to the server, which resolves the Holder.
+  // `AutomationButton` below owns the availability gate (its own `useMandate`
+  // probe), so an unbound automation key never reaches this run.
+  const convert = useHeadlessAgentJson();
   const [converting, setConverting] = useState(false);
 
   const save = async () => {
@@ -118,14 +121,17 @@ export function TriadInputSection({
   const runConvert = async () => {
     setConverting(true);
     try {
-      const text = await convert.runMandate({
+      const text = await convert.run<string>({
+        mandateKey: KIND_CONVERTER_MANDATE_KEY,
+        surfaceKey: `mandate:${KIND_CONVERTER_MANDATE_KEY}`,
+        sourceFeature: "agent-builder",
+        expect: "text",
+        initiation: "user",
         variables: {
           mandate_key: data.mandate.mandate_key,
           mandate_goal: goalOfMandate(data.mandate) ?? "",
           draft_inputs: JSON.stringify(draftInputs),
         },
-        sourceApp: "matrx-frontend",
-        sourceFeature: "agent-builder",
       });
       toast.success("Structure proposal ready — review below.");
       setDraft(applyConversion(draftInputs, text));
@@ -293,7 +299,8 @@ export function TriadGoalSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(goal ?? "");
   const [saving, setSaving] = useState(false);
-  const refine = useMandateRunner(GOAL_WRITER_MANDATE_KEY, { optional: true });
+  // THE MANDATE DOOR — see the note on the Input section's converter run.
+  const refine = useHeadlessAgentJson();
   const [refining, setRefining] = useState(false);
 
   const save = async () => {
