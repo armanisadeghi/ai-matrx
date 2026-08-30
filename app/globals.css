@@ -2298,6 +2298,12 @@
   display: none;
 }
 
+[data-public-layout]:has([data-public-immersive-surface]) {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 [data-public-layout]:has([data-public-immersive-surface]) > [data-public-main] {
   overflow: hidden;
 }

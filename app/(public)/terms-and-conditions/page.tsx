@@ -19,8 +19,8 @@ export const metadata = createRouteMetadata("/terms-and-conditions", {
 
 export default function TermsAndConditionsPage() {
   return (
-    <div className="h-full overflow-y-auto">
-      <article className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
+    <div className="bg-background">
+      <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>SMS Terms and Conditions</h1>
         <p>
           <strong>Last updated:</strong> August 26, 2026

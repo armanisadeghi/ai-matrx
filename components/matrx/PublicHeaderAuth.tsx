@@ -1,29 +1,34 @@
-'use client';
+"use client";
 
-import { Suspense, lazy } from 'react';
-import { useRouter } from 'next/navigation';
-import { LayoutDashboard, LogIn } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { selectUser, selectDisplayName, selectProfilePhoto, selectIsSuperAdmin } from '@/lib/redux/slices/userSlice';
-import { cn } from '@/lib/utils';
-import { useIsMounted } from '@/hooks/use-is-mounted';
+import { Suspense, lazy } from "react";
+import { useRouter } from "next/navigation";
+import { LayoutDashboard, LogIn } from "lucide-react";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  selectUser,
+  selectDisplayName,
+  selectProfilePhoto,
+  selectIsSuperAdmin,
+} from "@/lib/redux/slices/userSlice";
+import { cn } from "@/lib/utils";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { PUBLIC_HEADER_ICON_BUTTON } from "./publicHeaderChrome";
 
 // Lazy load AdminMenu - only loads when user is admin
-const AdminMenu = lazy(() => import('./AdminMenu'));
+const AdminMenu = lazy(() => import("./AdminMenu"));
 
 /**
  * Public Header Auth - Redux-powered
- * 
+ *
  * Reads auth state from Redux (populated by GlobalAuthSync).
  * No direct Supabase calls - single source of truth.
- * 
+ *
  * Shows:
- * - Sign In button for unauthenticated users
- * - User avatar + Dashboard button for authenticated users
+ * - Sign In button for guests and unauthenticated visitors
+ * - User avatar + Dashboard button for non-anonymous account users
  * - AdminMenu dropdown for admin users (lazy loaded)
  */
 export function PublicHeaderAuth() {
@@ -42,13 +47,13 @@ export function PublicHeaderAuth() {
   // error and unmounts the entire subtree.
   const mounted = useIsMounted();
 
-  const isAuthenticated = mounted && !!user.id;
+  const isAuthenticated = mounted && !!user.id && !user.isAnonymous;
 
   // Calculate initials for avatar fallback
   const initials = displayName
-    .split(' ')
+    .split(" ")
     .map((n: string) => n[0])
-    .join('')
+    .join("")
     .toUpperCase()
     .slice(0, 2);
 
@@ -75,18 +80,18 @@ export function PublicHeaderAuth() {
 
         {/* Dashboard Button */}
         <Button
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push("/dashboard")}
           size="sm"
           aria-label="Open dashboard"
           className={cn(
             PUBLIC_HEADER_ICON_BUTTON,
-          "gap-1.5 p-0 text-xs",
+            "gap-1.5 p-0 text-xs",
             "bg-gradient-to-r from-blue-600 to-violet-600",
             "hover:from-blue-700 hover:to-violet-700",
             "text-white border-0",
             "shadow-md shadow-blue-500/20",
             "hover:shadow-lg hover:shadow-blue-500/30",
-            "transition-all duration-300"
+            "transition-all duration-300",
           )}
         >
           <LayoutDashboard className="h-3.5 w-3.5" />
@@ -109,7 +114,7 @@ export function PublicHeaderAuth() {
         "text-white border-0",
         "shadow-md shadow-blue-500/20",
         "hover:shadow-lg hover:shadow-blue-500/30",
-        "transition-all duration-300"
+        "transition-all duration-300",
       )}
     >
       <LogIn className="h-3.5 w-3.5" />

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ExtensionPrivacyPolicyPage() {
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 py-12 px-6">
+    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 px-4 py-8 sm:px-6 sm:py-12">
       <div className="max-w-3xl mx-auto">
         <div className="space-y-2 mb-10">
           <p className="text-sm text-muted-foreground">
@@ -17,7 +17,7 @@ export default function ExtensionPrivacyPolicyPage() {
               ← Back to AI Matrx Privacy Policy
             </Link>
           </p>
-          <h1 className="text-4xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Matrx Extend — Chrome Extension Privacy Policy
           </h1>
           <p className="text-muted-foreground">Last updated: August 22, 2026</p>

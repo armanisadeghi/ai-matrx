@@ -23,8 +23,8 @@ export default function SmsProgramPage() {
   const signInHref = `/login?redirectTo=${encodeURIComponent(SMS_SETTINGS_PATH)}`;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <article className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
+    <div className="bg-background">
+      <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>{SMS_PROGRAM_NAME}</h1>
         <p>
           AI Matrx account holders can choose to receive transactional and

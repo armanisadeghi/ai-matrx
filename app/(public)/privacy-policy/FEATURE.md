@@ -20,6 +20,8 @@ Any Matrx Extend permission or privacy-default change updates this page in the s
 
 ## Change log
 
+- 2026-08-30: Repaired the shared public/legal mobile presentation: legal documents now participate in the single page scroll so the footer follows the full document, mobile gutters and extension-policy heading scale fit narrow screens, and anonymous guest sessions no longer receive account-only feedback/new-feature promotion chrome.
+
 - 2026-08-22: Described the Vault tab — the three user-driven ways a website login is saved (typed, the "Save this login?" prompt after signing in to a site, the agent-requested capture box), HTTPS-only transport to the user's own Vault, encryption at rest, never to a model provider, fill only on the saved site on the user's click/approval, the Settings → Privacy toggle and per-site silence, and the local never-ask site list. No permission change.
 
 - 2026-08-17: Aligned the extension policy with the required all-sites content bridge, opt-in automatic capture, action confirmation modes, and the complete packaged permission set.

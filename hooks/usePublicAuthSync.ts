@@ -105,6 +105,8 @@ export function usePublicAuthSync() {
           dispatch(
             setUser({
               id: user.id,
+              createdAt: user.created_at || null,
+              isAnonymous: user.is_anonymous === true,
               email: user.email || null,
               phone: user.phone || null,
               emailConfirmedAt: user.email_confirmed_at || null,

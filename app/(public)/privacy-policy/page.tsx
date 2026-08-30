@@ -3,10 +3,8 @@ import { siteConfig } from "@/config/extras/site";
 
 const PrivacyPolicyPage = () => {
   return (
-    // PublicLayout provides a safe scroll fallback; this leaf keeps explicit
-    // ownership so its legal-document scrollbar remains the obvious one.
-    <div className="h-full overflow-y-auto">
-      <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
+    <div className="bg-background">
+      <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>Privacy Policy</h1>
         <p>
           <strong>Last updated:</strong> August 17, 2026
@@ -625,7 +623,7 @@ const PrivacyPolicyPage = () => {
           <br />
           Email: <a href="mailto:support@aimatrx.com">support@aimatrx.com</a>
         </p>
-      </div>
+      </article>
     </div>
   );
 };

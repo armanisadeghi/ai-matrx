@@ -27,6 +27,7 @@ export default function FeedbackButton({
 }: FeedbackButtonProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector((state) => state.userAuth.id);
+  const isAnonymous = useAppSelector((state) => state.userAuth.isAnonymous);
   const feedbackFeatureViewCount = useAppSelector(
     (state) => state.userPreferences.system.feedbackFeatureViewCount,
   );
@@ -37,7 +38,13 @@ export default function FeedbackButton({
   const [dismissTick, setDismissTick] = useState(0);
 
   const shouldShowHighlight =
-    !!userId && preferencesLoaded && feedbackFeatureViewCount < 5;
+    // A guest can have a Supabase UUID. Account-only feature promotion must
+    // use the explicit anonymous authority instead of treating any UUID as a
+    // registered user.
+    !!userId &&
+    !isAnonymous &&
+    preferencesLoaded &&
+    feedbackFeatureViewCount < 5;
 
   const handleClick = useCallback(() => {
     if (shouldShowHighlight) setDismissTick((n) => n + 1);

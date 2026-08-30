@@ -12,12 +12,9 @@ export default function PublicLayout({
 }) {
   return (
     <Providers>
-      <div data-public-layout className="flex h-dvh flex-col overflow-hidden">
+      <div data-public-layout className="flex min-h-dvh flex-col">
         <PublicHeader />
-        <main
-          data-public-main
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
-        >
+        <main data-public-main className="min-h-0 flex-1 overflow-x-hidden">
           {children}
         </main>
         <PublicFooter />
