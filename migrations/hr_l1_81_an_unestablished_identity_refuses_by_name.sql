@@ -89,9 +89,10 @@ AS $function$
 declare f hr.workflow_failure%rowtype; inst hr.workflow_instance%rowtype;
         v_uid uuid := auth.uid(); v_res jsonb; v_actions jsonb;
 begin
-  -- 🚨 hr_l1_81: NO IDENTITY, NO RESOLUTION. This read `if v_uid is not null and not capability(…)`
-  -- below, so a caller with no auth context skipped the authorization branch ENTIRELY and could
-  -- resolve any failure in any organization. An unestablished predicate fails CLOSED. There is no
+  -- 🚨 hr_l1_81: NO IDENTITY, NO RESOLUTION. The capability check below used to carry a
+  -- caller-is-established CONJUNCT in front of it, so a caller with no auth context skipped the
+  -- authorization branch ENTIRELY and could resolve any failure in any organization — fail-open on
+  -- identity absence. An unestablished predicate fails CLOSED. There is no
   -- sanctioned system caller of this door (census in this file's header); a privileged session
   -- that must drive it asserts an identity first, so the row records who acted.
   if v_uid is null then
