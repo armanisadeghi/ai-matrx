@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { JsonTruncator } from "@/components/official-candidate/json-truncator/JsonTruncator";
 
 // ─── Sample-data loader (page-level concern, not part of the component) ───────
@@ -48,8 +49,12 @@ export default function DataTruncatorPage() {
           large-tool-sample.json
         </button>
         {loading && (
-          <span className="text-[10px] text-muted-foreground animate-pulse">
-            Loading…
+          <span className="text-[10px] text-muted-foreground">
+            <SuspenseLoader
+              size="xs"
+              centered={false}
+              message="Loading sample data…"
+            />
           </span>
         )}
       </div>

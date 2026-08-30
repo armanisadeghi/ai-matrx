@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import {
   KIND_KEY,
@@ -61,7 +62,10 @@ const FlashcardsBlock = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex h-24 items-center justify-center rounded-lg border border-border bg-muted/30">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        <SuspenseLoader
+          centered={false}
+          message="Loading flashcard preview…"
+        />
       </div>
     ),
   },
@@ -868,7 +872,11 @@ export default function JsonBlockDetectorPage() {
               Reset
             </Button>
             {isRunning && (
-              <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+              <SuspenseLoader
+                size="xs"
+                centered={false}
+                message="Streaming sample JSON…"
+              />
             )}
             <div className="ml-auto flex items-center gap-3">
               <SettingField
@@ -953,11 +961,17 @@ export default function JsonBlockDetectorPage() {
                 <SelectTrigger className="h-8 w-full text-xs">
                   <SelectValue
                     placeholder={
-                      samplesLoading
-                        ? "Loading…"
-                        : samplesError
-                          ? "Failed to load"
-                          : "No samples"
+                      samplesLoading ? (
+                        <SuspenseLoader
+                          size="xs"
+                          centered={false}
+                          message="Loading block samples…"
+                        />
+                      ) : samplesError ? (
+                        "Failed to load"
+                      ) : (
+                        "No samples"
+                      )
                     }
                   />
                 </SelectTrigger>
@@ -1008,11 +1022,17 @@ export default function JsonBlockDetectorPage() {
                 <SelectTrigger className="h-8 w-full text-xs">
                   <SelectValue
                     placeholder={
-                      schemasLoading
-                        ? "Loading…"
-                        : schemasError
-                          ? "Failed to load"
-                          : "No schemas"
+                      schemasLoading ? (
+                        <SuspenseLoader
+                          size="xs"
+                          centered={false}
+                          message="Loading block schemas…"
+                        />
+                      ) : schemasError ? (
+                        "Failed to load"
+                      ) : (
+                        "No schemas"
+                      )
                     }
                   />
                 </SelectTrigger>

@@ -70,11 +70,11 @@ function Test2_StringsArePercent() {
     <div style={{ width: "100%", height: 160, border: "3px solid green" }}>
       <Group orientation="horizontal">
         <Panel defaultSize="30">
-          <Box label={'defaultSize="30"\n= 30% ✓'} bg="bg-green-100" />
+          <Box label={'defaultSize="30"\n= 30%'} bg="bg-green-100" />
         </Panel>
         <Handle />
         <Panel defaultSize="70">
-          <Box label={'defaultSize="70"\n= 70% ✓'} bg="bg-green-50" />
+          <Box label={'defaultSize="70"\n= 70%'} bg="bg-green-50" />
         </Panel>
       </Group>
     </div>
@@ -88,13 +88,13 @@ function Test3_ExplicitPercent() {
       <Group orientation="horizontal">
         <Panel defaultSize="30%" minSize="10%" maxSize="50%">
           <Box
-            label={'defaultSize="30%"\nminSize="10%"\nmaxSize="50%" ✓'}
+            label={'defaultSize="30%"\nminSize="10%"\nmaxSize="50%"'}
             bg="bg-blue-100"
           />
         </Panel>
         <Handle />
         <Panel defaultSize="70%" minSize="50%">
-          <Box label={'defaultSize="70%"\nminSize="50%" ✓'} bg="bg-blue-50" />
+          <Box label={'defaultSize="70%"\nminSize="50%"'} bg="bg-blue-50" />
         </Panel>
       </Group>
     </div>
@@ -148,7 +148,7 @@ function Test5_Vertical() {
       style={{ height: 300, border: "3px solid orange" }}
     >
       <Panel defaultSize="40%" minSize="20%">
-        <Box label={"TOP 40%\nvertical split ✓"} bg="bg-orange-100" />
+        <Box label={"TOP 40%\nvertical split"} bg="bg-orange-100" />
       </Panel>
       <Handle vertical />
       <Panel defaultSize="60%" minSize="20%">
@@ -169,7 +169,7 @@ export default function ResizableTestPage() {
 
       <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-xs space-y-1">
         <div className="font-bold text-yellow-800">
-          ⚠️ Critical: Number vs String sizes
+          Critical: Number vs String sizes
         </div>
         <div>
           <code>defaultSize={"{30}"}</code> → <strong>30 pixels</strong>

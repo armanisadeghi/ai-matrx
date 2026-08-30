@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   AlertTriangle,
@@ -1190,9 +1191,16 @@ export default function DocumentsPage() {
                       className="border rounded p-3 bg-background space-y-2"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono">
+                        <EntityRef
+                          token="note"
+                          id={c.note_id}
+                          name={c.note_id}
+                          showIcon={false}
+                          wrap
+                          labelClassName="text-xs font-mono"
+                        >
                           Note: {c.note_id}
-                        </span>
+                        </EntityRef>
                         <Badge variant="outline" className="text-[10px]">
                           {c.id}
                         </Badge>

@@ -13,7 +13,7 @@
 
 import React, { useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { History, Stars, Undo2 } from "lucide-react";
+import { Check, History, Stars, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FileIcon } from "../../styles/file-icon";
 import { selectSnapshotsForMessage } from "../../redux/codeEditHistorySlice";
@@ -178,14 +178,22 @@ export const MessageFilesStrip: React.FC<MessageFilesStripProps> = ({
                 <History className="h-3 w-3 text-blue-600/80 dark:text-blue-400/80" />
                 <span className="font-mono text-[10px]">
                   {applied > 0 && (
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      ✓{applied}
+                    <span
+                      className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400"
+                      title={`${applied} applied`}
+                    >
+                      <Check className="h-3 w-3" aria-hidden="true" />
+                      {applied}
                     </span>
                   )}
                   {applied > 0 && rejected > 0 && " "}
                   {rejected > 0 && (
-                    <span className="text-red-600 dark:text-red-400">
-                      ✗{rejected}
+                    <span
+                      className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400"
+                      title={`${rejected} rejected`}
+                    >
+                      <X className="h-3 w-3" aria-hidden="true" />
+                      {rejected}
                     </span>
                   )}
                 </span>
