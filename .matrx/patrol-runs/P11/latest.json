@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "20260830T153806Z",
-  "state": "closed",
-  "updatedAt": "2026-08-30T15:46:53.220Z",
-  "summary": "Closed P11 wave 2 with ten core-route families repaired through a final 15-file certified ownership batch",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T15:46:47.513Z",
+  "summary": "Certified corrected wave-2 candidate integrated with candidate ancestry preserved",
   "source": "20260830T153806Z.json",
-  "eventHash": "62ece6a994db27581b7ac2ee176a62740d0a66e39b9b2a1f976f217ce575b756"
+  "eventHash": "30aa6fd8495048806ce303ee10b89cd760b8d034edcafd8754a3b795ab4cfb30"
 }

@@ -167,6 +167,25 @@
       },
       "previousEventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81",
       "eventHash": "badbf3d892b88daa72c7e46473e7447caee99a50deb8499439d7ab1fd2cc5454"
+    },
+    {
+      "sequence": 12,
+      "state": "delivered",
+      "at": "2026-08-30T15:46:47.513Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified corrected wave-2 candidate integrated with candidate ancestry preserved",
+      "evidence": [
+        "Merge 87d68803eb preserves c245945c9f as an ancestor and is on origin/main",
+        "Release lane unchanged after v0.4.1499"
+      ],
+      "delivery": {
+        "candidateSha": "c245945c9fb3f65f6df937536d192d22781915e3",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153806Z",
+        "integratedSha": "87d68803eb",
+        "release": "not-released"
+      },
+      "previousEventHash": "badbf3d892b88daa72c7e46473e7447caee99a50deb8499439d7ab1fd2cc5454",
+      "eventHash": "30aa6fd8495048806ce303ee10b89cd760b8d034edcafd8754a3b795ab4cfb30"
     }
   ]
 }
