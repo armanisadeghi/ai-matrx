@@ -53,7 +53,7 @@ export function DatabaseAdminLayoutClient({
                 handleNavigate(DATABASE_MODULE_HOME);
               }}
               className={cn(
-                "inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-8",
+                "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors lg:min-h-8",
                 isHub
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -88,7 +88,7 @@ export function DatabaseAdminLayoutClient({
                       handleNavigate(page.path);
                     }}
                     className={cn(
-                      "inline-flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:min-h-8",
+                      "inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium transition-colors lg:min-h-8",
                       active
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -126,7 +126,7 @@ export function DatabaseAdminLayoutClient({
                       handleNavigate(page.path);
                     }}
                     className={cn(
-                      "inline-flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                      "inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors lg:min-h-10",
                       active
                         ? "border-primary text-foreground"
                         : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",

@@ -7,7 +7,7 @@ export const DATABASE_MODULE_HOME = "/administration/database";
 export const DEFAULT_DATABASE_SCHEMA = "public";
 
 export type DatabaseToolSection =
-  "legacy" | "sql" | "canonicalization" | "schema";
+  "legacy" | "sql" | "governance" | "canonicalization" | "schema";
 
 export interface DatabaseToolPage extends ModulePage {
   section: DatabaseToolSection;
@@ -41,13 +41,19 @@ export const DATABASE_TOOL_SECTIONS: {
       "Live gate, audit snapshots, and certify/verify workflow for the DB schema transition.",
   },
   {
+    id: "governance",
+    label: "Integrity & relationships",
+    description:
+      "Audit cross-system data invariants and manage the platform relationship graph.",
+  },
+  {
     id: "schema",
     label: "Schema visualization",
     description: "Interactive ER diagrams of the live database schema.",
   },
 ];
 
-/** Single registry for every Database-category admin tool (16 entries). */
+/** Single registry for the database-console tools exposed by this hub. */
 export const databaseToolPages: DatabaseToolPage[] = [
   // ── Legacy dashboard ──────────────────────────────────────────────
   {
@@ -120,6 +126,24 @@ export const databaseToolPages: DatabaseToolPage[] = [
     relative: false,
     description: "Manage database enum types and their values.",
     section: "sql",
+  },
+
+  // ── Integrity and relationship governance ────────────────────────
+  {
+    title: "Data Integrity",
+    path: "/administration/database/data-integrity",
+    relative: false,
+    description:
+      "Run the canonical referential and storage integrity audit and inspect its findings.",
+    section: "governance",
+  },
+  {
+    title: "Relationships Hub",
+    path: "/administration/database/relationships",
+    relative: false,
+    description:
+      "Manage entity types, association rules, sharing, reachability, and schema access planning.",
+    section: "governance",
   },
 
   // ── Canonicalization (8 pages) ────────────────────────────────────

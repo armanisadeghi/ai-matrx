@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Database,
   Loader2,
+  Network,
   ShieldCheck,
   SlidersHorizontal,
   SquareFunction,
@@ -30,6 +31,7 @@ import {
   DEFAULT_DATABASE_SCHEMA,
 } from "./database-tools";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   ADMIN_DATABASE_SURFACE_NAME,
   createAdminDatabaseScope,
@@ -38,6 +40,7 @@ import {
 const SECTION_ICONS: Record<DatabaseToolSection, React.ReactNode> = {
   legacy: <Database className="h-5 w-5" />,
   sql: <SquareFunction className="h-5 w-5" />,
+  governance: <Network className="h-5 w-5" />,
   canonicalization: <ShieldCheck className="h-5 w-5" />,
   schema: <SlidersHorizontal className="h-5 w-5" />,
 };
@@ -63,8 +66,11 @@ function ToolCard({ page }: { page: DatabaseToolPage }) {
         )}
       >
         {isPending && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/70 backdrop-blur-sm">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/70 backdrop-blur-sm">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-xs font-medium text-foreground">
+              Opening {databaseToolLabel(page)}…
+            </span>
           </div>
         )}
         <CardHeader className="px-4 pt-4 pb-2">
@@ -138,59 +144,71 @@ export function DatabaseHubLanding() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="h-full w-full overflow-auto bg-textured">
-      <div className="w-full max-w-[1400px] mx-auto py-6 px-4 sm:px-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">
-            Database Tools Hub
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-3xl">
-            Unified entry point for all {totalTools} database admin tools — SQL
-            editors, legacy dashboard, canonicalization workflow, and schema
-            visualizers. {dupCount} duplicate(s) marked{" "}
-            <Badge variant="outline" className="text-[10px] mx-0.5">
-              Dup
-            </Badge>{" "}
-            so you can compare and pick which to keep.
-          </p>
-        </div>
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        surfaceName={ADMIN_DATABASE_SURFACE_NAME}
+        getApplicationScope={getSurfaceScope}
+        contentSource={{ type: "raw" }}
+      >
+        <div
+          className="min-h-full w-full bg-textured"
+          data-surface-value="console_section"
+        >
+          <div className="mx-auto w-full max-w-[1400px] px-4 py-4 sm:px-6">
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span data-surface-value="database_tool_count">
+                {totalTools} tools
+              </span>
+              <span aria-hidden="true">·</span>
+              <span data-surface-value="default_schema">
+                Default schema: {DEFAULT_DATABASE_SCHEMA}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="inline-flex items-center gap-1.5">
+                {dupCount} duplicates marked
+                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                  Dup
+                </Badge>
+              </span>
+            </div>
 
-        <div className="space-y-8">
-          {DATABASE_TOOL_SECTIONS.map((section) => {
-            const tools = databaseToolPages.filter(
-              (p) => p.section === section.id,
-            );
-            if (tools.length === 0) return null;
+            <div className="space-y-8" data-surface-value="database_tool_pages">
+              {DATABASE_TOOL_SECTIONS.map((section) => {
+                const tools = databaseToolPages.filter(
+                  (p) => p.section === section.id,
+                );
+                if (tools.length === 0) return null;
 
-            return (
-              <section key={section.id}>
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-muted-foreground">
-                    {SECTION_ICONS[section.id]}
-                  </span>
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">
-                      {section.label}
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        ({tools.length})
+                return (
+                  <section key={section.id}>
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="text-muted-foreground">
+                        {SECTION_ICONS[section.id]}
                       </span>
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {section.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {tools.map((page) => (
-                    <ToolCard key={page.path} page={page} />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
+                      <div>
+                        <h2 className="text-sm font-semibold text-foreground">
+                          {section.label}
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            ({tools.length})
+                          </span>
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                          {section.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {tools.map((page) => (
+                        <ToolCard key={page.path} page={page} />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

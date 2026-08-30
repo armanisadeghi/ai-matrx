@@ -345,6 +345,11 @@ export const EnhancedSQLEditor = ({
       </CardHeader>
       <CardContent className="p-3 flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
         <div className="relative flex-shrink-0">
+          {/* Raw textarea is deliberate on this admin/debug surface: SQL is
+              code, and ProTextarea's voice, prose stats, and inline agent
+              affordances would duplicate the surface menu and code-editor
+              controls. The global iOS zoom floor still guarantees 16px on
+              touch input. */}
           <textarea
             value={sqlQuery}
             onChange={(e) => setSqlQuery(e.target.value)}
