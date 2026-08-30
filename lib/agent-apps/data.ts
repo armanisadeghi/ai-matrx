@@ -172,7 +172,29 @@ export async function getAgentApp(idOrSlug: string): Promise<AgentApp> {
   // `string`; `AgentAppRecord` narrows them to literal unions. `parseAgentAppRow`
   // validates those literals at read time (throwing loudly on a bad DB value)
   // so we hand back a genuinely-typed record with no `as unknown as`.
-  return parseAgentAppRow(result.data);
+  const app = parseAgentAppRow(result.data);
+
+  // 🚨 `app.definition` stores the JOB by id; `useAppHolder` resolves it by
+  // KEY. This is the row every `/agent-apps/[id]/**` route hydrates Redux
+  // from, so without the key the signed-in cutover branch reads a fully
+  // migrated app as "does not name a mandate yet", returns `agentId: null`,
+  // and the renderer refuses before spend. Resolved by IDENTITY — never
+  // derived from the slug.
+  if (!app.mandate_id) return app;
+  const mandate = await supabase
+    .schema("mandate")
+    .from("definition")
+    .select("mandate_key")
+    .eq("id", app.mandate_id)
+    .maybeSingle();
+  if (mandate.error) {
+    console.error(
+      `[agent-apps] could not read mandate ${app.mandate_id} for app ${app.id}; ` +
+        `this app will refuse to run for signed-in callers: ${mandate.error.message}`,
+    );
+    return app;
+  }
+  return { ...app, mandate_key: mandate.data?.mandate_key ?? null };
 }
 
 /** Fetch all version snapshots for an app, newest first. RLS scopes by app. */
