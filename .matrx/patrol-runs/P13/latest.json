@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P13",
-  "runId": "20260830T081317Z",
-  "state": "reconciled",
-  "updatedAt": "2026-08-30T08:25:56.842Z",
-  "summary": "Reconciled v0.4.1485 ordering escape with later exact-candidate certification",
-  "source": "20260830T081317Z.json",
-  "eventHash": "88e872dfc9f4f2f56816e5ca1b313b8a01a52c8b0427eb532564a71d2c49b42a"
+  "runId": "20260830T083100Z",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T08:49:28.489Z",
+  "summary": "Certified scope candidate queued for fast integration",
+  "source": "20260830T083100Z.json",
+  "eventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd"
 }
