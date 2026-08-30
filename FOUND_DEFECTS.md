@@ -2594,3 +2594,8 @@ instead — so the string is absent and the suite fails. The CONTRACT the test g
 against the retired `slot_*` tables) still holds; only its positive assertion is stale. Fix is either
 to assert on the storage helpers or to have the test read `lib/supabase/mandateStorage.ts` too. Left
 alone here because changing what a guard asserts is not a change to make inside an unrelated task.
+
+## 2026-08-28 — GA4 campaign-pause test failing (pre-existing, unrelated to marketing restructure)
+`features/marketing/analytics/campaign-pause.test.ts` › "refuses a stale manual caller before dispatch" fails with
+`Cannot read properties of undefined (reading 'error')` inside the GA4 sync path (`features/marketing/analytics/data.ts` / `syncSiteAnalytics`).
+None of these files changed in the agency-model restructure commits; last touched by `d13ebb0a3b fix(org): bind GA4 stream to site tenant` (2026-08-24). Owner of the GA4 stream/tenant work should re-run the suite.
