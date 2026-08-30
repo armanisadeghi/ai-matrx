@@ -30,6 +30,20 @@
       ],
       "previousEventHash": "123c49fe46143909968f86e2b217e08fd7daaa037cfae05d1fd1597ca6931b3a",
       "eventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:31:24.705Z",
+      "actor": "codex-root",
+      "summary": "Leading HIGH repair batch preserved as clean 13-file candidate b0ae0f612e after 18 detector findings closed.",
+      "evidence": [
+        "Post-wave detector: 54 total, 20 HIGH; baseline was 72 total and all 18 eliminated rows were HIGH.",
+        "One inspected legacy ResourcesSection row remains open because its retired skill.resource id cannot safely route as a Matrx file id.",
+        "Candidate remote: origin/patrol/p1-20260830-wave1 at b0ae0f612eebff3250cb9a9ed510ba3979cef36e."
+      ],
+      "previousEventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a",
+      "eventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778"
     }
   ]
 }

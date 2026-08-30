@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Braces, Check, Copy } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";

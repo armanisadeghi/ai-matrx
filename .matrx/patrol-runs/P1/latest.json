@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260830T141853Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:19:05.762Z",
-  "summary": "Implementing three disjoint canonical EntityRef door repairs from the leading still-open HIGH queue.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:31:24.705Z",
+  "summary": "Leading HIGH repair batch preserved as clean 13-file candidate b0ae0f612e after 18 detector findings closed.",
   "source": "20260830T141853Z.json",
-  "eventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a"
+  "eventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778"
 }

@@ -167,6 +167,7 @@ function PageResearchWindowInner({
     setAttachment({ status: "not_started", error: null });
     setPhase({ status: "starting" });
     let topicId: string | null = null;
+    let attachmentOutcome: PageResearchAttachmentStatus = "not_started";
     try {
       const { topic } = await createTopic(organizationId, {
         name: name.trim(),
@@ -180,6 +181,7 @@ function PageResearchWindowInner({
       // ATTACH FIRST, run second. The topic row and its edge are the durable
       // result of this window; the run is the paid work on top. A run that
       // dies still leaves the page pointing at real research.
+      attachmentOutcome = "attaching";
       setAttachment({ status: "attaching", error: null });
       const attached = await links.attach(
         "research_topic",
@@ -190,11 +192,13 @@ function PageResearchWindowInner({
         const attachmentError =
           attached.error ??
           "The association write did not return an error message.";
+        attachmentOutcome = "failed";
         setAttachment({ status: "failed", error: attachmentError });
         toast.error(
           `Research started, but attaching it to this page failed: ${attachmentError}`,
         );
       } else {
+        attachmentOutcome = "attached";
         setAttachment({ status: "attached", error: null });
       }
 
@@ -219,8 +223,18 @@ function PageResearchWindowInner({
     } catch (error) {
       const message = extractErrorMessage(error);
       toast.error(`Page research failed: ${message}`);
-      // The topic exists and is attached — the user keeps it and can re-run
-      // from the research page rather than losing the work.
+      if (
+        topicId &&
+        (attachmentOutcome === "not_started" ||
+          attachmentOutcome === "attaching")
+      ) {
+        setAttachment({
+          status: "failed",
+          error: `The topic was created before page attachment completed: ${message}`,
+        });
+      }
+      // A created topic is kept even when keyword setup or attachment failed;
+      // the visible topic link lets the user inspect or recover it.
       setPhase(topicId ? { status: "done", topicId } : { status: "form" });
     }
   }, [

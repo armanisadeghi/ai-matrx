@@ -25,7 +25,6 @@ import {
   queryCameraPermission,
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
-import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import {
   acquireMicStream,
   releaseMicStream,
@@ -130,6 +129,8 @@ export interface CameraCaptureHost {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   stream: MediaStream | null;
   recording: boolean;
+  /** "user" while the front camera is active — mirror the preview. */
+  facing: "environment" | "user";
 }
 
 export function useCameraCaptureHost(
@@ -404,5 +405,7 @@ export function useCameraCaptureHost(
     videoRef,
     stream,
     recording,
+    /** "user" while the front camera is active — mirror the preview. */
+    facing,
   };
 }

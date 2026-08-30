@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:25:17.716Z",
-  "summary": "Candidate 18a0f0ce19 entered independent adversarial certification for the exact 15-file compact/control batch.",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:31:20.602Z",
+  "summary": "Correcting rejected AgentComparisonPage delta while preserving the exact contextual wrapper and spinner styling.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "71a32cb5a682c3cbb3c3a3fd65397f6a206963dfd0da825f12e5887344b7b6a3"
+  "eventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3"
 }

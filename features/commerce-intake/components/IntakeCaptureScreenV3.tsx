@@ -376,6 +376,7 @@ export function IntakeCaptureScreenV3({
             stream={host.stream}
             framing="viewport-crop"
             videoRef={host.videoRef}
+            mirror={host.facing === "user"}
           />
         }
         cloud={{
