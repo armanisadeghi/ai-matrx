@@ -272,7 +272,14 @@ function emitInterruption(reason: CameraInterruptionReason): void {
 function resolveSpec(spec: CameraLeaseSpec): CameraLeaseSpec {
   const pref = preferredCameraResolver ? preferredCameraResolver() : null;
   const resolved: CameraLeaseSpec = { profile: spec.profile };
-  const deviceId = spec.deviceId ?? pref?.deviceId ?? undefined;
+  // A caller-specified facingMode is an EXPLICIT side intent (the flip
+  // button). The preferred deviceId must not ride along then: deviceId is
+  // the stronger gUM constraint, so a persisted back camera would silently
+  // override "facingMode: user" and the flip would do nothing — the exact
+  // real-phone bug (2026-08-30). Preference fills in only when the caller
+  // expressed no side.
+  const deviceId =
+    spec.deviceId ?? (spec.facingMode ? undefined : pref?.deviceId) ?? undefined;
   const facingMode = spec.facingMode ?? pref?.facingMode ?? undefined;
   if (deviceId) resolved.deviceId = deviceId;
   if (facingMode) resolved.facingMode = facingMode;

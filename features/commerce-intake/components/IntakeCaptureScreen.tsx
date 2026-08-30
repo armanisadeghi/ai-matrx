@@ -1014,7 +1014,8 @@ function ArtifactThumb({ artifact }: { artifact: PendingIntakeArtifact }) {
       return (
         <span className="relative block h-full w-full">
           <video
-            src={artifact.previewUrl}
+            // #t forces iOS to paint the first frame (else: black tile).
+            src={`${artifact.previewUrl}#t=0.01`}
             muted
             playsInline
             className="h-full w-full object-cover"

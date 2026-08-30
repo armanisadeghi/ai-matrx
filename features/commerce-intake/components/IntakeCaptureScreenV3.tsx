@@ -187,13 +187,13 @@ export function IntakeCaptureScreenV3({
     mode: micWarm ? "video" : "photo",
   });
   const onRecordIntent = useCallback(() => setMicWarm(true), []);
-  // Release the warm-hold shortly after a recording ends (the grant is
-  // banked; re-warming on the next press is prompt-free and instant).
-  useEffect(() => {
-    if (host.recording || !micWarm) return;
-    const timer = setTimeout(() => setMicWarm(false), 5000);
-    return () => clearTimeout(timer);
-  }, [host.recording, micWarm]);
+  // Once warmed, the mic stays held until this surface unmounts. A 5s
+  // post-recording release shipped first and was the repeated-prompt bug on
+  // iOS Safari: WebKit's grant is per-ACTIVE-capture there, so tearing the
+  // mic down meant the very next press re-prompted — "asks every single
+  // time". The singleton releases cleanly on unmount via the host's own
+  // teardown; the cost of holding is the mic indicator, the cost of
+  // releasing is a permission dialog over the viewfinder.
 
   // ── Voice notes ──────────────────────────────────────────────────────────
   const [voiceActive, setVoiceActive] = useState(false);
@@ -608,7 +608,8 @@ function ArtifactThumb({ artifact }: { artifact: PendingIntakeArtifact }) {
       return (
         <span className="relative block h-full w-full">
           <video
-            src={artifact.previewUrl}
+            // #t forces iOS to paint the first frame (else: black tile).
+            src={`${artifact.previewUrl}#t=0.01`}
             muted
             playsInline
             className="h-full w-full object-cover"
