@@ -150,7 +150,7 @@ page's usage, never a global rule:
   `applyGroomerPreset` over its groomer sections — never a second list).
   `MatrxDataTable` takes `copy.aiVariants`/`copy.aiCustom` for the toolbar
   view copy.
-- **The Groomer is an item inside the page-level Copy-for-AI dropdown.** It
+- **The Groomer is an item inside the page-level unified menu.** It
   opens a WindowPanel where the user grooms the whole-page payload: sections with
   `full/compact/brief/off` dials, Everything/Balanced/Minimal presets, live
   size (chars + ~tokens), live preview. Full contract in the README. The
@@ -171,7 +171,7 @@ page's usage, never a global rule:
    (transcript levers), `conversationTranscript.ts` (reference pure builder),
    `features/cx-explorer/model-context/wire-ai-source.ts` (honest stubs +
    mirrored metrics). Its payload shaping is the reference; consolidate its
-   legacy separate JSON-copy control into the canonical AI dropdown.
+   legacy separate JSON-copy control into the canonical unified menu.
 2. **Backlinks** — `features/marketing/components/backlinks/BacklinksWorkspace.tsx`:
    full-granularity page (cards + dimension lists + table + groomer), presets
    derived from the groomer sections.
@@ -186,7 +186,7 @@ page's usage, never a global rule:
 ```tsx
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
-// per-row / per-card — compact icon pair:
+// per-row / per-card — one compact icon:
 <CopyButtons
   size="icon"
   label={`Sandbox ${row.sandbox_id}`}      // used in toast + tooltip
@@ -201,12 +201,12 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
   })}
 />
 
-// whole-list / whole-page — the same icon-only pair in the header/toolbar:
+// whole-list / whole-page — the same icon-only control in the header/toolbar:
 <CopyButtons
   size="sm"
   label="All sandboxes"
   human={() => list.map(summary).join("\n\n")}
-  json={() => list} // becomes an AI-dropdown item, never a third control
+  json={() => list} // becomes the second menu item, never another icon
   agent={() => ({ kind: "sandbox-instances", location, description,
                   data: list, attributes: { count: list.length },
                   context: { filter, total } })}
@@ -216,28 +216,29 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 ### Tables: use the built-in config, never hand-wire rows
 
 `MatrxDataTable` takes a `copy` config (`rowKind`/`listKind`/`humanRow`/…) and
-delivers ALL of: per-row two-control copy sets, toolbar this-view pair + ExportMenu
-(JSON + CSV downloads of the current view), a record pair in the row-window header, and
-per-field hover pairs in `DataRowInspector` (side panel + window). Page KPIs,
+delivers ALL of: per-row single-icon action menus, a toolbar this-view menu
+(Copy + JSON + AI + JSON/CSV/Excel downloads + Google Sheets), a record control
+in the row-window header, and per-field hover controls in `DataRowInspector`
+(side panel + window). Page KPIs,
 warnings, and live filters that must survive a zero-row view go in
 `copy.listContext`; mirror the same scalar counts in `listAttributes` and
 `rowAttributes`. Also pass
 `window={{ title }}` so rows open the record window.
 **Page already has its own header row above the table?** Set
-`copy.showToolbar: false` and put the view copy + ExportMenu IN that row —
+`copy.showToolbar: false` and put one `CopyButtons` with `export` IN that row —
 otherwise the table renders a near-empty toolbar row holding only copy icons
 (the exact mess Arman flagged on backlinks). Table titles are user words
 ("Backlinks"), never internal ("Stored backlink rows"); counts are a subtle
 muted `tabular-nums` beside the title, never a sentence pushing the search.
 `JsonInspector` takes `agentCopy` for raw-JSON surfaces.
 
-### Whole-page: one pair, Groomer inside the AI dropdown
+### Whole-page: one control, Groomer inside the menu
 
-Page header gets one icon-only `CopyButtons` pair. Its AI dropdown contains
+Page header gets one icon-only `CopyButtons` control. Its menu contains
 JSON, the what-I-see payload, Everything, shaped variants, and the Groomer
 custom workspace whose sections mirror the page's areas. Declare sections once
 and derive the quick payload from `sections.build("full")` — never maintain two
-section lists or place another launcher beside the pair. Supply the workspace
+section lists or place another launcher beside the control. Supply the workspace
 through `groomer={getGroomerConfig}` on that same `CopyButtons`.
 
 ### Step-by-step
@@ -276,9 +277,9 @@ first and emit the gap list; only then wire, batch by batch:
    FEATURE.md are the fast index; `grep` for `.map(` in its components to
    find every rendered list.
 2. **Classify each rendered data element** as one of: **list/table** (needs
-   row pair + view copy + ExportMenu), **record/detail** (header pair +
-   per-field), **field group / metric cards** (hover-reveal `xs` pairs),
-   **whole page** (one pair with Groomer inside its AI dropdown when multi-section), or **non-record
+   row control + view menu with export), **record/detail** (header control +
+   per-field), **field group / metric cards** (hover-reveal `xs` controls),
+   **whole page** (one control with Groomer inside its menu when multi-section), or **non-record
    tool** (composer/visualizer — SKIP, no forced buttons).
 3. **Size each one's AI control** (single icon / `aiVariants` dropdown /
    `+aiCustom` composer) per the sized-to-data table above, and note truncated
@@ -317,34 +318,34 @@ first and emit the gap list; only then wire, batch by batch:
 
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
   window (`AgentCopyGroomerWindow` + `groomer-types.ts`) routed from the one AI
-  dropdown; a separate launcher beside the pair is forbidden.
+  menu; a separate launcher beside the control is forbidden.
 - Graded Copy-for-AI variants: `AiCopyMenu`, `CopyButtons.aiVariants`,
   `CopyButtons.aiCustom`, `MatrxDataTable copy.aiVariants/aiCustom`, shared
   `clipboard.ts`, plus `buildGroomerPresetPayload` / `groomerPresetVariants`
   (groomer-types) and `keyFieldsAiVariant` (marketing `copy-payloads.ts`).
   Wired on the medium/massive marketing site tabs (keywords, ranks, findings,
   analysis, audit, links, crawls, discovery, cost + backlinks reference);
-  small bounded tabs deliberately keep the plain pair — the sized-to-data call
+  small bounded tabs deliberately keep the plain single control — the sized-to-data call
   is part of the job. `AiCopyMenu` remains in step with aidream
   `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`.
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
-  pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
+  menus; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
 - Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`,
   `features/marketing/components/backlinks/format.ts`,
   `features/sharing/format.ts`.
 - **Sharing / access (2026-08-15)** — wired in `features/sharing/*`, so every
   surface that renders sharing UI gained copy at once (ShareModal and its
   window, file info, notes, RAG data stores, agent share panel, marketing site
-  access). `PermissionsList`: per-grant hover pair, list pair, ExportMenu
+  access). `PermissionsList`: per-grant and list controls with export
   (JSON + CSV) over ALL grants, `ShowAllToggle` above a 12-row preview, and a
-  copyable empty state. `AccessSummaryPanel`: panel + per-reason pairs,
+  copyable empty state. `AccessSummaryPanel`: panel + per-reason controls,
   reason CSV export, and a payload for its ERROR branch (a failed reachability
   read means UNKNOWN, never "private"); its reason rows now come from the
   shared `accessReasonRows` extractor that the view itself renders, so copy
   cannot drift from screen. `PublicAccessTab` declares its rendered sentences
   once and both renders and copies them. The share tabs stay composers — no
   forced record buttons — but their rendered failures are copyable with LIVE
-  form state. `SiteAccessWorkspace` adds the page pair + ExportMenu, threads
+  form state. `SiteAccessWorkspace` adds the page unified menu, threads
   one `SharingCopyContext` (identity + KPIs) into every child, and offers an
   "Errors & access blockers" variant beside the what-I-see default.
   `accessKpis` is the what-I-see KPI mirror here, the `auditPageKpis` analogue.
@@ -388,7 +389,7 @@ first and emit the gap list; only then wire, batch by batch:
   the red-banner text verbatim.
   `features/agents/components/shortcuts/AgentShortcutsPanel` — rendered row
   projection (surface first), count cards mirrored into every payload, error
-  banner captured verbatim with its own pair; fat raw records demoted to
+  banner captured verbatim with its own control; fat raw records demoted to
   "Everything". Shared shapes in `features/agents/format.ts` +
   `features/agent-shortcuts/format.ts`.
 - **`features/marketing/content-plan` — the whole module (2026-08-15).** Wired
@@ -399,8 +400,8 @@ first and emit the gap list; only then wire, batch by batch:
   `EntityManager`'s two lists, the `PlanDriftBar` KPI strip and
   `PlanDriftSheet` worklist, `PlanAiRunsView`, `NodeRealityCard`, the
   form-heavy `BriefEditor` (payload from live `lines`, never the fetched row),
-  and the workbench's page-level pair with its six-section Groomer inside the
-  AI dropdown. Shared
+  and the workbench's page-level control with its six-section Groomer inside the
+  unified menu. Shared
   summaries + the KPI mirror: `features/marketing/content-plan/format.ts`
   (`contentPlanKpis` — the module's `auditPageKpis`). Fixed while there:
   `PlanSitesList`'s `.slice(0, 4)` status chips now say "+N more".

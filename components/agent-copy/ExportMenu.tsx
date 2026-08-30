@@ -2,8 +2,8 @@
 
 /**
  * ExportMenu — the "Export" dropdown for any data surface. Prefer passing
- * its items through `CopyButtons export={{ items }}` so it sits in the
- * even-width group. Standalone use is for surfaces that export without copy.
+ * its items through `CopyButtons export={{ items }}` so it joins the unified
+ * menu. Standalone use is for surfaces that export without any copy action.
  * Each item downloads a file built at click time (JSON, CSV, payload text…).
  *
  * Pass `sheetRows` and the menu also offers "Send to Google Sheet" — the same
@@ -40,8 +40,8 @@ export interface ExportMenuProps {
   size?: CopyActionSize | "sm";
   appearance?: CopyActionAppearance;
   /**
-   * Fill one even-width slot inside {@link CopyActionGroup}. Icon-only —
-   * the visible "Export" label is not used in a group.
+   * Fill one legacy grouped slot. Icon-only — the visible "Export" label is
+   * not used in a group.
    */
   grouped?: boolean;
   disabled?: boolean;

@@ -56,16 +56,16 @@ export interface CopyButtonsProps {
    */
   agent?: Resolvable<AgentPayloadInput | string>;
   /**
-   * When set, adds a JSON entry to the Copy-for-AI dropdown. It copies this
-   * value as pretty-printed JSON without adding a third top-level control.
+   * When set, adds Copy JSON as the second unified-menu action. It copies this
+   * value as pretty-printed JSON without adding another top-level control.
    * Pass the raw record/rows wherever structured data should remain available.
    */
   json?: Resolvable<unknown>;
   /** Used in toasts and tooltips, e.g. "Sandbox sbx-123" or "All sandboxes". */
   label: string;
   /**
-   * All sizes are icon-only: "xs" = micro pair (dense list items, metric
-   * cards, per-field); "icon" = compact pair (rows/cards); "sm" = header pair.
+   * All sizes are icon-only: "xs" = micro control (dense list items, metric
+   * cards, per-field); "icon" = compact control (rows/cards); "sm" = header.
    */
   size?: CopyActionSize;
   /** Visual chrome. `bare` removes borders and persistent/interactive fills. */
@@ -86,7 +86,7 @@ export interface CopyButtonsProps {
    */
   export?: Pick<ExportMenuProps, "items" | "sheetRows">;
   /**
-   * Drop any segment even when its data is passed. Cards that share a
+   * Drop any action category even when its data is passed. Cards that share a
    * builder with a page header use `hide={["export"]}`.
    */
   hide?: CopyActionId[];

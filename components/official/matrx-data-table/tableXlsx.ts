@@ -1,6 +1,10 @@
 import * as XLSX from "xlsx";
 
-import { exportFilename } from "@/components/agent-copy/export";
+import {
+  downloadFile,
+  exportFilename,
+} from "@/components/agent-copy/export";
+import { toast } from "@/lib/toast";
 import { columnId, getCellValue, stringifyCellValue } from "./filter-engine";
 import type { MatrxColumnDef } from "./types";
 
@@ -33,7 +37,15 @@ export function downloadTableAsXlsx<T>({
   const workbook = XLSX.utils.book_new();
   const sheetName = label.replace(/[\\/?*[\]:]/g, " ").trim().slice(0, 31) || "Data";
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-  XLSX.writeFile(workbook, exportFilename(label, "xlsx"), {
+  const bytes = XLSX.write(workbook, {
+    type: "array",
+    bookType: "xlsx",
     compression: true,
   });
+  downloadFile(
+    exportFilename(label, "xlsx"),
+    bytes,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  toast.success(`${label} exported (XLSX)`);
 }
