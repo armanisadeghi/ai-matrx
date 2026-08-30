@@ -184,8 +184,12 @@ export default function SystemJobsPage() {
   }, []);
 
   useEffect(() => {
-    void load();
-    void loadDb();
+    const timer = window.setTimeout(() => {
+      void load();
+      void loadDb();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [load, loadDb]);
 
   const markBusy = (id: string, on: boolean) =>
@@ -217,7 +221,9 @@ export default function SystemJobsPage() {
       const updated = await patchSystemTask(t.id, { enabled: !t.enabled });
       applyPatched(updated);
       toast.success(
-        updated.enabled ? `${updated.title} enabled` : `${updated.title} disabled`,
+        updated.enabled
+          ? `${updated.title} enabled`
+          : `${updated.title} disabled`,
       );
     } catch (err) {
       // The server refuses enabling a task with no registered handler — its
@@ -258,153 +264,158 @@ export default function SystemJobsPage() {
   // No useMemo: the React Compiler is on repo-wide, and these cells close over
   // live handlers (`busy`, toggleEnabled, runNow) that must stay fresh.
   const columns: MatrxColumnDef<SystemTaskResponse>[] = [
-      {
-        id: "title",
-        accessorKey: "title",
-        header: "Job",
-        width: 240,
-        cell: (r) => (
-          <div className="min-w-0">
-            <div className="font-medium truncate">{r.title}</div>
-            {r.description && (
-              <div
-                className="text-xs text-muted-foreground line-clamp-1"
-                title={r.description}
-              >
-                {r.description}
-              </div>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "tool_name",
-        accessorKey: "tool_name",
-        header: "Tool",
-        width: 200,
-        cell: (r) => (
-          <span className="font-mono text-xs truncate" title={r.tool_name ?? undefined}>
-            {r.tool_name ?? "—"}
-          </span>
-        ),
-      },
-      {
-        id: "state",
-        header: "State",
-        accessorFn: (r) => (r.enabled ? "Enabled" : "Disabled"),
-        filter: "select",
-        width: 150,
-        cell: (r) => (
-          <span className="flex flex-wrap items-center gap-1">
+    {
+      id: "title",
+      accessorKey: "title",
+      header: "Job",
+      width: 240,
+      cell: (r) => (
+        <div className="min-w-0">
+          <div className="font-medium truncate">{r.title}</div>
+          {r.description && (
+            <div
+              className="text-xs text-muted-foreground line-clamp-1"
+              title={r.description}
+            >
+              {r.description}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "tool_name",
+      accessorKey: "tool_name",
+      header: "Tool",
+      width: 200,
+      cell: (r) => (
+        <span
+          className="font-mono text-xs truncate"
+          title={r.tool_name ?? undefined}
+        >
+          {r.tool_name ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "state",
+      header: "State",
+      accessorFn: (r) => (r.enabled ? "Enabled" : "Disabled"),
+      filter: "select",
+      width: 150,
+      cell: (r) => (
+        <span className="flex flex-wrap items-center gap-1">
+          <Badge
+            variant={r.enabled ? "secondary" : "outline"}
+            className="text-[10px]"
+          >
+            {r.enabled ? "Enabled" : "Disabled"}
+          </Badge>
+          {r.handler_registered === false && (
             <Badge
-              variant={r.enabled ? "secondary" : "outline"}
-              className="text-[10px]"
+              variant="destructive"
+              className="gap-0.5 text-[10px]"
+              title="No handler is registered on the server for this tool — enabling will be refused."
             >
-              {r.enabled ? "Enabled" : "Disabled"}
+              <AlertTriangle className="h-2.5 w-2.5" />
+              handler missing
             </Badge>
-            {r.handler_registered === false && (
-              <Badge
-                variant="destructive"
-                className="gap-0.5 text-[10px]"
-                title="No handler is registered on the server for this tool — enabling will be refused."
-              >
-                <AlertTriangle className="h-2.5 w-2.5" />
-                handler missing
-              </Badge>
-            )}
-            {r.handler_gate_pending && (
-              <Badge
-                variant="outline"
-                className="border-warning/60 text-[10px]"
-                title="The handler is registered but waiting on a pending approval gate."
-              >
-                gate pending
-              </Badge>
-            )}
-          </span>
-        ),
-      },
-      {
-        id: "cadence",
-        header: "Cadence",
-        accessorFn: (r) => cadenceText(r),
-        width: 220,
-        cell: (r) => {
-          const trig = r.trigger;
-          if (!trig) {
-            return <span className="text-xs text-muted-foreground">No trigger</span>;
-          }
-          if (trig.type === "cron") {
-            const expr = String(
-              (trig.config as Record<string, unknown> | null)?.expression ?? "",
-            );
-            const hint = cronHint(expr);
-            return (
-              <div className="min-w-0">
-                <span className="font-mono text-xs">{expr || "cron"}</span>
-                {hint && (
-                  <div
-                    className="text-[11px] text-muted-foreground line-clamp-1"
-                    title={hint}
-                  >
-                    {hint}
-                  </div>
-                )}
-              </div>
-            );
-          }
-          return (
-            <span className="text-xs">
-              {cadenceText(r)}
-              {trig.enabled === false && (
-                <span className="ml-1 text-muted-foreground">(trigger off)</span>
-              )}
-            </span>
-          );
-        },
-      },
-      {
-        id: "next_due",
-        header: "Next due",
-        accessorFn: (r) => r.trigger?.next_due_at ?? "",
-        width: 120,
-        cell: (r) => (
-          <span className="text-xs">
-            {r.enabled && r.trigger?.next_due_at
-              ? humanizeRelative(r.trigger.next_due_at)
-              : "—"}
-          </span>
-        ),
-      },
-      {
-        id: "last_run",
-        header: "Last run",
-        accessorFn: (r) => r.last_run?.status ?? "",
-        width: 170,
-        cell: (r) => {
-          const run = r.last_run;
-          if (!run?.status) {
-            return <span className="text-xs text-muted-foreground">Never</span>;
-          }
-          const when = run.finished_at ?? run.started_at;
-          return (
-            <span
-              className="flex items-center gap-1.5"
-              title={run.error_message ?? undefined}
+          )}
+          {r.handler_gate_pending && (
+            <Badge
+              variant="outline"
+              className="border-warning/60 text-[10px]"
+              title="The handler is registered but waiting on a pending approval gate."
             >
-              <Badge variant={lastRunTone(run.status)} className="text-[10px]">
-                {run.status}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {when ? humanizeRelative(when) : ""}
-              </span>
-              {run.error_message && (
-                <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
-              )}
-            </span>
+              gate pending
+            </Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "cadence",
+      header: "Cadence",
+      accessorFn: (r) => cadenceText(r),
+      width: 220,
+      cell: (r) => {
+        const trig = r.trigger;
+        if (!trig) {
+          return (
+            <span className="text-xs text-muted-foreground">No trigger</span>
           );
-        },
+        }
+        if (trig.type === "cron") {
+          const expr = String(
+            (trig.config as Record<string, unknown> | null)?.expression ?? "",
+          );
+          const hint = cronHint(expr);
+          return (
+            <div className="min-w-0">
+              <span className="font-mono text-xs">{expr || "cron"}</span>
+              {hint && (
+                <div
+                  className="text-[11px] text-muted-foreground line-clamp-1"
+                  title={hint}
+                >
+                  {hint}
+                </div>
+              )}
+            </div>
+          );
+        }
+        return (
+          <span className="text-xs">
+            {cadenceText(r)}
+            {trig.enabled === false && (
+              <span className="ml-1 text-muted-foreground">(trigger off)</span>
+            )}
+          </span>
+        );
       },
+    },
+    {
+      id: "next_due",
+      header: "Next due",
+      accessorFn: (r) => r.trigger?.next_due_at ?? "",
+      width: 120,
+      cell: (r) => (
+        <span className="text-xs">
+          {r.enabled && r.trigger?.next_due_at
+            ? humanizeRelative(r.trigger.next_due_at)
+            : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "last_run",
+      header: "Last run",
+      accessorFn: (r) => r.last_run?.status ?? "",
+      width: 170,
+      cell: (r) => {
+        const run = r.last_run;
+        if (!run?.status) {
+          return <span className="text-xs text-muted-foreground">Never</span>;
+        }
+        const when = run.finished_at ?? run.started_at;
+        return (
+          <span
+            className="flex items-center gap-1.5"
+            title={run.error_message ?? undefined}
+          >
+            <Badge variant={lastRunTone(run.status)} className="text-[10px]">
+              {run.status}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {when ? humanizeRelative(when) : ""}
+            </span>
+            {run.error_message && (
+              <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
+            )}
+          </span>
+        );
+      },
+    },
   ];
 
   // Rendered in the table's own trailing Actions column (`rowActions`) — a
@@ -558,7 +569,10 @@ export default function SystemJobsPage() {
       filter: "select",
       width: 110,
       cell: (r) => (
-        <Badge variant={r.active ? "secondary" : "outline"} className="text-[10px]">
+        <Badge
+          variant={r.active ? "secondary" : "outline"}
+          className="text-[10px]"
+        >
           {r.active ? "Active" : "Inactive"}
         </Badge>
       ),
@@ -709,9 +723,9 @@ export default function SystemJobsPage() {
         <div className="mb-1.5">
           <h2 className="text-sm font-medium">Database jobs (pg_cron)</h2>
           <p className="text-xs text-muted-foreground">
-            SQL scheduled inside Postgres itself — pruning, refreshes,
-            partition upkeep. Same controls; no Run now (several are
-            destructive purges, and pg_cron has no run-once).
+            SQL scheduled inside Postgres itself — pruning, refreshes, partition
+            upkeep. Same controls; no Run now (several are destructive purges,
+            and pg_cron has no run-once).
           </p>
         </div>
         <MatrxDataTable
@@ -728,8 +742,7 @@ export default function SystemJobsPage() {
               ? "Database jobs could not be loaded"
               : "No database jobs",
             description:
-              dbLoadError ??
-              "The database has no pg_cron jobs registered.",
+              dbLoadError ?? "The database has no pg_cron jobs registered.",
           }}
           toolbar={{
             search: true,
@@ -972,7 +985,7 @@ function SystemJobEditDialog({
                 setArgsText(e.target.value);
                 setArgsTouched(true);
               }}
-              placeholder='Leave untouched to keep the current args. {} clears them.'
+              placeholder="Leave untouched to keep the current args. {} clears them."
             />
             <p className="text-xs text-muted-foreground">
               Sent as <span className="font-mono">variables_args</span> only if
