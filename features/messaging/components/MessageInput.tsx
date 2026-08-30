@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendTapButton } from "@ai-matrx/tap-target/buttons";
@@ -11,7 +12,6 @@ import {
   composeTextWithAttachments,
   type AttachedReference,
 } from "@/features/matrx-envelope/referenceText";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void;
@@ -198,7 +198,7 @@ export function MessageInput({
         </ul>
       )}
       <div className="relative w-full">
-        <ProTextarea
+        <Textarea
           ref={textareaRef}
           value={content}
           onChange={handleChange}

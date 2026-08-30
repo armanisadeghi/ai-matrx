@@ -14,13 +14,13 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Laptop, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import {
   checkLocalResumable,
   startLocalRuntimeSession,
   type LocalResumableVerdict,
 } from "@/features/ai-work/lib/matrxLocalRuntime";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 type VerdictState =
   | { state: "loading" }
@@ -149,7 +149,7 @@ export function ContinueOnMyMacPanel({
             , so this is a NATIVE resume — the session continues with its full
             history, using your own Claude Code login.
           </p>
-          <ProTextarea
+          <Textarea
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             rows={3}

@@ -26,7 +26,6 @@ import type {
   ConversationMessage,
   ConversationResource,
 } from "./_legacy-stubs";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ============================================================================
 // ATTACHED RESOURCES DISPLAY (structured array — images, files, etc.)
@@ -241,7 +240,7 @@ export function UserMessage({
         {isEditing ? (
           // ── Edit mode ──────────────────────────────────────────────
           <div className="p-2 space-y-2">
-            <ProTextarea
+            <textarea
               ref={textareaRef}
               value={editContent}
               onChange={handleEditChange}

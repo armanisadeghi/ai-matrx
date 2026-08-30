@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
 import { useAiChat } from '@/hooks/flashcard-app/useAiChat';
@@ -18,7 +19,6 @@ import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
 import type { ChatMessage } from "@/types/flashcards.types";
 import { QuickActionButtons } from './prompts-buttons';
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AiChatModalProps {
     isOpen: boolean;
@@ -169,7 +169,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                     />
 
                     <div className="relative w-full">
-                        <ProTextarea
+                        <Textarea
                             ref={textAreaRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}

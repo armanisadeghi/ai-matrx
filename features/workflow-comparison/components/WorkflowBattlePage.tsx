@@ -12,9 +12,16 @@
  *
  * Reuse: the served input surface (`ServedInputFields` +
  * `unsatisfiedServedInputs` — the same form contract the real run form
- * uses), `WorkflowRunBoard` for live per-node progress (the canonical
- * zero-config run view), the pure blind helpers from Agent Battle, and the
- * durable `workflow.comparison` row read directly from Supabase.
+ * uses), the pure blind helpers from Agent Battle, and the durable
+ * `workflow.comparison` row read directly from Supabase.
+ *
+ * 🚨 `WorkflowRunBoard` is NOT canonical, and this comment used to say it was.
+ * It is scheduled for deletion (UI-CENSUS #35); the canonical run controls are
+ * `run/RunControlBar.tsx` (#34). It is used here only because each arm has a
+ * `run_id` and no resolved workflow definition, and `RunStage` requires one —
+ * see the deletion banner in `WorkflowRunBoard.tsx` for the exact delta that
+ * has to close before it can go. Calling a delete-scheduled component
+ * "canonical" is how a scheduled deletion grows dependants instead of dying.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

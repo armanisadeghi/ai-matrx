@@ -39,7 +39,6 @@ import { cn } from "@/lib/utils";
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface NewChatLandingInputProps {
   /** Default-agent conversation bound to this input — same Redux state the
@@ -303,7 +302,7 @@ export function NewChatLandingInput({
             agentId,
           })}
         >
-          <ProTextarea
+          <textarea
             ref={textareaRef}
             value={visibleText}
             onChange={(e) =>

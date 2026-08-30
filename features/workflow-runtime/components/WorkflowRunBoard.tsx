@@ -13,6 +13,38 @@
  * Rendering law compliance: streamed content renders ONLY via
  * `LiveRunDisplay` (→ MarkdownStream requestId), settled kind-checked output
  * via `KindInstanceRender`. No hand-parsed stream anywhere.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 🚨 THIS COMPONENT IS SCHEDULED FOR DELETION AND IS NOT CANONICAL.
+ *
+ * UI-CENSUS #35 marks it `delete` in Phase 5.1: its controls moved to census
+ * #34, `run/RunControlBar.tsx`, which shipped and is a strict superset of the
+ * pause/resume/stop this board carries (it adds graceful-vs-immediate cancel
+ * and disabled-with-reason states). The board itself is a SECOND run
+ * presentation, and the program's no-legacy rule says a second presentation
+ * dies when the first one lands.
+ *
+ * It is still here, and the 2026-08-30 closing wave DECLINED to force the
+ * deletion, because the replacement pair does not cover the two live call
+ * sites. The exact, verified delta — the only thing that has to be built
+ * before this file can go:
+ *
+ *   1. DEFINITION-FREE RENDERING. This board needs a `runId` and nothing
+ *      else; its node list comes from `selectRunNodeOrder` (live redux).
+ *      `RunStage` requires `definitionId` + a resolved `WorkflowDefinitionLike`
+ *      as non-nullable props and calls `describeWorkflowSteps(definition)` in
+ *      render. Both call sites are precisely the no-definition case.
+ *   2. RECURSIVE CHILD RUNS. This is the only consumer of `selectChildRunIds`
+ *      in the repo; it renders ITSELF, indented, per sub-workflow run.
+ *      `RunStage`/`RunControlBar` reference that selector nowhere.
+ *   3. A NARROW, NESTABLE LAYOUT. `RunStage` is a full-page dashboard
+ *      (`max-w-[1500px]`, two-column grid, sticky aside). Both call sites
+ *      embed a board inside a 26rem column or an indented disclosure.
+ *
+ * Do NOT add a third consumer. Adding one is what turned a scheduled deletion
+ * into a growing dependency (PHASE8-CROSSCHECK D2) — the defect this banner
+ * exists to stop from repeating.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import { useState } from "react";

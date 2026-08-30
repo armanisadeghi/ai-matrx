@@ -936,6 +936,11 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     writePolicies: parseShortcutWritePolicies(row.value_mappings),
     contextMappings: parseScopeMappings(row.context_mappings),
     ...menuItemToConfigFields(row),
+    // Mandate identity rides the same REST rows (census #47) — the route
+    // selects `*` through `shortcutTable()`, so `mandate.vw_shortcut`'s two
+    // extra columns arrive here untouched the moment the switch flips.
+    mandateId: mandateIdOfShortcutRow(row),
+    mandateKey: mandateKeyOfShortcutRow(row),
     isActive: row.is_active,
     userId: row.created_by,
     organizationId: row.organization_id,
@@ -1535,7 +1540,12 @@ export {
   updateCategory,
   deleteCategory,
 } from "../agent-shortcut-categories/thunks";
-import { shortcutTable, SHORTCUT_RPCS } from "@/lib/supabase/shortcutStorage";
+import {
+  shortcutTable,
+  SHORTCUT_RPCS,
+  mandateIdOfShortcutRow,
+  mandateKeyOfShortcutRow,
+} from "@/lib/supabase/shortcutStorage";
 
 // Content-block CRUD moved to the canonical skl thunks
 // (features/agent-connections/redux/skl/thunks.ts —

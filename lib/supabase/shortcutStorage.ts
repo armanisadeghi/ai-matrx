@@ -138,6 +138,38 @@ export function mandateIdOfShortcutRow(row: ShortcutRowLike): string | null {
   return ((row as Record<string, unknown>).mandate_id as string | null) ?? null;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Write policies — treatment on the mandate side, blob-nested on the old one. */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * WHERE A SHORTCUT'S WRITE POLICIES LIVE on the ACTIVE storage.
+ *
+ * OFF — `agent.shortcut` has no home for them, so they ride inside the
+ * `value_mappings` JSONB under the reserved `__write_policies` key (the
+ * converters are the ONE serializer pair for that shape).
+ *
+ * ON — a write policy is TREATMENT, not consumption (THE-MODEL law 4), so it
+ * lives at `mandate.treatment.config.write_policies` and the compat view
+ * exposes it as its own `write_policies` column, writable through the same
+ * INSTEAD OF trigger. `value_mappings` then carries consumption ONLY and the
+ * two halves stop sharing a column.
+ * Migration: `migrations/mandate_shortcut_write_policies_on_treatment.sql`.
+ */
+export const SHORTCUT_WRITE_POLICIES_ON_TREATMENT = SHORTCUT_STORAGE_CUTOVER;
+
+/** The shortcut's write policies as stored on the ACTIVE storage — `null`
+ * when this row has none. Reads the treatment-backed column after the
+ * cutover; `null` before it, where the converters lift the nested key. */
+export function writePoliciesOfShortcutRow(
+  row: ShortcutRowLike,
+): Record<string, unknown> | null {
+  if (!SHORTCUT_WRITE_POLICIES_ON_TREATMENT) return null;
+  const raw = (row as Record<string, unknown>).write_policies;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return raw as Record<string, unknown>;
+}
+
 /** The mandate key behind a shortcut row — `null` before the cutover. */
 export function mandateKeyOfShortcutRow(row: ShortcutRowLike): string | null {
   if (!SHORTCUT_STORAGE_CUTOVER) return null;

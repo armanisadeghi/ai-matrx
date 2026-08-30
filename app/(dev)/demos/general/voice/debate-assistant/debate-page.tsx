@@ -4,11 +4,11 @@ import { useState, useTransition } from 'react';
 import { processDebate } from '@/actions/ai-actions/groq-debate';
 import { usePlayer } from '@/hooks/tts/usePlayer';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, MessageSquare, User, LayoutTemplate, Volume2 } from 'lucide-react';
 import { toast } from "@/lib/toast";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -174,7 +174,7 @@ export default function DebatePage() {
                     {/* Input Area */}
                     <div className="p-4 border-t">
                         <form onSubmit={handleSubmit} className="flex gap-2">
-                            <ProTextarea
+                            <Textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Type your debate argument or response..."

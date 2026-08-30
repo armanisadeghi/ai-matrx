@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from '@/components/ui/textarea';
 
 interface CheckboxGroupInputProps {
   value: string;
@@ -200,7 +200,7 @@ export function CheckboxGroupInput({
             {/* Custom text input when "Other" is checked */}
             {isOtherChecked && (
               <div className={compact ? "ml-6 pl-2" : "ml-9 pl-3"}>
-                <ProTextarea
+                <Textarea
                   value={customText}
                   onChange={(e) => handleCustomTextChange(e.target.value)}
                   placeholder="Enter custom value..."

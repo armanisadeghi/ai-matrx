@@ -1,7 +1,6 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function UninitializedShell({
   sendBtnClass,
@@ -13,8 +12,7 @@ export function UninitializedShell({
   if (singleRow) {
     return (
       <div className="flex items-center gap-1 bg-card rounded-full border border-border px-2 py-1 w-full shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]">
-        <ProTextarea
-          wrapperClassName="min-w-0 flex-1"
+        <textarea
           disabled
           placeholder="Initializing..."
           className="flex-1 bg-transparent border-none outline-none text-xs text-muted-foreground/50 placeholder:text-muted-foreground/40 resize-none leading-5"
@@ -31,7 +29,7 @@ export function UninitializedShell({
   return (
     <div className="bg-card rounded-[28px] border border-border overflow-hidden shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]">
       <div className="px-3 pt-3">
-        <ProTextarea
+        <textarea
           disabled
           placeholder="Initializing..."
           className="w-full bg-transparent border-none outline-none text-base text-muted-foreground/50 placeholder:text-muted-foreground/40 resize-none leading-7"

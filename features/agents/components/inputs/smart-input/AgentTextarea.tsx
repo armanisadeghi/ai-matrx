@@ -43,7 +43,6 @@ import {
   interruptAndSend,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -283,7 +282,7 @@ export function AgentTextarea({
   if (singleRow) {
     return (
       <div className="relative flex items-center min-w-0">
-        <ProTextarea
+        <textarea
           ref={textareaRef}
           value={visibleText}
           onChange={(e) => handleTextChange(e.target.value)}
@@ -304,7 +303,7 @@ export function AgentTextarea({
         {/* The layout effect owns the exact content height. The CSS cap is a
             second line of defence: if a host reflows between measurement and
             paint, an unexpanded composer still cannot absorb the flex column. */}
-        <ProTextarea
+        <textarea
           ref={textareaRef}
           value={visibleText}
           onChange={(e) => handleTextChange(e.target.value)}

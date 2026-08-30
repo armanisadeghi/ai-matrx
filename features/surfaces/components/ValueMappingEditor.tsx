@@ -28,6 +28,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  MEDIA_VALUE_KINDS,
+  SCALAR_VALUE_KINDS,
+  type OfferedValue,
+} from "@/features/mandates/provision-shapes";
 import type {
   SurfaceValue,
   ValueMapping,
@@ -60,6 +65,15 @@ interface Props {
   onChange: (next: ValueMappingMap) => void;
   /** Surface values available for `surface_value` selection. */
   availableSurfaceValues: readonly SurfaceValue[];
+  /**
+   * Offered values available for `offered_value` selection — the mandate
+   * consumption source (a provision's offer, a surface manifest's values, or
+   * the known values a discovered mandate binds to). Supply them and the
+   * "Offered value" map type appears; leave it empty (surface bindings) and it
+   * does not, because the surface resolver refuses that entry at runtime
+   * (`utils/value-mapping-resolver.ts`).
+   */
+  availableOfferedValues?: readonly OfferedValue[];
   /** If true, hide the `prompt_user` map type (tool flows don't support it). */
   hidePromptUser?: boolean;
   /** Compact mode (denser rows). */
@@ -68,26 +82,33 @@ interface Props {
   disabled?: boolean;
 }
 
-/** The map types THIS editor offers — `offered_value` belongs to the Mandate
- * consumption map (features/mandates/), never to surface bindings. */
-type SurfaceMapType = Exclude<ValueMapping["mapType"], "offered_value">;
+/** Every map type in the union — `offered_value` included. Consumption is
+ * per-binding (THE-MODEL law 1), so the ONE mapping editor renders it too; it
+ * is offered only where offered values exist (see `availableOfferedValues`). */
+type EditorMapType = ValueMapping["mapType"];
 
-const MAP_TYPE_LABELS: Record<SurfaceMapType, string> = {
+const MAP_TYPE_LABELS: Record<EditorMapType, string> = {
   surface_value: "Surface value",
   direct_value: "Direct value",
   prompt_user: "Prompt user",
   unmapped: "Unmapped",
+  offered_value: "Offered value",
 };
 
-const MAP_TYPE_DESCRIPTIONS: Record<SurfaceMapType, string> = {
+const MAP_TYPE_DESCRIPTIONS: Record<EditorMapType, string> = {
   surface_value: "Bind to a runtime value declared by the surface.",
   direct_value: "Set a fixed literal value for this binding.",
   prompt_user: "Show a dialog asking the user for the value at launch time.",
   unmapped:
     "Suppress auto-binding. Use when the surface declares a matching name you intentionally want to ignore.",
+  offered_value:
+    "Consume one of the values this place offers. Everything consumed must be offered; unused offered values are normal.",
 };
 
-function defaultMappingFor(type: SurfaceMapType): ValueMapping {
+function defaultMappingFor(
+  type: EditorMapType,
+  targetName: string,
+): ValueMapping {
   switch (type) {
     case "surface_value":
       return { mapType: "surface_value", target: "", required: false };
@@ -97,6 +118,8 @@ function defaultMappingFor(type: SurfaceMapType): ValueMapping {
       return { mapType: "prompt_user", prompt: "", required: false };
     case "unmapped":
       return { mapType: "unmapped" };
+    case "offered_value":
+      return { mapType: "offered_value", target: targetName, deliver: "variable" };
   }
 }
 
@@ -154,6 +177,7 @@ export function ValueMappingEditor({
   value,
   onChange,
   availableSurfaceValues,
+  availableOfferedValues = [],
   hidePromptUser = false,
   compact = false,
   disabled = false,
@@ -194,6 +218,7 @@ export function ValueMappingEditor({
               target={target}
               mapping={mapping}
               availableSurfaceValues={availableSurfaceValues}
+              availableOfferedValues={availableOfferedValues}
               surfaceValueIndex={surfaceValueIndex}
               hidePromptUser={hidePromptUser}
               compact={compact}
@@ -211,6 +236,7 @@ interface RowProps {
   target: MappingTarget;
   mapping: ValueMapping | undefined;
   availableSurfaceValues: readonly SurfaceValue[];
+  availableOfferedValues: readonly OfferedValue[];
   surfaceValueIndex: Map<string, SurfaceValue>;
   hidePromptUser: boolean;
   compact: boolean;
@@ -222,6 +248,7 @@ function MappingRow({
   target,
   mapping,
   availableSurfaceValues,
+  availableOfferedValues,
   surfaceValueIndex,
   hidePromptUser,
   compact,
@@ -250,7 +277,7 @@ function MappingRow({
       setExpanded(false);
       return;
     }
-    onChange(defaultMappingFor(next as SurfaceMapType));
+    onChange(defaultMappingFor(next as EditorMapType, target.name));
     setExpanded(true);
   };
 
@@ -258,7 +285,8 @@ function MappingRow({
     expanded ||
     mapping?.mapType === "surface_value" ||
     mapping?.mapType === "direct_value" ||
-    mapping?.mapType === "prompt_user";
+    mapping?.mapType === "prompt_user" ||
+    mapping?.mapType === "offered_value";
 
   return (
     <div className="rounded-md border border-border bg-card">
@@ -328,6 +356,11 @@ function MappingRow({
             <SelectItem value="surface_value">
               {MAP_TYPE_LABELS.surface_value}
             </SelectItem>
+            {availableOfferedValues.length > 0 && (
+              <SelectItem value="offered_value">
+                {MAP_TYPE_LABELS.offered_value}
+              </SelectItem>
+            )}
             <SelectItem value="direct_value">
               {MAP_TYPE_LABELS.direct_value}
             </SelectItem>
@@ -362,10 +395,16 @@ function MappingRow({
       {showDetail && mapping && (
         <div className="border-t border-border px-2 py-1.5 space-y-1.5 bg-muted/30">
           <p className="text-[10px] text-muted-foreground">
-            {mapping.mapType === "offered_value"
-              ? "Mandate consumption entry — not editable here (edit it on the mandate binding)."
-              : MAP_TYPE_DESCRIPTIONS[mapping.mapType]}
+            {MAP_TYPE_DESCRIPTIONS[mapping.mapType]}
           </p>
+          {mapping.mapType === "offered_value" && (
+            <OfferedValueInput
+              mapping={mapping}
+              availableOfferedValues={availableOfferedValues}
+              disabled={disabled}
+              onChange={onChange}
+            />
+          )}
           {mapping.mapType === "surface_value" && (
             <SurfaceValueInput
               mapping={mapping}
@@ -519,6 +558,142 @@ function SurfaceValueItem({
         <Badge variant="outline" className="text-[10px]">
           optional
         </Badge>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The `offered_value` branch — the mandate consumption entry. The source is
+ * the OFFERED value name; the key of the row is the holder input it feeds
+ * (target-centric on the wire, `provision-shapes.ts`). A non-guaranteed source
+ * must state what happens when it is absent: absence is a decision, never a
+ * surprise.
+ */
+function OfferedValueInput({
+  mapping,
+  availableOfferedValues,
+  disabled,
+  onChange,
+}: {
+  mapping: Extract<ValueMapping, { mapType: "offered_value" }>;
+  availableOfferedValues: readonly OfferedValue[];
+  disabled: boolean;
+  onChange: (next: ValueMapping) => void;
+}) {
+  const offered = availableOfferedValues.find((v) => v.name === mapping.target);
+  const structuredAsVariable =
+    mapping.deliver !== "context" &&
+    offered !== undefined &&
+    !SCALAR_VALUE_KINDS.has(offered.kind) &&
+    !MEDIA_VALUE_KINDS.has(offered.kind);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="grid grid-cols-[1fr_auto] gap-1.5 items-center">
+        <Select
+          value={mapping.target}
+          onValueChange={(v) => {
+            const next = availableOfferedValues.find((o) => o.name === v);
+            onChange({
+              ...mapping,
+              target: v,
+              ...(next && !next.guaranteed
+                ? { when_absent: mapping.when_absent ?? "skip" }
+                : { when_absent: undefined, default: undefined }),
+            });
+          }}
+          disabled={disabled}
+        >
+          <SelectTrigger className="h-7 text-[11px]">
+            <SelectValue placeholder="Pick an offered value…" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableOfferedValues.length === 0 && (
+              <SelectItem value="__none__" disabled>
+                This place offers no values
+              </SelectItem>
+            )}
+            {availableOfferedValues.map((v) => (
+              <SelectItem key={v.name} value={v.name}>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="font-mono text-[11px]">{v.name}</span>
+                  <Badge variant="outline" className="text-[10px] font-mono">
+                    {v.kind}
+                  </Badge>
+                  {!v.guaranteed && (
+                    <Badge variant="outline" className="text-[10px]">
+                      optional
+                    </Badge>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={mapping.deliver ?? "variable"}
+          onValueChange={(v) =>
+            onChange({ ...mapping, deliver: v as "variable" | "context" })
+          }
+          disabled={disabled}
+        >
+          <SelectTrigger className="h-7 w-[110px] text-[11px] shrink-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="variable">as variable</SelectItem>
+            <SelectItem value="context">as context</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {offered?.description && (
+        <p className="text-[10px] text-muted-foreground">
+          {offered.description}
+        </p>
+      )}
+      {offered && !offered.guaranteed && (
+        <div className="grid grid-cols-[auto_1fr] gap-1.5 items-center">
+          <Select
+            value={mapping.when_absent ?? "skip"}
+            onValueChange={(v) =>
+              onChange({
+                ...mapping,
+                when_absent: v as typeof mapping.when_absent,
+                ...(v === "use_default" ? {} : { default: undefined }),
+              })
+            }
+            disabled={disabled}
+          >
+            <SelectTrigger className="h-7 w-[150px] text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="skip">If absent: skip it</SelectItem>
+              <SelectItem value="use_default">If absent: use a default</SelectItem>
+              <SelectItem value="fail">If absent: fail the run</SelectItem>
+            </SelectContent>
+          </Select>
+          {mapping.when_absent === "use_default" && (
+            <Input
+              value={typeof mapping.default === "string" ? mapping.default : ""}
+              onChange={(e) =>
+                onChange({ ...mapping, default: e.target.value })
+              }
+              placeholder="Default value"
+              className="h-7 text-[11px]"
+              style={{ fontSize: "13px" }}
+              disabled={disabled}
+            />
+          )}
+        </div>
+      )}
+      {structuredAsVariable && (
+        <p className="text-[10px] text-destructive flex items-start gap-1">
+          <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+          {offered?.kind} is a structured shape — it can only feed a context
+          policy, never a prompt variable. Deliver it as context.
+        </p>
       )}
     </div>
   );

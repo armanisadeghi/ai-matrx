@@ -193,7 +193,31 @@ export function useHrRelationsCase(args: {
         ? [hintedKind]
         : ["incident", "corrective_action"];
 
+      /*
+        🚨 A REFUSAL OUTRANKS A PROBE FAILURE, AND THIS KEPT THE WRONG ONE.
+
+        With no hinted kind we ask the incident door and then the corrective-
+        action door, because the URL does not say which one a case id is. Only
+        ONE of those doors can ever hold the row, so the other ALWAYS fails —
+        `hr_corrective_action` raises `P0002: no ... row with id <uuid>` for
+        every incident id in the product.
+
+        This loop kept `lastFailure`, so that guaranteed probe miss overwrote
+        the door's real answer. Live, 2026-08-30, as an ACCUSED party: the
+        incident door returned the SPEC-ACCESS §5 subject-exclusion veto —
+        `{granted:false, reason:'subject_excluded'}` — and the page rendered
+        *"That record could not be loaded"* with a Try-again button that can
+        never succeed, because the corrective-action probe answered last. The
+        §5 veto, the strongest refusal in the module, was thrown away by a loop
+        variable and shown to the person it exists to protect as a transient
+        error.
+
+        A `denied` is the door speaking about the CALLER and is always the truth
+        worth keeping; a `failed` is a probe that asked the wrong door. So the
+        first denial wins and later failures cannot displace it.
+      */
       let lastFailure: HrDenied | HrFailed | null = null;
+      let firstDenial: HrDenied | null = null;
 
       for (const kind of order) {
         const result = await fetchHrRelationsCase({
@@ -203,6 +227,7 @@ export function useHrRelationsCase(args: {
         });
         if (cancelled) return;
         if (!result.ok) {
+          if (result.kind === "denied" && !firstDenial) firstDenial = result;
           lastFailure = result;
           continue;
         }
@@ -248,7 +273,7 @@ export function useHrRelationsCase(args: {
       }
 
       setDetail(null);
-      setError(lastFailure);
+      setError(firstDenial ?? lastFailure);
       setIsLoading(false);
     })();
 

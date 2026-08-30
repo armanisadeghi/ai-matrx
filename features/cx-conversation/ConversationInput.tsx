@@ -20,7 +20,6 @@ import {
   ResponseModeButtons,
   BackToStartButton,
 } from "@/features/public-chat/components/AgentSelector";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 const GuidedVariableInputs = dynamic(
   () =>
@@ -683,8 +682,7 @@ export function ConversationInput({
             </Popover>
           )}
 
-          <ProTextarea
-            wrapperClassName="min-w-0 flex-1"
+          <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) =>

@@ -17,7 +17,6 @@ import {
   Layers,
 } from "lucide-react";
 import { ResponseModeButtons, BackToStartButton } from "./InpuControlButtons";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 const GuidedVariableInputs = dynamic(
   () =>
@@ -479,8 +478,7 @@ export function ConversationInput({
             />
           )}
 
-          <ProTextarea
-            wrapperClassName="min-w-0 flex-1"
+          <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) =>
