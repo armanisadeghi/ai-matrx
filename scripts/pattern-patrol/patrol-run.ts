@@ -60,7 +60,7 @@ function now(args: Args): string {
 
 function usage(): never {
   throw new Error(
-    "usage: patrol-run init|transition|verify|certify|queue|deliver|record-escape|reconcile --patrol P# --run <task-id> [command options]",
+    "usage: patrol-run init|transition|verify|certify|queue|deliver|reverse|record-escape|reconcile --patrol P# --run <task-id> [command options]",
   );
 }
 
@@ -260,6 +260,31 @@ function main(): void {
           integratedSha,
           release,
         },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
+  if (args.command === "reverse") {
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "reversed",
+        at: now(args),
+        actor,
+        summary: one(args, "summary"),
+        evidence: many(args, "evidence"),
       });
       publishPatrolRunAuthority({
         repoRoot,
