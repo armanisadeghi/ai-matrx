@@ -207,6 +207,19 @@
       },
       "previousEventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77",
       "eventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef"
+    },
+    {
+      "sequence": 14,
+      "state": "closed",
+      "at": "2026-08-30T15:16:36.512Z",
+      "actor": "root",
+      "summary": "Hover repair unit 1 closed; P3 remains in ERADICATION with routed actionable backlog",
+      "evidence": [
+        "17 verified controls fixed and certified; detector reports 169 actionable and 4 review remaining",
+        "no approval or exception requested"
+      ],
+      "previousEventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef",
+      "eventHash": "88270b7dbff11a45c129e82cac85f115b3e56f331a711a221cc9fb123b22df7a"
     }
   ]
 }

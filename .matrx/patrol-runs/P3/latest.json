@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T143951Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T15:16:29.539Z",
-  "summary": "Reconcile exact certified candidate to its existing v0.4.1495 delivery without another release",
+  "state": "closed",
+  "updatedAt": "2026-08-30T15:16:36.512Z",
+  "summary": "Hover repair unit 1 closed; P3 remains in ERADICATION with routed actionable backlog",
   "source": "20260830T143951Z.json",
-  "eventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef"
+  "eventHash": "88270b7dbff11a45c129e82cac85f115b3e56f331a711a221cc9fb123b22df7a"
 }
