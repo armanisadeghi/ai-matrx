@@ -33,6 +33,7 @@ import {
   parseObservationExtras,
 } from "@/features/marketing/components/backlinks/lib/extras";
 import { providerExtras } from "@/features/marketing/components/backlinks/lib/enrichment";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const SOURCE_PREFIX = "seo.backlink_assist";
 export const BACKLINKS_ASSIST_SURFACE = "matrx-user/marketing-backlinks";
@@ -50,7 +51,7 @@ const COMPETITOR_INTERSECTIONS_MIN = 5;
 export interface BacklinksAssistSweepState {
   siteId: string;
   siteLabel: string;
-  sitePath: string;
+  brandId: string | null;
   brandNames: string[];
   summary: BacklinkSnapshotRow | null;
   detailSnapshot: BacklinkSnapshotRow | null;
@@ -326,7 +327,11 @@ function reviewBacklogCandidate(
     return null;
   }
   const requestKey = `${eventKey(state)}-${state.enrichment.awaiting}`;
-  const href = `${state.sitePath}/backlinks?view=links&reviewBatch=${REVIEW_BATCH_SIZE}&reviewRequest=${encodeURIComponent(requestKey)}`;
+  const href = marketingRoutes.site(
+    state.brandId,
+    state.siteId,
+    `/backlinks?view=links&reviewBatch=${REVIEW_BATCH_SIZE}&reviewRequest=${encodeURIComponent(requestKey)}`,
+  );
   return {
     sourceKey: `${SOURCE_PREFIX}.review_backlog`,
     title: `${state.enrichment.awaiting.toLocaleString()} linking pages are waiting for review`,

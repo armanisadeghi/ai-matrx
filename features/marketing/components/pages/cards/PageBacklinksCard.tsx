@@ -65,7 +65,7 @@ function maxDate(values: Array<string | null>): string | null {
 }
 
 export function PageBacklinksCard({ page }: { page: MarketingPage }) {
-  const { site, sitePath, brandId } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const backlinks = usePageBacklinks(site.id, page.id);
   const pageGap = usePageLinkGap(site.id, page.id);
   const serviceTargets = useAppSelector(selectApiServiceTargets);

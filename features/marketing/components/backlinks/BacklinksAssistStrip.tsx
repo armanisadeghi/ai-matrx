@@ -24,7 +24,7 @@ const sweptSites = new Set<string>();
 export function BacklinksAssistStrip({
   siteId,
   siteLabel,
-  sitePath,
+  brandId,
   brandNames,
   data,
   trend,
@@ -34,7 +34,7 @@ export function BacklinksAssistStrip({
 }: {
   siteId: string;
   siteLabel: string;
-  sitePath: string;
+  brandId: string | null;
   brandNames: string[];
   data: BacklinkWorkspaceData;
   trend: BacklinkTrendPoint[];
@@ -60,7 +60,7 @@ export function BacklinksAssistStrip({
       state: {
         siteId,
         siteLabel,
-        sitePath,
+        brandId,
         brandNames,
         summary: data.latestByDataset.summary ?? null,
         detailSnapshot: data.latestByDataset.backlinks ?? null,
@@ -78,7 +78,7 @@ export function BacklinksAssistStrip({
     userId,
     siteId,
     siteLabel,
-    sitePath,
+    brandId,
     brandNames,
     data,
     trend,

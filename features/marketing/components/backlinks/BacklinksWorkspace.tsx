@@ -443,7 +443,7 @@ export function parseBacklinkScheduleWrite(
 }
 
 export function BacklinksWorkspace() {
-  const { site, sitePath, brandId } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -1362,7 +1362,7 @@ export function BacklinksWorkspace() {
           <BacklinksAssistStrip
             siteId={site.id}
             siteLabel={site.domain}
-            sitePath={sitePath}
+            brandId={brandId}
             brandNames={[site.name]}
             data={data}
             trend={trend.data ?? []}
