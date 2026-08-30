@@ -12,7 +12,7 @@
 
 import { ChatRunHeader } from "./ChatRunHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 
 export function ChatNewHeader({
   agentId,

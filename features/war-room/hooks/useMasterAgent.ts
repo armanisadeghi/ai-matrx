@@ -26,7 +26,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { WAR_ROOM_MASTER_AGENT_MANDATE } from "@/features/war-room/constants";
 import { selectSessionsList } from "@/features/war-room/redux/selectors";
 import { useDurableAgentConversation } from "@/features/war-room/hooks/useDurableAgentConversation";

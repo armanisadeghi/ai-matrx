@@ -97,12 +97,15 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
 - **The TABLE owns the detail scroll — a custom body must never re-own it.** `SidePanelSurface` and `DataRowWindow` hand children a bounded cell, and every custom `detail.render` / `viewContent` / `editContent` is now wrapped in a scrolling container by the primitive. Write detail bodies as plain content (`space-y-3 p-3`); do **not** add an `h-full … overflow-y-auto` root. Custom bodies used to have to know this and mostly didn't, so their content silently cut off at the fold with no scrollbar across ~16 surfaces (fixed at this layer 2026-08-12).
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
-- **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). When both `selection` and
+- **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). Domain-specific
+  row actions such as paste-ready repair briefs belong in `copy.rowAiVariants`,
+  which feeds the same table-owned Copy-for-AI menu across cards, rows, side panels,
+  and windows; never add a separate copy button or action column. When both `selection` and
   `copy` are configured, the bulk bar automatically exposes Copy / JSON / Copy for AI for the
   loaded selected rows; consumers add only their domain-specific bulk actions.
 - **Desktop row actions are micro; touch targets stay full-size.** Table-owned
   row Copy/Copy-for-AI and window triggers use the `xs` action preset at `lg`
-  (20px group height) and remain 44px below `lg`. Consumer icon-only
+  (20px pair height, 32px per icon cell) and remain 44px below `lg`. Consumer icon-only
   `rowActions` match `h-11 w-11 lg:h-5 lg:w-5`; never use the default icon
   button size inside a row.
 - **Desktop body rows are dense; mobile rows stay touch-spaced.** Body cells use

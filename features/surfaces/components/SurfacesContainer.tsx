@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import {
@@ -63,6 +62,7 @@ import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registr
 import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates";
 import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
 import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function SurfacesContainer() {
   const router = useRouter();
@@ -577,7 +577,7 @@ function NewClientDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}

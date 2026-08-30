@@ -129,7 +129,7 @@ export default function OrgEditShortcutPage({
           </>
         }
       />
-      <div className="h-full overflow-hidden flex flex-col bg-textured">
+      <div className="h-full overflow-hidden flex flex-col bg-textured pt-[var(--shell-header-h)]">
       <div className="flex-1 overflow-hidden flex items-center justify-center p-6">
         <Card className="max-w-lg w-full">
           <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">

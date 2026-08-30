@@ -16,7 +16,7 @@ in the same change.
 | Direct-Supabase writes                   | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                                                      |
 | Universal file handler                   | `handler/` (see `handler/FEATURE.md`)                                                                                                                                                                   |
 | Upload transport policy                  | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                                               |
-| Core components                          | `components/core/` — FileTree, FileList, FileIcon, FileMeta, FilePreview, FileAcquisitionActions, FileUploadDropzone, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog |
+| Core components                          | `components/core/` — FileTree, FileList, FileMeta, FilePreview, FileAcquisitionActions, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog. Media renderers (InlineMediaRef, MediaThumbnail, FileIcon, FileUploadDropzone) come from `@ai-matrx/media/react`, wired via `media-client/` |
 | Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                                              |
 | The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                                                |
 | Previewer dispatch                       | `components/core/FilePreview/PreviewerSwitch.tsx`                                                                                                                                                       |
@@ -83,6 +83,9 @@ in the same change.
 21. **`get_user_file_tree` is an authenticated Data API door.** Keep its exact signature in
     `platform.client_callable_door` before granting `authenticated`; keep `anon` and `PUBLIC`
     revoked. `migrations/restore_get_user_file_tree_client_door.sql` asserts both halves.
+22. **File Copy for AI starts with `<file_ref>`.** `fileInfoAgentPayload` carries `file_id` plus a
+    permanent `durable_url` or `null`; `mediaSafe` replaces signed URLs and raw storage paths with
+    explicit omission notes. Human Copy remains `fileInfoHumanSummary`.
 
 ## Local commands
 
@@ -93,6 +96,19 @@ in the same change.
 and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
+
+- **2026-08-30 — File Info Copy for AI leads with durable identity.** The payload starts with
+  `<file_ref>`, excludes signed URLs and raw storage paths from every block, and leaves human Copy
+  unchanged.
+- **2026-08-29** — **C20 media swap.** The render surface moved to `@ai-matrx/media`:
+  `InlineMediaRef`, `MediaThumbnail`, `FileIcon`, `FileUploadDropzone`/`UploadProgressList`
+  now import from `@ai-matrx/media/react`; the originals are DELETED. The strangler
+  `MediaClient` adapter over the handler lives in `media-client/` (client + host ports +
+  `MediaHostProvider`, mounted once in `app/Providers.tsx`). `handler/hooks/{useFileSrc,
+  useDurableSrc,useFileBlob}.ts` are deleted — consumers use `useMediaResolution` /
+  `useMediaLoadRecovery` from `@ai-matrx/media/core`. The handler itself (fileHandler,
+  session, upload transports, blob cache, `useFileAs`/`useFileUpload`) stays the engine;
+  `useFileAs` retires with the wave-2 block/preview swap.
 
 - **2026-08-29 — File-tree reads require a matching browser session.** The
   canonical tree thunk now verifies that supabase-js has an access token for

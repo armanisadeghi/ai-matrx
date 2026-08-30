@@ -22,6 +22,15 @@
 
 import type { Database } from "@/types/database.types";
 import { parseCustomTools } from "@/features/agents/redux/agent-definition/parse-custom-tools";
+import {
+  parseAgentMessages,
+  parseAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-definition/parse-messages-variables";
+import { parseAgentOutputSchema } from "@/features/agents/redux/agent-definition/parse-output-snapshot";
+import {
+  parseAgentContextPolicies,
+  parseAgentSettings,
+} from "@/features/agents/redux/agent-definition/parse-settings-context";
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
@@ -270,25 +279,19 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     agentType: parseAgentType(row.agent_type),
 
     modelId: row.model_id,
-    // messages: JSONB — cast but not key-converted
-    messages: (row.messages as unknown as AgentDefinition["messages"]) ?? [],
-    variableDefinitions:
-      (row.variable_definitions as unknown as AgentDefinition["variableDefinitions"]) ??
-      null,
-    settings:
-      (row.settings as unknown as AgentDefinition["settings"]) ??
-      ({} as AgentDefinition["settings"]),
+    messages: parseAgentMessages(row.messages),
+    variableDefinitions: parseAgentVariableDefinitions(
+      row.variable_definitions,
+    ),
+    settings: parseAgentSettings(row.settings, ingress),
     tools,
 
-    contextPolicies:
-      (row.context_policies as unknown as AgentDefinition["contextPolicies"]) ??
-      [],
+    contextPolicies: parseAgentContextPolicies(row.context_policies, ingress),
     autoContextDisabled: row.auto_context_disabled === true,
     inputKind: row.input_kind ?? null,
 
     modelTiers: parseModelTiersJson(row.model_tiers),
-    outputSchema:
-      (row.output_schema as unknown as AgentDefinition["outputSchema"]) ?? null,
+    outputSchema: parseAgentOutputSchema(row.output_schema),
     customTools,
     autoToolsDisabled,
     skillConfig,

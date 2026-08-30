@@ -1,47 +1,35 @@
-// app/(core)/marketing/content-plan/[siteId]/page.tsx
-//
-// One site's Content Planning workspace (tree | table | map | entities |
-// setup via ?view=). The site is a routed record under the feature's list
-// page (/marketing/content-plan). Auth branches server-side; route chrome
-// injects into the shell header; the body is the client workbench,
-// full-height per (core) doctrine.
+import { permanentRedirect } from "next/navigation";
 
-import { redirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-server";
 
-import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
-import { ContentPlanHeader } from "@/features/marketing/content-plan/components/ContentPlanHeader";
-import { ContentPlanWorkbench } from "@/features/marketing/content-plan/components/ContentPlanWorkbench";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+/**
+ * Legacy address for one site's Content Plan workspace. The plan is a BRAND
+ * section now — /marketing/[brand]/content/plan/[site] — and its `?view=`
+ * tabs are routes (tree is the index, so it carries no suffix). `?node=` is
+ * row selection, not a screen, so it rides along unchanged.
+ */
+const PLAN_VIEWS = ["tree", "table", "map", "entities", "setup"];
 
-// Cookie-persisted tree|panel split (same pattern as /tasks) — read
-// server-side so the first paint already has the user's sizes.
-const LAYOUT_COOKIE = "panels:content-plan";
-
-export default async function ContentPlanSitePage({
+export default async function ContentPlanSiteShim({
   params,
+  searchParams,
 }: {
   params: Promise<{ siteId: string }>;
+  searchParams: Promise<{ view?: string; node?: string }>;
 }) {
-  const { siteId } = await params;
-  const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) {
-    redirect(`/login?next=/marketing/content-plan/${siteId}`);
-  }
-
-  const defaultLayout = await readLayoutCookie(LAYOUT_COOKIE);
-
-  return (
-    <>
-      {/* ContentPlanHeader is an EntityModeHeader, which injects itself
-        through RouteHeader -> PageHeader. Wrapping it in a second PageHeader
-        nests one portal inside another and the header renders EMPTY. */}
-      <ContentPlanHeader />
-      <div className="h-full overflow-hidden">
-        <ContentPlanWorkbench
-          defaultLayout={defaultLayout}
-          layoutCookieName={LAYOUT_COOKIE}
-        />
-      </div>
-    </>
+  const [{ siteId }, { view, node }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const address = await resolveLegacySiteAddress(siteId);
+  if (!address) permanentRedirect(marketingRoutes.brands());
+  const target = marketingRoutes.brandContentPlanSite(
+    address.brandSeg,
+    address.siteSeg,
+    view && PLAN_VIEWS.includes(view) ? view : undefined,
+  );
+  permanentRedirect(
+    node ? `${target}?node=${encodeURIComponent(node)}` : target,
   );
 }

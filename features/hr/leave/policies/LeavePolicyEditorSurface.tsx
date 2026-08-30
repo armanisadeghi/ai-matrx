@@ -70,7 +70,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -127,6 +126,7 @@ import {
   type LeavePolicyField,
   type LeavePolicyForm,
 } from "./policy-form";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** The schedule classes `hr.leave_policy.schedule_class_scope` is filtered against. */
 const SCHEDULE_CLASSES = ["full_time", "part_time", "variable", "per_diem"] as const;
@@ -286,7 +286,7 @@ function BlackoutEditor({
             <Label className="text-xs">
               What the employee is told when this blocks their request
             </Label>
-            <Textarea
+            <ProTextarea
               rows={2}
               value={rule.note ?? ""}
               onChange={(e) => update(index, { note: e.target.value })}

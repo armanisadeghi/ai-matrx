@@ -97,6 +97,7 @@ const SortIcon = ({
 interface ColumnFilters {
   name: string;
   slug: string;
+  mandateKey: string;
   status: Set<string>;
   category: Set<string>;
   featured: "all" | "featured" | "not-featured";
@@ -143,6 +144,7 @@ export default function AgentAppsAdminListPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
     name: "",
     slug: "",
+    mandateKey: "",
     status: new Set<string>(),
     category: new Set<string>(),
     featured: "all",
@@ -194,6 +196,12 @@ export default function AgentAppsAdminListPage() {
     if (columnFilters.slug) {
       const q = columnFilters.slug.toLowerCase();
       filtered = filtered.filter((a) => a.slug?.toLowerCase().includes(q));
+    }
+    if (columnFilters.mandateKey) {
+      const q = columnFilters.mandateKey.toLowerCase();
+      filtered = filtered.filter((a) =>
+        a.mandate_key?.toLowerCase().includes(q),
+      );
     }
     if (columnFilters.status.size > 0) {
       filtered = filtered.filter(
@@ -284,7 +292,7 @@ export default function AgentAppsAdminListPage() {
   };
 
   const updateTextFilter = (
-    field: "name" | "slug" | "creator",
+    field: "name" | "slug" | "mandateKey" | "creator",
     value: string,
   ) => setColumnFilters((p) => ({ ...p, [field]: value }));
 
@@ -309,6 +317,7 @@ export default function AgentAppsAdminListPage() {
     setColumnFilters({
       name: "",
       slug: "",
+      mandateKey: "",
       status: new Set<string>(),
       category: new Set<string>(),
       featured: "all",
@@ -319,6 +328,7 @@ export default function AgentAppsAdminListPage() {
   const hasActiveFilters =
     columnFilters.name ||
     columnFilters.slug ||
+    columnFilters.mandateKey ||
     columnFilters.status.size > 0 ||
     columnFilters.category.size > 0 ||
     columnFilters.featured !== "all" ||
@@ -587,6 +597,25 @@ export default function AgentAppsAdminListPage() {
                       placeholder="Filter..."
                       value={columnFilters.slug}
                       onChange={(e) => updateTextFilter("slug", e.target.value)}
+                      className="h-7 text-xs"
+                    />
+                  </div>
+                </TableHead>
+                {/*
+                  THE APP'S JOB (census #61). After 6.9 an app runs a mandate,
+                  and the mandate — not the app row — decides the holder. The
+                  key is read-only here and links to the mandate; the binding
+                  is edited on the app's own settings page.
+                */}
+                <TableHead className="min-w-[180px]">
+                  <div className="space-y-1">
+                    <span className="font-semibold">Mandate</span>
+                    <Input
+                      placeholder="Filter..."
+                      value={columnFilters.mandateKey}
+                      onChange={(e) =>
+                        updateTextFilter("mandateKey", e.target.value)
+                      }
                       className="h-7 text-xs"
                     />
                   </div>
@@ -882,6 +911,19 @@ export default function AgentAppsAdminListPage() {
                     <code className="text-xs bg-muted px-2 py-1 rounded">
                       {app.slug}
                     </code>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {app.mandate_key ? (
+                      <Link
+                        href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
+                        className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+                        title="Open this app's mandate"
+                      >
+                        {app.mandate_key}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>{getStatusBadge(app.status)}</TableCell>
                   <TableCell>

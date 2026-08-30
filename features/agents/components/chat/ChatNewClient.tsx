@@ -9,7 +9,7 @@ import {
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
 } from "./chat-quick-actions.config";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 
 /**
  * `/chat/new` — landing surface.
@@ -80,6 +80,13 @@ function ChatNewBody({ agentId }: { agentId: string }) {
   return (
     <ChatRoomClient
       agentId={agentId}
+      // THE MANDATE DOOR. `agentId` above is DISPLAY identity (SSR-resolved so
+      // the header and input bar paint without a flash); the RUN goes to
+      // `/ai/mandates/chat.default_new_chat` and aidream resolves the Holder
+      // for this principal. A user or org rebinding this mandate changes who
+      // answers immediately — no client deploy, and no second resolver that
+      // could disagree with the server about whose binding wins.
+      mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
       landingContent={(conversationId) => (
         <NewChatGreeting
           sourceConversationId={conversationId}

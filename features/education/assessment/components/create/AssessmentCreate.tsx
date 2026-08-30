@@ -28,7 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -71,6 +70,7 @@ import type {
   QuestionType,
 } from "../../data/types";
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
@@ -734,7 +734,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="as-req">Extra instructions (optional)</Label>
-              <Textarea
+              <ProTextarea
                 id="as-req"
                 value={userRequest}
                 onChange={(e) => setUserRequest(e.target.value)}

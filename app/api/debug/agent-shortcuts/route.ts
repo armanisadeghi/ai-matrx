@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { shortcutTable, contextMenuView } from "@/lib/supabase/shortcutStorage";
 
 // Dev-only diagnostic for the agent-shortcuts stack.
 // Returns row counts + samples from every table the context menu depends on,
@@ -24,9 +25,7 @@ export async function GET() {
           .from("categories")
           .select("*", { count: "exact", head: true })
           .eq("dimension", "shortcut"),
-        supabase
-          .schema("agent")
-          .from("shortcut")
+        shortcutTable(supabase)
           .select("*", { count: "exact", head: true }),
         supabase
           .schema("skill")
@@ -61,9 +60,7 @@ export async function GET() {
           )
           .eq("dimension", "shortcut")
           .limit(10),
-        supabase
-          .schema("agent")
-          .from("shortcut")
+        shortcutTable(supabase)
           .select(
             "id,label,category_id,agent_id,is_active,user_id:created_by,organization_id",
           )
@@ -75,7 +72,7 @@ export async function GET() {
             "id,label,block_id,category_id,is_active,user_id:created_by,organization_id",
           )
           .limit(10),
-        supabase.schema("agent").from("context_menu_view").select("*"),
+        contextMenuView(supabase).select("*"),
       ]);
 
     const result = {

@@ -13,7 +13,8 @@
  *                             ValueMappingMap the bind save already speaks
  *
  * Everything here is pure and synchronous so it is trivially testable; the
- * mandate run itself stays in the panel (useMandateRunner).
+ * mandate run itself stays in the panel (the mandate door, via
+ * useHeadlessAgentJson).
  */
 
 import { extractFirstJson } from "@/utils/json/extract-json";

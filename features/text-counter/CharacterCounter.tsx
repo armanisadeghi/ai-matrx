@@ -13,7 +13,6 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   computeTextCounterMetrics,
@@ -25,6 +24,7 @@ import {
   DESCRIPTION_LIMITS,
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const LIMIT_PRESETS = [
   { label: "Custom", value: "custom", limit: null },
@@ -189,7 +189,8 @@ export function CharacterCounter({
 
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex min-h-[18rem] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <Textarea
+          <ProTextarea
+            wrapperClassName="min-h-[18rem] flex-1"
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Type or paste text here…"

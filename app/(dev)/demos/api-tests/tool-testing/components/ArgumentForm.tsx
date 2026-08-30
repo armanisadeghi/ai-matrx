@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ParameterDefinition } from '@/features/tool-call-visualization/testing/types';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ function ParameterField({
         <div className="space-y-1">
           <FieldLabel name={name} param={param} />
           {isLong ? (
-            <Textarea
+            <ProTextarea
               value={strVal}
               onChange={(e) => onChange(e.target.value)}
               placeholder={param.description}

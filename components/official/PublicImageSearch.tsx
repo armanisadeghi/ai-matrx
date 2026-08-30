@@ -482,7 +482,7 @@ export function PublicImageSearch({
               {selectedUrls.map((url, index) => (
                 <div
                   key={index}
-                  className="h-14 w-20 shrink-0 rounded-md overflow-hidden cursor-pointer border border-border bg-muted relative group"
+                  className="matrx-touch-targets h-14 w-20 shrink-0 rounded-md overflow-hidden cursor-pointer border border-border bg-muted relative group"
                   onClick={() => handlePreviewClick(url)}
                 >
                   <img
@@ -498,8 +498,9 @@ export function PublicImageSearch({
                     {index + 1}
                   </div>
                   <button
-                    className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                     onClick={(e) => handleRemoveImage(url, e)}
+                    aria-label={`Remove image ${index + 1}`}
                   >
                     <X className="h-3 w-3 text-white" />
                   </button>

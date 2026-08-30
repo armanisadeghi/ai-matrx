@@ -17,6 +17,7 @@
 // panel's health opens its own run history.
 
 import { useCallback, useEffect, useState } from "react";
+import { humanizeBackendError } from "@/utils/errors";
 import Link from "next/link";
 import {
   Activity,
@@ -207,9 +208,13 @@ function PanelCard({
       {row.last_error ? (
         <div className="flex items-start gap-2 border-b border-border/60 bg-amber-500/5 px-3 py-2 text-[11px]">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-          <span>
+          {/* 🚨 `last_error` is written by the Python scheduler, so whatever
+              exception text it recorded landed in this permanently-visible
+              banner (2026-08-30). Sibling surfaces already humanize the same
+              kind of column; this one had not. */}
+          <span title={row.last_error ?? undefined}>
             <span className="font-medium">Last run reported a problem: </span>
-            {row.last_error}
+            {humanizeBackendError(row.last_error)}
           </span>
         </div>
       ) : null}

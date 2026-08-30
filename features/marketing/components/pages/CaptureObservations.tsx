@@ -34,10 +34,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
@@ -52,6 +51,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Note tag stamped on every capture observation (for /notes filtering). */
 const OBSERVATION_TAG = "observation";
@@ -276,7 +276,7 @@ function CaptureObservationsDialog({
 
           {/* Observation panel — composer + attached observation notes. */}
           <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
-            <Textarea
+            <ProTextarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="What's broken, wrong, or should change on this capture?"

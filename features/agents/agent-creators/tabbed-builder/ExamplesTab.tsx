@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ExamplesContentProps {
   updateContent?: (content: string) => void;
@@ -36,7 +36,7 @@ const ExamplesContent: React.FC<ExamplesContentProps> = ({ updateContent }) => {
         <Label htmlFor="examples-text" className="text-gray-700 dark:text-gray-300">
           Example Content
         </Label>
-        <Textarea
+        <ProTextarea
           id="examples-text"
           placeholder="Add examples to guide the AI's response format or content..."
           value={examplesText}

@@ -19,7 +19,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { FILE_RENDER_FIELDS } from "@/features/files/redux/file-hydration";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
 import type { FileIdentityHint } from "@/features/files/types";
@@ -102,7 +102,10 @@ export function SelectableFileThumbnail({
           )}
         >
           <MediaThumbnail
-            file={thumbnailFile}
+            mediaRef={{ file_id: thumbnailFile.id, mime_type: thumbnailFile.mimeType ?? undefined }}
+            fileName={thumbnailFile.fileName}
+            mimeType={thumbnailFile.mimeType}
+            thumbnailUrl={thumbnailFile.thumbnailUrl}
             iconSize={40}
             className="h-full w-full"
             rounded="rounded-lg"

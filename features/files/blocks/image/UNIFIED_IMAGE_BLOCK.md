@@ -133,7 +133,7 @@ UnifiedImageBlock = Union[MatrxImageBlock, ExternalImageBlock]
 | `parent_file_id`        | `parentFileId`             | |
 | `derivation_kind`       | `derivationKind`           | |
 
-**Phase 1b note:** thumbnails for matrx-owned media live on `Asset.variants["thumbnail_url"]` and are fetched per file via `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl` (lifted from the REST `FileRecord.thumbnail_url` field, which the backend now resolves from the variants store) is the cached source — see `MediaThumbnail` in `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx`.
+**Phase 1b note:** thumbnails for matrx-owned media live on `Asset.variants["thumbnail_url"]` and are fetched per file via `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl` (lifted from the REST `FileRecord.thumbnail_url` field, which the backend now resolves from the variants store) is the cached source — see `MediaThumbnail` in `@ai-matrx/media/react`.
 | `metadata`              | `metadata`                 | Pass-through. |
 | (computed server-side)  | `cdnUrl`                  | Permanent CDN URL, public files only. |
 | (computed server-side)  | `downloadUrl`             | Durable attachment-disposition URL. |

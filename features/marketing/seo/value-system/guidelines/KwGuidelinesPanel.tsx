@@ -44,7 +44,6 @@ import {
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/utils/errors";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
@@ -61,6 +60,7 @@ import {
 } from "../suggestions/KeywordMeaningSuggestions";
 import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** After this long without an edit the document is called out as possibly
  *  stale — "we keep these things up to date" is half the ruling. ONE line,
@@ -262,7 +262,8 @@ export function KwGuidelinesPanel({
         </p>
       ) : null}
 
-      <Textarea
+      <ProTextarea
+        wrapperClassName="min-h-0 flex-1"
         value={value}
         onChange={(event) => setDraft(event.target.value)}
         disabled={stored.isLoading || save.isPending}

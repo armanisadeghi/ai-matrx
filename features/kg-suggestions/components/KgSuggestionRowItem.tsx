@@ -47,7 +47,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
@@ -78,6 +77,7 @@ import {
 import { HeavyHitterAcceptDialog } from "./HeavyHitterAcceptDialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MATCH_LABEL: Partial<Record<KgMatchKind, string>> = {
   exact: "Exact match",
@@ -931,7 +931,7 @@ function DeferControl({
           <p className="text-[11px] text-muted-foreground">
             Snooze this and leave yourself a note for when it comes back.
           </p>
-          <Textarea
+          <ProTextarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="e.g. need to confirm with the client first"

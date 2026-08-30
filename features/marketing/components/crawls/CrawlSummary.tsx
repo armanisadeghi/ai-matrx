@@ -6,7 +6,7 @@ import { Ban, Radio } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
@@ -309,7 +309,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
             </dl>
             {row.error ? (
               <p className="border-t border-border bg-destructive/5 p-3 text-xs text-destructive">
-                {row.error}
+                {humanizeBackendError(row.error)}
               </p>
             ) : null}
           </div>

@@ -22,15 +22,22 @@ import { MyTimesheetContext } from "@/features/hr/me/MyTimesheetContext";
  * 🚨 SEARCH PARAMS STILL WIN. `?employment=…&period=…` is an explicit request — a manager
  * following a deep link, or anybody re-opening a specific period — and resolution is the fallback
  * for the bare route, never an override of what was asked for.
+ *
+ * 🚨 `?punch=` IS NOT A PERIOD, AND THAT IS WHY IT IS RESOLVED AND NOT IGNORED. A punch-correction
+ * notification links here as `?org=…&punch=…` (SPEC-TIME §4.1: the employee must be told what
+ * changed, who changed it and why, and the notice's link is how they see it). This route used to
+ * drop that parameter on the floor and land on the most recent open period saying nothing at all —
+ * a person told their punch was corrected, sent to a screen that never mentions it. A punch id
+ * only becomes a period through `hr_my_timesheet_context`, so it travels down to the resolver.
  */
 export const metadata = { title: "My timesheet" };
 
 export default async function MyTimesheetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ employment?: string; period?: string }>;
+  searchParams: Promise<{ employment?: string; period?: string; punch?: string }>;
 }) {
-  const { employment, period } = await searchParams;
+  const { employment, period, punch } = await searchParams;
 
   return (
     <>
@@ -50,6 +57,7 @@ export default async function MyTimesheetPage({
           <MyTimesheetContext
             employmentId={employment ?? null}
             payPeriodId={period ?? null}
+            punchId={punch ?? null}
           />
         </Suspense>
       </div>

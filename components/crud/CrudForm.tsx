@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -27,6 +26,7 @@ import {
   MatrxEditButton,
   MatrxDeleteButton,
 } from "@/components/matrx/buttons/MatrxButtons";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface FieldConfig {
   type: "text" | "textarea" | "select";
@@ -72,7 +72,7 @@ export function CrudForm<T extends z.ZodType<any, any>>({
             <FormLabel className="text-foreground">{config.label}</FormLabel>
             <FormControl>
               {config.type === "textarea" ? (
-                <Textarea
+                <ProTextarea
                   {...field}
                   disabled={!isEditing}
                   className="bg-background text-foreground border-input resize-none"

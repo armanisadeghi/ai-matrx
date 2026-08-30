@@ -21,7 +21,6 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   SLOT_STUBS,
@@ -33,6 +32,7 @@ import type {
   AgentAppSlotName,
   AgentAppSlotOverrides,
 } from "@/features/agent-apps/types";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SlotOverrideEditorProps {
   shellKind: AgentAppShellKind;

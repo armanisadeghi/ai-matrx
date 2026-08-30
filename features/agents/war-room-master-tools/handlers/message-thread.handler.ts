@@ -51,7 +51,7 @@ import { listRoomIdsForThread } from "@/features/war-room/service/associations";
 import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
 import { selectThreadById } from "@/features/war-room/redux/selectors";
 import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";

@@ -18,6 +18,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   Loader2,
   MousePointerClick,
   Plug,
@@ -25,6 +26,7 @@ import {
   SearchCheck,
   TrendingDown,
   TrendingUp,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,7 +46,11 @@ import {
   gscToday,
   shiftGscDay,
 } from "@/features/marketing/search-console/lib/gsc-day";
-import { getGscTimeseries } from "@/features/marketing/search-console/data";
+import {
+  getGscIngestionHealth,
+  getGscTimeseries,
+} from "@/features/marketing/search-console/data";
+import { classifyGscAccessFailure } from "@/features/marketing/google/gsc-property";
 import { resolvePeriods } from "@/features/marketing/search-console/lib/url-state";
 import {
   humanLines,
@@ -155,6 +161,42 @@ export function SearchConsolePortfolio({
   const withData = rows.filter((r) => r.gsc_latest_date !== null);
   const withoutData = rows.filter((r) => r.gsc_latest_date === null);
 
+  // WHY the stale sites are stale. On 2026-08-27→29 eight sites' nightly
+  // collections failed on a broken Google connection and this landing said
+  // only "Stale — Nd behind" with a Sync button that could not work. Reads
+  // are bounded to the STALE bound sites (a handful, never the fleet); a
+  // failed health read renders as ordinary staleness, never as healthy.
+  const staleBoundIds = rows
+    .filter(
+      (r) =>
+        siteHasGscBinding(r) &&
+        (r.gsc_latest_date === null ||
+          (daysBehind(r.gsc_latest_date) ?? 0) >= GSC_STALE_AFTER_DAYS),
+    )
+    .map((r) => r.id);
+  const staleHealth = useQuery({
+    queryKey: ["marketing", "gsc", "portfolio", "health", staleBoundIds],
+    queryFn: async ({ signal }) => {
+      const entries = await Promise.all(
+        staleBoundIds.map(async (siteId) => {
+          const row = await getGscIngestionHealth(siteId, signal).catch(
+            () => null,
+          );
+          return [
+            siteId,
+            row ? classifyGscAccessFailure(row.last_run_error) : null,
+          ] as const;
+        }),
+      );
+      return new Map(entries);
+    },
+    enabled: staleBoundIds.length > 0,
+    staleTime: 60 * 1000,
+  });
+  const brokenSites = rows.filter(
+    (r) => (staleHealth.data?.get(r.id) ?? null) !== null,
+  );
+
   // Daily clicks for the trend line — bounded to the cards that can show one
   // (real data, capped count), one RPC per card in parallel. The portfolio is
   // a fixed small set (an org's own sites), never a 1000-row table, so this
@@ -217,6 +259,7 @@ export function SearchConsolePortfolio({
     const behind = daysBehind(site.gsc_latest_date);
     const stale = behind !== null && behind >= GSC_STALE_AFTER_DAYS;
     const hasBinding = siteHasGscBinding(site);
+    const broken = staleHealth.data?.get(site.id) ?? null;
     const needsAction = stale || site.gsc_latest_date === null;
     const dashboardHref = marketingRoutes.searchConsole(site.id);
     const integrationsHref = marketingRoutes.siteSettings(
@@ -347,14 +390,32 @@ export function SearchConsolePortfolio({
                     : "bg-success",
               )}
             />
-            {site.gsc_latest_date
-              ? stale
-                ? `Stale — through ${formatGscDate(site.gsc_latest_date)} (${behind}d behind)`
-                : `Up to date — through ${formatGscDate(site.gsc_latest_date)}`
-              : "No Search Console data yet"}
+            {broken
+              ? site.gsc_latest_date
+                ? `Connection broken — data stopped ${formatGscDate(site.gsc_latest_date)}`
+                : "Connection broken — no data can arrive"
+              : site.gsc_latest_date
+                ? stale
+                  ? `Stale — through ${formatGscDate(site.gsc_latest_date)} (${behind}d behind)`
+                  : `Up to date — through ${formatGscDate(site.gsc_latest_date)}`
+                : "No Search Console data yet"}
           </p>
           {needsAction ? (
-            hasBinding ? (
+            broken ? (
+              // Syncing a broken connection can only fail; the one honest
+              // action is the repair door.
+              <Button
+                asChild
+                size="sm"
+                variant="destructive"
+                className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+              >
+                <Link href={integrationsHref}>
+                  <Wrench className="h-3 w-3" />
+                  Fix connection
+                </Link>
+              </Button>
+            ) : hasBinding ? (
               <Button
                 size="sm"
                 variant="outline"
@@ -391,6 +452,41 @@ export function SearchConsolePortfolio({
   return (
     <div className="h-full overflow-y-auto">
       <div className="space-y-4 py-1">
+        {brokenSites.length > 0 ? (
+          // The loud, first-screen version of the per-site banner: a broken
+          // Google connection is ONE event that silently stops every bound
+          // site, and this landing is the first place anyone looks.
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-foreground">
+                Google&apos;s Search Console connection is broken —{" "}
+                {brokenSites.length === 1
+                  ? "1 site has"
+                  : `${brokenSites.length} sites have`}{" "}
+                stopped collecting data
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Google is refusing access, so nightly collection keeps failing
+                for{" "}
+                {brokenSites
+                  .slice(0, 4)
+                  .map((s) => s.domain ?? s.name ?? s.id)
+                  .join(", ")}
+                {brokenSites.length > 4
+                  ? ` and ${brokenSites.length - 4} more`
+                  : ""}
+                . Reconnect Google once and every site recovers.
+              </p>
+            </div>
+            <Button asChild size="sm" className="h-7 shrink-0 gap-1 text-xs">
+              <Link href={marketingRoutes.connectionsGoogle()}>
+                <Wrench className="h-3 w-3" />
+                Fix Google connection
+              </Link>
+            </Button>
+          </div>
+        ) : null}
         {rows.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/60 p-10 text-center">
             <SearchCheck className="h-8 w-8 text-muted-foreground" />

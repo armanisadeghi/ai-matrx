@@ -48,6 +48,7 @@ import { TaskStatusPicker } from "../TaskStatusPicker";
 import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
 import { TaskProvenanceChip } from "../TaskProvenanceChip";
 import { TaskSnoozeButton } from "../TaskSnoozeButton";
+import { TaskEditorCopyButtonsForDraft } from "../editor/TaskEditorCopyButtons";
 
 interface MobileTaskDetailsProps {
   task: TaskWithProject;
@@ -219,6 +220,9 @@ export default function MobileTaskDetails({
   const subtasks = task.subtasks || [];
   const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const totalSubtasks = subtasks.length;
+  const taskLabels = Array.isArray(task.settings?.labels)
+    ? task.settings.labels
+    : [];
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
@@ -253,6 +257,45 @@ export default function MobileTaskDetails({
             </h1>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            <TaskEditorCopyButtonsForDraft
+              size="sm"
+              location="Tasks — mobile task editor"
+              getInput={() => ({
+                taskId: task.id,
+                effective: {
+                  title,
+                  description,
+                  dueDate: dueDate || null,
+                  priority,
+                  projectId: task.projectId || null,
+                  assigneeId: task.assigneeId ?? null,
+                  labels: taskLabels,
+                  status,
+                  startDate: startDate || null,
+                  recurrenceRule,
+                },
+                saved: {
+                  id: task.id,
+                  title: task.title,
+                  description: task.description,
+                  due_date: task.dueDate || null,
+                  start_date: task.startDate ?? null,
+                  priority: task.priority ?? null,
+                  status: task.status,
+                  project_id: task.projectId || null,
+                  assignee_id: task.assigneeId ?? null,
+                  recurrence_rule: task.recurrenceRule ?? null,
+                  settings: task.settings,
+                },
+                isDirty,
+                projectName: task.projectName,
+                subtasks: subtasks.map((subtask) => ({
+                  id: subtask.id,
+                  title: subtask.title,
+                  status: subtask.status,
+                })),
+              })}
+            />
             <ReferenceCopyButton
               referenceType="task"
               id={task.id}

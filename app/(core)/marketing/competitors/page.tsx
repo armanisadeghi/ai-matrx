@@ -1,19 +1,11 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import CompetitorAutopsyWorkspace from "@/features/marketing/competitors/CompetitorAutopsyWorkspace";
-
-export const metadata: Metadata = {
-  title: "Competitors",
-  description:
-    "Find the competitors that truly overlap, read the pages earning their visibility, and turn them into ranked opportunities.",
-};
-
-export default function MarketingCompetitorsPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading competitors…" />}>
-      <CompetitorAutopsyWorkspace />
-    </Suspense>
-  );
+/**
+ * Legacy flat pillar. Competitors now live on the brand, at /marketing/[brand]/intelligence/competitors.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingCompetitorsShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

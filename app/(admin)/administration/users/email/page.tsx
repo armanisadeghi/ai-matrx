@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
@@ -23,6 +24,8 @@ import {
 import { parseEmailDraftPatch } from "@/features/admin/shared/email-compose-draft";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { AdminUserSearchResponseSchema } from "@/features/user-search/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EmailTemplate {
   id: string;
@@ -298,7 +301,7 @@ export default function AdminEmailPage() {
                     <label className="block text-sm font-medium mb-1.5">
                       Email Addresses
                     </label>
-                    <textarea
+                    <Textarea
                       data-surface-value="custom_emails_raw"
                       value={customEmails}
                       onChange={(e) => setCustomEmails(e.target.value)}
@@ -435,7 +438,7 @@ export default function AdminEmailPage() {
                   <label className="block text-sm font-medium mb-1.5">
                     Message
                   </label>
-                  <textarea
+                  <ProTextarea
                     data-surface-value="message_body"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -488,7 +491,13 @@ export default function AdminEmailPage() {
                       ) : (
                         <>
                           Leave blank to use default:{" "}
-                          {emailConfig?.defaultFrom || "loading..."}
+                          {emailConfig?.defaultFrom || (
+                            <SuspenseLoader
+                              size="xs"
+                              centered={false}
+                              message="Loading default sender…"
+                            />
+                          )}
                         </>
                       )}
                     </p>

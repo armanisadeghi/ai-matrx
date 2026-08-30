@@ -76,12 +76,12 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 - **`AuthorityTierBadge` is the ONE renderer for authority** — never hand-roll a score pill.
   Authority ≠ importance ≠ recency: three axes, never conflated.
 - **All generated content renders via `MarkdownStream`** (never `whitespace-pre-wrap`, never
-  wrapped in `prose`). The one exception is the *loaded* document, which uses `ReactMarkdown` to
+  wrapped in `prose`). The one exception is the _loaded_ document, which uses `ReactMarkdown` to
   keep heading-slug `#anchor` TOC links.
 - **Read `token_usage` ONLY through `@/lib/token-usage/normalize`** — it holds
   `{total, by_model}` and has never held flat `input_tokens` keys. Reading those made every cost
   render $0 on 100% of rows. Absent pricing stays **unknown** (`—`), never `$0`. Render every cost
-  via `<CostValue>` / `useCostDisplay`; never `toFixed(2)` a dollar figure in a research component.
+via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a research component.
 - **Editing scraped content backs up the original ONCE** — never overwrite an existing
   `rs_content.original_content`.
 - **`sourcesDiscoveredFromItems` is the one "sources discovered" formula.** Keep it in one
@@ -97,11 +97,27 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 - **Do not collapse `page.images` and `media.items`** — Media is the curated subset of raw
   extracted images, and both say so out loud.
 - **Tags are manual** — the graph's Tags node must not imply auto-generation.
+- **Topic authorization denials are domain outcomes, not repair incidents.** Research compute
+  calls may return 403 after access is revoked or a stale shared link is opened. The experts
+  surface shows the refusal once without feeding either the API failure or its toast into
+  `system_error`; unexpected statuses remain captured at the transport boundary. The topic
+  layout resolves its topic read before launching overview/catalog reads so a guest or expired
+  session reaches the canonical `AccessGate` instead of an opaque Server Components failure.
+- **The Experts surface owns responsive interaction density.** Its root uses
+  `matrx-touch-targets`, and its Radix checkboxes retain the 14px visual while an invisible 44px
+  `CHECKBOX_TAP_AREA` owns the tablet/mobile hit target.
 
 `pnpm type-check` is the only type gate; the build ignores type errors.
 
 ## Change log
 
+- 2026-08-30 — Sequenced the topic layout's access read ahead of secondary server reads, preserving
+  the canonical access gate for guest, expired-session, deleted, and denied topic outcomes.
+- 2026-08-30 — The Experts surface now applies the shared 44px responsive touch floor to its
+  actions and invisible 44px hit areas to its visually compact checkboxes.
+- 2026-08-30 — Classified expected 403s from expert extraction/promotion at the canonical raw
+  transport boundary and removed the duplicate captured error toast; forcing tests preserve
+  capture for unexpected 5xx failures.
 - 2026-08-28 — Research template bindings and pipeline agent wiring now use the canonical
   system-agent picker, retaining their system-only boundary while inheriting the complete shared
   search, sort, filter, favorite, reset, origin, and detail behavior.

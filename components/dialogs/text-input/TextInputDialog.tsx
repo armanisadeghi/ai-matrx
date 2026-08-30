@@ -36,7 +36,6 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +53,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface TextInputDialogProps {
   open: boolean;
@@ -132,7 +132,7 @@ export function TextInputDialog({
   const body = (
     <form onSubmit={handleFormSubmit} className="space-y-2">
       {multiline ? (
-        <Textarea
+        <ProTextarea
           autoFocus
           onFocus={(event) => event.currentTarget.select()}
           value={value}

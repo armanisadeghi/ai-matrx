@@ -39,6 +39,7 @@ import {
   type CrmRecordCopyParent,
 } from "./record-copy";
 import { SectionCard } from "./SectionCard";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   party: PartyListRow;
@@ -119,7 +120,7 @@ function InlineField({
       </span>
       {editing ? (
         spec.multiline ? (
-          <textarea
+          <ProTextarea
             autoFocus
             rows={3}
             value={draft}

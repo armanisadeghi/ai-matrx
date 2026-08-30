@@ -21,7 +21,6 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -49,6 +48,7 @@ import type {
 } from "./types";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useAuthorityRouter } from "./useAuthorityRouter";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function AuthorityRouterWorkspace() {
   const { site, sitePath } = useMarketingSite();
@@ -204,7 +204,7 @@ export function AuthorityRouterWorkspace() {
               >
                 Optional priority
               </label>
-              <Textarea
+              <ProTextarea
                 id="authority-guidance"
                 value={guidance}
                 onChange={(event) => setGuidance(event.target.value)}

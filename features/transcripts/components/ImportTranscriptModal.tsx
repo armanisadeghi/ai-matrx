@@ -6,12 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, FileText } from 'lucide-react';
 import { useTranscripts } from "../hooks/useTranscripts";
 import type { TranscriptSegment } from '../types';
 import { useToastManager } from '@/hooks/useToastManager';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ImportTranscriptModalProps {
     isOpen: boolean;
@@ -95,7 +95,7 @@ export function ImportTranscriptModal({
                             {/* Description */}
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
-                                <Textarea
+                                <ProTextarea
                                     id="description"
                                     placeholder="Add any additional details..."
                                     value={description}

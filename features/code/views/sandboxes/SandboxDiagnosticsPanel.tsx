@@ -968,8 +968,15 @@ export function SandboxDiagnosticsPanel({
                 <ScrollArea className="h-60 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-1 p-2 font-mono">
                     {(diag.container.passthrough_landed ?? []).map((k) => (
-                      <span key={k} className="text-success">
-                        ✓ {k}
+                      <span
+                        key={k}
+                        className="inline-flex items-center gap-1 text-success"
+                      >
+                        <CheckCircle2
+                          className="h-3 w-3 shrink-0"
+                          aria-hidden="true"
+                        />
+                        {k}
                       </span>
                     ))}
                     {(diag.container.passthrough_missing_sample ?? []).map(

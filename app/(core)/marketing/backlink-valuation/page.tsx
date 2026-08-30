@@ -1,25 +1,11 @@
-import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-import { LinkValuationWorkspace } from "@/features/marketing/link-valuation/components/LinkValuationWorkspace";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-
-export const metadata: Metadata = {
-  title: "Backlink Valuation",
-  description:
-    "Score a candidate backlink on quality, relevance and placement, and price what it is worth paying — every weight, band and dollar point tunable.",
-};
-
-export default function BacklinkValuationPage() {
-  return (
-    <>
-      <PageHeader>
-        <h1 className="truncate text-sm font-medium text-foreground">
-          Backlink Valuation
-        </h1>
-      </PageHeader>
-      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-        <LinkValuationWorkspace />
-      </div>
-    </>
-  );
+/**
+ * Legacy flat pillar. Backlink valuation now lives on one site's SEO practice, at /marketing/[brand]/seo/[site]/backlinks.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingBacklinkValuationShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

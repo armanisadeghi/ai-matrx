@@ -83,6 +83,7 @@ describe("membership read session boundary", () => {
     expect(mockGetSession).toHaveBeenCalledTimes(2);
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining("recovery firing"),
+      undefined,
     );
   });
 

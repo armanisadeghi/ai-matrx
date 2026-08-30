@@ -45,6 +45,8 @@ import {
   recordHrSeparation,
 } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { fetchHrRelationsCases } from "@/features/hr/people/relations/service";
 import type { HrResult } from "@/features/hr/types";
 import type { HrEmployeeMenuSubject } from "@/features/hr/people/directory/useHrEmployeeMenu";
 import {
@@ -72,6 +74,13 @@ function rehireValue(choice: RehireChoice): boolean | null {
   return choice === "yes" ? true : choice === "no" ? false : null;
 }
 
+/**
+ * The "no link" option's value. A Radix `SelectItem` may not carry an empty string — that is
+ * reserved for "nothing selected" — so the sentinel is explicit and is translated back to
+ * `null` on the way to the door. Never sent to the server.
+ */
+const NO_BASIS = "__none__";
+
 export function OffboardEmployeeDialog({
   subject,
   onClose,
@@ -95,6 +104,45 @@ export function OffboardEmployeeDialog({
 
   const [saving, setSaving] = useState(false);
   const [refusal, setRefusal] = useState<HrResult<unknown> | null>(null);
+
+  // §4.5 node C3 — the documented basis. See the control below for why it is optional.
+  const [correctiveActionId, setCorrectiveActionId] = useState("");
+  const [basisOptions, setBasisOptions] = useState<
+    { id: string; label: string }[]
+  >([]);
+  const [basisFailed, setBasisFailed] = useState(false);
+  const { active } = useHrContext();
+  const organizationId = active?.organization_id ?? null;
+  const subjectEmploymentId = subject?.employmentId ?? null;
+
+  useEffect(() => {
+    if (!organizationId || !subjectEmploymentId) return;
+    let cancelled = false;
+    // Scoped to THIS person, through the audited route-15 door — never a client-direct
+    // select, and never the whole employer's relations history to fill a dropdown.
+    void fetchHrRelationsCases(organizationId, {
+      caseKind: "corrective_action",
+      subjectEmploymentId,
+    }).then((result) => {
+      if (cancelled) return;
+      if (!result.ok) {
+        // A refusal here is NOT an empty menu. An empty menu says "this person has no
+        // corrective actions", which is a different and possibly false statement.
+        setBasisFailed(true);
+        return;
+      }
+      setBasisFailed(false);
+      setBasisOptions(
+        result.data.cases.map((c) => ({
+          id: c.id,
+          label: [c.kindLabel, c.occurredOn].filter(Boolean).join(" · "),
+        })),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId, subjectEmploymentId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +189,8 @@ export function OffboardEmployeeDialog({
       terminationDate,
       rehireEligible: rehireValue(rehire),
       rehireEligibleNote: note.trim() || null,
+      // §4.5 node C3. Empty string means "not linked to one" — never sent as "".
+      correctiveActionId: correctiveActionId || null,
     });
     setSaving(false);
 
@@ -196,6 +246,60 @@ export function OffboardEmployeeDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* 🚨 §4.5 NODE C3 — THE DOCUMENTED BASIS, WHICH HAD NO WRITER.
+              `hr.separation.corrective_action_id` has existed since core tranche 2 and
+              `hr_separation_record` has always read the key; all nine live separations carry
+              NULL because no surface ever sent it. The Cause path in §4.5's flowchart is
+              exactly this link.
+
+              OPTIONAL, DELIBERATELY. The spec links the corrective action on the Cause path;
+              it does not say a for-cause separation is refused without one, and refusing here
+              would be this file inventing policy — an employer whose documentation lives
+              outside this system must still be able to record the separation. What the form
+              does instead is ASK, at the moment somebody is choosing "involuntary", which is
+              the only moment the question is cheap to answer.
+
+              Only shown for `involuntary`: linking a corrective action to a resignation would
+              be a claim about why somebody left that nobody made. */}
+          {category === "involuntary" ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="sep-basis">Documented basis (optional)</Label>
+              {basisFailed ? (
+                <p className="text-xs text-muted-foreground">
+                  This person&apos;s corrective actions could not be loaded, so none can be
+                  linked here. The separation can still be recorded.
+                </p>
+              ) : basisOptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  There are no corrective actions on this person&apos;s record to link.
+                </p>
+              ) : (
+                <Select
+                  value={correctiveActionId || NO_BASIS}
+                  onValueChange={(v) =>
+                    setCorrectiveActionId(v === NO_BASIS ? "" : v)
+                  }
+                >
+                  <SelectTrigger id="sep-basis" className="min-h-11 sm:min-h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_BASIS}>Not linked to one</SelectItem>
+                    {basisOptions.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Linking one records what this rests on. It does not give anybody new access to
+                it — whoever could read that record before still can, and nobody else.
+              </p>
+            </div>
+          ) : null}
 
           <div className="space-y-1.5">
             <Label htmlFor="sep-reason">Reason</Label>

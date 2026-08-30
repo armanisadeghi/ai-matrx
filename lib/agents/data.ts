@@ -6,10 +6,10 @@ import {
   dbRowToAgentDefinition,
   versionSnapshotRowToAgentDefinition,
 } from "@/features/agents/redux/agent-definition/converters";
+import { parseAgentVersionSnapshot } from "@/features/agents/redux/agent-definition/parse-output-snapshot";
 import type {
   AgentDefinition,
   AgentListRow,
-  AgentVersionSnapshot,
 } from "@/features/agents/types/agent-definition.types";
 import type { AgentAppSummary, AppStatus } from "@/features/agent-apps/types";
 
@@ -61,11 +61,9 @@ export const getAgentSnapshot = cache(
     if (error) notFound();
     const raw = Array.isArray(data) ? data[0] : data;
     if (!raw) notFound();
-    // Sanctioned cast: AgentVersionSnapshot carries a compile-time DbRpcRow
-    // guard against agx_get_version_snapshot (agent-definition.types.ts).
     return versionSnapshotRowToAgentDefinition(
       id,
-      raw as unknown as AgentVersionSnapshot,
+      parseAgentVersionSnapshot(raw),
     );
   },
 );

@@ -14,7 +14,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { resolveDocumentContentView } from "./documentContentView";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
 /**
  * Inline renderer for `document_content` — random access into a processed
@@ -126,14 +126,10 @@ function PdfBody({ result }: { result: Record<string, unknown> }) {
       ? (result.media_ref as { file_id?: string })
       : null;
   const fileId = typeof mediaRef?.file_id === "string" ? mediaRef.file_id : "";
-  const source = useMemo(
-    () =>
-      fileId
-        ? ({ kind: "file_id", fileId, mime: "application/pdf" } as const)
-        : null,
-    [fileId],
-  );
-  const src = useFileSrc(source);
+  const src =
+    useMediaResolution(
+      fileId ? { file_id: fileId, mime_type: "application/pdf" } : null,
+    ).resolution?.src ?? null;
   const sourcePages = Array.isArray(result.source_pages)
     ? (result.source_pages as unknown[]).filter(
         (p): p is number => typeof p === "number",

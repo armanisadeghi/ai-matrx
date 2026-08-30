@@ -23,7 +23,8 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Code2, ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
-import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
+import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 
 type View = "rendered" | "source";
 
@@ -79,7 +80,10 @@ function SvgRenderedView({ url, fileName }: SvgRenderedViewProps) {
   // URL it's a transparent passthrough. `failed` flips only after the retry
   // is exhausted. Hook called unconditionally (before the early returns) to
   // respect the rules of hooks.
-  const { src, retryKey, onError, failed } = useDurableSrc(url);
+  const src = url ?? "";
+  const { retryKey, onLoadError: onError, failed } = useMediaLoadRecovery(url, {
+    recoverable: !!url && recognizeOurFileUrl(url) !== null,
+  });
 
   if (!url) {
     return (

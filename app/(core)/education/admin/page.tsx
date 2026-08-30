@@ -53,7 +53,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       notes: [
         "Feature: features/education/onboard/** (useIngest → useKitGeneration → StartHero)",
         "Converter contract: features/education/convert/** (convertContent / useContentConverter)",
-        "Mandates: deck via flashcards.generate_from_source (CONVERT_MANDATES.deckFromSource) · summary + mind map via their convert mandates — agents are DB-bound, swap at /agents/mandates",
+        "Mandates: deck via flashcards.generate_from_source (CONVERT_MANDATES.deckFromSource) · summary + mind map via their convert mandates — agents are DB-bound, swap at /mandates",
       ],
     },
     {

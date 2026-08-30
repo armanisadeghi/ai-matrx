@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { contextMenuView } from "@/lib/supabase/shortcutStorage";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,9 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const placementType = searchParams.get("placement_type");
 
-    const builder = supabase
-      .schema("agent")
-      .from("context_menu_view")
+    const builder = contextMenuView(supabase)
       .select("*");
     const { data, error } = placementType
       ? await builder.eq("placement_type", placementType)

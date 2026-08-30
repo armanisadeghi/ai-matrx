@@ -86,6 +86,54 @@ describe("AiCopyMenu chrome", () => {
     expect(button?.getAttribute("aria-label")).toBe("Copy Plan tree for AI");
   });
 
+  it("renders copy and export choices behind one generic action trigger", () => {
+    act(() => {
+      root.render(
+        <AiCopyMenu
+          size="icon"
+          label="People"
+          variants={[
+            {
+              id: "copy",
+              label: "Copy",
+              section: "copy",
+              build: () => "people",
+            },
+            {
+              id: "copy-for-ai",
+              label: "Copy for AI",
+              section: "ai",
+              build: () => "agent people",
+            },
+          ]}
+          exportConfig={{
+            items: [
+              {
+                id: "csv",
+                label: "CSV (current view)",
+                build: () => ({
+                  content: "name\nAda",
+                  extension: "csv",
+                  mime: "text/csv",
+                }),
+              },
+            ],
+          }}
+        />,
+      );
+    });
+
+    const trigger = container.querySelector(
+      'button[aria-label="Copy People for AI or export"]',
+    );
+    expect(trigger).not.toBeNull();
+    expect(container.querySelectorAll("button")).toHaveLength(4);
+    expect(container.textContent).toContain("People actions");
+    expect(container.textContent).toContain("Copy");
+    expect(container.textContent).toContain("Copy for AI");
+    expect(container.textContent).toContain("CSV (current view)");
+  });
+
   it("opens a caller-owned modal from a menu item instead of copying", () => {
     const onSelect = jest.fn();
     act(() => {

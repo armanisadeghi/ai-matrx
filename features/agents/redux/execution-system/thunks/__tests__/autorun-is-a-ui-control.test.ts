@@ -76,7 +76,7 @@ jest.mock(
 const AGENT_ID = "mandate-agent-1";
 /** Mutable so one test can give the mandate a required document variable. */
 const __requiredVariables: string[] = [];
-jest.mock("@/features/agents/mandates/service", () => ({
+jest.mock("@/features/mandates/service", () => ({
   resolveMandate: jest.fn(async (mandateKey: string) => ({
     mandateKey,
     agentId: AGENT_ID,
@@ -97,8 +97,8 @@ jest.mock("@/features/agents/mandates/service", () => ({
     supplied: unknown,
   ) => {
     const contract = jest.requireActual<
-      typeof import("@/features/agents/mandates/contract")
-    >("@/features/agents/mandates/contract");
+      typeof import("@/features/mandates/contract")
+    >("@/features/mandates/contract");
     const missing = contract.missingRequiredVariables(
       mandate.contract as never,
       supplied as never,
@@ -114,7 +114,7 @@ jest.mock("@/features/agents/mandates/service", () => ({
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import { launchAgentExecution } from "../launch-agent-execution.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import conversationsReducer from "../../conversations/conversations.slice";
 import conversationFocusReducer from "../../conversation-focus/conversation-focus.slice";
 import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";

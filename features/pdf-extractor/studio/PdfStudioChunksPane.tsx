@@ -440,8 +440,12 @@ function ChunkCard({
           </Badge>
         )}
         {chunk.has_oai_embedding ? (
-          <Badge variant="success" className="text-[10px] px-1 py-0">
-            embed ✓
+          <Badge
+            variant="success"
+            className="gap-1 px-1 py-0 text-[10px]"
+          >
+            <Check className="h-3 w-3" aria-hidden="true" />
+            embed
           </Badge>
         ) : (
           <Badge variant="error" className="text-[10px] px-1 py-0">

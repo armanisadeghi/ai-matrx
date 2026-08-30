@@ -25,7 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +39,7 @@ import type { CmsPageMapEntry } from "../setup/bridge";
 import type { CmsLink } from "../setup/readiness";
 import { AgentPayloadButton } from "./AgentPayloadSheet";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** A small icon button whose disabled state IS information. */
 function StatusActionButton({
@@ -86,6 +86,7 @@ function StatusActionButton({
 
 export function PlanToolbar({
   siteId,
+  organizationId,
   nodeCount,
   run,
   onStart,
@@ -110,6 +111,8 @@ export function PlanToolbar({
 }: {
   /** The plan being viewed — the agent-payload preview is site-scoped. */
   siteId: string | null;
+  /** The viewed site's organization — topic creation must not use shell state. */
+  organizationId: string | null;
   nodeCount: number;
   run: PlanAiRunState;
   onStart: (options: { maxNodes: number; guidance?: string }) => void;
@@ -348,6 +351,7 @@ export function PlanToolbar({
                 <ResearchTopicSelect
                   value={researchTopicId}
                   onChange={onResearchTopicChange}
+                  organizationId={organizationId}
                   triggerClassName="h-8 w-full text-sm"
                   ariaLabel="Research topic grounding the generator"
                 />
@@ -380,7 +384,7 @@ export function PlanToolbar({
                 <Label className="mb-1 block text-xs font-medium">
                   Guidance (optional)
                 </Label>
-                <Textarea
+                <ProTextarea
                   value={guidance}
                   onChange={(event) => setGuidance(event.target.value)}
                   placeholder="Anything the research agents should know — focus areas, services to emphasize, pages to avoid…"

@@ -2,8 +2,8 @@
 //
 // DB-backed deck → the canonical flashcards printer's data shape.
 //
-// The printer (components/mardown-display/blocks/flashcards/flashcards-printer.ts)
-// speaks the markdown-lane `Flashcard` shape. A DB deck is `CardWithDetails[]`,
+// The printer (@ai-matrx/print/flashcards) speaks the markdown-lane
+// `Flashcard` shape. A DB deck is `CardWithDetails[]`,
 // so ONE mapper owns the translation — and it reuses the shared primitives
 // rather than re-deriving anything:
 //   - faces  → `studyFaces` (cloze cards print occluded/revealed, never raw
@@ -17,7 +17,7 @@
 // § Images). `skippedImageCount` lets the caller say so out loud instead of
 // silently printing a deck with holes in it.
 
-import type { Flashcard } from "@/components/mardown-display/blocks/flashcards/flashcard-parser";
+import type { Flashcard } from "@ai-matrx/print/flashcards";
 import type { CardWithDetails, FcSetRow } from "../data/types";
 import { studyFaces } from "./cardVariants";
 import { getCardImages } from "../components/study/cardImages";

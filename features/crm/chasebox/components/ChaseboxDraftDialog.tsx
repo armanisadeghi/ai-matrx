@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +72,7 @@ import {
 } from "@/features/crm/inbox/attributes";
 import type { InteractionRow } from "@/features/crm/types";
 import type { ChaseboxRow } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * What the reviewer currently has in front of them, lifted to the page so the
@@ -508,7 +508,7 @@ export function ChaseboxDraftDialog({
                         {field.label}
                       </p>
                       {mode === "edit" ? (
-                        <Textarea
+                        <ProTextarea
                           value={edits[field.name] ?? field.text}
                           onChange={(event) =>
                             setEdits((current) => ({
@@ -641,7 +641,7 @@ export function ChaseboxDraftDialog({
                   Nothing is sent and nothing is suppressed — their contact record
                   is untouched. You can put them back with Requeue on the campaign.
                 </p>
-                <Textarea
+                <ProTextarea
                   value={rejectReason}
                   onChange={(event) => setRejectReason(event.target.value)}
                   rows={2}

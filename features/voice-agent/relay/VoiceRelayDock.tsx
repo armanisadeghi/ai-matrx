@@ -16,7 +16,7 @@
 
 import { AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import { VoiceRelayPanel } from "./VoiceRelayPanel";
 import {

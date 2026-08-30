@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { useAiAudio } from "@/features/audio/voice/AiVoicePage";
 import { Language } from "@/lib/cartesia/cartesia.types";
 import { useState } from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const VoiceActions = () => {
     const { loading, error, setLoading, setError, smartSetData, smartGetData } = useAiAudio();
@@ -89,7 +89,7 @@ const VoiceActions = () => {
                     autoComplete="off"
                     required
                 />
-                <Textarea
+                <ProTextarea
                     placeholder="Voice Description"
                     value={customVoiceDescription}
                     onChange={(e) => smartSetData("customVoiceDescription", e.target.value)}
@@ -154,7 +154,7 @@ const VoiceActions = () => {
                     {cloneMode === "similarity" && (
                         <div>
                             <h4 className="font-medium mb-2">Transcript (Optional)</h4>
-                            <Textarea
+                            <ProTextarea
                                 placeholder="Enter transcript of the audio file to improve similarity"
                                 value={transcript}
                                 onChange={(e) => setTranscript(e.target.value)}

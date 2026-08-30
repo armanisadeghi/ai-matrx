@@ -5,6 +5,8 @@ import { Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import L from 'leaflet';
 import { toast } from "@/lib/toast";
+import { MapPin } from 'lucide-react';
+import { createRoot } from 'react-dom/client';
 
 interface LocationMarkerProps {
   icon?: Icon;
@@ -20,7 +22,7 @@ interface LocationMarkerProps {
 export default function LocationMarker({ 
   icon, 
   buttonPosition = 'topleft',
-  buttonIcon = '📍',
+  buttonIcon,
   showPopup = true,
   popupContent,
   onLocationFound,
@@ -55,11 +57,17 @@ export default function LocationMarker({
   useEffect(() => {
       // Create custom locate button
       const locateButton = document.createElement('button');
-      locateButton.innerHTML = buttonIcon;
+      const locateIconRoot = buttonIcon ? null : createRoot(locateButton);
+      if (buttonIcon) {
+        locateButton.textContent = buttonIcon;
+      } else {
+        locateIconRoot?.render(<MapPin aria-hidden="true" className="h-5 w-5" />);
+      }
       locateButton.className = 'leaflet-bar leaflet-control leaflet-control-custom bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-black dark:text-white p-2 rounded-lg shadow-md';
       locateButton.style.fontSize = '20px';
       locateButton.style.cursor = 'pointer';
       locateButton.title = 'Find my location';
+      locateButton.setAttribute('aria-label', 'Find my location');
       
       locateButton.onclick = () => {
         setIsLocating(true);
@@ -88,6 +96,7 @@ export default function LocationMarker({
       
       // Cleanup on unmount
       return () => {
+        locateIconRoot?.unmount();
         control.remove();
       };
   }, [map, buttonPosition, buttonIcon, flyToLocation, maxZoom]);

@@ -44,7 +44,7 @@ import {
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 import { useYouTubeVideoIdentityIndex } from "@/features/research/hooks/useResearchState";

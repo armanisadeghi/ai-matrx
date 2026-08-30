@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,6 +23,7 @@ import {
   formatHasOwnInput,
 } from '@/features/data-tables/components/FormatAwareInput';
 import { resolveFieldFormat } from '@/lib/field-formats/format';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AddRowModalProps {
   tableId: string;
@@ -262,7 +262,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
         
       default: // string and other types
         return (
-          <Textarea
+          <ProTextarea
             id={field.field_name}
             value={value === null || value === undefined ? '' : value}
             onChange={(e) => handleValueChange(field.field_name, e.target.value)}

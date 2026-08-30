@@ -84,7 +84,10 @@ export function useContentPlanSites() {
 }
 
 export function ContentPlanHeader() {
-  const { siteId, view } = usePlanWorkspaceParams();
+  // `viewHref`/`listHref` are brand-scoped when this workspace renders inside
+  // /marketing/[brandId]/content/plan/… and fall back to the agency-level
+  // resolver door otherwise — one builder, never a hand-built path here.
+  const { siteId, view, viewHref, listHref } = usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const queryClient = useQueryClient();
   // Shares the workbench's query-cache entry — running here lights up the
@@ -120,11 +123,11 @@ export function ContentPlanHeader() {
       siteId
         ? VIEW_ITEMS.map((item) => ({
             name: item.label,
-            href: marketingRoutes.contentPlanSite(siteId, item.view),
+            href: viewHref(item.view),
             icon: item.icon,
           }))
         : [],
-    [siteId],
+    [siteId, viewHref],
   );
 
   // Both actions ride the template's action list, so below `sm` they collapse
@@ -161,7 +164,7 @@ export function ContentPlanHeader() {
       <RouteHeader
         left={
           <ChevronLeftTapButton
-            href={marketingRoutes.contentPlan()}
+            href={listHref}
             ariaLabel="All content plans"
           />
         }
@@ -171,7 +174,7 @@ export function ContentPlanHeader() {
 
   return (
     <EntityModeHeader
-      backHref={marketingRoutes.contentPlan()}
+      backHref={listHref}
       entityLabel={
         activeSite
           ? (activeSite.domain ?? activeSite.name)
@@ -185,11 +188,9 @@ export function ContentPlanHeader() {
       right={<ActiveContextLensChip className="shrink-0" />}
       entityOptions={entityOptions}
       modes={modes}
-      // The views differ ONLY by `?view=` — pathname matching cannot tell them
-      // apart, which is exactly what this prop exists for.
-      activeModeHref={
-        siteId ? marketingRoutes.contentPlanSite(siteId, view) : undefined
-      }
+      // On the legacy address the views differ ONLY by `?view=`, which pathname
+      // matching cannot tell apart — exactly what this prop exists for.
+      activeModeHref={siteId ? viewHref(view) : undefined}
       actions={actions}
     />
   );

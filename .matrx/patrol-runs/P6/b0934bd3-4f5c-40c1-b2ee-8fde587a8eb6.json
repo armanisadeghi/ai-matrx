@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "b0934bd3-4f5c-40c1-b2ee-8fde587a8eb6",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:26:46.522Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:26:46.522Z",
+      "actor": "codex-p6",
+      "summary": "P6 ERADICATION batch 2: 15-file admin/canvas semantic glyph repair candidate reconstructed after shared integration race.",
+      "evidence": [
+        "Pre-edit type-check PASS; raw detector 1,146 lines in 434 files; canonical shared checkout dirty paths captured and excluded."
+      ],
+      "previousEventHash": null,
+      "eventHash": "9520c41b2326df66b70c36c3331fc0411d27ccc9cdb84c3460ec8a61185de89d"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:46.087Z",
+      "actor": "/root/p6_admin_canvas",
+      "summary": "Repaired 26 verified nodes plus adjacent status glyphs across 15 admin/canvas files.",
+      "evidence": [
+        "Initial candidate 0cc6358e6f6c37444595d2530bcf8d9c1a521644."
+      ],
+      "previousEventHash": "9520c41b2326df66b70c36c3331fc0411d27ccc9cdb84c3460ec8a61185de89d",
+      "eventHash": "d1f7cbe9617be01615dc1eabd84fad358689aabd2f58045c508c6a6fd5600b43"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:46.702Z",
+      "actor": "codex-p6-controller",
+      "summary": "Initial admin/canvas candidate entered adversarial certification.",
+      "evidence": [
+        "Remote candidate preserved."
+      ],
+      "previousEventHash": "d1f7cbe9617be01615dc1eabd84fad358689aabd2f58045c508c6a6fd5600b43",
+      "eventHash": "0c3f59858297f7897dd115df02be333aba256f1a2f048ef5c10f32ee2c172e6a"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:47:47.279Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "REJECTED initial candidate: two icon replacements removed accessible selected/completed state.",
+      "evidence": [
+        "MultiSelect lacked aria-pressed; recipe completion icon hid all state text."
+      ],
+      "previousEventHash": "0c3f59858297f7897dd115df02be333aba256f1a2f048ef5c10f32ee2c172e6a",
+      "eventHash": "bd1e4cf9c67b0a59839f96c76718224d8471bae78fff8ffe7233addf02f1300d"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:47.853Z",
+      "actor": "codex-p6-repair",
+      "summary": "Added aria-pressed and explicit screen-reader Completed text.",
+      "evidence": [
+        "Corrected candidate 533da349ffc81fd2b9126892750a9c090142cb8f has exactly 15 files."
+      ],
+      "previousEventHash": "bd1e4cf9c67b0a59839f96c76718224d8471bae78fff8ffe7233addf02f1300d",
+      "eventHash": "508b3c4caff948e639f3ac1f73ef1d95186c457d294035c39a61eab099dc1a68"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:48.435Z",
+      "actor": "codex-p6-controller",
+      "summary": "Accessible batch 2 retry entered adversarial recertification.",
+      "evidence": [
+        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch2-retry1"
+      ],
+      "previousEventHash": "508b3c4caff948e639f3ac1f73ef1d95186c457d294035c39a61eab099dc1a68",
+      "eventHash": "95b1f17a8c0d276113835b522fd4f8e2ac1c1d4f1ee881d51b52fa0eee7fa4b2"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T14:47:49.052Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "CERTIFIED exact accessible 15-file admin/canvas candidate.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "533da349ffc81fd2b9126892750a9c090142cb8f",
+        "certifierTaskId": "/root/p6_three_batch_certifier",
+        "checks": [
+          "Exactly 15 files; diff-check PASS; two remaining detector hits are comments.",
+          "aria-pressed and screen-reader Completed restore state semantics; type/doctrine baseline delta accepted."
+        ]
+      },
+      "previousEventHash": "95b1f17a8c0d276113835b522fd4f8e2ac1c1d4f1ee881d51b52fa0eee7fa4b2",
+      "eventHash": "25067fb4f421364ae80569951e585bd040f11149bcef79cc80ed29949e4842eb"
+    },
+    {
+      "sequence": 8,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:50:57.008Z",
+      "actor": "codex-p6-controller",
+      "summary": "Certified candidate preserved and queued after integration to origin/main.",
+      "evidence": [],
+      "delivery": {
+        "candidateSha": "533da349ffc81fd2b9126892750a9c090142cb8f",
+        "preservedRef": "refs/heads/patrol-runs/P6/b0934bd3-4f5c-40c1-b2ee-8fde587a8eb6",
+        "integratedSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5"
+      },
+      "previousEventHash": "25067fb4f421364ae80569951e585bd040f11149bcef79cc80ed29949e4842eb",
+      "eventHash": "98edee7554ab61711e80032844e514a81ab7159568e264254aef6b93dd8b8619"
+    },
+    {
+      "sequence": 9,
+      "state": "delivered",
+      "at": "2026-08-30T14:51:03.050Z",
+      "actor": "codex-p6-controller",
+      "summary": "DELIVERED to origin/main as a certified ancestor; versioned release remains pending in the serialized release lane.",
+      "evidence": [
+        "Candidate is an ancestor of origin/main at 05ad7aa37eb95e8f0f539068ff732ec87a3957d5."
+      ],
+      "delivery": {
+        "candidateSha": "533da349ffc81fd2b9126892750a9c090142cb8f",
+        "preservedRef": "refs/heads/patrol-runs/P6/b0934bd3-4f5c-40c1-b2ee-8fde587a8eb6",
+        "integratedSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5",
+        "release": "pending-serialized-release"
+      },
+      "previousEventHash": "98edee7554ab61711e80032844e514a81ab7159568e264254aef6b93dd8b8619",
+      "eventHash": "4cee431db81cc3ba25be3f0c681d442ff76e780f92f69c5f3d0640646816398a"
+    }
+  ]
+}

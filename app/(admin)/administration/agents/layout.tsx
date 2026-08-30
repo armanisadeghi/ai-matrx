@@ -3,7 +3,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/administration", {
   title: "Agents",
   description:
-    "Manage agent definitions, mandates, tools, skills, and execution surfaces.",
+    "Manage agent definitions, tools, skills, and execution surfaces.",
   letter: "AG",
   canonicalPath: "/administration/agents",
 });

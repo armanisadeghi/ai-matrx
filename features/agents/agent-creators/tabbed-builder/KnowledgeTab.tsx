@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface KnowledgeContentProps {
   updateContent?: (content: string) => void;
@@ -83,7 +83,7 @@ const KnowledgeContent: React.FC<KnowledgeContentProps> = ({ updateContent }) =>
         <Label htmlFor="limitations-text" className="text-gray-700 dark:text-gray-300">
           Specific Limitations (Optional)
         </Label>
-        <Textarea
+        <ProTextarea
           id="limitations-text"
           placeholder="Define any specific knowledge limitations..."
           value={limitationsText}

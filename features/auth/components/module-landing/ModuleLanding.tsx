@@ -129,7 +129,7 @@ export function ModuleLanding({
     .map((href) => MODULE_LANDING_DIRECTORY.find((e) => e.href === href))
     .filter((entry): entry is NonNullable<typeof entry> => entry != null);
   return (
-    <div className="min-h-dvh">
+    <div className="scroll-page-end-space min-h-dvh">
       <AuthedWorkspaceCTA
         workspaceHref={workspaceHref}
         workspaceLabel={workspaceLabel}

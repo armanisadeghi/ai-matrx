@@ -9,7 +9,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
@@ -17,6 +16,7 @@ import {
   type TaskSource,
 } from "@/features/tasks/hooks/useAssociateTask";
 import { selectProjects } from "@/features/tasks/redux/selectors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface QuickCreateTaskButtonProps {
   /** What we're creating the task from (optional — records an association). */
@@ -158,7 +158,7 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
 
           {expanded && (
             <div className="space-y-2">
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description (optional)"

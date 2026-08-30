@@ -35,11 +35,19 @@ export function PunchChain({
   punches,
   /** The door onto a voiding punch — the register scrolls to it, the day view opens route 30. */
   onOpenPunch,
+  /**
+   * The punch a `?punch=` deep link pointed at — a correction notice's subject (SPEC-TIME §4.1).
+   * BOTH ENDS OF THE CORRECTION ARE MARKED: the replacement punch itself, and the voided punch it
+   * replaced, which this component already renders struck through. Marking only one of the pair
+   * would send the reader to a row whose partner is the thing that actually changed.
+   */
+  highlightPunchId,
   emptySentence = "No punches were recorded on this day.",
   className,
 }: {
   punches: PunchRow[];
   onOpenPunch?: (punchId: string) => void;
+  highlightPunchId?: string | null;
   emptySentence?: string;
   className?: string;
 }) {
@@ -66,7 +74,15 @@ export function PunchChain({
       ) : (
         <ol className="space-y-1.5">
           {punches.map((punch) => (
-            <PunchChainRow key={punch.id} punch={punch} onOpenPunch={onOpenPunch} />
+            <PunchChainRow
+              key={punch.id}
+              punch={punch}
+              onOpenPunch={onOpenPunch}
+              highlighted={
+                highlightPunchId != null &&
+                (punch.id === highlightPunchId || punch.voidedByPunchId === highlightPunchId)
+              }
+            />
           ))}
         </ol>
       )}
@@ -77,9 +93,11 @@ export function PunchChain({
 function PunchChainRow({
   punch,
   onOpenPunch,
+  highlighted = false,
 }: {
   punch: PunchRow;
   onOpenPunch?: (punchId: string) => void;
+  highlighted?: boolean;
 }) {
   /*
    * The register fallback below ("Open the punch that replaced it") is only reached from the
@@ -92,11 +110,18 @@ function PunchChainRow({
 
   return (
     <li
+      aria-current={highlighted ? "true" : undefined}
       className={cn(
         "rounded-md border border-border bg-card px-2.5 py-1.5 text-xs",
         voided && "border-dashed opacity-90",
+        // Tokens, not literals — this has to read in both themes. Never colour ALONE: the
+        // screen-reader sentence below carries the same fact for a reader who cannot see a ring.
+        highlighted && "bg-primary/5 ring-2 ring-inset ring-primary/60",
       )}
     >
+      {highlighted ? (
+        <span className="sr-only">The punch the link you followed points to. </span>
+      ) : null}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {/* THE STRIKE-THROUGH. The record stays legible; it is marked, not removed. */}
         <span className={cn("font-medium", voided && "line-through decoration-2")}>

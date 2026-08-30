@@ -24,6 +24,7 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { rawSegmentsAppended } from "../../redux/slice";
 import { insertRawSegment } from "../../service/studioService";
 import type { RawSegment } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface PasteRawContentDialogProps {
   sessionId: string;
@@ -153,7 +154,7 @@ export function PasteRawContentDialog({
             of the existing timeline.
           </DialogDescription>
         </DialogHeader>
-        <textarea
+        <ProTextarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Paste your text here…"

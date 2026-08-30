@@ -22,6 +22,15 @@
  * standing on (Arman, 2026-08-26). A `<Link>` to a mandate route from here is a
  * regression. The sticky-note button stays for one-breath capture without even
  * opening the window.
+ *
+ * 🚨 THIRD SOURCE — DISCOVERED (census #16, THE-MODEL law 3). The two sources
+ * above are what this page ASSIGNED. They are not the whole truth about what
+ * the page can do: any portable item whose consumed surface values all resolve
+ * here is ALSO available, by the same derived gate the context menu runs
+ * (`features/surfaces/runtime/available-here.ts` → `decideOffer`). Disclosing
+ * only the assigned half was the disclosure law answering half a question.
+ * Discovered rows are collapsed by default and never mix with the assigned
+ * list — they are a capability statement, not a roster.
  */
 
 import { useEffect, useState } from "react";
@@ -30,17 +39,19 @@ import {
   ChevronDown,
   ChevronRight,
   Maximize2,
+  Sparkles,
   StickyNote,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useAvailableHere } from "@/features/surfaces/runtime/available-here";
 import {
   fetchMandateIdentities,
   type MandateIdentity,
-} from "@/features/agents/mandates/service";
-import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
+} from "@/features/mandates/service";
+import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
 export interface SurfaceMandatesSectionProps {
@@ -103,6 +114,9 @@ export function SurfaceMandatesSection({
     Record<string, MandateIdentity>
   >({});
   const [openNotesFor, setOpenNotesFor] = useState<string | null>(null);
+  const [discoveredOpen, setDiscoveredOpen] = useState(false);
+  // THE DERIVED HALF (#16). Same gate as the context menu — never a second one.
+  const discovered = useAvailableHere({ surfaceName: primarySurfaceName });
 
   const keyList = rows.map((row) => row.mandateKey).join("|");
   useEffect(() => {
@@ -123,19 +137,21 @@ export function SurfaceMandatesSection({
     };
   }, [keyList]);
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && discovered.available.length === 0) return null;
 
   return (
     <div className={cn("min-w-0 border-b border-border pb-2", className)}>
-      <div className="mb-1 flex items-center gap-1">
-        <BrainCircuit
-          className="h-3 w-3 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
-          AI doing jobs here
-        </span>
-      </div>
+      {rows.length > 0 && (
+        <div className="mb-1 flex items-center gap-1">
+          <BrainCircuit
+            className="h-3 w-3 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+            AI doing jobs here
+          </span>
+        </div>
+      )}
       <ul className="min-w-0 space-y-1">
         {rows.map((row) => {
           const identity = identities[row.mandateKey];
@@ -212,6 +228,69 @@ export function SurfaceMandatesSection({
           );
         })}
       </ul>
+
+      {/* DISCOVERED — what this page CAN run, by the derived gate. Collapsed:
+          it answers "what else is possible here", which is a question, not a
+          roster, and the assigned list above must stay the loud one. */}
+      {discovered.available.length > 0 && (
+        <div className={cn("min-w-0", rows.length > 0 && "mt-2 border-t border-border pt-2")}>
+          <button
+            type="button"
+            onClick={() => setDiscoveredOpen((open) => !open)}
+            aria-expanded={discoveredOpen}
+            title="Portable AI whose required page values all resolve here — availability is capability"
+            className="flex w-full min-w-0 items-center gap-1 text-left text-[9px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">
+              Also available here ({discovered.available.length})
+            </span>
+            {discoveredOpen ? (
+              <ChevronDown className="ml-auto h-2.5 w-2.5 shrink-0" />
+            ) : (
+              <ChevronRight className="ml-auto h-2.5 w-2.5 shrink-0" />
+            )}
+          </button>
+          {discoveredOpen && (
+            <>
+              <ul className="mt-1 min-w-0 space-y-0.5">
+                {discovered.available.map((item) => (
+                  <li
+                    key={item.id}
+                    className="min-w-0 rounded-md border border-border/60 bg-muted/20 px-2 py-1"
+                    title={
+                      item.requirements.length > 0
+                        ? `Needs: ${item.requirements.join(", ")} — all readable here`
+                        : "Needs nothing from this page"
+                    }
+                  >
+                    <span className="block truncate text-[11px] text-foreground">
+                      {item.label}
+                    </span>
+                    <span className="block truncate text-[9px] text-muted-foreground">
+                      {item.requirements.length > 0
+                        ? item.requirements.join(" · ")
+                        : "no page values required"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {/* 🚨 LOUD, COUNTED, VISIBLE — the half of census #16 that is
+                  NOT delivered. Per-row coverage state needs the row's mandate
+                  identity, and `mandate_key` reaches these rows only when
+                  SHORTCUT_STORAGE_CUTOVER flips. An empty badge column would
+                  read as "covered"; this sentence reads as what it is. */}
+              {discovered.withoutMandateIdentity > 0 && (
+                <p className="mt-1 text-[9px] leading-snug text-amber-600 dark:text-amber-400">
+                  {discovered.withoutMandateIdentity} of these carry no mandate
+                  identity on the active storage, so coverage state cannot be
+                  shown for them yet (shortcut storage cutover is OFF).
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

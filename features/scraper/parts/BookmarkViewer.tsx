@@ -9,13 +9,13 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 import {
   getValueByBookmark,
   importBookmarks,
 } from "../utils/json-path-navigation-util";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PathBookmark {
   path: string;

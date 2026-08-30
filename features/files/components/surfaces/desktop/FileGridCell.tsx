@@ -14,7 +14,7 @@ import { Copy, MoreHorizontal, Share2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatFileSize } from "@/features/files/utils/format";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FolderContextMenu } from "@/features/files/components/core/FolderContextMenu/FolderContextMenu";
@@ -132,7 +132,10 @@ function GridFile({
         */}
           <div className="absolute inset-0" onClick={onActivate}>
             <MediaThumbnail
-              file={file}
+              mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+              fileName={file.fileName}
+              mimeType={file.mimeType}
+              thumbnailUrl={file.thumbnailUrl}
               iconSize={48}
               className="h-full w-full"
             />

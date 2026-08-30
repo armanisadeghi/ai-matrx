@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,6 +46,7 @@ import {
 } from "@/features/agents/components/context-policies-management/InlinePolicyControl";
 import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
 import type { DictEntry, DictEntryDraft, DictLevel } from "@/features/dictionary/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   level: DictLevel;
@@ -546,7 +546,7 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                 />
               </Field>
               <Field label="Definition (helps the AI know when it applies)">
-                <Textarea
+                <ProTextarea
                   value={editing.draft.definition ?? ""}
                   onChange={(e) => setEditing({ ...editing, draft: { ...editing.draft, definition: e.target.value } })}
                   className="min-h-[60px]"

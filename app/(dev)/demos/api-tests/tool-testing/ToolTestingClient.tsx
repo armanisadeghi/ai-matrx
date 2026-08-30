@@ -336,7 +336,11 @@ export default function ToolTestingClient() {
                   <TooltipTrigger asChild>
                     <ToggleGroupItem
                       value="local"
-                      aria-label="Localhost"
+                      aria-label={
+                        isCheckingServer
+                          ? "Checking localhost server"
+                          : "Localhost"
+                      }
                       disabled={isCheckingServer}
                       className="h-10 w-10 p-0 sm:h-6 sm:w-6 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground disabled:opacity-40"
                     >
@@ -347,7 +351,11 @@ export default function ToolTestingClient() {
                       )}
                     </ToggleGroupItem>
                   </TooltipTrigger>
-                  <TooltipContent className="text-xs">Localhost</TooltipContent>
+                  <TooltipContent className="text-xs">
+                    {isCheckingServer
+                      ? "Checking localhost server"
+                      : "Localhost"}
+                  </TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -385,6 +393,11 @@ export default function ToolTestingClient() {
                     variant="outline"
                     onClick={loadTools}
                     disabled={loadingTools}
+                    aria-label={
+                      loadingTools
+                        ? "Reloading active tools"
+                        : "Reload active tools"
+                    }
                     className="h-10 px-3 text-xs gap-1 sm:h-6 sm:px-2"
                   >
                     <RefreshCw
@@ -393,7 +406,9 @@ export default function ToolTestingClient() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
-                  Reload active tools from database
+                  {loadingTools
+                    ? "Reloading active tools from database"
+                    : "Reload active tools from database"}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -414,7 +429,7 @@ export default function ToolTestingClient() {
                   )}
                   <span className="text-[10px] text-muted-foreground">
                     {!tokenReady
-                      ? "Loading…"
+                      ? "Checking session…"
                       : authToken
                         ? "Session active"
                         : "Not signed in"}
@@ -422,9 +437,11 @@ export default function ToolTestingClient() {
                 </div>
               </TooltipTrigger>
               <TooltipContent className="text-xs max-w-[260px]">
-                {authToken
-                  ? "Your real Supabase JWT is being sent with every request."
-                  : "No active session — sign in to test tools."}
+                {!tokenReady
+                  ? "Checking your sign-in session."
+                  : authToken
+                    ? "Your real Supabase JWT is being sent with every request."
+                    : "No active session — sign in to test tools."}
               </TooltipContent>
             </Tooltip>
 

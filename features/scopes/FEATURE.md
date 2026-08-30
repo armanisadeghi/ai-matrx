@@ -90,6 +90,11 @@ this directory.
   capture toolbar / `AssociationEntitySelect` / `CategorySelect` / `CategoryTagPicker`)
   ships in `@ai-matrx/associations/react` — the local `components/associations/` originals
   were deleted in the W5 swap.
+- `components/quick-assign/ScopeContextTargetPicker.tsx` — the selection-only
+  organization → scope type → scope → context-item cascade. **Never add structural
+  writers here.** Every selected row opens through `EntityDoorControls`; each level's
+  `+` door opens its canonical management/create surface from `lib/scopeRoutes.ts`.
+  Its `matrx-touch-targets` root keeps every control at the 44px coarse-pointer floor.
 - `components/management/` — the canonical scope-management surfaces: `ScopesManager`
   (the `/organizations/[orgId]/scopes` page), `OrgScopeTypeSection`, `NewScopeInline`,
   `EditScopeTypeSheet`, `AddScopeModal`, `ScopeOnboarding`, `TemplateGalleryDrawer`,
@@ -237,6 +242,10 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-30 — Pattern Patrol P13: quick-assign's four existing-record pickers
+  retain their cascade/reset behavior and now expose selected-record doors plus
+  canonical owner/create doors with the shared 44px touch-target floor; no second
+  organization or scope writer exists.
 - 2026-08-29 — **Associations W5 supervised swap (C20/C9)**: the whole
   association/category/favorites/titles system now runs on
   `@ai-matrx/associations@latest`. Flipped: the seven hooks (re-exports of

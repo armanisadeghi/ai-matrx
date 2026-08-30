@@ -117,7 +117,7 @@ export function SettingsColumnHeader({ column, onToggleCollapse }: Props) {
     <div
       ref={setNodeRef}
       style={dragStyle}
-      className="flex items-center gap-1 px-1 py-1 border-b border-border bg-card shrink-0"
+      className="matrx-touch-targets flex items-center gap-1 px-1 py-1 border-b border-border bg-card shrink-0 group"
     >
       <button
         type="button"
@@ -178,7 +178,7 @@ export function SettingsColumnHeader({ column, onToggleCollapse }: Props) {
               setLabelDraft(column.label);
               setEditingLabel(true);
             }}
-            className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-0 group-hover:opacity-100"
+            className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
             title="Rename"
           >
             <Pencil className="w-3 h-3" />

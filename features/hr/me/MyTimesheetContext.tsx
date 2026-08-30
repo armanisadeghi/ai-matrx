@@ -35,6 +35,18 @@
 // caller's own is refused BY NAME by the door (`hr_timesheet_context_not_self`) and that sentence
 // is what renders — route 5 is self-only by construction (SPEC-TIME §2.2) and route 29 is where a
 // manager reads a report's hours.
+//
+// 🚨 …EXCEPT THAT `?punch=` IS NOT AN ANSWER, IT IS A QUESTION — AND SKIPPING THE RESOLVER FOR IT
+// IS THE BUG THIS FILE SHIPPED WITH. A punch-correction notice deep-links here as
+// `/hr/me/timesheet?org=…&punch=…` (SPEC-TIME §4.1). A punch id is not a period and cannot become
+// one on this side of the wire: only `hr_my_timesheet_context` knows which work date that punch is
+// attributed to and which period covers it. So the "both params, fetch nothing" shortcut below is
+// suspended whenever a punch is present — otherwise the page lands on whatever period it would
+// have shown anyway and says nothing about the correction, which is the whole defect.
+//
+// 🚨 EVERY SENTENCE ON THIS PAGE IS THE SERVER'S, PRINTED. `periodNote` and `focusNote` are both
+// carried down untouched. Nothing here composes, summarises or re-derives a sentence from `basis`,
+// a date or a uuid — a client-written explanation of a server decision is a lie waiting to drift.
 
 "use client";
 
@@ -50,7 +62,18 @@ import { MyTimesheet } from "@/features/hr/time/timesheet/MyTimesheet";
 
 type Resolution =
   | { state: "resolving" }
-  | { state: "ready"; employmentId: string; payPeriodId: string; periodNote: string | null }
+  | {
+      state: "ready";
+      employmentId: string;
+      payPeriodId: string;
+      periodNote: string | null;
+      /** The server's sentence about the punch link, or null. Printed verbatim, like `periodNote`. */
+      focusNote: string | null;
+      /** Steers highlighting only — a uuid is never shown to a person. */
+      focusPunchId: string | null;
+      /** `YYYY-MM-DD`. The day row that opens and scrolls itself into view. */
+      focusLocalWorkDate: string | null;
+    }
   /** A real employment, and a real reason there is no period. The server's sentence, verbatim. */
   | { state: "no-period"; reason: string }
   /** The door refused. `userMessage` is the page text (SPEC-ACCESS §4.2: a denial names what failed). */
@@ -59,21 +82,28 @@ type Resolution =
 export function MyTimesheetContext({
   employmentId: employmentParam,
   payPeriodId: periodParam,
+  punchId: punchParam,
 }: {
   employmentId: string | null;
   payPeriodId: string | null;
+  /** `?punch=` — a punch-correction notice's deep link. Resolved server-side, never here. */
+  punchId: string | null;
 }) {
   const { orgRef, isLoading } = useHrContext();
 
-  // Params win, always. When both are present nothing is resolved and nothing is fetched.
-  const bothFromParams = Boolean(employmentParam && periodParam);
+  /*
+    Params win, always — when both ids are present nothing is resolved and nothing is fetched.
+    A punch SUSPENDS that: it is a question only the resolver can answer, and it also carries the
+    sentence the reader is owed, so the call has to happen even when both ids were supplied.
+  */
+  const bothFromParams = Boolean(employmentParam && periodParam && !punchParam);
   /*
     The inputs this answer belongs to. An answer whose key no longer matches is STALE and reads as
     `resolving` — which is why nothing here calls `setState` synchronously inside the effect to
     clear it. That pattern is a cascading render (`react-hooks/set-state-in-effect`), and the same
     invalidation falls out of a derived comparison for free.
   */
-  const key = `${employmentParam ?? ""}|${periodParam ?? ""}`;
+  const key = `${employmentParam ?? ""}|${periodParam ?? ""}|${punchParam ?? ""}`;
   const [answer, setAnswer] = useState<{ key: string; value: Resolution } | null>(null);
 
   useEffect(() => {
@@ -87,11 +117,16 @@ export function MyTimesheetContext({
     let cancelled = false;
     const controller = new AbortController();
 
-    void getMyTimesheetContext(employmentParam, { signal: controller.signal })
+    void getMyTimesheetContext(employmentParam, punchParam, { signal: controller.signal })
       .then((ctx) => {
         if (cancelled) return;
         const employment = employmentParam ?? ctx.employmentId;
-        // An explicit `?period=` still wins over the resolved one.
+        /*
+          An explicit `?period=` still wins over the resolved one. `?punch=` does not override it:
+          somebody who asked for a specific period gets that period. But with no `?period=`, the
+          period the resolver chose for the punch IS the answer — that is the whole point of
+          `basis: 'punch'`.
+        */
         const period = periodParam ?? ctx.payPeriodId;
         if (!employment || !period) {
           setAnswer({
@@ -105,6 +140,13 @@ export function MyTimesheetContext({
           });
           return;
         }
+        /*
+          The focus only means anything on the period the resolver picked. An explicit `?period=`
+          that overrode it is showing DIFFERENT days, so the punch is not on screen — highlighting
+          a day that is not there, or printing a sentence about a period the reader is not looking
+          at, would be worse than saying nothing.
+        */
+        const focusApplies = period === ctx.payPeriodId;
         setAnswer({
           key,
           value: {
@@ -113,6 +155,9 @@ export function MyTimesheetContext({
             payPeriodId: period,
             // Only `most_recent` carries one, and it is the server's sentence, printed not summarised.
             periodNote: periodParam ? null : ctx.periodNote,
+            focusNote: focusApplies ? ctx.focusNote : null,
+            focusPunchId: focusApplies ? ctx.focusPunchId : null,
+            focusLocalWorkDate: focusApplies ? ctx.focusLocalWorkDate : null,
           },
         });
       })
@@ -134,7 +179,7 @@ export function MyTimesheetContext({
       cancelled = true;
       controller.abort();
     };
-  }, [bothFromParams, employmentParam, periodParam, isLoading, key]);
+  }, [bothFromParams, employmentParam, periodParam, punchParam, isLoading, key]);
 
   const resolved: Resolution = bothFromParams
     ? {
@@ -142,6 +187,10 @@ export function MyTimesheetContext({
         employmentId: employmentParam as string,
         payPeriodId: periodParam as string,
         periodNote: null,
+        // No punch was asked for — `bothFromParams` is false whenever one is present.
+        focusNote: null,
+        focusPunchId: null,
+        focusLocalWorkDate: null,
       }
     : answer?.key === key
       ? answer.value
@@ -189,6 +238,9 @@ export function MyTimesheetContext({
       employmentId={resolved.employmentId}
       payPeriodId={resolved.payPeriodId}
       periodNote={resolved.periodNote}
+      focusNote={resolved.focusNote}
+      focusPunchId={resolved.focusPunchId}
+      focusLocalWorkDate={resolved.focusLocalWorkDate}
     />
   );
 }

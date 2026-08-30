@@ -101,7 +101,15 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
   // ââ Icons âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   {
     path: "lucide-react",
-    loader: () => import("lucide-react"),
+    // Never dynamically import the Lucide namespace barrel. Turbopack can
+    // instantiate that async barrel before its shared createLucideIcon module
+    // factory is registered, taking down the entire route. The canonical icon
+    // package exposes the curated synchronous map; generated references outside
+    // it are filled by the existing safe fallback below.
+    loader: async () => {
+      const { staticLucideIconMap } = await import("@ai-matrx/icons");
+      return staticLucideIconMap;
+    },
     scopeStrategy: "spread",
     safeProxy: true,
     core: true,

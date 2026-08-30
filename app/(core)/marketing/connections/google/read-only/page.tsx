@@ -1,5 +1,7 @@
-import { ReadOnlySweepWorkspace } from "@/features/marketing/google/ReadOnlySweepWorkspace";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function GoogleReadOnlyConnectionsPage() {
-  return <ReadOnlySweepWorkspace />;
+/** Legacy address — the Google read-only sweep is an agency operation now. */
+export default function GoogleReadOnlySweepShim() {
+  permanentRedirect(`${marketingRoutes.connectionsGoogle()}/read-only`);
 }

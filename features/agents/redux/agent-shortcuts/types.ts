@@ -124,6 +124,30 @@ export interface AgentShortcut {
    */
   jsonExtraction: JsonExtractionConfig | null;
 
+  // ── Mandate identity (READ-ONLY, supplied by the active storage) ─────
+  /**
+   * 🚨 THE BATCH GENERALIZATION (census #47, VISION-GAP §6). The batch grid
+   * is "the surface that makes one intelligence portable across many places",
+   * and the row it edits must therefore be a MANDATE row, not a shortcut row.
+   * Everything else about this type already is storage-agnostic: it is
+   * camelCase, semantic, and produced from `shortcutTable()` — the
+   * `lib/supabase/shortcutStorage.ts` router — in BOTH switch positions.
+   * These two fields were the one thing that stopped at the router: the only
+   * columns that differ between `agent.shortcut` and `mandate.vw_shortcut`
+   * are `mandate_id` + `mandate_key`, and `mandateIdOfShortcutRow` /
+   * `mandateKeyOfShortcutRow` existed with ZERO callers, so the mandate
+   * behind a row could not be seen by anything above the converters.
+   *
+   * Now every consumer of a shortcut row — the batch grid, the menu, the
+   * surface disclosure section — reads the same rows carrying their mandate
+   * identity. NULL in both positions today because the switch is OFF; the
+   * helpers return null by design until it flips, at which point these
+   * populate with no further change. Never written back: the mandate row is
+   * the writer's business (`mandate.definition`), not the shortcut view's.
+   */
+  mandateId?: string | null;
+  mandateKey?: string | null;
+
   // ── Status ───────────────────────────────────────────────────────────
   isActive: boolean;
 

@@ -12,7 +12,6 @@ import type { ScopeType, Scope } from "../../redux/scope/types";
 import { toSlug } from "@/features/scopes/utils/slugify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NONE_VALUE = "__none__";
 
@@ -139,7 +139,7 @@ export function ScopeForm({
 
         <div className="space-y-1.5">
           <Label className="text-xs">Description (optional)</Label>
-          <Textarea
+          <ProTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief description of this scope..."

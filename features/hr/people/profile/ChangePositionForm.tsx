@@ -39,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import {
@@ -49,6 +48,7 @@ import {
 import { recordHrPositionChange } from "../../service";
 import { hrSettingsHref } from "../../routes";
 import { activeStructure, useHrStructure } from "../shared/useHrStructure";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Row = Record<string, unknown>;
 
@@ -421,7 +421,7 @@ export function ChangePositionForm({
         ) : null}
 
         <Field label="Why is this changing?">
-          <Textarea
+          <ProTextarea
             value={changeReason}
             onChange={(event) => setChangeReason(event.target.value)}
             rows={2}

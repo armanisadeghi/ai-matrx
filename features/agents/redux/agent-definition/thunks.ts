@@ -57,13 +57,13 @@ import type {
   AgentExecutionFull,
   UpdateFromSourceResult,
   PromoteVersionResult,
-  AgentVersionSnapshot,
   AgentVersionLookup,
   LinkedAgentRef,
   LinkedCounterpartResult,
   PersonalCopyResult,
 } from "../../types/agent-definition.types";
 import { isSyntheticAgentId } from "./synthetic-id";
+import { parseAgentVersionSnapshot } from "./parse-output-snapshot";
 import { assignField } from "@/features/agents/redux/shared/field-flags";
 import {
   upsertAgent,
@@ -529,7 +529,7 @@ export const fetchAgentVersionSnapshot = createAsyncThunk<
 
     const raw = Array.isArray(data) ? data[0] : data;
     if (!raw) return;
-    const row = raw as unknown as AgentVersionSnapshot;
+    const row = parseAgentVersionSnapshot(raw);
 
     dispatch(upsertAgent(versionSnapshotRowToAgentDefinition(agentId, row)));
   },

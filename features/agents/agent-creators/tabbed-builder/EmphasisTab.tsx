@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, XIcon } from "lucide-react";
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface EmphasisContentProps {
   updateContent?: (content: string) => void;
@@ -72,7 +72,7 @@ const EmphasisContent: React.FC<EmphasisContentProps> = ({ updateContent }) => {
         
         {metrics.map((metric, index) => (
           <div key={index} className="flex items-center gap-2 mb-2 w-full">
-            <Textarea
+            <ProTextarea
               value={metric}
               onChange={(e) => updateMetric(index, e.target.value)}
               placeholder={`Metric ${index + 1}`}
@@ -105,7 +105,7 @@ const EmphasisContent: React.FC<EmphasisContentProps> = ({ updateContent }) => {
         <Label htmlFor="emphasis-details" className="text-gray-700 dark:text-gray-300">
           Additional Emphasis (Optional)
         </Label>
-        <Textarea
+        <ProTextarea
           id="emphasis-details"
           placeholder="Provide any additional details about what should be emphasized"
           value={emphasisDetails}

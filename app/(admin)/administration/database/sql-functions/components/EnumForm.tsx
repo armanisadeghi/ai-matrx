@@ -9,11 +9,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Save, X, Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DEFAULT_DATABASE_SCHEMA } from "../../config";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type EnumFormProps =
   | {
@@ -229,7 +229,7 @@ export default function EnumForm(props: EnumFormProps) {
             >
               Description
             </Label>
-            <Textarea
+            <ProTextarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

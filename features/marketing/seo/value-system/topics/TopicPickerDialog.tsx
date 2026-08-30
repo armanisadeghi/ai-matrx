@@ -23,11 +23,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import type { TopicNode } from "../types";
 import { rootTypeMeta } from "./types";
 import { lineageOf, type BuiltTree } from "./lib";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface TopicPickerRequest {
   /** What we are choosing a topic FOR. */
@@ -122,7 +122,7 @@ export function TopicPickerDialog({
             >
               {request.reasonPrompt}
             </label>
-            <Textarea
+            <ProTextarea
               id="topic-picker-reason"
               value={reason}
               onChange={(event) => setReason(event.target.value)}

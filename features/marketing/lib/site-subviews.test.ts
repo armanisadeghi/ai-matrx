@@ -17,6 +17,12 @@ describe("marketing site sub-view registry", () => {
     const slugs = new Set<string>(
       MARKETING_SITE_SECTIONS.map((section) => section.slug),
     );
+    // Two sub-view vocabularies survive the agency-model restructure without a
+    // section row: `value` lives at seo/[siteId]/keywords/value (a room inside
+    // Keywords, not a section), and `reputation` moved to the brand's
+    // Intelligence group. Their sub-view registries are still live at runtime.
+    slugs.add("value");
+    slugs.add("reputation");
     for (const entry of MARKETING_SITE_SUBVIEWS) {
       expect(slugs.has(entry.section)).toBe(true);
     }
@@ -178,15 +184,22 @@ describe("marketing site sub-view registry", () => {
     // 2026-08-25 — KI-049 added the Run console as a 23rd site section; its
     // organization-level sibling lives outside this map. Sub-views stay 52,
     // so the complete site destination count is now 75.
-    expect(MARKETING_SITE_SECTIONS.length).toBe(23);
+    // 2026-08-28 — the agency-model restructure split the site into the
+    // websites (7) and seo (17) branches = 24 sections; Backlink Valuation
+    // became a section (`valuation`), and `value` lost its three
+    // business-knowledge rooms (offerings, guidelines, discovery) to the
+    // brand's Identity home: sub-views 52 - 3 = 49.
+    // 2026-08-30 — adversarial-audit repairs: `keywords:research` declared (the
+    // routed Research workbench under seo keywords). Sub-views 49 + 1 = 50.
+    expect(MARKETING_SITE_SECTIONS.length).toBe(24);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(52);
+    ).toBe(50);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      75,
+      74,
     );
   });
 });

@@ -3,6 +3,7 @@ import {IconMailFilled} from "@tabler/icons-react";
 import {Grid, Pin} from "lucide-react";
 import Image from "next/image";
 import React from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function ContactFormGridWithDetails() {
     return (
@@ -101,7 +102,7 @@ export function ContactFormGridWithDetails() {
                     >
                         Message
                     </label>
-                    <textarea
+                    <ProTextarea
                         id="message"
                         rows={5}
                         placeholder="Type your message here"

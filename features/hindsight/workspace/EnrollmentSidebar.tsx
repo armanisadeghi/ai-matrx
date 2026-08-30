@@ -21,7 +21,6 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import type { useEnrollmentActions } from "../hooks/useEnrollmentActions";
@@ -29,6 +28,7 @@ import type { EnrollmentDetail, Review } from "../types";
 import { PendingExamplesPanel } from "../components/PendingExamplesPanel";
 import { ReviewProgress } from "../components/ReviewProgress";
 import { fmtCost, fmtDate } from "../components/tokens";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function ReviewTimelineRow({
   review,
@@ -243,7 +243,7 @@ export function EnrollmentSidebar({
           </div>
           {editingGoal ? (
             <div className="mt-1 space-y-1.5">
-              <Textarea
+              <ProTextarea
                 className="text-base md:text-sm"
                 rows={3}
                 value={goalDraft}

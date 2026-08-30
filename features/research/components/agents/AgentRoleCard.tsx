@@ -3,7 +3,7 @@
 /**
  * AgentRoleCard — one research pipeline role, backed by an mandate.
  * Thin consumer of the canonical mandates primitives
- * (`features/agents/mandates/`): ContractItem rows, the shared Copy & Update
+ * (`features/mandates/`): ContractItem rows, the shared Copy & Update
  * hook (useCopyMandateAgent), and MandateAgentPicker in controlled-override mode —
  * the write path stays research's own `rs_topic.agent_config` (via
  * onApply/onRemove from TopicAgentsPage). The old raw UUID paste box +
@@ -33,10 +33,10 @@ import {
   selectAgentExecutionPayload,
 } from "@/features/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
-import { systemContractRows } from "@/features/agents/mandates/contract-compare";
-import { useCopyMandateAgent } from "@/features/agents/mandates/useCopyMandateAgent";
-import { ContractItem } from "@/features/agents/mandates/components/ContractItem";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { systemContractRows } from "@/features/mandates/contract-compare";
+import { useCopyMandateAgent } from "@/features/mandates/useCopyMandateAgent";
+import { ContractItem } from "@/features/mandates/components/ContractItem";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import type { AgentRoleDefinition } from "./constants";
 import { shortUuid } from "./utils";
 

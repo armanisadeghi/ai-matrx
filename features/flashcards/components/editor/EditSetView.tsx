@@ -38,7 +38,6 @@ import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -91,6 +90,8 @@ import {
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { CardImageSlot } from "./CardImageSlot";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -999,7 +1000,7 @@ function CardEditor({
                 />
               </div>
             ) : (
-              <Textarea
+              <ProTextarea
                 value={front}
                 onChange={(e) => editCard({ front: e.target.value })}
                 rows={3}
@@ -1011,7 +1012,7 @@ function CardEditor({
             <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
               Extra notes (optional — shown on the revealed side)
             </label>
-            <Textarea
+            <ProTextarea
               value={back}
               onChange={(e) => editCard({ back: e.target.value })}
               rows={2}
@@ -1030,7 +1031,7 @@ function CardEditor({
                 <ConfigurableMarkdownContent content={front || "*empty*"} />
               </div>
             ) : (
-              <Textarea
+              <ProTextarea
                 value={front}
                 onChange={(e) => editCard({ front: e.target.value })}
                 rows={3}
@@ -1047,7 +1048,7 @@ function CardEditor({
                 <ConfigurableMarkdownContent content={back || "*empty*"} />
               </div>
             ) : (
-              <Textarea
+              <ProTextarea
                 value={back}
                 onChange={(e) => editCard({ back: e.target.value })}
                 rows={3}
@@ -1227,7 +1228,7 @@ function FormulaFields({
         <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
           Question (front)
         </label>
-        <Textarea
+        <ProTextarea
           value={front}
           onChange={(e) => onFrontChange(e.target.value)}
           rows={2}
@@ -1312,7 +1313,7 @@ function FormulaFields({
         <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
           Worked example (markdown + LaTeX)
         </label>
-        <Textarea
+        <ProTextarea
           value={formula.example ?? ""}
           onChange={(e) =>
             onFormulaChange({
@@ -1328,7 +1329,7 @@ function FormulaFields({
         <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
           Extra notes (optional — shown after the example)
         </label>
-        <Textarea
+        <ProTextarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={2}

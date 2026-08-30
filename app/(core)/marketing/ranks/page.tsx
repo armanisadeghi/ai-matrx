@@ -1,11 +1,7 @@
-import { Suspense } from "react";
-import { CrossSiteRanksHub } from "@/features/marketing/components/ranks/CrossSiteRanksHub";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingRanksPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading rank portfolio…" />}>
-      <CrossSiteRanksHub />
-    </Suspense>
-  );
+/** Legacy address — the cross-site rank portfolio is an agency report now. */
+export default function MarketingRanksShim() {
+  permanentRedirect(marketingRoutes.ranksRollup());
 }

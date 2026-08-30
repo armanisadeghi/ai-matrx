@@ -27,7 +27,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { selectAllFoldersMap, selectFileById } from "@/features/files/redux/selectors";
 import { formatFileSize } from "@/features/files/utils/format";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import type { Visibility } from "@/features/files/types";

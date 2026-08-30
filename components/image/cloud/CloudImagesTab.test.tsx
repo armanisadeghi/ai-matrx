@@ -63,7 +63,8 @@ jest.mock("@/features/image-manager/components/CloudFileMetadataSheet", () => ({
   CloudFileMetadataSheet: () => null,
 }));
 
-jest.mock("@/features/files/components/core/MediaThumbnail/MediaThumbnail", () => ({
+jest.mock("@ai-matrx/media/react", () => ({
+  ...jest.requireActual("@ai-matrx/media/react"),
   MediaThumbnail: () => <div />,
 }));
 

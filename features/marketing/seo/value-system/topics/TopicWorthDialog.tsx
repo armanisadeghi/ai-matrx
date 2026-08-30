@@ -27,7 +27,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import {
   isNegativeGuard,
@@ -35,6 +34,7 @@ import {
   OFFERING_MATCH_OPTIONS,
 } from "./types";
 import { DEFAULT_TOPIC_WEIGHT, type TopicTreeNode } from "./lib";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function TopicWorthDialog({
   node,
@@ -174,7 +174,7 @@ export function TopicWorthDialog({
             <Label htmlFor="topic-notes" className="text-xs">
               Why (optional, and worth writing)
             </Label>
-            <Textarea
+            <ProTextarea
               id="topic-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}

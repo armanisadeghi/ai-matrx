@@ -7,6 +7,7 @@ import {
 import {
   buildConsoleCaptureInput,
   isExpectedNextNavigationRecovery,
+  isOpaqueCrossOriginScriptError,
   serializeForErrorCapture,
 } from "./globalErrorCapture";
 
@@ -96,6 +97,28 @@ describe("global console error serialization", () => {
         "Failed to fetch RSC payload for /agents/agent-1/build. Falling back to browser navigation.",
         new Error("request failed"),
       ]),
+    ).toBe(false);
+  });
+
+  it("keeps only the fully opaque cross-origin Script error sentinel local", () => {
+    expect(
+      isOpaqueCrossOriginScriptError({
+        message: "Script error.",
+        error: null,
+        filename: "",
+        lineno: 0,
+        colno: 0,
+      }),
+    ).toBe(true);
+
+    expect(
+      isOpaqueCrossOriginScriptError({
+        message: "Script error.",
+        error: new Error("first-party failure"),
+        filename: "https://www.aimatrx.com/_next/static/chunks/app.js",
+        lineno: 10,
+        colno: 4,
+      }),
     ).toBe(false);
   });
 });

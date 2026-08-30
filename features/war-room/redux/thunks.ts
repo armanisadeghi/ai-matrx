@@ -39,7 +39,7 @@ import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import {
   WAR_ROOM_AUDIO_SOURCE,
   WAR_ROOM_ROOM_AGENT_MANDATE,

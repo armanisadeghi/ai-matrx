@@ -1616,7 +1616,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     slug: "page-research-window",
     overlayId: "pageResearchWindow",
     kind: "window",
-    label: "Research for this page",
+    label: "Page Research",
     defaultData: {
       nodeId: "",
       siteId: "",

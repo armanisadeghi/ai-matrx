@@ -13,7 +13,7 @@ Applies to every user-uploaded branding image: org logo, user avatar, app image,
 4. **Read** — map the DB `<thing>_file_id` back into the app shape.
 5. **Render** — prefer the id, fall back to the url:
    `<InlineMediaRef ref={logoFileId ? { file_id: logoFileId } : logoUrl} />`
-   (`@/features/files/components/inline/InlineMediaRef`). For href/"view" cases use
+   (`@ai-matrx/media/react`). For href/"view" cases use
    `useFileAsset` (`@/features/files/hooks/useFileAsset`), which is a null-safe no-op:
    `const { primaryUrl } = useFileAsset(logoFileId || undefined);`
    `const effectiveUrl = primaryUrl ?? (logoUrl || "");`

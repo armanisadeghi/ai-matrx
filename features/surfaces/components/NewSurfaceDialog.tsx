@@ -19,12 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import {
   createSurface,
   SURFACE_TIERS,
 } from "@/features/surfaces/services/surfaces.service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export const DEFAULT_PARENT_SURFACE = "matrx-default/default";
 export const PARENT_NONE = "__none__";
@@ -215,7 +215,7 @@ export function NewSurfaceDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}

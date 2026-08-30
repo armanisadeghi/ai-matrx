@@ -88,4 +88,21 @@ describe("live chat connector catalogue", () => {
     );
     expect(ids.filter((id) => id === "notion")).toHaveLength(1);
   });
+
+  it("preserves each dynamic provider's real catalogue artwork and brand color", () => {
+    const definitions = buildLiveConnectorDefinitions([
+      entry({
+        slug: "slack",
+        name: "Slack",
+        iconUrl: "https://cdn.example.com/slack.svg",
+        color: "#4A154B",
+      }),
+    ]);
+
+    expect(definitions.find(({ id }) => id === "slack")).toMatchObject({
+      iconUrl: "https://cdn.example.com/slack.svg",
+      brandColor: "#4A154B",
+    });
+    expect(definitions.find(({ id }) => id === "slack")?.logo).toBeUndefined();
+  });
 });

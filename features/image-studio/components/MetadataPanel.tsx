@@ -22,6 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { ImageMetadata, StudioSourceFile } from "../types";
 import { DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MetadataPanelProps {
   file: StudioSourceFile;
@@ -257,14 +259,20 @@ function Field({
       <label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
         {label}
       </label>
-      {multiline ? (
-        <textarea
+      {multiline && mono ? (
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={2}
+          className="w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 font-mono text-xs leading-snug focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      ) : multiline ? (
+        <ProTextarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={2}
           className={cn(
             "w-full text-xs rounded-md border border-border bg-background px-2 py-1.5 leading-snug focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none",
-            mono && "font-mono",
           )}
         />
       ) : (

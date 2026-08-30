@@ -25,7 +25,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eraser, Loader2, Tag, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
 import {
@@ -36,6 +35,7 @@ import {
   DimensionValuePicker,
   type PickedValue,
 } from "./DimensionValuePicker";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface AssignTarget {
   keywordIds: string[];
@@ -171,7 +171,7 @@ export function AssignPanel({
         >
           Why? <span className="text-muted-foreground">— optional, but this is what teaches the system</span>
         </label>
-        <Textarea
+        <ProTextarea
           id="assign-reason"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

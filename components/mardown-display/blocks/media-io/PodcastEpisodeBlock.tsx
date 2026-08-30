@@ -22,7 +22,7 @@
 
 import Link from "next/link";
 import { AlertTriangle, ExternalLink, Loader2, Mic } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import {
   readPodcastSpeakerList,

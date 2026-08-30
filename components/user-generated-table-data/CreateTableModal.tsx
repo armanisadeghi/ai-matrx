@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash, TriangleAlert } from "lucide-react";
 import {
@@ -27,6 +26,7 @@ import {
   VALID_DATA_TYPES,
 } from "@/utils/user-table-utls/table-utils";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CreateTableModalProps {
   isOpen: boolean;
@@ -248,7 +248,7 @@ export default function CreateTableModal({
 
           <div className="space-y-2">
             <Label htmlFor="description">Description (optional)</Label>
-            <Textarea
+            <ProTextarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

@@ -11,7 +11,7 @@ flashcards, summary, quiz, practice test, mind map, memory aids, notes, audio st
 
 The kit builder (`features/education/onboard`) has always produced eight artifacts from one
 upload, and they then scattered into six flat per-type lists. Nothing in the product ever showed
-the learner the thing they actually have: *their chemistry chapter*. This feature is that place —
+the learner the thing they actually have: _their chemistry chapter_. This feature is that place —
 the student arrives with ONE subject, so they get ONE page for it.
 
 ## THE KIT NEEDS NO TABLE — it already existed in the data
@@ -22,12 +22,12 @@ kinds. The grouping was in the database and nowhere in the UI.
 
 So:
 
-| The kit's… | is… |
-|---|---|
-| identity | its **source material** — the kit id IS the anchor id (a `file` in every ingested kit) |
-| membership | the anchor's incoming `source` edges |
-| name | `metadata.sourceTitle` on those edges — written once per run by `onboard/kitTitle.ts`, identical on every sibling |
-| chronology | the edges' `created_at` |
+| The kit's… | is…                                                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| identity   | its **source material** — the kit id IS the anchor id (a `file` in every ingested kit)                            |
+| membership | the anchor's incoming `source` edges                                                                              |
+| name       | `metadata.sourceTitle` on those edges — written once per run by `onboard/kitTitle.ts`, identical on every sibling |
+| chronology | the edges' `created_at`                                                                                           |
 
 No kit table, no kit column, no migration. Reads go through the registered association RPCs
 (`assoc_for_entity` / `assoc_for_sources`) — never a direct `platform.associations` query.
@@ -38,9 +38,9 @@ back the next day would recreate the scattering this feature exists to end.
 
 ## 🚨 WHAT THIS DOES NOT YET SOLVE — one kit is still ONE upload
 
-Arman's words that prompted this feature were plural: *"they're uploading **a bunch of stuff**
+Arman's words that prompted this feature were plural: _"they're uploading **a bunch of stuff**
 that's for one thing... give them a place they can go where all they look at is one thing, but
-**everything for that one thing**."*
+**everything for that one thing**."_
 
 What shipped closes the easier half: one upload's artifacts stop scattering. It does **not**
 close the half he actually described — a unit made of several sources (the chapter PDF, the
@@ -74,29 +74,35 @@ stamps it, so a `source` edge without one belongs to a different system on the s
 importantly the **per-card** `fc_card → file` edges a deck writes, which would otherwise flood a
 kit with hundreds of rows. Filter on the stamp, never on a type blocklist.
 
-## The kit is a STUDY surface, not a directory
+## The kit is a STUDY PATH, not a directory
 
-`kitStudy.ts` reads the canonical study spine (`item_mastery` via `studyService` — the SAME
-numbers the deck page and planner show, never a second progress model) for the kit's largest
-deck, and the hub leads with mastery %, cards studied, due count, and one primary action.
+The hub organizes every artifact by the learner's job — **Understand it → Make it stick → Prove
+you know it** — and names each card by its study-aid type, never by repeating the kit title eight
+times. Each format keeps its own destination, honest action verb, live content count, and the
+short reason a learner would choose it.
 
-🚨 **The action always opens the deck's own study surface, and the due count is a FACT, not a
-destination.** There is no per-kit due queue: `/education/flashcards/review` is the cross-deck
-FSRS queue and `[setId]/study` takes no mode parameter, so a "review this kit's due cards" link
-would be a promise the product cannot keep — exactly the class of shipped lie
-(`STATE.md` §4.1 item 7) that a behavioural test cannot see.
+`readKitArtifactStats` reuses the canonical Education Library KPI fold for the kit's exact
+artifact ids. Countable study aids show their own item coverage, lifetime accuracy, due count,
+and last activity; audio shows duration; read/explore formats keep their own content detail. The
+former top-level “X% mastered” was only flashcard retention for the largest deck, so presenting
+it as mastery of the entire mixed-format kit was removed. There is no invented kit score and no
+second progress model.
+
+`edu_library_list_scoped` accepts the same `{id: {kind:'select', values:[...]}}` filter vocabulary
+as every entity list. That filter is load-bearing: a kit fetches its eight KPI rows directly
+instead of scanning the learner's entire library.
 
 ## Doors (THE DOOR LAW)
 
 A kit is reachable from every direction a learner can arrive from:
 
-| From | Door |
-|---|---|
-| The run that just finished | **Open your kit** on `KitBoard` — the first time a kit outlives its tab |
-| Any artifact page (all 8 kinds) | **Open the kit** on `convert/MadeFromSource` |
-| The education tools grid + hub | The `kits` entry in `data/tools.ts` |
-| A kit page | **The material** (the source file) and **Make more from it** |
-| The education home's one nudge | `?add=<kind>` — the chip for a format the kit lacks (`home/nudges.ts` → `kitAddHref`) |
+| From                            | Door                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| The run that just finished      | **Open your kit** on `KitBoard` — the first time a kit outlives its tab               |
+| Any artifact page (all 8 kinds) | **Open the kit** on `convert/MadeFromSource`                                          |
+| The education tools grid + hub  | The `kits` entry in `data/tools.ts`                                                   |
+| A kit page                      | **The material** (the source file) and **Make more from it**                          |
+| The education home's one nudge  | `?add=<kind>` — the chip for a format the kit lacks (`home/nudges.ts` → `kitAddHref`) |
 
 ## MAKING MORE STAYS IN THE KIT
 
@@ -128,13 +134,20 @@ same anchor and whatever is made lands in THIS kit.
   before 2026-08-22 render the raw filename they were created with (`sample_video`,
   `STUDY KIT PDF VERIFICATION TEST`). They are not broken; they predate naming. A kit with no
   `sourceTitle` on any edge falls back to its newest artifact's title.
-- **The "largest deck" rule.** A kit with several decks shows the study bar for its biggest one.
-  Fine today (kits have one deck); revisit if multi-deck kits become normal.
 - **Artifact titles may legitimately differ from the kit's name.** A single-pass run lets a
   generator's own agent title its artifact, which is often better for that artifact. The kit's
   name is the name of the MATERIAL, which is what the hub is about.
 
 ## Change log
+
+- **2026-08-29** — **Reimagined the kit as an evidence-backed study path.** The hub no longer
+  repeats the material title on every artifact or presents one deck's retention as kit-wide
+  mastery. It now leads with a real next challenge, three learner-centered stages, type-first
+  cards, per-artifact counts / coverage / accuracy / due work / last activity, and honest
+  untracked-format detail. Added an exact-id filter to the canonical library RPC so the hub can
+  reuse its KPI fold without a full-library scan. The Education home kit cards now expose four
+  labeled, 40px mobile destinations plus a working “Open all N study aids” door instead of an
+  unlabeled icon strip; desktop exposes every type by name.
 
 - **2026-08-25** — **Making more stays in the kit.** `MakeMoreFromKit` replaces the
   `/education/start` link on the hub, `convert/reopenAnchor.ts` recovers any anchor's material

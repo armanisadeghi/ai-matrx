@@ -354,7 +354,6 @@ function categoryGroupNode(
   const { category, items, children } = group;
   const children_: MenuNode[] = items.map((entry) => {
     const isDisabled = entry.entryType === "agent_shortcut" && !entry.agentId;
-    const isLegacy = entry.legacyMatch === true;
     const hint =
       entry.entryType === "agent_shortcut" && entry.keyboardShortcut
         ? entry.keyboardShortcut
@@ -366,10 +365,9 @@ function categoryGroupNode(
       id: `entry:${entry.id}`,
       label: entry.label,
       icon: resolveIcon(entry.iconName),
-      iconClassName: isLegacy ? "text-red-600 dark:text-red-400" : undefined,
-      title: isLegacy
-        ? "Legacy match: shown via enabledFeatures/untagged, not surfaceName. Needs backfill."
-        : undefined,
+      // Phase 6.7: there is no "legacy match" row any more. Availability is
+      // derived (requirement-gate.ts) — an item either QUALIFIES here or is
+      // absent. Nothing renders red to advertise a backfill backlog.
       hint,
       disabled: isDisabled,
       onSelect: () => m.handleEntrySelect(entry),

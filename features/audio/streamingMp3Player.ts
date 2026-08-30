@@ -26,7 +26,7 @@ export function createStreamingMp3Player(
   options: StreamingMp3PlayerOptions = {},
 ): StreamingAudioPlayer | null {
   if (typeof window === "undefined" || typeof MediaSource === "undefined") {
-    console.error(
+    console.info(
       "[streaming-mp3] MediaSource is unavailable — live MP3 playback disabled; waiting for the canonical audio file",
     );
     return null;
@@ -34,7 +34,7 @@ export function createStreamingMp3Player(
 
   const mimeType = options.mimeType || "audio/mpeg";
   if (!MediaSource.isTypeSupported(mimeType)) {
-    console.error(
+    console.info(
       `[streaming-mp3] browser does not support MediaSource ${mimeType} — live playback disabled; waiting for the canonical audio file`,
     );
     return null;

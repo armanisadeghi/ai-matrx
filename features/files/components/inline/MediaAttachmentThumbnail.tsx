@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { AlertCircle, Image as ImageIcon, Loader2, X } from "lucide-react";
-import { InlineMediaRef } from "./InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
 
 const FILE_ID_PATTERN =

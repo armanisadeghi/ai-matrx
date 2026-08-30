@@ -3,8 +3,8 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface DefaultVariableValuesEditorProps {
   /** Declared variables on the agent. */
@@ -98,7 +98,7 @@ export function DefaultVariableValuesEditor({
               )}
             </div>
             {isMultiline ? (
-              <Textarea
+              <ProTextarea
                 id={`var-${v.name}`}
                 value={stringValue}
                 onChange={(e) => setValue(v.name, e.target.value)}

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { Trash2 } from 'lucide-react';
 import { MODEL_DESCRIPTION_MAX_CHARS } from '../model-metadata';
 import { ModelListDropdown } from '@/features/ai-models/components/lab/ModelListDropdown';
 import type { AiModelFormData, AiProvider, AiModel } from '../types';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AiModelFormProps {
     data: AiModelFormData;
@@ -98,7 +98,7 @@ export default function AiModelForm({
                 label="Description"
                 description={`Shown to users under the model name in pickers. Say what it is good at and when to pick something else — not the numbers already displayed. Max ${MODEL_DESCRIPTION_MAX_CHARS} characters; blank clears it.`}
             >
-                <Textarea
+                <ProTextarea
                     value={data.description}
                     onChange={set('description')}
                     maxLength={MODEL_DESCRIPTION_MAX_CHARS}

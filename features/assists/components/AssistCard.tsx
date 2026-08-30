@@ -11,7 +11,6 @@
 import { lazy, Suspense, useState } from "react";
 import { Clock, ExternalLink, Loader2, Quote, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +34,7 @@ import {
   urgencyFromPriority,
   type Assist,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Markdown loads only when a card actually opens — chips stay feather-light.
 const BasicMarkdownContent = lazy(
@@ -460,7 +460,7 @@ export function AssistCard({
           // anything was typed. kg-suggestions' defer-with-note, generalised —
           // "why did I say no" is the thing a resurfacing row must answer.
           <div className="mt-2">
-            <Textarea
+            <ProTextarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Optional — why not? (shown if this ever comes back)"
@@ -500,7 +500,7 @@ export function AssistCard({
               assist. This stays visible in All assists, where you can turn it
               back on.
             </p>
-            <Textarea
+            <ProTextarea
               value={silenceReason}
               onChange={(event) => setSilenceReason(event.target.value)}
               placeholder="Why should this kind stay quiet?"

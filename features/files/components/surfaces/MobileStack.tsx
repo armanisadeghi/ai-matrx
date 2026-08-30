@@ -50,7 +50,7 @@ import {
   loadFolderContents,
   loadUserFileTree,
 } from "@/features/files/redux/thunks";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
 import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";

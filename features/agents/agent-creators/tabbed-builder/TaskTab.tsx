@@ -3,11 +3,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface TaskTabProps {
   updateContent?: (content: string) => void;
@@ -120,7 +120,7 @@ const TaskContent: React.FC<TaskTabProps> = ({ updateContent }) => {
         <Label htmlFor="specific-task" className="text-gray-700 dark:text-gray-300">
           Specific Instructions (Optional)
         </Label>
-        <Textarea
+        <ProTextarea
           id="specific-task"
           placeholder="Add more specific instructions about the task"
           value={specificTask}

@@ -15,11 +15,11 @@
 import type {
   BlockPrinter,
   PrintSettings,
-} from "@/lib/block-print/block-print-utils";
+} from "@ai-matrx/print/core";
 import {
   buildPrintDocument,
   openPrintWindow,
-} from "@/lib/block-print/block-print-utils";
+} from "@ai-matrx/print/core";
 import type { DiagramData } from "./parseDiagramJSON";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ async function captureDiagramToPDF(
   settings: PrintSettings,
 ): Promise<void> {
   const { captureToPDF } =
-    await import("@/lib/block-print/dom-capture-print-utils");
+    await import("@ai-matrx/print/pdf");
 
   const orientation =
     (settings["orientation"] as "portrait" | "landscape") ?? "landscape";

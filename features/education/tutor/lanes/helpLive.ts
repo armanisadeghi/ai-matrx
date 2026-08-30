@@ -5,7 +5,7 @@
 // generalized out of Fast Fire so EVERY study surface (classic set study,
 // adaptive due review, weak-area drill, Fast Fire) can offer the same AI
 // tutor with real learner context, not a stub. The lane resolves through the
-// mandate — swap the agent behind it at /agents/mandates (the old
+// mandate — swap the agent behind it at /mandates (the old
 // localStorage agent-id override is RETIRED; bindings replaced it).
 //
 // The agent round-trip runs through the canonical headless primitive

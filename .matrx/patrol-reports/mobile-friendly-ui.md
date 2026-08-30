@@ -1,230 +1,67 @@
 # P3 Mobile-Friendly UI Patrol
 
-- **Run date:** 2026-08-27 (America/Los_Angeles)
-- **Run id:** `2026-08-27T131727Z`
-- **Base:** `2cfc5d15ffbb1886572f97f7ea58451dadcc1aa6` (`v0.4.1306` ancestry)
-- **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/safe-area pass
-- **Current state:** reconciled after exact-SHA certification, existing delivery bookkeeping, recovered exact-checkout interaction proof, and certified release-authorization ordering evidence
-- **Findings:** 19 verified occurrences in 8 files
-- **Fixed in candidate:** 19
-- **Approvals needed:** 0
-- **Degradation:** none outstanding. The permanent record still shows that release preceded certification; the retry recovered the missing exact-checkout proof and repaired the controller without creating another release.
+**Updated:** 2026-08-30  
+**Mode:** ERADICATION  
+**Runs:** `20260830T141852Z`, `20260830T143951Z`
 
-## Resume reconciliation
+## Outcome
 
-The prior P3 candidate `e8a5e84287f0d68962bcbcd067419432d706fcc2`
-was already an ancestor of `origin/main` and release `v0.4.980`. Its permanent
-authority record now carries the missing `delivered` event.
+This wave verified and repaired 18 mobile defects: the open Provider Sync compressed header plus 17 hover-only interactive controls across 15 files. Both exact product candidates are independently certified and present on `origin/main`. No approval or exception is needed.
 
-This run began in the detached automation worktree at base `2cfc5d15ff`. That
-worktree and one exact replacement were removed externally after baseline
-capture. The integration controller preserved the coherent fixing-state batch
-as `f28850472b2c617b9adcb53aeb43e37c2d96471a` on `origin/main` before
-certification. The permanent record therefore names the infrastructure block
-and escaped delivery explicitly; integration is not being treated as proof.
+P3 remains in ERADICATION. The corrected repository detector reports 169 actionable findings, 4 review findings, 93 decorative matches, and 187 already-safe matches. The next bounded unit is 20 findings across 15 files.
 
-The 2026-08-29 Fleet Health retry appended event 9, `reconciled`, rather than
-rewriting any prior event. Event 4 still records escaped delivery before event
-6 records certification and event 7 records delivery bookkeeping.
+## Provider Sync compressed header
 
-## Scope scanned
+The 375x812 sighting on `/administration/ai/ai-models/provider-sync` was reproduced: five metrics collapsed into narrow columns and the legend, Copy, and Refresh controls overlapped.
 
-Structural novelty since the preceding certified candidate:
+Exact candidate `141d52a518e50714c865419f020c0aa81f028566` repairs the shared dashboard toolbar by separating mobile statistics, legend, and actions into wrapping lanes; preserving the compact desktop row; and providing 44px mobile actions. Focused regression tests pass 2/2.
 
-- 177 added route leaves (1,217 current; SHA-256 `b496f1096b12b8e576f25656f7b07e0f702db5b8fbe77fe2e7dad287ce0d468c`)
-- 754 added direct client TSX files
-- 11 net-new top-level feature directories (138 current; SHA-256 `2ebbc9373a2253eeaf669f3aae26f0be45b4b8dd4256a6fea12c67c3354bcea8`)
-- all open P3 sightings
-- a periodic full runtime pass for numeric `vh`, `h-screen`, pinch-zoom config, inline sub-16px font sizes, and fixed-bottom safe-area candidates
-- targeted triage of new hover-hidden candidates and direct client route roots
+Independent certifier `/root/p3_provider_certifier_fresh` returned **CERTIFIED**:
 
-The full mechanical viewport/config pass is clean: no live numeric `vh`, no
-`h-screen`, no inline sub-16px font size, correct `userScalable: true` /
-`maximumScale: 5`, and no verified fixed-bottom safe-area defect.
+- 375x812 light and dark: 375px document width, no overflow or overlap, three distinct lanes, 44px Copy and Refresh.
+- 1440x900 light and dark: one compact 45px toolbar row, no overflow or overlap, 28px desktop actions.
+- Exact blobs, type-check, focused Jest, and path diff check passed.
 
-## Verified findings and standing-authority repairs
+The shared controller integrated the candidate before certification. Run `20260830T141852Z` preserves that ordering failure, then records exact certification and integration-only delivery. No release was created for this unit.
 
-### Hover-hidden touch actions — 11 occurrences
+## Hover-only interaction detector
 
-Eleven real edit, delete, filter, and row-menu actions were unconditionally
-`opacity-0` and depended on `group-hover` to become visible. They occurred in:
+`scripts/pattern-patrol/p3-hover-detector.ts` now distinguishes actionable controls from decorative icons, gives imported icon identity precedence over component-name suffixes, and requires hover hiding to be viewport-breakpoint-gated or otherwise explicitly safe below the breakpoint. Detector candidate `2a23c732f242b206db32064c4eec5cca060b6ed2` contains exactly the detector and its test; 15/15 tests pass.
 
-- Industry pack bands (2)
-- Industry pack meaning (2)
-- Industry pack topics (2)
-- Taxonomy tree row actions (1)
-- Performance review delete (1)
-- HR self-service edit (1)
-- Keyword Workbench filter (1)
-- Workflow browse row menu (1)
+The detector learned two concrete false-positive and false-negative classes during this run:
 
-Every action is now visible by default. Desktop hover-capable devices retain
-the dense reveal behavior through `[@media(hover:hover)]`; focus visibility is
-preserved. Event handlers, labels, permissions, and desktop dimensions are
-unchanged.
+- Imported Lucide icons such as `ExternalLink` are decoration unless the callsite supplies interaction semantics.
+- `@media (hover:hover)` alone is not mobile-safe because a browser can report hover capability at a 375px viewport; desktop hiding must also be breakpoint-gated.
 
-### Coarse-pointer touch floor — 8 surface roots
+Current inventory: 169 actionable, 4 review, 93 decoration, 187 safe.
 
-The same eight dense roots now consume the existing `.matrx-touch-targets`
-primitive. It applies only under `pointer: coarse`, raises controls to the 44px
-minimum, and leaves mouse/desktop density unchanged.
+## Hover repair unit 1
 
-## Baseline-delta verification
+Exact replacement candidate `c4eed060429b9941c5325d3e8ff88a10edfd90e8` repairs 17 verified controls across 15 files. Controls are visible by default, retain keyboard focus visibility, use the nearest safe `.matrx-touch-targets` floor, and hide/reveal only under `sm:[@media(hover:hover)]`, preserving desktop behavior without re-hiding mobile-width actions.
 
-- `pnpm type-check`: PASS -> PASS
-- `pnpm check:doctrine`: PASS -> PASS
-- `pnpm check:page-headers`: 7 warnings -> the same 7
-- `pnpm check:ui-primitives`: 25 warnings -> the same 25
-- `pnpm check:tsconfig`: PASS with the same two notes
-- `pnpm check:patrol-contracts`: unchanged baseline failure limited to other patrol/fleet automation drift; P3 has no manifest drift
-- `pnpm check:migrations`: exit 0 with 60 unrelated pre-existing drift warnings
-- scoped ESLint: the same two baseline errors before and after (`PackTopicsSection.tsx:67`, `TaxonomyTree.tsx:113`); neither changed line is involved
-- PostCSS/Tailwind compilation: PASS, 1,649,911 generated CSS bytes
-- changed-file assertions: 8 touch-floor roots, 11 `hover:hover` hides, 11 matching hover reveals, 0 unconditional hover-hidden action matches
-- `git diff --check`: PASS
+The first retry `38173c5d5011a6e594c3e9aa0eecf4c86a735527` was correctly **REJECTED**: at 375x812 the Browser reported hover capability, and Workbooks Delete computed to opacity 0 despite a 44x44 box. The replacement fixes the entire 17-control class, not only that callsite.
 
-The managed preview is owned by the requested checkout but was already at
-approximately 25 GB RSS. A 375x812 in-app Browser navigation timed out; the
-owned tab was closed and viewport override reset. No foreign preview, Chrome,
-or user tab was used. Under the baseline-delta constitution this is
-infrastructure evidence, not a product rejection.
+Independent exact-candidate certification is **CERTIFIED**:
 
-## Exact-checkout proof recovery — 2026-08-29
+- 375x812 light and dark: Delete and Quick Look are visible at opacity 1, 44x44, with no overflow or overlap; Quick Look activation opened the expected dialog.
+- 1440x900 light and dark: Delete is hidden at rest and revealed by card hover and true keyboard focus; dense 28px desktop geometry and non-overlap are preserved.
+- All 15 owned blobs matched before and after Browser proof; type-check, syntax, path diff, and detector Jest 15/15 passed.
 
-The retry recreated candidate `f28850472b2c617b9adcb53aeb43e37c2d96471a`
-in a detached worktree, completed a worktree-local offline install, and used
-only that checkout's managed preview lease. The first taxonomy navigation
-timed out at the browser transport boundary, but the route completed and the
-same owned in-app Browser tab remained controllable.
+The shared release lane tagged the active replacement as `v0.4.1495` before certification. Permanent run `20260830T143951Z` retains the `infrastructure_blocked` and `escaped_delivery` events, the concrete rejected predecessor, exact replacement certification, and reconciliation to the existing release. No redundant release was created.
 
-Representative exact-byte evidence then passed:
+## Remaining routing
 
-- Taxonomy at 375x812 loaded authenticated live data, and its visible Edit
-  action opened the real edit dialog.
-- Workflow browse at 375x812 exposed a measured 44x44 row action; activating it
-  opened the real `Options` dialog.
-- A populated Shared Knowledge industry-pack Meaning surface at 375x812 entered
-  inline editing from its action. The rendered CSSOM contained the exact
-  `(pointer: coarse)` `.matrx-touch-targets` 2.75rem minimum-height and
-  minimum-width rules, and the live action was inside that primitive.
-- Taxonomy at 1440x900 retained desktop density: the row action was opacity 0
-  before pointer hover and opacity 1 after hover.
-- The browser console contained no errors. The owned tab was closed, the
-  viewport override was reset, and the exact-worktree preview lease was
-  stopped.
+The next bounded repair unit contains 20 findings across PackBandsSection, PackMeaningSection, PackTopicsSection, SystemPromptColumnHeader, ToolsColumnHeader, TuningColumnHeader, VariationsColumnHeader, ResourcesSection, AgentContextPoliciesManager, AgentSettingsCore, StreamProfilerOverlay, DocumentsWorkspace, InstanceUIStateCore, InstanceUIStateList, and TaskPanel.
 
-The in-app Browser's explicit mobile viewport remained hover-capable and did
-not emulate a coarse pointer. The proof therefore combines real 375x812
-interactions with exact-checkout rendered-CSSOM verification of the
-coarse-pointer rule; it does not claim native coarse-pointer emulation.
+No finding was suppressed, allowlisted, or converted into an exception. The four detector review findings remain open for evidence-based classification.
 
-## Release-authorization lifecycle evidence — 2026-08-29
+## Baseline and infrastructure notes
 
-The retry verified two controller defects. First, `release.sh` treated patrol
-delivery authorization as advisory, and the delivery policy did not recognize
-a non-latest permanent patrol-run record as provenance. That combination let
-the original product candidate reach release before certification. Second, an
-initial hard-fail repair (`078f36e07127ba1e32b037d8f7afa452f10a893e`) still
-performed its authorization check after lease acquisition and branch mutation;
-independent adversarial review rejected it for that concrete ordering defect.
-
-Certified machinery candidate `9d168957618fbabc876239fdee736fc6184d4ae7`:
-
-- recognizes permanent patrol-run record paths as patrol provenance;
-- requires authorization for both the local release source and fetched
-  `origin/main` before the serialized lease or branch movement;
-- refuses divergent history rather than rebasing an exact certified candidate;
-- preserves the local release commit and tag for controller reconciliation if
-  a push race occurs; and
-- adds privileged, append-only `reconciled` state validation tied to the exact
-  escaped event hash, later exact-candidate certification, delivery
-  bookkeeping, and recovered proof checks.
-
-Independent adversarial review **CERTIFIED** that exact machinery SHA after the
-rejection. Focused Jest coverage passed 14/14, along with the Git-authority
-test, type-check, shell syntax, diff, and candidate-scoped delivery checks.
-The fleet release policy subsequently restored patrol delivery findings to an
-advisory, fail-forward gate. This evidence therefore records the certified
-ordering behavior of that candidate; it does not claim the current release
-controller hard-stops on patrol findings.
-
-An earlier repair ancestor, `592ef9c4f5924c7bf407ff70c64e8e2010bf8695`,
-was concurrently integrated before certification and entered releases
-`v0.4.1441` and `v0.4.1442`; commit `09d31a9b53eb0afd69ae06b1622cd83b3e6eeb39`
-then restored the unsafe advisory behavior. Those facts remain visible rather
-than being rewritten. During final integration, current main also merged
-`4c4476af2ee74510f1eb8b498bf7bfc76482873c`, which again restored the
-fail-forward branch after the certified repair was already in ancestry. Exact
-follow-up candidate `b242d633f1247620468c3c4a8d5faaedf7e0d9cf` removes that
-regression on top of current main and was independently **CERTIFIED**: focused
-Jest passed 15/15, type-check and shell/diff checks passed, local and remote
-authorization precede lease and branch mutation, the post-ship hard checkpoint
-remains before tag creation, and no rebase path exists. A second concurrent
-merge, `bd22614a02b2a0bd9db246964a85a77db99e6095`, then explicitly selected
-the fail-forward version again. The final exact follow-up on that merge ancestry,
-`bd6d6672cd1336747f01d57c96ea44a519615814`, was independently **CERTIFIED**
-with the same 15/15 focused suite and ordering assertions. This retry integrates
-that final certified state without creating a redundant release. A concurrent
-fleet process cut `v0.4.1443` from the fail-forward ancestry before this final
-integration; this retry did not create that release. Certified candidate
-`bd6d6672cd` is preserved as an ancestor of final integration
-`c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc`. The scheduled fleet policy keeps
-the current `release.sh` fail-forward for patrol findings; certification of the
-historical hard-stop candidate does not override that release policy.
-
-## Open routing
-
-- `/administration/ai/ai-models/provider-sync` remains open: the prior 375x812
-  compressed-header sighting could not be re-verified because the exact
-  checkout navigation timed out. It remains a missing-current-evidence task,
-  not an exception.
-- The broad hover-only backlog remains a detector/triage task. This run repaired
-  all 11 verified real actions in the structurally new candidate set; decorative
-  hover polish and responsive desktop-only actions were not counted.
-
-No exception was proposed, suppressed, or allowlisted. No product-layout choice
-requiring Arman was found.
-
-## Certification
-
-Independent adversarial review **CERTIFIED** exact candidate
-`f28850472b2c617b9adcb53aeb43e37c2d96471a`: all 19 repairs, Tailwind
-semantics, coarse-pointer isolation, keyboard visibility, unchanged handlers,
-and the baseline-delta evidence passed with no concrete batch-caused defect.
-The candidate had already been preserved on `origin/main` and entered
-`v0.4.1307`; the permanent record retains that ordering as escaped delivery and
-then closes it with exact-candidate certification and delivery reconciliation.
-
-Independent adversarial review also **CERTIFIED** lifecycle candidate
-`9d168957618fbabc876239fdee736fc6184d4ae7`, after rejecting its predecessor
-for checking authorization too late. That candidate checked local and remote
-source authorization before release-lane mutation and preserved exact history
-across divergence or push races. Later concurrent merges restored fail-forward
-behavior, as recorded below; current main intentionally retains that scheduled
-fleet policy while preserving the certified hard-stop candidates in ancestry.
-
-After a parallel fail-forward commit was subsequently merged into main,
-independent adversarial review **CERTIFIED** exact follow-up
-`b242d633f1247620468c3c4a8d5faaedf7e0d9cf` against its current-main parent.
-That candidate restores the hard failure without changing the previously
-certified ordering or history-preservation behavior.
-
-When a second concurrent merge again selected fail-forward behavior,
-independent adversarial review **CERTIFIED** final exact follow-up
-`bd6d6672cd1336747f01d57c96ea44a519615814` against merge parent
-`fe3fcc2bfdbfd3f0742578b3c9bccb487f00b9ae`. The certifier verified both
-pre-mutation authorization checks, the post-ship hard checkpoint, no rebase,
-and the complete focused gate set.
-
-Code integration `c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc` and projection
-`b0a9943d6cf3301914587207a2da00517edd6afb` preserve that certified SHA as an
-ancestor on `origin/main`. Current main applies the fleet's fail-forward patrol
-policy. No release was created for the retry.
+- Canonical checkout and canonical `pnpm preview:start/status/stop` lease were used; no worktree was created.
+- A poisoned preserved `.next-preview` cache reported a duplicate declaration absent from current source and passing type-check. The cache was moved recoverably to `/tmp/matrx-p3-next-preview-stale.bz3yvK/.next-preview`; the clean canonical rebuild returned HTTP 200.
+- Independent Browser bindings reset several times. Those incidents were recorded as infrastructure evidence; no valid repair was rejected for them.
+- Concurrent shared-checkout checkpoints twice absorbed exact owned bytes and once rolled back the first hover candidate. Durable refs and blob-scoped certification preserved exact provenance without overwriting unrelated work.
 
 ## Recursive learning
 
-This retry proved that a fail-closed release test must assert control-flow
-ordering, not merely the presence of a failing checker or matching error text.
-The smallest next improvement is a runtime release-controller harness that
-forces the patrol checker to fail and asserts that no lease, branch, version,
-tag, or push mutation occurred.
+Imported-icon identity must precede component-name control heuristics, and mobile-safe hover hiding needs both hover capability and an explicit desktop breakpoint. The smallest next process improvement is to make the detector assertion and four-quadrant Browser probe a pre-certification gate before the shared release lane can checkpoint or tag an active candidate.

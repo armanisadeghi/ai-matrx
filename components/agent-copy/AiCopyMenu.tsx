@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Download, Loader2, Table2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,14 +42,17 @@ import {
   fmtBytes,
   writeClipboard,
 } from "@/components/agent-copy/clipboard";
+import type { ExportItem } from "@/components/agent-copy/export";
+import { useExportActions } from "@/components/agent-copy/useExportActions";
 
 /**
  * AiCopyMenu — the data-agnostic multi-variant "Copy for AI" control.
  *
  * A "Copy for AI" control is not a copy button — it is an AI context source: a
  * named point in the UI that turns whatever data is in scope into a
- * model-ready payload. Small bounded data keeps the plain CopyButtons pair;
- * once the data is medium/massive, the AI action becomes THIS menu — graded
+ * model-ready payload. This is also the internal chrome for CopyButtons'
+ * second icon: JSON / AI / Export actions live here while human Copy remains
+ * the first icon. Once the data is medium/massive, the menu gains graded
  * variants (Short / Everything) and, for data with real shortening knobs, a
  * custom-preview dialog with live char / byte / ~token counts.
  *
@@ -71,6 +74,12 @@ export interface AiVariant {
   label: string;
   hint?: string;
   icon?: AiIconType;
+  /** Groups related rows and inserts a separator when the section changes. */
+  section?: "copy" | "ai";
+  /** Accessible name when this is the only action and the trigger runs it directly. */
+  ariaLabel?: string;
+  /** Success copy for clipboard variants. Defaults to the historical AI message. */
+  successMessage?: string;
   /** Pure builder → an envelope input (wrapped via buildAgentPayload) or a
    *  finished string. May be async (e.g. lazily fetches the full set). */
   build?: () =>
@@ -162,6 +171,11 @@ export interface AiCopyMenuProps {
   custom?: AiCustomSource;
   /** Optional whole-page Groomer, opened from a single menu item. */
   groomer?: () => AgentCopyGroomerConfig;
+  /** Download and external-destination actions appended after copy actions. */
+  exportConfig?: {
+    items: ExportItem[];
+    sheetRows?: () => Array<Record<string, unknown>>;
+  };
   /** Human label for tooltips / toasts, e.g. "Backlinks", "All sandboxes". */
   label: string;
   /**
@@ -172,8 +186,8 @@ export interface AiCopyMenuProps {
   size?: CopyActionSize;
   appearance?: CopyActionAppearance;
   /**
-   * Fill one even-width slot inside {@link CopyActionGroup}. The chevron
-   * sits beside the icon; every cell is sized for that pair.
+   * Fill the available action slot. The chevron sits beside the icon when a
+   * caller deliberately uses grouped legacy chrome.
    */
   grouped?: boolean;
   /** Stop click events from bubbling (rows/cards with their own onClick). */
@@ -191,6 +205,7 @@ export function AiCopyMenu({
   variants,
   custom,
   groomer,
+  exportConfig,
   label,
   size = "icon",
   appearance = "segmented",
@@ -206,8 +221,13 @@ export function AiCopyMenu({
   const [groomerConfig, setGroomerConfig] =
     React.useState<AgentCopyGroomerConfig | null>(null);
   const [openModalId, setOpenModalId] = React.useState<string | null>(null);
+  const { runExportItem, sendToSheet, sendingToSheet } = useExportActions({
+    label,
+    sheetRows: exportConfig?.sheetRows,
+  });
 
   const buttonCls = cn(
+    "shrink-0",
     grouped
       ? copyActionSegmentClass(size, appearance)
       : size === "xs"
@@ -249,7 +269,7 @@ export function AiCopyMenu({
     try {
       const resolved = await v.build();
       await writeClipboard(toText(resolved));
-      toast.success(`${label} — ${v.label} copied for AI`);
+      toast.success(v.successMessage ?? `${label} — ${v.label} copied for AI`);
     } catch {
       toast.error(`Failed to copy ${label}`);
     } finally {
@@ -257,8 +277,13 @@ export function AiCopyMenu({
     }
   };
 
+  const hasExports =
+    (exportConfig?.items.length ?? 0) > 0 ||
+    exportConfig?.sheetRows !== undefined;
   const single =
-    variants.length === 1 && !custom && !groomer ? variants[0] : null;
+    variants.length === 1 && !custom && !groomer && !hasExports
+      ? variants[0]
+      : null;
 
   const openGroomer = () => {
     if (!groomer) return;
@@ -315,8 +340,8 @@ export function AiCopyMenu({
         className={cn(buttonCls, className)}
         disabled={disabled || busy}
         onClick={() => activateVariant(single)}
-        aria-label={`Copy ${label} for AI`}
-        title={single.hint ?? `Copy ${label} for AI`}
+        aria-label={single.ariaLabel ?? `Copy ${label} for AI`}
+        title={single.hint ?? single.ariaLabel ?? `Copy ${label} for AI`}
       >
         {triggerBody}
       </Button>,
@@ -333,33 +358,41 @@ export function AiCopyMenu({
             size="icon"
             className={cn(buttonCls, className)}
             disabled={disabled || busy}
-            aria-label={`Copy ${label} for AI`}
-            title={`Copy ${label} for AI`}
+            aria-label={`Copy ${label} for AI or export`}
+            title={`Copy ${label} for AI or export`}
           >
             {triggerBody}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align={align} className="w-72">
-          <DropdownMenuLabel>Copy {label} for AI</DropdownMenuLabel>
+          <DropdownMenuLabel>{label} actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {variants.map((v) => {
+          {variants.map((v, index) => {
             const Icon = v.icon ?? CopyForAiIcon;
+            const previous = variants[index - 1];
+            const startsSection =
+              index > 0 &&
+              v.section !== undefined &&
+              previous?.section !== undefined &&
+              v.section !== previous.section;
             return (
-              <DropdownMenuItem
-                key={v.id}
-                onSelect={() => activateVariant(v)}
-                className="gap-2"
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <div className="flex flex-col">
-                  <span>{v.label}</span>
-                  {v.hint && (
-                    <span className="text-xs text-muted-foreground">
-                      {v.hint}
-                    </span>
-                  )}
-                </div>
-              </DropdownMenuItem>
+              <React.Fragment key={v.id}>
+                {startsSection ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuItem
+                  onSelect={() => activateVariant(v)}
+                  className="gap-2"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <div className="flex flex-col">
+                    <span>{v.label}</span>
+                    {v.hint && (
+                      <span className="text-xs text-muted-foreground">
+                        {v.hint}
+                      </span>
+                    )}
+                  </div>
+                </DropdownMenuItem>
+              </React.Fragment>
             );
           })}
           {custom && (
@@ -395,6 +428,35 @@ export function AiCopyMenu({
               </DropdownMenuItem>
             </>
           )}
+          {hasExports ? (
+            <>
+              <DropdownMenuSeparator />
+              {exportConfig?.items.map((item) => (
+                <DropdownMenuItem
+                  key={`export-${item.id}`}
+                  onSelect={() => void runExportItem(item)}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4 shrink-0" />
+                  <span>{item.label}</span>
+                </DropdownMenuItem>
+              ))}
+              {exportConfig?.sheetRows ? (
+                <DropdownMenuItem
+                  disabled={sendingToSheet}
+                  onSelect={() => void sendToSheet()}
+                  className="gap-2"
+                >
+                  <Table2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>
+                    {sendingToSheet
+                      ? "Creating Google Sheet…"
+                      : "Send to Google Sheet"}
+                  </span>
+                </DropdownMenuItem>
+              ) : null}
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 

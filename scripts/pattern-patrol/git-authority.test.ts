@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -58,9 +58,13 @@ describe("Pattern Patrol remote run authority", () => {
       authorityRef,
       actor: "controller",
     });
-    expect(git(repo, ["merge-base", "--is-ancestor", candidateSha, authoritySha])).toBe("");
     expect(
-      JSON.parse(git(repo, ["show", `${authoritySha}:.matrx/patrol-runs/P9/run-9.json`])),
+      git(repo, ["merge-base", "--is-ancestor", candidateSha, authoritySha]),
+    ).toBe("");
+    expect(
+      JSON.parse(
+        git(repo, ["show", `${authoritySha}:.matrx/patrol-runs/P9/run-9.json`]),
+      ),
     ).toEqual(first);
     expect(() =>
       publishPatrolRunAuthority({
@@ -80,5 +84,86 @@ describe("Pattern Patrol remote run authority", () => {
         actor: "controller",
       }),
     ).toThrow("not an exact prefix");
+  });
+
+  it("publishes corrected candidate bytes after the recorded candidate is rejected", () => {
+    writeFileSync(join(repo, "product.txt"), "first candidate\n");
+    git(repo, ["add", "product.txt"]);
+    git(repo, ["commit", "-m", "first product candidate"]);
+    const firstCandidate = git(repo, ["rev-parse", "HEAD"]);
+    const authorityRef = "refs/heads/patrol-runs/P9/run-9";
+    const first = blockedRecord();
+    const firstAuthority = publishPatrolRunAuthority({
+      repoRoot: repo,
+      record: first,
+      candidateSha: firstCandidate,
+      authorityRef,
+      actor: "controller",
+    });
+
+    writeFileSync(join(repo, "product.txt"), "corrected candidate\n");
+    git(repo, ["add", "product.txt"]);
+    git(repo, ["commit", "-m", "correct product candidate"]);
+    const correctedCandidate = git(repo, ["rev-parse", "HEAD"]);
+    const certifying = appendPatrolRunEvent(first, {
+      state: "certifying",
+      at: "2026-08-14T12:02:00.000Z",
+      actor: "controller",
+      summary: "Certifying first candidate",
+    });
+    const rejected = appendPatrolRunEvent(certifying, {
+      state: "rejected",
+      at: "2026-08-14T12:03:00.000Z",
+      actor: "certifier",
+      summary: "Rejected first candidate",
+    });
+    const rejectedAuthority = publishPatrolRunAuthority({
+      repoRoot: repo,
+      record: rejected,
+      candidateSha: firstCandidate,
+      authorityRef,
+      actor: "controller",
+    });
+    expect(
+      git(repo, [
+        "merge-base",
+        "--is-ancestor",
+        firstAuthority,
+        rejectedAuthority,
+      ]),
+    ).toBe("");
+    const fixing = appendPatrolRunEvent(rejected, {
+      state: "fixing",
+      at: "2026-08-14T12:04:00.000Z",
+      actor: "worker",
+      summary: "Corrected rejected defect",
+    });
+    const correctedAuthority = publishPatrolRunAuthority({
+      repoRoot: repo,
+      record: fixing,
+      candidateSha: correctedCandidate,
+      authorityRef,
+      actor: "controller",
+    });
+
+    expect(git(repo, ["show", `${correctedAuthority}:product.txt`])).toBe(
+      "corrected candidate",
+    );
+    expect(
+      git(repo, [
+        "merge-base",
+        "--is-ancestor",
+        rejectedAuthority,
+        correctedAuthority,
+      ]),
+    ).toBe("");
+    expect(
+      git(repo, [
+        "merge-base",
+        "--is-ancestor",
+        correctedCandidate,
+        correctedAuthority,
+      ]),
+    ).toBe("");
   });
 });

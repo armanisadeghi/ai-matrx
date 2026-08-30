@@ -20,6 +20,7 @@ import {
   Hammer,
   Variable,
 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -73,7 +74,13 @@ export function ShortcutQuickCreateBody({
         </div>
         <div className="text-sm font-semibold text-foreground truncate mt-0.5 flex items-center gap-1.5">
           <Hammer className="h-3.5 w-3.5 text-primary shrink-0" />
-          {agent?.name ?? "Loading…"}
+          {agent?.name ?? (
+            <SuspenseLoader
+              size="xs"
+              centered={false}
+              message="Loading agent…"
+            />
+          )}
         </div>
         {agent?.description && (
           <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">

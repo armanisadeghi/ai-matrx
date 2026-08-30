@@ -4,8 +4,8 @@
 // an agent id: it resolves LIVE (system default → org binding → user binding)
 // to whatever agent the DATABASE currently binds — agent identity (and the
 // tutor's entire persona/prompt) never lives in code. Swap the agent at
-// /agents/mandates; no code change, no deploy. See
-// features/agents/mandates/FEATURE.md.
+// /mandates; no code change, no deploy. See
+// features/mandates/FEATURE.md.
 //
 // The one-shot in-study help lanes (helpLive / reviewBatch / microCoach) live
 // in FC_MANDATES (features/flashcards/data/mandates.ts) — they are flashcards

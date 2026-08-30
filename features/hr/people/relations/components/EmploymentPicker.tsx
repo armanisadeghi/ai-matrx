@@ -36,6 +36,7 @@ export function EmploymentPicker({
   id,
   value,
   onChange,
+  onChangeSubject,
   disabled,
   placeholder = "Search by name or employee number",
 }: {
@@ -43,6 +44,28 @@ export function EmploymentPicker({
   /** The chosen `employment_id`, or null. */
   value: string | null;
   onChange: (employmentId: string | null) => void;
+  /**
+   * 🚨 THE SUBJECT LANE, FOR A DOOR THAT RESOLVES THE SPELL ITSELF.
+   *
+   * `hr_directory_list` is TIERED, and at the employee tier it does not return
+   * `employment_id` — that is the working-record addressing key and withholding
+   * it is deliberate (hr_l1_65). So for a rank-and-file viewer every row here
+   * arrived with a null spell id and was rendered disabled by the rule below,
+   * and an employee opening the incident intake form found every colleague
+   * greyed out: they could describe what happened and could not say who it was
+   * about.
+   *
+   * Two different facts were arriving on the wire looking identical — "this
+   * person has no spell" and "you may not see this person's spell id" — and
+   * only the server can tell them apart. So when a caller passes this, the
+   * picker hands back the EMPLOYEE and the door resolves the spell
+   * (`hr_incident_create` → `hr.subject_employment_as_of`, hr_l1_79). Callers
+   * whose door genuinely needs a specific spell — a corrective action, a party
+   * row on a rehire — must NOT pass it and keep the strict behaviour.
+   */
+  onChangeSubject?: (
+    value: { employmentId: string | null; employeeId: string | null },
+  ) => void;
   disabled?: boolean;
   placeholder?: string;
 }) {
@@ -141,12 +164,22 @@ export function EmploymentPicker({
                 type="button"
                 // A person with no active spell cannot be the subject of a new
                 // record keyed on a spell. Absent from the choices, not offered
-                // and then refused.
-                disabled={!row.employment_id}
+                // and then refused. UNLESS the caller's door resolves the spell
+                // itself — then a missing `employment_id` means "not yours to
+                // see", not "not there", and disabling the row would hide the
+                // whole company from the person filing a complaint.
+                disabled={!row.employment_id && !onChangeSubject}
                 onClick={() => {
-                  if (!row.employment_id) return;
+                  if (!row.employment_id && !onChangeSubject) return;
                   setChosen(row);
-                  onChange(row.employment_id);
+                  if (onChangeSubject) {
+                    onChangeSubject({
+                      employmentId: row.employment_id ?? null,
+                      employeeId: row.employee_id ?? null,
+                    });
+                    return;
+                  }
+                  onChange(row.employment_id ?? null);
                 }}
                 className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
               >

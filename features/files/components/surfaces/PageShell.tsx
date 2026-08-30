@@ -105,7 +105,7 @@ import {
   loadUserFileTree,
 } from "@/features/files/redux/thunks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,7 +117,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { FileUploadDropzone } from "@ai-matrx/media/react";
 import { OnboardingEmptyState } from "./OnboardingEmptyState";
 import { MobileStack } from "./MobileStack";
 import { PreviewPane } from "./PreviewPane";
@@ -950,7 +950,7 @@ function PageShellDesktop({
                           <SectionPlaceholder section={section} />
                         ) : isEmpty && section === "all" ? (
                           <FileUploadDropzone
-                            parentFolderId={null}
+                            uploadOptions={{ parentFolderId: null }}
                             mode="overlay"
                             className="h-full w-full"
                             onUploadStart={handleUploadStart}
@@ -970,7 +970,7 @@ function PageShellDesktop({
                           />
                         ) : showTableOrGrid ? (
                           <FileUploadDropzone
-                            parentFolderId={activeFolderId}
+                            uploadOptions={{ parentFolderId: activeFolderId }}
                             mode="overlay"
                             className="h-full w-full"
                             onUploadStart={handleUploadStart}

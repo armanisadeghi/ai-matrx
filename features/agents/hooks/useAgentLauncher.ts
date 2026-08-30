@@ -211,6 +211,9 @@ export function useAgentLauncher(
     async (id: string, opts?: ManagedAgentOptions): Promise<LaunchResult> => {
       const payload: ManagedAgentOptions = {
         agentId: id,
+        // Mandate-driven launch with a known display agent — the run still goes
+        // through the server's mandate door (see ManagedAgentOptions.mandateKey).
+        ...(opts?.mandateKey ? { mandateKey: opts.mandateKey } : {}),
         conversationId: opts?.conversationId,
         surfaceKey: opts?.surfaceKey ?? `agent:${id}`,
         sourceFeature: opts?.sourceFeature ?? "agent-runner",
@@ -335,6 +338,7 @@ export function useAgentLauncher(
     jsonExtraction,
     retainOnUnmount = false,
     isEphemeral,
+    mandateKey: managedMandateKey,
   } = options ?? {};
 
   useEffect(() => {
@@ -386,6 +390,11 @@ export function useAgentLauncher(
       surfaceKey,
       conversationId: targetId,
       sourceFeature,
+      // THE MANDATE DOOR for managed surfaces. A surface that knows WHICH JOB
+      // it is (chat's `chat.default_new_chat`) passes both: `agentId` paints
+      // the header/input bar from the surface's own SSR resolution, and the
+      // RUN goes to `/ai/mandates/{key}` where the server decides the Holder.
+      ...(managedMandateKey ? { mandateKey: managedMandateKey } : {}),
       // Managed-mode defaults: direct display, no auto-run.
       // Caller's config takes precedence via the spread.
       config: { displayMode: "direct", autoRun: false, ...config },
@@ -452,7 +461,14 @@ export function useAgentLauncher(
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId, ready, isManaged, surfaceKey, freshSessionKey]);
+  }, [
+    agentId,
+    ready,
+    isManaged,
+    surfaceKey,
+    freshSessionKey,
+    managedMandateKey,
+  ]);
 
   if (isManaged) {
     return {

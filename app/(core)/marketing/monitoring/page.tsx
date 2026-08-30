@@ -1,36 +1,11 @@
-// app/(core)/marketing/monitoring/page.tsx
-//
-// The Marketing pillar's front door to monitoring: coverage, link changes, AI
-// visibility and reputation all live in a WEBSITE's own workspace, so this
-// route scopes to a site and opens them. It never re-renders them.
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-import { Suspense } from "react";
-import type { Metadata } from "next";
-
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { MonitoringFrontDoor } from "@/features/marketing/front-doors/MonitoringFrontDoor";
-
-export const metadata: Metadata = {
-  title: "Monitoring",
-  description:
-    "Who wrote about you, what happened to your links, and whether the answer engines cite you — watched per website.",
-};
-
-export default function MarketingMonitoringPage() {
-  return (
-    <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Monitoring
-          </h1>
-        </div>
-      </PageHeader>
-      {/* The site selector reads `?site=` on the client. */}
-      <Suspense fallback={<LoadingSurface label="Loading monitoring…" />}>
-        <MonitoringFrontDoor />
-      </Suspense>
-    </>
-  );
+/**
+ * Legacy flat pillar. Monitoring now lives on the brand, at /marketing/[brand]/intelligence/monitoring.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingMonitoringShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

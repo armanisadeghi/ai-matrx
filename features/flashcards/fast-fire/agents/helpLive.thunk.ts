@@ -9,7 +9,7 @@
 // the timer deadline itself lives in a ref, not Redux, per the slice's design).
 //
 // The lane resolves through the mandate (FC_MANDATES.helpLive) — swap the
-// agent behind it at /agents/mandates (the old localStorage agent-id config
+// agent behind it at /mandates (the old localStorage agent-id config
 // is RETIRED; bindings replaced it).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";

@@ -32,6 +32,7 @@ import {
   sourceKindLabel,
 } from "./source-kind-badge";
 import type { Database } from "@/types/database.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -201,7 +202,7 @@ export function ToolEditPage({ tool }: Props) {
         <Label>
           Description <span className="text-destructive">*</span>
         </Label>
-        <Textarea
+        <ProTextarea
           value={editedTool.description}
           onChange={(e) => setField("description", e.target.value)}
           rows={4}

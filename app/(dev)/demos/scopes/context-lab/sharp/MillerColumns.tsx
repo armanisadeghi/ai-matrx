@@ -9,6 +9,7 @@
 
 import React, { useState } from "react";
 import { Building2, Check, ChevronRight, Loader2 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
@@ -84,20 +85,25 @@ export function MillerColumns({ data, sel, footer }: MillerColumnsProps) {
                 >
                   <CheckTarget on={sel.hasOrg(org.id)} />
                 </button>
-                <button
-                  className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-left"
-                  onClick={() => {
+                <EntityRef
+                  token="organization"
+                  id={org.id}
+                  name={org.name}
+                  fill
+                  onOpen={() => {
                     setNavOrg(org);
                     setNavType(null);
                     setNavScope(null);
                   }}
+                  className="h-full min-w-0 flex-1"
+                  labelClassName="flex items-center gap-1.5 text-[13px]"
                 >
                   <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate text-[13px]">
                     {org.name}
                   </span>
-                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
-                </button>
+                </EntityRef>
+                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
               </div>
             );
           })}

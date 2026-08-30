@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import type { TaxonomyLevel, TaxonomyRow, TaxonomyStatus } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface NodeDialogState {
   mode: "create" | "edit";
@@ -210,7 +210,7 @@ export default function NodeDialog({ state, rows, onClose, onSaved }: NodeDialog
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="tax-notes">Notes</Label>
-            <Textarea
+            <ProTextarea
               id="tax-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

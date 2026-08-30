@@ -5,7 +5,6 @@ import { Save, X, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { updateOrganization } from "../service";
@@ -15,7 +14,7 @@ import {
   type Organization,
   type OrgRole,
 } from "../types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";
@@ -25,6 +24,7 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useOrgSettingsLayoutRefresh } from "./OrgSettingsLayoutContext";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface GeneralSettingsProps {
   organization: Organization;
@@ -336,7 +336,7 @@ export function GeneralSettings({
           </Label>
           {isEditing ? (
             <>
-              <Textarea
+              <ProTextarea
                 id={`${fieldId}-description`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

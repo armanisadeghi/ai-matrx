@@ -14,6 +14,7 @@
 
 import { Label } from "@/components/ui/label";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface WidgetVariableInputsProps {
   definitions: VariableDefinition[];
@@ -106,7 +107,7 @@ export function WidgetVariableInputs({
                 className="w-full h-8 rounded-md border border-border bg-background px-2 text-sm leading-tight placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             ) : (
-              <textarea
+              <ProTextarea
                 id={id}
                 value={
                   typeof current === "string"

@@ -40,8 +40,18 @@ import {
 
 const ALERTS_PROMISE_ID = "marketing.monitoring.alerts";
 
-export function MonitoringFrontDoor() {
-  const siteState = useFrontDoorSite();
+export function MonitoringFrontDoor({
+  brandId,
+  basePath,
+}: {
+  /** Brand scope — the brand route always passes it (see useFrontDoorSite). */
+  brandId?: string | null;
+  /** The route the site picker writes `?site=` back onto. Defaults to the flat
+   * monitoring route; inside a brand it must be the brand route or selecting a
+   * site navigates the user out of the client workspace. */
+  basePath?: string;
+} = {}) {
+  const siteState = useFrontDoorSite(brandId);
   const promise = getComingSoon(ALERTS_PROMISE_ID);
 
   const doors: MarketingDoor[] = [];
@@ -86,7 +96,7 @@ export function MonitoringFrontDoor() {
       toolbar={
         <FrontDoorSiteSelect
           state={siteState}
-          basePath="/marketing/monitoring"
+          basePath={basePath ?? "/marketing/monitoring"}
           label="Website to monitor"
         />
       }

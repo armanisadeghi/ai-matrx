@@ -61,7 +61,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Json } from "@/types/database.types";
@@ -85,6 +84,7 @@ import {
   type AccessPlannerSnapshot,
   type PlannerTable,
 } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type AccessMode = "root" | "nested" | "component" | "infrastructure";
 
@@ -1228,7 +1228,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                         <Label htmlFor="reason">
                           Why is this not an entity?
                         </Label>
-                        <Textarea
+                        <ProTextarea
                           id="reason"
                           value={reason}
                           onChange={(event) => setReason(event.target.value)}

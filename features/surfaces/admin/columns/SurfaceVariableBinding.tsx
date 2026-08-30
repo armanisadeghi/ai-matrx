@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -29,6 +28,7 @@ import {
   formatVariableDisplayName,
   variableValueToDisplay,
 } from "@/features/agents/utils/variable-utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * One row in the binding form. Drives a single agent variable / context
@@ -466,7 +466,7 @@ function DirectValueDetail({
       <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
         Value
       </Label>
-      <Textarea
+      <ProTextarea
         value={stringValue}
         onChange={(e) => onChange({ ...mapping, target: e.target.value })}
         rows={3}

@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -82,6 +87,14 @@ import {
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
+// #51 — the manifest-role half of the auto-run inversion writes through the
+// SAME binding path 6.8 shipped, and offers through the SAME rule file.
+import {
+  listAgentSurfaceBindings,
+  upsertAgentSurfaceBinding,
+  type AgentSurfaceBinding,
+} from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import {
   ToolSearchDialog,
@@ -106,6 +119,7 @@ import {
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NONE = "__none__";
 
@@ -789,7 +803,7 @@ function IdentitySection({
       <div className="space-y-3 rounded-md border border-border bg-card p-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Description</Label>
-          <Textarea
+          <ProTextarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
             rows={3}
@@ -1822,6 +1836,133 @@ function RolesSection({
   const [busyRole, setBusyRole] = useState<string | null>(null);
   const roles = configBundle?.dbRoles ?? [];
 
+  /**
+   * 🚨 THE MANIFEST HALF OF THE AUTO-RUN INVERSION (census #51, PLAN 6.8).
+   *
+   * This line used to be `auto-run: {role.autoRun}` — a read-only badge
+   * printing a manifest word. 6.8's rule is that the manifest declares the
+   * CHOICE-NESS, not always the answer: `always`/`never` are pins the admin
+   * must not touch, and `user-choice` is the manifest saying "somebody decides
+   * this" — with nowhere to record the decision.
+   *
+   * WHERE THE ANSWER GOES: the surface binding, through the same path 6.8's
+   * binding half already shipped (`upsertAgentSurfaceBinding` → payload v3
+   * `auto_run`, rule in `features/surfaces/utils/binding-auto-run.ts`). NOT a
+   * new column and NOT a new config namespace: the role's answer is "when this
+   * agent runs on this surface, does it stop and ask?", which is precisely
+   * what a binding's `auto_run` means. Writing it anywhere else would create a
+   * second auto-run store that `resolveEffectiveAutoRun` does not read — an
+   * unhonored knob, which is worse than the read-only badge it replaces.
+   *
+   * The edit therefore lands on the PLATFORM (global-tier) binding for the
+   * agent that currently fills the role, and the launcher honors it through
+   * the precedence rule already in place. `evaluateBindingAutoRun` gates the
+   * offer here on the mapping's prompts — the required-variable half of the
+   * same rule is re-checked by the launcher against the live page, which is
+   * the documented design (intent, never a bypass).
+   */
+  const [roleBindings, setRoleBindings] = useState<
+    Record<string, AgentSurfaceBinding | null>
+  >({});
+  const [bindingsError, setBindingsError] = useState<string | null>(null);
+
+  /** The agent actually filling the role: platform override, else the manifest default. */
+  const effectiveAgentIdFor = useCallback(
+    (role: { name: string; defaultAgentId: string | null }): string | null => {
+      const override = (configBundle?.prefs ?? []).find(
+        (p) =>
+          p.roleName === role.name &&
+          p.kind === "selection" &&
+          tierOf(p) === "global",
+      );
+      return override?.agentId ?? role.defaultAgentId ?? null;
+    },
+    [configBundle],
+  );
+
+  const roleAgentSignature = roles
+    .map((role) => `${role.name}:${effectiveAgentIdFor(role) ?? ""}`)
+    .join("|");
+
+  useEffect(() => {
+    const pairs = roleAgentSignature
+      .split("|")
+      .filter(Boolean)
+      .map((entry) => {
+        const idx = entry.indexOf(":");
+        return { roleName: entry.slice(0, idx), agentId: entry.slice(idx + 1) };
+      })
+      .filter((p) => p.agentId);
+    if (pairs.length === 0) {
+      setRoleBindings({});
+      return;
+    }
+    let cancelled = false;
+    // ONE read per distinct agent, never one per role.
+    const agentIds = [...new Set(pairs.map((p) => p.agentId))];
+    Promise.all(agentIds.map((id) => listAgentSurfaceBindings(id)))
+      .then((results) => {
+        if (cancelled) return;
+        const byAgent = new Map<string, AgentSurfaceBinding[]>();
+        agentIds.forEach((id, i) => byAgent.set(id, results[i] ?? []));
+        const next: Record<string, AgentSurfaceBinding | null> = {};
+        for (const pair of pairs) {
+          next[pair.roleName] =
+            (byAgent.get(pair.agentId) ?? []).find(
+              (b) =>
+                b.surfaceName === surfaceName &&
+                !b.userId &&
+                !b.organizationId &&
+                !b.projectId &&
+                !b.taskId,
+            ) ?? null;
+        }
+        setRoleBindings(next);
+        setBindingsError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        // Verbatim, and rendered — a silent failure here would show every role
+        // as "not set" and invite an admin to overwrite a real answer.
+        setBindingsError(
+          err instanceof Error ? err.message : "Binding read failed",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [roleAgentSignature, surfaceName]);
+
+  const setRoleAutoRun = async (
+    roleName: string,
+    agentId: string,
+    next: boolean,
+  ) => {
+    setBusyRole(roleName);
+    try {
+      const existing = roleBindings[roleName];
+      const saved = await upsertAgentSurfaceBinding({
+        agentId,
+        surfaceName,
+        scope: {},
+        valueMappings: existing?.valueMappings ?? {},
+        writePolicies: existing?.writePolicies,
+        autoRun: next,
+      });
+      setRoleBindings((prev) => ({ ...prev, [roleName]: saved }));
+      toast.success(
+        next
+          ? `${roleName} runs immediately on this surface`
+          : `${roleName} waits for Run on this surface`,
+      );
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Auto-run save failed");
+    } finally {
+      setBusyRole(null);
+    }
+  };
+
   // NO NULL ORG: the platform-global tier is the system org, not an all-NULL
   // row (db-rules §2/§6e). `tierOf` is the ONE place that knows that — this
   // page used to re-derive the tier inline, which is exactly how a rule like
@@ -1882,6 +2023,17 @@ function RolesSection({
           {roles.map((role) => {
             const overrides = globalSelectionFor(role.name);
             const isBusy = busyRole === role.name;
+            // #51 — the manifest declares the choice-ness; `user-choice` (the
+            // sync default for an unset column) is the one writable case.
+            const declaredAutoRun = role.autoRun ?? "user-choice";
+            const autoRunIsWritable = declaredAutoRun === "user-choice";
+            const roleAgentId = effectiveAgentIdFor(role);
+            const binding = roleBindings[role.name] ?? null;
+            const eligibility = evaluateBindingAutoRun(
+              [],
+              binding?.valueMappings ?? {},
+            );
+            const autoRunOn = binding?.autoRun === true;
             return (
               <div key={role.name} className="px-3 py-2 space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1905,10 +2057,62 @@ function RolesSection({
                       max {role.maxAgents}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="text-[10px]">
-                    auto-run: {role.autoRun}
-                  </Badge>
+                  {/* AUTO-RUN — read-only where the manifest PINS it, a real
+                      editor where the manifest says `user-choice`. */}
+                  {!autoRunIsWritable ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px]"
+                      title={`The manifest pins auto-run to "${declaredAutoRun}" for this role. Change the manifest to make it a choice.`}
+                    >
+                      auto-run: {declaredAutoRun} (pinned)
+                    </Badge>
+                  ) : !roleAgentId ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-amber-600 dark:text-amber-400"
+                      title="The manifest leaves auto-run to a choice, but no agent fills this role yet — there is no binding to record the answer on. Set a platform default or an override first."
+                    >
+                      auto-run: your choice — no agent in this role
+                    </Badge>
+                  ) : (
+                    <label
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded border border-border px-1.5 py-0.5 text-[10px]",
+                        !eligibility.eligible && "opacity-60",
+                      )}
+                      title={
+                        eligibility.eligible
+                          ? autoRunOn
+                            ? "Runs the moment it is triggered here. The launcher still refuses if the mapping leaves a required variable unresolved on the live page — a stored yes is intent, never a bypass."
+                            : "Waits for the person to press Run on this surface."
+                          : `Waits for Run — this binding's mapping asks for ${eligibility.blockers.join(", ")}`
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-3 w-3 accent-primary"
+                        checked={autoRunOn}
+                        disabled={isBusy || !eligibility.eligible}
+                        onChange={(e) =>
+                          void setRoleAutoRun(
+                            role.name,
+                            roleAgentId,
+                            e.target.checked,
+                          )
+                        }
+                      />
+                      <span className={autoRunOn ? "text-primary" : "text-muted-foreground"}>
+                        auto-run
+                      </span>
+                    </label>
+                  )}
                 </div>
+                {bindingsError && autoRunIsWritable && (
+                  <p className="text-[10px] text-destructive">
+                    Auto-run answer unreadable: {bindingsError}
+                  </p>
+                )}
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
                   <span className="text-muted-foreground">
                     Platform default:{" "}
@@ -2001,6 +2205,18 @@ function RoleOverridePicker({
 // Config namespaces (global/admin tier is editable)
 // ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * The `menu` namespace is offered on EVERY surface, declared or not — the
+ * exclusion valve is a property of being a place, not of a manifest opting
+ * in. Shape: `{ "excludedItemIds": ["<shortcut/mandate id>", ...] }`.
+ */
+const UNIVERSAL_MENU_NAMESPACE = {
+  namespace: "menu",
+  label: "Context menu (exclusion valve)",
+  description:
+    'Item ids this surface REFUSES even though they qualify. Menu availability is otherwise derived — an item is offered here iff every surface value it consumes has a read path on this page. Shape: {"excludedItemIds":["<id>"]}. Org and user tiers may exclude MORE; no tier can re-admit.',
+} as const;
+
 function ConfigNamespacesSection({
   surfaceName,
   configBundle,
@@ -2027,7 +2243,17 @@ function ConfigNamespacesSection({
   const globalRowFor = (ns: string) =>
     rows.find((row) => row.namespace === ns && tierOf(row) === "global");
   const allNamespaces = [
-    ...new Set([...declared.map((d) => d.namespace), ...counts.keys()]),
+    ...new Set([
+      ...declared.map((d) => d.namespace),
+      ...counts.keys(),
+      // THE EXCLUSION VALVE (#43) is universal — every place may refuse a
+      // context-menu item the derived requirement gate offered it
+      // (THE-MODEL law 3). Declaring it on all ~100 manifests would be
+      // noise, and injecting it into every RESOLVED manifest would flood the
+      // user-facing surfaces hub (which lists a surface iff it has roles or
+      // namespaces). So it is declared HERE, where the valve is authored.
+      UNIVERSAL_MENU_NAMESPACE.namespace,
+    ]),
   ].sort((a, b) => a.localeCompare(b));
 
   return (
@@ -2043,7 +2269,11 @@ function ConfigNamespacesSection({
       ) : (
         <div className="rounded-md border border-border bg-card divide-y divide-border">
           {allNamespaces.map((ns) => {
-            const decl = declared.find((d) => d.namespace === ns) ?? null;
+            const decl =
+              declared.find((d) => d.namespace === ns) ??
+              (ns === UNIVERSAL_MENU_NAMESPACE.namespace
+                ? UNIVERSAL_MENU_NAMESPACE
+                : null);
             const tierCounts = counts.get(ns) ?? {};
             return (
               <NamespaceConfigEditorRow

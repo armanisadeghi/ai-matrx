@@ -285,7 +285,10 @@ export function boundaryWeeksSentence(boundaryWorkweekIds: string[]): string | n
   if (count === 0) return null;
   const noun = count === 1 ? "workweek straddles" : "workweeks straddle";
   return (
-    `${count} ${noun} this period's edges. Overtime for those weeks is computed on the whole week ` +
+    // Byte-identical to the server's `boundary_note` since hr_l3_119 — the panel prefers the
+    // server note and falls back to this one, so the two saying different things would show a
+    // reader a different sentence for the same fact depending on which read reached them.
+    `${count} ${noun} this period's edges. Overtime for those weeks is computed on the whole workweek ` +
     `and attributed to the period containing the week's end date.`
   );
 }

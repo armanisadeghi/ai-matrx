@@ -22,7 +22,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -65,6 +64,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Define TypeScript types
 export type TranscriptSegment = Omit<
@@ -1119,7 +1119,7 @@ const AdvancedTranscriptViewer = ({
                 onTextInsertBefore={(text) => setEditValue(`${text}${editValue}`)}
                 onTextInsertAfter={(text) => setEditValue(`${editValue}${text}`)}
               >
-                <Textarea
+                <ProTextarea
                   id="segment-text"
                   ref={editSegmentTextareaRef}
                   value={editValue}

@@ -1,6 +1,11 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingAiVisibilityPage() {
-  redirect(marketingRoutes.sites());
+/**
+ * Legacy flat pillar. AI visibility now lives on one site's SEO practice, at /marketing/[brand]/seo/[site]/ai-visibility.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingAiVisibilityShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

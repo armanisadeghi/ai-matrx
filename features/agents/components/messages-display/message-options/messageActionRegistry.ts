@@ -975,7 +975,7 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         try {
           // Markdown → styled offscreen render → multi-page PDF blob.
           const { markdownToPdfBlob } =
-            await import("@/lib/block-print/markdown-pdf");
+            await import("@/lib/print/markdown-pdf");
           const blob = await markdownToPdfBlob(content);
 
           const title = deriveMessageTitle(ctx);
@@ -2129,7 +2129,7 @@ export function resumePendingAuthAction(
         })
         .catch(() => toast.error("Failed to publish webpage"));
     } else if (action === "save-as-pdf") {
-      import("@/lib/block-print/markdown-pdf")
+      import("@/lib/print/markdown-pdf")
         .then(async ({ markdownToPdfBlob }) => {
           const blob = await markdownToPdfBlob(savedContent);
           const ts = new Date()

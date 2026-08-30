@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P9",
-  "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
-  "state": "delivered",
-  "updatedAt": "2026-08-29T14:50:09.472Z",
-  "summary": "Corrected certified P9 repair delivered; original escaped candidate shipped as v0.4.561 and was reconciled without redundant re-release.",
-  "source": "019ff9f6-6062-78f0-a8d2-e96ec520f635.json",
-  "eventHash": "8bdc54dde7c4902a6e82c71a31bb84c8c7b223bbe78b55063c06454f89efa86f"
+  "runId": "01a05301-8fab-7d50-87f1-ea38599319d4",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:56:19.115Z",
+  "summary": "Restored the unreleased Files batch as the final state: no behavioral defect, delivery blocked only by the generated route-manifest lockfile prohibition.",
+  "source": "01a05301-8fab-7d50-87f1-ea38599319d4.json",
+  "eventHash": "14a0c756b3da7483e8112060fc0e7c60aebb054e8eb5cad39c4155ec34c605a1"
 }

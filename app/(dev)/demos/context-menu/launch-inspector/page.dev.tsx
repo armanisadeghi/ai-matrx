@@ -397,7 +397,7 @@ export default function LaunchInspectorDemoPage() {
                 onClick={() => void loadById()}
                 className="min-h-11 rounded border border-border px-3 text-sm text-primary hover:bg-muted/50 disabled:opacity-50 sm:min-h-8 sm:text-xs"
               >
-                {idLoading ? "Loading…" : "Load"}
+                {idLoading ? "Loading shortcut…" : "Load"}
               </button>
             </div>
             {idError && (

@@ -16,7 +16,8 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
-import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
+import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { chatConversationsActions } from "../../_legacy-stubs";
 import { AssistantActionBar } from "./AssistantActionBar";
 import type { ConversationMessage } from "@/features/cx-chat/types/conversation";
@@ -111,11 +112,13 @@ export function AssistantMessage({
   ).audioMimeType;
   // A TTS audio response is one of our own files — on a load failure the
   // primitive refreshes the file-session cookie and retries the durable URL.
+  const audioSrc = audioUrl ?? "";
   const {
-    src: audioSrc,
     retryKey: audioRetryKey,
-    onError: handleAudioError,
-  } = useDurableSrc(audioUrl ?? null);
+    onLoadError: handleAudioError,
+  } = useMediaLoadRecovery(audioUrl ?? null, {
+    recoverable: !!audioUrl && recognizeOurFileUrl(audioUrl) !== null,
+  });
 
   const handleDownloadAudio = async () => {
     if (!audioUrl || isDownloading) return;

@@ -26,6 +26,7 @@ import {
   Scale,
   Search,
 } from "lucide-react";
+import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import { useSites } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -71,19 +72,32 @@ const SCREENS = [
   },
 ] as const;
 
-const LIST_STATE = {
+// Plain-column sort ON PURPOSE: the default KPI sort routes through
+// web.v_site_kpis, which is GSC-access-gated and has no row for KPI-less
+// sites — a DOOR page must never lose a site over metrics (2026-08-30).
+// Click ordering happens client-side on whatever the rows carry. The shape is
+// the REAL MatrxDataTableQueryState — the old `filters: {}` stub made
+// listSites read `state.columnFilters[...]` off undefined and throw.
+const LIST_STATE: MatrxDataTableQueryState = {
   page: 1,
   pageSize: 50,
   search: "",
-  sort: null,
-  filters: {},
-} as const;
+  anyOf: "",
+  columnFilters: {},
+  sort: { id: "updated_at", direction: "desc" },
+};
 
-export function KeywordIntelligenceHub() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the shared
-  // list hook's query-state type is the table's, not ours; this page needs only
-  // the first page of sites by clicks, which is that type's default shape.
-  const sites = useSites(LIST_STATE as any);
+export function KeywordIntelligenceHub({
+  brandId,
+}: {
+  /**
+   * Scope the hub to one client's websites (the agency-model brand workspace
+   * mounts it as the brand's SEO overview). Omitted, it lists every readable
+   * site — the pre-restructure cross-portfolio behavior.
+   */
+  brandId?: string;
+} = {}) {
+  const sites = useSites(LIST_STATE, brandId ?? null);
 
   const rows = useMemo(
     () =>
@@ -100,21 +114,22 @@ export function KeywordIntelligenceHub() {
           Keyword Intelligence
         </h1>
         <p className="text-xs text-muted-foreground">
-          Every screen that gives your keywords meaning, for every website you
-          run. Pick a website, then the job you came to do.
+          {brandId
+            ? "Every screen that gives this client's keywords meaning. Pick a website, then the job you came to do."
+            : "Every screen that gives your keywords meaning, for every website you run. Pick a website, then the job you came to do."}
         </p>
       </header>
 
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
         <Link
-          href="/marketing/approvals"
+          href={marketingRoutes.approvals()}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
         >
           <ClipboardCheck className="h-3.5 w-3.5" />
           Approvals — everything an agent proposed
         </Link>
         <Link
-          href={marketingRoutes.ranks()}
+          href={marketingRoutes.ranksRollup()}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
         >
           <Search className="h-3.5 w-3.5" />

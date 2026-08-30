@@ -137,7 +137,21 @@ function Banner({
   );
 }
 
-export default function PressRoomWorkspace() {
+export default function PressRoomWorkspace({
+  scopedBrandId,
+}: {
+  /**
+   * 🚨 BRAND SCOPE (2026-08-30). The brand route mounted this workspace with
+   * nothing, and the effect below then "defaulted" to `brands.data[0]` — the
+   * first brand ALPHABETICALLY ACROSS THE WHOLE PLATFORM. So opening
+   * `/marketing/<any-client>/pr` without a `?brand=` showed a DIFFERENT
+   * client's press room — their stories, journalists, pitches and coverage —
+   * while the URL and page header still named the client you asked for. When
+   * the route supplies a brand it is the only brand this workspace may
+   * default to.
+   */
+  scopedBrandId?: string | null;
+} = {}) {
   const {
     brandId,
     siteId,
@@ -154,12 +168,20 @@ export default function PressRoomWorkspace() {
   const now = useMinuteClock();
   const rulings = usePressRoomRulings();
 
-  // Default to the first brand / first site once options load; the URL wins.
+  // Default the brand once options load; the URL wins, and inside a brand
+  // route the ROUTE wins over any platform-wide first row.
   useEffect(() => {
-    if (!brandId && brands.data && brands.data.length > 0) {
+    if (brandId) return;
+    if (scopedBrandId) {
+      set({ brand: scopedBrandId });
+      return;
+    }
+    // Only a genuinely unscoped mount (the flat route) may fall back to the
+    // first visible brand.
+    if (brands.data && brands.data.length > 0) {
       set({ brand: brands.data[0].id });
     }
-  }, [brandId, brands.data, set]);
+  }, [brandId, scopedBrandId, brands.data, set]);
   useEffect(() => {
     if (brandId && !siteId && sites.data && sites.data.length > 0) {
       set({ site: sites.data[0].id });

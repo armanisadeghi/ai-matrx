@@ -26,11 +26,7 @@ import { cn } from "@/lib/utils";
 import { isJsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
 import { fetchPartyExpertTopics, setExpertStatus } from "../../service";
-import type {
-  ExpertStatus,
-  ExpertTopicRef,
-  PartyListRow,
-} from "../../types";
+import type { ExpertStatus, ExpertTopicRef, PartyListRow } from "../../types";
 import {
   EXPERT_STATUSES,
   EXPERT_STATUS_DESCRIPTION,
@@ -59,7 +55,9 @@ function readResearchAttrs(party: PartyListRow): ResearchExpertAttrs | null {
   const raw = attributes.research_expert;
   if (!isJsonObject(raw)) return null;
   const strings = (value: unknown): string[] =>
-    Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+    Array.isArray(value)
+      ? value.filter((v): v is string => typeof v === "string")
+      : [];
   return {
     topicId: typeof raw.topic_id === "string" ? raw.topic_id : null,
     confidence: typeof raw.confidence === "number" ? raw.confidence : null,
@@ -76,7 +74,9 @@ function isExpertStatus(value: string | null): value is ExpertStatus {
 export function ExpertStatusCard({ party, onChanged }: Props) {
   const [topics, setTopics] = useState<ExpertTopicRef[]>([]);
   const [saving, setSaving] = useState(false);
-  const status = isExpertStatus(party.expert_status) ? party.expert_status : null;
+  const status = isExpertStatus(party.expert_status)
+    ? party.expert_status
+    : null;
   const research = readResearchAttrs(party);
   const isPerson = party.party_kind === "person";
 
@@ -145,7 +145,7 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
               size="sm"
               disabled={saving || tier === status}
               onClick={() => void apply(tier)}
-              className="h-7 px-2 text-xs"
+              className="h-11 px-2 text-xs sm:h-7"
             >
               {EXPERT_STATUS_LABEL[tier]}
             </Button>
@@ -156,7 +156,7 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
               size="sm"
               disabled={saving}
               onClick={() => void apply(null)}
-              className="h-7 px-2 text-xs text-muted-foreground"
+              className="h-11 px-2 text-xs text-muted-foreground sm:h-7"
             >
               Clear
             </Button>
@@ -185,7 +185,8 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
             )}
             {research.affiliationHints.length > 0 && (
               <div>
-                Named alongside: {research.affiliationHints.slice(0, 4).join(", ")}
+                Named alongside:{" "}
+                {research.affiliationHints.slice(0, 4).join(", ")}
               </div>
             )}
           </div>
@@ -211,7 +212,10 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
                 </Link>
               ) : (
                 // Never a bare id you can't open: an unreadable topic says so.
-                <div key={topic.id} className="px-1 py-0.5 text-xs text-muted-foreground">
+                <div
+                  key={topic.id}
+                  className="px-1 py-0.5 text-xs text-muted-foreground"
+                >
                   A research topic you no longer have access to
                 </div>
               ),

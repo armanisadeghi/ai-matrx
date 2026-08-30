@@ -9,10 +9,21 @@ import {
   resolveMarketingSubView,
 } from "./useMarketingSubView";
 
-const SITE = "/marketing/brands/brand-1/sites/site-1";
+// Branch-aware bases (agency-model tree): inventory vs practice.
+const W = "/marketing/brand-1/websites/site-1";
+const S = "/marketing/brand-1/seo/site-1";
+const SEO_SLUGS = new Set([
+  "keywords","rankings","search-console","audit","findings","analysis",
+  "coverage","performance","changes","backlinks","links","authority",
+  "valuation","ai-visibility","growth-loop","automations","capabilities",
+]);
+const baseFor = (slug: string) => (SEO_SLUGS.has(slug) ? S : W);
+const SITE = W;
 
 const navFor = (pathname: string, view: string | null = null) =>
   buildMarketingSubNav(SITE, pathname, view);
+const seoNavFor = (pathname: string, view: string | null = null) =>
+  buildMarketingSubNav(S, pathname, view);
 
 describe("what the site header renders", () => {
   /**
@@ -28,15 +39,16 @@ describe("what the site header renders", () => {
    */
   it("never shows more items than the header's ceiling allows", () => {
     for (const section of MARKETING_SITE_SECTIONS) {
-      const pathname = section.slug ? `${SITE}/${section.slug}` : SITE;
-      expect(navFor(pathname).modes.length).toBeLessThanOrEqual(
+      const base = baseFor(section.slug);
+      const pathname = section.slug ? `${base}/${section.slug}` : base;
+      expect(buildMarketingSubNav(base, pathname, null).modes.length).toBeLessThanOrEqual(
         marketingSubNavCeiling(section.slug ?? ""),
       );
     }
   });
 
   it("shows the active section's sub-views, not the sections", () => {
-    const backlinks = navFor(`${SITE}/backlinks`);
+    const backlinks = seoNavFor(`${S}/backlinks`);
     expect(backlinks.section).toBe("backlinks");
     expect(backlinks.modes.map((mode) => mode.name)).toEqual([
       "Overview",
@@ -55,7 +67,7 @@ describe("what the site header renders", () => {
   it("shows nothing for a section that has no sub-views", () => {
     // Single-surface sections correctly leave the header centre empty.
     // correct — the page's own title says where you are.
-    expect(navFor(`${SITE}/audit`).modes).toEqual([]);
+    expect(seoNavFor(`${S}/audit`).modes).toEqual([]);
     expect(navFor(SITE).modes).toEqual([]);
   });
 
@@ -63,8 +75,9 @@ describe("what the site header renders", () => {
     // RouteModeNav only reaches its compact icon variant when EVERY item has
     // one; a single missing icon drops the whole set to a dropdown.
     for (const section of MARKETING_SITE_SECTIONS) {
-      const pathname = section.slug ? `${SITE}/${section.slug}` : SITE;
-      for (const mode of navFor(pathname).modes) {
+      const base = baseFor(section.slug);
+      const pathname = section.slug ? `${base}/${section.slug}` : base;
+      for (const mode of buildMarketingSubNav(base, pathname, null).modes) {
         expect(mode.icon).toBeDefined();
       }
     }
@@ -97,7 +110,7 @@ describe("what the site header renders", () => {
   });
 
   it("renders and activates AI Visibility's path-style sub-routes", () => {
-    const overview = navFor(`${SITE}/ai-visibility`);
+    const overview = seoNavFor(`${S}/ai-visibility`);
     expect(overview.modes.map((mode) => mode.name)).toEqual([
       "Overview",
       "Claims",
@@ -106,16 +119,23 @@ describe("what the site header renders", () => {
       "History",
       "Panels",
     ]);
-    expect(overview.activeHref).toBe(`${SITE}/ai-visibility`);
-    expect(navFor(`${SITE}/ai-visibility/signals`).activeHref).toBe(
-      `${SITE}/ai-visibility/signals`,
+    expect(overview.activeHref).toBe(`${S}/ai-visibility`);
+    expect(seoNavFor(`${S}/ai-visibility/signals`).activeHref).toBe(
+      `${S}/ai-visibility/signals`,
     );
   });
 
   it("has migrated every declared section", () => {
+    // `value` (a room inside seo keywords) and `reputation` (moved to the
+    // brand's Intelligence group) keep sub-view registries but no longer have
+    // a section row on either branch — their screens read the registry
+    // directly via useMarketingSubView.
+    const OFF_BRANCH = new Set(["value", "reputation"]);
     const unmigrated = MARKETING_SITE_SUBVIEWS.filter((entry) => {
-      const pathname = entry.section ? `${SITE}/${entry.section}` : SITE;
-      return navFor(pathname).modes.length === 0;
+      if (OFF_BRANCH.has(entry.section)) return false;
+      const base = baseFor(entry.section);
+      const pathname = entry.section ? `${base}/${entry.section}` : base;
+      return buildMarketingSubNav(base, pathname, null).modes.length === 0;
     }).map((entry) => entry.section);
     expect(unmigrated).toEqual([]);
   });

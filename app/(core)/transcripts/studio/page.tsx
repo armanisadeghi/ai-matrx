@@ -25,13 +25,14 @@ import {
 import { StudioRoute } from "./_components/StudioRoute";
 
 interface PageProps {
-  searchParams: Promise<{ session?: string }>;
+  searchParams: Promise<{ session?: string; import?: string }>;
 }
 
 export default async function TranscriptStudioPage({
   searchParams,
 }: PageProps) {
-  const { session: initialSessionId } = await searchParams;
+  const { session: initialSessionId, import: importTranscriptId } =
+    await searchParams;
 
   // Guests bounce to the public `/transcripts` landing (same convention as
   // the processor page) — the studio workspace has nothing to show them.
@@ -96,6 +97,8 @@ export default async function TranscriptStudioPage({
       />
       <Suspense fallback={null}>
         <StudioRoute
+          initialSessionId={initialSessionId ?? null}
+          importTranscriptId={importTranscriptId ?? null}
           defaultColumnLayout={defaultColumnLayout}
           defaultSidebarLayout={defaultSidebarLayout}
         />

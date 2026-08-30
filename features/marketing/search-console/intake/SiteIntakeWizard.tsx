@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Compass, Loader2, RotateCcw } from "lucide-react";
+import { Check, CheckCircle2, Compass, Loader2, RotateCcw } from "lucide-react";
 
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { siteSetupChecklist } from "@/features/marketing/search-console/setup/siteSetupChecklist";
@@ -27,7 +27,6 @@ import { siteSetupChecklist } from "@/features/marketing/search-console/setup/si
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
@@ -50,6 +49,7 @@ import {
   type SiteIntakeApplyResult,
   type SiteIntakeRunResult,
 } from "@/features/marketing/search-console/intake/intake-service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const CLASS_META: Record<IntakeClass, { label: string; className: string }> = {
   money: {
@@ -438,7 +438,7 @@ export function SiteIntakeWizard() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {proposal.business_inference.evidence}
               </p>
-              <Textarea
+              <ProTextarea
                 className="mt-2 min-h-20 text-sm"
                 value={confirmedSummary}
                 onChange={(event) => setConfirmedSummary(event.target.value)}
@@ -603,6 +603,7 @@ export function SiteIntakeWizard() {
                       size="sm"
                       variant={aliasChecks[alias] ? "secondary" : "outline"}
                       className="h-6 px-2 text-[11px] font-normal"
+                      aria-pressed={aliasChecks[alias]}
                       onClick={() =>
                         setAliasChecks((prev) => ({
                           ...prev,
@@ -610,7 +611,9 @@ export function SiteIntakeWizard() {
                         }))
                       }
                     >
-                      {aliasChecks[alias] ? "✓ " : ""}
+                      {aliasChecks[alias] ? (
+                        <Check className="h-3 w-3" aria-hidden="true" />
+                      ) : null}
                       {alias}
                     </Button>
                   ))}

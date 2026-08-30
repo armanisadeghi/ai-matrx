@@ -90,6 +90,7 @@ import type {
   ScopeProps,
   ShortcutFormData,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function extractErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) return err.message;
@@ -629,7 +630,7 @@ export function ShortcutForm({
         <Label htmlFor="shortcut-description" className="text-sm">
           Description
         </Label>
-        <Textarea
+        <ProTextarea
           id="shortcut-description"
           value={formData.description ?? ""}
           onChange={(e) => handleChange("description", e.target.value || null)}
@@ -984,7 +985,7 @@ export function ShortcutForm({
               (designer-only, never shown to user)
             </span>
           </Label>
-          <Textarea
+          <ProTextarea
             id="default-user-input"
             value={formData.defaultUserInput ?? ""}
             onChange={(e) =>

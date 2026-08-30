@@ -32,7 +32,7 @@ import {
   useSiteCrawlSchedule,
 } from "@/features/marketing/data/crawl-schedule-hooks";
 import type { CrawlSchedule } from "@/features/marketing/types";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 
 /** Absolute local time, with the relative distance a human actually reads. */
 function formatNextRun(value: string | null): string | null {
@@ -296,7 +296,7 @@ export function CrawlScheduleCard({
 
       {schedule?.last_outcome === "failed" && schedule.last_error ? (
         <p className="text-[10px] leading-4 text-destructive">
-          Last automatic run failed: {schedule.last_error}
+          Last automatic run failed: {humanizeBackendError(schedule.last_error)}
         </p>
       ) : null}
     </section>

@@ -269,7 +269,7 @@ export function DealsBoard({
     onMoved(dealId, overStageId);
     try {
       await moveDealToStage({ dealId, stageId: overStageId });
-      if (target.outcome === "won") toast.success(`"${deal.name}" won 🎉`);
+      if (target.outcome === "won") toast.success(`"${deal.name}" won`);
       else if (target.outcome === "lost") toast(`"${deal.name}" marked lost`);
     } catch (e) {
       onRevert();

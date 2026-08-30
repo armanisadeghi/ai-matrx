@@ -32,14 +32,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MediaVariableInput } from "@/features/agents/components/inputs/input-components/MediaVariableInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -397,7 +397,7 @@ export function BlockEditor({
                   </p>
                 </div>
               ) : multiline ? (
-                <Textarea
+                <ProTextarea
                   autoFocus={key === config.fields[0].key}
                   value={values[key] ?? ""}
                   onChange={(e) => setValue(key, e.target.value)}

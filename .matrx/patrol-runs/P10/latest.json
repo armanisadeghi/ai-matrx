@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P10",
-  "runId": "2026-08-29T192327Z",
-  "state": "closed",
-  "updatedAt": "2026-08-29T19:29:31.163Z",
-  "summary": "Batch 2 lifecycle closed; five schema-backed reads remain assigned to the next P10 wave.",
-  "source": "2026-08-29T192327Z.json",
-  "eventHash": "b8411f2859f637fea78f54658755080490a512180556f9bf3fdd09dedd521061"
+  "runId": "2026-08-30T141622Z",
+  "state": "reconciled",
+  "updatedAt": "2026-08-30T14:48:50.322Z",
+  "summary": "Reconciled escaped delivery after later exact-candidate certification and delivery proof.",
+  "source": "2026-08-30T141622Z.json",
+  "eventHash": "912aa986dbd2d45f169f6525c99636ea3fdc48297e6e5d73cb3db87193daae70"
 }

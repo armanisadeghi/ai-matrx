@@ -111,3 +111,96 @@ export function extractErrorMessage(err: unknown): string {
   }
   return "An unexpected error occurred";
 }
+
+
+// eslint-disable-next-line no-control-regex -- stripping the raw control char is the point
+const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
+
+/**
+ * A BACKEND failure as a PERSON should read it.
+ *
+ * 🚨 Added 2026-08-30 after a crawl-sessions table rendered `session.error`
+ * raw and showed the user a full server dump: ANSI colour codes, the ORM's
+ * banner, the failing SQL, and a developer hint about `get_or_none()`. Several
+ * other surfaces printed the same column the same way, and one of them had a
+ * partial copy of this logic that only stripped the colour codes — so the SQL
+ * still reached the screen.
+ *
+ * The durable row keeps every byte (that is what logs are for). This returns
+ * the first real sentence; callers put the untouched text on `title` for
+ * whoever needs it. Returns null when there is no error at all.
+ */
+/**
+ * Plain-English readings of the failure classes that actually reach our
+ * screens. Each is an accurate paraphrase of the condition — never a guess at
+ * WHY it happened, which only the logs can say. Anything unmatched keeps the
+ * server's own sentence rather than being flattened into something vague.
+ */
+const PLAIN_ENGLISH: ReadonlyArray<readonly [RegExp, string]> = [
+  [
+    /duplicate key value|unique constraint/i,
+    "It tried to save a record that already existed.",
+  ],
+  [
+    /violates foreign key constraint/i,
+    "It referred to something that no longer exists.",
+  ],
+  [
+    /violates (?:not-null|check) constraint/i,
+    "A required value was missing or out of range.",
+  ],
+  [
+    /statement timeout|query timed out|timeouterror|timed out/i,
+    "It took too long and was stopped.",
+  ],
+  [
+    /name or service not known|connection refused|unreachable|econnrefused|enotfound/i,
+    "A service it needed could not be reached.",
+  ],
+  [
+    /permission denied|not authorized|insufficient privilege|rls/i,
+    "It was not allowed to read or write something it needed.",
+  ],
+  [/rate limit|429|too many requests/i, "The provider was rate-limiting us."],
+];
+
+export function humanizeBackendError(
+  raw: string | null | undefined,
+  fallback = "It failed. The full technical detail is in the logs.",
+): string | null {
+  if (!raw) return null;
+  const clean = raw
+    .replace(ANSI_ESCAPE, "")
+    .replace(/\[\d{1,3}m/g, "")
+    .replace(/-{6,}/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return null;
+
+  // Our ORM's banner puts the readable sentence after a labelled line; prefer
+  // it over the exception class and the SQL that follows.
+  const labelled = clean.match(
+    /(?:Database integrity error|DB error|Reason|message)\s*:\s*([^:]{8,240}?)(?:\s+(?:DETAIL|Hint|Query|Args|Operation)\b|$)/i,
+  );
+  // A recognized failure class reads as English; the exact text stays on the
+  // element's `title` for whoever needs it.
+  for (const [pattern, plain] of PLAIN_ENGLISH) {
+    if (pattern.test(clean)) return plain;
+  }
+
+  if (labelled?.[1]) return clampSentence(labelled[1], fallback);
+
+  // Otherwise drop a leading `SomeError:` prefix and everything from the first
+  // developer-facing section onward.
+  const withoutClass = clean.replace(/^\s*\w*(?:Error|Exception)\s*:\s*/i, "");
+  const cut = withoutClass.split(
+    /\s+(?:DETAIL|Hint|Query|Args|Operation|Traceback)\b/i,
+  )[0];
+  return clampSentence(cut || withoutClass, fallback);
+}
+
+function clampSentence(value: string, fallback: string): string {
+  const trimmed = value.replace(/[-\s]+$/, "").trim();
+  if (!trimmed) return fallback;
+  return trimmed.length > 200 ? `${trimmed.slice(0, 197)}...` : trimmed;
+}

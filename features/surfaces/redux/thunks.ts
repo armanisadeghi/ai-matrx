@@ -143,6 +143,12 @@ export interface UpsertBindingArgs {
    * overrides are cleared.
    */
   writePolicies?: WritePolicyMap;
+  /**
+   * THE AUTO-RUN INVERSION (surface_binding payload v3). Same wholesale-replace
+   * rule as `writePolicies`: a caller editing an existing binding MUST carry
+   * the stored value or a `true` is silently cleared.
+   */
+  autoRun?: boolean;
 }
 
 export const upsertAgentSurfaceBindingThunk = createAsyncThunk<

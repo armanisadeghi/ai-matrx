@@ -24,7 +24,6 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -38,6 +37,7 @@ import {
 } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { useAudioStudyCreate } from "../useAudioStudyCreate";
 import type { EduAudioFormat } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
 
@@ -212,7 +212,7 @@ export function AudioStudyNew() {
             ))}
           </select>
         ) : (
-          <Textarea
+          <ProTextarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. The causes of the French Revolution"

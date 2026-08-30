@@ -5,7 +5,6 @@ import { idMatchesQuery } from '@ai-matrx/kit/search-scoring';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -25,6 +24,7 @@ import type { Note } from '../types';
 import { toast } from "@/lib/toast";
 import { getFolderIconAndColor } from '../utils/folderUtils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function noteUpdatedAtMs(updatedAt: string | null): number {
     return updatedAt ? new Date(updatedAt).getTime() : 0;
@@ -431,7 +431,8 @@ export function CategoryNotesModal({
                                     className="text-base"
                                 />
                             </div>
-                            <Textarea
+                            <ProTextarea
+                                wrapperClassName="min-h-0 flex-1"
                                 placeholder="Content..."
                                 value={newNoteContent}
                                 onChange={(e) => setNewNoteContent(e.target.value)}
@@ -457,7 +458,8 @@ export function CategoryNotesModal({
                                     className="text-base"
                                 />
                             </div>
-                            <Textarea
+                            <ProTextarea
+                                wrapperClassName="min-h-0 flex-1"
                                 placeholder="Content..."
                                 value={editNoteContent}
                                 onChange={(e) => setEditNoteContent(e.target.value)}

@@ -74,6 +74,21 @@ describe("captured error persistence settlement", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("keeps rule-classified Supabase transport loss out for every account tier", async () => {
+    captureError({
+      source: "supabase-postgrest",
+      relation: "mbr_for_user",
+      operation: "rpc",
+      name: "TypeError",
+      status: 0,
+      message: "TypeError: Load failed",
+    });
+
+    await jest.advanceTimersByTimeAsync(1_500);
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("keeps a denial local when AccessGate resolves during the grace window", async () => {
     const error = recordUnavailable({
       entity: "brand",

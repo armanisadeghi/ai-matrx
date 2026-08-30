@@ -37,7 +37,7 @@ export default async function NewAgentAppPage({
           </h1>
         </div>
       </PageHeader>
-      <div className="h-full flex flex-col overflow-hidden bg-textured">
+      <div className="h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <div className="flex-1 overflow-y-auto">
           {/* Width is managed inside the wrapper now — the 6-card grid
               centers itself with `max-w-7xl`; Live Builder uses the full

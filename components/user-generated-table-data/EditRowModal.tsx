@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
@@ -41,6 +40,7 @@ import {
   formatHasOwnInput,
 } from "@/features/data-tables/components/FormatAwareInput";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface TableField {
   id: string;
@@ -261,7 +261,7 @@ export default function EditRowModal({
 
         return (
           <div className="relative">
-            <Textarea
+            <ProTextarea
               id={field.field_name}
               value={stringValue}
               onChange={(e) =>

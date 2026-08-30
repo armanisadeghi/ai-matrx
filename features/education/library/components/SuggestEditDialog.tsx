@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { suggestEditAction } from "../actions";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * Suggest-edit — the ethical contribution flywheel. A studier proposes an
@@ -67,7 +67,7 @@ export function SuggestEditDialog({
   );
 
   const field = (
-    <Textarea
+    <ProTextarea
       value={body}
       onChange={(e) => setBody(e.target.value)}
       rows={5}

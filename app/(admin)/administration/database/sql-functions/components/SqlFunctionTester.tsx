@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Play, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SqlFunctionTesterProps {
   func: SqlFunction;
@@ -244,7 +245,7 @@ function ArgRow({
     );
   } else if (isJson) {
     inputEl = (
-      <textarea
+      <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={isNull}

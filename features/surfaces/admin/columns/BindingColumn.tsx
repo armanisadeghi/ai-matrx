@@ -343,6 +343,9 @@ function BindingForm({
           // write-policy overrides or they'd be silently cleared. Policies are
           // edited in the Agent access column, not this form.
           writePolicies: existing?.writePolicies ?? undefined,
+          // Same round-trip for the binding's auto-run answer — it is edited
+          // in SurfaceAgentBindPanel, not this form.
+          autoRun: existing?.autoRun,
         }),
       ).unwrap();
       toast.success(existing ? "Binding updated" : "Binding created");

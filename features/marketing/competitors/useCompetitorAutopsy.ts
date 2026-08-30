@@ -72,7 +72,21 @@ function stageLabel(kind: string, current: string | undefined): string | undefin
   return STAGES[kind] ?? current;
 }
 
-export function useCompetitorAutopsy(siteId: string | null) {
+export function useCompetitorAutopsy(
+  siteId: string | null,
+  /**
+   * 🚨 BRAND SCOPE IS LOAD-BEARING (2026-08-30). The brand route
+   * `/marketing/<brand>/intelligence/competitors` carries no `?siteId`, and
+   * this hook used to fall back to `sites.data[0]` — the first site on the
+   * PLATFORM. So every brand's competitors page silently rendered a different
+   * client's competitors and verdict (All Green, with 12 competitors, showed
+   * aimatrx.com's 3 and an aimatrx verdict about study.com/britannica.com).
+   * When a brand is in scope the fallback may only ever choose one of THAT
+   * brand's sites; if the brand has none, we resolve to null and the surface
+   * says so instead of showing a stranger's data.
+   */
+  brandId?: string | null,
+) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const adoptedRequestId = useRef<string | null>(null);
@@ -88,7 +102,15 @@ export function useCompetitorAutopsy(siteId: string | null) {
     queryFn: listCompetitorSites,
     staleTime: 5 * 60_000,
   });
-  const resolvedSiteId = siteId ?? sites.data?.[0]?.id ?? null;
+  const scopedSites = brandId
+    ? (sites.data ?? []).filter((site) => site.brand_id === brandId)
+    : (sites.data ?? []);
+  // An explicit ?siteId is honored only when it belongs to the brand in scope.
+  const requestedIsInScope =
+    siteId != null &&
+    (!brandId || scopedSites.some((site) => site.id === siteId));
+  const resolvedSiteId =
+    (requestedIsInScope ? siteId : null) ?? scopedSites[0]?.id ?? null;
   const workspace = useQuery({
     queryKey: ["marketing", "competitors", resolvedSiteId],
     queryFn: () => {
@@ -227,5 +249,7 @@ export function useCompetitorAutopsy(siteId: string | null) {
     [dispatch, queryClient, resolvedSiteId],
   );
 
-  return { sites, workspace, run, start, resolvedSiteId };
+  // `scopedSites` is what the surface may offer — inside a brand that is the
+  // brand's sites only, so the picker can never hand the user a stranger's.
+  return { sites, scopedSites, workspace, run, start, resolvedSiteId };
 }

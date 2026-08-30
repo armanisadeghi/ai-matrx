@@ -34,7 +34,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
-import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
+import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 
 export interface AudioPreviewProps {
   url: string | null;
@@ -67,12 +68,14 @@ export function AudioPreview({
   // own file never just "expires". `remintOnError` is wired to the <audio>
   // error event; `remintFailed` flips true only after the retry is exhausted.
   // Foreign URLs pass through.
+  const src = url ?? "";
   const {
-    src,
     retryKey,
-    onError: remintOnError,
+    onLoadError: remintOnError,
     failed: remintFailed,
-  } = useDurableSrc(url);
+  } = useMediaLoadRecovery(url, {
+    recoverable: !!url && recognizeOurFileUrl(url) !== null,
+  });
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);

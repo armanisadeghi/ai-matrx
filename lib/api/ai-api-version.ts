@@ -67,6 +67,7 @@ export const V2_COVERED_AI_PATH_TEMPLATES = [
   "/ai/conversations/{conversation_id}",
   "/ai/conversation/{conversation_id}", // singular alias
   "/ai/prompts/{prompt_id}", // saved-prompt execution (server mirror 2026-07-13)
+  "/ai/mandates/{mandate_key}", // THE MANDATE DOOR — `/v2` sibling exists (routers/v2.py)
 ] as const;
 
 /**
@@ -118,6 +119,7 @@ const COVERED_INTERPOLATED_PATH = [
   /^(?:\/api)?\/ai\/conversations\/[^/]+$/,
   /^(?:\/api)?\/ai\/conversation\/[^/]+$/,
   /^(?:\/api)?\/ai\/prompts\/[^/]+$/, // `/warm` etc. deliberately don't match
+  /^(?:\/api)?\/ai\/mandates\/[^/]+$/, // the mandate door
 ];
 
 /** Whether `path` (already interpolated) is one of the covered surfaces. */

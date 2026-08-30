@@ -387,7 +387,7 @@ export const CHANGE_TYPE_CATALOGUE: readonly ChangeTypeDef[] = [
         // reviewer EXISTS since D-18 (2026-08-15) but is not wired into any
         // apply path yet — so this row ships as plain Review. Which VERSION of
         // it runs is DB-owned (the agent's pin, rebindnable at
-        // /administration/agents/mandates); naming a version id here would rot on
+        // /administration/mandates); naming a version id here would rot on
         // the next rebind. See FEATURE.md § Row 25.
         note: "Will additionally route through the context-starved code reviewer once that guard is wired into the apply path.",
         subject: "tool",

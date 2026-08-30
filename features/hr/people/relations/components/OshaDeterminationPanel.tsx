@@ -19,8 +19,6 @@ import { BrainCircuit, HardHat } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { setHrOshaDetermination } from "@/features/hr/service";
@@ -64,28 +62,29 @@ export function OshaDeterminationPanel({
   const [privacyCase, setPrivacyCase] = useState(
     incident.osha_privacy_case ?? false,
   );
-  const [basis, setBasis] = useState("");
   const [saving, setSaving] = useState(false);
 
   // The block only exists for the kinds that can be recordable at all. For a
   // complaint it is ABSENT, not shown-and-empty.
   if (!needsOshaCapture(incident.incident_kind as HrIncidentKind)) return null;
 
-  const assist = recordabilityAssist(incident.osha_fields);
+  const assist = recordabilityAssist({
+    treatment_beyond_first_aid: incident.treatment_beyond_first_aid,
+    hospitalized: incident.hospitalized_overnight,
+  });
   const decided = incident.osha_recordable !== null && incident.osha_recordable !== undefined;
 
   async function save() {
-    if (!basis.trim() || saving) return;
+    if (saving) return;
     setSaving(true);
     const result = await setHrOshaDetermination({
       incidentId: incident.id,
+      currentState: String(incident.state),
       recordable,
       privacyCase,
-      basis: basis.trim(),
     });
     setSaving(false);
     if (result.ok) {
-      setBasis("");
       onChanged();
       return;
     }
@@ -141,24 +140,11 @@ export function OshaDeterminationPanel({
             <Switch checked={privacyCase} onCheckedChange={setPrivacyCase} />
           </label>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="osha-basis">
-              Why you decided this (required)
-            </Label>
-            <Input
-              id="osha-basis"
-              value={basis}
-              onChange={(e) => setBasis(e.target.value)}
-              className="min-h-11 sm:min-h-9"
-              placeholder="The rule and the fact you applied it to."
-            />
-          </div>
-
           <Button
             type="button"
             size="sm"
             onClick={save}
-            disabled={!basis.trim() || saving}
+            disabled={saving}
             className="min-h-11 sm:min-h-9"
           >
             Record the determination

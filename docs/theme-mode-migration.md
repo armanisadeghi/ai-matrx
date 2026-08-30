@@ -97,7 +97,7 @@ These read `document.documentElement.classList` inline and behave correctly; cou
 
 - `features/code/terminal/TerminalTab.tsx`
 - `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx`
-- `lib/block-print/dom-capture-print-utils.ts`
+- `@ai-matrx/print/pdf` (was `lib/block-print/dom-capture-print-utils.ts`)
 - `features/whatsapp-clone/chat-view/MessageInputBar.tsx`
 - `app/(dev)/demos/glass-lab/_components/DraggableGlassWidget.tsx`
 

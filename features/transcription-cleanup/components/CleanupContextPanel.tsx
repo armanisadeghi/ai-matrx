@@ -31,6 +31,7 @@ import {
 } from "@/features/notes/components/NotePickerPopover";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export const CONTEXT_FOLDER = "Transcription Contexts";
 
@@ -362,7 +363,7 @@ export function CleanupContextPanel({
             </div>
 
             {/* ── Textarea ────────────────────────────────────────────────── */}
-            <textarea
+            <ProTextarea
               value={block.text}
               onChange={(e) => handleTextChange(block.id, e.target.value)}
               placeholder="Provide context for the AI…"

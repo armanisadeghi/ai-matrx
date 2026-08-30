@@ -10,8 +10,8 @@
 import { useState, useTransition } from "react";
 import { Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Props = {
   token: string;
@@ -138,7 +138,7 @@ export function UnsubscribeForm({
         >
           Anything you want to tell them? (optional)
         </label>
-        <Textarea
+        <ProTextarea enableVoice={false} enableCleanup={false}
           id="unsubscribe-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}

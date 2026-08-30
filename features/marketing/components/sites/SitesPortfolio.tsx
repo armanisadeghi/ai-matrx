@@ -1,51 +1,34 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  Braces,
-  Copy,
-  ExternalLink,
-  Eye,
-  Globe2,
-  MoreHorizontal,
-  PanelsTopLeft,
-  Pencil,
-  Plus,
-  SearchCheck,
-  Trash2,
-} from "lucide-react";
-import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
+import { ArrowRight, Plus, SearchCheck } from "lucide-react";
+
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
-import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
-import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
-import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
-  useDeleteSite,
-  useSiteCount,
-  useSites,
-} from "@/features/marketing/data/hooks";
+  buildSiteMenu,
+  siteRowCopy,
+} from "@/features/marketing/components/sites/site-actions";
+import {
+  renderSiteListMobileCard,
+  SITE_LIST_COLUMNS,
+} from "@/features/marketing/components/sites/site-list-presentation";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
 import type { SiteEditorHandleRef } from "@/features/marketing/components/sites/SiteEditorDialog";
+import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
+import { useDeleteSite, useSiteCount } from "@/features/marketing/data/hooks";
+import {
+  siteListService,
+  toSiteTableQueryState,
+} from "@/features/marketing/data/site-list-service";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import {
   resolveSiteForWrite,
   SITE_EDITOR_DRAFT_TARGET,
@@ -53,71 +36,64 @@ import {
   type SiteDraftPatch,
 } from "@/features/marketing/lib/site-write-targets";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
-import {
-  QueryError,
-  StatusBadge,
-} from "@/features/marketing/components/shared/MarketingUi";
-import {
-  SiteConnectionChips,
-  SiteIdentityMark,
-} from "@/features/marketing/components/shared/SiteConnectionChips";
-import {
-  formatMetric,
-  formatPosition,
-  GscMetricPeek,
-  PagesPeek,
-  TrendDelta,
-  trendPercent,
-} from "@/features/marketing/components/sites/SiteKpiPeeks";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
+import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import type {
+  EntityListConfig,
+  EntityListController,
+} from "@/lib/entity-list/config";
+import {
+  EntityListPage,
+  type EntityListSurface,
+} from "@/lib/entity-list/components/EntityListPage";
+import { toast } from "@/lib/toast";
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 
-// Quick view opens one-at-a-time on user action, so the WindowPanel machinery
-// stays behind this lazy edge (lazyOverlay pattern — code-splitting skill).
-const SitePeekWindow = dynamic(
-  () => import("@/features/marketing/components/sites/SitePeekWindow"),
-  { ssr: false },
-);
-
-const STATUS_OPTIONS = [
-  { value: "active", label: "Active" },
-  { value: "paused", label: "Paused" },
-  { value: "error", label: "Error" },
-];
-
-async function copyToClipboard(text: string, message: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
-  toast.success(message);
+function sitesListCopy(rows: SiteListRow[], total: number, managed?: number) {
+  return webCopy({
+    kind: "web-sites-list",
+    label: "Managed sites",
+    description:
+      "The flattened all-sites list currently loaded at /marketing/sites (respects active search/filters/page).",
+    surface: "Sites list",
+    data: rows,
+    lines: [
+      ["Sites on this page", rows.length],
+      ["Total matching", total],
+      ["Total managed", managed ?? null],
+      ...rows.map((row): [string, string] => [
+        row.domain,
+        `${row.name} · ${row.page_count} pages · ${
+          row.gsc_clicks_28d ?? 0
+        } clicks/28d · ${row.gsc_impressions_28d ?? 0} impressions/28d`,
+      ]),
+    ],
+    attributes: { count: rows.length, total },
+  });
 }
 
-export function SitesPortfolio() {
+export function SitesPortfolio({
+  brandId,
+}: {
+  /** When set, the portfolio lists only this brand's websites. */
+  brandId?: string | null;
+} = {}) {
   const router = useRouter();
-  const table = useMarketingTableState({
-    defaultSort: { id: "gsc_clicks_28d", direction: "desc" },
-  });
-  const sites = useSites(table.queryState);
-  // access-errors: ok — header count chip; the sites table is the primary read and absence only hides the number
-  const siteCount = useSiteCount();
   const deleteMutation = useDeleteSite();
+  // access-errors: ok — surface/list-copy total; the entity list is primary.
+  const siteCount = useSiteCount();
   const [editing, setEditing] = useState<MarketingSite | null>(null);
   const [deleting, setDeleting] = useState<MarketingSite | null>(null);
   const [deniedDelete, setDeniedDelete] = useState<MarketingSite | null>(null);
   const [peeking, setPeeking] = useState<SiteListRow | null>(null);
+  const listRef = useRef<EntityListController<SiteListRow> | null>(null);
 
-  // The open site editor's live handle (null whenever no editor is open), plus
-  // the patch waiting for an editor this component just asked to open. Both
-  // are refs, not state: `applySurfaceWrite` resolves handlers BEFORE the user
-  // answers the confirm, so an "is it open / is it saving" guard read off a
-  // render closure would be stale by the time Apply is pressed.
+  // The open site editor's live handle plus a patch waiting for an editor this
+  // component just opened. Refs are required because surface-write approval
+  // resolves handlers before the user answers its confirmation.
   const editorRef = useRef<SiteEditorHandleRef | null>(null);
   const pendingStageRef = useRef<{
     siteId: string;
@@ -138,6 +114,8 @@ export function SitesPortfolio() {
     if (!deleting) return;
     try {
       await deleteMutation.mutateAsync(deleting.id);
+      listRef.current?.removeRow(deleting.id);
+      listRef.current?.refresh();
       toast.success(`Deleted ${deleting.name}`);
       setDeleting(null);
     } catch (error) {
@@ -150,113 +128,14 @@ export function SitesPortfolio() {
     }
   };
 
-  const hasFilters =
-    Boolean(table.state.search || table.state.anyOf) ||
-    Object.values(table.state.columnFilters).some(Boolean);
-
-  const siteRowCopy = (row: SiteListRow) =>
-    webCopy({
-      kind: "web-site",
-      label: `Site ${row.domain}`,
-      description: "One managed website row from the Marketing sites list.",
-      surface: `Sites list — ${row.domain}`,
-      data: row,
-      lines: [
-        ["Site", row.name],
-        ["Domain", row.domain],
-        ["Root URL", row.root_url],
-        ["Status", row.status],
-        ["Pages", row.page_count],
-        ["Pages in Google", row.pages_in_gsc],
-        ["Clicks (28d)", row.gsc_clicks_28d],
-        ["Impressions (28d)", row.gsc_impressions_28d],
-        ["Avg position (28d)", row.gsc_position_28d?.toFixed(1) ?? null],
-        ["Health score", row.health_score],
-        ["GSC data through", row.gsc_latest_date],
-      ],
-      attributes: {
-        site_id: row.id,
-        brand_id: row.brand_id,
-        status: row.status,
-      },
-    });
-
-  const listRows = sites.data?.rows ?? [];
-
-  // Surface scope — assembled at trigger time from already-loaded queries.
-  // Brand totals and the per-brand portfolio rollup are not loaded on this
-  // view, so brand_count and portfolio_summary are honestly omitted.
-  const getHubScope = () => {
-    // Read twin of the site_editor_draft target — what is staged RIGHT NOW,
-    // including unsaved edits. Read off the ref at trigger time, not render.
-    const openEditor = editorRef.current?.current ?? null;
-    return createMarketingScope({
-      hub_view: "sites",
-      list_query: marketingListQuery(table.state),
-      ...(openEditor
-        ? {
-            site_editor: {
-              site_id: openEditor.siteId,
-              domain: openEditor.domain,
-              name: openEditor.draft.name,
-              description: openEditor.draft.description,
-            },
-          }
-        : {}),
-      ...(typeof siteCount.data === "number"
-        ? { site_count: siteCount.data }
-        : {}),
-      ...(typeof sites.data?.total === "number"
-        ? { sites_total: sites.data.total }
-        : {}),
-      ...(listRows.length > 0
-        ? {
-            visible_sites: listRows.map((row) => ({
-              site_id: row.id,
-              brand_id: row.brand_id,
-              name: row.name,
-              domain: row.domain,
-              root_url: row.root_url,
-              // Declared in the manifest all along, never emitted — and it is
-              // the read twin for the description half of site_editor_draft.
-              description: row.description,
-              status: row.status,
-              visibility: row.visibility,
-              initialized: Boolean(row.initialized_at),
-              health_score: row.health_score,
-              scored_pages: row.scored_pages,
-              page_count: row.page_count,
-              pages_in_gsc: row.pages_in_gsc,
-              gsc_clicks_28d: row.gsc_clicks_28d,
-              gsc_impressions_28d: row.gsc_impressions_28d,
-              gsc_position_28d: row.gsc_position_28d,
-              updated_at: row.updated_at,
-            })),
-          }
-        : {}),
-    });
-  };
-
-  /**
-   * The write half of `matrx-user/marketing` — the ONLY mount of this surface
-   * that registers a handler (see the manifest's writeTargets block for why
-   * the brands, connections, cost and hub-map mounts register none).
-   *
-   * `site_editor_draft` stages authored copy into the site editor dialog and
-   * stops there: the user still presses "Save site", which runs the existing
-   * version-guarded `updateSiteIdentity`. Validation is the pure, unit-tested
-   * `site-write-targets.ts`, and it runs to completion BEFORE anything opens
-   * or changes, so a refused write leaves the page exactly as it found it.
-   *
-   * Handlers are rebuilt every render; the provider holds them in a ref, so
-   * `listRows` here is always the freshest committed list.
-   */
-  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+  const buildWriteHandlers = (
+    list: EntityListController<SiteListRow>,
+  ): SurfaceWriteHandlers => ({
     [SITE_EDITOR_DRAFT_TARGET]: (value: unknown) => {
       const { site, patch } = validateSiteEditorDraftWrite(value);
       const resolved = resolveSiteForWrite(
         site,
-        listRows.map((row) => ({
+        list.rows.map((row) => ({
           site_id: row.id,
           name: row.name,
           domain: row.domain,
@@ -269,24 +148,17 @@ export function SitesPortfolio() {
           `${SITE_EDITOR_DRAFT_TARGET} refused — the site editor for "${open.domain}" is mid-save. Wait for it to finish, then ask again. Nothing was staged.`,
         );
       }
-      // Never silently switch editors: the open one may hold unsaved edits,
-      // and closing it to serve this write would destroy the user's work.
       if (open && open.siteId !== resolved.site_id) {
         throw new Error(
           `${SITE_EDITOR_DRAFT_TARGET} refused — the site editor is already open on "${open.domain}", not "${resolved.domain}", and it may hold unsaved edits. Ask the user to close it first, or write to "${open.domain}" instead. Nothing was staged.`,
         );
       }
-
       if (open) {
         open.stage(patch);
         return;
       }
 
-      // No editor open. Opening one is the whole reason this target is
-      // reachable at all: the dialog is modal, so a user cannot open it and
-      // THEN ask an agent — the overlay covers the header Agents button and
-      // the chat composer. The user names the site; nothing is chosen for them.
-      const row = listRows.find(
+      const row = list.rows.find(
         (candidate) => candidate.id === resolved.site_id,
       );
       if (!row) {
@@ -299,388 +171,141 @@ export function SitesPortfolio() {
     },
   });
 
-  const sitesListCopy = webCopy({
-    kind: "web-sites-list",
-    label: "Managed sites",
-    description:
-      "The flattened all-sites list currently loaded at /marketing/sites (respects active search/filters/page).",
-    surface: "Sites list",
-    data: listRows,
-    lines: [
-      ["Sites on this page", listRows.length],
-      ["Total matching", sites.data?.total ?? listRows.length],
-      ["Total managed", siteCount.data ?? null],
-      ...listRows.map((row): [string, string] => [
-        row.domain,
-        `${row.name} · ${row.page_count} pages · ${
-          row.gsc_clicks_28d ?? 0
-        } clicks/28d · ${row.gsc_impressions_28d ?? 0} impressions/28d`,
-      ]),
-    ],
-    attributes: { count: listRows.length, total: sites.data?.total ?? null },
-  });
-
-  const buildRowMenu = (row: SiteListRow): ItemMenuConfig => {
-    const copy = siteRowCopy(row);
-    return {
-      header: { title: row.name, description: row.domain },
-      sections: [
-        {
-          id: "open",
-          items: [
-            {
-              id: "workspace",
-              label: "Open workspace",
-              icon: PanelsTopLeft,
-              onSelect: () =>
-                router.push(marketingRoutes.site(row.brand_id, row.id)),
-            },
-            {
-              id: "quick-view",
-              label: "Quick view",
-              icon: Eye,
-              onSelect: () => setPeeking(row),
-            },
-            {
-              id: "live-site",
-              kind: "link",
-              label: "Open live site",
-              icon: ExternalLink,
-              href: row.root_url,
-              target: "_blank",
-            },
-          ],
+  const config: EntityListConfig<SiteListRow> = {
+    surfaceKey: brandId ? `marketing-sites-${brandId}` : "marketing-sites",
+    entityLabel: { singular: "site", plural: "sites" },
+    sourceFeature: "marketing",
+    scopes: ["orgs"],
+    service: siteListService(brandId),
+    columns: SITE_LIST_COLUMNS,
+    prefsVersion: 1,
+    prefsDefaults: {
+      sort: "gsc_clicks_28d",
+      direction: "desc",
+      pageSize: 25,
+    },
+    getRowId: (row) => row.id,
+    getRowName: (row) => row.name,
+    door: {
+      token: "web_site",
+      column: "name",
+      hrefFor: (row) => marketingRoutes.site(row.brand_id, row.id),
+    },
+    getRowEntity: (row) => ({
+      type: "web_site",
+      id: row.id,
+      title: row.name,
+      resourceType: "web_site",
+    }),
+    useRowActions: (list) => {
+      listRef.current = list;
+      return {
+        actions: {
+          menuFor: (site) => () =>
+            buildSiteMenu({
+              site,
+              onOpenWorkspace: (href) => router.push(href),
+              onQuickView: setPeeking,
+              onEditSite: setEditing,
+              onDeleteSite: setDeleting,
+            }),
+          onOpenRow: (row) =>
+            router.push(marketingRoutes.site(row.brand_id, row.id)),
         },
-        {
-          id: "copy",
-          items: [
-            {
-              id: "copy-summary",
-              label: "Copy summary",
-              icon: Copy,
-              onSelect: () =>
-                void copyToClipboard(
-                  copy.human(),
-                  `${row.domain} copied to clipboard`,
-                ),
-            },
-            {
-              id: "copy-ai",
-              label: "Copy for AI",
-              icon: Braces,
-              onSelect: () =>
-                void copyToClipboard(
-                  buildAgentPayload(copy.agent()),
-                  `${row.domain} copied for AI agent`,
-                ),
-            },
-          ],
-        },
-        {
-          id: "manage",
-          items: [
-            {
-              id: "edit",
-              label: "Edit site",
-              icon: Pencil,
-              onSelect: () => setEditing(row),
-            },
-            {
-              id: "delete",
-              label: "Delete site",
-              icon: Trash2,
-              tone: "destructive",
-              onSelect: () => setDeleting(row),
-            },
-          ],
-        },
-      ],
-    };
+      };
+    },
+    supportsArchived: false,
+    facetSections: [],
+    copy: {
+      label: "Site",
+      listLabel: "Sites",
+      location: "/marketing/sites",
+      rowKind: "web-site",
+      listKind: "web-sites-list",
+      rowDescription: "One managed website row from the Marketing sites list.",
+      humanRow: (row) => siteRowCopy(row).human(),
+      agentRow: (row) => row,
+      rowAttributes: (row) => ({
+        site_id: row.id,
+        brand_id: row.brand_id,
+        status: row.status,
+      }),
+      // The canonical seven-action menu owns row copy; the shell header below
+      // owns list copy. Suppress duplicate controls while retaining one config.
+      showRow: false,
+      showToolbar: false,
+    },
+    mobileCards: renderSiteListMobileCard,
+    emptyState: {
+      title: "No managed sites",
+      description: "Add a site to begin building its canonical page registry.",
+    },
   };
 
-  const columns: MatrxColumnDef<SiteListRow>[] = [
-    {
-      id: "name",
-      accessorKey: "name",
-      header: "Site",
-      filter: "text",
-      cellKind: "text",
-      // THE DOOR LAW: the whole-row click is a mouse convenience; the name cell
-      // is the real anchor (keyboard, screen reader, cmd/middle-click). Same
-      // destination as `onRowOpen`, built by the one canonical route builder.
-      href: (row) => marketingRoutes.site(row.brand_id, row.id),
-      cell: (row) => (
-        <div className="flex min-w-52 items-center gap-2.5">
-          <SiteIdentityMark site={row} size={30} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">
-              {row.name}
-            </p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              {row.domain}
-            </p>
-          </div>
-        </div>
-      ),
+  const surface: EntityListSurface<SiteListRow> = {
+    surfaceName: "matrx-user/marketing",
+    getScope: (list) => {
+      const openEditor = editorRef.current?.current ?? null;
+      return createMarketingScope({
+        hub_view: "sites",
+        list_query: marketingListQuery(
+          toSiteTableQueryState(list.query, list.view),
+        ),
+        ...(openEditor
+          ? {
+              site_editor: {
+                site_id: openEditor.siteId,
+                domain: openEditor.domain,
+                name: openEditor.draft.name,
+                description: openEditor.draft.description,
+              },
+            }
+          : {}),
+        ...(typeof siteCount.data === "number"
+          ? { site_count: siteCount.data }
+          : {}),
+        sites_total: list.total,
+        ...(list.rows.length > 0
+          ? {
+              visible_sites: list.rows.map((row) => ({
+                site_id: row.id,
+                brand_id: row.brand_id,
+                name: row.name,
+                domain: row.domain,
+                root_url: row.root_url,
+                description: row.description,
+                status: row.status,
+                visibility: row.visibility,
+                initialized: Boolean(row.initialized_at),
+                health_score: row.health_score,
+                scored_pages: row.scored_pages,
+                page_count: row.page_count,
+                pages_in_gsc: row.pages_in_gsc,
+                gsc_clicks_28d: row.gsc_clicks_28d,
+                gsc_impressions_28d: row.gsc_impressions_28d,
+                gsc_position_28d: row.gsc_position_28d,
+                updated_at: row.updated_at,
+              })),
+            }
+          : {}),
+      });
     },
-    {
-      id: "page_count",
-      accessorKey: "page_count",
-      header: "Pages",
-      filter: false,
-      align: "right",
-      cell: (row) => (
-        <PagesPeek site={row}>
-          <span className="block text-right">
-            <span className="block text-sm font-medium tabular-nums text-foreground">
-              {formatMetric(row.page_count)}
-            </span>
-            <span className="block text-[10px] tabular-nums text-muted-foreground">
-              {formatMetric(row.pages_in_gsc)} in Google
-            </span>
-            {/* Say what the count leaves out. A silently smaller number is its
-                own defect — these rows are real registry evidence. */}
-            {row.resource_count > 0 ? (
-              <span className="block text-[10px] tabular-nums text-muted-foreground">
-                +{formatMetric(row.resource_count)} resources
-              </span>
-            ) : null}
-          </span>
-        </PagesPeek>
-      ),
-    },
-    {
-      id: "gsc_clicks_28d",
-      accessorKey: "gsc_clicks_28d",
-      header: "Clicks · 28d",
-      filter: false,
-      align: "right",
-      cell: (row) => (
-        <GscMetricPeek site={row} metric="clicks">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-sm font-medium tabular-nums text-foreground">
-              {formatMetric(row.gsc_clicks_28d)}
-            </span>
-            <TrendDelta
-              percent={trendPercent(
-                row.gsc_clicks_28d,
-                row.gsc_clicks_prev_28d,
-                row.gsc_prev_days,
-              )}
-            />
-          </span>
-        </GscMetricPeek>
-      ),
-    },
-    {
-      id: "gsc_impressions_28d",
-      accessorKey: "gsc_impressions_28d",
-      header: "Impressions · 28d",
-      filter: false,
-      align: "right",
-      cell: (row) => (
-        <GscMetricPeek site={row} metric="impressions">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-sm font-medium tabular-nums text-foreground">
-              {formatMetric(row.gsc_impressions_28d)}
-            </span>
-            <TrendDelta
-              percent={trendPercent(
-                row.gsc_impressions_28d,
-                row.gsc_impressions_prev_28d,
-                row.gsc_prev_days,
-              )}
-            />
-          </span>
-        </GscMetricPeek>
-      ),
-    },
-    {
-      id: "gsc_position_28d",
-      accessorKey: "gsc_position_28d",
-      header: "Pos.",
-      filter: false,
-      align: "right",
-      cell: (row) => (
-        <GscMetricPeek site={row} metric="position">
-          <span className="text-sm tabular-nums text-foreground">
-            {formatPosition(row.gsc_position_28d)}
-          </span>
-        </GscMetricPeek>
-      ),
-    },
-    {
-      // Weighted catalogue-analysis score from web.v_site_score, written by
-      // the per-page audit workers (post-crawl analysis / Analyze command).
-      // Sort is server-served via the health_score branch in listSites;
-      // filter deliberately absent (same rule as the KPI columns).
-      id: "health_score",
-      accessorKey: "health_score",
-      header: "Health",
-      filter: false,
-      align: "right",
-      cell: (row) => (
-        <span className="block text-right">
-          <span
-            className={cn(
-              "block text-sm font-medium tabular-nums",
-              row.health_score === null
-                ? "text-muted-foreground"
-                : row.health_score >= 90
-                  ? "text-success"
-                  : row.health_score >= 70
-                    ? "text-warning"
-                    : "text-destructive",
-            )}
-          >
-            {row.health_score === null ? "—" : row.health_score.toFixed(1)}
-          </span>
-          <span className="block text-[10px] tabular-nums text-muted-foreground">
-            {row.scored_pages
-              ? `${formatMetric(row.scored_pages)} scored`
-              : "not analyzed"}
-          </span>
-        </span>
-      ),
-    },
-    {
-      id: "connections",
-      accessorKey: "id",
-      header: "Connections",
-      filter: false,
-      sortable: false,
-      cell: (row) => <SiteConnectionChips site={row} />,
-    },
-    {
-      id: "status",
-      accessorKey: "status",
-      header: "Status",
-      filter: "select",
-      filterOptions: STATUS_OPTIONS,
-      cell: (row) => <StatusBadge value={row.status} />,
-    },
-  ];
-
-  const renderMobileSiteCard = (row: SiteListRow) => {
-    const siteHref = marketingRoutes.site(row.brand_id, row.id);
-    return (
-      <article className="shrink-0 rounded-lg border border-border/80 bg-background p-3 shadow-sm">
-        <header className="flex items-start gap-2">
-          <Link
-            href={siteHref}
-            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <SiteIdentityMark site={row} size={34} />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-foreground">
-                {row.name}
-              </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {row.domain}
-              </span>
-            </span>
-          </Link>
-          <ItemMenu config={() => buildRowMenu(row)} align="end">
-            <button
-              type="button"
-              aria-label={`Actions for ${row.name}`}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted data-[state=open]:text-foreground"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </ItemMenu>
-        </header>
-
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3">
-          <div>
-            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Pages
-            </dt>
-            <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-              {formatMetric(row.page_count)}
-            </dd>
-            <dd className="text-[10px] tabular-nums text-muted-foreground">
-              {formatMetric(row.pages_in_gsc)} in Google
-              {row.resource_count > 0
-                ? ` · +${formatMetric(row.resource_count)} resources`
-                : ""}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Clicks · 28d
-            </dt>
-            <dd className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground">
-              {formatMetric(row.gsc_clicks_28d)}
-              <TrendDelta
-                percent={trendPercent(
-                  row.gsc_clicks_28d,
-                  row.gsc_clicks_prev_28d,
-                  row.gsc_prev_days,
-                )}
-              />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Impressions · 28d
-            </dt>
-            <dd className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground">
-              {formatMetric(row.gsc_impressions_28d)}
-              <TrendDelta
-                percent={trendPercent(
-                  row.gsc_impressions_28d,
-                  row.gsc_impressions_prev_28d,
-                  row.gsc_prev_days,
-                )}
-              />
-            </dd>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Position
-              </dt>
-              <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-                {formatPosition(row.gsc_position_28d)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Health
-              </dt>
-              <dd
-                className={cn(
-                  "mt-0.5 text-sm font-semibold tabular-nums",
-                  row.health_score === null
-                    ? "text-muted-foreground"
-                    : row.health_score >= 90
-                      ? "text-success"
-                      : row.health_score >= 70
-                        ? "text-warning"
-                        : "text-destructive",
-                )}
-              >
-                {row.health_score === null ? "—" : row.health_score.toFixed(1)}
-              </dd>
-            </div>
-          </div>
-        </dl>
-
-        <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <StatusBadge value={row.status} />
-          <SiteConnectionChips site={row} />
-        </footer>
-      </article>
-    );
+    getWriteHandlers: buildWriteHandlers,
   };
+
+  const addSiteButton = (
+    <Button
+      size="sm"
+      className="h-11 gap-1.5 lg:h-7"
+      onClick={() => router.push("/marketing/sites/new")}
+    >
+      <Plus className="h-3.5 w-3.5" />
+      <span className="max-sm:sr-only">Add site</span>
+    </Button>
+  );
 
   return (
-    <SurfaceRuntimeProvider
-      surfaceName="matrx-user/marketing"
-      getScope={getHubScope}
-      getWriteHandlers={buildWriteHandlers}
-    >
+    <>
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -688,144 +313,65 @@ export function SitesPortfolio() {
           </h1>
         }
         center={<MarketingWorkspaceNav />}
-        right={
-          <div className="flex items-center gap-1">
-            {listRows.length > 0 ? (
-              <CopyButtons size="icon" {...sitesListCopy} />
-            ) : null}
-            <RefreshCwTapButton
-              ariaLabel="Refresh sites"
-              onClick={() => void sites.refetch()}
-              disabled={sites.isFetching}
-              className={sites.isFetching ? "animate-spin" : undefined}
-            />
-          </div>
-        }
       />
-      <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
-        <GscPortfolioClassBar
-          siteIds={listRows.map((site) => site.id)}
-          totalSites={sites.data?.total}
-          className="shrink-0"
-        />
-        <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-card px-3 py-2">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <SearchCheck className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold">
-                Seed sites from connected data
-              </p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                Set up GSC or organization credentials, then bind a property to
-                a managed site.
-              </p>
+      <main className="h-full overflow-hidden bg-textured">
+        <EntityListPage
+          config={config}
+          defaultScope={{ kind: "orgs", organizationId: null }}
+          surface={surface}
+          notice={(list) => (
+            <div className="space-y-2">
+              <GscPortfolioClassBar
+                siteIds={list.rows.map((site) => site.id)}
+                totalSites={list.total}
+              />
+              <section className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-card px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <SearchCheck className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold">
+                      Seed sites from connected data
+                    </p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      Set up GSC or organization credentials, then bind a
+                      property to a managed site.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="h-11 gap-1.5 text-xs lg:h-7"
+                >
+                  <Link href="/marketing/connections">
+                    Connections <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </section>
             </div>
-          </div>
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1.5 text-xs"
-          >
-            <Link href="/marketing/connections">
-              Connections <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </section>
-        {sites.isError ? (
-          <QueryError
-            error={sites.error}
-            onRetry={() => void sites.refetch()}
-          />
-        ) : (
-          <div className="min-h-0 flex-1">
-            <MatrxDataTable<SiteListRow>
-              data={sites.data?.rows ?? []}
-              columns={columns}
-              getRowId={(row) => row.id}
-              mobileCards={renderMobileSiteCard}
-              isLoading={sites.isLoading}
-              isFetching={sites.isFetching}
-              query={{
-                mode: "controlled",
-                state: table.state,
-                totalItems: sites.data?.total ?? 0,
-                onStateChange: table.onStateChange,
-              }}
-              toolbar={{
-                searchPlaceholder: "Search name, domain, or URL…",
-                leading:
-                  siteCount.data !== undefined ? (
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      {siteCount.data.toLocaleString()} managed
-                      {hasFilters && sites.data
-                        ? ` · ${sites.data.total.toLocaleString()} matching`
-                        : ""}
-                    </span>
-                  ) : undefined,
-                actions: (
-                  <Button
-                    size="sm"
-                    className="h-8 gap-1.5"
-                    onClick={() => router.push("/marketing/sites/new")}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add site
-                  </Button>
-                ),
-              }}
-              detail={{ enabled: false }}
-              onRowOpen={(row) =>
-                router.push(marketingRoutes.site(row.brand_id, row.id))
-              }
-              rowActions={(row) => (
-                <span onClick={(event) => event.stopPropagation()}>
-                  <ItemMenu config={() => buildRowMenu(row)} align="end">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${row.name}`}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </ItemMenu>
-                </span>
-              )}
-              emptyState={{
-                icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
-                title: hasFilters
-                  ? "No sites match your filters"
-                  : "No managed sites",
-                description: hasFilters
-                  ? "Clear the current search and filters to return to the complete site portfolio."
-                  : "Add a site to begin building its canonical page registry.",
-                action: (
-                  <Button
-                    size="sm"
-                    variant={hasFilters ? "outline" : "default"}
-                    onClick={() => {
-                      if (hasFilters) {
-                        table.onStateChange({
-                          ...table.state,
-                          page: 1,
-                          search: "",
-                          anyOf: "",
-                          columnFilters: {},
-                        });
-                      } else {
-                        router.push("/marketing/sites/new");
-                      }
-                    }}
-                  >
-                    {hasFilters ? "Clear filters" : "Add your first site"}
-                  </Button>
-                ),
-              }}
-            />
-          </div>
-        )}
+          )}
+          headerActions={(list) => {
+            const copy = sitesListCopy(list.rows, list.total, siteCount.data);
+            return (
+              <>
+                {list.rows.length > 0 ? (
+                  <CopyButtons size="icon" {...copy} />
+                ) : null}
+                <RefreshCwTapButton
+                  ariaLabel="Refresh sites"
+                  onClick={list.refresh}
+                  disabled={list.isFetching}
+                  className={list.isFetching ? "animate-spin" : undefined}
+                />
+                {addSiteButton}
+              </>
+            );
+          }}
+          emptyAction={addSiteButton}
+        />
       </main>
 
       {peeking ? (
@@ -835,14 +381,13 @@ export function SitesPortfolio() {
         open={Boolean(editing)}
         onOpenChange={(open) => {
           if (!open) {
-            // A dismissed editor must not leave a queued agent patch behind to
-            // land on whatever the user opens next.
             pendingStageRef.current = null;
             setEditing(null);
           }
         }}
         site={editing}
         onRegister={registerEditor}
+        onSaved={() => listRef.current?.refresh()}
       />
       <ConfirmDialog
         open={Boolean(deleting)}
@@ -864,7 +409,7 @@ export function SitesPortfolio() {
           href={marketingRoutes.site(deniedDelete.brand_id, deniedDelete.id)}
         />
       ) : null}
-    </SurfaceRuntimeProvider>
+    </>
   );
 }
 

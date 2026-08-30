@@ -2,7 +2,7 @@
 
 /**
  * LabelBatchDetail — one print run: counts, print / preview / PDF /
- * calibration through the `lib/label-print` seam, reprint ranges (the
+ * calibration through the `@ai-matrx/print` seam, reprint ranges (the
  * printer's own labelRange/startAt settings), void remaining codes, and the
  * full code list with doors to the owning assets.
  *
@@ -27,23 +27,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import {
-  PrintOptionsDialog,
-  usePrintOptions,
-} from "@/lib/block-print/PrintOptionsDialog";
-import type { BlockPrinter } from "@/lib/block-print/block-print-utils";
-import { LabelSheetPreview } from "@/lib/label-print/LabelSheetPreview";
+import type { BlockPrinter } from "@ai-matrx/print/core";
 import {
   LABEL_TEMPLATES,
+  downloadLabelsPdf,
   getLabelTemplate,
-} from "@/lib/label-print/label-templates";
-import { downloadLabelsPdf } from "@/lib/label-print/qr-labels-pdf";
-import {
   printCalibrationSheet,
   qrLabelsPrinter,
   type QrEcLevel,
   type QrLabelPrintData,
-} from "@/lib/label-print/qr-labels-printer";
+} from "@ai-matrx/print/labels";
+import {
+  LabelSheetPreview,
+  PrintOptionsDialog,
+  usePrintOptions,
+} from "@ai-matrx/print/react";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { toast } from "@/lib/toast";
 

@@ -38,7 +38,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
 import { detectDocument } from "../api";
 import { ENHANCE_LABELS, applyEnhance } from "../enhance";
@@ -267,11 +267,10 @@ function CropEditor({
 
   // Prefer the session-local preview; fall back to the uploaded file's URL
   // (resumed sessions have no local preview).
-  const remoteSrc = useFileSrc(
-    !item.previewUrl && item.fileId
-      ? { kind: "file_id", fileId: item.fileId }
-      : null,
-  );
+  const remoteSrc =
+    useMediaResolution(
+      !item.previewUrl && item.fileId ? item.fileId : null,
+    ).resolution?.src ?? null;
   const imageUrl = item.previewUrl ?? remoteSrc ?? null;
   const rotated = useRotatedImage(imageUrl, rotation);
 

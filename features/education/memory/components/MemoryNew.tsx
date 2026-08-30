@@ -15,7 +15,6 @@ import { ArrowLeft, Brain, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -42,6 +41,7 @@ import {
 } from "@/features/surfaces/manifests/education-memory.manifest";
 import { useGenerateMemoryAid } from "../useGenerateMemoryAid";
 import { memoryAidCounts } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // The generator source vocabulary lives ONCE in media/types.ts — the picker
 // below renders from it, the manifest interpolates it into the write-target
@@ -341,7 +341,7 @@ export function MemoryNew() {
             ))}
           </select>
         ) : (
-          <Textarea
+          <ProTextarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. The cranial nerves"

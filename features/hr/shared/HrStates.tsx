@@ -34,12 +34,11 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Building2,
   ClipboardCheck,
-  Compass,
   RefreshCw,
   ShieldOff,
   UserCog,
@@ -49,6 +48,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+import { HR_ORG_PARAM } from "../constants";
+import { HrAccessDenied } from "./HrAccessDenied";
 import {
   hrHref,
   hrMeHref,
@@ -57,7 +58,12 @@ import {
   hrSwitchEmployerHref,
 } from "../routes";
 import { isHrDenied, isHrFailed, type HrResult } from "../types";
-import { isHrModuleOff, needsHrActivation, useHrContext } from "./useHrContext";
+import {
+  isHrModuleOff,
+  needsHrActivation,
+  useHrContext,
+  type HrContextValue,
+} from "./useHrContext";
 import { isOrgSteward } from "./useHrPersona";
 
 // ── 1. Loading ──────────────────────────────────────────────────────────────
@@ -333,14 +339,33 @@ export function HrError({
  *
  * The route is separately ABSENT from the nav (`resolveHrNav`), so a person only
  * lands here by typing a URL or following a stale link.
+ *
+ * 🚨 THIS NO LONGER DRAWS ITS OWN SCREEN. Owner ruling, 2026-08-30: a person who
+ * lands somewhere they have no authority for gets the PLATFORM'S one refusal
+ * surface — same look, same doors, same request-access affordance — everywhere
+ * in the product. HR keeps the half only HR can know: the sentence. The frame is
+ * `features/access-gate`, reached through the single wrapper `HrAccessDenied`;
+ * this component is now the HR-context adapter in front of it (persona home
+ * door, and the one requestable class) and nothing else.
+ *
+ * `employerRef` is the ONLY way a request-access button appears on an HR
+ * refusal. Read the header of `HrAccessDenied.tsx` before adding a second one.
  */
 export function HrNoAccess({
   personaHomeHref,
   sentence,
+  employerRef,
   className,
 }: {
   personaHomeHref?: string;
   sentence?: string;
+  /**
+   * The employer a link named that this person has no standing in (uuid or
+   * slug). Present ⇒ the refusal is requestable against that ORGANIZATION.
+   * Leave unset — the default, absolute, is the safe answer for every HR record
+   * refusal, and the §5 subject-exclusion veto depends on it.
+   */
+  employerRef?: string | null;
   className?: string;
 }) {
   const { persona, orgRef } = useHrContext();
@@ -349,16 +374,13 @@ export function HrNoAccess({
   const fallbackLabel = persona === "employee" ? "Go to My Info" : "Go to HR home";
 
   return (
-    <div className={cn("w-full min-w-0 p-4 sm:p-6", className)}>
-      <div className="mx-auto flex max-w-xl flex-col items-start gap-3 rounded-lg border border-border bg-card p-4 sm:p-6">
-        <Compass className="h-5 w-5 shrink-0 text-muted-foreground" />
-        <p className="text-sm text-foreground">
-          {sentence?.trim() || "This part of HR isn't yours here."}
-        </p>
-        <Button asChild size="sm" className="min-h-11 sm:min-h-9">
-          <Link href={fallbackHref}>{fallbackLabel}</Link>
-        </Button>
-      </div>
+    <div className={cn("w-full min-w-0", className)}>
+      <HrAccessDenied
+        sentence={sentence?.trim() || "This part of HR isn't yours here."}
+        fallbackHref={fallbackHref}
+        fallbackLabel={fallbackLabel}
+        employerRef={employerRef}
+      />
     </div>
   );
 }
@@ -378,6 +400,8 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading } = useHrContext();
   // The picker is itself the pre-employer-context state.
   const pathname = usePathname() ?? hrHref(null);
+  const askedEmployerRef =
+    useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
 
   if (isLoading) return <HrLoading variant="cards" rows={3} className={className} />;
 
@@ -386,6 +410,28 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
   );
 
   if (choosable.length === 0) {
+    /*
+      🚨 A LINK NAMED AN EMPLOYER AND THIS PERSON HAS NO STANDING IN IT.
+      This is the SMS-deep-link landing (owner, 2026-08-30), and there is
+      nothing to pick — offering a chooser with no choices is the dead end the
+      canonical refusal exists to kill. So it becomes the platform's denial
+      about that ORGANIZATION, with the request-access click that reaches its
+      owners and admins. With no `?org=` there is nothing to name and nothing to
+      ask for, so the plain page stands.
+    */
+    if (askedEmployerRef) {
+      return (
+        <div className={cn("w-full min-w-0", className)}>
+          <HrAccessDenied
+            sentence="You don't work here as far as HR is concerned, so there's nothing in this employer's HR for you to open."
+            fallbackHref={hrHref(null)}
+            fallbackLabel="Back to HR"
+            employerRef={askedEmployerRef}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={cn("w-full min-w-0 p-4 sm:p-6", className)}>
         <div className="mx-auto flex max-w-xl flex-col items-start gap-3 rounded-lg border border-border bg-card p-4 sm:p-6">
@@ -498,11 +544,70 @@ export function useHrDisclosureClaimed(): boolean {
  * NOT a modal, NOT a toast, and NOT dismissible: it is a statement of which employer
  * this page is showing, and it must still be true the moment somebody looks up.
  */
+/**
+ * The rescue landed nowhere: `?org=` named an employer this person cannot do HR
+ * in, and the employer they were rescued into has HR off or unfinished — so the
+ * substitution bought them nothing and `HrPageState` refuses about the ASKED-FOR
+ * employer instead, through the canonical access-denied primitive.
+ *
+ * ONE predicate, consulted by the state machine that renders the refusal AND by
+ * the substitution notice that must stand down for it. Two copies of this
+ * condition would drift into a page that says both things or neither.
+ */
+export function hrRescueLandedNowhere(context: HrContextValue): boolean {
+  return (
+    context.substitution?.reason === "unavailable" &&
+    Boolean(context.active) &&
+    (isHrModuleOff(context) || needsHrActivation(context))
+  );
+}
+
+/**
+ * The rescue-landed-nowhere refusal, for the surfaces that do NOT run
+ * `HrPageState` — `/hr/tasks` and `/hr/tasks/[instanceId]`, the exact routes
+ * every HR notification and SMS deep-links to, and the ones with no `HrShell`
+ * above them.
+ *
+ * 🚨 THIS IS NOT OPTIONAL ON THOSE ROUTES. `HrEmployerSubstitutionNotice` stands
+ * down when the rescue landed nowhere because THIS refusal says it better; a
+ * surface that suppresses the notice and renders neither shows an empty inbox
+ * for an employer the person never asked about, which reads as "nothing is
+ * waiting on you" — the one lie an approval inbox must never tell.
+ *
+ * Returns null in every ordinary case, so it costs nothing.
+ */
+export function useHrRescueRefusal(personaHomeHref?: string): ReactNode {
+  const context = useHrContext();
+  const askedEmployerRef =
+    useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
+
+  if (!hrRescueLandedNowhere(context) || !askedEmployerRef) return null;
+
+  return (
+    <HrNoAccess
+      personaHomeHref={personaHomeHref}
+      sentence="You don't work here as far as HR is concerned, so there's nothing in this employer's HR for you to open."
+      employerRef={askedEmployerRef}
+    />
+  );
+}
+
 export function HrEmployerSubstitutionNotice({
   className,
 }: { className?: string } = {}) {
-  const { substitution } = useHrContext();
+  const context = useHrContext();
+  const { substitution } = context;
   if (!substitution) return null;
+
+  /*
+    🚨 LAW B IS NOT BROKEN HERE — IT IS SATISFIED HARDER.
+    The law is that no employer is ever substituted in SILENCE. When the rescue
+    landed nowhere, nothing is substituted at all: the page below is the
+    canonical refusal, and it names the asked-for employer out loud. Saying "so
+    this is your Workspace" above a page that refuses about Castellano & Reyes
+    would be two different answers to one question, and the banner's is false.
+  */
+  if (hrRescueLandedNowhere(context)) return null;
 
   const { askedName, askedRef, reason, openedName } = substitution;
 
@@ -671,6 +776,10 @@ export function HrPageState({
 }) {
   const context = useHrContext();
   const disclosureClaimed = useHrDisclosureClaimed();
+  // What the link ASKED for, not what resolved — the whole point of the
+  // no-standing case is that nothing resolved.
+  const askedEmployerRef =
+    useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
 
   if (context.isLoading) return <HrLoading variant={variant} rows={rows} />;
 
@@ -678,8 +787,22 @@ export function HrPageState({
     // A refusal at the CONTEXT level means this person has no HR standing at all
     // — that is the no-access state, not an error state.
     if (context.error.kind === "denied") {
+      /*
+        🚨 THE SMS-DEEP-LINK CASE (owner, 2026-08-30 — he hit it on his phone).
+        A refusal at the CONTEXT level means this person has no HR standing in
+        this employer AT ALL — not that a record is hidden from them. That is
+        the one HR refusal where asking is a real option, so it names the
+        employer the link asked for and carries the canonical Request-access
+        click through to that organization's owners and admins.
+
+        Every OTHER HR refusal below stays absolute. See `HrAccessDenied.tsx`.
+      */
       return (
-        <HrNoAccess personaHomeHref={personaHomeHref} sentence={noAccessSentence} />
+        <HrNoAccess
+          personaHomeHref={personaHomeHref}
+          sentence={noAccessSentence}
+          employerRef={askedEmployerRef}
+        />
       );
     }
     return (
@@ -693,6 +816,36 @@ export function HrPageState({
   }
 
   if (requireEmployer && !context.active) return <HrEmployerPicker />;
+
+  /*
+    🚨 THE SMS-DEEP-LINK LANDING (owner, on his phone, 2026-08-30).
+
+    `?org=` named an employer this person cannot do HR in, so
+    `useHrContextResolver` rescued them into an employer they CAN use — and the
+    rescue landed on one with HR switched off or never set up. The result was a
+    page about the WRONG ORGANIZATION offering to turn HR on there, which
+    answers a question nobody asked, and gives the person no way at all to reach
+    the employer the link was actually about.
+
+    That is landing on a page you have no authority for, so it gets the
+    platform's one refusal surface: the asked-for employer named honestly, and
+    the canonical Request-access click through to that organization's owners and
+    admins.
+
+    NARROW ON PURPOSE. The rescue is a real kindness for a multi-employer person
+    whose active org happens to be personal — she still gets her HR plus the
+    substitution notice (law B). This fires only where the rescue produced
+    NOTHING USABLE, which is the case where the notice was the whole page.
+  */
+  if (hrRescueLandedNowhere(context) && askedEmployerRef) {
+    return (
+      <HrNoAccess
+        personaHomeHref={personaHomeHref}
+        sentence="You don't work here as far as HR is concerned, so there's nothing in this employer's HR for you to open."
+        employerRef={askedEmployerRef}
+      />
+    );
+  }
 
   if (context.active && isHrModuleOff(context)) {
     return (

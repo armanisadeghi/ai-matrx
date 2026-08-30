@@ -40,6 +40,7 @@ import type { BingConnectionSummary } from "@/features/marketing/bing/types";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import type { MarketingSite } from "@/features/marketing/types";
 import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
+import { humanizeBackendError } from "@/utils/errors";
 
 const BING_WEBMASTER_URL = "https://www.bing.com/webmasters";
 
@@ -795,7 +796,7 @@ function ConnectionRow({
         </div>
         <p className="mt-0.5 text-[10px] text-muted-foreground">
           {siteCount} discovered propert{siteCount === 1 ? "y" : "ies"}
-          {connection.last_error ? ` · ${connection.last_error}` : ""}
+          {connection.last_error ? ` · ${humanizeBackendError(connection.last_error) ?? ""}` : ""}
         </p>
       </div>
       <Button

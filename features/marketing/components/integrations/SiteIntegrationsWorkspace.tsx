@@ -85,6 +85,12 @@ import {
   type GoogleResourceBindingDiagnosis,
 } from "@/features/marketing/google/health";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
+import {
+  discoveredDomainProperty,
+  isSiteDomainProperty,
+  preferredGscProperty,
+} from "@/features/marketing/google/gsc-property";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { siteSetupChecklist } from "@/features/marketing/search-console/setup/siteSetupChecklist";
@@ -473,18 +479,15 @@ function SiteIntegrationsEditor({
           resource.connection_id === connectionId &&
           resource.resource_type === "search_console_property",
       );
-      const matchingSearch =
-        searchResources.find((resource) => {
-          const ref = resource.resource_ref.toLowerCase();
-          if (ref === `sc-domain:${site.domain.toLowerCase()}`) return true;
-          try {
-            return (
-              new URL(ref).hostname.toLowerCase() === site.domain.toLowerCase()
-            );
-          } catch {
-            return false;
-          }
-        }) ?? (searchResources.length === 1 ? searchResources[0] : null);
+      // THE DOMAIN-PROPERTY RULE: `sc-domain:` covers every version of the
+      // site, so it wins over any URL-prefix match whenever Google returns
+      // it. `.find` over an unordered inventory used to pick whichever
+      // matching version happened to come back first.
+      const matchingSearch = preferredGscProperty(
+        resources,
+        connectionId,
+        site.domain,
+      );
       const nextGoogleSearchConsole: ProviderIntegrationDraft = {
         ...draft.googleSearchConsole,
         enabled: Boolean(matchingSearch) || draft.googleSearchConsole.enabled,
@@ -664,14 +667,14 @@ function SiteIntegrationsEditor({
     }
   };
 
-  const save = () => {
+  const save = (draftToSave: SiteIntegrationsDraft = draft) => {
     if (visibleIssues.length) return;
     try {
       update.mutate(
         {
           siteId: site.id,
           expectedVersion: site.version,
-          integrations: buildSiteIntegrations(site.integrations, draft),
+          integrations: buildSiteIntegrations(site.integrations, draftToSave),
         },
         {
           onSuccess: () => {
@@ -681,7 +684,7 @@ function SiteIntegrationsEditor({
               true,
             );
             if (before !== "reference_configured")
-              kickGscFirstImport(draft.googleSearchConsole);
+              kickGscFirstImport(draftToSave.googleSearchConsole);
           },
         },
       );
@@ -690,6 +693,76 @@ function SiteIntegrationsEditor({
         error instanceof Error ? error.message : "Unable to save integrations.",
       );
     }
+  };
+
+  /**
+   * THE DOMAIN-PROPERTY RULE, enforcement half (Arman, 2026-08-29): when
+   * Google's discovery holds the domain property (`sc-domain:<domain>`) for
+   * this site, that is the binding — it covers every protocol/host version.
+   * A user choosing a URL-prefix version instead must answer THREE separate
+   * warnings before the save goes through; agreeing at any point swaps the
+   * binding to the domain property. An unchanged stored binding is never
+   * re-nagged on unrelated saves.
+   *
+   * Returns the draft to persist (possibly swapped to the domain property).
+   */
+  const confirmGscPropertyChoice =
+    async (): Promise<SiteIntegrationsDraft> => {
+      const gsc = draft.googleSearchConsole;
+      const unchanged =
+        JSON.stringify(gsc) === JSON.stringify(initial.googleSearchConsole);
+      if (unchanged || !gsc.enabled || !gsc.credentialRef || !gsc.resourceRef) {
+        return draft;
+      }
+      if (isSiteDomainProperty(gsc.resourceRef, site.domain)) return draft;
+      const domainProperty = discoveredDomainProperty(
+        googleInventory.data?.resources ?? [],
+        gsc.credentialRef,
+        site.domain,
+      );
+      if (!domainProperty) return draft;
+      const swap = (): SiteIntegrationsDraft => {
+        const next = {
+          ...draft,
+          googleSearchConsole: {
+            ...gsc,
+            resourceRef: domainProperty.resource_ref,
+          },
+        };
+        setDraft(next);
+        return next;
+      };
+      const warnings: Array<{ title: string; description: string }> = [
+        {
+          title: "Use the domain property instead",
+          description: `Your Google account has the domain property ${domainProperty.resource_ref}, which covers every version of ${site.domain} (http, https, www and non-www). ${gsc.resourceRef} is only one version — binding it can silently miss traffic Google files under the others.`,
+        },
+        {
+          title: "Are you sure? The domain property is almost always right",
+          description: `Choosing ${gsc.resourceRef} means Search Console data for other versions of ${site.domain} will never reach this site. The domain property ${domainProperty.resource_ref} has no such blind spot.`,
+        },
+        {
+          title: "Final warning — this choice loses data",
+          description: `This is the last confirmation. Connecting ${gsc.resourceRef} instead of ${domainProperty.resource_ref} is almost never correct. Continue only if you have a specific reason this site must read a single URL version.`,
+        },
+      ];
+      for (const warning of warnings) {
+        const useDomain = await confirm({
+          title: warning.title,
+          description: warning.description,
+          variant: "destructive",
+          confirmLabel: "Use the domain property",
+          cancelLabel: "Keep my choice",
+        });
+        if (useDomain) return swap();
+      }
+      // Three separate refusals — the user is let through, as ruled.
+      return draft;
+    };
+
+  const saveWithGscPropertyGuard = async () => {
+    if (visibleIssues.length) return;
+    save(await confirmGscPropertyChoice());
   };
 
   const providerStatusLabel = (key: BuiltInProviderKey): string =>
@@ -1004,20 +1077,27 @@ function SiteIntegrationsEditor({
                   ) : undefined
                 }
                 value={draft[key]}
+                siteDomain={site.domain}
                 connections={googleInventory.data?.connections ?? []}
                 resources={googleInventory.data?.resources ?? []}
                 dirty={
                   JSON.stringify(draft[key]) !== JSON.stringify(initial[key])
                 }
                 saving={update.isPending}
-                onSave={save}
+                onSave={() => void saveWithGscPropertyGuard()}
                 onEnable={() => {
-                  void persistBuiltInProvider(
-                    key,
-                    { ...draft[key], enabled: true },
-                    `${provider.label} enabled`,
-                    `${provider.label} is now enabled for ${site.domain}.`,
-                  ).catch((error) =>
+                  void (async () => {
+                    const guarded =
+                      key === "googleSearchConsole"
+                        ? (await confirmGscPropertyChoice())[key]
+                        : draft[key];
+                    await persistBuiltInProvider(
+                      key,
+                      { ...guarded, enabled: true },
+                      `${provider.label} enabled`,
+                      `${provider.label} is now enabled for ${site.domain}.`,
+                    );
+                  })().catch((error) =>
                     toast.error(
                       error instanceof Error
                         ? error.message
@@ -1119,7 +1199,7 @@ function SiteIntegrationsEditor({
               size="sm"
               className="gap-1.5"
               disabled={!dirty || visibleIssues.length > 0 || update.isPending}
-              onClick={save}
+              onClick={() => void saveWithGscPropertyGuard()}
             >
               {update.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1427,6 +1507,7 @@ function BuiltInProviderCard({
   resourcePlaceholder,
   icon: Icon,
   value,
+  siteDomain,
   connections,
   resources,
   dirty,
@@ -1444,6 +1525,7 @@ function BuiltInProviderCard({
   resourcePlaceholder?: string;
   icon: typeof SearchCheck;
   value: ProviderIntegrationDraft;
+  siteDomain: string;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
   dirty: boolean;
@@ -1504,6 +1586,7 @@ function BuiltInProviderCard({
         <ProviderReferenceFields
           providerKey={providerKey}
           value={value}
+          siteDomain={siteDomain}
           connections={connections}
           resources={resources}
           resourceLabel={resourceLabel}
@@ -1774,6 +1857,7 @@ function UrlChangeIntakeCard({
 function ProviderReferenceFields({
   providerKey,
   value,
+  siteDomain,
   connections,
   resources,
   resourceLabel,
@@ -1782,6 +1866,7 @@ function ProviderReferenceFields({
 }: {
   providerKey: BuiltInProviderKey;
   value: ProviderIntegrationDraft;
+  siteDomain: string;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
   resourceLabel?: string;
@@ -1801,10 +1886,33 @@ function ProviderReferenceFields({
     providerKey === "googleSearchConsole"
       ? "search_console_property"
       : "analytics_property";
-  const availableResources = resources.filter(
+  const unorderedResources = resources.filter(
     (resource) =>
       resource.connection_id === value.credentialRef &&
       resource.resource_type === resourceType,
+  );
+  // THE DOMAIN-PROPERTY RULE: for Search Console, this site's domain
+  // property leads the list and wears the recommendation — it covers every
+  // version of the site, and the picker must never present the URL versions
+  // as equal peers when it exists.
+  const domainProperty =
+    providerKey === "googleSearchConsole"
+      ? (unorderedResources.find((resource) =>
+          isSiteDomainProperty(resource.resource_ref, siteDomain),
+        ) ?? null)
+      : null;
+  const availableResources = domainProperty
+    ? [
+        domainProperty,
+        ...unorderedResources.filter(
+          (resource) => resource.id !== domainProperty.id,
+        ),
+      ]
+    : unorderedResources;
+  const nonDomainChosen = Boolean(
+    domainProperty &&
+      value.resourceRef &&
+      value.resourceRef !== domainProperty.resource_ref,
   );
   // One entry per Google identity: a personal + an org connection to the
   // same Google account are the same authorization — never two choices.
@@ -1824,7 +1932,16 @@ function ProviderReferenceFields({
               ...value,
               credentialAuthority: "external_connection",
               credentialRef,
-              resourceRef: "",
+              // Search Console defaults straight to the domain property when
+              // the newly chosen connection discovered one for this site.
+              resourceRef:
+                providerKey === "googleSearchConsole"
+                  ? (discoveredDomainProperty(
+                      resources,
+                      credentialRef,
+                      siteDomain,
+                    )?.resource_ref ?? "")
+                  : "",
             })
           }
         >
@@ -1875,10 +1992,35 @@ function ProviderReferenceFields({
               {availableResources.map((resource) => (
                 <SelectItem key={resource.id} value={resource.resource_ref}>
                   {resource.display_name}
+                  {domainProperty && resource.id === domainProperty.id
+                    ? " · Recommended — covers every version"
+                    : ""}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {nonDomainChosen && domainProperty ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5">
+              <p className="min-w-0 flex-1 text-[10px] leading-4 text-foreground">
+                {value.resourceRef} is only one version of {siteDomain}. The
+                domain property {domainProperty.resource_ref} covers every
+                version and is the one you want.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 shrink-0 px-2 text-[10px]"
+                onClick={() =>
+                  onChange({
+                    ...value,
+                    resourceRef: domainProperty.resource_ref,
+                  })
+                }
+              >
+                Use the domain property
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </>

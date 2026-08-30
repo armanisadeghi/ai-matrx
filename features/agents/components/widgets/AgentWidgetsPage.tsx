@@ -64,6 +64,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SURFACE_KEY_PREFIX = "agent-widgets-page";
 
@@ -642,7 +643,7 @@ export function AgentWidgetsPage({
                       />
                     </span>
                   </div>
-                  <textarea
+                  <ProTextarea
                     id="widgets-user-input"
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}

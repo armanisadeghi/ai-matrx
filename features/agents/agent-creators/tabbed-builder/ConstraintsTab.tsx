@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ConstraintsContentProps {
   updateContent?: (content: string) => void;
@@ -85,7 +85,7 @@ const ConstraintsContent: React.FC<ConstraintsContentProps> = ({ updateContent }
         <Label htmlFor="specific-constraints" className="text-gray-700 dark:text-gray-300">
           Specific Constraints (Optional)
         </Label>
-        <Textarea
+        <ProTextarea
           id="specific-constraints"
           placeholder="Describe specific constraints in detail..."
           value={specificConstraints}

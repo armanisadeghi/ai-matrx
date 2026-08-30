@@ -100,12 +100,37 @@ import type {
   ColumnFilterValue,
   ColumnFiltersState,
   MatrxColumnDef,
+  MatrxDataTableCopyConfig,
   MatrxDataTableHierarchyMove,
   MatrxDataTableProps,
   MatrxDataTableQueryState,
   SortState,
   TableSearchMatchMode,
 } from "./types";
+
+interface TableRowCopyControlProps<T> {
+  copy: MatrxDataTableCopyConfig<T>;
+  row: T;
+  size: "xs" | "icon";
+}
+
+/** One row-copy seam shared by cards, desktop rows, panels, and windows. */
+function TableRowCopyControl<T>({
+  copy,
+  row,
+  size,
+}: TableRowCopyControlProps<T>) {
+  return (
+    <CopyButtons
+      size={size}
+      label={copy.label}
+      human={() => copy.humanRow(row)}
+      json={() => (copy.agentRow ? copy.agentRow(row) : row)}
+      agent={() => buildRowAgentInput(copy, row)}
+      aiVariants={copy.rowAiVariants?.(row)}
+    />
+  );
+}
 
 interface HierarchyDropPreview {
   move: MatrxDataTableHierarchyMove;
@@ -1248,6 +1273,19 @@ function MatrxDataTableCore<T>({
                           mime: "text/csv",
                         }),
                       },
+                      {
+                        id: "xlsx",
+                        label: "Excel (.xlsx)",
+                        onSelect: async () => {
+                          const { downloadTableAsXlsx } =
+                            await import("./tableXlsx");
+                          downloadTableAsXlsx({
+                            rows: processed,
+                            columns: visibleColumns,
+                            label: copy.listLabel ?? copy.label,
+                          });
+                        },
+                      },
                     ],
                     sheetRows: () =>
                       rowsToRecordsFromColumns(processed, visibleColumns),
@@ -1298,6 +1336,44 @@ function MatrxDataTableCore<T>({
                       scope: "selected",
                     })
                   }
+                  export={{
+                    items: [
+                      jsonExportItem(
+                        () =>
+                          selectedRows.map((row) =>
+                            copy.agentRow ? copy.agentRow(row) : row,
+                          ),
+                        "JSON (selected rows)",
+                      ),
+                      {
+                        id: "csv",
+                        label: "CSV (selected rows)",
+                        build: () => ({
+                          content: rowsToCsvFromColumns(
+                            selectedRows,
+                            visibleColumns,
+                          ),
+                          extension: "csv",
+                          mime: "text/csv",
+                        }),
+                      },
+                      {
+                        id: "xlsx",
+                        label: "Excel (.xlsx)",
+                        onSelect: async () => {
+                          const { downloadTableAsXlsx } =
+                            await import("./tableXlsx");
+                          downloadTableAsXlsx({
+                            rows: selectedRows,
+                            columns: visibleColumns,
+                            label: `${copy.listLabel ?? copy.label} selected`,
+                          });
+                        },
+                      },
+                    ],
+                    sheetRows: () =>
+                      rowsToRecordsFromColumns(selectedRows, visibleColumns),
+                  }}
                 />
               ) : null}
               {selection.actions?.(selectedRows, selection.selectedIds)}
@@ -1380,18 +1456,10 @@ function MatrxDataTableCore<T>({
                                 onClick={(event) => event.stopPropagation()}
                               >
                                 {showRowCopy && copy ? (
-                                  <CopyButtons
+                                  <TableRowCopyControl
                                     size="xs"
-                                    label={copy.label}
-                                    human={() => copy.humanRow(displayRow)}
-                                    json={() =>
-                                      copy.agentRow
-                                        ? copy.agentRow(displayRow)
-                                        : displayRow
-                                    }
-                                    agent={() =>
-                                      buildRowAgentInput(copy, displayRow)
-                                    }
+                                    copy={copy}
+                                    row={displayRow}
                                   />
                                 ) : null}
                                 {rowActions?.(row, {
@@ -1665,12 +1733,19 @@ function MatrxDataTableCore<T>({
                               className="px-2 py-1.5 align-middle lg:py-0.5"
                               onClick={(e) => e.stopPropagation()}
                             >
+                              {/*
+                                🚨 An unselectable row gets NO CONTROL AT ALL — not a
+                                greyed one. `isRowSelectable` returning false means the
+                                surface beneath will refuse this row, and a checkbox
+                                that renders (even faded) still says "this is a thing
+                                you pick"; the cell stays for column alignment, the
+                                control does not exist. Absent, not disabled, not
+                                hidden — nothing in the DOM to find or tick.
+                              */}
+                              {(selection.isRowSelectable?.(row) ?? true) ? (
                               <Checkbox
                                 className={CHECKBOX_TAP_AREA}
                                 checked={isChecked}
-                                disabled={
-                                  !(selection.isRowSelectable?.(row) ?? true)
-                                }
                                 aria-label={`Select this ${selectionNoun}`}
                                 // Radix hands the checkbox's own click through here;
                                 // shift-range needs the native event's modifier, so
@@ -1679,6 +1754,7 @@ function MatrxDataTableCore<T>({
                                   toggleRowSelected(index, e.shiftKey)
                                 }
                               />
+                              ) : null}
                             </td>
                           ) : null}
                           {visibleColumns.map((col, colIdx) => {
@@ -1783,18 +1859,10 @@ function MatrxDataTableCore<T>({
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {showRowCopy && copy ? (
-                                  <CopyButtons
+                                  <TableRowCopyControl
                                     size="xs"
-                                    label={copy.label}
-                                    human={() => copy.humanRow(displayRow)}
-                                    json={() =>
-                                      copy.agentRow
-                                        ? copy.agentRow(displayRow)
-                                        : displayRow
-                                    }
-                                    agent={() =>
-                                      buildRowAgentInput(copy, displayRow)
-                                    }
+                                    copy={copy}
+                                    row={displayRow}
                                   />
                                 ) : null}
                                 {rowActions?.(row, {
@@ -1943,14 +2011,10 @@ function MatrxDataTableCore<T>({
             headerActions={
               <div className="flex items-center gap-1">
                 {copy && showRowCopy ? (
-                  <CopyButtons
+                  <TableRowCopyControl
                     size="icon"
-                    label={copy.label}
-                    human={() => copy.humanRow(selectedRow)}
-                    json={() =>
-                      copy.agentRow ? copy.agentRow(selectedRow) : selectedRow
-                    }
-                    agent={() => buildRowAgentInput(copy, selectedRow)}
+                    copy={copy}
+                    row={selectedRow}
                   />
                 ) : null}
                 {detail?.headerActions?.(selectedRow)}
@@ -2030,14 +2094,10 @@ function MatrxDataTableCore<T>({
                   </Button>
                 ) : null}
                 {copy ? (
-                  <CopyButtons
+                  <TableRowCopyControl
                     size="icon"
-                    label={copy.label}
-                    human={() => copy.humanRow(windowRow)}
-                    json={() =>
-                      copy.agentRow ? copy.agentRow(windowRow) : windowRow
-                    }
-                    agent={() => buildRowAgentInput(copy, windowRow)}
+                    copy={copy}
+                    row={windowRow}
                   />
                 ) : null}
               </div>

@@ -133,6 +133,7 @@ export const SYSTEM_ITEMS_KEY = "__system__";
 export const listSystemContextItems = createAsyncThunk(
   "contextItems/listSystem",
   async () => {
+    // VIEW LAW: system context items are intentionally global public facts with no owner or scope dimension.
     const { data, error } = await contextDb(supabase)
       .from("system_context_item")
       .select(

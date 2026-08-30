@@ -11,7 +11,6 @@ import type { ScopeType } from "../../redux/scope/types";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -24,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
 import { toSlug } from "@/features/scopes/utils/slugify";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ScopeTypeFormSheetProps {
   open: boolean;
@@ -194,7 +194,7 @@ export function ScopeTypeFormSheet({
 
         <div className="space-y-1.5">
           <Label className="text-xs">Description</Label>
-          <Textarea
+          <ProTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What this scope type represents..."

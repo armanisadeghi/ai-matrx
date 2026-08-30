@@ -44,7 +44,7 @@ export function TaskEditorCopyButtons({
 
   // Gathered inside the click handler, never memoized at render — the whole
   // point is that the payload reflects the keystroke before the click.
-  const gather = (): TaskEditorCopyInput => ({
+  const getInput = (): TaskEditorCopyInput => ({
     taskId,
     effective,
     saved: task ?? null,
@@ -58,27 +58,58 @@ export function TaskEditorCopyButtons({
   });
 
   return (
+    <TaskEditorCopyButtonsForDraft
+      getInput={getInput}
+      size={size}
+      className={className}
+      location={location}
+    />
+  );
+}
+
+/**
+ * Shared task-editor copy control for editors whose draft state does not live
+ * in TaskEditorControllerContext (currently the dedicated mobile editor).
+ * The caller supplies a click-time getter so the live-state law remains true.
+ */
+export function TaskEditorCopyButtonsForDraft({
+  getInput,
+  size = "xs",
+  className,
+  location = "Tasks — task editor",
+}: {
+  getInput: () => TaskEditorCopyInput;
+  size?: "xs" | "icon" | "sm";
+  className?: string;
+  location?: string;
+}) {
+  const current = getInput();
+
+  return (
     <CopyButtons
       size={size}
       className={className}
-      label={effective.title || "Task"}
-      human={() => taskEditorHuman(gather())}
-      json={() => gather().effective}
-      agent={() => buildTaskEditorPayload(gather())}
+      label={current.effective.title || "Task"}
+      human={() => taskEditorHuman(getInput())}
+      json={() => getInput().effective}
+      agent={() => buildTaskEditorPayload(getInput())}
       agentVariant={{
         id: "this-task",
-        label: isDirty ? "This task (incl. unsaved edits)" : "This task",
+        label: current.isDirty
+          ? "This task (incl. unsaved edits)"
+          : "This task",
         hint: "The editor exactly as it is on screen right now",
         position: "first",
       }}
       aiVariants={taskEditorVariants({
         fullTree: async () => {
-          const bundle = await fetchTaskExportBundle(taskId);
+          const input = getInput();
+          const bundle = await fetchTaskExportBundle(input.taskId);
           if (!bundle)
             throw recordUnavailable({
               entity: "task",
               reason: "unknown",
-              recordId: taskId,
+              recordId: input.taskId,
               token: "task",
             });
           return serializeTaskForAi(bundle, location);

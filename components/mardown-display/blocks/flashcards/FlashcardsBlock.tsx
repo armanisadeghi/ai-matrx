@@ -14,8 +14,8 @@ import {
 } from "./flashcards-set-parts";
 import { InlineArtifactDebugStrip } from "@/features/canvas/components/CanvasArtifactDebugPanel";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
-import { flashcardsPrinter } from "./flashcards-printer";
-import { PrintOptionsDialog } from "@/lib/block-print/PrintOptionsDialog";
+import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { PrintOptionsDialog } from "@ai-matrx/print/react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";

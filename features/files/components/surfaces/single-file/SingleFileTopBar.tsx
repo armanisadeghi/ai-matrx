@@ -48,7 +48,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { getFolderAncestors } from "@/features/files/redux/tree-utils";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { FileLineageChip } from "../FileLineageChip";

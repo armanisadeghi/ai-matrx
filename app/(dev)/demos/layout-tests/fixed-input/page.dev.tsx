@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Send } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { PageSpecificHeader } from '@/components/layout/new-layout/PageSpecificHeader';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function FixedInputPage() {
   const [message, setMessage] = useState('');
@@ -54,7 +54,8 @@ export default function FixedInputPage() {
             </span>
           </div>
           <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-b-lg">
-            <Textarea
+            <ProTextarea
+              wrapperClassName="min-w-0 flex-1"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type here and watch - this should never get covered by browser UI..."

@@ -363,6 +363,12 @@ export interface RequestOptions {
 export interface RawResponseOptions extends RequestOptions {
   /** Return a non-2xx response after capturing it instead of throwing. */
   allowHttpError?: boolean;
+  /**
+   * HTTP failures this call site handles as expected domain outcomes. They
+   * still reject (or return when `allowHttpError` is set), but do not enter
+   * the global Error Inspector. Mirrors `callApi.expectedErrorStatuses`.
+   */
+  expectedErrorStatuses?: readonly number[];
 }
 
 export interface ResponseMeta {
@@ -482,17 +488,26 @@ export async function requestRaw(
     if (!response.ok) {
       const error = await parseHttpError(response.clone());
       if (opts.allowHttpError) {
-        capturePythonClientError(error, {
-          url,
-          method,
-          path: relationPathFromUrl(path),
-        });
+        if (!opts.expectedErrorStatuses?.includes(response.status)) {
+          capturePythonClientError(error, {
+            url,
+            method,
+            path: relationPathFromUrl(path),
+          });
+        }
         return response;
       }
       throw error;
     }
     return response;
   } catch (err) {
+    if (
+      err instanceof BackendApiError &&
+      err.status !== null &&
+      opts.expectedErrorStatuses?.includes(err.status)
+    ) {
+      throw err;
+    }
     failClient(err, method, path, url, requestId);
   }
 }

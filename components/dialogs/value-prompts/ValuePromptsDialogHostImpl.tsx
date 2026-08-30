@@ -24,13 +24,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   _registerHost,
   _unregisterHost,
   type ValuePromptsRequest,
 } from "./valuePromptsOpener";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ActiveRequest {
   req: ValuePromptsRequest;
@@ -127,7 +127,7 @@ export default function ValuePromptsDialogHostImpl() {
                   <span className="ml-1 text-destructive">*</span>
                 )}
               </Label>
-              <Textarea
+              <ProTextarea
                 id={`value-prompt-${field.name}`}
                 value={answers[field.name] ?? ""}
                 onChange={(e) =>

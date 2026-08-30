@@ -29,6 +29,7 @@ import {
   type OrchestraResultMode,
 } from "../constants";
 import type { OrchestraMember } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface MemberInspectorProps {
   conductorId: string;
@@ -131,7 +132,7 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
               </button>
             )}
           </div>
-          <textarea
+          <ProTextarea
             value={gap}
             onChange={(e) => setGap(e.target.value)}
             placeholder={agent?.description || "What does this agent contribute to the Orchestra?"}

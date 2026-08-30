@@ -44,8 +44,8 @@ import {
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
-import { useMandate } from "@/features/agents/mandates/useMandate";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { useMandate } from "@/features/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   DOMAIN_OUTPUTS,
@@ -74,6 +74,7 @@ import { ResourcePicker } from "./ResourcePicker";
 import { BudgetMeter } from "./BudgetMeter";
 import { BundleBar } from "./BundleBar";
 import { VariablePreview } from "./VariablePreview";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** What the agent is asked to do when the user does not say otherwise. */
 /** The research surface, for agent-surface binding value mappings. */
@@ -738,7 +739,7 @@ function AgentRunnerBody({
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Instruction
           </span>
-          <textarea
+          <ProTextarea
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             rows={2}

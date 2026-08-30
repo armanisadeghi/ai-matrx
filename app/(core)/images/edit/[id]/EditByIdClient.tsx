@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileName } from "@/features/files/redux/selectors";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import type { ImageSource } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(
@@ -31,7 +31,7 @@ interface Props {
  * HEAD-style anonymous probe.)
  */
 export default function EditByIdClient({ cloudFileId, folder }: Props) {
-  const url = useFileSrc({ kind: "file_id", fileId: cloudFileId });
+  const url = useMediaResolution(cloudFileId).resolution?.src ?? null;
   const fileName = useAppSelector((s) => selectFileName(s, cloudFileId));
 
   if (!url) {

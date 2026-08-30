@@ -17,8 +17,8 @@ import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KindRequestDialog } from "@/features/content-ir/react/actions/KindRequestDialog";
-import { useMandate } from "@/features/agents/mandates/useMandate";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { useMandate } from "@/features/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { podcastService } from "@/features/podcasts/service";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
 
@@ -29,7 +29,7 @@ const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
 /** FIRST CLIENT-SIDE MANDATE SWAP (2026-08-08): which agent generates topic
  * ideas is DB-managed via the `podcast_client.topic_ideas` mandate (declared in
  * aidream `mandates/client_mandates.py`, rebound from
- * /administration/agents/mandates). No hardcoded agent id, no silent fallback —
+ * /administration/mandates). No hardcoded agent id, no silent fallback —
  * if the mandate can't resolve, the affordance disables and says why. */
 const TOPIC_IDEAS_MANDATE_KEY = "podcast_client.topic_ideas";
 

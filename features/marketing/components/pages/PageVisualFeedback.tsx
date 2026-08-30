@@ -7,7 +7,7 @@
 
 import { ImagePlus, Loader2, PenLine, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";

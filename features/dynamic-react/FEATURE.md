@@ -59,8 +59,9 @@ which namespaces it uses; user/admin approves), and the guest-privilege model.
 
 - The whole compiler is reached only through lazy chunks; Babel is a dynamic
   `import()` on first use. **Nothing is in the SSR or initial client bundle.**
-- Every capability loads via a dynamic `import()` with a literal specifier, so
-  each is its own chunk. `detectReactCapabilities` loads only referenced
+- Every capability loads through a literal-specifier boundary, so each is its
+  own chunk. The Lucide boundary loads `@ai-matrx/icons.staticLucideIconMap`,
+  never the full `lucide-react` namespace barrel. `detectReactCapabilities` loads only referenced
   capabilities → a chart block never downloads three.js; a 3D block never
   downloads recharts. Core (React/common UI/lucide/cn) is in shared chunks, so
   re-importing adds ~nothing.
@@ -74,6 +75,7 @@ PascalCase identifiers fall back to a placeholder icon instead of crashing.
 
 ## Change log
 
+- `2026-08-30` — Removed application-owned dynamic imports of the full `lucide-react` namespace. Dynamic React loads the canonical curated map and retains its missing-icon fallback, preventing Turbopack from instantiating the Lucide barrel before its base factory.
 - `2026-06-19` — composer: Initial doc. Added async demand-loaded capability
   scope (heavy libs: recharts/motion/katex/react-pdf/xlsx/three/fiber/date-fns/
   lodash), `detectReactCapabilities` wiring in `compileReactComponent`, and the

@@ -48,6 +48,7 @@ import {
   type Sensitivity,
   type ValueType,
 } from "./shared";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Serialize the editor value to the raw string the API coerces per value_type.
 function valueToRaw(value: unknown): string {
@@ -154,7 +155,7 @@ export function EditItemDialog({
             />
           </Field>
           <Field label="Description" hint="Optional.">
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -372,7 +373,7 @@ export function AddItemDialog({
           </Field>
 
           <Field label="Description" hint="Optional.">
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}

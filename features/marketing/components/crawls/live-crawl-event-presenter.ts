@@ -87,6 +87,8 @@ function pageSubject(event: CrawlLiveEvent): string {
 // eslint-disable-next-line no-control-regex -- ANSI escape detection needs the raw control char
 const RAW_ERROR_DUMP = /\u001b|\bquery=|\bargs=|Traceback|^\s*\w*(Error|Exception)\b/;
 
+
+
 function warningText(event: CrawlLiveEvent): string | null {
   const message = event.message;
   if (typeof message !== "string") return null;

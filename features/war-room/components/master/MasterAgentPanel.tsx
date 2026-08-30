@@ -19,7 +19,7 @@ import { Radar, Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { useMasterAgent } from "@/features/war-room/hooks/useMasterAgent";
 import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { WAR_ROOM_MASTER_AGENT_MANDATE } from "@/features/war-room/constants";
 
 export default function MasterAgentPanel() {

@@ -24,7 +24,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
@@ -42,6 +41,7 @@ import { removeItemFile, uploadItemFile } from "../uploads";
 import { ProductCaptureHeader } from "./ProductCaptureHeader";
 import { MediaPager } from "./MediaPager";
 import { useLongPress } from "../hooks/useLongPress";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NOTES_AUTOSAVE_MS = 800;
 
@@ -338,7 +338,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                     {notesSaving ? "Saving…" : "Saved automatically"}
                   </span>
                 </span>
-                <Textarea
+                <ProTextarea
                   value={notes}
                   onChange={(e) => onNotesChange(e.target.value)}
                   placeholder="Type or paste notes for this item…"

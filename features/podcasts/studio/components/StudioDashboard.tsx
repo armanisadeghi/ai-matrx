@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
@@ -176,7 +176,7 @@ export function StudioDashboard() {
                 (common-docs/systems/mandates/FEATURE.md). Until this link, the
                 surface named none of that and there was no way in from here. */}
               <Button asChild variant="outline" className="gap-2">
-                <Link href="/agents/mandates?feature=podcast">
+                <Link href="/mandates?feature=podcast">
                   <BrainCircuit className="h-4 w-4" />
                   Podcast agents
                 </Link>

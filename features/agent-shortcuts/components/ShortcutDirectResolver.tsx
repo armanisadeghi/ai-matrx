@@ -14,6 +14,7 @@ import {
   resolveShortcutDirectUrl,
   resolveShortcutEditUrl,
 } from "../utils/shortcut-directory-rows";
+import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 interface ShortcutLookupRow {
   id: string;
@@ -38,9 +39,7 @@ export function ShortcutDirectResolver({
 
     async function resolveShortcut() {
       setError(null);
-      const { data, error: fetchError } = await supabase
-        .schema("agent")
-        .from("shortcut")
+      const { data, error: fetchError } = await shortcutTable(supabase)
         .select("id, agent_id")
         .eq("id", shortcutId)
         .maybeSingle();

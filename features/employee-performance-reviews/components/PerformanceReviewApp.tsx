@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { captureElementsToPDF } from "@/lib/block-print/dom-capture-print-utils";
+import { captureElementsToPDF } from "@ai-matrx/print/pdf";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";

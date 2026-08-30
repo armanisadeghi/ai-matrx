@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
-import { LABEL_TEMPLATES } from "@/lib/label-print/label-templates";
+import { LABEL_TEMPLATES } from "@ai-matrx/print/labels";
 import { toast } from "@/lib/toast";
 
 import { createLabelBatch, mintLabelCodes } from "../service";

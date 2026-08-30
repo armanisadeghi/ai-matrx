@@ -234,8 +234,9 @@ import {
   agentShortcutToInsert,
   agentShortcutToUpdate,
   parseValueMappings,
-  parseShortcutWritePolicies,
-  packShortcutValueMappings,
+  readShortcutWritePolicies,
+  packShortcutMappingColumns,
+  shortcutMappingColumnsAreShared,
 } from "./converters";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
@@ -273,7 +274,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
       ? arg.placementTypes
       : ["ai-action"];
 
-  const { data, error } = await supabase.rpc("agx_build_shortcut_menu", {
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.buildMenu, {
     p_placement_types: placementTypes,
   });
 
@@ -330,8 +331,8 @@ export const buildAgentShortcutMenu = createAsyncThunk<
           valueMappings: parseValueMappings(
             (item as { value_mappings?: unknown }).value_mappings,
           ),
-          writePolicies: parseShortcutWritePolicies(
-            (item as { value_mappings?: unknown }).value_mappings,
+          writePolicies: readShortcutWritePolicies(
+            item as unknown as Record<string, unknown>,
           ),
           contextMappings: parseScopeMappings(item.context_mappings),
 
@@ -400,8 +401,7 @@ export const fetchShortcutsForContext = createAsyncThunk<
 
     if (selectIsContextLoaded(getState(), contextKey)) return;
 
-    const { data, error } = await supabase.rpc(
-      "agx_get_shortcuts_for_context",
+    const { data, error } = await supabase.rpc(SHORTCUT_RPCS.forContext,
       {
         p_project_id: projectId ?? undefined,
         p_task_id: taskId ?? undefined,
@@ -448,8 +448,8 @@ export const fetchShortcutsForContext = createAsyncThunk<
         valueMappings: parseValueMappings(
           (row as { value_mappings?: unknown }).value_mappings,
         ),
-        writePolicies: parseShortcutWritePolicies(
-          (row as { value_mappings?: unknown }).value_mappings,
+        writePolicies: readShortcutWritePolicies(
+          row as unknown as Record<string, unknown>,
         ),
         contextMappings: parseScopeMappings(row.context_mappings),
 
@@ -491,9 +491,7 @@ export const fetchFullShortcut = createAsyncThunk<void, string, ThunkApi>(
   async (shortcutId, { dispatch }) => {
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { data, error } = await shortcutTable(supabase)
       .select("*")
       .eq("id", shortcutId)
       .single();
@@ -526,11 +524,14 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
       assignField(dirtyPartial, field, record[field]);
     }
 
-    // valueMappings + writePolicies share ONE JSONB column — when either is
-    // dirty, ship both from the record so the pack never clears a half.
+    // Pre-cutover valueMappings + writePolicies share ONE JSONB column — when
+    // either is dirty, ship both from the record so the pack never clears a
+    // half. Post-cutover policies are treatment (their own column) and each
+    // half saves on its own.
     if (
-      dirtyPartial.valueMappings !== undefined ||
-      dirtyPartial.writePolicies !== undefined
+      shortcutMappingColumnsAreShared() &&
+      (dirtyPartial.valueMappings !== undefined ||
+        dirtyPartial.writePolicies !== undefined)
     ) {
       dirtyPartial.valueMappings = record.valueMappings;
       dirtyPartial.writePolicies = record.writePolicies ?? null;
@@ -540,9 +541,7 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
 
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
 
-    const { error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error } = await shortcutTable(supabase)
       .update(agentShortcutToUpdate(dirtyPartial))
       .eq("id", shortcutId);
 
@@ -579,11 +578,12 @@ export const saveShortcutField = createAsyncThunk<
     // Optimistic update
     dispatch(setShortcutField({ id: shortcutId, field, value }));
 
-    // valueMappings + writePolicies share ONE JSONB column — a single-field
-    // save of either must carry the other from the existing record or the
-    // pack clears it.
+    // Pre-cutover valueMappings + writePolicies share ONE JSONB column — a
+    // single-field save of either must carry the other from the existing
+    // record or the pack clears it. Post-cutover they are separate columns.
     const patch: Partial<AgentShortcut> =
-      field === "valueMappings" || field === "writePolicies"
+      shortcutMappingColumnsAreShared() &&
+      (field === "valueMappings" || field === "writePolicies")
         ? {
             valueMappings:
               field === "valueMappings"
@@ -596,9 +596,7 @@ export const saveShortcutField = createAsyncThunk<
           }
         : ({ [field]: value } as Partial<AgentShortcut>);
 
-    const { error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error } = await shortcutTable(supabase)
       .update(agentShortcutToUpdate(patch))
       .eq("id", shortcutId);
 
@@ -636,9 +634,7 @@ export const createShortcut = createAsyncThunk<
     updatedAt: "",
   };
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("shortcut")
+  const { data, error } = await shortcutTable(supabase)
     .insert(agentShortcutToInsert(draft))
     .select()
     .single();
@@ -656,9 +652,7 @@ export const createShortcut = createAsyncThunk<
 export const deleteShortcut = createAsyncThunk<void, string, ThunkApi>(
   "agentShortcut/delete",
   async (shortcutId, { dispatch }) => {
-    const { error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error } = await shortcutTable(supabase)
       .delete()
       .eq("id", shortcutId);
 
@@ -686,7 +680,7 @@ export const fetchUserShortcuts = createAsyncThunk<
   void,
   ThunkApi
 >("agentShortcut/fetchUserShortcuts", async () => {
-  const { data, error } = await supabase.rpc("agx_get_user_shortcuts");
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.userShortcuts);
 
   if (error) throw pgErrorToError(error);
 
@@ -707,7 +701,7 @@ export const duplicateShortcut = createAsyncThunk<
   const shortcutId = typeof arg === "string" ? arg : arg.id;
   const targetCategoryId = typeof arg === "string" ? undefined : arg.categoryId;
 
-  const { data, error } = await supabase.rpc("agx_duplicate_shortcut", {
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.duplicate, {
     p_shortcut_id: shortcutId,
   });
 
@@ -752,8 +746,7 @@ export const promoteShortcutToGlobal = createAsyncThunk<
 >(
   "agentShortcut/promoteToGlobal",
   async ({ shortcutId, targetCategoryId, label }, { dispatch }) => {
-    const { data, error } = await supabase.rpc(
-      "agx_promote_shortcut_to_global",
+    const { data, error } = await supabase.rpc(SHORTCUT_RPCS.promoteToGlobal,
       {
         p_shortcut_id: shortcutId,
         p_target_category_id: targetCategoryId,
@@ -788,8 +781,7 @@ export const listNonGlobalShortcutsForAdmin = createAsyncThunk<
   void,
   ThunkApi
 >("agentShortcut/listNonGlobalForAdmin", async () => {
-  const { data, error } = await supabase.rpc(
-    "agx_list_non_global_shortcuts_for_admin",
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.listNonGlobalForAdmin,
   );
 
   if (error) throw pgErrorToError(error);
@@ -822,7 +814,7 @@ export const createShortcutForAgent = createAsyncThunk<
         : null),
   };
 
-  const { data, error } = await supabase.rpc("agx_create_shortcut", {
+  const { data, error } = await supabase.rpc(SHORTCUT_RPCS.create, {
     p_agent_id: rpcParams.p_agent_id,
     p_category_id: rpcParams.p_category_id,
     p_label: rpcParams.p_label,
@@ -872,7 +864,9 @@ export const syncUserShortcutToSlice = createAsyncThunk<
       surfaceName: item.surface_name ?? null,
       scopeMappings: item.scope_mappings,
       valueMappings: parseValueMappings(item.value_mappings),
-      writePolicies: parseShortcutWritePolicies(item.value_mappings),
+      writePolicies: readShortcutWritePolicies(
+        item as unknown as Record<string, unknown>,
+      ),
       contextMappings: item.context_mappings,
       ...menuItemToConfigFields(item),
       isActive: item.is_active,
@@ -946,9 +940,16 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     surfaceName: row.surface_name ?? null,
     scopeMappings: parseScopeMappings(row.scope_mappings),
     valueMappings: parseValueMappings(row.value_mappings),
-    writePolicies: parseShortcutWritePolicies(row.value_mappings),
+    writePolicies: readShortcutWritePolicies(
+      row as unknown as Record<string, unknown>,
+    ),
     contextMappings: parseScopeMappings(row.context_mappings),
     ...menuItemToConfigFields(row),
+    // Mandate identity rides the same REST rows (census #47) — the route
+    // selects `*` through `shortcutTable()`, so `mandate.vw_shortcut`'s two
+    // extra columns arrive here untouched the moment the switch flips.
+    mandateId: mandateIdOfShortcutRow(row),
+    mandateKey: mandateKeyOfShortcutRow(row),
     isActive: row.is_active,
     userId: row.created_by,
     organizationId: row.organization_id,
@@ -982,8 +983,8 @@ function shortcutToApiBody(
   if (patch.valueMappings !== undefined || patch.writePolicies !== undefined) {
     // Shared-column pack — see agentShortcutToUpdate for the same rule.
     if (
-      patch.valueMappings === undefined ||
-      patch.writePolicies === undefined
+      shortcutMappingColumnsAreShared() &&
+      (patch.valueMappings === undefined || patch.writePolicies === undefined)
     ) {
       console.error(
         "[agent-shortcuts] REST value_mappings patch is one-sided — valueMappings and writePolicies share one column; the missing half is being CLEARED. Pass both (updateShortcut fills them automatically).",
@@ -993,10 +994,14 @@ function shortcutToApiBody(
         },
       );
     }
-    out.value_mappings = packShortcutValueMappings(
+    const columns = packShortcutMappingColumns(
       patch.valueMappings ?? null,
       patch.writePolicies ?? null,
-    ) as unknown;
+    );
+    if (shortcutMappingColumnsAreShared() || patch.valueMappings !== undefined)
+      out.value_mappings = columns.value_mappings;
+    if (!shortcutMappingColumnsAreShared() && patch.writePolicies !== undefined)
+      out.write_policies = columns.write_policies;
   }
   if (patch.contextMappings !== undefined)
     out.context_mappings = patch.contextMappings as unknown;
@@ -1103,11 +1108,12 @@ export const updateShortcut = createAsyncThunk<
 
   const existing = selectShortcutById(getState(), id);
 
-  // valueMappings + writePolicies share ONE JSONB column — a one-sided patch
-  // would clear the other half. Fill the missing half from the loaded record.
+  // Pre-cutover valueMappings + writePolicies share ONE JSONB column — a
+  // one-sided patch would clear the other half, so fill the missing half from
+  // the loaded record. Post-cutover a one-sided patch is a one-column patch.
   if (
-    (patch.valueMappings !== undefined) !==
-    (patch.writePolicies !== undefined)
+    shortcutMappingColumnsAreShared() &&
+    (patch.valueMappings !== undefined) !== (patch.writePolicies !== undefined)
   ) {
     if (!existing) {
       console.warn(
@@ -1548,6 +1554,12 @@ export {
   updateCategory,
   deleteCategory,
 } from "../agent-shortcut-categories/thunks";
+import {
+  shortcutTable,
+  SHORTCUT_RPCS,
+  mandateIdOfShortcutRow,
+  mandateKeyOfShortcutRow,
+} from "@/lib/supabase/shortcutStorage";
 
 // Content-block CRUD moved to the canonical skl thunks
 // (features/agent-connections/redux/skl/thunks.ts —

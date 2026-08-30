@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,6 +34,7 @@ import {
   type AdminPackDetail,
   type TopicOption,
 } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NONE = "__none__";
 
@@ -191,7 +191,7 @@ function TopicEditor({
           </Select>
         </label>
       </div>
-      <Textarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="The expert's own words — why this topic is worth this much to this industry" className="min-h-14 text-sm" />
+      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="The expert's own words — why this topic is worth this much to this industry" className="min-h-14 text-sm" />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
           Cancel

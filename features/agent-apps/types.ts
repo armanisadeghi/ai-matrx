@@ -203,6 +203,14 @@ export interface AgentAppRecord {
   agent_version_id: string | null;
   use_latest: boolean;
 
+  /**
+   * The JOB this app fronts (`mandate.definition`). Phase 6.9 gave every app
+   * one; `agent_id` above stays the serving source until APP_MANDATE_CUTOVER
+   * flips. Read it ONLY through `features/agent-apps/lib/appHolder.ts` — that
+   * module is the single place this repo decides which agent an app runs.
+   */
+  mandate_id: string | null;
+
   app_kind: string;
   shared_context_policies: Json | null;
   search_tsv: unknown;
@@ -286,7 +294,17 @@ export type PublicAgentApp = Omit<
   | "last_execution_at"
   | "status"
   | "visibility"
->;
+> & {
+  /**
+   * The mandate columns the public RPC carries so an ANONYMOUS visitor never
+   * has to read `mandate.definition` (it cannot: `anon` has no grant, and a
+   * guest has no bindings anyway, so the system default is the whole honest
+   * answer). Consumed only by `useAppHolder(app, { guest: true })`.
+   */
+  mandate_key: string | null;
+  mandate_agent_id: string | null;
+  mandate_agent_version_id: string | null;
+};
 
 export interface VariableSchemaItem {
   name: string;

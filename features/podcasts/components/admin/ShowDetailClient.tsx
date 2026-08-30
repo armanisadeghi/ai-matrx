@@ -32,7 +32,7 @@ import NextLink from "next/link";
 import { ShowForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PublicPageLink } from "./PublicPageLink";
 import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";

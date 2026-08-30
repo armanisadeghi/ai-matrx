@@ -25,17 +25,20 @@ import type {
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
 import { isHeadlessDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import {
   resolveMandate,
   assertMandateVariables,
   type ResolvedMandate,
-} from "@/features/agents/mandates/service";
+} from "@/features/mandates/service";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import {
+  resolveEffectiveAutoRun,
+  unresolvedRequiredVariables,
+} from "@/features/surfaces/utils/binding-auto-run";
 import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
@@ -61,7 +64,10 @@ import {
   setContextEntries,
 } from "../instance-context/instance-context.slice";
 import { setUserInputText } from "../instance-user-input/instance-user-input.slice";
-import { setDisplayMode as setDisplayModeAction } from "../instance-ui-state/instance-ui-state.slice";
+import {
+  setAutoRun,
+  setDisplayMode as setDisplayModeAction,
+} from "../instance-ui-state/instance-ui-state.slice";
 import {
   selectRequest,
   deriveAnswerText,
@@ -184,28 +190,40 @@ export const launchAgentExecution = createAsyncThunk<
     initiation,
   } = options;
 
-  // ── Mandate-first identity — resolve BOTH halves of the binding ──────────────
-  // A mandate binding can swap the agent AND/OR override settings (model,
-  // thinking_level, temperature …). Resolving inside the one launch funnel is
-  // what makes a settings-only binding effective on this path: the resolved
-  // config_overrides merge over the caller's `config.llmOverrides` (the
-  // binding wins per key — same precedence as useMandateRunner) and are seeded
-  // into the instance-model-overrides slice below, so every turn's request
-  // carries them as `config_overrides`. Resolution is LOUD: an unresolvable
-  // mandate throws here and nothing launches — never a hardcoded fallback.
+  // ── Mandate-driven launch — THE SERVER RESOLVES, this thunk does not ────────
+  //
+  // A `mandateKey` launch runs through THE MANDATE DOOR: turn 1 POSTs
+  // `/ai/mandates/{key}` (see execute-instance) and aidream resolves principal
+  // → system default → org binding → user binding, applies the binding's
+  // `config_overrides`, provision consumption and variable mapping, then runs
+  // the identical downstream pipeline. That is the ONE resolver.
+  //
+  // What is left here is DISPLAY IDENTITY only. A surface that already knows
+  // which agent to paint (SSR-resolved, e.g. `/chat/new`) passes `agentId`
+  // ALONGSIDE `mandateKey` and this thunk resolves NOTHING. A surface that
+  // does not (imperative `launchMandate`) still needs an agent row to snapshot
+  // for the instance — name, avatar, variable definitions — so it reads one
+  // through `resolveMandate`, which is a display read on this path, never the
+  // run decision.
+  //
+  // 🚨 The resolved `config_overrides` are DELIBERATELY NOT applied. The server
+  // treats request `config_overrides` as the EXPLICIT layer that WINS over the
+  // binding, so echoing a client-resolved binding back would re-fork resolution
+  // and pin whatever the browser happened to read. The caller's own
+  // `config.llmOverrides` still ride, because those really are explicit.
   let agentId = providedAgentId;
-  let mandateLlmOverrides: Partial<FeLlmParams> | null = null;
   let resolvedMandate: ResolvedMandate | null = null;
   if (mandateKey) {
-    if (providedAgentId || shortcutId) {
+    if (shortcutId) {
       throw new Error(
-        `launchAgentExecution: mandateKey ("${mandateKey}") is mutually exclusive with agentId/shortcutId`,
+        `launchAgentExecution: mandateKey ("${mandateKey}") is mutually exclusive with shortcutId`,
       );
     }
-    const resolved = await resolveMandate(mandateKey);
-    resolvedMandate = resolved;
-    agentId = resolved.agentId;
-    mandateLlmOverrides = resolved.configOverrides;
+    if (!agentId) {
+      const resolved = await resolveMandate(mandateKey);
+      resolvedMandate = resolved;
+      agentId = resolved.agentId;
+    }
   }
 
   // ── Read all config/runtime values from the nested bundles ────────────────
@@ -375,6 +393,26 @@ export const launchAgentExecution = createAsyncThunk<
   let conversationId: string;
   let resolvedDisplayMode: ResultDisplayMode = displayModeOverride ?? "direct";
 
+  // ── THE AUTO-RUN INVERSION (surface_binding payload v3) ───────────────────
+  // A surface binding now answers the same one question a shortcut's
+  // `auto_run` answers: does the UI stop before the request goes out?
+  // (THE-MODEL law 7 — "a referenced, fully-mapped binding runs with no user
+  // input; prompting is the flexibility option.")
+  //
+  // Recorded here, in thunk scope, because the binding layers resolve deep
+  // inside the direct-agent branch while `effectiveAutoRun` is computed at
+  // Step 3. `null` = no binding layer had an opinion.
+  //
+  // Set ONLY on the direct-agent path. A shortcut is the most opinionated
+  // binding layer there is, and it already carries its own `auto_run` through
+  // instance-ui-state — letting a weaker surface binding override it would
+  // invert the precedence the whole layer stack is built on.
+  let bindingAutoRun: boolean | null = null;
+  // Populated when a stored `auto_run: true` is REFUSED because the mapping
+  // did not resolve every required variable for this page. Drives the scream
+  // and keeps the run stopping at the panel to ask for exactly the gap.
+  let bindingAutoRunGap: string[] = [];
+
   // =========================================================================
   // Step 0.5: Ensure the agent's FULL execution payload is in Redux — but
   // only for the DIRECT-AGENT path. Shortcuts are self-sufficient: they carry
@@ -522,6 +560,10 @@ export const launchAgentExecution = createAsyncThunk<
                 provenance: {},
                 inertLayers: [],
                 writePolicies: shortcutOnlyPolicies,
+                // A shortcut layer never declares auto-run — the shortcut's
+                // own `auto_run` rides instance-ui-state (see Step 3).
+                autoRun: null,
+                autoRunProvenance: null,
               }
             : null;
       }
@@ -603,6 +645,9 @@ export const launchAgentExecution = createAsyncThunk<
     conversationId = await dispatch(
       createManualInstance({
         agentId,
+        // Stamps THE MANDATE DOOR onto the conversation: turn 1 goes to
+        // `/ai/mandates/{key}` and the server picks the Holder.
+        ...(mandateKey ? { mandateKey } : {}),
         ...(providedConversationId
           ? { conversationId: providedConversationId }
           : {}),
@@ -676,6 +721,7 @@ export const launchAgentExecution = createAsyncThunk<
             );
           }
           applyLaunchWritePolicies(resolvedLayers, agentId, surfaceName);
+          bindingAutoRun = resolvedLayers?.autoRun ?? null;
           if (resolvedLayers) {
             // Validation/prompt failures are intentional launch aborts.
             surfaceValueMappings = await prepareLaunchMappings({
@@ -713,6 +759,24 @@ export const launchAgentExecution = createAsyncThunk<
               "[launchAgentExecution] surface mapping warnings:",
               result.warnings,
             );
+          }
+          // THE AUTO-RUN GATE. A stored `auto_run: true` is the binder's
+          // INTENT, never a bypass: it may only fire when the mapping
+          // actually delivered every required variable for THIS page. A gap
+          // means the person still has something to answer, so the panel
+          // opens and asks for exactly that — which is the whole point of
+          // prompting being the flexibility option rather than the default.
+          if (bindingAutoRun === true) {
+            bindingAutoRunGap = unresolvedRequiredVariables(
+              agent.variableDefinitions,
+              result.variableValues,
+            );
+            if (bindingAutoRunGap.length > 0) {
+              bindingAutoRun = false;
+              console.warn(
+                `[launchAgentExecution] binding auto-run REFUSED for agent=${agentId} on surface=${surfaceName}: the mapping left required variable(s) ${bindingAutoRunGap.join(", ")} unresolved on this page. Opening the input panel to ask for exactly those. Fix the binding's mapping (or the surface value it points at) to make auto-run fire.`,
+              );
+            }
           }
           dispatch(
             replaceSurfaceVariableValues({
@@ -755,9 +819,11 @@ export const launchAgentExecution = createAsyncThunk<
       );
     }
 
-    // The caller's llmOverrides are the feature's defaults; the mandate binding's
-    // config_overrides (the USER's choice) win per key.
-    const llmOverrides = { ...config?.llmOverrides, ...mandateLlmOverrides };
+    // ONLY the caller's own explicit overrides. A mandate binding's
+    // `config_overrides` are applied SERVER-SIDE inside the mandate door —
+    // seeding them here would send them back as the explicit layer and beat
+    // the very binding they came from.
+    const llmOverrides = { ...config?.llmOverrides };
     if (Object.keys(llmOverrides).length > 0) {
       const { setOverrides } =
         await import("../instance-model-overrides/instance-model-overrides.slice");
@@ -878,7 +944,25 @@ export const launchAgentExecution = createAsyncThunk<
     .byConversationId[conversationId];
   const effectiveShowPreExecutionGate =
     showPreExecutionGate ?? seededUiState?.showPreExecutionGate ?? false;
-  const effectiveAutoRun = autoRun ?? seededUiState?.autoRun ?? false;
+  // Precedence: the caller's explicit literal → the surface binding's stored
+  // answer → whatever instance-ui-state was seeded with (a shortcut's own
+  // `auto_run`, or the hard default false) → false. The binding sits ABOVE the
+  // seed because a direct-agent launch seeds a meaningless hard false, which
+  // would otherwise swallow the binding's answer entirely — the exact
+  // inversion this work exists to fix.
+  const effectiveAutoRun = resolveEffectiveAutoRun({
+    callerAutoRun: autoRun,
+    bindingAutoRun,
+    seededAutoRun: seededUiState?.autoRun,
+  });
+  if (bindingAutoRun !== null && autoRun === undefined) {
+    // The binding decided. Seed instance-ui-state too, so any consumer that
+    // renders AgentRunner directly (its own autoRun effect) agrees with the
+    // launcher instead of reading a stale hard default.
+    dispatch(
+      setAutoRun({ conversationId, value: effectiveAutoRun }),
+    );
+  }
 
   if (effectiveShowPreExecutionGate) {
     const downstreamOverlayId = DISPLAY_MODE_TO_OVERLAY_ID[resolvedDisplayMode];

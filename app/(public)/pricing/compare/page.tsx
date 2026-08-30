@@ -77,7 +77,7 @@ const TABLE_ROWS: Row[] = [
   {
     dimension: "Previously-free features",
     incumbent:
-      "Moved behind a paywall over time — a driver of Quizlet's ~1.4★ consumer rating.",
+      "Moved behind a paywall over time — a driver of Quizlet's roughly 1.4 out of 5 consumer rating.",
     matrx:
       "The core study loop stays free. We never retroactively lock what was free.",
   },

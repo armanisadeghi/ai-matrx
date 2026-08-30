@@ -9,6 +9,7 @@ import Link from "next/link";
 import KindExamplePreview from "@/features/content-ir/studio/components/KindExamplePreview";
 import ShapeOwnerEditor from "@/features/content-ir/studio/components/ShapeOwnerEditor";
 import ShapeRenderStatusStrip from "@/features/content-ir/studio/components/ShapeRenderStatusStrip";
+import ShapeOpenSightings from "@/features/content-ir/render-paths/ShapeOpenSightings";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import type { Json } from "@/types/database.types";
@@ -122,7 +123,9 @@ export default function ShapePreviewTab({
       getScope={getSurfaceScope}
       isEditable={false}
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl space-y-3">
+        {/* A downgrade nobody is told about is indistinguishable from none. */}
+        <ShapeOpenSightings kind={kind} canResolve={isOwnedByViewer} />
         <ShapeRenderStatusStrip
           kind={kind}
           kindDefinitionId={kindDefinitionId}

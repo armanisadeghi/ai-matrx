@@ -15,7 +15,6 @@ import { REFERENCE_CATEGORY_DISPLAY } from "@/types/generated/entity-types.gener
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface EntityTypeEditorState {
   mode: "create" | "edit";
@@ -359,7 +359,7 @@ export function EntityTypeForm({
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium">Notes</span>
-        <Textarea
+        <ProTextarea
           value={editor.notes}
           onChange={(e) => onChange({ ...editor, notes: e.target.value })}
           rows={3}

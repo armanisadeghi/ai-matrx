@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   InlineQueryError,
   LoadingSurface,
@@ -86,6 +85,7 @@ import { EndowmentAnalysisCard } from "@/features/marketing/local/EndowmentAnaly
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
   critical: "bg-primary/15 text-primary",
@@ -707,7 +707,7 @@ function ProfileEditor({
           <Label className="text-xs text-muted-foreground">
             Description (used for submissions)
           </Label>
-          <Textarea rows={2} className="text-sm" {...field("description")} />
+          <ProTextarea rows={2} className="text-sm" {...field("description")} />
         </div>
         {gaps.length > 0 ? (
           <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">

@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, Edit3, Maximize2, Minimize2, Type } from 'lucide-react';
 import { useComponentRef, useRefManager } from '@/lib/refs';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Example Editor Component
 const Editor = ({ id }: { id: string }) => {
@@ -42,7 +43,7 @@ const Editor = ({ id }: { id: string }) => {
         </Button>
       </CardHeader>
       <CardContent>
-        <textarea
+        <ProTextarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           style={{ fontSize: `${fontSize}px` }}

@@ -41,8 +41,8 @@ import {
   selectSortedRootChildren,
 } from "@/features/files/redux/selectors";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { FileIcon } from "@ai-matrx/media/react";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import type { CloudFile } from "@/features/files/types";
@@ -134,7 +134,10 @@ interface PickerFileThumbnailProps {
 function PickerFileThumbnail({ file }: PickerFileThumbnailProps) {
   return (
     <MediaThumbnail
-      file={file}
+      mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+      fileName={file.fileName}
+      mimeType={file.mimeType}
+      thumbnailUrl={file.thumbnailUrl}
       iconSize={18}
       className="h-10 w-10 shrink-0"
       rounded="rounded-md border border-border/50"

@@ -18,6 +18,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -103,6 +104,9 @@ import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import type { EntityType } from "@/features/scopes/types";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { getManifest } from "@/features/surfaces/manifests/registry";
+import { useMandateSet } from "@/features/mandates/useMandateSet";
+import { mandateRoute } from "@/features/mandates/browse/types";
 
 /**
  * Canonical entity_type for agent↔surface binding edges rows in the scope-assignments
@@ -580,6 +584,7 @@ function SurfaceRow({
               {surface.description}
             </p>
           )}
+          <SurfaceMandateRoles surfaceName={surface.name} />
         </div>
         <Button
           size="sm"
@@ -605,6 +610,63 @@ function SurfaceRow({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * WHAT ACTUALLY RUNS HERE — the one-resolver read (census #21).
+ *
+ * The bindings above are THIS agent's; they are not necessarily what the
+ * surface runs. A surface slot that names a mandate key runs whatever the
+ * mandate door resolves for the viewer (system default → org → user), and that
+ * resolution has exactly ONE reader in this repo: `resolveMandate`, through
+ * `useMandateSet`. Reading the slot's holder any other way — an agent-id join,
+ * a second lens over `ui_surface_agent_pref` — is the drift class the program
+ * exists to remove, so this block asks the door and links to it.
+ *
+ * Keys are optional on purpose: a manifest may name a mandate that is not
+ * seeded yet, which is a normal unfilled role, not a system error.
+ */
+function SurfaceMandateRoles({ surfaceName }: { surfaceName: string }) {
+  const roles = (getManifest(surfaceName)?.agentRoles ?? []).filter(
+    (r) => typeof r.mandateKey === "string" && r.mandateKey.length > 0,
+  );
+  const keys = roles.map((r) => r.mandateKey as string);
+  const resolved = useMandateSet(keys, { optionalKeys: keys });
+
+  if (roles.length === 0) return null;
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+        Runs here
+      </span>
+      {roles.map((role) => {
+        const key = role.mandateKey as string;
+        const state = resolved[key];
+        return (
+          <Link
+            key={role.name}
+            href={mandateRoute({ mandate_key: key })}
+            className="inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:border-foreground/40"
+            title={`${role.label} — open the mandate`}
+          >
+            <span className="font-mono">{key}</span>
+            {state?.loading ? (
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+            ) : state?.mandate ? (
+              <span className="text-[10px]">
+                {state.mandate.holderType} · {state.mandate.provenance}
+              </span>
+            ) : (
+              <span className="text-amber-700 dark:text-amber-400">
+                unfilled
+              </span>
+            )}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -858,6 +920,11 @@ function BindingEditorDialog({
           writePolicies:
             existing?.surfaceName === surfaceName
               ? (existing?.writePolicies ?? undefined)
+              : undefined,
+          // Same round-trip for the binding's auto-run answer.
+          autoRun:
+            existing?.surfaceName === surfaceName
+              ? existing?.autoRun
               : undefined,
         }),
       ).unwrap();

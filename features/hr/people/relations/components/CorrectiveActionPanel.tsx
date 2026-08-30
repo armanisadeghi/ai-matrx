@@ -46,12 +46,13 @@ import {
   HR_CORRECTIVE_ACTION_OUTCOMES,
   HR_CORRECTIVE_ACTION_OUTCOME_LABELS,
   HR_CORRECTIVE_ACTION_STATE_LABELS,
+  acknowledgementFacts,
   acknowledgmentKindsFor,
+  correctiveActionState,
   type HrAcknowledgmentKind,
   type HrCorrectiveActionLevel,
   type HrCorrectiveActionOutcome,
   type HrCorrectiveActionRow,
-  type HrCorrectiveActionState,
 } from "../types";
 import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusChip";
 
@@ -65,9 +66,22 @@ export function CorrectiveActionPanel({
   viewerRole: string | null;
   onChanged: () => void;
 }) {
-  // THE ABSENCE RULE. No login → `esign` is not in the list at all.
-  const subjectHasLogin = Boolean(action.subject_login_user_id);
-  const kinds = acknowledgmentKindsFor(subjectHasLogin);
+  // 🚨 `esign` IS NEVER ON THIS PANEL, AND THE REASON IS THE DOOR'S, NOT A
+  // PROPERTY OF THE SUBJECT. This is the ISSUER's view — `canRecordAck` below
+  // requires `viewerRole !== "subject"` — and
+  // `hr_corrective_action_acknowledge` refuses an e-signature from anybody but
+  // the signer, by name: `esign_is_the_signers_own`, "an e-signature whose
+  // evidence package names a signer who did not press the button is not an
+  // e-signature; it is a forgery with timestamps." So offering it here would be
+  // a control that cannot do the thing it offers.
+  //
+  // It USED to be excluded by accident, which is worse: the gate read
+  // `action.subject_login_user_id`, a key `hr._project_row` has never put on the
+  // wire, so `subjectHasLogin` was `false` for every subject alive and the "no
+  // account here, so the signed paper copy is the delivery" sentence printed
+  // under people who hold a perfectly good login. The subject's own e-sign lane
+  // is `/hr/tasks`, where the signer really is the caller.
+  const kinds = acknowledgmentKindsFor(false);
 
   const [ackKind, setAckKind] = useState<HrAcknowledgmentKind>(kinds[0]);
   const [witness, setWitness] = useState("");
@@ -76,9 +90,29 @@ export function CorrectiveActionPanel({
   const [outcomeNote, setOutcomeNote] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const state = String(action.state).replace(/_/g, "-") as HrCorrectiveActionState;
+  // DERIVED from the lifecycle columns — `hr.corrective_action` has no `state`
+  // column, and reading one put the literal word `undefined` on this badge.
+  const state = correctiveActionState(action);
+  const declined = action.employee_acknowledgement_kind === "refused";
   const acknowledged = Boolean(action.employee_acknowledged_at);
-  const canRecordAck = viewerRole !== "subject" && !acknowledged;
+  // A refusal SETTLES the acknowledgment step (§4.8 F4) even though it leaves
+  // `employee_acknowledged_at` null. Leaving the form up after one would invite
+  // a second recording over a person who has already answered.
+  const canRecordAck = viewerRole !== "subject" && !acknowledged && !declined;
+  const facts = acknowledgementFacts(action);
+  const witnessOnFile =
+    typeof facts?.witness_name === "string" ? facts.witness_name : null;
+  const refusalOnFile =
+    typeof facts?.refusal_note === "string" ? facts.refusal_note : null;
+  // 🚨 THE WITNESS IS NOT THE VERBAL LANE'S ALONE. `hr.corrective_ack_wf_apply`
+  // stores `witness_name` for WHATEVER kind carries one, and a wet signature by
+  // a kiosk-only employee is precisely the case that needs one: the paper copy
+  // is the delivery, and who watched them sign it is the whole evidentiary
+  // value. This control used to render only for `verbal_witnessed` and
+  // hard-nulled the name on every other kind, so the door's own field could
+  // never be filled from the one surface that issues these.
+  const witnessApplies =
+    ackKind === "verbal_witnessed" || ackKind === "wet_signature";
 
   async function saveAck() {
     if (saving) return;
@@ -86,10 +120,19 @@ export function CorrectiveActionPanel({
     const result = await acknowledgeHrCorrectiveAction({
       correctiveActionId: action.id,
       kind: ackKind,
+      // 🚨 THE WITNESS WAS COLLECTED AND THROWN AWAY. This control has always
+      // asked "who witnessed it" and the answer went into component state and
+      // nowhere else — `witnessEmploymentId: null` was hard-coded here, and the
+      // door it would have gone to did not exist anyway. It is a free-text NAME,
+      // not an employment: the person who witnessed a verbal warning is whoever
+      // was in the room, and there is no picker for that. It lands write-once on
+      // `hr.corrective_action.metadata.acknowledgement.witness_name`.
+      witnessName: witnessApplies ? witness.trim() || null : null,
       witnessEmploymentId: null,
       signedFileId: null,
       // NEVER sent from this surface — the statement is the employee's, and
-      // this panel is the issuer's view of the record.
+      // this panel is the issuer's view of the record. The door refuses it from
+      // a non-subject by name (`statement_is_the_employees_own`).
       employeeStatement: null,
       refusalNote: ackKind === "refused" ? refusalNote.trim() || null : null,
     });
@@ -107,7 +150,11 @@ export function CorrectiveActionPanel({
     const result = await recordHrCorrectiveActionOutcome({
       correctiveActionId: action.id,
       outcome,
-      note: outcomeNote.trim() || null,
+      // 🚨 THIS WAS "note", AND THERE IS NO NOTE. The door reads exactly two
+      // payload keys and `hr.corrective_action` has no note column, so the field
+      // could not have saved under any spelling of the call. It is the FOLLOW-UP
+      // OUTCOME (§4.8 node H → I) and the label now says so.
+      followUpOutcome: outcomeNote.trim() || null,
     });
     setSaving(false);
     if (result.ok) {
@@ -128,7 +175,7 @@ export function CorrectiveActionPanel({
             ] ?? action.level}
           </h2>
           <Badge variant="outline">
-            {HR_CORRECTIVE_ACTION_STATE_LABELS[state] ?? action.state}
+            {HR_CORRECTIVE_ACTION_STATE_LABELS[state]}
           </Badge>
         </div>
 
@@ -145,12 +192,12 @@ export function CorrectiveActionPanel({
               <dd className="text-foreground">{formatDay(action.incident_on)}</dd>
             </div>
           ) : null}
-          {action.issuer_name ? (
-            <div>
-              <dt className="text-xs text-muted-foreground">Issued by</dt>
-              <dd className="text-foreground">{action.issuer_name}</dd>
-            </div>
-          ) : null}
+          {/* 🚨 NO "Issued by" LINE. `hr._project_row` names the SUBJECT only;
+              the issuer is `issued_by_employment_id`, a uuid, and there is no
+              door that resolves it to a name. This slot read `action.issuer_name`
+              — a key that has never been on the wire — so it could never render
+              anyway. It stays ABSENT rather than printing a uuid under a heading
+              that promises a person. */}
           {action.policy_cited ? (
             <div>
               <dt className="text-xs text-muted-foreground">Policy cited</dt>
@@ -165,15 +212,14 @@ export function CorrectiveActionPanel({
           ) : null}
         </dl>
 
-        {/* The ladder is a CHAIN. Show where this step came from. */}
+        {/* The ladder is a CHAIN. Show where this step came from — but only
+            what the door actually gave us. `prior_action_level` is not on the
+            wire (only `prior_action_id` is), so the level is not named here;
+            claiming one would be an invention on a disciplinary record. */}
         {action.prior_action_id ? (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Link2 className="h-3.5 w-3.5 shrink-0" />
-            Follows{" "}
-            {HR_CORRECTIVE_ACTION_LEVEL_LABELS[
-              action.prior_action_level as HrCorrectiveActionLevel
-            ]?.toLowerCase() ?? "an earlier step"}{" "}
-            on this person&apos;s record.
+            Follows an earlier step on this person&apos;s record.
           </p>
         ) : null}
 
@@ -202,15 +248,37 @@ export function CorrectiveActionPanel({
           Acknowledgment
         </h2>
 
-        {acknowledged ? (
-          <p className="text-sm text-foreground">
-            {HR_ACKNOWLEDGMENT_KIND_LABELS[
-              action.acknowledgment_kind as HrAcknowledgmentKind
-            ] ?? action.acknowledgment_kind}{" "}
-            <span className="text-muted-foreground">
-              on {formatDay(action.employee_acknowledged_at)}
-            </span>
-          </p>
+        {/* 🚨 THE KEY IS `employee_acknowledgement_kind`. `acknowledgment_kind`
+            has never been on the wire, so this line rendered the label map's
+            miss — a blank where the word should be — on every acknowledged
+            record. Read live off `hr_confidential_get` 2026-08-29. */}
+        {declined ? (
+          // A refusal is recorded, not stuck (§4.8 F4), and it has no
+          // acknowledged-at — saying "on <date>" here would invent one.
+          <div className="space-y-1">
+            <p className="text-sm text-foreground">
+              {HR_ACKNOWLEDGMENT_KIND_LABELS.refused}
+            </p>
+            {refusalOnFile ? (
+              <p className="text-sm text-muted-foreground">{refusalOnFile}</p>
+            ) : null}
+          </div>
+        ) : acknowledged ? (
+          <div className="space-y-1">
+            <p className="text-sm text-foreground">
+              {HR_ACKNOWLEDGMENT_KIND_LABELS[
+                action.employee_acknowledgement_kind as HrAcknowledgmentKind
+              ] ?? "Acknowledged"}{" "}
+              <span className="text-muted-foreground">
+                on {formatDay(action.employee_acknowledged_at)}
+              </span>
+            </p>
+            {witnessOnFile ? (
+              <p className="text-sm text-muted-foreground">
+                Witnessed by {witnessOnFile}
+              </p>
+            ) : null}
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">
             This step stands unacknowledged.
@@ -229,12 +297,14 @@ export function CorrectiveActionPanel({
           </div>
         ) : null}
 
-        {!subjectHasLogin ? (
-          <p className="text-xs text-muted-foreground">
-            This person has no account here, so the signed paper copy is the
-            delivery.
-          </p>
-        ) : null}
+        {/* 🚨 THE "no account here" SENTENCE IS GONE FROM THIS PANEL. It was
+            gated on `subject_login_user_id`, which is not on the wire, so it
+            printed under EVERY subject — including ones who hold a login and can
+            e-sign from their own tasks page. Telling an issuer that somebody has
+            no account, wrongly, is how a person ends up signing paper they never
+            needed to. Restoring it needs the door to project the fact; until
+            then this panel says nothing about the subject's account, which is
+            the honest position. */}
 
         {canRecordAck ? (
           <div className="space-y-3">
@@ -257,15 +327,26 @@ export function CorrectiveActionPanel({
               </Select>
             </div>
 
-            {ackKind === "verbal_witnessed" ? (
+            {witnessApplies ? (
               <div className="space-y-1.5">
-                <Label htmlFor="ack-witness">Who witnessed it</Label>
+                <Label htmlFor="ack-witness">
+                  {ackKind === "wet_signature"
+                    ? "Who watched them sign it"
+                    : "Who witnessed it"}
+                </Label>
                 <Input
                   id="ack-witness"
                   value={witness}
                   onChange={(e) => setWitness(e.target.value)}
                   className="min-h-11 sm:min-h-9"
                 />
+                {ackKind === "wet_signature" ? (
+                  // Optional, and said so — a signature on paper stands on its
+                  // own. A required field here would block a real signing.
+                  <p className="text-xs text-muted-foreground">
+                    Optional. It is a name, kept exactly as you type it.
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
@@ -302,11 +383,29 @@ export function CorrectiveActionPanel({
         <h2 className="text-sm font-semibold text-foreground">Outcome</h2>
 
         {action.outcome ? (
-          <p className="text-sm text-foreground">
-            {HR_CORRECTIVE_ACTION_OUTCOME_LABELS[
-              action.outcome as HrCorrectiveActionOutcome
-            ] ?? action.outcome}
-          </p>
+          <div className="space-y-1">
+            <p className="text-sm text-foreground">
+              {HR_CORRECTIVE_ACTION_OUTCOME_LABELS[
+                action.outcome as HrCorrectiveActionOutcome
+              ] ?? action.outcome}
+              {action.outcome_on ? (
+                <span className="text-muted-foreground">
+                  {" "}
+                  on {formatDay(action.outcome_on)}
+                </span>
+              ) : null}
+            </p>
+            {/* 🚨 THE FOLLOW-UP OUTCOME HAD NOWHERE TO RENDER. The door writes
+                `follow_up_outcome` (§4.8 node H → I) and this panel collected it
+                in the form above and then never showed it back — so a person
+                recorded what happened at the follow-up and the record appeared
+                to have swallowed it. */}
+            {action.follow_up_outcome ? (
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                {action.follow_up_outcome}
+              </p>
+            ) : null}
+          </div>
         ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -336,7 +435,7 @@ export function CorrectiveActionPanel({
               ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="outcome-note">Note</Label>
+              <Label htmlFor="outcome-note">What happened at the follow-up</Label>
               <Input
                 id="outcome-note"
                 value={outcomeNote}

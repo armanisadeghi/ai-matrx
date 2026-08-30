@@ -7,8 +7,11 @@
 // the next agent exactly what to build and where the promise is recorded.
 //
 // Copy comes from ONE place: the `marketing.*` row in lib/coming-soon/registry.ts
-// (the promise) plus the matching entry in lib/marketing-nav.ts (pillar, icon,
-// description). Route files pass only an id — never prose.
+// (the promise, and the label when nothing richer exists). An agency-plane route
+// also has a matching entry in lib/marketing-nav.ts, which adds the pillar, the
+// icon, and the live siblings; a CLIENT-workspace route (declared in
+// brand-sections.ts instead) has none, and renders the promise alone.
+// Route files pass only an id — never prose.
 
 import Link from "next/link";
 import {
@@ -84,31 +87,39 @@ export function MarketingComingSoon({
   const found = findEntry(comingSoonId);
   const promise = getComingSoon(comingSoonId);
 
-  // A reserved route with no nav entry or no registry row is the exact failure
-  // both systems exist to prevent — say so loudly instead of rendering a
-  // convincing-looking stub.
-  if (!found || !promise) {
+  // The PROMISE is the load-bearing half, and it lives in one place. A reserved
+  // route with no registry row is the exact failure this system exists to
+  // prevent — say so loudly instead of rendering a convincing-looking stub.
+  if (!promise) {
     throw new Error(
-      `MarketingComingSoon: "${comingSoonId}" is missing its ${
-        !found ? "MARKETING_PILLARS entry" : "lib/coming-soon/registry.ts row"
-      }. Every reserved Marketing route must be declared in both.`,
+      `MarketingComingSoon: "${comingSoonId}" is missing its lib/coming-soon/registry.ts row. Every reserved Marketing route must be declared there.`,
     );
   }
 
-  const { entry, pillar } = found;
-  const Icon = ICONS[entry.iconName] ?? Circle;
+  // MARKETING_PILLARS is the AGENCY plane's nav (2026-08-28 restructure); the
+  // client workspace's reserved sections (`/marketing/[brandId]/socials`,
+  // `…/identity/audience`, …) live in MARKETING_BRAND_SECTIONS instead and
+  // carry no pillar entry. Their promise still renders — with no pillar label
+  // and no sibling list, because neither exists at this level.
+  const entry = found?.entry ?? null;
+  const pillar = found?.pillar ?? null;
+  const label = entry?.label ?? promise.label;
+  const Icon = (entry ? ICONS[entry.iconName] : undefined) ?? Circle;
 
   // What the user can already do in this pillar instead of waiting.
-  const liveSiblings = pillar.entries.filter(
-    (e) => e.status !== "coming-soon" && e.href !== entry.href,
-  );
+  const liveSiblings =
+    pillar && entry
+      ? pillar.entries.filter(
+          (e) => e.status !== "coming-soon" && e.href !== entry.href,
+        )
+      : [];
 
   return (
     <>
       <PageHeader>
         <div className="flex w-full min-w-0 items-center gap-2">
           <h1 className="truncate text-sm font-medium text-foreground">
-            {entry.label}
+            {label}
           </h1>
           <ComingSoonBadge />
         </div>
@@ -122,13 +133,15 @@ export function MarketingComingSoon({
 
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <ComingSoonBadge />
-              <span className="text-xs text-muted-foreground">
-                {pillar.label}
-              </span>
+              {pillar ? (
+                <span className="text-xs text-muted-foreground">
+                  {pillar.label}
+                </span>
+              ) : null}
             </div>
 
             <h2 className="mb-2 text-xl font-semibold text-foreground">
-              {entry.label}
+              {label}
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {promise.promise}
@@ -144,7 +157,7 @@ export function MarketingComingSoon({
             {liveSiblings.length > 0 ? (
               <div className="mt-6">
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                  Available now in {pillar.label}
+                  Available now in {pillar?.label}
                 </p>
                 <ul className="space-y-1.5">
                   {liveSiblings.map((sibling) => (

@@ -18,7 +18,7 @@ import {
   openPrintWindow,
   type BlockPrinter,
   type PrintSettings,
-} from "@/lib/block-print/block-print-utils";
+} from "@ai-matrx/print/core";
 import { formatCurrency, formatNumber } from "../lib/formulas";
 import type {
   StatelessRatingResponse,

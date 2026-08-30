@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
 import { formatUsd } from "@/lib/processing-units/units";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import {
   listRunAiCalls,
   listRunHistory,
@@ -149,9 +150,19 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
               <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
                 Error
               </p>
-              <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
-                {JSON.stringify(call.error, null, 2)}
-              </pre>
+              {/* 🚨 A pretty-printed JSON error object is not an answer for
+                  the business owner who pressed Run (2026-08-30). This console
+                  mounts at the brand tier too, not just for developers. The
+                  sentence goes on screen; the exact object stays on `title`. */}
+              <p
+                className="max-h-40 overflow-auto whitespace-pre-wrap rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive"
+                title={JSON.stringify(call.error, null, 2)}
+              >
+                {humanizeBackendError(
+                  extractErrorMessage(call.error),
+                  "That run failed. The full detail is in the logs.",
+                )}
+              </p>
             </div>
           ) : null}
           <p className="text-[10px] tabular-nums text-muted-foreground">

@@ -13,7 +13,6 @@ import { Upload, ClipboardPaste, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +24,7 @@ import {
   type ImportOutcome,
   type LibraryImportOutcome,
 } from "../import/importDeck";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Filename check only — kept here so the heavy Anki decoder (jszip + sql.js
  * WASM) is loaded LAZILY, only when an .apkg is actually chosen. */
@@ -167,7 +167,7 @@ export function ImportDeckPanel() {
             placeholder="Deck name"
             className="text-sm"
           />
-          <Textarea
+          <ProTextarea
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
             placeholder={"term\tdefinition (one per line — tab, comma, or semicolon separated)"}

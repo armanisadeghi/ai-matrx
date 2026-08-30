@@ -21,17 +21,17 @@ page — the destination survives.
 
 ## The API — read/forward through this, never hand-roll a param
 
-| Function | Use it for |
-|---|---|
-| `captureAuthDestination(pathname, search, hash?)` | THE capture point — a bounce or a client "Sign in" link |
-| `readAuthDestination(source)` | Read from `URLSearchParams` / `FormData` / Next `searchParams` / a URL string. `null` when absent |
-| `authDestinationOr(source, fallback?)` | Read at the END of a flow, where someone must be sent somewhere (`/dashboard`) |
-| `withAuthDestination(target, dest)` | Attach — **never overwrites an existing one** |
-| `preserveAuthDestination(target, source, extra?)` | The workhorse: carry forward + add `error`/`success` |
-| `loginHref(dest)` / `signUpHref(dest)` | Build a sign-in / sign-up link |
-| `useLoginHref()` ([hook](../../hooks/auth/useLoginHref.ts)) | Client components — captures the current route automatically |
-| `serverLoginHref()` ([helper](./server-login-href.ts)) | Server layouts/actions — rebuilds the request from the canonical proxy headers |
-| `withAuthFlowParams(target, params)` | Adds an auth result query without moving it behind an existing fragment |
+| Function                                                    | Use it for                                                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `captureAuthDestination(pathname, search, hash?)`           | THE capture point — a bounce or a client "Sign in" link                                           |
+| `readAuthDestination(source)`                               | Read from `URLSearchParams` / `FormData` / Next `searchParams` / a URL string. `null` when absent |
+| `authDestinationOr(source, fallback?)`                      | Read at the END of a flow, where someone must be sent somewhere (`/dashboard`)                    |
+| `withAuthDestination(target, dest)`                         | Attach — **never overwrites an existing one**                                                     |
+| `preserveAuthDestination(target, source, extra?)`           | The workhorse: carry forward + add `error`/`success`                                              |
+| `loginHref(dest)` / `signUpHref(dest)`                      | Build a sign-in / sign-up link                                                                    |
+| `useLoginHref()` ([hook](../../hooks/auth/useLoginHref.ts)) | Client components — captures the current route automatically                                      |
+| `serverLoginHref()` ([helper](./server-login-href.ts))      | Server layouts/actions — rebuilds the request from the canonical proxy headers                    |
+| `withAuthFlowParams(target, params)`                        | Adds an auth result query without moving it behind an existing fragment                           |
 
 **`encodedRedirect(type, path, message, destinationSource)`** ([`utils/utils.ts`](../utils.ts))
 — **always pass the 4th argument** on an auth surface. Omitting it is how the
@@ -47,17 +47,17 @@ helpers do this for you); the aliases stay readable so old links keep working.
 ## The onboarding funnel never overrides a destination
 
 **`/welcome` is the DEFAULT landing for a new user with no page in mind — not an
-override.** A new user is the *most* important person to deliver to what they
+override.** A new user is the _most_ important person to deliver to what they
 asked for: they came to make meta titles or try agent creation, and that intent
 is what earned the signup.
 
-| Arriving with | Lands on |
-|---|---|
-| no destination, or the generic hub (`/dashboard`) | `/welcome` |
-| any specific destination (`/agents/all`, `/tasks`, …) | that page |
+| Arriving with                                         | Lands on   |
+| ----------------------------------------------------- | ---------- |
+| no destination, or the generic hub (`/dashboard`)     | `/welcome` |
+| any specific destination (`/agents/all`, `/tasks`, …) | that page  |
 
 The funnel therefore lives in **exactly one route** —
-[`app/(core)/dashboard/layout.tsx`](../../app/(core)/dashboard/layout.tsx) —
+[`app/(core)/dashboard/layout.tsx`](<../../app/(core)/dashboard/layout.tsx>) —
 because "send me to the hub" is what "no particular intent" looks like. **Never
 add a second call site.** The root layout, the middleware and the auth actions
 all see users who DO have a destination, and would silently eat it. The
@@ -116,6 +116,12 @@ sales page after signing in.
   PostgREST as `anon`. Idempotent operations using
   [`runWithSessionRetry`](../../lib/supabase/authRetry.ts) also preflight the
   browser session at the database boundary, closing the event-to-effect race.
+- **A Supabase auth authority owns a unique cookie epoch.**
+  [`authCookie.ts`](../supabase/authCookie.ts) binds East to
+  `sb-matrx-auth-v2`; never reuse a retired project's storage key. Proxy may
+  seed the prior key only for one server validation, persists it only when
+  East accepts it, then clears the superseded cookie. Every redirect after
+  `getUser()` copies refreshed cookies from the canonical response.
 - **External app redirects are registered capabilities, not user input.**
   [`trusted-app-redirect.ts`](./trusted-app-redirect.ts) requires an exact
   first-party origin and the exact `/oauth/callback` path before any access or
@@ -138,6 +144,10 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-30** — Isolated East auth from pre-cutover West browser bundles
+  with a new cookie epoch, validated one-shot session migration, legacy-cookie
+  cleanup, and redirect-safe refresh propagation.
 
 - **2026-08-28** — Protected `/projects/**` and `/tasks/**` at the proxy boundary;
   guests can no longer mount container workspaces and fan out anonymous reads.

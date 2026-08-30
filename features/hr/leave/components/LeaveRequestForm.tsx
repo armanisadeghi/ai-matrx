@@ -32,7 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isHrDenied, isHrFailed } from "@/features/hr/types";
 import { cn } from "@/lib/utils";
@@ -46,6 +45,7 @@ import type {
   MyLeavePolicy,
 } from "../api/types";
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** How long after the last keystroke the preview re-reads. */
 const PREVIEW_DEBOUNCE_MS = 350;
@@ -474,7 +474,7 @@ export function LeaveRequestForm({
             "Never require an employee to type a diagnosis."
           */}
           <Label htmlFor="leave-note">Note (optional)</Label>
-          <Textarea
+          <ProTextarea
             id="leave-note"
             value={note}
             onChange={(e) => setNote(e.target.value)}

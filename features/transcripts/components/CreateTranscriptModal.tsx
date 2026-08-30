@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,6 +51,7 @@ import {
   createDeterministicRecordingCanary,
   TRANSCRIPT_RECORDING_CANARY,
 } from "../qa/deterministicRecordingCanary";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CreateTranscriptModalProps {
   isOpen: boolean;
@@ -592,7 +592,7 @@ export function CreateTranscriptModal({
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea
+                <ProTextarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

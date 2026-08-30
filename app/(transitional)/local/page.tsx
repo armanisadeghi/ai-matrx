@@ -20,6 +20,10 @@ import {
   Globe,
   Clock,
   AlertCircle,
+  Apple,
+  Laptop,
+  PanelsTopLeft,
+  Terminal,
   WifiOff,
 } from "lucide-react";
 import type { LocalInstance } from "@/app/api/local-instances/route";
@@ -32,11 +36,16 @@ function formatLastSeen(lastSeen: string): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
-function platformIcon(platform: string | null) {
-  if (!platform) return "💻";
-  if (platform.includes("darwin")) return "🍎";
-  if (platform.includes("win")) return "🪟";
-  return "🐧";
+function PlatformIcon({ platform }: { platform: string | null }) {
+  const Icon = !platform
+    ? Laptop
+    : platform.includes("darwin")
+      ? Apple
+      : platform.includes("win")
+        ? PanelsTopLeft
+        : Terminal;
+
+  return <Icon aria-hidden="true" className="h-6 w-6" />;
 }
 
 export default function LocalDevicesPage() {
@@ -125,7 +134,9 @@ export default function LocalDevicesPage() {
             {/* Card header */}
             <div className="flex items-start justify-between px-5 py-4 border-b border-border/50">
               <div className="flex items-center gap-3">
-                <div className="text-2xl">{platformIcon(inst.platform)}</div>
+                <div className="text-muted-foreground">
+                  <PlatformIcon platform={inst.platform} />
+                </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{inst.instance_name || inst.hostname || "Unknown Device"}</span>

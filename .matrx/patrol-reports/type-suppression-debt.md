@@ -1,5 +1,30 @@
 # P10 — Type suppression debt
 
+## Schema-backed agent-definition tranche — 2026-08-30
+
+- Permanent run `2026-08-30T141622Z` is reconciled on exact candidate
+  `d3a4cd79b655a0ba0afe3b24a470a0d472fc2952`, independently **CERTIFIED** by
+  `/root/p10_certifier`, delivered as an ancestor of `origin/main`, and preserved at
+  `refs/heads/patrol-runs/P10/2026-08-30T141622Z`. No release was requested or run.
+- Canonical runtime parsers now guard messages, variable definitions, settings, context policies,
+  and output schema at DB ingress. All three `agx_get_version_snapshot` consumers validate the
+  complete RPC row. The batch removes five field assertions plus three whole-row assertions, with
+  no looser cast or replacement suppression.
+- Adversarial review rejected the first candidate because historical snapshots legitimately retain
+  `input_kind = null`; the runtime type, parser, and regression fixture now preserve that contract.
+  A second rejection exposed authority publication rebuilding from a stale prior-candidate tree.
+  The publisher now rebuilds from the corrected candidate, retains prior authority as immutable
+  ancestry, and proves non-empty product bytes plus full tree parity outside the two run projections.
+- Final proof passed 61 focused tests, the full type gate, zero scoped ESLint errors, the scoped hatch
+  scan, and candidate-to-authority tree parity. P10's run record and latest pointer are marker-free
+  and hash-valid on `origin/main` and the authority ref.
+- This exhausts the ready schema-backed agent-definition tranche. The repository-wide hatch ratchet
+  remains above baseline, so P10 stays in eradication mode and the next ranked independent repair
+  wave continues; this is not a maintenance-mode zero proof.
+- Recursive learning: rank a DB/RPC boundary as one repair family across every consumer, and make
+  authority retry tests change a real product fixture. Candidate ancestry alone cannot prove that a
+  retry authority preserved the corrected bytes.
+
 ## Eradication waves — 2026-08-29
 
 ### Certified Batch 1
@@ -36,12 +61,10 @@
   the frozen baseline: `as unknown as` +267, `Record<string, any>` +4, non-null assertions +10,
   `?? {}` +137, and `?? ""` +876. This is not a zero proof and maintenance mode is not allowed.
 
-### Next repair wave
+### Next repair wave — completed 2026-08-30
 
-- Five complex agent-definition JSON reads remain: messages, variable definitions, settings,
-  context policies, and output schema. The next bounded wave must introduce or reuse their canonical
-  runtime schemas and remove the upstream whole-RPC-row assertion; it must not replace the five
-  assertions with a looser cast.
+- The five complex agent-definition JSON reads and every snapshot-RPC whole-row assertion were
+  completed in run `2026-08-30T141622Z`; see the certified tranche above.
 - Recursive learning: generated DB/API boundaries are a proven automatic recipe when validation is
   placed at ingress and writes are constructed from generated shapes. The detector should rank
   whole-file disables and concentrated generated-boundary casts separately, and identify groups

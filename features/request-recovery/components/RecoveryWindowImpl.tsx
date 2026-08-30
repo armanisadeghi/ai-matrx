@@ -33,7 +33,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -47,6 +46,7 @@ import {
 } from "../utils/formatRecoveryDisplay";
 import { formatVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { toast } from "@/lib/toast";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function formatTimestamp(ts: number): string {
   return new Date(ts).toLocaleString(undefined, {
@@ -94,7 +94,7 @@ function RecoveryInputSection({
           Your input
         </div>
         {isEditing ? (
-          <Textarea
+          <ProTextarea
             value={draftText}
             onChange={(e) => onDraftChange(e.target.value)}
             className="min-h-[160px] text-base"

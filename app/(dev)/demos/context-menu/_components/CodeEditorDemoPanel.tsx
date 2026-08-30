@@ -32,7 +32,10 @@ export interface CodeEditorDemoPanelProps {
   initialContent?: string;
   /**
    * `production` — contextFilter: "code-editor" (matches `/code`).
-   * `explicit` — omits contextFilter; pass addedContexts/excludedContexts via menuOverrides.
+   * `explicit` — omits contextFilter. Phase 6.7 removed the
+   * addedContexts/excludedContexts slug filters entirely (availability is
+   * derived from what the surface can read), so this mode now differs from
+   * `production` only by not setting the (already inert) contextFilter key.
    */
   contextFilterMode?: "production" | "explicit";
   /** Extra props merged onto the production code-editor menu baseline. */
@@ -88,13 +91,6 @@ export function CodeEditorDemoPanel({
     },
   );
 
-  const explicitContextProps: Partial<EditableContextMenuProps> =
-    contextFilterMode === "explicit"
-      ? {
-          addedContexts: ["code-editor"],
-          excludedContexts: ["general"],
-        }
-      : {};
 
   const getApplicationScope = useCallback(() => {
     const el = textareaRef.current;
@@ -119,7 +115,6 @@ export function CodeEditorDemoPanel({
       </header>
       <EditableContextMenu
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
-        {...explicitContextProps}
         contextData={contextData}
         getApplicationScope={getApplicationScope}
         getTextarea={() => textareaRef.current}

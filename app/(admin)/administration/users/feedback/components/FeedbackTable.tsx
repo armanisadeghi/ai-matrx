@@ -28,7 +28,7 @@ import {
 } from "@/types/feedback.types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

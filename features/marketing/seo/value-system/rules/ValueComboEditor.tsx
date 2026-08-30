@@ -43,7 +43,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -76,6 +75,7 @@ import {
   type FacetDimension,
   type ValueComboFormState,
 } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const EMPTY: ValueComboFormState = {
   valueIds: [],
@@ -586,7 +586,7 @@ export function ValueComboEditor({
               label="Why (optional)"
               hint="The reasoning survives you. Every keyword this touches shows it."
             >
-              <Textarea
+              <ProTextarea
                 value={form.notes}
                 onChange={(e) => set("notes", e.target.value)}
                 rows={3}

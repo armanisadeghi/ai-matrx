@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   updateFeedback,
   setAdminDecision,
@@ -44,7 +50,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -55,6 +60,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   AlertCircle,
   Flame,
@@ -108,10 +114,11 @@ import {
 } from "../format";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
 import { feedbackHref } from "../doors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;
@@ -858,11 +865,9 @@ export default function FeedbackDetailDialog({
         status: formStatus,
         hasOpenIssues,
         categoryId,
-        categoryName:
-          categories.find((c) => c.id === categoryId)?.name ?? null,
+        categoryName: categories.find((c) => c.id === categoryId)?.name ?? null,
         assigneeId,
-        assigneeName:
-          assignee?.display_name ?? assignee?.email ?? null,
+        assigneeName: assignee?.display_name ?? assignee?.email ?? null,
         parentId,
       },
       drafts: {
@@ -1208,7 +1213,8 @@ export default function FeedbackDetailDialog({
                           // (preview + download button + Open-in-app),
                           // not on raw bytes that some browsers/CDNs
                           // attachment-force.
-                          const viewHref = feedbackScreenshotHref(screenshotRef);
+                          const viewHref =
+                            feedbackScreenshotHref(screenshotRef);
                           return (
                             <a
                               key={screenshotRef}
@@ -1311,7 +1317,11 @@ export default function FeedbackDetailDialog({
                                       </span>
                                     ) : (
                                       <span className="text-muted-foreground italic">
-                                        Loading...
+                                        <SuspenseLoader
+                                          size="xs"
+                                          centered={false}
+                                          message="Loading parent feedback…"
+                                        />
                                       </span>
                                     )}
                                   </>
@@ -1538,7 +1548,7 @@ export default function FeedbackDetailDialog({
                   <label className="text-sm font-medium mb-1.5 block">
                     Direction for Agent
                   </label>
-                  <Textarea
+                  <ProTextarea
                     value={direction}
                     onChange={(e) => setDirection(e.target.value)}
                     placeholder="Specific instructions for the AI agent before it starts working on this..."
@@ -1551,7 +1561,7 @@ export default function FeedbackDetailDialog({
                   <label className="text-sm font-medium mb-1.5 block">
                     Admin Notes
                   </label>
-                  <Textarea
+                  <ProTextarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder="Internal notes about this feedback..."
@@ -2142,7 +2152,7 @@ export default function FeedbackDetailDialog({
 
                 {/* Comment Input */}
                 <div className="relative pt-3 border-t mt-auto">
-                  <Textarea
+                  <ProTextarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Add a comment..."
@@ -2440,7 +2450,7 @@ export default function FeedbackDetailDialog({
                                 : "What still needs work? Describe the remaining issues."}
                             </span>
                           </div>
-                          <Textarea
+                          <ProTextarea
                             value={testFeedbackText}
                             onChange={(e) =>
                               setTestFeedbackText(e.target.value)
@@ -2510,7 +2520,7 @@ export default function FeedbackDetailDialog({
                             email. The item will move to the User Review stage
                             until they respond.
                           </p>
-                          <Textarea
+                          <ProTextarea
                             ref={composeTextareaRef}
                             value={userReviewMessage}
                             onChange={(e) =>
@@ -2523,7 +2533,7 @@ export default function FeedbackDetailDialog({
                           {composeImages.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {composeImages.map((url, idx) => (
-                                <div key={idx} className="relative group">
+                                <div key={idx} className="matrx-touch-targets relative group">
                                   <InlineMediaRef
                                     ref={url}
                                     size={{ width: 64, height: 64 }}
@@ -2539,7 +2549,8 @@ export default function FeedbackDetailDialog({
                                         prev.filter((_, i) => i !== idx),
                                       )
                                     }
-                                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                                    aria-label={`Remove attachment ${idx + 1}`}
                                   >
                                     <X className="w-2.5 h-2.5" />
                                   </button>
@@ -2792,7 +2803,7 @@ export default function FeedbackDetailDialog({
                   {replyImages.length > 0 && (
                     <div className="flex flex-wrap gap-2 px-1">
                       {replyImages.map((url, idx) => (
-                        <div key={idx} className="relative group">
+                        <div key={idx} className="matrx-touch-targets relative group">
                           <InlineMediaRef
                             ref={url}
                             size={{ width: 64, height: 64 }}
@@ -2808,7 +2819,8 @@ export default function FeedbackDetailDialog({
                                 prev.filter((_, i) => i !== idx),
                               )
                             }
-                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                            aria-label={`Remove attachment ${idx + 1}`}
                           >
                             <X className="w-2.5 h-2.5" />
                           </button>
@@ -2817,7 +2829,7 @@ export default function FeedbackDetailDialog({
                     </div>
                   )}
                   <div className="relative">
-                    <Textarea
+                    <ProTextarea
                       ref={replyTextareaRef}
                       value={userReplyText}
                       onChange={(e) => setUserReplyText(e.target.value)}

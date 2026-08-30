@@ -3,8 +3,8 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface DefaultContextPolicyValuesEditorProps {
   /** Declared context policies on the agent. */
@@ -93,7 +93,7 @@ export function DefaultContextPolicyValuesEditor({
               )}
             </div>
             {isLongText ? (
-              <Textarea
+              <ProTextarea
                 id={`slot-${slot.key}`}
                 value={stringValue}
                 onChange={(e) => setValue(slot.key, e.target.value)}

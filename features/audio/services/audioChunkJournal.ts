@@ -33,6 +33,8 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { suppressSupabaseErrorCapture } from "@/lib/diagnostics/supabaseErrorCapture";
 import { getUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
@@ -69,6 +71,21 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const queues = new Map<string, Promise<void>>();
 // Consecutive persistent failures per safetyId — used to escalate the log.
 const failureCounts = new Map<string, number>();
+
+class JournalUpsertError extends Error {
+  constructor(
+    readonly postgrest: {
+      message: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    },
+    readonly status: number,
+  ) {
+    super(`journal insert failed: ${postgrest.message}`);
+    this.name = "JournalUpsertError";
+  }
+}
 
 async function uploadAndJournalOnce(
   safetyId: string,
@@ -125,25 +142,27 @@ async function uploadAndJournalOnce(
   // which is the wrong org for a recording made inside a team org. Stamping
   // the active org here is what keeps the journal in the same org as the
   // recording it belongs to.
-  const { error } = await supabase
-    .schema("transcripts")
-    .from("studio_recording_chunks")
-    .upsert(
-      {
-        safety_id: safetyId,
-        chunk_index: chunkIndex,
-        file_id: normalized.fileId,
-        mime_type: contentType,
-        size_bytes: blob.size,
-        organization_id: await ensureOrgId(null),
-      },
-      { onConflict: "safety_id,chunk_index", ignoreDuplicates: true },
-    );
+  const { error, status } = await suppressSupabaseErrorCapture(
+    supabase
+      .schema("transcripts")
+      .from("studio_recording_chunks")
+      .upsert(
+        {
+          safety_id: safetyId,
+          chunk_index: chunkIndex,
+          file_id: normalized.fileId,
+          mime_type: contentType,
+          size_bytes: blob.size,
+          organization_id: await ensureOrgId(null),
+        },
+        { onConflict: "safety_id,chunk_index", ignoreDuplicates: true },
+      ),
+  );
   if (error) {
     // The uploaded file would be orphaned without its row — remove it so a
     // retry starts clean (best-effort; staging is ephemeral either way).
     void fileHandler.remove(normalized.fileId, { hard: true }).catch(() => {});
-    throw new Error(`journal insert failed: ${error.message}`);
+    throw new JournalUpsertError(error, status);
   }
 }
 
@@ -181,12 +200,28 @@ export function journalChunk(input: {
     // chunk); this only degrades cross-device recovery for this cycle.
     const failures = (failureCounts.get(safetyId) ?? 0) + 1;
     failureCounts.set(safetyId, failures);
-    console.error(
+    const message =
       `${LOG_PREFIX} chunk ${chunkIndex} of ${safetyId} failed to journal after ` +
-        `${MAX_ATTEMPTS} attempts (${failures} chunk(s) lost from this cycle's ` +
-        `cross-device journal — same-device IndexedDB recovery is unaffected):`,
-      lastError,
-    );
+      `${MAX_ATTEMPTS} attempts (${failures} chunk(s) lost from this cycle's ` +
+      `cross-device journal — same-device IndexedDB recovery is unaffected)`;
+    if (lastError instanceof JournalUpsertError) {
+      captureError({
+        source: "supabase-postgrest",
+        operation: "upsert",
+        schema: "transcripts",
+        relation: "studio_recording_chunks",
+        name: "JournalUpsertError",
+        message: lastError.postgrest.message,
+        details: lastError.postgrest.details,
+        hint: lastError.postgrest.hint,
+        code: lastError.postgrest.code,
+        status: lastError.status,
+        raw: lastError.postgrest,
+      });
+      console.warn(`${message}:`, lastError);
+    } else {
+      console.error(`${message}:`, lastError);
+    }
   });
   queues.set(safetyId, next);
 }

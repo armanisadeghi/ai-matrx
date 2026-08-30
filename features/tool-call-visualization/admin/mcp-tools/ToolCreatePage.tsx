@@ -34,6 +34,7 @@ import {
   sourceKindLabel,
   type ToolSourceKind,
 } from "./source-kind-badge";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface NewTool {
   name: string;
@@ -221,7 +222,7 @@ export function ToolCreatePage() {
         <Label>
           Description <span className="text-destructive">*</span>
         </Label>
-        <Textarea
+        <ProTextarea
           value={tool.description}
           onChange={(e) => setField("description", e.target.value)}
           rows={4}

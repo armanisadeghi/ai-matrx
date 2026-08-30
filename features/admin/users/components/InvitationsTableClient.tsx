@@ -20,10 +20,10 @@ import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface InvitationRequest {
   id: string;
@@ -291,14 +291,14 @@ export function InvitationsTableClient() {
                 ) : null}
                 {r.status === "pending" ? (
                   <div className="space-y-2 border-t border-border pt-3">
-                    <Textarea
+                    <ProTextarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Internal notes (optional)…"
                       rows={2}
                       className="resize-none"
                     />
-                    <Textarea
+                    <ProTextarea
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       placeholder="Rejection reason (sent if rejecting)…"

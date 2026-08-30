@@ -88,6 +88,11 @@ Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
 text; hosts explicitly disable it for JSON, search/query, URL/endpoint,
 keyword/tag, and machine-identifier fields. `ProInput` collapses Apply output
 to one line; both controls keep the streamed result copyable before Apply.
+**Every human-authored multiline field uses `ProTextarea`.** Basic textarea
+survivors are limited to structured/code/import values, protected credentials,
+read-only outputs, geometry-sensitive inline editors, primitive fixtures, and
+hosts that already own the same action layer; new exceptions require that same
+concrete rationale.
 
 ## Invariants
 
@@ -179,6 +184,22 @@ Auto-run: raw-source slots fire simultaneously with Clean (mic completion +
 manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
+
+- 2026-08-29 — **Canonical ProTextarea fleet sweep.** An AST inventory found
+  650 executable raw/basic multiline fields against 154 ProTextarea fields
+  (including the legacy JSX surface). The tree now has 439 fewer raw/basic
+  fields and 597 ProTextarea fields; all 211 survivors
+  were reviewed and are limited to the exception classes above. This includes
+  shared form wrappers plus missed prompts, descriptions, notes, TTS scripts,
+  CMS/page prose, skill content, workflow prose, and read/write editors. The
+  cleanup worker is confirmed surface-role driven: the prompt/model/variables
+  live in database `agent.*`, but the `clean` role still connects through the
+  manifest's `defaultAgentId` rather than a mandate key — an explicit mandate
+  conversion gap.
+  A separate explicit-flag audit reviewed all 35 executable
+  `enableCleanup={false}` call sites; the only survivors are dedicated action
+  hosts, anonymous public forms, component demonstrations, exact machine
+  values, and search/keyword/tag fields where rewriting changes the query.
 
 - 2026-08-29 — **Cleanup propagated to canonical single-line text without
   propagating it into machine values.** `ProInput` now reuses the same cleanup

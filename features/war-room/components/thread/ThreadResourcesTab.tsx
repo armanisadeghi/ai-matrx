@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { folderForWarRoomThread } from "@/features/files/utils/folder-conventions";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useFile } from "@/features/files/handler/hooks/useFile";

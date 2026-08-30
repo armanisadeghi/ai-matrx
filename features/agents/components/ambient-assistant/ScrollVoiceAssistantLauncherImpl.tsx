@@ -6,8 +6,8 @@ import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
-import { useMandate } from "@/features/agents/mandates/useMandate";
-import { useMandateChain } from "@/features/agents/mandates/useMandateChain";
+import { useMandate } from "@/features/mandates/useMandate";
+import { useMandateChain } from "@/features/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
@@ -96,7 +96,7 @@ function GuestAmbientVoiceAssistant({
   });
 
   return (
-    <div className="pointer-events-none fixed bottom-5 left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div className="ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="flex items-center gap-2 opacity-75 transition-opacity hover:opacity-100 focus-within:opacity-100">
         <Button
           type="button"
@@ -195,7 +195,7 @@ function ActiveAmbientVoiceAssistant({
                     : "Tap to try again";
 
   return (
-    <div className="pointer-events-none fixed bottom-5 left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div className="ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
       {mode === "text" ? (
         <AmbientTextMode
           conversationId={conversationId}
@@ -316,12 +316,12 @@ function AuthenticatedAmbientVoiceAssistant({
 
   if (loading) {
     return (
-      <div className="pointer-events-none fixed bottom-5 left-1/2 z-[35] h-9 w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-pulse rounded-full bg-glass shadow-glass backdrop-blur-glass" />
+      <div className="ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] h-9 w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-pulse rounded-full bg-glass shadow-glass backdrop-blur-glass" />
     );
   }
 
   const unavailableLauncher = (
-    <div className="pointer-events-none fixed bottom-5 left-1/2 z-[35] w-[min(420px,calc(100vw-2rem))] -translate-x-1/2">
+    <div className="ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] w-[min(420px,calc(100vw-2rem))] -translate-x-1/2">
       <div className="pointer-events-auto flex h-10 items-center rounded-full border border-border bg-card/90 px-3 text-xs text-muted-foreground shadow-glass backdrop-blur-glass">
         Assistant unavailable
       </div>

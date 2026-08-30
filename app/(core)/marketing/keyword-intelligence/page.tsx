@@ -1,17 +1,11 @@
-import { Suspense } from "react";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { KeywordIntelligenceHub } from "@/features/marketing/seo/hub/KeywordIntelligenceHub";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export const metadata = {
-  title: "Keyword Intelligence",
-  description:
-    "Every screen that gives your keywords meaning, for every website you run.",
-};
-
-export default function KeywordIntelligencePage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading your websites…" />}>
-      <KeywordIntelligenceHub />
-    </Suspense>
-  );
+/**
+ * Legacy flat pillar. Keyword intelligence now lives on one site's SEO practice, at /marketing/[brand]/seo/[site]/keywords.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingKeywordIntelligenceShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

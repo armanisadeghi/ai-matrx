@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Workflow, User, Cog, RefreshCw, Loader2, AlertCircle, Activity } from 'lucide-react';
-import { InlineMediaRef } from '@/features/files/components/inline/InlineMediaRef';
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { openFilePreview } from '@/features/files/components/preview/openFilePreview';
 
 const ACTOR_META = {

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P12",
+  "runId": "2026-08-30T141811Z",
+  "baseSha": "b029fd439333075600bd9ae7522f3907e3dd3395",
+  "createdAt": "2026-08-30T14:18:11.718Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:11.718Z",
+      "actor": "codex-root",
+      "summary": "P12 ERADICATION: complete the first ranked three-Surface tranche",
+      "evidence": [
+        "Canonical shared checkout; baseline type-check PASS; surface drift PASS (194 surfaces, 4757 values); surface routes PASS with 125 undeclared; overlays PASS with 162 undeclared; unrelated P10 run-record paths were dirty before P12 editing."
+      ],
+      "previousEventHash": null,
+      "eventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:20:27.020Z",
+      "actor": "codex-root",
+      "summary": "Three disjoint repair units are implementing the ranked overlay family",
+      "evidence": [
+        "quick_answers_surface owns Quick Answers wrapper + canonical child + manifest",
+        "keyword_research_window_surface owns the distinct floating-window identity because matrx-user/keyword-research already owns the routed workbench",
+        "page_research_surface owns Page Research wrapper + manifest"
+      ],
+      "previousEventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4",
+      "eventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:51:14.447Z",
+      "actor": "/root/p12_certifier",
+      "summary": "Corrected three-Surface candidate is static-clean and mirror-synced but cannot earn verified readiness without the required isolated in-app Browser proof",
+      "evidence": [
+        "Independent verdict INFRASTRUCTURE BLOCKED, not rejected; no candidate-caused source regression",
+        "type-check PASS; focused ESLint PASS with only baseline metadata warnings; drift/routes/overlays PASS; responsive Jest 2/2 PASS; three DB surface-impact checks PASS",
+        "DB mirror contains 92 focused values, 4 roles, and 8 write targets; all three manifests remain readiness=partial pending Browser proof"
+      ],
+      "blocker": {
+        "prerequisite": "Expose the in-app Browser controller node_repl/js tool to this canonical local task and retry the three live interaction paths",
+        "preservedRef": "refs/heads/patrol-runs/P12/2026-08-30T141811Z-candidate",
+        "preservedSha": "ded49823bc44dee83d4d1012f235ac92fee92ab9"
+      },
+      "previousEventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d",
+      "eventHash": "98d89b3460d0637dc1dde467023e6c07916c9eed86b01b9c0d9ee8014ee4e1d9"
+    }
+  ]
+}

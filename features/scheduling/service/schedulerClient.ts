@@ -12,6 +12,9 @@ import { supabase } from "@/utils/supabase/client";
 import type {
   ComputeNextDueRequest,
   ComputeNextDueResponse,
+  DbJobListResponse,
+  DbJobPatchRequest,
+  DbJobResponse,
   DeletedResponse,
   ListRunsQuery,
   ListTasksQuery,
@@ -37,12 +40,12 @@ import type {
   ValidateCronRequest,
   ValidateCronResponse,
 } from "./schedulerApi.types";
-import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 
 // ── Base URL + auth ────────────────────────────────────────────────────────
 
 function baseUrl(): string {
-  return AIDREAM_PRODUCTION_URL.replace(/\/$/, "");
+  return resolveServiceBaseUrl("aidream");
 }
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -278,4 +281,27 @@ export function runSystemTaskNow(taskId: string): Promise<RunNowResponse> {
     `/scheduling/run-now/${encodeURIComponent(taskId)}`,
     { method: "POST" },
   );
+}
+
+// ── DB jobs (admin, /scheduling/admin/db-jobs) ─────────────────────────────
+//
+// pg_cron — SQL scheduled inside Postgres itself, on the same console per
+// Arman's 2026-08-29 ruling extension. Same admin gate as system tasks.
+// There is deliberately NO run-now: pg_cron has no run-once primitive and
+// several jobs are destructive purges.
+
+export function listDbJobs(): Promise<DbJobListResponse> {
+  return request<DbJobListResponse>("/scheduling/admin/db-jobs", {
+    method: "GET",
+  });
+}
+
+export function patchDbJob(
+  jobid: number,
+  body: DbJobPatchRequest,
+): Promise<DbJobResponse> {
+  return request<DbJobResponse>(`/scheduling/admin/db-jobs/${jobid}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 }

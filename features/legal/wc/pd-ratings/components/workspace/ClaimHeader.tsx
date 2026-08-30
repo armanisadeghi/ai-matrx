@@ -4,7 +4,6 @@ import * as React from "react";
 import { ChevronDown, ChevronRight, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -18,6 +17,7 @@ import { DateField } from "./DateField";
 import { OccupationCombobox } from "./OccupationCombobox";
 import { WeeklyEarningsField } from "./WeeklyEarningsField";
 import type { ClaimDraft } from "../../state/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const GENDER_OPTIONS = ["Male", "Female", "Non-binary", "Prefer not to say"] as const;
 
@@ -391,7 +391,7 @@ function CaseInfoSection({
               label="Comments"
               hint="Free-form notes attached to the claim. Not used in the rating."
             >
-              <Textarea
+              <ProTextarea
                 value={claim.comments ?? ""}
                 onChange={(e) =>
                   onChange({ comments: e.target.value || null })

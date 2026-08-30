@@ -22,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -36,11 +35,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Check, Share2, Link2, Globe, Lock, X } from "lucide-react";
 import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CanvasType, CanvasVisibility } from "@/types/canvas-social";
 import { ShareCoverImagePicker } from "./ShareCoverImagePicker";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ============================================================================
 // TYPES
@@ -251,7 +251,7 @@ function ShareFormContent({
 
           <div className="space-y-2">
             <Label htmlFor="share-description">Description</Label>
-            <Textarea
+            <ProTextarea
               id="share-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

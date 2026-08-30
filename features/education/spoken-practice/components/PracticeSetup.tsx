@@ -30,7 +30,11 @@ import {
   type PracticeSetupSnapshot,
 } from "../setupSnapshot";
 import { resolvePracticeSetupPatch } from "../setupWrites";
-import type { PracticeConfig, PracticeSource, SpokenPracticeMode } from "../types";
+import type {
+  PracticeConfig,
+  PracticeSource,
+  SpokenPracticeMode,
+} from "../types";
 
 const SURFACE_NAME = "matrx-user/education-practice-oral";
 
@@ -65,7 +69,8 @@ export function PracticeSetup({
     if (!cfg.offersDeckGrounding) return;
     let alive = true;
     void (async () => {
-      const { fcService } = await import("@/features/flashcards/data/fcService");
+      const { fcService } =
+        await import("@/features/flashcards/data/fcService");
       const res = await fcService.listSets();
       if (alive && res.data) setDecks(res.data);
     })();
@@ -96,7 +101,6 @@ export function PracticeSetup({
 
   useEffect(() => {
     publishPracticeSetupSnapshot(surfaceSnapshot());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     mode,
     focus,
@@ -150,7 +154,8 @@ export function PracticeSetup({
       let source: PracticeSource | null = null;
       if (cfg.offersDeckGrounding && deckId) {
         source = await buildDeckSource(deckId);
-        if (!source) toast.error("That deck has no cards — continuing ungrounded");
+        if (!source)
+          toast.error("That deck has no cards — continuing ungrounded");
       }
       if (!source) source = buildTopicSource(focus.trim(), pasted);
 
@@ -172,7 +177,7 @@ export function PracticeSetup({
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5 px-4 pb-4 sm:px-6 sm:pb-6">
+    <div className="matrx-touch-targets mx-auto w-full max-w-md space-y-5 px-4 pb-4 sm:px-6 sm:pb-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back">
           <ArrowLeft className="h-4 w-4" />

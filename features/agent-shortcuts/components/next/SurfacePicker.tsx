@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   Select,
   SelectContent,
@@ -113,7 +114,19 @@ export function SurfacePicker({
           disabled={disabled || loading}
         >
           <SelectTrigger className="h-9 text-sm">
-            <SelectValue placeholder={loading ? "Loading…" : "Pick a client"} />
+            <SelectValue
+              placeholder={
+                loading ? (
+                  <SuspenseLoader
+                    size="xs"
+                    centered={false}
+                    message="Loading clients…"
+                  />
+                ) : (
+                  "Pick a client"
+                )
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             {clients.map((c) => (

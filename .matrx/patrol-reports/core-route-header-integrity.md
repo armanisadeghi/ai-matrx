@@ -3,11 +3,11 @@
 - **Run date:** 2026-08-29 (America/Los_Angeles)
 - **Run id:** `2026-08-29T161426Z`
 - **Base:** `20551a187a25e2f58d83d6d35c610cc0f0618770`
-- **Current state:** infrastructure blocked
+- **Current state:** closed
 - **Findings:** 6
 - **Fixed in source:** 6
 - **Approvals needed:** 0
-- **Degradation:** required exact-worktree visual certification incomplete
+- **Degradation:** none remaining
 
 ## Resume and configuration reconciliation
 
@@ -15,6 +15,10 @@ The prior P11 run `2026-08-26T161415Z` was hash-valid, closed clean, and
 already reconciled on `origin/main`; no candidate or human decision remained to
 resume. The live P11 automation id, name, M/R tier, recipe, report slug,
 schedule, and run instruction match `scripts/pattern-patrol/manifest.ts`.
+The current 2026-08-29 contract requires `executionEnvironment=local` in the
+canonical `/Users/armanisadeghi/code/matrx-frontend` checkout and forbids
+worktrees; that live ruling supersedes the historical worktree wording retained
+in earlier append-only events.
 `pnpm check:patrol-contracts` continues to report only the unrelated
 `pattern-patrol-fleet-health` prompt drift.
 
@@ -27,8 +31,9 @@ schedule, and run instruction match `scripts/pattern-patrol/manifest.ts`.
   faux body headers, and avatar-clearance padding in route and feature-owned
   `PageHeader` consumers.
 - The sighting ledger contained no open P11 item.
-- The exact-worktree preview lease was checked repeatedly and remained owned
-  by `/Users/armanisadeghi/code/matrx-frontend`; it was never reused or stopped.
+- The canonical managed preview is running from
+  `/Users/armanisadeghi/code/matrx-frontend` on port 3001 and contains the
+  corrected candidate in its ancestry.
 
 ## Findings and standing-authority repairs
 
@@ -66,18 +71,21 @@ same isolated path; no work continued in the shared checkout. Scheduled release
 `v0.4.1448` contains this escaped first candidate. The append-only run record
 preserves the infrastructure loss, escaped delivery, and rejection.
 
-### Corrected candidate — infrastructure blocked
+### Corrected candidate — certified and delivered
 
 - Candidate: `4b06080808465764e280fbfef3cd895abb093c24`
-- Preserved ref: `refs/heads/codex/p11-20260829-repair`
+- Integration merge: `a6e0cc9b340cb7e8ccb742235d78625c0aeb8e56`
+- First containing release: `v0.4.1449`
 - Authority projection: `refs/heads/patrol-runs/P11/2026-08-29T161426Z`
-  at `f691b19a8724d5dee632d61e45251ce2f42401fc`
+  at `49237b0c9d51df3fdbaa47b53c8accb6b729ab5e`
 - Second certifier: `/root/p11_certifier_4b060808`
-- Verdict: **INFRASTRUCTURE BLOCKED** — no candidate-caused defect found
+- Verdict: **CERTIFIED** — no candidate-caused defect found
 
-The corrected candidate fixes the scanner callsite and detector scope. It
-remains preserved off `origin/main`; it was not reverted or integrated because
-the required exact-worktree viewport/theme matrix could not run.
+The corrected candidate fixes the scanner callsite and detector scope. It is
+already an ancestor of `origin/main` through the integration merge above and
+has shipped in `v0.4.1449` and every newer release. This preserves the
+historical release-before-certification escape while reconciling the corrected
+candidate's exact certification, integration, and first containing release.
 
 ## Baseline-to-candidate verification
 
@@ -90,22 +98,32 @@ the required exact-worktree viewport/theme matrix could not run.
   warnings before and after; none is a P11 `(core)` finding.
 - `git diff --check`: PASS.
 - `pnpm check:doctrine`: PASS.
-- `pnpm check:migrations`: command PASS with the ledger check skipped because
-  this isolated worktree has no Supabase credentials; no migration was touched.
+- `pnpm check:migrations`: command PASS in the original candidate batch with
+  its credentialed ledger check skipped; no migration was touched.
 - `pnpm check:patrol-contracts`: unchanged baseline failure limited to the
   fleet-health prompt drift.
 - Run record hash verification: PASS.
-- Canonical authority publication: PASS after a fast-forward two-parent
-  reconciliation preserved both the earlier escaped-delivery authority chain
-  and the corrected candidate ancestry.
+- Canonical authority publication: PASS at
+  `49237b0c9d51df3fdbaa47b53c8accb6b729ab5e`; the 17-event record is hash-valid
+  and preserves the earlier escaped-delivery and rejection history.
 
-## Missing proof and retry contract
+## Visual certification
 
-Required browser proof remains desktop 1280×800, intermediate 700–900px,
-mobile 375×812, and both light/dark themes on representative Marketing,
-Workflow Bake-off, and Scanner surfaces. The retry must acquire the managed
-preview lease from this exact worktree, use the isolated in-app Browser, and
-certify candidate `4b06080808465764e280fbfef3cd895abb093c24` before integration.
+The isolated in-app Browser captured and the independent certifier inspected
+all 18 required states: Marketing, Workflow Bake-off, and Scanner at 1280×800,
+800×800, and 375×812 in both light and dark. Every state had one shell-owned
+header, exact full-height body geometry, correct top clearance, no
+header/content or avatar/action collision, no page-level horizontal overflow,
+and closed theme menus. Scanner's Camera, Photos, Files, and Save controls
+remained visible and reachable. Fresh per-route tabs reported zero console
+errors.
+
+`/marketing/pr` now intentionally redirects to `/marketing/brands` because of
+a post-candidate route change; Bake-off and Scanner retain their original
+product paths. The canonical preview briefly became unresponsive at 72.3 GB RSS
+after its persistent cache reached 107 GB. A managed preview restart cleared
+that cache and recovered all routes; this was infrastructure evidence, not a
+candidate regression, and no valid work was reverted.
 
 ## Decisions and exceptions
 
@@ -119,4 +137,38 @@ This run proved that P11 detector scope must follow the canonical `PageHeader`
 portal consumer, not route-file location or component naming. The smallest next
 improvement is a focused detector fixture containing one route-owned and one
 feature-owned `PageHeader` clearance hack so this exact false-clean regression
-cannot recur.
+cannot recur. The process improvement is to validate in-app Browser capability
+when a visual-certification task is dispatched and to monitor persistent preview
+cache growth before it reaches machine-scale size.
+
+## 2026-08-30 eradication waves
+
+The user reported widespread top-header overlap, and the current strict detector
+proved falsely clean because it checks header composition but not whether the
+rendered body root reserves `--shell-header-h`. A render-path inventory found 179
+core routes with `PageHeader`/`RouteHeader`; shared-shell owners were eliminated
+before treating a route as a finding.
+
+- Wave 1 fixed four route files: all loading/error/success states for class,
+  project, and organization invitation acceptance, plus Welcome. Exact candidate
+  `fb564b058e28fb4bbcb260a3ae26e21deac43d97` was independently CERTIFIED and
+  integrated through `b4c55f5c5c`.
+- Wave 2 fixed ten core-route families in a final 15-file ownership batch:
+  Agent Apps create, Agent Apps, Agent Run, Agent Shortcuts, Agent Surface Batch,
+  Marketing Automations, Marketing Capabilities, Podcast Studio, Organization
+  Configuration, and Organization Shortcut Edit. Shared Agent panels remain
+  shell-neutral; core hosts own the canonical offset; admin hosts preserve their
+  prior non-shell visual spacing.
+- The adversarial certifier rejected two intermediate wave-2 candidates for
+  concrete double-offset regressions. Final exact candidate
+  `c245945c9fb3f65f6df937536d192d22781915e3` is CERTIFIED, preserved as an
+  ancestor of main integration `87d68803eb`, and unreleased after `v0.4.1499`.
+- A concurrent WIP integrator swept the initial wave-2 bytes into
+  `de83ae2cdd` before certification. The permanent record preserves that escape;
+  the bad shared-component ownership was subsequently repaired and certified.
+
+All completed batches passed repository type-check, strict page-header,
+strict scroll-chain, and diff checks. No approval or exception is required.
+The eradication remains open: remaining render paths need classification, and
+the detector needs a body-owner/render-path rule so a missing offset cannot
+again report clean.

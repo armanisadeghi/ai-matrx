@@ -10,7 +10,7 @@ import {
   SECONDARY_QUICK_ACTIONS,
   type ChatQuickAction,
 } from "./chat-quick-actions.config";
-import { useMandateSet } from "@/features/agents/mandates/useMandateSet";
+import { useMandateSet } from "@/features/mandates/useMandateSet";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";

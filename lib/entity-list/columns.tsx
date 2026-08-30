@@ -4,10 +4,12 @@
 //
 // Generic column vocabulary for a canonical entity-list surface.
 //
-// APP POLICY: every column sorts AND filters, server-side, over the WHOLE
-// result set. Where a column has a finite value set the filter offers real
-// OPTIONS with counts from the facets RPC — not a bare text box. Sorting is on
-// the DATABASE column, never the rendered cell.
+// APP POLICY: every capability a column declares runs server-side over the
+// WHOLE result set. Sort/filter default on, but an explicit `false` is honest
+// when the canonical server path cannot serve it yet. Where a column has a
+// finite value set the filter offers real OPTIONS with counts from the facets
+// RPC — not a bare text box. Sorting is on the DATABASE column, never the
+// rendered cell.
 //
 // A feature declares its columns ONCE as `EntityColumnSpec<TRow>[]`; the shell
 // derives the table columns, the column picker, the panel's sort options, and
@@ -48,6 +50,13 @@ export interface EntityColumnSpec<TRow> {
    */
   formatFacetValue?: (value: string) => string;
   column: MatrxColumnDef<TRow>;
+}
+
+/** Default-on capability without erasing an explicit server-side refusal. */
+export function entityColumnSortable<TRow>(
+  spec: EntityColumnSpec<TRow>,
+): boolean {
+  return spec.column.sortable !== false;
 }
 
 /** Column ids hidden by default — the initial `hiddenColumns` for a new user. */

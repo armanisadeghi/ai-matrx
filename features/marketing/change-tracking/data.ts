@@ -3,7 +3,7 @@ import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { getGscSummary } from "@/features/marketing/search-console/data";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { makeAssertData } from "@/utils/errors";
+import { makeAssertData, operationFailed } from "@/utils/errors";
 
 type SeoTables = Database["seo"]["Tables"];
 type SeoViews = Database["seo"]["Views"];
@@ -346,9 +346,12 @@ export async function createSeoChange(
   } catch (error) {
     const cleanup = await db.from("change_set").delete().eq("id", changeId);
     if (cleanup.error) {
-      throw new Error(
-        `${error instanceof Error ? error.message : String(error)} Cleanup also failed: ${cleanup.error.message}`,
-      );
+      // Two raw PostgREST messages concatenated used to reach a toast. The
+      // person needs one sentence; both originals stay reachable as `cause`.
+      throw operationFailed("document this change", {
+        original: error,
+        cleanup: cleanup.error,
+      });
     }
     throw error;
   }

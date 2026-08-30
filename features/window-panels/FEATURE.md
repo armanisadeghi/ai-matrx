@@ -87,8 +87,8 @@ The rule, and why it is not a style preference:
   icon for the agents that are assigned into roles."_ A working surface that names a record
   OPENS its window; a `<Link>` to that record's route from such a surface is the regression
   this law exists to stop. The route keeps existing for browsing the whole list.
-- Worked example: `MandateWindow` (`windows/agents/MandateWindow.tsx`) — the mandate twin of
-  `AgentSettingsWindow`. Its Yours pane IS `MandateOverridePanel` (what `/agents/mandates`
+- Worked example: `MandateWindow` (`windows/mandates/MandateWindow.tsx`) — the mandate twin of
+  `AgentSettingsWindow`. Its Yours pane IS `MandateOverridePanel` (what `/mandates`
   composes) and its Admin pane IS `MandateDetailView` (the console drawer, whole). The
   window's own code is the shell only: which mandates are in scope (the surface's own + its
   family's), which is selected, which pane shows, and ONE scoped load
@@ -120,7 +120,7 @@ The rule, and why it is not a style preference:
 
 - 2026-08-26 — **`mandateWindow` — mandates handled in place.** Every mandate NAME on a
   working surface (the Agents menu's "AI doing jobs here" rows) now opens
-  this panel over the page instead of navigating to `/agents/mandates` or the admin console;
+  this panel over the page instead of navigating to `/mandates` or the admin console;
   both `<Link>`s are gone. Two panes, both canonical components: **Yours** (everyone) is
   `MandateOverridePanel` + `MandateResolutionRibbon` — principal chips, agent swap, settings
   overrides, consumption map, copy & customize — with `MandateNotesPanel` beside it for
@@ -486,8 +486,8 @@ All three live under `lib/redux/slices/`:
 - Desktop minimized windows are **240×160** cards. Slot zero starts bottom-right, later cards grow left, then wrap upward. Mobile geometry remains 72px tall and viewport-clamped.
 - When full cards exceed the current viewport's row capacity, every minimized window reflows into a bounded 32px title-strip overview grid. All 64 supported sessions remain on-screen and individually restorable; dropping back under capacity restores the full-card layout.
 - `constants/tray.ts` is the only geometry source. Minimize, resize recomputation, release, reorder, restore, reveal, maximize, unregister, and pop-out update slot order and rendered rectangles together; a slot number must never move without its rectangle.
-- Header structure is fixed by `WindowPanel`: 32px tall, traffic lights plus a single truncated 11px title. Rich `titleNode`, consumer header actions, sidebars, and footers do not enter the minimized chrome.
-- Preview priority is semantic registry preview → explicitly supplied local screenshot → quiet title fallback. Eleven of the 106 registered windows have semantic previews, including all five preservation pilots, so their normal minimize path performs no raster capture. Capture is an explicit per-window opt-in for a window whose value cannot be represented semantically; it runs once per minimize against a briefly retained offscreen body and is capped at a 320px longest edge, WebP quality 0.62, and an 800ms budget.
+- Header structure is fixed by `WindowPanel`: 32px tall, traffic lights plus a single truncated 11px title. Rich `titleNode`, consumer header actions, sidebars, and footers do not enter the minimized chrome. Single-click on the card body restores; **double-click anywhere on the card — header included — also restores**.
+- Preview priority is semantic registry preview → captured local screenshot → styled default body (label + category), which also covers the async gap while a capture is pending. A window with a semantic preview performs no raster capture. **Every other window falls back to `WindowTray/defaultTraySnapshotCapture.ts`** (precedence: `captureTraySnapshot` prop → registry capture → default), so minimize shows a representative image of the actual body. Capture runs once per minimize against the briefly retained offscreen body, capped at a 320px longest edge, WebP quality 0.62, and an 800ms budget; it lazy-loads `html-to-image` on first use and skips bodies over 3000 descendant elements or under 8px, landing on the default body instead.
 - Full bodies unmount after preview capture by default. **Stateful/live panels use `retainBodyOnMinimize`** to keep the body mounted offscreen so minimize never tears down drafts, streams, launcher focus, or component-local context; `AgentRunWindow` is the reference consumer.
 - Snapshots are in-memory `Blob` object URLs only: no cloud upload, localStorage, IndexedDB, Redux payload, polling, or refresh loop. The cache holds at most 16 snapshots and revokes URLs on replacement, eviction, restore, and unmount.
 - Runtime window ids key screenshots; overlay ids key static metadata/preview registration. This prevents multi-instance windows from sharing an image accidentally.
@@ -631,7 +631,8 @@ Enforced by:
 | `WindowPanel.tsx`                                       | Shell (drag, resize, maximize, minimize, mobile routing, persistence, URL sync). Decomposition into modules is Phase 6.                                                                                                                                |
 | `WindowPersistenceManager.tsx`                          | Coordinates identity/tab readiness, staged local restore, bounded saves, close flushes, and idle GC.                                                                                                                                                   |
 | `WindowTray.tsx` / `WindowTraySync.tsx`                 | Standalone minimized-dock chips + debounced viewport sync. **The `WindowTray` dock is NOT mounted in prod** — minimized windows render as the shrunken `WindowPanel` shell (positioned by `traySlotRect`); `WindowTraySync` keeps those shells docked. |
-| `WindowTray/MinimizedWindowContent.tsx`                 | Body of a minimized shell: renders `TrayChipPreview` (registry semantic / explicit snapshot / default) + click-to-restore. Registry and runtime snapshot keys stay distinct.                                                                           |
+| `WindowTray/MinimizedWindowContent.tsx`                 | Body of a minimized shell: renders `TrayChipPreview` (registry semantic / snapshot / default) + click-to-restore. Registry and runtime snapshot keys stay distinct.                                                                                    |
+| `WindowTray/defaultTraySnapshotCapture.ts`              | Fleet-wide fallback `captureTraySnapshot`: lazy-loads `html-to-image` on first minimize, skips oversized (>3000 elements) or collapsed bodies, resolves null on any failure.                                                                           |
 | `WindowTray/TrayChipPreview.tsx` / `TrayStatusChip.tsx` | Canonical minimized-body preview (3 modes) + the reusable status primitive (tinted icon + count + per-tone breakdown; presentational, colour language from `errorTiers.ts`). Custom previews register in `registry/trayPreviewRegistry.ts`.            |
 | `WindowTray/traySnapshotMap.ts`                         | Bounded 16-entry in-memory Blob/object-URL snapshot cache with explicit URL revocation.                                                                                                                                                                |
 
@@ -840,6 +841,8 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 ---
 
 ## Change log
+
+- **2026-08-30** — **Minimized cards show a representative screenshot by default, and double-click restores.** `WindowTray/defaultTraySnapshotCapture.ts` is now the fallback `captureTraySnapshot` for every window without a semantic `renderTrayPreview` (precedence: prop → registry → default), so minimize captures a downscaled WebP of the real body inside the existing one-shot 800ms offscreen budget; `html-to-image` loads only on first capture, and oversized/collapsed bodies skip straight to the styled default preview body, which also replaced the bare italic-title snapshot fallback in `TrayChipPreview`. Double-clicking anywhere on the minimized card (header included) restores the window.
 
 - **2026-08-29** — **Window body guard rings now paint with the canonical background token.** The structural 6px `WindowPanelBodyShell` gutter still protects resize-handle hit zones, but it no longer exposes the card-coloured window shell around full-bleed bodies such as Chat; the gutter and transparent body content now resolve to the same `bg-background` surface.
 - **2026-08-26** — **Degenerate viewport recovery is warning-level observability.** The expected hidden/prerendered 0×0 measurement still warns once and prevents geometry writes, but no longer enters the production `client:console-error` queue.

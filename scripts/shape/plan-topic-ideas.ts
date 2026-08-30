@@ -1,9 +1,19 @@
 /**
  * One-shot planner for the `topic_ideas` field declaration.
  *
+ * ⚠️ ITS PREMISE IS RESOLVED (2026-08-29). This script exists because the
+ * registry read ONLY the stored field list, so a kind carrying a complete
+ * `emitted_json_schema` and a NULL `data[]` looked fieldless. The registry now
+ * DERIVES the field model from the schema (`kindSchemaFromJsonSchema`), and
+ * all 502 live kinds resolve that way — `topic_ideas` included. Kept as the
+ * dated record of the workaround, not as a thing to run or copy; a new kind
+ * needing this treatment is now a bug report, not a script.
+ *
+ * Original note follows.
+ *
  * `topic_ideas` was registered python-side with a complete
  * `emitted_json_schema` but a NULL `data[]` — so the frontend registry (which
- * reads ONLY `data` + `kind_edge`) sees a fieldless kind: it cannot render a
+ * read ONLY `data` + `kind_edge`) saw a fieldless kind: it cannot render a
  * per-field form and `isKindBindable` refuses to bind it to an agent's
  * `output_schema`. This script declares the three real fields
  * (concept_summary, search_insights, ideas -> topic_idea[]) and regenerates

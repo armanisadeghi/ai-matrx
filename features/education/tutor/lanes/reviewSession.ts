@@ -15,7 +15,7 @@
 // floating window instead of a page polling the row for a result.
 //
 // The lane resolves through the mandate — swap the agent behind it at
-// /agents/mandates (the old localStorage agent-id override is RETIRED;
+// /mandates (the old localStorage agent-id override is RETIRED;
 // bindings replaced it). The agent round-trip runs through the canonical
 // headless primitive (`runHeadlessAgentJson`, D126) — this lane only owns
 // variables, coercion, and the session_review persist.

@@ -22,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
@@ -48,6 +47,7 @@ import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlic
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type RepairKind = "table" | "text" | "missing_context" | "other";
 
@@ -404,7 +404,7 @@ function RepairPane({
               pages {reviewPages.join(", ")}
             </Badge>
           </div>
-          <Textarea
+          <ProTextarea
             value={instructions}
             onChange={(event) => setInstructions(event.target.value)}
             className="min-h-32 resize-y text-xs leading-relaxed"

@@ -61,11 +61,14 @@ describe("normalizeJsonRegion", () => {
     );
   });
 
-  it("degrades unknown kinds to a raw root without erroring", () => {
+  it("degrades a schema-less kind to UNVERIFIED (not raw) without erroring", () => {
+    // A kind with no registered schema was never CHECKED — it is unverified,
+    // not broken. The distinction is what keeps its component rendering; see
+    // IrKindState in @ai-matrx/content-ir.
     const envelope = normalizeJsonRegion(UNKNOWN_KIND_JSON, {
       schemas: FLASHCARD_SCHEMAS,
     });
-    expect(envelope.root.kindState).toBe("raw");
+    expect(envelope.root.kindState).toBe("unverified");
     expect(envelope.root.status).toBe("complete");
     expect(envelope.root.value.title).toBe("nobody registered me");
     expect(

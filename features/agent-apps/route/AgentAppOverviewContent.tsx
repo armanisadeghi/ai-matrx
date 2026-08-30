@@ -53,9 +53,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { siteConfig } from "@/config/extras/site";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
+import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
 import {
   selectAgentById,
   selectAgentContextPolicies,
@@ -138,14 +139,19 @@ function LabeledPill({ label, children, icon: Icon, accent }: LabeledPillProps) 
 export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps) {
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
+  // The agent this overview describes is the one that will RUN — read through
+  // the router, never off `app.agent_id`, or after the cutover the page would
+  // show one agent's variables while a different agent answered.
+  const holder = useAppHolder(app);
+  const runAgentId = holder.agentId;
   const agent = useAppSelector((state) =>
-    app?.agent_id ? selectAgentById(state, app.agent_id) : undefined,
+    runAgentId ? selectAgentById(state, runAgentId) : undefined,
   );
   const agentVariables = useAppSelector((state) =>
-    app?.agent_id ? selectAgentVariableDefinitions(state, app.agent_id) : null,
+    runAgentId ? selectAgentVariableDefinitions(state, runAgentId) : null,
   );
   const agentContextPolicies = useAppSelector((state) =>
-    app?.agent_id ? selectAgentContextPolicies(state, app.agent_id) : null,
+    runAgentId ? selectAgentContextPolicies(state, runAgentId) : null,
   );
 
   const [copied, setCopied] = useState<string | null>(null);
@@ -167,12 +173,12 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
    * window is the most complete agent surface today.
    */
   const handleOpenAgent = () => {
-    if (!app?.agent_id) return;
+    if (!runAgentId) return;
     dispatch(
       openOverlay({
         overlayId: "agentAdvancedEditorWindow",
         data: {
-          initialAgentId: app.agent_id,
+          initialAgentId: runAgentId,
           initialTab: "overview",
           tabs: null,
         },
@@ -402,7 +408,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                 app.description,
                 `Status: ${statusLabel} · ${visibilityLabel}`,
                 app.category ? `Category: ${app.category}` : null,
-                `Agent: ${agent?.name ?? app.agent_id}`,
+                `Agent: ${agent?.name ?? runAgentId ?? "unresolved"}`,
                 `Runs: ${formatNumber(app.total_executions)} · ${successPct} success`,
                 `Public URL: ${publicUrl}`,
               ]

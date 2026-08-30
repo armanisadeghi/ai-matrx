@@ -49,7 +49,7 @@ import { useCloudTree } from "@/features/files/hooks/useCloudTree";
 import { useFileMutation } from "@/features/files/hooks/useFileMutation";
 import { fileUrls } from "@/features/files/handler/utils/python-base";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { filesDb, FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { dbRowToCloudFile } from "@/features/files/redux/converters";
@@ -277,7 +277,10 @@ function FileRow({ file, onSelect, multiple, selected }: FileRowProps) {
         className="flex min-w-0 flex-1 items-center gap-2 rounded text-left"
       >
         <MediaThumbnail
-          file={file}
+          mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+          fileName={file.fileName}
+          mimeType={file.mimeType}
+          thumbnailUrl={file.thumbnailUrl}
           iconSize={14}
           rounded="rounded-md"
           className="h-10 w-10 shrink-0 border border-border/50"
@@ -346,7 +349,10 @@ function FileGridTile({
       >
         <div className="relative aspect-square w-full bg-muted/40">
           <MediaThumbnail
-            file={file}
+            mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+            fileName={file.fileName}
+            mimeType={file.mimeType}
+            thumbnailUrl={file.thumbnailUrl}
             iconSize={24}
             rounded="rounded-none"
             className="absolute inset-0 h-full w-full"

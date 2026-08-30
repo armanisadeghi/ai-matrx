@@ -227,6 +227,10 @@ export function useCameraCaptureHost(
   // ── Camera flip (persisted preferred camera) ────────────────────────────
   const { setCamera } = useAudioDevices();
   const switchCamera = useCallback(() => {
+    // Flipping reacquires the lease and stops the current tracks — doing it
+    // mid-recording would kill the recording. The button is hidden while
+    // recording (engine.onFlipCamera goes null), and this guard backstops it.
+    if (recordingRef.current) return;
     const cams = getMediaDevicesSnapshot().cameras;
     if (cams.length < 2) return;
     const currentIdx = deviceId
@@ -278,11 +282,16 @@ export function useCameraCaptureHost(
   }, [recording]);
 
   // ── Capture paths ───────────────────────────────────────────────────────
+  const captureBusyRef = useRef(false);
   const capturePhotoWith = useCallback(
     (opts: { fileNamePrefix: string; aspect?: CaptureAspect }) => {
       const video = videoRef.current;
       const lease = leaseRef.current;
       if (!video || !lease || video.videoWidth === 0) return;
+      // One capture at a time: a double-tap on the shutter must not produce
+      // two near-identical frames.
+      if (captureBusyRef.current) return;
+      captureBusyRef.current = true;
       // Full-sensor shutter behind the cropped preview (§2 policy 6); the
       // aspect crop (when selected) is applied to that full frame.
       void capturePhotoFromVideo({
@@ -304,6 +313,11 @@ export function useCameraCaptureHost(
         })
         .catch((err: unknown) => {
           console.error("[capture-camera] shutter capture failed", err);
+          // A tapped shutter that produced nothing must say so.
+          toast.error("The photo could not be captured — try again.");
+        })
+        .finally(() => {
+          captureBusyRef.current = false;
         });
     },
     [onPhoto],
@@ -380,7 +394,12 @@ export function useCameraCaptureHost(
     recording,
     recordElapsedSeconds: recordElapsed,
     onUpload,
-    onFlipCamera: numberOfCameras > 1 && !cameraBlocked ? switchCamera : null,
+    // Hidden while recording: a flip reacquires the lease, which would kill
+    // the recording mid-take.
+    onFlipCamera:
+      numberOfCameras > 1 && !cameraBlocked && !recording
+        ? switchCamera
+        : null,
   };
 
   return {

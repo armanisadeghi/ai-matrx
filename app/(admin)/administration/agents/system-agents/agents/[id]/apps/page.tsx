@@ -25,7 +25,7 @@ export default async function AdminSystemAgentAppsPage({
           basePath={ADMIN_BASE_PATH}
         />
       </PageHeader>
-      <div className="h-full overflow-y-auto">
+      <div className="h-full overflow-y-auto pt-10">
         <AgentAppsPanel agentId={id} agentName={agent.name} apps={apps} />
       </div>
     </>

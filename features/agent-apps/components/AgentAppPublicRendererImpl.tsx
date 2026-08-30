@@ -34,6 +34,7 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
+import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
@@ -167,6 +168,8 @@ function ShellOnSurface({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fingerprintId]);
 
+  const hostHolder = useAppHolder(app);
+
   // Read at scope-build time, never snapshotted: `guest_runs_remaining` drops
   // as the visitor runs the app, and the fingerprint resolves asynchronously.
   const surface: AgentAppSurfaceBinding = {
@@ -175,8 +178,11 @@ function ShellOnSurface({
       app_id: app.id,
       app_slug: app.slug,
       app_name: app.name,
-      agent_id: app.agent_id,
-      agent_version_id: app.agent_version_id ?? undefined,
+      // The host scope reports the agent that will ACTUALLY run, so the
+      // Agents chrome and the shell never disagree about whose instructions
+      // a viewer is reading. Identical to `app.agent_id` until the flip.
+      agent_id: hostHolder.agentId ?? app.agent_id,
+      agent_version_id: hostHolder.agentVersionId ?? undefined,
       shell_kind: app.shell_kind ?? "fully_custom",
       is_authenticated: isAuthenticated,
       guest_fingerprint_id: fingerprintId ?? undefined,
@@ -286,9 +292,18 @@ function CustomComponentRenderer({
   // hydration / first paint) so it never competes with the page's render
   // path. If the user submits before the warm completes, the real call
   // simply finds the cache populated; no race.
+  // THE ONE agent decision for this renderer — pinned today, mandate-resolved
+  // once APP_MANDATE_CUTOVER flips. Every site below reads `runAgentId`, so
+  // the launch, the warm and the surface scope can never disagree about which
+  // agent this run belongs to.
+  const holder = useAppHolder(app);
+  const runAgentId = holder.agentId;
+  const runAgentVersionId = holder.agentVersionId;
+  const holderError = holder.error;
+  const holderLoading = holder.loading;
   const pinnedVersionId =
-    !app.use_latest && app.agent_version_id ? app.agent_version_id : null;
-  useWarmAgent(pinnedVersionId ?? app.agent_id, {
+    !holder.useLatest && runAgentVersionId ? runAgentVersionId : null;
+  useWarmAgent(pinnedVersionId ?? runAgentId ?? "", {
     isVersion: !!pinnedVersionId,
   });
 
@@ -378,6 +393,24 @@ function CustomComponentRenderer({
           return;
         }
 
+        // REFUSE before the launch when no Holder resolved. Loud, and never a
+        // fallback to the pinned id: an app whose mandate is missing, disabled
+        // or held by something that cannot run yet must say so, not quietly
+        // run yesterday's agent.
+        if (!runAgentId) {
+          const msg =
+            holderError ??
+            (holderLoading
+              ? "still resolving this app's agent — try again in a moment"
+              : "this app has no runnable agent");
+          // No tracker call: we refuse BEFORE `startRun`, so there is no run
+          // row to fail — inventing one would put a phantom execution in the
+          // app's analytics.
+          setLocalError({ type: "execution_error", message: msg });
+          setIsExecuting(false);
+          return;
+        }
+
         // Delegate to the canonical agent-execution path. `launchAgentExecution`
         // owns: URL routing (/ai/agents/{id} vs /ai/conversations/{id}),
         // is_new / is_version flags, auth headers (Bearer for authed, fingerprint
@@ -389,7 +422,7 @@ function CustomComponentRenderer({
         // UI surface; the launcher does not open any overlay/modal.
         if (process.env.NODE_ENV !== "production") {
           console.log("[AgentApp] launchAgentExecution", {
-            agent_id: app.agent_id,
+            agent_id: runAgentId,
             slug,
             isAuthenticated,
             fingerprintId,
@@ -408,7 +441,7 @@ function CustomComponentRenderer({
 
         await dispatch(
           launchAgentExecution({
-            agentId: app.agent_id,
+            agentId: runAgentId,
             surfaceKey: `agent-app:${slug}`,
             sourceFeature: "agent-app",
             config: {
@@ -437,8 +470,8 @@ function CustomComponentRenderer({
                       app_id: app.id,
                       app_slug: app.slug,
                       app_name: app.name,
-                      agent_id: app.agent_id,
-                      agent_version_id: app.agent_version_id ?? undefined,
+                      agent_id: runAgentId,
+                      agent_version_id: runAgentVersionId ?? undefined,
                       shell_kind: app.shell_kind ?? "fully_custom",
                       is_authenticated: isAuthenticated,
                       guest_fingerprint_id: fingerprintId ?? undefined,
@@ -484,7 +517,10 @@ function CustomComponentRenderer({
       }
     },
     [
-      app.agent_id,
+      runAgentId,
+      runAgentVersionId,
+      holderError,
+      holderLoading,
       slug,
       isAuthenticated,
       fingerprintId,
@@ -588,8 +624,8 @@ function CustomComponentRenderer({
       app_id: app.id,
       app_slug: app.slug,
       app_name: app.name,
-      agent_id: app.agent_id,
-      agent_version_id: app.agent_version_id ?? undefined,
+      agent_id: runAgentId ?? app.agent_id,
+      agent_version_id: runAgentVersionId ?? undefined,
       shell_kind: app.shell_kind ?? "fully_custom",
       is_authenticated: isAuthenticated,
       guest_fingerprint_id: fingerprintId ?? undefined,

@@ -190,6 +190,35 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain('aria-label="Open in window"');
   });
 
+  it("evaluates row AI variants through the table-owned row copy control", () => {
+    const rowAiVariants = jest.fn((row: Row) => [
+      {
+        id: "repair-brief",
+        label: "Repair brief",
+        build: () => `Repair ${row.name}`,
+      },
+    ]);
+
+    renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        copy={{
+          label: "Row",
+          location: "Test table",
+          rowKind: "test-row",
+          listKind: "test-row-list",
+          humanRow: (row) => row.name,
+          rowAiVariants,
+        }}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(rowAiVariants).toHaveBeenCalledWith({ id: "row-a", name: "Alpha" });
+  });
+
   it("uses dense desktop body-cell padding without shrinking mobile rows", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable
@@ -385,6 +414,7 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     );
 
     expect(markup).toContain("Mobile Alpha");
-    expect(markup).toContain("Copy Record");
+    expect(markup).toContain('aria-label="Copy Record"');
+    expect(markup).toContain('aria-label="Copy Record for AI or export"');
   });
 });

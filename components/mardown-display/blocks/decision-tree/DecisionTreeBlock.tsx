@@ -117,7 +117,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     setIsPrinting(true);
     try {
       const { captureBlockElement } =
-        await import("@/lib/block-print/dom-capture-block-printer");
+        await import("@ai-matrx/print/pdf");
       await captureBlockElement(
         blockContentRef.current,
         decisionTree.title.replace(/\s+/g, "-").toLowerCase() ||

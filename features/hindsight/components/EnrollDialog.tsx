@@ -33,7 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { operationFailed } from "@/utils/errors";
 import { supabase } from "@/utils/supabase/client";
@@ -41,6 +40,7 @@ import { supabase } from "@/utils/supabase/client";
 import { enroll, listToolSubjects } from "../api";
 import type { EnrollRequest, SubjectKind } from "../types";
 import { ENROLLABLE_KINDS, KIND_LABEL } from "./tokens";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type WindowMode = NonNullable<EnrollRequest["window_mode"]>;
 type LensVisibility = NonNullable<EnrollRequest["lens_visibility"]>;
@@ -665,7 +665,7 @@ export function EnrollDialog({
 
           <div className="space-y-1.5">
             <Label>Why enroll it? (guides the reviewer)</Label>
-            <Textarea
+            <ProTextarea
               placeholder='e.g. "This agent burns tool calls searching for provider pages that block scraping — make it reliable."'
               value={goal}
               onChange={(e) => setGoal(e.target.value)}

@@ -23,6 +23,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/dashboard", favicon: { color: "#0ea5e9", letter: "H" } },
   { href: "/work", favicon: { color: "#7c3aed", letter: "AW" } },
   { href: "/agents", favicon: { color: "#f43f5e", letter: "AG" } },
+  { href: "/mandates", favicon: { color: "#7c3aed", letter: "Mt" } },
   { href: "/agent-connections", favicon: { color: "#0f172a", letter: "Ax" } },
   { href: "/assists", favicon: { color: "#0c4a6e", letter: "As" } },
   { href: "/research", favicon: { color: "#7c3aed", letter: "R" } },

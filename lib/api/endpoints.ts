@@ -48,6 +48,27 @@ export const ENDPOINTS = {
     agentStart: (agentId: string) => `/ai/agents/${agentId}` as const,
 
     /**
+     * POST — THE MANDATE DOOR. Start a new conversation by MANDATE KEY, not by
+     * agent id (Guest OK).
+     * POST /ai/mandates/{mandateKey}
+     *
+     * Body is the SAME `AgentStartRequest` as `agentStart`. The server resolves
+     * the principal (bearer/fingerprint) → system default → org binding → user
+     * binding, applies the binding's `config_overrides`, provision consumption
+     * and variable mapping, and then runs the IDENTICAL downstream pipeline
+     * (`_run_mandated_agent` → `_run_agent`). A rebind therefore changes which
+     * agent answers with NO client deploy — which is the entire point.
+     *
+     * Never send mandate-derived `config_overrides` on this path: the server
+     * treats request config as the EXPLICIT layer that WINS over the binding,
+     * so echoing a client-resolved binding back would re-fork resolution.
+     *
+     * 404 `{code: "mandate_unfulfilled"}` when the mandate cannot be resolved —
+     * surfaced verbatim, never swallowed into a client-side re-resolve.
+     */
+    mandateStart: (mandateKey: string) => `/ai/mandates/${mandateKey}` as const,
+
+    /**
      * POST — Continue any existing conversation (Guest OK)
      * POST /ai/conversations/{conversationId}
      * Conversation ID in URL. Just send user_input in the body.

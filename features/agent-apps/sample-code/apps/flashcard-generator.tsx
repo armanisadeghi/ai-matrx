@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { BookOpen, Zap, Loader2, GraduationCap, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import MarkdownStream from '@/components/MarkdownStream';
 import type { AgentAppComponentProps } from '../../types';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function FlashcardGenerator({ onExecute, response, isExecuting, isStreaming, error, rateLimitInfo }: AgentAppComponentProps) {
   const [variables, setVariables] = useState({
@@ -99,7 +99,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
             <Label htmlFor="topic" className="text-base font-semibold">
               Topic or Content
             </Label>
-            <Textarea
+            <ProTextarea
               id="topic"
               value={variables.topic_or_data}
               onChange={(e) => setVariables({...variables, topic_or_data: e.target.value})}

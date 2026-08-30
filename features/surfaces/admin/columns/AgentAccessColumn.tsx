@@ -153,6 +153,9 @@ function AgentAccessForm({
             : { userId: currentUserId },
           valueMappings: existing?.valueMappings ?? {},
           writePolicies: policies,
+          // Round-trip: this form replaces policies only; the binding's
+          // auto-run answer must survive it.
+          autoRun: existing?.autoRun,
         }),
       ).unwrap();
       toast.success("Agent access saved");

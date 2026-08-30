@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +32,7 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -240,7 +240,7 @@ function InlineEditRow({ sample, onUpdate }: InlineEditRowProps) {
 
             <div className="space-y-1">
                 <Label className="text-[11px] text-muted-foreground">Comments</Label>
-                <Textarea
+                <ProTextarea
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
                     placeholder="Admin notes about this sample…"

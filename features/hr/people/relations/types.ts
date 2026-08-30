@@ -110,6 +110,33 @@ export function defaultSubjectExcluded(kind: HrIncidentKind): boolean {
   );
 }
 
+/**
+ * 🚨 FOR THESE THREE KINDS THE EXCLUSION IS NOT A DEFAULT — IT IS THE PLATFORM'S,
+ * AND NOBODY CAN TURN IT OFF.
+ *
+ * `public.hr_incident_create` computes it before it writes anything:
+ *
+ *     v_locked := v_kind in ('harassment','discrimination','ethics');
+ *     v_excluded := case when v_locked then true … end;
+ *
+ * — the payload's `subject_excluded` is not even consulted on that branch, and
+ * the knob `hr.relations.complaint_subject_excluded_default` is scoped to "other
+ * kinds only" for the same reason (§7). So a SWITCH rendered next to a
+ * harassment report is a control that cannot do the thing it offers: it moved,
+ * it looked answered, and the server ignored it. A control that lies about an
+ * access decision on a harassment complaint is worse than no control, because
+ * the person filing it is deciding whether they are safe.
+ *
+ * `defaultSubjectExcluded` still governs `complaint` — where the org's knob
+ * really can loosen it — and safety/near-miss/injury, where the reporter really
+ * can tighten it.
+ */
+export function subjectExclusionLocked(kind: HrIncidentKind): boolean {
+  return (
+    kind === "harassment" || kind === "discrimination" || kind === "ethics"
+  );
+}
+
 /** Injuries and illnesses capture the OSHA 300/301 set AT INTAKE — it cannot be captured later. */
 export function needsOshaCapture(kind: HrIncidentKind): boolean {
   return kind === "injury" || kind === "illness";
@@ -162,6 +189,7 @@ export const HR_RESTRICTED_NOTE_KIND_LABELS: Record<HrRestrictedNoteKind, string
 export const HR_CORRECTIVE_ACTION_STATES = [
   "issued",
   "acknowledged",
+  "declined",
   "follow-up-due",
   "outcome-recorded",
 ] as const;
@@ -173,9 +201,65 @@ export const HR_CORRECTIVE_ACTION_STATE_LABELS: Record<
 > = {
   issued: "Issued",
   acknowledged: "Acknowledged",
+  // §4.8 F4. A refusal is a valid OUTCOME of the acknowledgment step, not a
+  // stuck flow — and it is NOT "Acknowledged". Calling it that on a chip would
+  // put a false statement about a person on the one record that may be read in
+  // a deposition. Same words as the acknowledgment choice that produced it.
+  declined: "Declined to sign",
   "follow-up-due": "Follow-up due",
   "outcome-recorded": "Outcome recorded",
 };
+
+/**
+ * 🚨 `hr.corrective_action` HAS NO `state` COLUMN, AND IT NEVER HAS.
+ *
+ * Read off `information_schema.columns` and off a live `hr_confidential_get`
+ * payload on 2026-08-29 — the door emits 36 keys and `state` is not one of them.
+ * `hr.incident` has a `state` column; the corrective action carries a
+ * LIFECYCLE spread across `employee_acknowledged_at`,
+ * `employee_acknowledgement_kind`, `follow_up_on` and `outcome`.
+ *
+ * So `String(row.state)` produced the literal string `"undefined"`, which then
+ * missed every key in the label map and fell through the `?? state` fallback to
+ * render **`undefined`** as the state chip on EVERY corrective action, in the
+ * queue and on the case page. The fallback is what hid it: a lookup miss that
+ * shows the raw value looks deliberate, so nothing about the render said the
+ * field was absent rather than unmapped.
+ *
+ * The derivation lives HERE, once, because the previous arrangement had two
+ * call sites independently spelling a column that does not exist.
+ */
+export function correctiveActionState(row: {
+  outcome?: string | null;
+  follow_up_on?: string | null;
+  employee_acknowledged_at?: string | null;
+  employee_acknowledgement_kind?: string | null;
+}): HrCorrectiveActionState {
+  // Terminal: §4.8 node I. An outcome is recorded and the ladder step is closed.
+  if (row.outcome) return "outcome-recorded";
+  // A refusal leaves `employee_acknowledged_at` NULL on purpose — nobody
+  // acknowledged anything — and stamps the kind. Checked BEFORE the
+  // acknowledged branch for exactly that reason.
+  if (row.employee_acknowledgement_kind === "refused") return "declined";
+  if (row.employee_acknowledged_at) {
+    // Acknowledged, but a follow-up date has come due and no outcome is on file.
+    if (row.follow_up_on && row.follow_up_on <= todayIsoDay()) {
+      return "follow-up-due";
+    }
+    return "acknowledged";
+  }
+  return "issued";
+}
+
+/** Local calendar day as `YYYY-MM-DD`, to compare against a DATE column. */
+function todayIsoDay(): string {
+  const now = new Date();
+  return [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+}
 
 /**
  * THE LADDER, in order. `coaching` is rung ZERO and it is the whole point of
@@ -292,6 +376,15 @@ export const HR_CORRECTIVE_ACTION_OUTCOME_LABELS: Record<
 // exactly the way `hr_employee_profile.personal` does, so `key in row` is a
 // real access answer and a null is a real "nobody filled this in".
 
+// 🚨 EVERY FIELD BELOW WAS RE-READ OFF `hr.incident` AND `hr._project_row` ON
+// 2026-08-30, AND SEVEN OF THEM DID NOT EXIST. `redacted_summary`,
+// `assignee_employment_id`, `assignee_name`, `reporter_name`,
+// `establishment_name`, `osha_fields`, `legal_hold_id` and `legal_hold_origin`
+// were all declared here and none of them has ever been on the wire — an
+// optional key that names nothing is indistinguishable from a key the viewer's
+// tier stripped, which is exactly how "the legal-hold banner never renders"
+// survived a build. The door emits the flat table row plus `subject_name`, and
+// that is what this type says now.
 export type HrIncidentRow = {
   id: string;
   organization_id?: string | null;
@@ -300,59 +393,111 @@ export type HrIncidentRow = {
   occurred_at: string | null;
   reported_at: string | null;
   summary?: string | null;
-  redacted_summary?: string | null;
   subject_employment_id?: string | null;
+  /** Added by `hr._project_row` from the subject employment, per viewer. */
   subject_name?: string | null;
-  /** ABSENT for an anonymous report. The page never renders an empty "Reported by". */
+  /** NULL for an anonymous report. The page never renders an empty "Reported by". */
   reporter_employment_id?: string | null;
-  reporter_name?: string | null;
   reported_anonymously?: boolean | null;
-  assignee_employment_id?: string | null;
-  assignee_name?: string | null;
+  assigned_to_employment_id?: string | null;
   establishment_id?: string | null;
-  establishment_name?: string | null;
+  follow_up_on?: string | null;
   osha_recordable?: boolean | null;
   osha_privacy_case?: boolean | null;
-  osha_fields?: Record<string, unknown> | null;
+  /** The OSHA 300/301 set is FLAT on the row — never a nested `osha_fields` bag. */
+  injury_body_part?: string | null;
+  injury_nature?: string | null;
+  injury_object_substance?: string | null;
+  injury_event_description?: string | null;
+  treatment_beyond_first_aid?: boolean | null;
+  treatment_facility?: string | null;
+  physician_name?: string | null;
+  hospitalized_overnight?: boolean | null;
+  emergency_room?: boolean | null;
+  work_restrictions?: string | null;
+  return_to_work_on?: string | null;
+  workers_comp_claim_ref?: string | null;
+  provider_ref?: string | null;
   resolution_summary?: string | null;
   resolved_at?: string | null;
-  legal_hold_id?: string | null;
-  legal_hold_origin?: string | null;
+  /** `{{RETAIN}}`. There is no `legal_hold_id` and there never was. */
+  legal_hold_count?: number | null;
+  retention_trigger_at?: string | null;
   subject_excluded?: boolean | null;
+  /** Set by `hr_incident_void` (hr_l1_76). A void is NEVER hidden. */
+  voided_at?: string | null;
+  void_reason?: string | null;
 };
 
+// 🚨 RE-READ OFF A LIVE `hr_confidential_get` PAYLOAD ON 2026-08-29 (36 keys,
+// as the issuer, in a rolled-back transaction) AND OFF
+// `information_schema.columns`. SIX DECLARED FIELDS DID NOT EXIST:
+//
+//   `state`                  → there is no state column; see `correctiveActionState`
+//   `acknowledgment_kind`    → the column is `employee_acknowledgement_kind`
+//                              (British spelling, and prefixed)
+//   `issuer_name`            → `hr._project_row` names only the SUBJECT; the
+//                              issuer is `issued_by_employment_id`, a uuid
+//   `issuer_employment_id`   → the column is `issued_by_employment_id`
+//   `prior_action_level`     → only `prior_action_id` is on the row
+//   `subject_login_user_id`  → lives on `hr.employee`, never projected here
+//   `reason_category`        → no such column
+//
+// The first two rendered wrong words to a user. The rest rendered as absent,
+// which the panel's "absent stays absent" law makes safe but silently dead: the
+// "Issued by" line and the ladder-chain sentence could never appear, and `esign`
+// was absent from the acknowledgment choices for EVERY subject, including ones
+// who do hold a login. Those are recorded as findings rather than papered over
+// with a guess — the door has to project them before a surface can show them.
 export type HrCorrectiveActionRow = {
   id: string;
   organization_id?: string | null;
   level: HrCorrectiveActionLevel | string;
-  state: string;
   issued_on: string | null;
   incident_on: string | null;
-  subject_employment_id?: string | null;
+  /** `hr.corrective_action` names its subject `employment_id`, not `subject_…`. */
+  employment_id?: string | null;
   subject_name?: string | null;
-  /** null → `esign` is ABSENT from the acknowledgment choices. */
-  subject_login_user_id?: string | null;
-  issuer_employment_id?: string | null;
-  issuer_name?: string | null;
+  /** The ISSUER, as a uuid. The door projects no display name for them. */
+  issued_by_employment_id?: string | null;
   policy_cited?: string | null;
   policy_document_file_id?: string | null;
   summary?: string | null;
   expected_improvement?: string | null;
   consequence_if_unmet?: string | null;
   follow_up_on?: string | null;
-  reason_category?: string | null;
+  /** §4.8 node H → I — what actually happened at the follow-up. */
+  follow_up_outcome?: string | null;
   prior_action_id?: string | null;
-  prior_action_level?: HrCorrectiveActionLevel | string | null;
-  acknowledgment_kind?: HrAcknowledgmentKind | string | null;
+  /** `esign` · `wet_signature` · `verbal_witnessed` · `refused`. */
+  employee_acknowledgement_kind?: HrAcknowledgmentKind | string | null;
+  /** NULL on a refusal, by design — nobody acknowledged anything. */
   employee_acknowledged_at?: string | null;
   /** THE EMPLOYEE'S OWN WORDS. The issuer can never edit this. */
   employee_statement?: string | null;
   esign_request_id?: string | null;
   outcome?: string | null;
+  outcome_on?: string | null;
   attendance_exception_id?: string | null;
-  legal_hold_id?: string | null;
-  legal_hold_origin?: string | null;
+  legal_hold_count?: number | null;
+  /**
+   * Where the acknowledgment's FACTS land, write-once, from
+   * `hr.corrective_ack_wf_apply`: `metadata.acknowledgement.{witness_name,
+   * refusal_note, signed_file_id, recorded_off_platform, …}`. There is no
+   * column for a witness — this is the only place one is kept.
+   */
+  metadata?: Record<string, unknown> | null;
 };
+
+/** The acknowledgment facts the apply function wrote, or `null` if none. */
+export function acknowledgementFacts(
+  row: Pick<HrCorrectiveActionRow, "metadata">,
+): Record<string, unknown> | null {
+  const bag = row.metadata?.acknowledgement;
+  return bag && typeof bag === "object"
+    ? (bag as Record<string, unknown>)
+    : null;
+}
 
 /** One row of the unified route-15 list. */
 export type HrRelationsCase = {
@@ -371,33 +516,55 @@ export type HrRelationsCase = {
   underLegalHold: boolean;
   /** Whichever summary this viewer was given — full, redacted, or none. */
   summary: string | null;
+  /**
+   * Set aside as wrong (hr_l1_79). The row still LISTS — struck through, never
+   * removed: "a hidden void is a destroyed record."
+   */
+  voided: boolean;
+  voidReason: string | null;
   incident?: HrIncidentRow;
   correctiveAction?: HrCorrectiveActionRow;
 };
 
+/**
+ * MAPPED in `fetchHrIncidentParties`, not cast. The wire column is `party_role`
+ * and the person's name arrives as `subject_name`; `note` is gone because
+ * `hr.incident_party` has no note column — a narrative about a party belongs in
+ * `hr.restricted_note`, behind its own lane.
+ */
 export type HrIncidentParty = {
   id: string;
   role: HrIncidentPartyRole | string;
   employment_id?: string | null;
   display_name?: string | null;
   external_name?: string | null;
-  note?: string | null;
+  interviewed_at?: string | null;
   added_at?: string | null;
 };
 
 export type HrRestrictedNote = {
   id: string;
   note_kind: HrRestrictedNoteKind | string;
-  /** Present ONLY through the note's own owner lane. */
+  title?: string | null;
+  /** Present ONLY through the note's own per-kind reader lane. */
   body?: string | null;
   /** What a non-owner may be given instead — often nothing at all. */
   redacted_summary?: string | null;
+  /**
+   * Usually NULL. `hr.restricted_note` names its person `author_employment_id`,
+   * and `hr._project_row` only resolves a display name off
+   * `subject_employment_id` / `employment_id` — so the door does not currently
+   * name the author. Rendered as absent rather than as a uuid.
+   */
   author_name?: string | null;
   created_at?: string | null;
-  is_owner?: boolean | null;
 };
 
-/** What `hr_restricted_get` returns for one case, either kind. */
+/**
+ * The COMPOSED case, assembled by `useHrRelationsCase` out of three separately
+ * audited reads (§2.2 route 16). It is NOT what any one door returns — that
+ * mistake is what made the case page render a heading and nothing else.
+ */
 export type HrCaseDetail = {
   case_kind?: HrCaseKind | string;
   incident?: HrIncidentRow;

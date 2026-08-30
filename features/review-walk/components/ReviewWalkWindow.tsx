@@ -62,6 +62,7 @@ import {
   type FlagEntry,
   type FlagsApi,
 } from "./TurnDiagnosis";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface ReviewWalkWindowProps {
   onClose: () => void;
@@ -879,7 +880,7 @@ function FilingPanel({
         <span className="text-xs font-medium text-muted-foreground">
           Anything else worth knowing? (optional)
         </span>
-        <textarea
+        <ProTextarea
           value={reasoning}
           onChange={(e) => setReasoning(e.target.value)}
           rows={3}

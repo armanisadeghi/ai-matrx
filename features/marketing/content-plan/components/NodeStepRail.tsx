@@ -68,6 +68,7 @@ import { cn } from "@/lib/utils";
 import { PIPELINE_STEPS, RUNNABLE_STEP_ACTIONS } from "../types";
 import type { PlanNodeArtifactRow, RunnablePipelineStep } from "../types";
 import { useNodeArtifacts } from "../data/hooks";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import { isRunnableStep, usePageStepRun } from "../hooks/usePageStepRun";
 import { PageDraftEditor } from "./PageDraftEditor";
 import { StepEmptyState } from "./StepEmptyState";
@@ -493,7 +494,15 @@ export function NodeStepRail({
           // what a click does. A bare `title=` gave none of that (and never
           // shows on touch) — every chip and arrow carries a real Tooltip.
           const statusLine = state?.error
-            ? `Failed: ${JSON.stringify(state.error)}`
+            ? // 🚨 This file's own header forbids JSON dumps ("a JSON dump is not an
+      // answer for a non-technical page owner... Never reintroduce one") and
+      // this line did exactly that for the error field (fixed 2026-08-30).
+      `Failed: ${
+        humanizeBackendError(
+          extractErrorMessage(state.error),
+          "this step failed",
+        ) ?? "this step failed"
+      }`
             : staleness
               ? stalenessTitle(label, staleness)
               : status

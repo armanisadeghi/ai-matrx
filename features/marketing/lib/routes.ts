@@ -1,16 +1,36 @@
 /**
- * Canonical Marketing route builders. The URL hierarchy is brand-first:
+ * Canonical Marketing route builders — the AGENCY-MODEL tree (2026-08-28).
  *
- *   /marketing/brands                         — brand portfolio (anchor list)
- *   /marketing/brands/[brandId]               — brand cockpit
- *   /marketing/brands/[brandId]/sites/[siteId]/...   — website property verticals
- *   /marketing/brands/[brandId]/socials/...   — (future) social properties
- *   /marketing/sites                          — flattened all-sites view
- *   /marketing/sites/[siteId]/...             — LEGACY; server-redirects to the
- *                                               nested canonical URL
+ * Two planes (design: docs/handoffs/marketing-agency-restructure.md):
  *
- * Never hand-build a `/marketing/...` entity path — use these builders so the
+ *   AGENCY (small by design — only what concerns no single client)
+ *     /marketing                       — agency home / hub
+ *     /marketing/brands                — client roster (+ /brands/new-website)
+ *     /marketing/reports               — cross-client roll-ups (+ /cost, /ranks)
+ *     /marketing/operations/…          — connections, automations, approvals, data-quality
+ *     /marketing/tools/…               — public analyzers index, YouTube research
+ *
+ *   CLIENT — everything else, nested under the brand
+ *     /marketing/[brandKey]                    — brand dashboard
+ *     /marketing/[brandKey]/identity/…         — the brand home (media, …)
+ *     /marketing/[brandKey]/websites/[siteKey]/… — website INVENTORY (pages,
+ *         structure, sitemaps, media, crawls, settings)
+ *     /marketing/[brandKey]/seo/[siteKey]/…    — the SEO PRACTICE on one site
+ *         (keywords, rankings, search-console, audit, findings, analysis,
+ *         coverage, performance, changes, backlinks, links, authority,
+ *         valuation, ai-visibility, growth-loop, automations, capabilities)
+ *     /marketing/[brandKey]/{locations,content,socials,ads,email,pr,
+ *         intelligence,analytics,planning,inbox,settings}
+ *
+ * Segments are DUAL-MODE (key or UUID — see lib/keys.ts); builders accept
+ * either and the server layouts 308 UUID addresses to the key address. Never
+ * hand-build a `/marketing/...` entity path — use these builders so the
  * hierarchy can't drift per call site.
+ *
+ * Legacy shapes (`/marketing/brands/[brandId]/…`, `/marketing/sites/[siteId]/…`
+ * and the old flat pillars) are REDIRECT SHIMS, kept so pre-restructure links
+ * keep landing; builders that lack the context to emit a canonical address
+ * fall back to a shim path that resolves it server/client-side.
  */
 
 /** The brand asset desk's four views, in display order. */
@@ -38,121 +58,198 @@ export type MarketingSiteSettingsView =
   | "access-public"
   | "intake";
 
+/** Settings tabs are ROUTES now (tabs-law); access keeps its audience as a view. */
+const SITE_SETTINGS_PATHS: Record<MarketingSiteSettingsView, string> = {
+  site: "",
+  integrations: "/integrations",
+  intake: "/intake",
+  "access-users": "/access?view=users",
+  "access-organizations": "/access?view=organizations",
+  "access-public": "/access?view=public",
+};
+
 export function marketingSiteSettingsHref(
   sitePath: string,
   view: MarketingSiteSettingsView = "site",
 ): string {
-  const base = `${sitePath}/settings`;
-  return view === "site" ? base : `${base}?view=${view}`;
+  return `${sitePath}/settings${SITE_SETTINGS_PATHS[view]}`;
+}
+
+/**
+ * Where each pre-restructure site section lives now. `websites` = inventory,
+ * `seo` = practice. Old slug → { branch, slug } (empty slug = branch root).
+ * Consumed by `site()` (so old call sites emit new URLs) and by the legacy
+ * shims that translate stored/bookmarked old addresses.
+ */
+export const MARKETING_SITE_SECTION_HOMES: Record<
+  string,
+  { branch: "websites" | "seo"; slug: string }
+> = {
+  "": { branch: "websites", slug: "" },
+  pages: { branch: "websites", slug: "pages" },
+  structure: { branch: "websites", slug: "structure" },
+  sitemaps: { branch: "websites", slug: "sitemaps" },
+  media: { branch: "websites", slug: "media" },
+  crawls: { branch: "websites", slug: "crawls" },
+  settings: { branch: "websites", slug: "settings" },
+  keywords: { branch: "seo", slug: "keywords" },
+  value: { branch: "seo", slug: "keywords/value" },
+  ranks: { branch: "seo", slug: "rankings" },
+  "ai-visibility": { branch: "seo", slug: "ai-visibility" },
+  audit: { branch: "seo", slug: "audit" },
+  findings: { branch: "seo", slug: "findings" },
+  analysis: { branch: "seo", slug: "analysis" },
+  coverage: { branch: "seo", slug: "coverage" },
+  performance: { branch: "seo", slug: "performance" },
+  changes: { branch: "seo", slug: "changes" },
+  backlinks: { branch: "seo", slug: "backlinks" },
+  links: { branch: "seo", slug: "links" },
+  authority: { branch: "seo", slug: "authority" },
+  "growth-loop": { branch: "seo", slug: "growth-loop" },
+  automations: { branch: "seo", slug: "automations" },
+};
+
+/**
+ * Business-knowledge screens moved OUT of the keyword-value ladder and into
+ * the brand home (identity owns business truth; valuation consumes it).
+ * Old `value/<x>` → `identity/<y>` on the brand, carrying `?site=` selection.
+ */
+const VALUE_TO_IDENTITY: Record<string, string> = {
+  discovery: "knowledge",
+  offerings: "offerings",
+  topics: "offerings",
+  guidelines: "guidelines",
+};
+
+/** Split "/keywords/value/rules?x=1" → old section slug + remainder + query. */
+function mapLegacySiteSub(brandSeg: string, siteSeg: string, sub: string): string {
+  const [path, query = ""] = sub.split("?");
+  const segments = path.split("/").filter(Boolean);
+  const first = segments[0] ?? "";
+  if (first === "value" && segments[1] && VALUE_TO_IDENTITY[segments[1]]) {
+    const params = new URLSearchParams(query);
+    params.set("site", siteSeg);
+    return `/marketing/${brandSeg}/identity/${VALUE_TO_IDENTITY[segments[1]]}?${params.toString()}`;
+  }
+  // "value/rules" maps via the section table; everything after rides along.
+  const home = MARKETING_SITE_SECTION_HOMES[first];
+  const rest = segments.slice(1).join("/");
+  const suffix = query ? `?${query}` : "";
+  if (!home) {
+    // Unknown section: keep it under the inventory branch so nothing 404s.
+    return `/marketing/${brandSeg}/websites/${siteSeg}${path ? `/${path}` : ""}${suffix}`;
+  }
+  const mapped = [home.slug, rest].filter(Boolean).join("/");
+  const base = `/marketing/${brandSeg}/${home.branch}/${siteSeg}`;
+  return `${mapped ? `${base}/${mapped}` : base}${suffix}`;
 }
 
 export const marketingRoutes = {
+  // ── Agency plane ───────────────────────────────────────────────────────
   home: () => "/marketing",
   brands: () => "/marketing/brands",
-  /** Content-plan LIST page (was the root-level `/content-plan`, moved 2026-07-25; list+workspace split 2026-07-28). */
-  contentPlan: () => "/marketing/content-plan",
-  /** One site's plan workspace. `view` = tree (default) | table | map | entities | setup. */
-  contentPlanSite: (siteId: string, view?: string) =>
-    `/marketing/content-plan/${siteId}${view && view !== "tree" ? `?view=${view}` : ""}`,
-  /** Keyword research workbench (was `/seo/keyword-research`, moved 2026-07-25). */
-  keywordResearch: () => "/marketing/keyword-research",
-  /** Score and price a candidate backlink. Every weight and dollar point tunable. */
-  backlinkValuation: () => "/marketing/backlink-valuation",
-
-  /** Press & PR — the earned-media workspace (Story Engine + source requests). */
-  press: () => "/marketing/pr",
-  /** Public-video discovery and expertise comparison through YouTube Data API v3. */
-  youtubeDiscovery: () => "/marketing/discovery/youtube",
-  youtubeVideo: (videoId: string) =>
-    `/marketing/discovery/youtube/videos/${encodeURIComponent(videoId)}`,
-  /** The Search Console data dashboard (cross-site landing + `?site=` deep view). */
-  searchConsole: (siteId?: string) =>
-    siteId
-      ? `/marketing/search-console?site=${siteId}`
-      : "/marketing/search-console",
-  /** In-app index of the PUBLIC SEO utilities (they live under `/seo/*`). */
-  tools: () => "/marketing/tools",
-  /** Marketing cost — provider spend against the org's monthly ceilings. */
-  cost: () => "/marketing/cost",
-  /** Shared catalogue of Marketing's SEO measurement capabilities. */
-  capabilities: (siteId?: string) =>
-    siteId
-      ? `/marketing/capabilities?site=${encodeURIComponent(siteId)}`
-      : "/marketing/capabilities",
-
-  // ── Reserved routes ────────────────────────────────────────────────────
-  // These render <MarketingComingSoon> today. They are REAL routes, declared
-  // here and in `marketing-nav.ts` with a `marketing.*` id in
-  // `lib/coming-soon/registry.ts`, so the intended shape of the platform is
-  // visible to users and to the next agent. When one ships, delete its
-  // registry row and drop `status: "coming-soon"` from its nav entry — the
-  // href never changes.
-  initiatives: () => "/marketing/initiatives",
-  calendar: () => "/marketing/calendar",
-  audience: () => "/marketing/audience",
-  local: () => "/marketing/local",
-  /** One brand's locations. Location identity belongs in the path, never search params. */
-  brandLocal: (brandId: string) => `/marketing/brands/${brandId}/local`,
-  /** One canonical location and its publisher-listing workspace. */
-  brandLocation: (brandId: string, locationId: string) =>
-    `/marketing/brands/${brandId}/local/${locationId}`,
-  ranks: () => "/marketing/ranks",
-  approvals: () => "/marketing/approvals",
-  contentStudio: () => "/marketing/content-studio",
-  social: () => "/marketing/social",
-  email: () => "/marketing/email",
-  ads: () => "/marketing/ads",
-  outreach: () => "/marketing/outreach",
-  competitors: () => "/marketing/competitors",
-  monitoring: () => "/marketing/monitoring",
-  analytics: () => "/marketing/analytics",
+  /** New-website intake (static child of /brands so it can't collide with a brand key). */
+  newSite: (brandId?: string) =>
+    brandId
+      ? `/marketing/brands/new-website?brand=${brandId}`
+      : "/marketing/brands/new-website",
   reports: () => "/marketing/reports",
-  automations: () => "/marketing/automations",
-  brand: (brandId: string) => `/marketing/brands/${brandId}`,
-  /** Brand-wide review inbox for discovered assets, properties, and facts. */
-  brandDiscovery: (brandId: string) => `/marketing/brands/${brandId}/discovery`,
-  /** Keyword value settings for this brand — the ladder's brand rung (KI-046). */
-  brandValueSettings: (brandId: string) =>
-    `/marketing/brands/${brandId}/settings`,
+  /** Cross-client cost roll-up (was /marketing/cost). */
+  cost: () => "/marketing/reports/cost",
+  /** Cross-client rank roll-up (was /marketing/ranks). */
+  ranksRollup: () => "/marketing/reports/ranks",
+  /** Cross-client Search Console landing (site picker inside). */
+  searchConsoleRollup: () => "/marketing/reports/search-console",
+  /** Cross-client SEO capabilities catalogue (website selector inside). */
+  capabilitiesCatalog: () => "/marketing/operations/capabilities",
+  connections: () => "/marketing/operations/connections",
+  connectionsGoogle: () => "/marketing/operations/connections/google",
+  connectionsBing: () => "/marketing/operations/connections/bing",
+  automations: () => "/marketing/operations/automations",
+  approvals: () => "/marketing/operations/approvals",
+  dataQuality: () => "/marketing/operations/data-quality",
+  /** In-app index of the PUBLIC SEO analyzers (they live under `/seo/*`). */
+  tools: () => "/marketing/tools",
+  /** Public-video discovery and expertise comparison through YouTube Data API v3. */
+  youtubeDiscovery: () => "/marketing/tools/youtube",
+  youtubeVideo: (videoId: string) =>
+    `/marketing/tools/youtube/videos/${encodeURIComponent(videoId)}`,
+
+  // ── The client workspace ──────────────────────────────────────────────
+  brand: (brandId: string) => `/marketing/${brandId}`,
+  brandSection: (brandId: string, section: string) =>
+    `/marketing/${brandId}/${section}`,
+  /** The brand home. `view` = media | media/research | … */
+  brandIdentity: (brandId: string) => `/marketing/${brandId}/identity`,
   /**
-   * The brand's asset desk — Library, Research, Sources, Generate.
-   *
-   * These four views used to live in the WEBSITE's Media section, where they
-   * were a lie: all four read brand- or org-scoped data, so two sites under
-   * one brand rendered the same rows and editing "this site's library" edited
-   * everything under the brand (Arman's ruling, 2026-08-15). The website keeps
-   * what is genuinely its own — Crawled, Videos, Standards.
-   *
-   * `brief` seeds the Generate view's order, which is how the site's crawled
-   * inventory hands a replacement order across the level boundary.
+   * The brand's asset desk — Library, Research, Sources, Generate — now the
+   * Identity section's media room (views are routes; library is the index).
    */
   brandAssets: (
     brandId: string,
     view: MarketingBrandAssetsView = "library",
     brief?: string,
   ) => {
-    const base = `/marketing/brands/${brandId}/assets`;
-    const params = new URLSearchParams();
-    if (view !== "library") params.set("view", view);
-    if (brief?.trim()) params.set("brief", brief.trim());
-    const query = params.toString();
-    return query ? `${base}?${query}` : base;
+    const base = `/marketing/${brandId}/identity/media`;
+    const path = view === "library" ? base : `${base}/${view}`;
+    const brief_ = brief?.trim();
+    return brief_ ? `${path}?brief=${encodeURIComponent(brief_)}` : path;
   },
-  sites: () => "/marketing/sites",
-  /** Pass a brandId to pre-bind the new site to that brand (`?brand=`). */
-  newSite: (brandId?: string) =>
-    brandId ? `/marketing/sites/new?brand=${brandId}` : "/marketing/sites/new",
-  connections: () => "/marketing/connections",
-  connectionsGoogle: () => "/marketing/connections/google",
-  connectionsBing: () => "/marketing/connections/bing",
+  /** Brand-wide review inbox for discovered assets, properties, and facts. */
+  brandDiscovery: (brandId: string) => `/marketing/${brandId}/inbox`,
+  /** Brand settings (keyword-value defaults, autonomy — the ladder's brand rung). */
+  brandValueSettings: (brandId: string) => `/marketing/${brandId}/settings`,
+  /** One brand's locations (Local & Listings). */
+  brandLocal: (brandId: string) => `/marketing/${brandId}/locations`,
+  /** One canonical location and its publisher-listing workspace. */
+  brandLocation: (brandId: string, locationId: string) =>
+    `/marketing/${brandId}/locations/${locationId}`,
+  brandWebsites: (brandId: string) => `/marketing/${brandId}/websites`,
+  brandSeo: (brandId: string) => `/marketing/${brandId}/seo`,
+  brandContentPlan: (brandId: string) => `/marketing/${brandId}/content/plan`,
+  brandEmail: (brandId: string) => `/marketing/${brandId}/email`,
+  brandPress: (brandId: string) => `/marketing/${brandId}/pr`,
+  brandAds: (brandId: string) => `/marketing/${brandId}/ads`,
+  brandSocials: (brandId: string) => `/marketing/${brandId}/socials`,
+  brandCompetitors: (brandId: string) =>
+    `/marketing/${brandId}/intelligence/competitors`,
+  brandMonitoring: (brandId: string) =>
+    `/marketing/${brandId}/intelligence/monitoring`,
+  brandReputation: (brandId: string, siteId?: string) =>
+    siteId
+      ? `/marketing/${brandId}/intelligence/reputation/${siteId}`
+      : `/marketing/${brandId}/intelligence/reputation`,
+  brandAnalytics: (brandId: string) => `/marketing/${brandId}/analytics`,
+  brandInitiatives: (brandId: string) =>
+    `/marketing/${brandId}/planning/initiatives`,
+
+  // ── Website inventory (what the site IS) ──────────────────────────────
+  website: (brandId: string, siteId: string, sub = "") =>
+    `/marketing/${brandId}/websites/${siteId}${sub}`,
+
+  // ── SEO practice on one site ──────────────────────────────────────────
+  seoSite: (brandId: string, siteId: string, sub = "") =>
+    `/marketing/${brandId}/seo/${siteId}${sub}`,
+  siteKeywords: (brandId: string, siteId: string) =>
+    `/marketing/${brandId}/seo/${siteId}/keywords`,
+  siteKeywordValue: (brandId: string, siteId: string, sub = "") =>
+    `/marketing/${brandId}/seo/${siteId}/keywords/value${sub}`,
+  siteSearchConsole: (brandId: string, siteId: string) =>
+    `/marketing/${brandId}/seo/${siteId}/search-console`,
+  siteCapabilities: (brandId: string, siteId: string) =>
+    `/marketing/${brandId}/seo/${siteId}/capabilities`,
+
   /**
-   * Canonical site base. Falls back to the legacy flat path (which
-   * server-redirects to the nested one) when the brand id is unknown at the
-   * call site — e.g. cross-links built from rows that only carry site_id.
+   * Compatibility site base — the pre-restructure workhorse (79 call sites).
+   * Splits the legacy section path across the websites/seo branches via
+   * `MARKETING_SITE_SECTION_HOMES`, so every old call site emits a NEW
+   * canonical URL without being touched. Falls back to the legacy flat shim
+   * (`/marketing/sites/[siteId]/…`, which resolves brand + section
+   * server-side) when the brand is unknown at the call site.
    */
   site: (brandId: string | null | undefined, siteId: string, sub = "") =>
     brandId
-      ? `/marketing/brands/${brandId}/sites/${siteId}${sub}`
+      ? mapLegacySiteSub(brandId, siteId, sub)
       : `/marketing/sites/${siteId}${sub}`,
   /** One configuration destination with durable, linkable Settings views. */
   siteSettings: (
@@ -160,21 +257,27 @@ export const marketingRoutes = {
     siteId: string,
     view: MarketingSiteSettingsView = "site",
   ) => {
-    const sitePath = marketingRoutes.site(brandId, siteId);
-    return marketingSiteSettingsHref(sitePath, view);
+    if (!brandId) {
+      const legacy = `/marketing/sites/${siteId}`;
+      return view === "site"
+        ? `${legacy}/settings`
+        : `${legacy}/settings?view=${view}`;
+    }
+    return marketingSiteSettingsHref(
+      `/marketing/${brandId}/websites/${siteId}`,
+      view,
+    );
   },
   /** Site-wide internal authority flow: backlinks → crawl graph → priority pages. */
   siteAuthority: (brandId: string | null | undefined, siteId: string) =>
     brandId
-      ? `/marketing/brands/${brandId}/sites/${siteId}/authority`
+      ? `/marketing/${brandId}/seo/${siteId}/authority`
       : `/marketing/sites/${siteId}/authority`,
   /**
    * One canonical page's workspace. THE DOOR LAW's most-linked marketing
-   * destination: every surface that resolves a `page_id` (GSC breakdowns, dig
-   * results, insights, the watchlist, crawl ledgers, cost rollups) reaches the
-   * page through this ONE builder. `brandId` is optional because those rows
-   * usually carry only `site_id` — the `/marketing/sites/[siteId]/[...rest]`
-   * shim resolves the brand and replaces the URL with the nested canonical one.
+   * destination — every surface that resolves a `page_id` reaches the page
+   * through this ONE builder. `brandId` optional: rows usually carry only
+   * `site_id`; the flat shim resolves the brand and replaces the URL.
    */
   sitePage: (
     brandId: string | null | undefined,
@@ -182,7 +285,7 @@ export const marketingRoutes = {
     pageId: string,
   ) =>
     brandId
-      ? `/marketing/brands/${brandId}/sites/${siteId}/pages/${pageId}`
+      ? `/marketing/${brandId}/websites/${siteId}/pages/${pageId}`
       : `/marketing/sites/${siteId}/pages/${pageId}`,
   /** Theory-backed intervention ledger for one site. */
   siteChanges: (
@@ -191,7 +294,7 @@ export const marketingRoutes = {
     changeId?: string,
   ) => {
     const base = brandId
-      ? `/marketing/brands/${brandId}/sites/${siteId}/changes`
+      ? `/marketing/${brandId}/seo/${siteId}/changes`
       : `/marketing/sites/${siteId}/changes`;
     return changeId ? `${base}?change=${encodeURIComponent(changeId)}` : base;
   },
@@ -201,7 +304,7 @@ export const marketingRoutes = {
     crawlId: string,
   ) =>
     brandId
-      ? `/marketing/brands/${brandId}/sites/${siteId}/crawls/${crawlId}/reports`
+      ? `/marketing/${brandId}/websites/${siteId}/crawls/${crawlId}/reports`
       : `/marketing/sites/${siteId}/crawls/${crawlId}/reports`,
   crawlReport: (
     brandId: string | null | undefined,
@@ -210,6 +313,49 @@ export const marketingRoutes = {
     reportKey: string,
   ) =>
     brandId
-      ? `/marketing/brands/${brandId}/sites/${siteId}/crawls/${crawlId}/reports/${reportKey}`
+      ? `/marketing/${brandId}/websites/${siteId}/crawls/${crawlId}/reports/${reportKey}`
       : `/marketing/sites/${siteId}/crawls/${crawlId}/reports/${reportKey}`,
+
+  // ── Content plan ──────────────────────────────────────────────────────
+  /** Agency-level list door (legacy address; resolves per brand). */
+  contentPlan: () => "/marketing/content-plan",
+  /**
+   * One site's plan workspace. Views are ROUTES now (tree is the index).
+   * Without a brand the legacy shim (`/marketing/content-plan/[siteId]`)
+   * resolves it — 18 call sites carry only siteId.
+   */
+  contentPlanSite: (siteId: string, view?: string) =>
+    `/marketing/content-plan/${siteId}${view && view !== "tree" ? `?view=${view}` : ""}`,
+  brandContentPlanSite: (brandId: string, siteId: string, view?: string) =>
+    `/marketing/${brandId}/content/plan/${siteId}${view && view !== "tree" ? `/${view}` : ""}`,
+
+  // ── Legacy shim addresses (resolve + redirect; builders keep them only
+  //    where the call site lacks the context for a canonical address) ─────
+  sites: () => "/marketing/sites",
+  /** Cross-site Search Console door; with a site it resolves into the brand tree. */
+  searchConsole: (siteId?: string) =>
+    siteId
+      ? `/marketing/search-console?site=${siteId}`
+      : "/marketing/search-console",
+  /** Shared catalogue of Marketing's SEO measurement capabilities. */
+  capabilities: (siteId?: string) =>
+    siteId
+      ? `/marketing/capabilities?site=${encodeURIComponent(siteId)}`
+      : "/marketing/capabilities",
+  keywordResearch: () => "/marketing/keyword-research",
+  backlinkValuation: () => "/marketing/backlink-valuation",
+  press: () => "/marketing/pr",
+  local: () => "/marketing/local",
+  ranks: () => "/marketing/ranks",
+  contentStudio: () => "/marketing/content-studio",
+  social: () => "/marketing/social",
+  email: () => "/marketing/email",
+  ads: () => "/marketing/ads",
+  outreach: () => "/marketing/outreach",
+  competitors: () => "/marketing/competitors",
+  monitoring: () => "/marketing/monitoring",
+  analytics: () => "/marketing/analytics",
+  initiatives: () => "/marketing/initiatives",
+  calendar: () => "/marketing/calendar",
+  audience: () => "/marketing/audience",
 };

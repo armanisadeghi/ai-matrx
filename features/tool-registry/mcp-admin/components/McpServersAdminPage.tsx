@@ -101,6 +101,7 @@ import {
   serversListSummary,
   type ServerToolRow,
 } from "@/features/tool-registry/mcp-admin/format";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
@@ -1420,7 +1421,7 @@ function ConfigDialog({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Notes (admin-only)</Label>
-            <Textarea
+            <ProTextarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

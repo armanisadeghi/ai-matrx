@@ -18,7 +18,7 @@
 
 RPCs (all `public.`, SECURITY DEFINER):
 
-- `edu_library_list_scoped` / `edu_library_scope_counts` / `edu_library_facets` — authenticated canonical-list reads across decks, assessments, study media, and notes. Scope is explicit (`mine`, `shared`, `public`); permissions and visibility are enforced server-side. Migration: `education_library_scoped_list.sql`.
+- `edu_library_list_scoped` / `edu_library_scope_counts` / `edu_library_facets` — authenticated canonical-list reads across decks, assessments, study media, and notes. Scope is explicit (`mine`, `shared`, `public`); permissions and visibility are enforced server-side. The list's shared filter vocabulary includes exact `id` selection so focused consumers can reuse its KPI fold without scanning a whole library. Migrations: `education_library_scoped_list.sql`, `education_library_exact_id_filter.sql`.
 - `edu_public_decks(search, certified_only, limit, exam_slug)` — the listing read (public deck + card count via `platform.associations` member edges + certified status), anon-executable, **exposes only `visibility='public'`**. One round-trip, no N+1. **`exam_slug` filters on `fc_set.metadata->>'exam_slug'`** so the exam-prep hub reuses this exact RPC for its curated block (`fetchExamCertifiedDecks`). Card count counts `a.role='member'` — the column `fcService` writes (an earlier version counted `a.label`, always NULL → every deck showed 0 cards; fixed in `migrations/education_public_decks_exam_filter.sql`).
 - `edu_certify_content` / `edu_uncertify_content` — super-admin only (protected-style admin grant).
 - `edu_suggest_edit` — any authenticated user; resolves + denormalizes the deck owner, rejects self-suggestions.
@@ -77,6 +77,7 @@ the human may make it public + curated. This path still creates an **AI-built st
 
 ## Change log
 
+- **2026-08-29** — `edu_library_list_scoped` gained an exact-id filter in its existing `p_filters` contract. Study-kit detail pages now reuse the library's canonical per-artifact KPI fold for only their members instead of scanning the learner's entire library or creating a second progress model.
 - **2026-08-21** — Split the user artifact Library from the community deck browser. `/education/library` now lists persisted decks, assessments, study media, and notes across Mine / Shared / Public; the public certified-deck browser moved intact to `/education/library/community`. Added subtype-aware routes so generated audio, summaries, mind maps, memory aids, quizzes, and practice tests open in their owning tools.
 - **2026-07-14** — Seeded the first curated exam libraries: 9 certified public decks (SAT/AP Bio/GRE, 128 cards) via the real generation agent, tagged `exam_slug`; `edu_public_decks` gained an `exam_slug` filter and a card-count fix (`role` not `label`); new `ExamCuratedLibrary` surfaces certified decks + guides on each exam-prep page.
 

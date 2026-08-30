@@ -54,9 +54,10 @@ export function AgentAppFormToResultShell({
   const [gateDismissed, setGateDismissed] = useState(false);
 
   const ctx = useAgentApp({
-    agentId: app.agent_id,
-    agentVersionId: app.agent_version_id,
-    useLatest: app.use_latest,
+    // The app ROW, not a plucked agent id: `useAppHolder` inside the hook is
+    // the one place that decides which agent an app runs (pinned today,
+    // mandate-resolved once APP_MANDATE_CUTOVER flips).
+    app,
     appId: app.id,
     autoRun: config.autoRun ?? false,
     allowChat,

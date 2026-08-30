@@ -135,7 +135,11 @@ export function useResearchApi() {
         topicId: string,
         signal?: AbortSignal,
       ): Promise<ExpertExtraction> => {
-        const res = await api.get(endpoints(topicId).experts, signal);
+        const res = await api.get(endpoints(topicId).experts, signal, {
+          // A stale/revoked topic link is a normal authorization outcome. The
+          // UI owns its disclosure; it is not a production repair incident.
+          expectedErrorStatuses: [403],
+        });
         return (await res.json()) as ExpertExtraction;
       },
 
@@ -150,7 +154,12 @@ export function useResearchApi() {
         topicId: string,
         body: { keys: string[]; accept_weak?: boolean },
       ): Promise<ExpertPromotionResult> => {
-        const res = await api.post(endpoints(topicId).promoteExperts, body);
+        const res = await api.post(
+          endpoints(topicId).promoteExperts,
+          body,
+          undefined,
+          { expectedErrorStatuses: [403] },
+        );
         return (await res.json()) as ExpertPromotionResult;
       },
 

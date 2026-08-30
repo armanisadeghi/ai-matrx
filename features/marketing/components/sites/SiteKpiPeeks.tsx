@@ -15,6 +15,7 @@ import { GscClassBar } from "@/features/marketing/search-console/components/amba
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, FileSearch, Loader2 } from "lucide-react";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
   useSiteGscDaily,
   useSiteGscTopPages,
@@ -330,7 +331,13 @@ export function GscPeekBody({
         </div>
       </div>
 
-      {daily.isLoading ? (
+      {daily.isError ? (
+        <InlineQueryError
+          what="the Search Console trend"
+          error={daily.error}
+          onRetry={() => void daily.refetch()}
+        />
+      ) : daily.isLoading ? (
         <div className="flex h-[72px] items-center justify-center">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>
@@ -355,7 +362,16 @@ export function GscPeekBody({
         <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
           Top pages by clicks
         </p>
-        {topPages.isLoading ? (
+        {topPages.isError ? (
+        // 🚨 A failed Search Console read is NOT "no data" (2026-08-30). The
+        // codebase already burned on exactly this: an empty state rendered
+        // over a site with 16 months of history.
+        <InlineQueryError
+          what="Search Console pages"
+          error={topPages.error}
+          onRetry={() => void topPages.refetch()}
+        />
+      ) : topPages.isLoading ? (
           <div className="flex h-10 items-center justify-center">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
           </div>

@@ -28,12 +28,13 @@ import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkCom
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
 import type { Components } from "react-markdown";
-import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
+import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 
 /**
  * Durable markdown <img> — the media-durability fix for the default renderer.
  * On a load failure the file-session cookie is refreshed and the SAME durable
- * URL retried once (useDurableSrc); a URL that still fails (link rot on a
+ * URL retried once (useMediaLoadRecovery); a URL that still fails (link rot on a
  * hotlinked card/web image) hides gracefully instead of rendering the
  * broken-image glyph.
  */
@@ -44,7 +45,10 @@ function DurableMarkdownImg({
   ...props
 }: React.ComponentProps<"img">) {
   const raw = typeof src === "string" ? src : null;
-  const { src: durableSrc, retryKey, onError, failed } = useDurableSrc(raw);
+  const { retryKey, onLoadError: onError, failed } = useMediaLoadRecovery(raw, {
+    recoverable: !!raw && recognizeOurFileUrl(raw) !== null,
+  });
+  const durableSrc = raw ?? "";
   if (!raw || failed || !durableSrc) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element

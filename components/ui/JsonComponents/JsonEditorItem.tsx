@@ -90,26 +90,31 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
     const IconButton = ({
         icon: Icon,
         onClick,
+        label,
         color = "text-muted-foreground",
         hoverColor = "hover:text-foreground"
     }: {
         icon: React.ComponentType<{ className?: string }>;
         onClick: () => void;
+        label: string;
         color?: string;
         hoverColor?: string;
     }) => (
-        <button
-            onClick={onClick}
-            className={cn(
-                "p-0.5 rounded-sm transition-colors",
-                color,
-                hoverColor,
-                "opacity-0 group-hover:opacity-100",
-                readOnly && "hidden"
-            )}
-        >
-            <Icon className="h-3.5 w-3.5"/>
-        </button>
+        <span className="matrx-touch-targets inline-flex">
+            <button
+                onClick={onClick}
+                aria-label={label}
+                className={cn(
+                    "p-0.5 rounded-sm transition-colors",
+                    color,
+                    hoverColor,
+                    "opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100",
+                    readOnly && "hidden"
+                )}
+            >
+                <Icon className="h-3.5 w-3.5"/>
+            </button>
+        </span>
     );
 
     const renderValue = (val: JsonValue) => {
@@ -160,12 +165,14 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                         <IconButton
                             icon={Save}
                             onClick={handleSave}
+                            label="Save edit"
                             color="text-green-600 dark:text-green-400"
                             hoverColor="hover:text-green-700 dark:hover:text-green-300"
                         />
                         <IconButton
                             icon={X}
                             onClick={handleCancel}
+                            label="Cancel edit"
                             color="text-red-600 dark:text-red-400"
                             hoverColor="hover:text-red-700 dark:hover:text-red-300"
                         />
@@ -190,18 +197,21 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                             <IconButton
                                 icon={Edit}
                                 onClick={handleEdit}
+                                label="Edit value"
                                 color="text-blue-600 dark:text-blue-400"
                                 hoverColor="hover:text-blue-700 dark:hover:text-blue-300"
                             />
                             <IconButton
                                 icon={Plus}
                                 onClick={() => onAdd("newKey", null, index + 1)}
+                                label="Add value"
                                 color="text-green-600 dark:text-green-400"
                                 hoverColor="hover:text-green-700 dark:hover:text-green-300"
                             />
                             <IconButton
                                 icon={Trash}
                                 onClick={onDelete}
+                                label="Delete value"
                                 color="text-red-600 dark:text-red-400"
                                 hoverColor="hover:text-red-700 dark:hover:text-red-300"
                             />

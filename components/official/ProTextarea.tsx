@@ -65,6 +65,12 @@
  *
  * ## Constraints (intentional)
  *
+ * - This is NOT a drop-in replacement inside composite input hosts. Keep the
+ *   host's original textarea when it owns auto-resize measurements, absolute
+ *   fill geometry, voice/attachment/send controls, editor selection logic, or
+ *   chat/agent reply key chords. ProTextarea adds wrapper DOM and its own
+ *   action layer; nesting it in those hosts changes their layout and can
+ *   duplicate controls.
  * - `floatingLabel` and `placeholder` are mutually exclusive. The floating
  *   label sits where the placeholder would, so the placeholder is suppressed
  *   when `floatingLabel` is set.

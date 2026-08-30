@@ -196,7 +196,14 @@ export const MARKETING_SITE_SUBVIEWS = [
         purpose:
           "Say what a keyword IS — set its class or any dimension, with your reason.",
       },
+      {
+        id: "research",
+        label: "Research",
+        purpose:
+          "Map a keyword's parents, children and variants with AI, plus live market volume.",
+      },
     ],
+    hrefStyle: "path",
   },
   {
     // THE KEYWORD VALUE FAMILY. Five real routes, one job each, and before
@@ -232,12 +239,6 @@ export const MARKETING_SITE_SUBVIEWS = [
         purpose: "What earns points and how much — matchers, worth and levels.",
       },
       {
-        id: "offerings",
-        label: "Offerings",
-        purpose:
-          "Group keywords into your offerings, and set what each is worth.",
-      },
-      {
         id: "packs",
         label: "Industry packs",
         purpose: "Start from your industry's defaults instead of a blank page.",
@@ -251,18 +252,6 @@ export const MARKETING_SITE_SUBVIEWS = [
         label: "Settings",
         purpose:
           "The starting score and the levels this site uses — or what it inherits from the brand.",
-      },
-      {
-        id: "guidelines",
-        label: "Guidelines",
-        purpose:
-          "What the AI must know about this business before it judges a keyword.",
-      },
-      {
-        id: "discovery",
-        label: "Discovery",
-        purpose:
-          "AI reads your site cold and proposes your business model, customers, Offerings and their worth — you rule each step.",
       },
     ],
     hrefStyle: "path",

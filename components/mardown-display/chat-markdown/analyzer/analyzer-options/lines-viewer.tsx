@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, FileText, Hash, Type, List, Minus, Quote, Link, CornerDownLeft } from 'lucide-react';
+import { Copy, Check, FileText, Hash, Type, List, Minus, Quote, Link, CornerDownLeft, Square, SquareCheckBig } from 'lucide-react';
 import { addUtmSource } from '@/utils/url-utm';
 
 export interface LineItem {
@@ -151,7 +151,10 @@ const renderLineItem = (item: LineItem) => {
   if (type === "check_item_checked") {
     return (
       <div className="flex items-start gap-2">
-        <span className="text-green-600 dark:text-green-400 mt-1">☑</span>
+        <SquareCheckBig
+          className="mt-1 h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+          aria-hidden="true"
+        />
         <div className="text-gray-700 dark:text-gray-300">
           {content}
         </div>
@@ -162,7 +165,10 @@ const renderLineItem = (item: LineItem) => {
   if (type === "check_item_unchecked") {
     return (
       <div className="flex items-start gap-2">
-        <span className="text-gray-400 dark:text-gray-500 mt-1">☐</span>
+        <Square
+          className="mt-1 h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500"
+          aria-hidden="true"
+        />
         <div className="text-gray-700 dark:text-gray-300">
           {content}
         </div>

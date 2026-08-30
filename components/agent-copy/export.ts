@@ -11,17 +11,17 @@ export interface ExportItem {
   /** Menu row label, e.g. "JSON (raw data)" or "CSV (current view)". */
   label: string;
   /** Called at click time to download a file. Omit when the item opens UI. */
-  build?: () => { content: string; extension: string; mime: string };
+  build?: () => { content: BlobPart; extension: string; mime: string };
   /**
    * Caller-owned modal/window. Wins over `build` — the item opens UI
    * instead of downloading.
    */
-  onSelect?: () => void;
+  onSelect?: () => void | Promise<void>;
 }
 
 export function downloadFile(
   filename: string,
-  content: string,
+  content: BlobPart,
   mime: string,
 ): void {
   const blob = new Blob([content], { type: mime });

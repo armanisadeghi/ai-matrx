@@ -587,20 +587,12 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
   // "hr.people.start-offboarding" was a stage:"blocked" stub while hr_separation_record was
   // already live. The separation FORM is now built (OffboardEmployeeDialog, wired from the
   // /hr/people row menu), so the coming-soon entry is deleted — no dead path left behind.
-  "hr.people.corrective-action": {
-    id: "hr.people.corrective-action",
-    label: "Start a corrective action",
-    owner: "hr",
-    promise:
-      "Record a corrective action the person can actually read, respond to, and keep their own words beside — with the ladder, the policy cited, the improvement expected, and an acknowledgment they sign.",
-    stage: "blocked",
-    blockedBy:
-      "public.hr_corrective_action_issue IS live; the issuance form and the case surface (routes 15/16) belong to the Employee Relations lane and are not built. The door is offered at the notes compose box because that is where a manager reaches for the wrong tool.",
-    surfaces: [
-      "/hr/people/[employeeId]/notes — compose box",
-      "/hr/people/[employeeId]/relations",
-    ],
-  },
+  // "hr.people.corrective-action" was a stage:"blocked" stub whose `blockedBy` had gone stale:
+  // the Employee Relations lane HAD landed both the issuance form (NewCorrectiveActionDialog)
+  // and the case surface, and the notes compose box was still announcing them as unbuilt. The
+  // button now opens the real dialog (hr_l1_74), so the entry is deleted rather than reworded —
+  // a coming-soon row pointing at shipped code is a dead path that teaches the next reader a
+  // false thing about what exists.
   "hr.people.compensation-history": {
     id: "hr.people.compensation-history",
     label: "Pay components and their history",

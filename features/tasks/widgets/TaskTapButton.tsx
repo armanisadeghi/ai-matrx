@@ -12,7 +12,6 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
@@ -36,6 +35,7 @@ import {
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { selectFullContextStatus } from "@/features/agent-context/redux/hierarchySlice";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Variant = "glass" | "transparent" | "solid" | "group";
 
@@ -374,7 +374,7 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
               className="h-8 text-sm"
               style={{ fontSize: "16px" }}
             />
-            <Textarea
+            <ProTextarea
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Description (optional)"

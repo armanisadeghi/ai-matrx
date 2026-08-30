@@ -10,7 +10,7 @@
  */
 
 import type { ReactNode } from "react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 

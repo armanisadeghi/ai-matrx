@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -50,6 +49,7 @@ import {
   MATCH_KINDS,
   type AdminPackDetail,
 } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const WORTH_NONE = "__label__";
 
@@ -320,7 +320,7 @@ function MeaningEditor({
         placeholder="What this catches, for a non-technical reader"
         className="h-8 text-sm"
       />
-      <Textarea
+      <ProTextarea
         value={d.notes}
         onChange={(e) => setD({ ...d, notes: e.target.value })}
         placeholder="Why — the evidence or the expert ruling (this is what the business reads)"

@@ -33,6 +33,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
@@ -347,8 +348,11 @@ function LineageCard({
         <button
           type="button"
           onClick={onToggle}
-          className="w-full flex items-center gap-3 p-3 pr-28 hover:bg-accent/30 transition-colors text-left"
-        >
+          aria-expanded={isOpen}
+          aria-label={`${isOpen ? "Collapse" : "Expand"} lineage for ${agent.name}`}
+          className="absolute inset-0 w-full rounded-t-lg hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring transition-colors"
+        />
+        <div className="relative pointer-events-none w-full flex items-center gap-3 p-3 pr-28 text-left">
           {isOpen ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
           ) : (
@@ -358,7 +362,15 @@ function LineageCard({
             <Cpu className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium truncate">{agent.name}</div>
+            <EntityRef
+              token="agent"
+              id={agent.id}
+              name={agent.name}
+              href={`${ADMIN_AGENT_BASE}/${agent.id}/build`}
+              showIcon={false}
+              className="pointer-events-auto text-sm"
+              labelClassName="font-medium"
+            />
             <div className="text-xs text-muted-foreground truncate">
               {agent.description ?? "No description"}
             </div>
@@ -377,16 +389,8 @@ function LineageCard({
               icon={AppWindow}
               loading={appsLoading}
             />
-            <Link
-              href={`${ADMIN_AGENT_BASE}/${agent.id}/build`}
-              className="ml-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Open in builder"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
           </div>
-        </button>
+        </div>
         {/* The header above is a toggle <button> — CopyButtons must never
             nest inside one, so this renders as an absolute sibling overlay. */}
         <CopyButtons

@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   Select,
   SelectContent,
@@ -308,7 +309,7 @@ function DefinitionFeedConfig({
       {feedType === "agent" && (
         <>
           <FieldRow label="Agent prompt" hint="What the agent should produce as this value.">
-            <Textarea
+            <ProTextarea
               rows={3}
               value={cfgStr(config, "prompt")}
               onChange={(e) => set("prompt", e.target.value)}

@@ -86,6 +86,10 @@ import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromS
 import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudFilesPickerHost";
 // disaster
 import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
+// ONE MediaProvider for @ai-matrx/media — the strangler MediaClient over the
+// universal file handler + host ports (next/image, audio session, actions).
+// See features/files/media-client/. Deep import, not a barrel.
+import { MediaHostProvider } from "@/features/files/media-client/MediaHostProvider";
 import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ClipboardFallbackHost } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackHost";
@@ -138,6 +142,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                   <ModuleHeaderProvider>
                       <SelectedImagesProvider>
                             <RequestRecoveryProvider>
+                              <MediaHostProvider>
                               {/* ONE audio mount — the whole audio system
                                 (devices, recording engine, TTS output,
                                 playback/session mirrors, modal, recovery)
@@ -214,6 +219,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                       "@/features/files/components/preview/openFilePreview";
                                     openFilePreview(fileId); */}
                               </React.Fragment>
+                              </MediaHostProvider>
                             </RequestRecoveryProvider>
                       </SelectedImagesProvider>
                   </ModuleHeaderProvider>

@@ -31,7 +31,6 @@ import { toast } from "@/lib/toast";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -68,6 +67,7 @@ import {
   describeBlocks,
   isTenantSuppressed,
 } from "../../reachability";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Labels come from the ONE reachability map (features/crm/reachability.ts);
 // the dialer only overrides the two that should say "number" on a phone screen.
@@ -684,7 +684,7 @@ export function CallQueuePage({ listId }: { listId: string }) {
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Call notes
                 </div>
-                <Textarea
+                <ProTextarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}

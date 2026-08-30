@@ -1,10 +1,12 @@
-import { YouTubeVideoPreviewPage } from "@/features/marketing/discovery/youtube/YouTubeVideoPreviewPage";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default async function YouTubeDiscoveryVideoPage({
+/** Legacy address — YouTube research is an agency tool now. */
+export default async function YouTubeDiscoveryVideoShim({
   params,
 }: {
   params: Promise<{ videoId: string }>;
 }) {
   const { videoId } = await params;
-  return <YouTubeVideoPreviewPage videoId={videoId} />;
+  permanentRedirect(marketingRoutes.youtubeVideo(videoId));
 }

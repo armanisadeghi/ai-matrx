@@ -1,6 +1,4 @@
 "use client";
-
-import { Textarea } from "@/components/ui/textarea";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
@@ -9,6 +7,7 @@ import type {
   MarketingPage,
   PageDesiredValues,
 } from "@/features/marketing/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * PagePlanNoteCard — the generic freeform plan slot. Every observed area in
@@ -72,7 +71,7 @@ export function PagePlanNoteCard({
         onReset={desired.reset}
         className="border-t-0"
       >
-        <Textarea
+        <ProTextarea
           value={value}
           onChange={(event) =>
             desired.setDraft(event.target.value || undefined)

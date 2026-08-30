@@ -33,8 +33,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import FullScreenOverlay, { TabDefinition } from '@/components/official/FullScreenOverlay';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface QueryHistoryOverlayProps {
   isOpen: boolean;
@@ -565,7 +565,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
               <Label htmlFor="description" className="text-sm font-medium">
                 Description
               </Label>
-              <Textarea
+              <ProTextarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

@@ -12,9 +12,9 @@ import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 
 import { enroll } from "../api";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function EnableCard({
   agentId,
@@ -64,7 +64,7 @@ export function EnableCard({
         <label className="text-xs font-medium uppercase text-muted-foreground">
           Anything the reviewer should focus on? (optional)
         </label>
-        <Textarea
+        <ProTextarea
           className="mt-1"
           rows={2}
           placeholder="e.g. Answers should always cite the source document. Watch for cases where it guesses."

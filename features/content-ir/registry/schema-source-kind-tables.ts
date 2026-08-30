@@ -16,6 +16,7 @@
 import type { Database, Json } from "@/types/database.types";
 import type { KindSchema } from "@ai-matrx/content-ir";
 import {
+  kindSchemaFromJsonSchema,
   storageToKindSchema,
   type KindEdgeSpec,
   type StoredFieldElement,
@@ -147,35 +148,112 @@ function asStoredData(value: Json, kind: string): StoredFieldElement[] {
 }
 
 /**
- * Python owns some object contracts only as `emitted_json_schema`: its
- * all-or-nothing flattener deliberately leaves `data` NULL when the contract
- * cannot be represented faithfully as `StoredFieldElement[]`. That is schema
- * unavailability for the parser, not an empty object schema.
+ * 🚨 THE ONE SOURCE OF TRUTH FOR A KIND'S FIELDS (Arman's ruling, 2026-08-29).
+ *
+ * `emitted_json_schema` IS the kind's contract. `kind_definition.data` is a
+ * flattened copy of it written beside it, and a copy that can disagree with
+ * its source is not a cache — it is a second source of truth waiting to drift.
+ * It already had: on 2026-08-29, of the 62 live kinds carrying both, 13
+ * disagreed. Four stored lists declared `__kind` as a data field (it is the
+ * discriminator, never a field). Nine flattened closed enums to bare strings,
+ * or lost min/max bounds, required flags and descriptions the schema states.
+ * And 440 of 502 active kinds had no copy at all, because the writer that
+ * produces it is all-or-nothing and declines any nested shape — which is how
+ * ~221 kinds with real components ended up unrenderable.
+ *
+ * So: DERIVE, always, from the schema. The stored copy is consulted only when
+ * a kind has no schema at all — a shrinking legacy tail, never the primary
+ * path — and never silently: reaching it is worth knowing about.
+ *
+ * There is deliberately NO memo here. A cache would have to prove, on every
+ * failure path a kind component can take, that it refreshed and retried before
+ * anything blamed the data. Until someone measures a reason to need one, the
+ * derivation is cheap and honest.
  */
-function hasUnflattenedObjectContract(
-  data: Json,
-  emittedJsonSchema: Json | null | undefined,
-): boolean {
-  if (data !== null && data !== undefined) return false;
-  if (
-    emittedJsonSchema === null ||
-    emittedJsonSchema === undefined ||
-    typeof emittedJsonSchema !== "object" ||
-    Array.isArray(emittedJsonSchema)
-  ) {
-    return false;
+function deriveKindSchema(
+  kind: string,
+  emittedJsonSchema: Json | null,
+  storedData: Json,
+  edges: KindEdgeSpec[],
+): KindSchema | null {
+  if (emittedJsonSchema !== null && emittedJsonSchema !== undefined) {
+    const { schema, problems } = kindSchemaFromJsonSchema(
+      kind,
+      emittedJsonSchema,
+    );
+    const errors = problems.filter((p) => p.severity === "error");
+    if (errors.length > 0) reportSchemaDerivationErrors(kind, errors);
+    if (schema) return schema;
   }
 
-  const schema = emittedJsonSchema as Record<string, Json | undefined>;
-  const schemaType = schema.type;
-  return (
-    schemaType === "object" ||
-    (Array.isArray(schemaType) && schemaType.includes("object")) ||
-    (schema.properties !== null &&
-      schema.properties !== undefined &&
-      typeof schema.properties === "object" &&
-      !Array.isArray(schema.properties))
-  );
+  // No schema on the row at all — the legacy tail, unchanged in behavior from
+  // before the derivation cutover so scalar/passthrough kinds (text, number,
+  // json, the workflow node-result kinds) keep resolving to their empty field
+  // map exactly as they did.
+  //
+  // The scream fires only when a REAL stored field list is doing the work: a
+  // kind in that state has no contract of its own, so it cannot be validated,
+  // bound to an agent's output, or published, and it is living on a copy whose
+  // source no longer exists.
+  if (storedData !== null && storedData !== undefined) {
+    reportSchemalessKind(kind);
+  }
+  return storageToKindSchema(kind, {
+    data: asStoredData(storedData, kind),
+    edges,
+  });
+}
+
+function reportSchemaDerivationErrors(
+  kind: string,
+  errors: Array<{ path: string; message: string }>,
+): void {
+  const detail = errors
+    .map((e) => `${e.path || "(root)"}: ${e.message}`)
+    .join("; ");
+  const message = `Kind "${kind}": emitted_json_schema could not be fully converted — ${detail}`;
+  void import("@/lib/diagnostics/errorCaptureStore")
+    .then(({ captureError }) =>
+      captureError({
+        source: "content-ir",
+        schema: "content_ir",
+        relation: "kind_definition",
+        message,
+        hint: "Fix the kind's schema; the field model is derived from it.",
+        callSite: "deriveKindSchema",
+      }),
+    )
+    .catch(() => {});
+  console.error(`[content_ir] ${message}`);
+}
+
+/** One report per kind per session — a warm sweep re-reports nothing. */
+const reportedSchemalessKinds = new Set<string>();
+
+/** Test seam — resets the once-per-kind dedupe. */
+export function resetSchemalessKindReports(): void {
+  reportedSchemalessKinds.clear();
+}
+
+function reportSchemalessKind(kind: string): void {
+  if (reportedSchemalessKinds.has(kind)) return;
+  reportedSchemalessKinds.add(kind);
+  const message =
+    `Kind "${kind}" has NO emitted_json_schema — falling back to the stored ` +
+    `field list. That copy is not a contract: it cannot validate a payload, ` +
+    `bind an agent's output, or be published. Give the kind a schema.`;
+  void import("@/lib/diagnostics/errorCaptureStore")
+    .then(({ captureError }) =>
+      captureError({
+        source: "content-ir",
+        schema: "content_ir",
+        relation: "kind_definition",
+        message,
+        callSite: "deriveKindSchema",
+      }),
+    )
+    .catch(() => {});
+  console.warn(`[content_ir] ${message}`);
 }
 
 /**
@@ -227,12 +305,12 @@ export function reconstructKindRegistry(
     // floor covers anything genuinely needed, and a broken kind was unusable
     // anyway. This is a recovery path firing → a real data defect upstream.
     try {
-      const schema = hasUnflattenedObjectContract(d.data, d.emitted_json_schema)
-        ? null
-        : storageToKindSchema(d.kind, {
-            data: asStoredData(d.data, d.kind),
-            edges: edgesByParent.get(d.id) ?? [],
-          });
+      const schema = deriveKindSchema(
+        d.kind,
+        d.emitted_json_schema ?? null,
+        d.data,
+        edgesByParent.get(d.id) ?? [],
+      );
       if (schema) schemas[d.kind] = schema;
       entries.push({
         id: d.id,
@@ -482,15 +560,13 @@ export async function getKindSchemaAndMetaBySlugFromTables(
 
   const loadingComponent = kindLoadingComponentFromMetadata(def.metadata ?? null);
   const emittedJsonSchema = (def.emitted_json_schema ?? null) as Json | null;
-  if (hasUnflattenedObjectContract(def.data, def.emitted_json_schema)) {
-    return { schema: null, loadingComponent, emittedJsonSchema };
-  }
   try {
+    // SAME DERIVATION AS THE WARM PATH. The two used to diverge — warm read the
+    // stored field list, cold read it too but with a different bail condition —
+    // and a kind that resolved one way in a sweep and another way mid-stream is
+    // the hardest class of render bug to see. One function, both callers.
     return {
-      schema: storageToKindSchema(def.kind, {
-        data: asStoredData(def.data, def.kind),
-        edges: specs,
-      }),
+      schema: deriveKindSchema(def.kind, emittedJsonSchema, def.data, specs),
       loadingComponent,
       emittedJsonSchema,
     };

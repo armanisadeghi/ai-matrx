@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -67,6 +66,7 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * The shared TabsContent wrapper hardcodes `forceMount`, so BOTH tables stay
@@ -1005,7 +1005,7 @@ function ErrorsTable({ active }: { active: boolean }) {
               {!selected.resolved && (
                 <div>
                   <Label htmlFor="resolution-notes">Resolution Notes</Label>
-                  <Textarea
+                  <ProTextarea
                     id="resolution-notes"
                     value={resolutionNotes}
                     onChange={(e) => setResolutionNotes(e.target.value)}

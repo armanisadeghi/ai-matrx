@@ -63,9 +63,8 @@ export function AgentAppChatShell({ app, surface }: AgentAppChatShellProps) {
   );
 
   const agentAppCtx = useAgentApp({
-    agentId: app.agent_id,
-    agentVersionId: app.agent_version_id,
-    useLatest: app.use_latest,
+    // See AgentAppFormToResultShell: the row carries the app's JOB.
+    app,
     appId: app.id,
     surfaceKey,
     autoRun: config.autoRun ?? false,

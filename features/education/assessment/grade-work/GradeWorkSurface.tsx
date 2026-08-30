@@ -28,7 +28,6 @@ import {
   MinusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
@@ -39,6 +38,7 @@ import { createEducationGradeWorkScope } from "@/features/surfaces/manifests/edu
 import { HandwrittenWorkInput } from "../components/HandwrittenWorkInput";
 import { StepBreakdown } from "../components/StepBreakdown";
 import { useGradeWork } from "./useGradeWork";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const RESULT_STYLE: Record<
   GradeResult,
@@ -220,7 +220,7 @@ export function GradeWorkSurface() {
             <label className="text-sm font-medium text-foreground">
               The problem
             </label>
-            <Textarea
+            <ProTextarea
               value={problem}
               onChange={(e) => setProblem(e.target.value)}
               placeholder="Paste or type the exact problem you solved — e.g. 'Solve for x: 3(x + 2) = 15' or an essay prompt."
@@ -236,7 +236,7 @@ export function GradeWorkSurface() {
                 (optional)
               </span>
             </label>
-            <Textarea
+            <ProTextarea
               value={expected}
               onChange={(e) => setExpected(e.target.value)}
               placeholder="Leave blank to have the AI solve it and grade against its own solution — or describe what full credit must show."

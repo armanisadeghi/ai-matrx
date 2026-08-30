@@ -18,7 +18,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { cn } from "@/lib/utils";
 
 export interface PagerMedia {
@@ -29,8 +29,11 @@ export interface PagerMedia {
   previewUrl?: string;
 }
 
-const SWIPE_TRIGGER_PX = 60;
-const SWIPE_TRIGGER_VELOCITY = 400;
+// Tuned on a real phone (2026-08-29): 60px/400 felt dead — a natural iOS
+// Photos flick is a short fast drag, so the distance OR a modest velocity
+// must page.
+const SWIPE_TRIGGER_PX = 40;
+const SWIPE_TRIGGER_VELOCITY = 200;
 const DISMISS_TRIGGER_PX = 110;
 
 const variants = {
@@ -179,12 +182,12 @@ export function MediaPager({
               }
               if (
                 x < -SWIPE_TRIGGER_PX ||
-                (x < -20 && info.velocity.x < -SWIPE_TRIGGER_VELOCITY)
+                (x < -10 && info.velocity.x < -SWIPE_TRIGGER_VELOCITY)
               ) {
                 go(1);
               } else if (
                 x > SWIPE_TRIGGER_PX ||
-                (x > 20 && info.velocity.x > SWIPE_TRIGGER_VELOCITY)
+                (x > 10 && info.velocity.x > SWIPE_TRIGGER_VELOCITY)
               ) {
                 go(-1);
               }
@@ -193,6 +196,30 @@ export function MediaPager({
             <PagerSlide item={current} />
           </motion.div>
         </AnimatePresence>
+
+        {/* Neighbor preload layer — the adjacent slides stay MOUNTED but
+            invisible, so their bytes are fetched and their pixels decoded
+            BEFORE the swipe lands. Without this every page turn (revisits
+            included) paid a mount + resolve + full-size JPEG decode, which
+            reads as lag on a phone. Photos only get ±2; videos ±1 (a mounted
+            hidden <video> still buffers metadata, which is the win). */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0">
+          {[index - 2, index - 1, index + 1, index + 2]
+            .filter((i) => i >= 0 && i < count)
+            .map((i) => media[i])
+            .filter(
+              (m): m is PagerMedia =>
+                m !== undefined &&
+                (m.kind === "photo" ||
+                  m === media[index - 1] ||
+                  m === media[index + 1]),
+            )
+            .map((m) => (
+              <div key={m.key} className="absolute inset-0">
+                <PagerSlide item={m} interactive={false} />
+              </div>
+            ))}
+        </div>
 
         {/* Desktop chevrons (hidden on touch-first small screens) */}
         {index > 0 && (
@@ -237,15 +264,30 @@ export function MediaPager({
   );
 }
 
-function PagerSlide({ item }: { item: PagerMedia }) {
+function PagerSlide({
+  item,
+  interactive = true,
+}: {
+  item: PagerMedia;
+  /** False for the invisible preload copies: `pointer-events-auto` on a
+   *  descendant re-enables hit-testing under a pointer-events-none ancestor,
+   *  so a hidden neighbor video would sit ABOVE the visible slide (opacity
+   *  creates a stacking context) and eat every swipe. */
+  interactive?: boolean;
+}) {
   if (item.previewUrl) {
     if (item.kind === "video") {
       return (
         <video
           src={item.previewUrl}
-          controls
+          controls={interactive}
+          muted={!interactive}
+          preload={interactive ? "auto" : "metadata"}
           playsInline
-          className="pointer-events-auto absolute inset-0 h-full w-full object-contain"
+          className={cn(
+            "absolute inset-0 h-full w-full object-contain",
+            interactive ? "pointer-events-auto" : "pointer-events-none",
+          )}
         />
       );
     }

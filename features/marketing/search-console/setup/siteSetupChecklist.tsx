@@ -193,11 +193,19 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
       confirmLabel: "Yes, that's the one",
       values: ({ site }) => {
         const property = gscProperty(site);
+        // THE DOMAIN-PROPERTY RULE (Arman, 2026-08-29): a `sc-domain:`
+        // property covers EVERY version of the site. A bound URL version is
+        // called out as the likely mistake it is — this step must never
+        // present the versions as equal peers.
+        const urlVersionBound =
+          property !== null && !property.toLowerCase().startsWith("sc-domain:");
         return [
           {
             label: "Connected in Google",
             value: property ?? "Nothing connected yet",
-            hint: "This is the property we're reading data from.",
+            hint: urlVersionBound
+              ? `This is only ONE version of your site. If your Google account has the domain property (sc-domain:${site.domain ?? "your-domain"}), connect that instead — it covers every version.`
+              : "This is the property we're reading data from.",
           },
           {
             label: "Your site's address",
@@ -206,11 +214,18 @@ export const siteSetupChecklist = registerChecklist<SiteSetupContext>({
           },
         ];
       },
-      howTo: () => [
-        "Compare the two lines above — they should be the same website.",
-        "If they aren't, open Integrations and connect the right property.",
-        "A domain property (no https:// in front) covers every version of your site and is usually the one you want.",
-      ],
+      howTo: ({ site }) => {
+        const property = gscProperty(site);
+        const urlVersionBound =
+          property !== null && !property.toLowerCase().startsWith("sc-domain:");
+        return [
+          "Compare the two lines above — they should be the same website.",
+          "If they aren't, open Integrations and connect the right property.",
+          urlVersionBound
+            ? `You're connected to a single URL version. Open Integrations and switch to the domain property (sc-domain:${site.domain ?? "…"}) if Google offers it — it covers every version, and the URL version silently misses the rest.`
+            : "The domain property (sc-domain:, no https:// in front) covers every version of your site — it's the one to keep.",
+        ];
+      },
     },
   ],
 });

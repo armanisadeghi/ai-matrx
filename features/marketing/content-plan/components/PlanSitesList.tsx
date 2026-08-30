@@ -14,10 +14,9 @@
  */
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Columns3,
-  ExternalLink,
   LayoutTemplate,
   ListTree,
   Map as MapIcon,
@@ -29,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -45,15 +45,22 @@ import type {
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
+import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
+import { buildSiteMenu } from "@/features/marketing/components/sites/site-actions";
+import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
+import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
 import {
   keyFieldsAiVariant,
+  webCopy,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import type { MarketingSite } from "@/features/marketing/types";
+import { getSiteListRow } from "@/features/marketing/data/service";
+import { marketingKeys, useDeleteSite } from "@/features/marketing/data/hooks";
+import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { createContentPlanListScope } from "@/features/surfaces/manifests/content-plan-list.manifest";
 import {
   SurfaceRuntimeProvider,
@@ -62,6 +69,7 @@ import {
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { CmsSiteService } from "@/features/cms/services/cmsService";
@@ -100,10 +108,80 @@ interface PlanSiteRow {
   id: string;
 }
 
-export function PlanSitesList() {
+function planSiteCopy(
+  row: PlanSiteRow,
+  vertical: string | null,
+  pagesPublished: number,
+  statusName: (statusId: string) => string,
+) {
+  const statusMix = planSiteStatusMix(row.stats, statusName);
+  const copy = webCopy({
+    kind: "web-content-plan-site",
+    label: `Content plan ${row.site.domain}`,
+    description:
+      "One site from the brand Content Plan list with its complete plan aggregates.",
+    surface: `Content Plan — ${row.site.domain}`,
+    data: {
+      site: row.site,
+      plan: {
+        vertical,
+        pages_planned: row.stats?.totalNodes ?? 0,
+        pages_with_keyword: row.stats?.keywordBound ?? 0,
+        pages_published: pagesPublished,
+        status_mix: statusMix,
+        last_activity: row.stats?.lastUpdatedAt ?? null,
+      },
+    },
+    lines: [
+      ["Site", row.site.name],
+      ["Domain", row.site.domain],
+      ["Vertical", vertical],
+      ["Pages planned", row.stats?.totalNodes ?? 0],
+      ["Pages with keyword", row.stats?.keywordBound ?? 0],
+      ["Pages published", pagesPublished],
+      ["Last activity", formatUpdated(row.stats?.lastUpdatedAt ?? null)],
+    ],
+    attributes: {
+      site_id: row.id,
+      brand_id: row.site.brand_id,
+      pages_planned: row.stats?.totalNodes ?? 0,
+    },
+  });
+
+  return {
+    ...copy,
+    // Keep the Content Plan list's established human row summary exact.
+    human: () =>
+      planSiteSummary({
+        name: row.site.name,
+        domain: row.site.domain,
+        stats: row.stats,
+      }),
+  };
+}
+
+export function PlanSitesList({
+  brandId,
+}: {
+  /**
+   * 🚨 BRAND SCOPE (2026-08-30). `/marketing/<brand>/content/plan` mounted
+   * this list with nothing, so it showed every site the viewer can plan
+   * across every org and every client — one client's workspace listing
+   * another client's websites and their plan coverage. The dropdown is
+   * deliberately cross-org (a plan applied under another org must stay
+   * reachable); the LIST on a brand route is not.
+   */
+  brandId?: string | null;
+} = {}) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const deleteMutation = useDeleteSite();
   const { sites, orgSites } = useContentPlanSites();
   const stats = usePlanSiteStats();
+  const [editing, setEditing] = useState<MarketingSite | null>(null);
+  const [deleting, setDeleting] = useState<MarketingSite | null>(null);
+  const [deniedDelete, setDeniedDelete] = useState<MarketingSite | null>(null);
+  const [peeking, setPeeking] = useState<SiteListRow | null>(null);
   // `web.site.plan_profile_id` → the profile's vertical. Cross-org read on
   // purpose: this list spans orgs, and an org-scoped read would blank the
   // column for every row outside the active org.
@@ -162,12 +240,17 @@ export function PlanSitesList() {
 
   const rows = useMemo<PlanSiteRow[]>(() => {
     const bySite = stats.data ?? new Map<string, PlanSiteStats>();
-    return orgSites.map((site) => ({
+    // Inside a brand, the list is that brand's websites — never the whole
+    // cross-org roster (see the brandId note on this component).
+    const listed = brandId
+      ? orgSites.filter((site) => site.brand_id === brandId)
+      : orgSites;
+    return listed.map((site) => ({
       id: site.id,
       site,
       stats: bySite.get(site.id) ?? null,
     }));
-  }, [orgSites, stats.data]);
+  }, [brandId, orgSites, stats.data]);
 
   const publishedCount = useMemo(
     () => (row: PlanSiteRow) => {
@@ -194,71 +277,127 @@ export function PlanSitesList() {
     [router],
   );
 
-  const buildRowMenu = (row: PlanSiteRow): ItemMenuConfig => ({
-    sections: [
-      {
-        id: "open",
-        items: [
+  const openQuickView = useCallback(
+    (site: MarketingSite) => {
+      void queryClient
+        .fetchQuery({
+          queryKey: [...marketingKeys.site(site.id), "list-row"],
+          queryFn: ({ signal }) => getSiteListRow(site.id, signal),
+          staleTime: 60_000,
+        })
+        .then(setPeeking)
+        .catch((error) => {
+          toast.error("Could not open site Quick view", {
+            description: extractErrorMessage(error),
+          });
+        });
+    },
+    [queryClient],
+  );
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMutation.mutateAsync(deleting.id);
+      toast.success(`Deleted ${deleting.name}`);
+      setDeleting(null);
+    } catch (error) {
+      if (isGovernedActionDenial(error)) {
+        setDeniedDelete(deleting);
+        setDeleting(null);
+        return;
+      }
+      toast.error("Could not delete site", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const buildRowMenu = useCallback(
+    (row: PlanSiteRow) => {
+      const cmsLink = resolveCmsLink(row.site, cmsSites.data ?? []);
+      const vertical = row.site.plan_profile_id
+        ? (verticalById.get(row.site.plan_profile_id) ?? null)
+        : null;
+
+      return buildSiteMenu({
+        site: row.site,
+        copy: planSiteCopy(
+          row,
+          vertical,
+          publishedCount(row),
+          (statusId) => statusMetaById.get(statusId)?.name ?? "No status",
+        ),
+        beforeSections: [
           {
-            id: "open-tree",
-            label: "Open plan",
-            icon: ListTree,
-            onSelect: () => openWorkspace(row, "tree"),
-          },
-          {
-            id: "open-table",
-            label: "Table",
-            icon: Table2,
-            onSelect: () => openWorkspace(row, "table"),
-          },
-          {
-            id: "open-map",
-            label: "Pillar map",
-            icon: MapIcon,
-            onSelect: () => openWorkspace(row, "map"),
-          },
-          {
-            id: "open-entities",
-            label: "Entities",
-            icon: Users,
-            onSelect: () => openWorkspace(row, "entities"),
-          },
-          {
-            id: "open-setup",
-            label: "Site Setup",
-            icon: LayoutTemplate,
-            onSelect: () => openWorkspace(row, "setup"),
+            id: "content-plan",
+            items: [
+              {
+                id: "open-tree",
+                label: "Open plan",
+                icon: ListTree,
+                onSelect: () => openWorkspace(row, "tree"),
+              },
+              {
+                id: "open-table",
+                label: "Table",
+                icon: Table2,
+                onSelect: () => openWorkspace(row, "table"),
+              },
+              {
+                id: "open-map",
+                label: "Pillar map",
+                icon: MapIcon,
+                onSelect: () => openWorkspace(row, "map"),
+              },
+              {
+                id: "open-entities",
+                label: "Entities",
+                icon: Users,
+                onSelect: () => openWorkspace(row, "entities"),
+              },
+              {
+                id: "open-setup",
+                label: "Site Setup",
+                icon: LayoutTemplate,
+                onSelect: () => openWorkspace(row, "setup"),
+              },
+            ],
           },
         ],
-      },
-      {
-        id: "related",
-        items: [
-          ...(() => {
-            const link = resolveCmsLink(row.site, cmsSites.data ?? []);
-            return link.linked && link.cmsSiteId
-              ? [
-                  {
-                    id: "open-cms",
-                    kind: "link" as const,
-                    label: "Open in CMS",
-                    icon: PanelsTopLeft,
-                    href: `/cms/${link.cmsSiteId}`,
-                  },
-                ]
-              : [];
-          })(),
-          {
-            id: "site-record",
-            kind: "link",
-            label: "Site record (Marketing)",
-            icon: ExternalLink,
-            href: marketingRoutes.site(row.site.brand_id, row.site.id),
-          },
-        ],
-      },
+        afterSections:
+          cmsLink.linked && cmsLink.cmsSiteId
+            ? [
+                {
+                  id: "related",
+                  items: [
+                    {
+                      id: "open-cms",
+                      kind: "link",
+                      label: "Open in CMS",
+                      icon: PanelsTopLeft,
+                      href: `/cms/${cmsLink.cmsSiteId}`,
+                    },
+                  ],
+                },
+              ]
+            : [],
+        onOpenWorkspace: (href) => router.push(href),
+        onQuickView: openQuickView,
+        onEditSite: setEditing,
+        onDeleteSite: setDeleting,
+      });
+    },
+    [
+      cmsSites.data,
+      openQuickView,
+      openWorkspace,
+      publishedCount,
+      router,
+      statusMetaById,
+      verticalById,
     ],
-  });
+  );
 
   const columns = useMemo<MatrxColumnDef<PlanSiteRow>[]>(() => {
     const brandLabel = (row: PlanSiteRow) =>
@@ -498,7 +637,7 @@ export function PlanSitesList() {
         align: "center",
       },
     ];
-  }, [rows, statusMetaById, publishedCount, openWorkspace, verticalById]);
+  }, [buildRowMenu, publishedCount, rows, statusMetaById, verticalById]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];
   const visibleColumns = useMemo(
@@ -611,158 +750,189 @@ export function PlanSitesList() {
   });
 
   return (
-    <SurfaceRuntimeProvider
-      surfaceName="matrx-user/content-plan-list"
-      getScope={getScope}
-      getWriteHandlers={getWriteHandlers}
-    >
-      <MatrxDataTable<PlanSiteRow>
-        data={pageRows}
-        columns={visibleColumns}
-        getRowId={(row) => row.id}
-        isLoading={sites.isLoading || stats.isLoading}
-        isFetching={sites.isFetching || stats.isFetching}
-        query={{
-          mode: "controlled",
-          state: query,
-          totalItems: processed.length,
-          onStateChange: handleQueryChange,
-        }}
-        detail={{ enabled: false }}
-        onRowOpen={(row) => openWorkspace(row)}
-        copy={{
-          label: "Plan site",
-          listLabel: "Plan sites",
-          location: webLocation("Content Plan — all plans"),
-          rowKind: "plan_site",
-          listKind: "plan_site_list",
-          rowDescription:
-            "One site on the Content Plan list, with its plan aggregates as rendered.",
-          listDescription:
-            "The Content Plan list — every site you can plan, with its plan aggregates.",
-          humanRow: (row) =>
-            planSiteSummary({
-              name: row.site.name,
-              domain: row.site.domain,
-              stats: row.stats,
-            }),
-          // The row cell shows the top four status chips; the payload carries
-          // the WHOLE mix, named rather than id'd — a truncated view must never
-          // become a truncated payload.
-          agentRow: (row) => ({
-            id: row.id,
-            domain: row.site.domain,
-            name: row.site.name,
-            has_brand: row.site.brand_id !== null,
-            vertical: row.site.plan_profile_id
-              ? (verticalById.get(row.site.plan_profile_id) ?? null)
-              : null,
-            pages_planned: row.stats?.totalNodes ?? 0,
-            pages_with_keyword: row.stats?.keywordBound ?? 0,
-            pages_published: publishedCount(row),
-            status_mix: planSiteStatusMix(
-              row.stats,
-              (statusId) => statusMetaById.get(statusId)?.name ?? "No status",
-            ),
-            last_activity: row.stats?.lastUpdatedAt ?? null,
-          }),
-          rowAttributes: (row) => ({
-            site_id: row.id,
-            domain: row.site.domain,
-            pages_planned: row.stats?.totalNodes ?? 0,
-          }),
-          listAttributes: (visible, all) => ({
-            rows: visible.length,
-            sites_total: all.length,
-            pages_planned_total: all.reduce(
-              (sum, row) => sum + (row.stats?.totalNodes ?? 0),
-              0,
-            ),
-            sites_without_a_plan: all.filter(
-              (row) => (row.stats?.totalNodes ?? 0) === 0,
-            ).length,
-          }),
-          aiVariants: (visible) => [
-            keyFieldsAiVariant({
-              kind: "plan_site_list",
-              location: webLocation("Content Plan — all plans"),
-              description:
-                "The sites in the current view, projected to their plan aggregates.",
-              visible,
-              project: (row: PlanSiteRow) => ({
-                domain: row.site.domain ?? row.site.name,
-                pages_planned: row.stats?.totalNodes ?? 0,
-                pages_with_keyword: row.stats?.keywordBound ?? 0,
-                pages_published: publishedCount(row),
-                last_activity: row.stats?.lastUpdatedAt ?? null,
+    <>
+      <SurfaceRuntimeProvider
+        surfaceName="matrx-user/content-plan-list"
+        getScope={getScope}
+        getWriteHandlers={getWriteHandlers}
+      >
+        <MatrxDataTable<PlanSiteRow>
+          data={pageRows}
+          columns={visibleColumns}
+          getRowId={(row) => row.id}
+          isLoading={sites.isLoading || stats.isLoading}
+          isFetching={sites.isFetching || stats.isFetching}
+          query={{
+            mode: "controlled",
+            state: query,
+            totalItems: processed.length,
+            onStateChange: handleQueryChange,
+          }}
+          detail={{ enabled: false }}
+          onRowOpen={(row) => openWorkspace(row)}
+          copy={{
+            label: "Plan site",
+            listLabel: "Plan sites",
+            location: webLocation("Content Plan — all plans"),
+            rowKind: "plan_site",
+            listKind: "plan_site_list",
+            rowDescription:
+              "One site on the Content Plan list, with its plan aggregates as rendered.",
+            listDescription:
+              "The Content Plan list — every site you can plan, with its plan aggregates.",
+            humanRow: (row) =>
+              planSiteSummary({
+                name: row.site.name,
+                domain: row.site.domain,
+                stats: row.stats,
               }),
-              query,
+            // The row cell shows the top four status chips; the payload carries
+            // the WHOLE mix, named rather than id'd — a truncated view must never
+            // become a truncated payload.
+            agentRow: (row) => ({
+              id: row.id,
+              domain: row.site.domain,
+              name: row.site.name,
+              has_brand: row.site.brand_id !== null,
+              vertical: row.site.plan_profile_id
+                ? (verticalById.get(row.site.plan_profile_id) ?? null)
+                : null,
+              pages_planned: row.stats?.totalNodes ?? 0,
+              pages_with_keyword: row.stats?.keywordBound ?? 0,
+              pages_published: publishedCount(row),
+              status_mix: planSiteStatusMix(
+                row.stats,
+                (statusId) => statusMetaById.get(statusId)?.name ?? "No status",
+              ),
+              last_activity: row.stats?.lastUpdatedAt ?? null,
             }),
-          ],
-        }}
-        toolbar={{
-          searchPlaceholder: "Search site name or domain…",
-          actions: (
-            <>
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 px-2.5 text-xs"
-                onClick={() =>
-                  // From the plans list, the default intent is a site that
-                  // doesn't exist yet — the form still offers both kinds.
-                  router.push(`${marketingRoutes.newSite()}?purpose=planned`)
-                }
-              >
-                <Plus className="h-3.5 w-3.5" />
-                New site
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5 px-2 text-xs"
-                  >
-                    <Columns3 className="h-3.5 w-3.5" />
-                    Columns
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel className="text-xs">
-                    Visible columns
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {columns
-                    .filter((column) => column.id !== "actions")
-                    .map((column) => {
-                      const id = column.id ?? "";
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={id}
-                          className="text-xs"
-                          checked={!hiddenColumns.includes(id)}
-                          disabled={id === "site"}
-                          onCheckedChange={() => toggleColumn(id)}
-                          onSelect={(event) => event.preventDefault()}
-                        >
-                          {COLUMN_LABELS[id] ?? id}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          ),
-        }}
-        emptyState={{
-          title: rows.length === 0 ? "No sites yet" : "No sites match",
-          description:
-            rows.length === 0
-              ? "Create a site in Marketing → Sites, assign it a brand, then plan its content here."
-              : "Adjust the search or clear the column filters.",
-        }}
-        className="p-2"
+            rowAttributes: (row) => ({
+              site_id: row.id,
+              domain: row.site.domain,
+              pages_planned: row.stats?.totalNodes ?? 0,
+            }),
+            listAttributes: (visible, all) => ({
+              rows: visible.length,
+              sites_total: all.length,
+              pages_planned_total: all.reduce(
+                (sum, row) => sum + (row.stats?.totalNodes ?? 0),
+                0,
+              ),
+              sites_without_a_plan: all.filter(
+                (row) => (row.stats?.totalNodes ?? 0) === 0,
+              ).length,
+            }),
+            aiVariants: (visible) => [
+              keyFieldsAiVariant({
+                kind: "plan_site_list",
+                location: webLocation("Content Plan — all plans"),
+                description:
+                  "The sites in the current view, projected to their plan aggregates.",
+                visible,
+                project: (row: PlanSiteRow) => ({
+                  domain: row.site.domain ?? row.site.name,
+                  pages_planned: row.stats?.totalNodes ?? 0,
+                  pages_with_keyword: row.stats?.keywordBound ?? 0,
+                  pages_published: publishedCount(row),
+                  last_activity: row.stats?.lastUpdatedAt ?? null,
+                }),
+                query,
+              }),
+            ],
+          }}
+          toolbar={{
+            searchPlaceholder: "Search site name or domain…",
+            actions: (
+              <>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 px-2.5 text-xs"
+                  onClick={() =>
+                    // From the plans list, the default intent is a site that
+                    // doesn't exist yet — the form still offers both kinds.
+                    router.push(`${marketingRoutes.newSite()}?purpose=planned`)
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New site
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 px-2 text-xs"
+                    >
+                      <Columns3 className="h-3.5 w-3.5" />
+                      Columns
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel className="text-xs">
+                      Visible columns
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {columns
+                      .filter((column) => column.id !== "actions")
+                      .map((column) => {
+                        const id = column.id ?? "";
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={id}
+                            className="text-xs"
+                            checked={!hiddenColumns.includes(id)}
+                            disabled={id === "site"}
+                            onCheckedChange={() => toggleColumn(id)}
+                            onSelect={(event) => event.preventDefault()}
+                          >
+                            {COLUMN_LABELS[id] ?? id}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ),
+          }}
+          emptyState={{
+            title: rows.length === 0 ? "No sites yet" : "No sites match",
+            description:
+              rows.length === 0
+                ? "Create a site in Marketing → Sites, assign it a brand, then plan its content here."
+                : "Adjust the search or clear the column filters.",
+          }}
+          className="p-2"
+        />
+      </SurfaceRuntimeProvider>
+
+      {peeking ? (
+        <SitePeekWindow site={peeking} onClose={() => setPeeking(null)} />
+      ) : null}
+      <SiteEditorDialog
+        open={Boolean(editing)}
+        onOpenChange={(open) => !open && setEditing(null)}
+        site={editing}
       />
-    </SurfaceRuntimeProvider>
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={deleting ? `Delete ${deleting.name}?` : "Delete site?"}
+        description="The site moves to trash and disappears from every list. This does not delete the brand."
+        variant="destructive"
+        confirmLabel="Delete site"
+        busy={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
+      {deniedDelete ? (
+        <GovernedActionDialog
+          open
+          onOpenChange={(next) => !next && setDeniedDelete(null)}
+          resourceType="web_site"
+          resourceId={deniedDelete.id}
+          itemName={deniedDelete.name}
+          href={marketingRoutes.site(deniedDelete.brand_id, deniedDelete.id)}
+        />
+      ) : null}
+    </>
   );
 }
