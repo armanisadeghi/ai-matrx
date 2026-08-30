@@ -36,7 +36,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -228,22 +228,6 @@ export function FastFireSetup() {
   return (
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
-        {/* Header */}
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
-            <Flame className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              FastFire
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Speak your answers out loud. Cards advance on a timer — you never
-              wait on the AI.
-            </p>
-          </div>
-        </div>
-
         {/* Set picker */}
         <section className="mb-5 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
@@ -252,7 +236,10 @@ export function FastFireSetup() {
           </div>
           {sets === null ? (
             <div className="flex items-center justify-center py-8">
-              <MatrxMiniLoader />
+              <SuspenseLoader
+                centered={false}
+                message="Loading flashcard sets…"
+              />
             </div>
           ) : loadError ? (
             <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-4 text-xs text-muted-foreground">
@@ -292,8 +279,7 @@ export function FastFireSetup() {
               onValueChange={(v) =>
                 dispatch(
                   updateConfig({
-                    secondsPerCard:
-                      v[0] ?? DEFAULT_DRILL_CONFIG.secondsPerCard,
+                    secondsPerCard: v[0] ?? DEFAULT_DRILL_CONFIG.secondsPerCard,
                   }),
                 )
               }
@@ -581,7 +567,7 @@ export function FastFireSetup() {
           <button
             type="button"
             onClick={() => setShowDevices((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+            className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-3 text-left"
           >
             <span className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Headphones className="h-4 w-4 text-muted-foreground" />
@@ -623,9 +609,9 @@ export function FastFireSetup() {
             void (async () => {
               if (!(await coppa.ensureAllowed())) return;
               await liveGrade.guard(async () => {
-              // Metered ONCE at session start (never per card — a per-card
-              // check would stall the timed loop). Commit only on a real
-              // start; a failed/aborted start never burns quota.
+                // Metered ONCE at session start (never per card — a per-card
+                // check would stall the timed loop). Commit only on a real
+                // start; a failed/aborted start never burns quota.
                 const started = await start();
                 if (started) await liveGrade.commit();
               });
@@ -653,22 +639,19 @@ export function FastFireSetup() {
         <enrichGuard.Paywall />
 
         {/* Entry-flow affordances: create a new set, or review past results. */}
-        <div className="mt-5 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-          <Link
-            href="/education/flashcards/new"
-            className="inline-flex items-center gap-1 hover:text-foreground"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Create a new set
-          </Link>
-          <span className="text-border">|</span>
-          <Link
-            href="/education/flashcards/sessions"
-            className="inline-flex items-center gap-1 hover:text-foreground"
-          >
-            <History className="h-3.5 w-3.5" />
-            View past results
-          </Link>
+        <div className="mt-5 flex flex-col items-stretch justify-center gap-1 sm:flex-row sm:items-center">
+          <Button asChild variant="ghost" className="min-h-11">
+            <Link href="/education/flashcards/new">
+              <Plus className="h-4 w-4" />
+              Create a new set
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="min-h-11">
+            <Link href="/education/flashcards/sessions">
+              <History className="h-4 w-4" />
+              View past results
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

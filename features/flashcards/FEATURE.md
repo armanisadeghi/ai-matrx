@@ -162,6 +162,13 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-30 — FastFire surface-check candidate repairs: `/education/fastfire`
+  now uses the shared `EducationToolHeader`, keeps one bounded body scroll owner
+  below the glass header, replaces generic setup/chunk spinners with contextual
+  loaders, routes exit through a transition, and restores 44px mobile reachability
+  for audio disclosure, result filters, and the two setup exit doors. Live matrix
+  remains verifier-gated under the surface-certification Work Loop.
+
 - 2026-08-30 — Set detail now stops guests at the server auth boundary before any
   `education.fc_set` client read, preserving the requested deck through login.
 
@@ -179,7 +186,7 @@ own fresh conversation):
   never promise cards the run won't touch. An **explicit pick beats the skip heuristic**: a
   selected card that already has layers is enriched anyway and reported separately ("1 you
   picked already had layers and got more") — never a silent second spend. F3's text-mergeable
-  restriction moved off `selectable` (every kind can be *enriched*) and onto the Merge button,
+  restriction moved off `selectable` (every kind can be _enriched_) and onto the Merge button,
   which now judges the selection. **(2) It showed a progress bar instead of the platform's own
   showcase.** `card_enrichment` is an ACTIVE registered kind with a default DB component
   (`card_enrichment_stack`); the window was rendering `LiveRunProgress` rows next to it. Now
@@ -212,7 +219,7 @@ own fresh conversation):
   (`selectCardDetailLayers` / `cardHasDetailLayers`): the only definition of "this card is
   enriched", used by the study strip, the set-detail badge, and the bulk planner, so they can
   never disagree. It excludes audio/image rows and memory-aid rows (`metadata.source ===
-  "memory_hint"` — `MemoryAidButton` renders those). **ONE renderer** —
+"memory_hint"` — `MemoryAidButton` renders those). **ONE renderer** —
   [`components/study/CardDetailLayers.tsx`](./components/study/CardDetailLayers.tsx): a
   collapsed-by-default "More on this card (N)" strip under the card in BOTH study forms
   (desktop card body + the mobile tools panel), each layer labelled in learner words, plus an
@@ -247,7 +254,7 @@ own fresh conversation):
   never saw the 1–5 confidence scale desktop feeds FSRS. Both fallbacks now render the SAME
   `FlashcardConfidenceRow` desktop uses, via `confidenceToResult` (`lib/srs/fsrs.ts`) — never a
   fork. `onGrade` widened to carry an optional `confidence` (`components/mardown-display/blocks/
-  flashcards/FlashcardMobileView.tsx`); `CanvasFlashcardsView.tsx` and `FlashcardStudyWindow.tsx`
+flashcards/FlashcardMobileView.tsx`); `CanvasFlashcardsView.tsx` and `FlashcardStudyWindow.tsx`
   forward it into `useFlashcardStudy().grade(result, { confidence })`, which already runs the
   offline-aware FSRS path (`recordAttemptOfflineAware`) — no new write path, no bypass. The
   in-grid duplicate compact row (cramped into a 3-column action-grid cell) was removed in favor
@@ -285,7 +292,7 @@ own fresh conversation):
   reader against the new agents' real `__kind` payloads. TTS: `flashcards.helper_tts` /
   `flashcards.spoken_front_tts` have NO generated offer entry — both thunks type their variables
   against `FlashcardsTtsRenderOffer` (`flashcards.tts_render`); `types/python-generated/
-  provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edited. Plan:
+provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edited. Plan:
   `common-docs/projects/agent-manifest-campaign/PLAN.md`.
 - 2026-08-22 — Generated-set title reads the `flashcard_set` kind's `title` only: the mandate
   `flashcards.generate_from_source` (v6) dropped `set_title` from its output_schema and declares

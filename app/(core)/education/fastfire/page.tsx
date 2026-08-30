@@ -7,6 +7,7 @@
 // never enter a server/SSR render path.
 import type { Metadata } from "next";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { FastFireClient } from "@/features/flashcards/fast-fire/components/FastFireClient";
 
 export const metadata: Metadata = toolMetadata("fastfire");
@@ -20,12 +21,15 @@ export default async function FastFireToolPage({
 }: FastFirePageProps) {
   const { set } = await searchParams;
   return (
-    // Scrolling shell: the setup/scoreboard phases are taller than a phone
-    // viewport, so the shell MUST scroll — `overflow-hidden` here clipped everything
-    // below the fold on mobile and locked the user out. Full-screen drill phases use
-    // `min-h-full` and simply fill this height without adding a scrollbar.
-    <div className="h-full overflow-y-auto">
-      <FastFireClient setId={set ?? null} />
-    </div>
+    <>
+      <EducationToolHeader title="FastFire" />
+      <div className="h-full overflow-hidden bg-textured">
+        {/* One scroll owner for setup and scoreboard. The header offset keeps
+            their first interactive controls below the AppShell glass. */}
+        <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+          <FastFireClient setId={set ?? null} />
+        </div>
+      </div>
+    </>
   );
 }

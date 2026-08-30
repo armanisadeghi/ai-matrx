@@ -149,7 +149,7 @@ export function FastFireScoreboard({
               type="button"
               onClick={() => dispatch(setReviewFilter({ filter: f.id }))}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                "min-h-11 rounded-full px-3 py-1 text-xs font-medium transition-colors sm:min-h-0",
                 filter === f.id
                   ? "bg-orange-600 text-white"
                   : "bg-muted text-muted-foreground hover:bg-accent",

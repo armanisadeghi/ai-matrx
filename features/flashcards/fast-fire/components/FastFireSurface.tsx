@@ -13,15 +13,19 @@
 
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { Button } from "@/components/ui/button";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildFastFireSurfaceScope } from "../fastfire-surface-scope";
 import { openSetup, resetFastFire, updateConfig } from "../redux/fastFireSlice";
 import { parseDrillConfigPatch } from "../drill-config";
-import { selectFastFirePhase, selectFastFireConfig } from "../redux/fastFire.selectors";
+import {
+  selectFastFirePhase,
+  selectFastFireConfig,
+} from "../redux/fastFire.selectors";
 import { useFastFireDrill } from "../hooks/useFastFireDrill";
 import { FastFireSetup } from "./FastFireSetup";
 import { FastFireCountdown } from "./FastFireCountdown";
@@ -35,6 +39,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const router = useRouter();
+  const [isExiting, startExitTransition] = useTransition();
   const phase = useAppSelector(selectFastFirePhase);
   const config = useAppSelector(selectFastFireConfig);
 
@@ -45,15 +50,11 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
 
   // Enter setup on first mount (carrying a route-provided setId). Reset on leave.
   useEffect(() => {
-    if (phase === "idle") {
-      dispatch(openSetup({ setId: setId ?? null }));
-    }
+    dispatch(openSetup({ setId: setId ?? null }));
     return () => {
       dispatch(resetFastFire());
     };
-    // Mount-once: setId is read at entry; changing routes remounts the surface.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dispatch, setId]);
 
   const restart = (): void => {
     dispatch(openSetup({ setId: config.setId }));
@@ -61,7 +62,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
 
   const exit = (): void => {
     dispatch(resetFastFire());
-    router.push(FLASHCARDS_HOME);
+    startExitTransition(() => router.push(FLASHCARDS_HOME));
   };
 
   // Live scope for the surface system — read from the store at Run time only.
@@ -107,7 +108,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
     case "idle":
       body = (
         <div className="flex min-h-[60dvh] items-center justify-center bg-textured">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <SuspenseLoader centered={false} message="Loading FastFire setup…" />
         </div>
       );
       break;
@@ -140,13 +141,14 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
       body = (
         <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 bg-textured text-center">
           <p className="text-sm text-muted-foreground">Session ended.</p>
-          <button
+          <Button
             type="button"
             onClick={restart}
-            className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+            disabled={isExiting}
+            className="bg-orange-600 hover:bg-orange-700"
           >
             Start a new FastFire
-          </button>
+          </Button>
         </div>
       );
       break;

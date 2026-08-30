@@ -10,7 +10,7 @@
 // only this. (CLAUDE.md heavy-client-code-split rule.)
 
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 const FastFireSurface = dynamic(
   () => import("./FastFireSurface").then((m) => m.FastFireSurface),
@@ -18,7 +18,7 @@ const FastFireSurface = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex min-h-[60dvh] items-center justify-center bg-textured">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <SuspenseLoader centered={false} message="Loading FastFire…" />
       </div>
     ),
   },
