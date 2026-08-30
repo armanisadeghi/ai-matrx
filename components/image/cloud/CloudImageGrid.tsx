@@ -80,7 +80,10 @@ export function CloudImageGrid({
               }
             >
               <MediaThumbnail
-                mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+                mediaRef={{
+                  file_id: file.id,
+                  mime_type: file.mimeType ?? undefined,
+                }}
                 fileName={file.fileName}
                 mimeType={file.mimeType}
                 thumbnailUrl={file.thumbnailUrl}
@@ -97,7 +100,7 @@ export function CloudImageGrid({
                 checked={bulkSelected}
                 onCheckedChange={() => onToggleBulkSelected(file.id)}
                 aria-label={`Select ${file.fileName} for bulk actions`}
-                className="bg-background/90 backdrop-blur"
+                className="relative bg-background/90 backdrop-blur before:absolute before:-inset-3 before:content-['']"
               />
             </div>
 
@@ -127,7 +130,8 @@ export function CloudImageGrid({
               title="File details"
               aria-label={`Details for ${file.fileName}`}
               className={cn(
-                "absolute z-10 rounded-full bg-background/80 text-foreground flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-background",
+                "absolute z-10 rounded-full bg-background/80 text-foreground flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity hover:bg-background",
+                "max-md:h-11 max-md:w-11 max-md:top-0 max-md:right-0",
                 infoSize,
               )}
             >
@@ -135,7 +139,7 @@ export function CloudImageGrid({
             </button>
 
             {density !== "compact" ? (
-              <div className="pointer-events-none absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent text-white text-[11px] px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="pointer-events-none absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent text-white text-[11px] px-2 py-1 truncate opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 {file.fileName}
               </div>
             ) : null}

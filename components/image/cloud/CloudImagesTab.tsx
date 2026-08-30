@@ -110,6 +110,7 @@ import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProv
 import { CloudFileMetadataSheet } from "@/features/image-manager/components/CloudFileMetadataSheet";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildImagesScope } from "@/features/image-manager/lib/images-surface-scope";
 import { IMAGES_SURFACE_NAME } from "@/features/surfaces/manifests/images.manifest";
 import {
@@ -439,7 +440,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     () =>
       allFiles.filter(
         (file) =>
-          !file.deletedAt && isImageMime(resolveMime(file.mimeType, file.fileName)),
+          !file.deletedAt &&
+          isImageMime(resolveMime(file.mimeType, file.fileName)),
       ).length,
     [allFiles],
   );
@@ -481,7 +483,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         raw = JSON.parse(raw);
       } catch {
         throw new Error(
-          "image_selection expects an array of image ids, e.g. [\"<uuid>\", \"<uuid>\"] — received a string that is not valid JSON.",
+          'image_selection expects an array of image ids, e.g. ["<uuid>", "<uuid>"] — received a string that is not valid JSON.',
         );
       }
     }
@@ -514,7 +516,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         .slice(0, 30)
         .map((file) => `${file.id} (${file.fileName})`)
         .join(", ");
-      const more = imageFiles.length > 30 ? `, …and ${imageFiles.length - 30} more` : "";
+      const more =
+        imageFiles.length > 30 ? `, …and ${imageFiles.length - 30} more` : "";
       throw new Error(
         `image_selection rejected: ${unknown.length} of the ${ids.length} id(s) you sent are not among the ${imageFiles.length} image(s) currently visible — ${unknown.join(", ")}. ` +
           `The selection was left unchanged. Note that applying search_query or recents_only changes this set, so ids you read before those writes may no longer be visible. ` +
@@ -579,316 +582,330 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
       getScope={getImagesScope}
       getWriteHandlers={buildImagesWriteHandlers}
     >
-    <TooltipProvider delayDuration={300}>
-      <div className="h-full flex flex-col">
-        <div className="border-b border-border px-3 md:px-4 py-2.5 md:pr-14 flex items-center gap-2 md:gap-3 flex-wrap">
-          <SearchInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder="Search your images..."
-            className="min-w-0 flex-1"
-            inputClassName="h-9 bg-background text-base"
-            showClearButton={true}
-            autoFocus={false}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => setMobileOptionsOpen(true)}
-            className="h-9 w-9 shrink-0 md:hidden"
-            aria-label="Image view options"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </Button>
-          <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
-            <Button
-              type="button"
-              variant={showRecentsOnly ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowRecentsOnly((v) => !v)}
-              className="h-9"
-            >
-              <Clock className="h-3.5 w-3.5 mr-1.5" />
-              Recents
-            </Button>
-            <ViewModeToggle prefs={prefs} onChange={setPrefs} />
-            <div
-              className="flex h-9 items-center rounded-md border border-border/80 bg-card/70 px-2.5 text-xs font-medium text-muted-foreground shadow-sm"
-              aria-label={`${imageCountLabel} loaded`}
-              aria-live="polite"
-            >
-              {imageCountLabel}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-auto p-3 md:p-4 space-y-4 md:space-y-6 overscroll-contain">
-          {providedUrls && providedUrls.length > 0 ? (
-            <section>
-              <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Provided
-              </h4>
-              <ImageGrid
-                images={providedUrls.map((url, index) => ({
-                  type: "public" as const,
-                  url,
-                  id: `provided-${index}-${url}`,
-                  metadata: {
-                    description: `External image ${index + 1}`,
-                    title: `Image ${index + 1}`,
-                  },
-                }))}
-                columns={4}
-                gap="md"
-                aspectRatio="1:1"
-                selectable={true}
-              />
-            </section>
-          ) : null}
-
-          <section>
-            {providedUrls && providedUrls.length > 0 ? (
-              <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Your Cloud
-              </h4>
-            ) : null}
-
-            {isLoading && allFiles.length === 0 ? (
-              <CloudLoadingState />
-            ) : imageFiles.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border/80 bg-card/30">
-                <EmptyStateCard
-                  title={
-                    query.length > 0
-                      ? "No matching images"
-                      : showRecentsOnly
-                        ? "No recent images"
-                        : "No images in your cloud yet"
-                  }
-                  description={
-                    query.length > 0
-                      ? "Try a different search term, or clear filters."
-                      : "Upload an image from the Upload tab and it will appear here automatically."
-                  }
-                  icon={query.length > 0 ? ImageOff : Cloud}
+      <TooltipProvider delayDuration={300}>
+        <NonEditableContextMenu
+          sourceFeature="image-manager"
+          surfaceName={IMAGES_SURFACE_NAME}
+          getApplicationScope={getImagesScope}
+          contentSource={{ type: "raw" }}
+        >
+          <div className="h-full flex flex-col" data-surface-value="context">
+            <div className="border-b border-border px-3 md:px-4 py-2.5 md:pr-14 flex items-center gap-2 md:gap-3 flex-wrap">
+              <div className="min-w-0 flex-1" data-surface-value="search_query">
+                <SearchInput
+                  value={query}
+                  onValueChange={setQuery}
+                  placeholder="Search your images..."
+                  inputClassName="h-9 bg-background text-base"
+                  showClearButton={true}
+                  autoFocus={false}
                 />
               </div>
-            ) : isListView ? (
-              <CloudImageList
-                files={imageFiles}
-                resolvingId={resolvingId}
-                selectionMode={selectionMode}
-                isSelected={(id) => isSelected(`cloud:${id}`)}
-                bulkSelectedIds={bulkSelectedIds}
-                onToggleBulkSelected={handleToggleBulkSelected}
-                onTileClick={handleTileClick}
-                onShowMetadata={setMetadataFile}
-              />
-            ) : (
-              <CloudImageGrid
-                files={imageFiles}
-                density={gridDensity}
-                resolvingId={resolvingId}
-                selectionMode={selectionMode}
-                isSelected={(id) => isSelected(`cloud:${id}`)}
-                bulkSelectedIds={bulkSelectedIds}
-                onToggleBulkSelected={handleToggleBulkSelected}
-                onTileClick={handleTileClick}
-                onShowMetadata={setMetadataFile}
-              />
-            )}
-          </section>
-        </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setMobileOptionsOpen(true)}
+                className="h-9 w-9 shrink-0 md:hidden"
+                aria-label="Image view options"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+              <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
+                <Button
+                  type="button"
+                  variant={showRecentsOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowRecentsOnly((v) => !v)}
+                  className="h-9"
+                  data-surface-value="recents_only"
+                >
+                  <Clock className="h-3.5 w-3.5 mr-1.5" />
+                  Recents
+                </Button>
+                <div data-surface-value="view_mode">
+                  <ViewModeToggle prefs={prefs} onChange={setPrefs} />
+                </div>
+                <div
+                  className="flex h-9 items-center rounded-md border border-border/80 bg-card/70 px-2.5 text-xs font-medium text-muted-foreground shadow-sm"
+                  aria-label={`${imageCountLabel} loaded`}
+                  aria-live="polite"
+                  data-surface-value="visible_image_count"
+                >
+                  {imageCountLabel}
+                </div>
+              </div>
+            </div>
 
-        <CloudFileMetadataSheet
-          file={metadataFile}
-          onOpenChange={(open) => {
-            if (!open) setMetadataFile(null);
-          }}
-        />
-        <FloatingSelectionToolbar
-          selectedCount={bulkSelectedIds.length}
-          actions={[
-            {
-              id: "download",
-              label: "Download",
-              icon: <Download className="h-3.5 w-3.5" />,
-              onClick: () => void handleBulkDownload(),
-              running: bulkBusy === "download",
-              disabled: bulkBusy !== null,
-            },
-            {
-              id: "move",
-              label: "Move...",
-              icon: <FolderInput className="h-3.5 w-3.5" />,
-              onClick: () => void handleBulkMove(),
-              running: bulkBusy === "move",
-              disabled: bulkBusy !== null,
-            },
-          ]}
-          onClear={handleClearBulkSelection}
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <div className="flex-1 overflow-auto p-3 md:p-4 space-y-4 md:space-y-6 overscroll-contain">
+              {providedUrls && providedUrls.length > 0 ? (
+                <section>
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                    Provided
+                  </h4>
+                  <ImageGrid
+                    images={providedUrls.map((url, index) => ({
+                      type: "public" as const,
+                      url,
+                      id: `provided-${index}-${url}`,
+                      metadata: {
+                        description: `External image ${index + 1}`,
+                        title: `Image ${index + 1}`,
+                      },
+                    }))}
+                    columns={4}
+                    gap="md"
+                    aspectRatio="1:1"
+                    selectable={true}
+                  />
+                </section>
+              ) : null}
+
+              <section data-surface-value="visible_images">
+                {providedUrls && providedUrls.length > 0 ? (
+                  <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                    Your Cloud
+                  </h4>
+                ) : null}
+
+                {isLoading && allFiles.length === 0 ? (
+                  <CloudLoadingState />
+                ) : imageFiles.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border/80 bg-card/30">
+                    <EmptyStateCard
+                      title={
+                        query.length > 0
+                          ? "No matching images"
+                          : showRecentsOnly
+                            ? "No recent images"
+                            : "No images in your cloud yet"
+                      }
+                      description={
+                        query.length > 0
+                          ? "Try a different search term, or clear filters."
+                          : "Upload an image from the Upload tab and it will appear here automatically."
+                      }
+                      icon={query.length > 0 ? ImageOff : Cloud}
+                    />
+                  </div>
+                ) : isListView ? (
+                  <CloudImageList
+                    files={imageFiles}
+                    resolvingId={resolvingId}
+                    selectionMode={selectionMode}
+                    isSelected={(id) => isSelected(`cloud:${id}`)}
+                    bulkSelectedIds={bulkSelectedIds}
+                    onToggleBulkSelected={handleToggleBulkSelected}
+                    onTileClick={handleTileClick}
+                    onShowMetadata={setMetadataFile}
+                  />
+                ) : (
+                  <CloudImageGrid
+                    files={imageFiles}
+                    density={gridDensity}
+                    resolvingId={resolvingId}
+                    selectionMode={selectionMode}
+                    isSelected={(id) => isSelected(`cloud:${id}`)}
+                    bulkSelectedIds={bulkSelectedIds}
+                    onToggleBulkSelected={handleToggleBulkSelected}
+                    onTileClick={handleTileClick}
+                    onShowMetadata={setMetadataFile}
+                  />
+                )}
+              </section>
+            </div>
+
+            <CloudFileMetadataSheet
+              file={metadataFile}
+              onOpenChange={(open) => {
+                if (!open) setMetadataFile(null);
+              }}
+            />
+            <FloatingSelectionToolbar
+              selectedCount={bulkSelectedIds.length}
+              actions={[
+                {
+                  id: "download",
+                  label: "Download",
+                  icon: <Download className="h-3.5 w-3.5" />,
+                  onClick: () => void handleBulkDownload(),
+                  running: bulkBusy === "download",
+                  disabled: bulkBusy !== null,
+                },
+                {
+                  id: "move",
+                  label: "Move...",
+                  icon: <FolderInput className="h-3.5 w-3.5" />,
+                  onClick: () => void handleBulkMove(),
+                  running: bulkBusy === "move",
+                  disabled: bulkBusy !== null,
+                },
+              ]}
+              onClear={handleClearBulkSelection}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={bulkBusy !== null}
+                    className={cn(
+                      "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+                      "max-md:w-9 max-md:justify-center max-md:px-0",
+                      "text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    {bulkBusy === "visibility" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5" />
+                    )}
+                    <span className="max-md:hidden">Visibility</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => void handleBulkVisibility("personal")}
+                  >
+                    <Lock className="mr-2 h-4 w-4" /> Private
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => void handleBulkVisibility("link")}
+                  >
+                    <Users className="mr-2 h-4 w-4" /> Anyone with the link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => void handleBulkVisibility("public")}
+                  >
+                    <Globe className="mr-2 h-4 w-4" /> Public
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 type="button"
+                onClick={() => setConfirmDelete(true)}
                 disabled={bulkBusy !== null}
                 className={cn(
                   "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
                   "max-md:w-9 max-md:justify-center max-md:px-0",
-                  "text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
+                  "text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50",
                 )}
               >
-                {bulkBusy === "visibility" ? (
+                {bulkBusy === "delete" ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Lock className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 )}
-                <span className="max-md:hidden">Visibility</span>
+                <span className="max-md:hidden">Delete</span>
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-44">
-              <DropdownMenuItem
-                onClick={() => void handleBulkVisibility("personal")}
-              >
-                <Lock className="mr-2 h-4 w-4" /> Private
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => void handleBulkVisibility("link")}
-              >
-                <Users className="mr-2 h-4 w-4" /> Anyone with the link
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => void handleBulkVisibility("public")}
-              >
-                <Globe className="mr-2 h-4 w-4" /> Public
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            disabled={bulkBusy !== null}
-            className={cn(
-              "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
-              "max-md:w-9 max-md:justify-center max-md:px-0",
-              "text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-          >
-            {bulkBusy === "delete" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
-            <span className="max-md:hidden">Delete</span>
-          </button>
-        </FloatingSelectionToolbar>
-        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Delete {bulkSelectedIds.length}{" "}
-                {bulkSelectedIds.length === 1 ? "image" : "images"}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                These images will move to Trash. You can restore them later from
-                the Files area.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => void handleBulkDelete()}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        <BottomSheet
-          open={mobileOptionsOpen}
-          onOpenChange={setMobileOptionsOpen}
-          title="Image options"
-        >
-          <BottomSheetHeader
-            title="Image options"
-            trailing={
-              <button
-                type="button"
-                onClick={() => setMobileOptionsOpen(false)}
-                className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
-              >
-                Done
-              </button>
-            }
-          />
-          <BottomSheetBody className="px-4 pb-5">
-            <div className="space-y-5">
-              <div>
-                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  View
-                </h3>
-                <div className="overflow-hidden rounded-xl border border-border bg-card/60">
-                  {VIEW_OPTIONS.map((opt, index) => {
-                    const Icon = opt.icon;
-                    const active = isActiveViewOption(prefs, opt);
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() =>
-                          setPrefs(
-                            opt.density
-                              ? { view: opt.view, density: opt.density }
-                              : { view: opt.view },
-                          )
-                        }
-                        className={cn(
-                          "flex min-h-[48px] w-full items-center gap-3 px-3 text-left",
-                          index > 0 && "border-t border-border",
-                          active ? "text-primary" : "text-foreground",
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="flex-1 text-[15px] font-medium">
-                          {opt.label}
-                        </span>
-                        {active ? (
-                          <span className="text-xs text-primary">Current</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
+            </FloatingSelectionToolbar>
+            <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Delete {bulkSelectedIds.length}{" "}
+                    {bulkSelectedIds.length === 1 ? "image" : "images"}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    These images will move to Trash. You can restore them later
+                    from the Files area.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void handleBulkDelete()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <BottomSheet
+              open={mobileOptionsOpen}
+              onOpenChange={setMobileOptionsOpen}
+              title="Image options"
+            >
+              <BottomSheetHeader
+                title="Image options"
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setMobileOptionsOpen(false)}
+                    className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+                  >
+                    Done
+                  </button>
+                }
+              />
+              <BottomSheetBody className="px-4 pb-5">
+                <div className="space-y-5">
+                  <div>
+                    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      View
+                    </h3>
+                    <div className="overflow-hidden rounded-xl border border-border bg-card/60">
+                      {VIEW_OPTIONS.map((opt, index) => {
+                        const Icon = opt.icon;
+                        const active = isActiveViewOption(prefs, opt);
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() =>
+                              setPrefs(
+                                opt.density
+                                  ? { view: opt.view, density: opt.density }
+                                  : { view: opt.view },
+                              )
+                            }
+                            className={cn(
+                              "flex min-h-[48px] w-full items-center gap-3 px-3 text-left",
+                              index > 0 && "border-t border-border",
+                              active ? "text-primary" : "text-foreground",
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="flex-1 text-[15px] font-medium">
+                              {opt.label}
+                            </span>
+                            {active ? (
+                              <span className="text-xs text-primary">
+                                Current
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowRecentsOnly((v) => !v)}
+                    className={cn(
+                      "flex min-h-[48px] w-full items-center gap-3 rounded-xl border border-border bg-card/60 px-3 text-left",
+                      showRecentsOnly && "border-primary/40 text-primary",
+                    )}
+                  >
+                    <Clock className="h-4 w-4" />
+                    <span className="flex-1 text-[15px] font-medium">
+                      Recent images only
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {showRecentsOnly ? "On" : "Off"}
+                    </span>
+                  </button>
+
+                  <div className="rounded-xl border border-border bg-card/60 px-3 py-3 text-sm text-muted-foreground">
+                    {imageCountLabel} loaded
+                  </div>
                 </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowRecentsOnly((v) => !v)}
-                className={cn(
-                  "flex min-h-[48px] w-full items-center gap-3 rounded-xl border border-border bg-card/60 px-3 text-left",
-                  showRecentsOnly && "border-primary/40 text-primary",
-                )}
-              >
-                <Clock className="h-4 w-4" />
-                <span className="flex-1 text-[15px] font-medium">
-                  Recent images only
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {showRecentsOnly ? "On" : "Off"}
-                </span>
-              </button>
-
-              <div className="rounded-xl border border-border bg-card/60 px-3 py-3 text-sm text-muted-foreground">
-                {imageCountLabel} loaded
-              </div>
-            </div>
-          </BottomSheetBody>
-        </BottomSheet>
-      </div>
-    </TooltipProvider>
+              </BottomSheetBody>
+            </BottomSheet>
+          </div>
+        </NonEditableContextMenu>
+      </TooltipProvider>
     </SurfaceRuntimeProvider>
   );
 }

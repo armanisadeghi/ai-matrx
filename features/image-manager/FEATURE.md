@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-26`
+**Last updated:** `2026-08-30`
 
 ---
 
@@ -207,6 +207,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-08-30` — codex: **Surface certification repaired the image library's missing pane menu and touch-only dead ends.** `/images/my-cloud` now mounts the canonical `NonEditableContextMenu` around the whole gallery with trigger-time `matrx-user/images` scope, so desktop right-click and mobile long-press resolve the same surface instead of falling through to shell state. Grid metadata and filenames are visible without hover on mobile, grid/list metadata controls and bulk-selection checkboxes have touch-reachable hit areas, and key query/view/count/content regions carry Locate anchors.
 - `2026-08-26` — codex: **Canonical backend GETs retry one transient browser transport loss before structured capture.** `/images/my-cloud` asset-envelope reads now recover from a single dropped connection while deterministic HTTP failures and caller aborts remain immediate.
 - `2026-08-26` — codex: **Private image-cloud routes now stop guests before user data UI mounts.** `/images/my-cloud`, `/images/all-files`, and `/images/upload` use the registry-backed server gate; `/images/public-search` and `/images/studio` remain public.
 - `2026-08-15` — claude: **Copy / Copy-for-AI on the image details sheet, with signed URLs kept out of the payload.** `CloudFileMetadataSheet` gains a header `CopyButtons` pair (`kind="image-file-metadata"`). Both flavors come from the new shared `lib/copy-format.ts` — `imageFileHumanSummary` / `imageRowSummary` / `imageFileAgentData` / `imageListAgentRows` — so the record, the rows, and any future grid copy cannot drift. Image rows are the cluster's worst signed-URL offenders: a `CloudFile` carries `url` / `signedUrl` / `downloadUrl` (all expiring within days) plus `filePath` (a raw storage path). The agent payload therefore leads with `agentFileRef` (durable `file_id` + CDN URL, or `durable_url: null` — never a signed substitute) and runs the row through `mediaSafe`, which replaces those fields with honest stubs. The sheet still _renders_ the storage path, but deliberately does not emit it. Two surfaces reclassified during the audit and intentionally left unwired: `PublicImagesSection` is an image **picker** over external Unsplash results plus a static preset catalog (no copyable record), and `StudioLibraryTab` is a thin wrapper — its `.map()` lives in `components/image/cloud/CloudFilesTab.tsx`, which is where a grid copy belongs so every cloud-file grid benefits at once. Audit: [`docs/handoffs/agent-copy-media-cluster.md`](../../docs/handoffs/agent-copy-media-cluster.md).

@@ -50,7 +50,7 @@ export function CloudImageList({
               checked={bulkSelected}
               onCheckedChange={() => onToggleBulkSelected(file.id)}
               aria-label={`Select ${file.fileName} for bulk actions`}
-              className="shrink-0"
+              className="relative shrink-0 before:absolute before:-inset-3 before:content-['']"
             />
             <button
               type="button"
@@ -70,7 +70,10 @@ export function CloudImageList({
             >
               <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-sm bg-muted/40">
                 <MediaThumbnail
-                  mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+                  mediaRef={{
+                    file_id: file.id,
+                    mime_type: file.mimeType ?? undefined,
+                  }}
                   fileName={file.fileName}
                   mimeType={file.mimeType}
                   thumbnailUrl={file.thumbnailUrl}
@@ -110,7 +113,7 @@ export function CloudImageList({
                 onShowMetadata(file);
               }}
               aria-label={`Details for ${file.fileName}`}
-              className="h-7 w-7 flex-shrink-0 rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex items-center justify-center"
+              className="h-11 w-11 md:h-7 md:w-7 flex-shrink-0 rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors flex items-center justify-center"
               title="File details"
             >
               <Info className="h-3.5 w-3.5" />
