@@ -45,7 +45,6 @@ import {
   Play,
   Share2,
   Video as VideoIcon,
-  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -70,6 +69,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { BlockSharePopover } from "../BlockSharePopover";
 import { useVideoActions } from "./useVideoActions";
 import { useBlockMediaSource } from "../useBlockMediaSource";
+import { MediaLightbox } from "@ai-matrx/media/react";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import type { VideoBlock } from "../types";
 import type { MediaExtraAction } from "../actions";
@@ -545,7 +545,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
         open={isExpanded && src !== null}
         onClose={() => setIsExpanded(false)}
         mediaRef={mediaRef}
-        fileName={block.origin === "matrx" ? (block.fileName ?? undefined) : undefined}
+        fileName={block.fileName ?? undefined}
         alt="Video"
         as="video"
         autoPlay
