@@ -499,6 +499,7 @@ export function AssistantActionBar({
             isOpen={showOptionsMenu}
             onClose={() => setShowOptionsMenu(false)}
             content={content}
+            contentIsStructuredRaw={inspectable.isStructuredRaw}
             turnContent={aggregatedContent}
             messageId={messageId}
             editTarget={editTarget}

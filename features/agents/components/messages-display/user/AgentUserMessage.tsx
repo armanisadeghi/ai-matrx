@@ -21,6 +21,7 @@ import {
   selectFirstMessageId,
   selectHasMoreOlderMessages,
   extractFlatText,
+  extractInspectableText,
   extractContentBlocks,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
@@ -156,6 +157,13 @@ export function AgentUserMessage({
   const [isHovered, setIsHovered] = useState(false);
 
   const content = extractFlatText(record);
+  // Raw-faithful view for the action bar (copy / edit / menu). For a message
+  // whose stored content is a pure structured payload (e.g. media blocks with
+  // no text), `text` is the pretty-printed JSON and `isStructuredRaw` flips
+  // the edit affordance into the read-only raw viewer — actions never operate
+  // on a blank. The transcript bubble below keeps rendering `trimmedText` +
+  // attachment chips; the JSON never leaks into the display.
+  const inspectable = extractInspectableText(record);
   // Persisted generated parts stay typed all the way into the one shared
   // attachment strip. No RenderBlockPayload/open-data conversion is involved.
   const attachmentParts = extractContentBlocks(record).filter(
@@ -375,7 +383,8 @@ export function AgentUserMessage({
         )}
       >
         <UserActionBar
-          content={trimmedText}
+          content={inspectable.isStructuredRaw ? inspectable.text : trimmedText}
+          structuredRaw={inspectable.isStructuredRaw}
           messageId={messageId}
           conversationId={conversationId}
           metadata={metadata}

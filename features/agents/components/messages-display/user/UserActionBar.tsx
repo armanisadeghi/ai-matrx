@@ -40,6 +40,7 @@ import { selectMessagePosition } from "@/features/agents/redux/execution-system/
 import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toast } from "@/lib/toast";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
+import { openStructuredRawViewer } from "../message-options/openAssistantMessageEditor";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   USER_EDIT_ACTIONS,
@@ -92,8 +93,19 @@ const MessageOptionsMenu = lazy(() =>
 );
 
 export interface UserActionBarProps {
-  /** Flat-text rendering of the user's message. */
+  /**
+   * Flat-text rendering of the user's message — or, when `structuredRaw` is
+   * true, the pretty-printed JSON of a structured (non-text) stored payload.
+   */
   content: string;
+  /**
+   * True when `content` is the read-only JSON raw view of a structured
+   * payload (e.g. a pure media-block array with no extractable text). The
+   * edit buttons then open the read-only raw viewer instead of the
+   * three-outcome text editor — saving the JSON back as a text block would
+   * corrupt the row, and an honest raw view beats the old blank editor.
+   */
+  structuredRaw?: boolean;
   /** Server `cx_message.id` (or client temp id for an optimistic message). */
   messageId: string;
   /** Server `cx_conversation.id`. */
@@ -111,6 +123,7 @@ export interface UserActionBarProps {
 
 export function UserActionBar({
   content,
+  structuredRaw = false,
   messageId,
   conversationId,
   metadata = null,
@@ -172,6 +185,17 @@ export function UserActionBar({
   // (callbackGroupId), never through Redux; the bridge closes the editor
   // itself after emitting.
   const handleEdit = () => {
+    if (structuredRaw) {
+      // Structured payload: faithful read-only raw view (shared opener with
+      // the assistant path). Never the text editor — its save/resubmit
+      // outcomes would wrap the JSON string into a text block.
+      openStructuredRawViewer(dispatch, {
+        content,
+        messageId,
+        metadata,
+      });
+      return;
+    }
     openEditor({
       instanceId: `user-edit-${messageId}`,
       content,
@@ -310,6 +334,7 @@ export function UserActionBar({
             isOpen={showOptionsMenu}
             onClose={() => setShowOptionsMenu(false)}
             content={content}
+            contentIsStructuredRaw={structuredRaw}
             messageId={messageId}
             conversationId={conversationId}
             metadata={metadata}

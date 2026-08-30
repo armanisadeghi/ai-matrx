@@ -40,6 +40,11 @@ export interface MessageOptionsMenuProps {
   /** Flat-text rendering of the message content (for copy/print/TTS). */
   content: string;
   /**
+   * True when `content` is the pretty-printed JSON raw view of a structured
+   * (non-text) stored payload. Edit paths open the read-only raw viewer.
+   */
+  contentIsStructuredRaw?: boolean;
+  /**
    * Aggregated flat text of the whole multi-iteration turn, when the host
    * bar has one. Consumption-only actions prefer it; edit paths ignore it.
    */
@@ -87,6 +92,7 @@ export function MessageOptionsMenu({
   onClose,
   role,
   content,
+  contentIsStructuredRaw = false,
   turnContent = null,
   messageId,
   editTarget,
@@ -168,6 +174,7 @@ export function MessageOptionsMenu({
 
   const ctx: MessageActionContext = {
     content,
+    contentIsStructuredRaw,
     turnContent,
     isAuthenticated,
     messageId,

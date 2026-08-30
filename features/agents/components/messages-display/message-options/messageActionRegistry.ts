@@ -103,6 +103,14 @@ export interface MessageActionContext {
    * they mutate a single `cx_message` row.
    */
   turnContent?: string | null;
+  /**
+   * True when `content` is the pretty-printed JSON raw view of a structured
+   * (non-text) stored payload (see `extractInspectableText`). Consumption
+   * actions (copy/save/export) still work on it faithfully; text-edit paths
+   * switch to the read-only raw viewer so the JSON string is never written
+   * back as a text block.
+   */
+  contentIsStructuredRaw?: boolean;
   /** Is the viewer signed in? Gates auth-required actions. */
   isAuthenticated: boolean;
   /** Server `cx_message.id`. Required for any mutation path; null hides those items. */
@@ -1119,19 +1127,22 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
     ctx;
   const editContent = ctx.editTarget?.content ?? content;
   const editMessageId = ctx.editTarget?.messageId ?? messageId;
+  const editStructuredRaw = ctx.editTarget?.isStructuredRaw ?? false;
   return {
     key: "edit-content",
     icon: Edit,
     iconColor: "text-emerald-500 dark:text-emerald-400",
-    label: "Edit content",
+    label: editStructuredRaw ? "View raw content" : "Edit content",
     action: () => {
       // Shared opener — identical contract (mode, instance, save path) to the
       // action-bar pencil, so the two edit entry points can never drift.
+      // Structured payloads open the read-only raw viewer.
       openAssistantMessageEditor(dispatch, {
         content: editContent,
         conversationId,
         messageId: editMessageId,
         metadata,
+        structuredRaw: editStructuredRaw,
       });
       onClose();
     },
@@ -1165,10 +1176,18 @@ function editAndResubmitUserItem(ctx: MessageActionContext): MenuItem {
     key: "edit-resubmit",
     icon: Send,
     iconColor: "text-cyan-500 dark:text-cyan-400",
-    label: "Edit & resubmit",
+    label: ctx.contentIsStructuredRaw ? "View raw content" : "Edit & resubmit",
     action: async () => {
       onClose();
       if (!conversationId || !messageId) return;
+      if (ctx.contentIsStructuredRaw) {
+        // Structured payload: faithful read-only raw view — the three-outcome
+        // text editor would save the JSON string back as a text block.
+        const { openStructuredRawViewer } =
+          await import("./openAssistantMessageEditor");
+        openStructuredRawViewer(dispatch, { content, messageId, metadata });
+        return;
+      }
       const { USER_EDIT_ACTIONS, routeUserEditAction } =
         await import("./userEditActions");
       const { callbackGroupId } = createFullScreenEditorCallbackGroup({
