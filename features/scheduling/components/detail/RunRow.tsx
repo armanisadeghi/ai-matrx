@@ -30,7 +30,7 @@ export function RunRow({ run, task = null }: Props) {
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "grid min-h-11 min-w-0 flex-1 grid-cols-[auto_1fr_auto] items-center gap-3 px-3 py-2 text-left hover:bg-accent/30",
+            "grid min-h-11 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-2 py-2 text-left hover:bg-accent/30 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-3 sm:px-3",
           )}
         >
           {open ? (
@@ -38,7 +38,7 @@ export function RunRow({ run, task = null }: Props) {
           ) : (
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
           )}
-          <div className="min-w-0 flex items-center gap-3 flex-wrap">
+          <div className="min-w-0 flex items-center gap-x-2 gap-y-1 flex-wrap sm:gap-x-3">
             <StatusPill status={run.status} />
             <span className="text-xs text-muted-foreground">
               {humanizeRelative(startedAt)}
@@ -59,13 +59,15 @@ export function RunRow({ run, task = null }: Props) {
               </span>
             )}
           </div>
-          <OutputRefLink outputRef={run.output_ref} />
+          <div className="col-start-2 min-w-0 sm:col-auto">
+            <OutputRefLink outputRef={run.output_ref} />
+          </div>
         </button>
         {/* Sibling of the expand button, never nested inside it. */}
         <CopyButtons
           size="xs"
           label={`Run ${run.status}`}
-          className="self-center pr-2 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
+          className="shrink-0 self-center pr-1 sm:pr-2 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"
           human={() => runSummary(run)}
           json={() => run}
           agent={() => buildRunRowPayload(run, task)}

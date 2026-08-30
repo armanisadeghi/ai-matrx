@@ -36,7 +36,7 @@ export function StatusPill({ status, className }: Props) {
     <Badge
       variant="outline"
       className={cn(
-        "px-2 py-0.5 text-xs font-medium",
+        "shrink-0 whitespace-nowrap px-2 py-0.5 text-xs font-medium",
         STATUS_STYLES[status],
         className,
       )}
