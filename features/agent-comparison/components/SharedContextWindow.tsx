@@ -39,7 +39,6 @@ import {
   broadcastRemoveContextEntry,
 } from "../redux/thunks";
 import { selectBattleColumns } from "../redux/selectors";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SharedContextWindowProps {
   id: string;
@@ -319,7 +318,7 @@ function SharedContextRow({
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
-      <ProTextarea
+      <textarea
         value={draft}
         onChange={(e) => {
           setDraft(e.target.value);

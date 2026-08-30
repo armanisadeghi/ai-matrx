@@ -36,12 +36,12 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 
 import { discussFinding, discussReview, getReviewThread } from "../api";
 import type { DiscussResult } from "../types";
 import { ThreadMessageRow } from "./ThreadMessageRow";
 import { fmtCost, fmtElapsed } from "./tokens";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 function Elapsed({ startedAt }: { startedAt: number }) {
   const [elapsed, setElapsed] = useState(0);
@@ -192,7 +192,7 @@ export function DiscussPanel({
       )}
 
       <div className="space-y-2">
-        <ProTextarea
+        <Textarea
           rows={3}
           value={draft}
           disabled={send.isPending}

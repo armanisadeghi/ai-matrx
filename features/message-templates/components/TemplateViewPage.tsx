@@ -46,7 +46,6 @@ import {
   deleteTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -205,7 +204,7 @@ function AutoTextarea({
   }, [value]);
 
   return (
-    <ProTextarea
+    <textarea
       ref={ref}
       value={value}
       onChange={(e) => onChange(e.target.value)}

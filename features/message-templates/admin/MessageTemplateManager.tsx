@@ -82,7 +82,6 @@ import type {
 } from "@/types/python-generated/stream-events";
 import { isJsonObject } from "@/types/json";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -91,10 +90,7 @@ interface MessageTemplateManagerProps {
 // Auto-resizing textarea component
 const AutoResizeTextarea = React.forwardRef<
   HTMLTextAreaElement,
-  Omit<
-    React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    "onChange" | "onSubmit"
-  > & {
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     minHeight?: number;
@@ -138,7 +134,7 @@ const AutoResizeTextarea = React.forwardRef<
   };
 
   return (
-    <ProTextarea
+    <textarea
       ref={textareaRef}
       className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden ${className}`}
       value={value}

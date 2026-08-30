@@ -22,7 +22,6 @@ import {
   NEW_MEMORY_ID,
   type UseAgentMemoriesReturn,
 } from "../hooks/useAgentMemories";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SCOPE_OPTIONS: { value: AgentMemoryScope; label: string }[] = [
   { value: "user", label: "Just me" },
@@ -100,8 +99,7 @@ export function MemoryComposer({ state, memory }: MemoryComposerProps) {
         className="mb-2 w-full shrink-0 bg-transparent text-lg font-semibold text-foreground outline-none placeholder:text-muted-foreground/50"
       />
 
-      <ProTextarea
-        wrapperClassName="min-h-0 flex-1"
+      <textarea
         value={draft.content}
         onChange={(e) => setDraftContent(e.target.value)}
         placeholder="Write the memory as a clear statement of fact or preference…"

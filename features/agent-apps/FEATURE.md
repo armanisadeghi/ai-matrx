@@ -187,6 +187,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- `2026-08-30` — **The admin console names the app's JOB (workflow-mandate census #61).** After 6.9 an app's job is its mandate, so `/administration/agents/agent-apps/apps` gained a filterable **Mandate** column and the detail route (`edit/[id]`) a Mandate field, both showing `mandate.definition.mandate_key` linked to `/mandates/<key>`. Read-only by design — the holder behind the mandate is the mandate's business and the binding is edited on the app's own settings page. `AgentAppAdminView` now declares `mandate_id` / `mandate_key`; the key comes from a second `mandate.definition` read (`readAllRows`) in `lib/services/agent-apps-admin-service.ts`, mirroring the creator-email lookup beside it, because the two tables sit in different schemas. Unaffected by `APP_MANDATE_CUTOVER`: every one of the 96 apps already carries `mandate_id`, so the column reads true while the run path is still dark.
+
 - `2026-08-29` — **The authenticated renderer preserves the full public-app contract.** `AgentAppRenderer` now forwards `app_kind`, `shared_context_policies`, and `search_tsv` when projecting an authenticated app into `PublicAgentApp`; the whole-file TypeScript disable is removed.
 
 - `2026-08-28` — **Agent binding now uses the same canonical picker as the Chat header.** The compact Agent App binding control delegates to `AgentListDropdown`, preserving its small trigger while gaining the complete Redux-backed inventory, ownership tabs, search, sort, favorites, category/tag filters, reset, origin badges, and detail doors. It no longer maintains a second `Command`-based roster.

@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { ChangeDiff } from "@/components/ui/change-diff";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -42,7 +43,6 @@ import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import type { ApprovalVerb } from "./approval-types";
 import { REMEMBER_SENTINEL } from "./approval-types";
 import { AgentCardShell, type AccentTone } from "./AgentCardShell";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ApprovalCardProps {
   ask: PendingAsk;
@@ -118,7 +118,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
 
   const footer = respondMode ? (
     <div>
-      <ProTextarea
+      <Textarea
         value={respondText}
         onChange={(e) => setRespondText(e.target.value)}
         placeholder="Tell the agent what to do instead…"

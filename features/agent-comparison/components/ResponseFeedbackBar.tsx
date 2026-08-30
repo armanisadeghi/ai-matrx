@@ -64,7 +64,6 @@ import {
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { setFeedbackRank, setFeedbackSnapshot } from "../redux/battleSlice";
 import type { FeedbackSnapshot } from "../types";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   conversationId: string;
@@ -559,7 +558,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
       {/* Comment */}
       {commentOpen && (
         <div className="px-3 pb-3">
-          <ProTextarea
+          <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             onBlur={handleCommitComment}

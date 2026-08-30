@@ -17,7 +17,6 @@ import { Pencil, Trash2, GitCompareArrows } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface EditableTextSegmentRowProps {
   text: string;
@@ -77,7 +76,7 @@ export function EditableTextSegmentRow({
     <div className={cn("group relative", className)}>
       {editing ? (
         <div className="flex flex-col gap-2 px-3 py-2">
-          <ProTextarea
+          <textarea
             ref={taRef}
             value={draft}
             onChange={(e) => {

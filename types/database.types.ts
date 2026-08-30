@@ -52397,6 +52397,7 @@ export type Database = {
           variables_panel_style: string | null
           version: number | null
           visibility: Database["platform"]["Enums"]["visibility"] | null
+          write_policies: Json | null
         }
         Relationships: []
       }

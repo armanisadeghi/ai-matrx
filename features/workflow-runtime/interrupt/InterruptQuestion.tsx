@@ -57,7 +57,6 @@ import {
   type InterruptAnswerField,
   type InterruptQuestionView,
 } from "./interrupt-view";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * Where the host is drawing questions.
@@ -280,7 +279,7 @@ function ApprovalControl({
           Reject
         </button>
       </div>
-      <ProTextarea
+      <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
         rows={2}

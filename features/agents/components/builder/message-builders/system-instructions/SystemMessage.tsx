@@ -44,7 +44,6 @@ import { withAgentSystemInstruction } from "@/features/agents/utils/agent-system
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Extract text from a TextBlock. Canonical field is `.text` — normalised at the Redux boundary. */
 function extractTextFromBlock(block: Record<string, unknown>): string {
@@ -734,7 +733,7 @@ export function SystemMessage({
               onViewHistory={handleViewHistory}
               hasHistory={canUndo || canRedo}
             >
-              <ProTextarea
+              <textarea
                 ref={handleTextareaRef}
                 value={developerMessage}
                 onChange={handleChange}

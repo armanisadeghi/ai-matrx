@@ -1442,11 +1442,22 @@ source_text?}`. **THE reference for "the source kind gates which fields are
   the `surface_binding` payload is replaced WHOLESALE on save, so every save
   path carries the binding's current `value_mappings` + the FULL policy map
   (BindingColumn, the batch editor, and the Agent access column all do).
-  **Shortcut storage (no DDL):** the shortcut's overrides live INSIDE
-  `agent.shortcut.value_mappings` under the reserved `__write_policies` key —
-  serializer pair in `features/agents/redux/agent-shortcuts/converters.ts`
-  (`parseShortcutWritePolicies` / `packShortcutValueMappings`;
-  `parseValueMappings` strips the key). The launch thunk pushes the
+  **Shortcut storage — a policy is TREATMENT, not consumption** (THE-MODEL
+  law 4; census #20): on `mandate.vw_shortcut` the overrides are a column of
+  their own, `write_policies`, backed by
+  `mandate.treatment.config.write_policies`
+  (`migrations/mandate_shortcut_write_policies_on_treatment.sql`). While
+  `SHORTCUT_STORAGE_CUTOVER` is OFF the active storage is `agent.shortcut`,
+  which has no home for them, so they still ride inside its `value_mappings`
+  under the reserved `__write_policies` key. Both shapes go through ONE read
+  seam and ONE write seam in
+  `features/agents/redux/agent-shortcuts/converters.ts`
+  (`readShortcutWritePolicies` / `packShortcutMappingColumns`, routed by
+  `SHORTCUT_WRITE_POLICIES_ON_TREATMENT` in `lib/supabase/shortcutStorage.ts`);
+  `parseShortcutWritePolicies` / `packShortcutValueMappings` are the legacy
+  blob pair those seams call, never call sites. The two halves share one column
+  only pre-cutover — that is what the one-sided-patch screams guard, and they
+  go quiet once policies have their own column. The launch thunk pushes the
   shortcut's `writePolicies` on the `"shortcut"` layer, so a policy-only
   shortcut still participates in the merge, and `matrx-user/pdf-extractor` (2 draft/`ask` targets on the Content-extractor template in the PDF studio's right inspector — `extraction_template_draft` (partial `{template_name, page_range, chunk_size, chunk_overlap}`) and `extraction_output_columns` (the whole Results table definition); handlers in `ChunkingConfigForm` through the same `patchDraft` the form's own inputs dispatch, mode-gated on the panel's EDITING state and refused while a run is in flight, with a base refusal layer on `PdfStudioShell`'s provider for when the panel is not mounted. Declared HERE and not on `matrx-user/extractor-chunker`, which the campaign named: that surface has no client mount at all — it is a server-side per-chunk vocabulary catalog, so targets on it would never be offered), and
   `matrx-user/cms` (the CMS HUB — ONE ask-policy `mode:"draft"` target,
@@ -1987,6 +1998,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-08-30 — Closing wave: the value-mapping / write-policy editor family finished (workflow-mandate census #19 #20 #21).** `ValueMappingEditor` no longer `Exclude`s `offered_value`: consumption is per-binding (THE-MODEL law 1) and the ONE mapping editor now renders that branch — source picker over the offered values, `deliver` variable|context, `when_absent` skip/use_default/fail on a non-guaranteed source, and the structured-kind refusal (a non-scalar, non-media kind may only ride `context`). It appears only when a caller passes `availableOfferedValues`, so surface bindings never offer an entry `utils/value-mapping-resolver.ts` refuses at runtime. `WritePolicyEditor`'s map moved off the shortcut-side `__write_policies` blob key onto the treatment: `mandate.treatment.config.write_policies`, exposed as `mandate.vw_shortcut.write_policies` (writable through the existing INSTEAD OF trigger; round-trip proven live, and the view now strips the reserved key from `value_mappings` so there is exactly one home). Client routing is one constant — `SHORTCUT_WRITE_POLICIES_ON_TREATMENT` — with `readShortcutWritePolicies` / `packShortcutMappingColumns` as the only read/write seams; the one-sided-patch screams now fire only while the halves actually share a column. `AgentSurfacesPanel` gained the one-resolver read: each surface row shows the mandate keys its manifest's `agentRoles` declare, resolved through `useMandateSet` (`resolveMandate` — system → org → user) with holder type + provenance and a link to the mandate door, instead of implying the listed agent-id bindings are what runs there.
 
 - **2026-08-30 — P12 completed the first three-overlay Surface tranche in code and the live mirror.** `matrx-user/keyword-quick-answers`, the distinct floating `matrx-user/keyword-research-window` (the routed workbench remains `matrx-user/keyword-research`), and `matrx-user/page-research` now each have a registered manifest, complete trigger-time scope, nested runtime provider, v3 context menu, Locate anchors, and only bounded draft/UI write targets; paid or semantic commit actions remain on their existing human controls. The canonical mirror sync created/updated 92 values, four agent roles, and eight write targets across the three declarations. Static gates pass with 197 registered surfaces, and the overlay backlog dropped from 162 to 159. Readiness remains `partial` until the required isolated in-app Browser proof is available; mirror presence and green detectors do not substitute for that proof.
 

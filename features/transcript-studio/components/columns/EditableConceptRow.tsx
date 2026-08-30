@@ -14,7 +14,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { CONCEPT_KINDS } from "../../types";
 import type { ConceptItem, ConceptKind } from "../../types";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 const KIND_OPTIONS: readonly ConceptKind[] = CONCEPT_KINDS;
 
@@ -114,7 +113,7 @@ export function EditableConceptRow({
           placeholder="Label"
           className="rounded-md border border-border bg-background px-2 py-1 text-sm font-medium outline-none focus:ring-1 focus:ring-ring"
         />
-        <ProTextarea
+        <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={(e) => {

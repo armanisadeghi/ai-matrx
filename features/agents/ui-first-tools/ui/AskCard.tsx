@@ -65,6 +65,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk, PendingAskLevel } from "../redux/pending-asks.slice";
@@ -80,7 +81,6 @@ import type { AskUserResponse, UserAskOption } from "../tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import { AskCardCountdown } from "./AskCardCountdown";
 import { AgentCardShell, type AccentTone } from "./AgentCardShell";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 const OTHER_SENTINEL = "__matrx_other__";
 
@@ -286,7 +286,7 @@ export function AskCard({ ask }: AskCardProps) {
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                 Anything else? (optional)
               </div>
-              <ProTextarea
+              <Textarea
                 value={additionalInstructions}
                 onChange={(e) => setAdditionalInstructions(e.target.value)}
                 placeholder="Add a note for the agent…"
@@ -328,7 +328,7 @@ export function WriteInsteadBody({
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
         Write a message instead
       </div>
-      <ProTextarea
+      <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Type your reply to the agent…"
@@ -432,7 +432,7 @@ function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
   if (otherMode) {
     return (
       <div className="flex flex-col gap-2">
-        <ProTextarea
+        <Textarea
           value={otherText}
           onChange={(e) => setOtherText(e.target.value)}
           placeholder="Type your answer…"
@@ -581,7 +581,7 @@ function ChoiceBody({
               <div className="min-w-0 flex-1">
                 <div>Other</div>
                 {otherSelected ? (
-                  <ProTextarea
+                  <Textarea
                     value={otherText}
                     onChange={(e) => setOtherText(e.target.value)}
                     placeholder="Type your answer…"
@@ -654,7 +654,7 @@ function TextBody({
           </button>
         </div>
       ) : (
-        <ProTextarea
+        <Textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Type your answer…"
@@ -738,7 +738,7 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
       )}
       {showOther && (
         <div className="flex flex-col gap-2">
-          <ProTextarea
+          <Textarea
             value={freeform}
             onChange={(e) => setFreeform(e.target.value)}
             placeholder="Tell the agent what happened…"

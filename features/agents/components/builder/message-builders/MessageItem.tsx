@@ -46,7 +46,6 @@ import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import MarkdownStream from "@/components/MarkdownStream";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Extract text from a TextBlock. */
 function extractTextFromBlock(block: Record<string, unknown>): string {
@@ -735,7 +734,7 @@ export function MessageItem({
             onViewHistory={handleViewHistory}
             hasHistory={canUndo || canRedo}
           >
-            <ProTextarea
+            <textarea
               ref={handleTextareaRef}
               value={currentText}
               onChange={handleChange}

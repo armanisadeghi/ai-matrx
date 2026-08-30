@@ -26,7 +26,6 @@ import type { ContentSource } from "@/features/rich-document/types";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
 
@@ -359,7 +358,7 @@ export default function MobileNoteEditor({
               growTextarea();
             }}
           >
-            <ProTextarea
+            <textarea
               ref={textareaRef}
               value={localContent}
               onChange={(e) => {

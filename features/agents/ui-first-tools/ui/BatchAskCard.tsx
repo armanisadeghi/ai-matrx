@@ -26,6 +26,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
@@ -42,7 +43,6 @@ import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import { AskCardCountdown } from "./AskCardCountdown";
 import { AgentCardShell } from "./AgentCardShell";
 import { AskBody, WriteInsteadBody, presentation } from "./AskCard";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface BatchAskCardProps {
   /** All questions in the batch (any order — sorted by batchIndex here). */
@@ -236,7 +236,7 @@ export function BatchAskCard({ asks }: BatchAskCardProps) {
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
               Anything else? (optional)
             </div>
-            <ProTextarea
+            <Textarea
               value={additionalInstructions}
               onChange={(e) => setAdditionalInstructions(e.target.value)}
               placeholder="Add a note for the agent…"
