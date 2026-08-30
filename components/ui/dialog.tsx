@@ -58,6 +58,7 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
+import { PortalContainerProvider } from "@ai-matrx/design-system";
 import {
   RadixDialogModalProvider,
   useRadixDialogModal,
@@ -139,6 +140,9 @@ const DialogContent = React.forwardRef<
 >(({ className, children, mobileSheet = true, ...props }, ref) => {
   const isMobile = useIsMobile();
   const isModal = useRadixDialogModal();
+  // Falls through to the popout body while `containerEl` is unset (pre-mount)
+  // — identical to useNestedPortalContainer's dialog > popout > body order.
+  const popoutBridgeContainer = usePopoutContainer();
   const asSheet = mobileSheet && isMobile;
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [containerEl, setContainerEl] = React.useState<HTMLElement | null>(
@@ -188,7 +192,20 @@ const DialogContent = React.forwardRef<
           </VisuallyHidden.Root>
         )}
         <DialogContainerContext.Provider value={containerEl}>
-          {children}
+          {/*
+           * Host wiring for the @ai-matrx/design-system portal seam: package
+           * primitives (Popover) read PortalContainerProvider instead of the
+           * host's useNestedPortalContainer. Feed it the SAME resolution the
+           * host hook computes here — dialog content first (keeps nested
+           * popovers inside the react-remove-scroll shard), then the popout
+           * body, then document.body. An explicit `container` prop on the
+           * package component still wins (package seam contract).
+           */}
+          <PortalContainerProvider
+            container={containerEl ?? popoutBridgeContainer ?? null}
+          >
+            {children}
+          </PortalContainerProvider>
         </DialogContainerContext.Provider>
         <DialogPrimitive.Close
           data-slot="dialog-close"
