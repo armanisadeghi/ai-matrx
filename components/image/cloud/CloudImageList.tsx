@@ -3,7 +3,7 @@
 import { Check, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import type { CloudFileRecord } from "@/features/files/types";
 
 export interface CloudImageListProps {
@@ -70,7 +70,10 @@ export function CloudImageList({
             >
               <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-sm bg-muted/40">
                 <MediaThumbnail
-                  file={file}
+                  mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+                  fileName={file.fileName}
+                  mimeType={file.mimeType}
+                  thumbnailUrl={file.thumbnailUrl}
                   iconSize={20}
                   className="absolute inset-0"
                 />

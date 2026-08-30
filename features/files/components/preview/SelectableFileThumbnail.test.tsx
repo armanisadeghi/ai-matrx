@@ -24,10 +24,10 @@ jest.mock("@/features/files/redux/selectors", () => ({
   selectFileById: jest.fn(),
 }));
 
-jest.mock(
-  "@/features/files/components/core/MediaThumbnail/MediaThumbnail",
-  () => ({ MediaThumbnail: () => <span data-testid="thumbnail" /> }),
-);
+jest.mock("@ai-matrx/media/react", () => ({
+  ...jest.requireActual("@ai-matrx/media/react"),
+  MediaThumbnail: () => <span data-testid="thumbnail" />,
+}));
 
 jest.mock(
   "@/features/files/components/core/FileContextMenu/FileRightClickMenu",

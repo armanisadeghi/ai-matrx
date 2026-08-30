@@ -16,7 +16,7 @@ jest.mock("motion/react", () => ({
   },
 }));
 
-jest.mock("./InlineMediaRef", () => ({
+jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: (props: Record<string, unknown>) => {
     mockInlineMediaRef(props);
     return <div data-testid="inline-media" />;

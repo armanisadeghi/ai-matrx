@@ -19,7 +19,7 @@
 
 import { Download, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { formatFileSize } from "@/features/files/utils/format";
 
 // ---------------------------------------------------------------------------

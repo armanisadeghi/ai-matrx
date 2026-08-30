@@ -10,7 +10,7 @@
 
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 
 export interface FolderIconWithMembersProps {
   isShared: boolean;

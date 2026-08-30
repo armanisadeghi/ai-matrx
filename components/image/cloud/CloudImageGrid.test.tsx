@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CloudImageGrid } from "@/components/image/cloud/CloudImageGrid";
 import type { CloudFileRecord } from "@/features/files/types";
 
-jest.mock("@/features/files/components/core/MediaThumbnail/MediaThumbnail", () => ({
+jest.mock("@ai-matrx/media/react", () => ({
+  ...jest.requireActual("@ai-matrx/media/react"),
   MediaThumbnail: () => <div data-media-thumbnail="true" />,
 }));
 

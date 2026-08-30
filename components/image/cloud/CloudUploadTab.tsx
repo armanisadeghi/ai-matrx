@@ -36,7 +36,8 @@ import {
 } from "@/features/files/redux/selectors";
 import { ensureFolderPath } from "@/features/files/redux/thunks";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { FileUploadDropzone } from "@ai-matrx/media/react";
+import { DropzoneAcquisitionActions } from "@/features/files/components/core/FileAcquisition/DropzoneAcquisitionActions";
 import { ImageIcon } from "lucide-react";
 import {
   useSelectedImages,
@@ -203,12 +204,18 @@ export function CloudUploadTab({
       <div className="flex-1 overflow-auto overscroll-contain p-3 md:p-4 space-y-4">
         <FileUploadDropzone
           mode="inline"
-          parentFolderId={folderId}
-          visibility={visibility}
+          uploadOptions={{ parentFolderId: folderId, visibility }}
           accept={accept}
           enablePaste
           onUploaded={handleUploaded}
           onError={handleError}
+          actions={
+            <DropzoneAcquisitionActions
+              uploadOptions={{ parentFolderId: folderId, visibility }}
+              accept={accept?.join(",")}
+              onError={handleError}
+            />
+          }
           className="rounded-xl border border-dashed border-border bg-card/40 py-8 px-4"
         >
           <div className="flex flex-col items-center gap-2 text-center">

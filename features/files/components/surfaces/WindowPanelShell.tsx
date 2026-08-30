@@ -42,9 +42,10 @@ import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import { FileList } from "@/features/files/components/core/FileList/FileList";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { FileUploadDropzone } from "@ai-matrx/media/react";
+import { DropzoneAcquisitionActions } from "@/features/files/components/core/FileAcquisition/DropzoneAcquisitionActions";
 import { useFileSearch } from "@/features/files/hooks/useFileSearch";
 import { ProInput } from "@/components/official/ProInput";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -404,9 +405,14 @@ function UploadTab() {
         />
       </div>
       <FileUploadDropzone
-        parentFolderId={activeFolderId}
+        uploadOptions={{ parentFolderId: activeFolderId }}
         mode="inline"
         className="min-h-64 flex-1"
+        actions={
+          <DropzoneAcquisitionActions
+            uploadOptions={{ parentFolderId: activeFolderId }}
+          />
+        }
       />
     </div>
   );

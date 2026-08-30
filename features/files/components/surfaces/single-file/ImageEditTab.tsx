@@ -51,7 +51,7 @@ import {
   selectFileById,
   selectFolderById,
 } from "@/features/files/redux/selectors";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import type { SaveResult } from "@/features/image-studio/modes/shared/types";
 
 const EditModeShell = dynamic(
@@ -76,7 +76,7 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
     file?.parentFolderId ? selectFolderById(s, file.parentFolderId) : null,
   );
 
-  const url = useFileSrc(fileId ? { kind: "file_id", fileId } : null);
+  const url = useMediaResolution(fileId ?? null).resolution?.src ?? null;
 
   const [lastSave, setLastSave] = useState<SaveResult | null>(null);
 

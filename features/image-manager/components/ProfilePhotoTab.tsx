@@ -29,7 +29,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 
 export function ProfilePhotoTab() {
   const currentAvatar = useAppSelector(selectUserAvatarUrl);
