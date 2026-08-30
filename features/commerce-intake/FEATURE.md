@@ -226,6 +226,10 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-30 — Upload failures retain the canonical file-transport incident
+  (including request identity) without emitting a duplicate route-level
+  `console-error`; the failed capture chip and off-screen failure toast remain.
+
 - 2026-08-30 — **v3: the vertical-rail chrome (`/commerce/intake/v3` + `/v3/instant`).** `IntakeCaptureScreenV3` maps commerce onto `CameraCaptureV3` (`@ai-matrx/capture` 0.3.1): ONE hold-shutter (tap photo / hold video; mic warms on `onRecordIntent` so iOS never prompts mid-take — warm-hold keyed off intent, released 5s after recording ends), QR/Notes/Process as RIGHT-RAIL actions above the package's core set (extras collapse behind the chevron), serial entry as the expanding `topEntry` pill (commits on Enter/blur/unmount), Next/Break in `shutterTrailing`, voice note above the shutter, and the library drawer as the ONE door to existing media with Upload inside it (`CloudLibrarySheet.onUpload`; no UPLOAD mode). Same engine, session, media mapping and QR gating as v2 — deliberately no timing modes and no feature-promo tile. 0.3.1 package fixes found on first render: the rail survives a blocked camera (host actions stay usable; core camera actions disable) and status chips clear the `topCenter` line. Verified in-browser: expanding field, chevron expand/collapse, blocked-state rail, chips. v1/v2 untouched.
 
 - 2026-08-29 — **Asset route identity guard.** `/commerce/intake/assets/[id]` classifies its

@@ -897,7 +897,10 @@ export function useIntakeSession(
         });
         return { asset, artifact };
       } catch (err) {
-        console.error("[commerce-intake] upload failed", err);
+        // The canonical file transport already captures the failed request
+        // with its request id. Keep a local breadcrumb without creating a
+        // second, lower-fidelity console-error incident for the same upload.
+        console.warn("[commerce-intake] upload failed", err);
         removedWhileUploadingRef.current.delete(localId);
         // If the chip is no longer on screen (Next item cleared the strip, or
         // the artifact was removed), the red-ring surface can't tell the user
