@@ -3,7 +3,11 @@
 /**
  * The book, drawn to the trim size the user actually picked.
  *
- * This is an ILLUSTRATION, not a measurement: the cover is drawn at the real
+ * This is the stage the whole right rail is built around — a large tinted
+ * panel with the book standing in it, the way a product configurator shows
+ * you the thing you are buying.
+ *
+ * It is an ILLUSTRATION, not a measurement: the cover is drawn at the real
  * trim aspect ratio from the catalog, and the spine thickens with page count
  * so a 40-page saddle-stitch and an 800-page hardcover do not look identical.
  * Exact spine widths come from `POST /lulu/cover-dimensions` — never from
@@ -27,7 +31,7 @@ interface BookPreviewProps {
 function hasVisibleSpine(binding: LuluBindingOption | null): boolean {
   if (!binding) return true;
   const id = binding.id.toLowerCase();
-  return !id.includes("saddle") && !id.includes("coil") && !id.includes("wire");
+  return !id.includes("saddle");
 }
 
 export function BookPreview({
@@ -37,141 +41,170 @@ export function BookPreview({
   coverFinishId,
   className,
 }: BookPreviewProps) {
-  const ratio =
-    trim && trim.widthIn && trim.heightIn ? trim.widthIn / trim.heightIn : 0.72;
-
-  // Fit the cover inside a fixed box so every trim is drawn to the same scale
-  // relative to its neighbours — a Pocketbook really does look smaller than
-  // US Letter, which is the whole point of showing this.
-  const BOX = 128;
-  const coverHeight = BOX;
-  const coverWidth = Math.round(BOX * ratio);
-
-  // Spine grows with pages, clamped so the drawing stays a book, not a brick.
-  const spine = hasVisibleSpine(binding)
-    ? Math.min(26, Math.max(3, Math.round((pageCount ?? 0) / 26)))
-    : 3;
-
-  const hardcover = binding?.group === "hardcover";
-  const glossy = (coverFinishId ?? "").toLowerCase().startsWith("gloss");
-
-  const width = coverWidth + spine + 14;
-  const height = coverHeight + 20;
-
   if (!trim) {
     return (
       <div
         className={cn(
-          "flex h-44 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 text-center",
+          "flex aspect-[4/3] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-gradient-to-br from-muted/50 to-muted text-center",
           className,
         )}
       >
-        <BookOpen className="size-7 text-muted-foreground/60" />
-        <p className="max-w-[14rem] text-xs text-muted-foreground">
+        <BookOpen className="size-9 text-muted-foreground/50" />
+        <p className="max-w-[15rem] px-4 text-sm text-muted-foreground">
           Pick a size and your book appears here, drawn to scale.
         </p>
       </div>
     );
   }
 
+  const ratio =
+    trim.widthIn && trim.heightIn ? trim.widthIn / trim.heightIn : 0.72;
+
+  // The stage is a fixed 200×150 box; the cover is sized inside it so a
+  // Pocketbook really does render smaller than US Letter.
+  const STAGE_W = 200;
+  const STAGE_H = 150;
+  const maxHeight = 108;
+  const coverHeight = maxHeight;
+  const coverWidth = coverHeight * ratio;
+
+  const spine = hasVisibleSpine(binding)
+    ? Math.min(22, Math.max(2.5, (pageCount ?? 0) / 30))
+    : 2;
+
+  const hardcover = binding?.group === "hardcover";
+  const coil = (binding?.id ?? "").toLowerCase().includes("coil");
+  const wire = (binding?.id ?? "").toLowerCase().includes("wire");
+  const glossy = (coverFinishId ?? "").toLowerCase().startsWith("gloss");
+
+  // Centre the whole object (spine + cover) on the stage.
+  const totalWidth = spine + coverWidth;
+  const left = (STAGE_W - totalWidth) / 2;
+  const top = (STAGE_H - coverHeight) / 2 - 4;
+
   return (
     <div
       className={cn(
-        "flex h-44 items-center justify-center rounded-xl border border-border bg-muted/30",
+        "aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/10 to-secondary/20",
         className,
       )}
     >
       <svg
-        viewBox={`0 0 ${width} ${height}`}
-        width={width}
-        height={height}
+        viewBox={`0 0 ${STAGE_W} ${STAGE_H}`}
+        className="h-full w-full"
         role="img"
-        aria-label={`${trim.label}${pageCount ? `, ${pageCount} pages` : ""}`}
-        className="overflow-visible"
+        aria-label={`${trim.label}${pageCount ? `, ${pageCount} pages` : ""}${
+          binding ? `, ${binding.label}` : ""
+        }`}
       >
         <defs>
-          <linearGradient id="lulu-cover-face" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id="preview-cover" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="hsl(var(--secondary))" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="hsl(var(--secondary))" stopOpacity="0.92" />
           </linearGradient>
-          <linearGradient id="lulu-cover-spine" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(var(--secondary))" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+          <linearGradient id="preview-spine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="hsl(var(--secondary))" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.85" />
           </linearGradient>
-          <linearGradient id="lulu-cover-sheen" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="white" stopOpacity={glossy ? 0.42 : 0.14} />
-            <stop offset="55%" stopColor="white" stopOpacity="0" />
+          <linearGradient id="preview-sheen" x1="0" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stopColor="white" stopOpacity={glossy ? 0.5 : 0.16} />
+            <stop offset={glossy ? "38%" : "62%"} stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="preview-pages" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="white" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="white" stopOpacity="0.7" />
           </linearGradient>
         </defs>
 
-        {/* Ground shadow keeps the book from floating. */}
+        {/* Contact shadow — the book stands on something. */}
         <ellipse
-          cx={spine + coverWidth / 2 + 6}
-          cy={height - 5}
-          rx={coverWidth / 2}
-          ry="3.5"
+          cx={left + totalWidth / 2}
+          cy={top + coverHeight + 7}
+          rx={coverWidth * 0.62}
+          ry="5"
           fill="hsl(var(--foreground))"
-          opacity="0.12"
+          opacity="0.16"
         />
 
-        {/* Page block — the stack you see under the cover. */}
+        {/* Page block behind the cover. */}
         <rect
-          x={spine + 3}
-          y="9"
+          x={left + spine}
+          y={top + 2}
           width={coverWidth}
-          height={coverHeight - 4}
-          rx={hardcover ? 3 : 2}
-          fill="hsl(var(--card))"
-          stroke="hsl(var(--border))"
-          strokeWidth="1"
+          height={coverHeight - 3}
+          rx="1.5"
+          fill="url(#preview-pages)"
         />
 
-        {/* Spine face. */}
+        {/* Spine plane. */}
         <path
-          d={`M6 ${8 + spine} L${6 + spine} 8 L${6 + spine} ${8 + coverHeight} L6 ${8 + coverHeight + spine} Z`}
-          fill="url(#lulu-cover-spine)"
+          d={`M${left} ${top + spine} L${left + spine} ${top} L${left + spine} ${top + coverHeight} L${left} ${top + coverHeight + spine} Z`}
+          fill="url(#preview-spine)"
         />
 
-        {/* Front cover. */}
+        {/* Front cover — hardcovers overhang the block. */}
         <rect
-          x={6 + spine}
-          y="8"
+          x={left + spine}
+          y={hardcover ? top - 2.5 : top}
           width={coverWidth}
-          height={coverHeight}
+          height={hardcover ? coverHeight + 5 : coverHeight}
           rx={hardcover ? 3 : 1.5}
-          fill="url(#lulu-cover-face)"
+          fill="url(#preview-cover)"
         />
         <rect
-          x={6 + spine}
-          y="8"
+          x={left + spine}
+          y={hardcover ? top - 2.5 : top}
           width={coverWidth}
-          height={coverHeight}
+          height={hardcover ? coverHeight + 5 : coverHeight}
           rx={hardcover ? 3 : 1.5}
-          fill="url(#lulu-cover-sheen)"
+          fill="url(#preview-sheen)"
         />
 
-        {/* Linen wrap gets its foil-stamp rule; case wrap gets a printed band. */}
+        {/* Linen wrap earns its foil rule; case wrap a printed band. */}
         {hardcover ? (
           <rect
-            x={6 + spine + coverWidth * 0.14}
-            y={8 + coverHeight * 0.34}
-            width={coverWidth * 0.72}
-            height="1.5"
-            fill="white"
-            opacity="0.75"
+            x={left + spine + coverWidth * 0.16}
+            y={top + coverHeight * 0.36}
+            width={coverWidth * 0.68}
+            height="2"
+            rx="1"
+            fill={
+              (binding?.id ?? "").toLowerCase().includes("linen")
+                ? "#f5d78a"
+                : "white"
+            }
+            opacity={
+              (binding?.id ?? "").toLowerCase().includes("linen") ? 0.95 : 0.7
+            }
           />
         ) : null}
 
-        {/* Coil / wire binding reads as its holes, not a spine. */}
-        {!hasVisibleSpine(binding) && binding?.id.toLowerCase().includes("coil")
-          ? Array.from({ length: 7 }).map((_, index) => (
+        {/* Coil / Wire-O bind through the spine edge. */}
+        {coil
+          ? Array.from({ length: 9 }).map((_, i) => (
               <circle
-                key={index}
-                cx={6 + spine + 5}
-                cy={18 + index * ((coverHeight - 20) / 6)}
-                r="1.8"
-                fill="hsl(var(--card))"
-                opacity="0.85"
+                key={i}
+                cx={left + spine + 5}
+                cy={top + 8 + i * ((coverHeight - 16) / 8)}
+                r="2.2"
+                fill="none"
+                stroke="white"
+                strokeWidth="1.4"
+                opacity="0.75"
+              />
+            ))
+          : null}
+        {wire
+          ? Array.from({ length: 11 }).map((_, i) => (
+              <rect
+                key={i}
+                x={left + spine + 2.5}
+                y={top + 7 + i * ((coverHeight - 14) / 10)}
+                width="6"
+                height="1.8"
+                rx="0.9"
+                fill="white"
+                opacity="0.7"
               />
             ))
           : null}

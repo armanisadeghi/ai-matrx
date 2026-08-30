@@ -25,10 +25,10 @@ import {
   Info,
   Layers,
   MapPin,
+  Paintbrush,
   Palette,
   RefreshCcw,
   Ruler,
-  Sparkle,
   Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -821,6 +821,7 @@ export default function LuluPricingDemoPage() {
                           selectedId={selection.bindingId}
                           onSelect={(id) => chooseOption("binding", id)}
                           columns={3}
+                          swatch="binding"
                           disabled={previewOnly}
                         />
                       </div>
@@ -842,6 +843,7 @@ export default function LuluPricingDemoPage() {
                   selectedId={selection.colorId}
                   onSelect={(id) => chooseOption("color", id)}
                   columns={2}
+                  swatch="color"
                   disabled={previewOnly}
                 />
               </Section>
@@ -859,13 +861,14 @@ export default function LuluPricingDemoPage() {
                   selectedId={selection.paperId}
                   onSelect={(id) => chooseOption("paper", id)}
                   columns={3}
+                  swatch="paper"
                   disabled={previewOnly}
                 />
               </Section>
 
               <Section
                 step={5}
-                icon={<Sparkle className="size-4 text-muted-foreground" />}
+                icon={<Paintbrush className="size-4 text-muted-foreground" />}
                 title="Cover finish"
               >
                 <OptionGrid
@@ -876,6 +879,7 @@ export default function LuluPricingDemoPage() {
                   selectedId={selection.coverFinishId}
                   onSelect={(id) => chooseOption("coverFinish", id)}
                   columns={3}
+                  swatch="coverFinish"
                   disabled={previewOnly}
                 />
               </Section>
