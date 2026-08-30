@@ -34,6 +34,32 @@
  *                             demands (`hr_restricted_list` on a confidential
  *                             token raises 22023)
  *
+ * 🚨 THE TIER PAIRING NOW SEES THROUGH A BRANCH, WHICH IS WHERE IT WAS BLIND.
+ * A two-kind call site is naturally written `cond ? TOKEN_A : TOKEN_B`, and the
+ * old value model asked for ONE resolvable literal, got none, and filed the
+ * whole call under UNANALYZABLE. Route 16 sent BOTH case tokens into
+ * `hr_restricted_get` that way; `hr_corrective_action` is the confidential tier;
+ * the corrective-action case page could not load for any viewer on production or
+ * on main, and this guard was green throughout. A ternary, a `??` and a `||` are
+ * now split and EVERY arm is validated on its own.
+ *
+ * 🚨 WHAT THE PAIRING STILL CANNOT SEE, and no static pass over this language
+ * could:
+ *   • a token assembled at runtime — `\`hr_${kind}\``, a value off a map, a
+ *     token read from props, a DB row or a URL. There is no literal to check,
+ *     and these are listed under UNANALYZABLE rather than assumed clean.
+ *   • a token that reaches a door through an unnamed callback or an object built
+ *     across module boundaries — the conduit chase follows named functions only.
+ *   • a tier that CHANGES in the database without `pnpm hr:door-snapshot`. The
+ *     pairing is only ever as true as the committed snapshot; SPEC-EMPLOYEES §13
+ *     D-4 is an open ruling that would move `hr_corrective_action` between tiers,
+ *     and this guard turns red on that only after the snapshot is refreshed.
+ *   • a door that is tiered but absent from `door_expected_tier` — the pairing
+ *     simply does not run, silently. Only the five audited doors are covered.
+ *   • whether the caller was ENTITLED to the row. This checks which FAMILY the
+ *     door serves, never who may open it; every access verdict stays the
+ *     server's.
+ *
  * and, as WARNINGS that never fail the build:
  *
  *   KEY NEVER SENT            a payload key the door reads that no analyzable
@@ -353,6 +379,42 @@ function bind(expr: ts.Expression, sink: Sink, file: SourceFile, node: ts.Node):
   const n = unwrap(expr);
   const site: Site = { file: file.rel, line: lineOf(file, node) };
 
+  // 🚨 A BRANCH IS NOT AN UNKNOWN. THIS IS THE HOLE ROUTE 16 FELL THROUGH.
+  //
+  // `token: kind === "incident" ? HR_INCIDENT_TOKEN : HR_CORRECTIVE_ACTION_TOKEN`
+  // is the single most natural way to write a two-kind call site, and every
+  // value in it is a resolvable literal. But the old `bind` asked
+  // `asStringValue` for ONE value, got null for the ConditionalExpression, and
+  // filed the whole thing under UNANALYZABLE — where a "no database, no
+  // secrets" guard's honest coverage gap is exactly where nobody looks.
+  //
+  // What that cost: `fetchHrRelationsCase` sent BOTH case tokens into
+  // `hr_restricted_get`, and `hr_corrective_action` is the CONFIDENTIAL tier.
+  // The pairing check three passes down had the door's tier and the token's tier
+  // in the snapshot the entire time and never got to compare them, so the
+  // corrective-action case page could not load for ANY viewer, on production and
+  // on main, while the guard reported conformant.
+  //
+  // A branch is a SET of values and every branch has to hold. So both arms are
+  // bound, independently, and each is validated on its own — which is also what
+  // makes the finding readable: it names the losing token, not the ternary.
+  if (ts.isConditionalExpression(n)) {
+    bind(n.whenTrue, sink, file, node);
+    bind(n.whenFalse, sink, file, node);
+    return;
+  }
+  // `TOKEN ?? FALLBACK` and `TOKEN || FALLBACK` are the same shape: either side
+  // can be the value that actually travels, so both must be legal.
+  if (
+    ts.isBinaryExpression(n) &&
+    (n.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+      n.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+  ) {
+    bind(n.left, sink, file, node);
+    bind(n.right, sink, file, node);
+    return;
+  }
+
   if (ts.isObjectLiteralExpression(n)) {
     push(objectValues, sinkKey(sink), { site, shape: objectShape(n) });
     return;
@@ -615,6 +677,21 @@ function validate(snap: Snapshot): void {
   }
 
   // ---- token literals: registered, and the tier the door demands
+  //
+  // 🚨 THIS IS A SEAM TYPESCRIPT CANNOT SEE AT ALL. Both `hr_restricted_get` and
+  // `hr_confidential_get` take `(token: string, id: string, …)`, so every tier
+  // mistake is a perfectly well-typed call. The registry is the only thing that
+  // knows `hr_incident` is restricted and `hr_corrective_action` is confidential,
+  // and the door RAISES on the mismatch rather than refusing — which the "a
+  // refusal is DATA" transport then swallows into a toast. That is how the
+  // route-16 case read shipped a page that could not load for anybody.
+  //
+  // Whether a token reads one row or a list is NOT part of the pairing — a door
+  // serves one tier and one shape, so a `_get` token is matched only against
+  // other `_get` doors when suggesting the fix.
+  const doorShape = (d: string): string =>
+    d.endsWith("_list") ? "list" : d.endsWith("_get") ? "get" : d;
+
   for (const [key, values] of stringValues) {
     const [doorName, argName] = key.split("::") as [string, string];
     if (argName !== "p_token" && argName !== "p_target_token") continue;
@@ -635,10 +712,30 @@ function validate(snap: Snapshot): void {
         });
         continue;
       }
+      if (expected && !token.tier) {
+        // A tiered door was asked about a token the registry gives no tier. The
+        // pairing is UNPROVEN, not proven safe, and it says so out loud rather
+        // than passing by default.
+        warnings.push({
+          ...v.site, door: doorName, kind: "TOKEN TIER UNKNOWN",
+          detail: `\`${doorName}\` serves the \`${expected}\` tier, but the snapshot records no tier for \`${v.value}\`, so this pairing is not verified. Refresh with \`pnpm hr:door-snapshot\`.`,
+        });
+        continue;
+      }
       if (expected && token.tier && token.tier !== expected) {
+        // 🚨 NAME THE DOOR THAT WOULD WORK. The database's own 22023 does —
+        // "use the hr_confidential_get door" — and a guard finding that stops at
+        // "wrong tier" sends a reader back to the registry to work out something
+        // the snapshot already knows.
+        const rightDoor = Object.keys(snap.door_expected_tier)
+          .filter((d) => snap.door_expected_tier[d] === token.tier)
+          .filter((d) => doorShape(d) === doorShape(doorName))
+          .sort();
         failures.push({
           ...v.site, door: doorName, kind: "WRONG TIER FOR TOKEN",
-          detail: `\`${doorName}\` serves the \`${expected}\` tier; \`${v.value}\` is \`${token.tier}\`. The door raises 22023 ("% is the % tier") on every call.`,
+          detail: `\`${doorName}\` serves the \`${expected}\` tier; \`${v.value}\` is \`${token.tier}\`. The door RAISES 22023 ("% is the % tier") on every call — it does not refuse, so the surface sees a failure, not an access verdict.${
+            rightDoor.length > 0 ? ` Use \`${rightDoor.join("` or `")}\` for this token.` : ""
+          }`,
         });
       }
     }

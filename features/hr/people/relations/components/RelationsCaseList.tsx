@@ -40,8 +40,9 @@ import { useHrPersona } from "@/features/hr/shared/useHrPersona";
 import { useHrRelationsCases } from "../hooks/useRelationsCases";
 import type { HrRelationsFilter } from "../service";
 import {
-  HR_CORRECTIVE_ACTION_STATES,
   HR_INCIDENT_STATES,
+  HR_INCIDENT_STATE_LABELS,
+  HR_INCIDENT_STATE_TOKEN,
   type HrRelationsCase,
 } from "../types";
 import { NewCorrectiveActionDialog } from "./NewCorrectiveActionDialog";
@@ -241,25 +242,66 @@ export function RelationsCaseList() {
                       value === "all"
                         ? null
                         : (value as HrRelationsFilter["caseKind"]),
+                    // The other half of the pairing above: a state has no
+                    // meaning off the incident side, and leaving one set while
+                    // the user moves to corrective actions (or back to All)
+                    // sends it to the door that raises 42703 on it.
+                    state: value === "incident" ? f.state : null,
                   })),
               },
               {
                 id: "state",
                 type: "button-group",
-                label: "State",
+                // Named for what it actually filters. See the block below: a
+                // state question only has an answer on the incident side.
+                label: "Incident state",
                 value: filter.state ?? "all",
+                // 🚨 THIS CONTROL ASKED THE DOOR TWO QUESTIONS IT CANNOT ANSWER.
+                // Both probed live against `hr_relations_list` on 2026-08-29:
+                //
+                //  1. EVERY CORRECTIVE-ACTION STATE RAISED. `hr._door_list`'s
+                //     allowlist names `state` for `hr_corrective_action`, and
+                //     that table HAS NO `state` COLUMN — the filter went
+                //     straight into SQL and came back **42703 `column "state"
+                //     does not exist`**, swallowed by the transport into a
+                //     toast. Those choices are ABSENT until the door can serve
+                //     them; a corrective action's state is DERIVED from
+                //     `outcome` / `employee_acknowledgement_kind` /
+                //     `employee_acknowledged_at` (see `correctiveActionState`)
+                //     and only the server can filter on a derivation. Offering
+                //     a button that 400s is worse than not offering it.
+                //
+                //  2. THE INCIDENT STATES WERE SPELLED THE UI's WAY, NOT THE
+                //     COLUMN'S. `hr.incident.state` holds `intake` and
+                //     `action_pending`; this sent `open` and `action-pending`.
+                //     Filtering by **Open** — the first choice on the control —
+                //     returned **0 of 9 real open incidents**, `granted: true`,
+                //     rendered as "nothing here". `HR_INCIDENT_STATE_TOKEN` is
+                //     the translation and it existed the whole time.
+                //
+                // And the labels are words now, not raw enum values: this list
+                // used to print `action-pending` and `outcome-recorded` at a
+                // person.
                 options: [
                   { value: "all", label: "All" },
-                  ...HR_INCIDENT_STATES.map((s) => ({ value: s, label: s })),
-                  ...HR_CORRECTIVE_ACTION_STATES.map((s) => ({
-                    value: s,
-                    label: s,
+                  ...HR_INCIDENT_STATES.map((s) => ({
+                    value: HR_INCIDENT_STATE_TOKEN[s],
+                    label: HR_INCIDENT_STATE_LABELS[s],
                   })),
                 ],
+                // 🚨 A STATE ALSO PINS THE RECORD KIND, AND IT HAS TO.
+                // `hr_relations_list` asks BOTH doors with the SAME filter, so
+                // any `state` at all reaches the corrective-action side and
+                // raises 42703 there — which is why this control could never
+                // work while "All records" was selected, whatever it sent. It
+                // is not magic and it is not hidden: the Record filter visibly
+                // snaps to Incidents, and clearing the state clears nothing
+                // else. The alternative is a control that always errors.
                 onChange: (value) =>
                   setFilter((f) => ({
                     ...f,
                     state: value === "all" ? null : value,
+                    caseKind: value === "all" ? f.caseKind : "incident",
                   })),
               },
               {
