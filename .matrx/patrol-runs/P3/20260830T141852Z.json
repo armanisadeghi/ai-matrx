@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "20260830T141852Z",
+  "baseSha": "53b4144f21d8d32b8062033500ef9c72a7f32f2c",
+  "createdAt": "2026-08-30T14:18:53.171Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:53.171Z",
+      "actor": "p3-eradication",
+      "summary": "Resume P3 ERADICATION from the open provider-sync mobile-header sighting and hover-only detector queue.",
+      "evidence": [
+        "Canonical shared checkout was clean at 53b4144f21d8d32b8062033500ef9c72a7f32f2c; managed preview owned by this checkout; baseline type-check and patrol contracts passed.",
+        "375x812 in-app Browser reproduction showed provider stats compressed into one-character columns with legend and Copy/Refresh overlap."
+      ],
+      "previousEventHash": null,
+      "eventHash": "107afc1c7799cdebeb272d6af444573a259aa68736caf587f7cdaa124502c17a"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:18:53.739Z",
+      "actor": "p3-eradication",
+      "summary": "Verified provider-sync mobile header defect; beginning bounded canonical responsive repair while detector machinery runs in a disjoint scripts-only unit.",
+      "evidence": [
+        "Desktop behavior will remain under sm breakpoint; mobile toolbar receives explicit full-width rows."
+      ],
+      "previousEventHash": "107afc1c7799cdebeb272d6af444573a259aa68736caf587f7cdaa124502c17a",
+      "eventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "73c40b81-9bae-4c53-a852-9c65c0a73260",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:17:48.316Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:17:48.316Z",
+      "actor": "codex-p6",
+      "summary": "ERADICATION resumed from 102 verified user-visible literal nodes across 47 files; three disjoint repair units claimed in canonical shared checkout.",
+      "evidence": [
+        "Canonical pre-edit dirty paths: .matrx/patrol-runs/P10/latest.json; .matrx/patrol-runs/P10/2026-08-30T141622Z.json; app/(auth-pages)/login/page.tsx; features/commerce-intake/FEATURE.md; features/commerce-intake/hooks/useIntakeSession.ts (all unrelated and excluded).",
+        "Pre-edit full raw detector: 1,146 lines in 434 files.",
+        "Pre-edit pnpm type-check: PASS.",
+        "Canonical preview lease RUNNING pid 71881 port 3001 rss cap 64.5GB owner canonical checkout; lease not stopped."
+      ],
+      "previousEventHash": null,
+      "eventHash": "ee2bb1b61869570eb52e067893a774382fd5c3a9f85765991ea62df6c9b23f80"
+    }
+  ]
+}

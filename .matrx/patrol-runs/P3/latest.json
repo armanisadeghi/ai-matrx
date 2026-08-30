@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P3",
-  "runId": "2026-08-27T131727Z",
-  "state": "reconciled",
-  "updatedAt": "2026-08-29T14:43:18.521Z",
-  "summary": "Reconciled the preserved release-before-certification incident after exact-checkout representative interaction proof and a certified fail-closed controller repair.",
-  "source": "2026-08-27T131727Z.json",
-  "eventHash": "fa1f2fec27bba592b0432555c89baca6df32459ad610188bed721683ed443b63"
+  "runId": "20260830T141852Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:18:53.739Z",
+  "summary": "Verified provider-sync mobile header defect; beginning bounded canonical responsive repair while detector machinery runs in a disjoint scripts-only unit.",
+  "source": "20260830T141852Z.json",
+  "eventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020"
 }

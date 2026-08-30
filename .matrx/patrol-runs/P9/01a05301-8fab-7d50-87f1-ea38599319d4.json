@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P9",
+  "runId": "01a05301-8fab-7d50-87f1-ea38599319d4",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:17:59.383Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:17:59.383Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Resumed P9 in ERADICATION from the retained backlog; build detector and interaction proof, then repair the first reachable promises in bounded certified waves.",
+      "evidence": [
+        "baseline:type-check-pass",
+        "baseline:123-files-182-lines",
+        "baseline:81-registry-entries",
+        "ownership:canonical-shared-checkout",
+        "other-owner:P10-run-records"
+      ],
+      "previousEventHash": null,
+      "eventHash": "f60a461fd2bfe23e080b8b484664568a8fad843a99a90e209366c57e170b3b1e"
+    }
+  ]
+}

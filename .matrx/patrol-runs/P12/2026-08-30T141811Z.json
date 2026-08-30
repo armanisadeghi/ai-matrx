@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P12",
+  "runId": "2026-08-30T141811Z",
+  "baseSha": "b029fd439333075600bd9ae7522f3907e3dd3395",
+  "createdAt": "2026-08-30T14:18:11.718Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:11.718Z",
+      "actor": "codex-root",
+      "summary": "P12 ERADICATION: complete the first ranked three-Surface tranche",
+      "evidence": [
+        "Canonical shared checkout; baseline type-check PASS; surface drift PASS (194 surfaces, 4757 values); surface routes PASS with 125 undeclared; overlays PASS with 162 undeclared; unrelated P10 run-record paths were dirty before P12 editing."
+      ],
+      "previousEventHash": null,
+      "eventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4"
+    }
+  ]
+}

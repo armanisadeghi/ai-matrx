@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-30T141622Z",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:16:31.422Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:16:31.422Z",
+      "actor": "/root",
+      "summary": "P10 schema-backed eradication tranche: five agent-definition JSON reads and snapshot RPC boundary.",
+      "evidence": [
+        "canonical-checkout:/Users/armanisadeghi/code/matrx-frontend",
+        "baseline-type-check:PASS",
+        "baseline-converter-hatches:5-as-unknown-as",
+        "baseline-working-tree:clean"
+      ],
+      "previousEventHash": null,
+      "eventHash": "b0109a9c51c4b2a12f2e5d4d7e8e1c051a9cb77e98eb04449785380b68440826"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:16:32.062Z",
+      "actor": "/root",
+      "summary": "Claimed disjoint parser modules and upstream snapshot boundary for parallel implementation.",
+      "evidence": [
+        "messages+variables parser unit",
+        "settings+context-policies parser unit",
+        "output-schema+snapshot-RPC unit"
+      ],
+      "previousEventHash": "b0109a9c51c4b2a12f2e5d4d7e8e1c051a9cb77e98eb04449785380b68440826",
+      "eventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41"
+    }
+  ]
+}

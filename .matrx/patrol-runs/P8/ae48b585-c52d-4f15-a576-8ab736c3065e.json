@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:17:30.069Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:17:30.069Z",
+      "actor": "/root",
+      "summary": "ERADICATION backlog wave: claimed the first four compact/control mapping items for disjoint repair-now execution.",
+      "evidence": [
+        "Canonical shared checkout base 857dcd2c3b7bed591441c6a175caf72eb1397ec4 equals origin/main.",
+        "Pre-edit pnpm type-check: PASS.",
+        "Pre-edit scoped detector captured all generic loading signatures in the four claimed files.",
+        "Pre-edit scoped ESLint: nine baseline errors (three email page, six feedback dialog); auth pages clean.",
+        "Unrelated dirty paths owned by P10: .matrx/patrol-runs/P10/latest.json and .matrx/patrol-runs/P10/2026-08-30T141622Z.json."
+      ],
+      "previousEventHash": null,
+      "eventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252"
+    }
+  ]
+}

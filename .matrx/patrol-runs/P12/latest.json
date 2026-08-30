@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P12",
-  "runId": "20260828T162115Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-28T16:52:53.049Z",
-  "summary": "Certified P12 candidate is integrated and contained in release v0.4.1392.",
-  "source": "20260828T162115Z.json",
-  "eventHash": "194aabcbf7f186e5cbf252038c231c56952047ebb4005e11913cc4fa95a03299"
+  "runId": "2026-08-30T141811Z",
+  "state": "discovered",
+  "updatedAt": "2026-08-30T14:18:11.718Z",
+  "summary": "P12 ERADICATION: complete the first ranked three-Surface tranche",
+  "source": "2026-08-30T141811Z.json",
+  "eventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4"
 }
