@@ -6166,23 +6166,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/arxiv/public/publication": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Publication */
-        get: operations["public_publication_arxiv_public_publication_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/met-museum/public/object": {
         parameters: {
             query?: never;
@@ -6277,23 +6260,6 @@ export interface paths {
         };
         /** Public Work */
         get: operations["public_work_open_library_public_work_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inaturalist/public/observation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Observation */
-        get: operations["public_observation_inaturalist_public_observation_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6515,23 +6481,6 @@ export interface paths {
         };
         /** Public Release */
         get: operations["public_release_endoflife_date_public_release_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/nager-holidays/public/holidays": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Holidays */
-        get: operations["public_holidays_nager_holidays_public_holidays_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13281,30 +13230,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -17625,26 +17550,6 @@ export interface paths {
          * @description Green/orange/red for every live mandate, computed against live storage.
          */
         get: operations["mandate_coverage_mandates_coverage_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/mandates/coverage/states": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Mandate Coverage States
-         * @description One coverage verdict per mandate, for a list surface's per-row badge.
-         */
-        get: operations["mandate_coverage_states_mandates_coverage_states_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -28347,50 +28252,6 @@ export interface components {
             keywords: string[];
             /** Provider Page */
             provider_page: string;
-        };
-        /**
-         * ArxivPublicPublication
-         * @description Safe bounded projection of one arXiv publication.
-         */
-        ArxivPublicPublication: {
-            /**
-             * Kind
-             * @default arxiv_public_publication
-             * @constant
-             */
-            __kind?: "arxiv_public_publication";
-            /**
-             * Provider
-             * @default arxiv
-             * @constant
-             */
-            provider?: "arxiv";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /** Arxiv Id */
-            arxiv_id: string;
-            /** Version */
-            version: number;
-            /** Title */
-            title: string;
-            /** Published At */
-            published_at: string;
-            /** Updated At */
-            updated_at: string;
-            /** Primary Category */
-            primary_category: string;
-            /** Record Page */
-            record_page: string;
-            /**
-             * Attribution
-             * @default Thank you to arXiv for use of its open access interoperability.
-             * @constant
-             */
-            attribution?: "Thank you to arXiv for use of its open access interoperability.";
         };
         /** Asset */
         Asset: {
@@ -40504,33 +40365,6 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -47256,62 +47090,6 @@ export interface components {
             /** Adapter Version */
             adapter_version?: string | null;
         };
-        /**
-         * INaturalistPublicObservation
-         * @description Privacy-bounded metadata for one public iNaturalist observation.
-         */
-        INaturalistPublicObservation: {
-            /**
-             * Kind
-             * @default inaturalist_public_observation
-             * @constant
-             */
-            __kind?: "inaturalist_public_observation";
-            /**
-             * Provider
-             * @default inaturalist
-             * @constant
-             */
-            provider?: "inaturalist";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /**
-             * Source Notice
-             * @default verify-observation-license-before-reuse
-             * @constant
-             */
-            source_notice?: "verify-observation-license-before-reuse";
-            /** Observation Id */
-            observation_id: number;
-            /** Observer */
-            observer: string;
-            /** Taxon Id */
-            taxon_id: number;
-            /** Scientific Name */
-            scientific_name: string;
-            /** Common Name */
-            common_name?: string | null;
-            /**
-             * Quality Grade
-             * @enum {string}
-             */
-            quality_grade: "casual" | "needs_id" | "research";
-            /** Observed On */
-            observed_on?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** License Code */
-            license_code?: string | null;
-            /** Inaturalist Url */
-            inaturalist_url: string;
-        };
         /** IceBlock */
         IceBlock: {
             /** Stun Urls */
@@ -51917,30 +51695,6 @@ export interface components {
             /** Computed At */
             computed_at: string;
         };
-        /** MandateCoverageState */
-        MandateCoverageState: {
-            /** Mandate Key */
-            mandate_key: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "green" | "orange" | "red";
-            /** Leader Key */
-            leader_key: string | null;
-            /** Reason */
-            reason: string | null;
-        };
-        /** MandateCoverageStatesResponse */
-        MandateCoverageStatesResponse: {
-            /** Organization Id */
-            organization_id: string | null;
-            counts: components["schemas"]["MandateCoverageCounts"];
-            /** States */
-            states: components["schemas"]["MandateCoverageState"][];
-            /** Computed At */
-            computed_at: string;
-        };
         /** MandateCreateRequest */
         MandateCreateRequest: {
             /** Mandate Key */
@@ -54030,62 +53784,6 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
-        };
-        /**
-         * NagerHolidaysCalendar
-         * @description One bounded country-year public holiday calendar.
-         */
-        NagerHolidaysCalendar: {
-            /**
-             * Kind
-             * @default nager_holidays_public_holiday_calendar
-             * @constant
-             */
-            __kind?: "nager_holidays_public_holiday_calendar";
-            /**
-             * Provider
-             * @default nager_holidays
-             * @constant
-             */
-            provider?: "nager_holidays";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /** Year */
-            year: number;
-            /** Country Code */
-            country_code: string;
-            /** Holiday Count */
-            holiday_count: number;
-            /** Holidays */
-            holidays: components["schemas"]["NagerHolidaysPublicHoliday"][];
-        };
-        /**
-         * NagerHolidaysPublicHoliday
-         * @description Safe bounded projection of one official public holiday.
-         */
-        NagerHolidaysPublicHoliday: {
-            /** Date */
-            date: string;
-            /** Local Name */
-            local_name: string;
-            /** Name */
-            name: string;
-            /** Country Code */
-            country_code: string;
-            /** Fixed */
-            fixed: boolean;
-            /** Global Holiday */
-            global_holiday: boolean;
-            /** Counties */
-            counties?: string[] | null;
-            /** Launch Year */
-            launch_year?: number | null;
-            /** Types */
-            types: string[];
         };
         /** NamespaceField */
         NamespaceField: {
@@ -89604,37 +89302,6 @@ export interface operations {
             };
         };
     };
-    public_publication_arxiv_public_publication_get: {
-        parameters: {
-            query: {
-                arxiv_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArxivPublicPublication"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     public_object_met_museum_public_object_get: {
         parameters: {
             query: {
@@ -89809,37 +89476,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenLibraryPublicWork"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    public_observation_inaturalist_public_observation_get: {
-        parameters: {
-            query: {
-                observation_id: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["INaturalistPublicObservation"];
                 };
             };
             /** @description Validation Error */
@@ -90248,38 +89884,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EndOfLifeDatePublicRelease"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    public_holidays_nager_holidays_public_holidays_get: {
-        parameters: {
-            query: {
-                year: number;
-                country_code: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NagerHolidaysCalendar"];
                 };
             };
             /** @description Validation Error */
@@ -101350,41 +100954,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -109504,38 +109073,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateCoverageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    mandate_coverage_states_mandates_coverage_states_get: {
-        parameters: {
-            query?: {
-                /** @description Scope to ONE owner's mandates (law 5: screams follow ownership) — the org mandate list passes its own org. Membership is verified. Omit for the whole live registry. */
-                organization_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateCoverageStatesResponse"];
                 };
             };
             /** @description Validation Error */

@@ -46838,6 +46838,10 @@ export type Database = {
         Args: { p_id: string; p_token: string; p_user: string }
         Returns: boolean
       }
+      _break_glass_justification: {
+        Args: { p_id: string; p_token: string; p_user: string }
+        Returns: string
+      }
       _can_edit_punch: {
         Args: { p_at: string; p_employment_id: string; p_user: string }
         Returns: Json
@@ -47665,6 +47669,14 @@ export type Database = {
         Args: { p_end: string; p_start: string; p_tz: string }
         Returns: Json
       }
+      _workweek_subject: {
+        Args: {
+          p_count: number
+          p_plural_verb: string
+          p_singular_verb: string
+        }
+        Returns: string
+      }
       access_audit_page: {
         Args: {
           p_cursor?: string
@@ -47770,6 +47782,13 @@ export type Database = {
           pay_period_id: string
           row_state: string
           source_available: boolean
+        }[]
+      }
+      break_glass_registration_drift: {
+        Args: never
+        Returns: {
+          reason: string
+          token: string
         }[]
       }
       can_approve: {

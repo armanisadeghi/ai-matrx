@@ -135,17 +135,12 @@ export interface StartComparisonBody {
     version_number: number | null;
     input_overrides: Record<string, unknown>;
   }>;
+  /** name -> "human" for values the person actually typed (source=human). */
+  input_sources: Record<string, "human">;
   normalization: Record<string, unknown>;
 }
 
-/**
- * DELETE-ME CAST: `/workflows/comparisons` shipped server-side in the same
- * change as this file and enters `types/python-generated/api-types.ts` on the
- * next routine `pnpm sync-types` after the server deploy. Until then the path
- * is asserted onto an existing streaming POST path's type. Remove both casts
- * (here and in `rerunComparisonArm`) once sync-types has run.
- */
-const START_PATH = "/workflows/comparisons" as "/podcast/races";
+const START_PATH = "/workflows/comparisons" satisfies keyof paths;
 
 function extractComparisonId(streamText: string): string | null {
   // The typed WorkflowComparisonStartedEvent rides the stream as a data
@@ -183,9 +178,8 @@ export async function startComparison(
   };
 }
 
-/** DELETE-ME CAST — see `START_PATH`. */
 const RERUN_PATH =
-  "/workflows/comparisons/{comparison_id}/arms/{arm_index}/rerun" as "/podcast/races/{race_id}/arms/{arm}/rerun";
+  "/workflows/comparisons/{comparison_id}/arms/{arm_index}/rerun" satisfies keyof paths;
 
 export async function rerunComparisonArm(
   dispatch: AppDispatch,
@@ -198,7 +192,7 @@ export async function rerunComparisonArm(
     pathParams: {
       comparison_id: comparisonId,
       arm_index: String(armIndex),
-    } as never,
+    },
     stream: true,
     consumeStream: async (response: Response) => {
       await response.text();

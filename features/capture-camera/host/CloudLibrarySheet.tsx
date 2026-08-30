@@ -14,7 +14,7 @@
 
 import React, { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ImageOff, Loader2, Play, X } from "lucide-react";
+import { ImageOff, Loader2, Play, Upload, X } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -30,6 +30,18 @@ import type { CloudFileRecord } from "@/features/files/types";
 export interface CloudLibrarySheetProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Pick files from the device. Supplied by v3 hosts, where this drawer is the
+   * ONLY door to existing media (Arman, 2026-08-30: "we don't need both upload
+   * and cloud because we can modify the drawer that has the cloud images to
+   * just show an option for uploading").
+   *
+   * Two controls that both mean "media I already have" is a choice the user
+   * should never have been asked to make: whether a file happens to be in the
+   * cloud yet is our bookkeeping, not their mental model. Omitted by v2 hosts,
+   * which still carry a separate UPLOAD lane in the mode row.
+   */
+  onUpload?: () => void;
 }
 
 function isVideoMime(mime: string): boolean {
@@ -40,7 +52,11 @@ function isVideoMime(mime: string): boolean {
  *  mounted thumbnails and as many fetches. */
 const PAGE_SIZE = 60;
 
-export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
+export function CloudLibrarySheet({
+  open,
+  onClose,
+  onUpload,
+}: CloudLibrarySheetProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const files = useAppSelector(selectAllFilesArray);
@@ -81,15 +97,33 @@ export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
   return (
     <div className="absolute inset-0 z-50 flex flex-col bg-black">
       <div className="flex shrink-0 items-center justify-between bg-black/80 px-4 pt-safe">
-        <h2 className="py-4 text-[17px] font-semibold text-white">Library</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close library"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <h2 className="py-4 text-[17px] font-semibold text-white">Your media</h2>
+        <div className="flex items-center gap-2">
+          {onUpload ? (
+            <button
+              type="button"
+              onClick={() => {
+                // Close first: the picker is a system sheet, and leaving the
+                // library mounted behind it means the user lands back in a
+                // gallery that has not yet heard about their new file.
+                onClose();
+                onUpload();
+              }}
+              className="flex h-10 touch-manipulation items-center gap-1.5 rounded-full bg-white/10 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-white/20"
+            >
+              <Upload className="h-4 w-4" />
+              Upload
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close library"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-safe">
@@ -101,6 +135,21 @@ export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
           <div className="flex h-full flex-col items-center justify-center gap-3 text-white/60">
             <ImageOff className="h-8 w-8" />
             <p className="text-sm">No photos or videos in your cloud yet.</p>
+            {/* An empty gallery whose only affordance is "close" is a dead end
+                — the one thing a user can do from here is add something. */}
+            {onUpload ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onUpload();
+                }}
+                className="flex h-11 touch-manipulation items-center gap-2 rounded-full bg-white/10 px-5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+              >
+                <Upload className="h-4 w-4" />
+                Upload from this device
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-0.5 sm:grid-cols-5 md:grid-cols-7">

@@ -284,8 +284,10 @@ function BattleSetup({ onStarted }: { onStarted: (row: ComparisonRow) => void })
         // THE source=human invariant: exactly the values a person typed here
         // are claimed human (what satisfies an ask-sourced input).
         normalization: {},
-        input_sources: Object.fromEntries(humanNames.map((n) => [n, "human"])),
-      } as never);
+        input_sources: Object.fromEntries(
+          humanNames.map((n) => [n, "human" as const]),
+        ),
+      });
       if (error || !comparisonId) {
         toast.error(error ?? "The comparison started but no id came back.");
         return;
