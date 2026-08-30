@@ -186,6 +186,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/agents/lookups"),
           destination("/administration/agents/mandates", [
             "/administration/agents/mandates/[mandateKey]",
+            "/administration/agents/mandates/new",
           ]),
           destination("/administration/agents/mcp-tools/new"),
         ],

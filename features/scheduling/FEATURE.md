@@ -214,6 +214,9 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-29** — Replaced the temporary handwritten `DbJob*` HTTP wire
+  mirrors with direct aliases to the live generated OpenAPI schemas.
+
 - **2026-08-29** — System jobs no longer exist by display name alone. Every
   server `kind=tool` task carries a required FK to one canonical
   `platform.taxonomy_node`; every pg_cron job is anchored from that same

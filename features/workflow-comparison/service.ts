@@ -9,7 +9,7 @@
  */
 
 import type { AppDispatch } from "@/lib/redux/store";
-import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
+import { callApi } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
 import { supabase } from "@/utils/supabase/client";
 
@@ -19,28 +19,20 @@ import type { ComparisonRow } from "./types";
 // Reads (direct Supabase)
 // ---------------------------------------------------------------------------
 
-export async function fetchComparison(id: string): Promise<ComparisonRow | null> {
-  const { data, error } = await supabase
-    .schema("workflow")
-    .from("comparison")
-    .select("*")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (error) throw new Error(`Could not load the comparison: ${error.message}`);
-  return data;
+export async function fetchComparison(
+  id: string,
+): Promise<ComparisonRow | null> {
+  void id;
+  throw new Error(
+    "Workflow Battle is unavailable until its live contract is deployed.",
+  );
 }
 
 export async function listComparisons(limit = 30): Promise<ComparisonRow[]> {
-  const { data, error } = await supabase
-    .schema("workflow")
-    .from("comparison")
-    .select("*")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(`Could not list comparisons: ${error.message}`);
-  return data ?? [];
+  void limit;
+  throw new Error(
+    "Workflow Battle is unavailable until its live contract is deployed.",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -53,17 +45,10 @@ export async function saveVerdict(args: {
   notes: string;
   userId: string | null;
 }): Promise<void> {
-  const { error } = await supabase
-    .schema("workflow")
-    .from("comparison")
-    .update({
-      verdict_winner: args.winnerLabel,
-      verdict_notes: args.notes || null,
-      verdict_at: args.winnerLabel ? new Date().toISOString() : null,
-      verdict_by: args.winnerLabel ? args.userId : null,
-    })
-    .eq("id", args.comparisonId);
-  if (error) throw new Error(`Could not save the verdict: ${error.message}`);
+  void args;
+  throw new Error(
+    "Workflow Battle is unavailable until its live contract is deployed.",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +62,9 @@ export interface WorkflowChoice {
   version: number;
 }
 
-export async function searchWorkflows(query: string): Promise<WorkflowChoice[]> {
+export async function searchWorkflows(
+  query: string,
+): Promise<WorkflowChoice[]> {
   let q = supabase
     .schema("workflow")
     .from("definition")
@@ -138,80 +125,31 @@ export interface StartComparisonBody {
   normalization: Record<string, unknown>;
 }
 
-/**
- * DELETE-ME CAST: `/workflows/comparisons` shipped server-side in the same
- * change as this file and enters `types/python-generated/api-types.ts` on the
- * next routine `pnpm sync-types` after the server deploy. Until then the path
- * is asserted onto an existing streaming POST path's type. Remove both casts
- * (here and in `rerunComparisonArm`) once sync-types has run.
- */
-const START_PATH = "/workflows/comparisons" as "/podcast/races";
-
-function extractComparisonId(streamText: string): string | null {
-  // The typed WorkflowComparisonStartedEvent rides the stream as a data
-  // event; the comparison_id is the one field this client needs.
-  const match = streamText.match(
-    /"comparison_id"\s*:\s*"([0-9a-f-]{36})"/i,
-  );
-  return match ? match[1] : null;
-}
-
 export async function startComparison(
   dispatch: AppDispatch,
   body: StartComparisonBody,
 ): Promise<{ comparisonId: string | null; error: string | null }> {
-  const captured: { text: string | null } = { text: null };
-  const config: ApiCallConfig<typeof START_PATH, "POST"> = {
-    path: START_PATH,
-    method: "POST",
-    body: body as never,
-    stream: true,
-    consumeStream: async (response: Response) => {
-      captured.text = await response.text();
-    },
-  };
-  const result = await dispatch(callApi(config));
-  if (result.error) {
-    return {
-      comparisonId: null,
-      error: result.error.message || "Could not start the comparison.",
-    };
-  }
+  void dispatch;
+  void body;
   return {
-    comparisonId: captured.text ? extractComparisonId(captured.text) : null,
-    error: null,
+    comparisonId: null,
+    error:
+      "Workflow Battle is unavailable until its live contract is deployed.",
   };
 }
-
-/** DELETE-ME CAST — see `START_PATH`. */
-const RERUN_PATH =
-  "/workflows/comparisons/{comparison_id}/arms/{arm_index}/rerun" as "/podcast/races/{race_id}/arms/{arm}/rerun";
 
 export async function rerunComparisonArm(
   dispatch: AppDispatch,
   comparisonId: string,
   armIndex: number,
 ): Promise<{ error: string | null }> {
-  const config: ApiCallConfig<typeof RERUN_PATH, "POST"> = {
-    path: RERUN_PATH,
-    method: "POST",
-    pathParams: {
-      comparison_id: comparisonId,
-      arm_index: String(armIndex),
-    } as never,
-    stream: true,
-    consumeStream: async (response: Response) => {
-      await response.text();
-    },
-    // 409 = the arm's lease is live — an expected domain outcome the UI
-    // explains, never a system error.
-    expectedErrorStatuses: [409],
+  void dispatch;
+  void comparisonId;
+  void armIndex;
+  return {
+    error:
+      "Workflow Battle is unavailable until its live contract is deployed.",
   };
-  const result = await dispatch(callApi(config));
-  if (result.error) {
-    return { error: result.error.message || "Could not re-run the arm." };
-  }
-  return { error: null };
 }
 
 // ---------------------------------------------------------------------------

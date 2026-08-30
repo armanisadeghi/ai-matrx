@@ -1,6 +1,8 @@
 # Workflow Comparison — Workflow Battle
 
-**Route:** `/workflows/battle` (`app/(core)/workflows/battle/page.tsx`).
+**Route:** `/workflows/battle` currently redirects to `/workflows`.
+**Status:** Integrated but deliberately gated until the live database relation
+and generated API paths exist.
 **What it is:** Agent Battle for WORKFLOWS — pick 2–6 workflows, each at a
 pinned version, lock ONE shared input set, run every arm for real money,
 watch each arm's run live, judge blind, record the verdict. Server half:
@@ -10,16 +12,18 @@ watch each arm's run live, judge blind, record the verdict. Server half:
 
 ## Architecture
 
-- **The durable row is the state of record**: `workflow.comparison`, read
-  DIRECTLY via Supabase (`service.ts`), polled every 5s while running. Each
+- **The intended durable row is the state of record**: `workflow.comparison`.
+  The relation is not present in the live Data API, so `service.ts` refuses
+  reads and writes and the route remains unroutable. Once deployed, it will be
+  read DIRECTLY via Supabase and polled every 5s while running. Each
   arm entry carries `run_id`, status, heartbeat, verified cost
   (`compute_run_cost` summary), the run's whole output, and error.
-- **Compute only via the server**: `POST /workflows/comparisons` (streams a
+- **Compute only via the server**: the intended `POST /workflows/comparisons` (streams a
   typed `workflow_comparison_started` event carrying the row id before any
   spend) and `POST …/arms/{i}/rerun`. Arm cancel is the CANONICAL
-  `POST /runs/{run_id}/cancel` on the arm's own run. ⚠️ Both comparison
-  paths ride a DELETE-ME cast in `service.ts` until the next routine
-  `pnpm sync-types` after the server deploy.
+  `POST /runs/{run_id}/cancel` on the arm's own run. The comparison paths are
+  absent from the live OpenAPI contract; no fallback or unrelated-path cast is
+  permitted while they are absent.
 - **Locked vs varied is computed, explicit, and data**: each arm's SERVED
   input surface (`GET /workflows/{id}/run-form`, the same contract the real
   run form uses) is fetched; fields EVERY arm declares render once as the
@@ -32,10 +36,10 @@ watch each arm's run live, judge blind, record the verdict. Server half:
 - **Blind judging** reuses Agent Battle's pure helpers
   (`features/agent-comparison/shared/blind.ts`): shuffle the columns, hide
   labels/versions/costs, reveal on verdict. Verdict (`verdict_winner/
-  notes/at/by`) writes directly to the row.
+notes/at/by`) writes directly to the row.
 - **The half-price-cake rule** (Arman, 2026-08-26): a shorter/smaller output
   is NOT savings. Per-arm cost is verified server-side; `metrics.
-  normalization` on the row is reserved for per-unit normalization display.
+normalization` on the row is reserved for per-unit normalization display.
 
 ## Files
 
@@ -52,6 +56,10 @@ watch each arm's run live, judge blind, record the verdict. Server half:
 
 ## Change Log
 
+- 2026-08-29 — Gated the route and replaced the absent relation/API calls with
+  explicit unavailable responses. The prior temporary casts targeted unrelated
+  podcast endpoints and the live `workflow.comparison` relation did not exist;
+  the feature can only be re-enabled after both contracts are generated live.
 - 2026-08-26 — Feature created: full battle lifecycle (setup → locked
   inputs → run → blind judge → verdict → history). Replaces the deleted
   podcast-race demo surface.

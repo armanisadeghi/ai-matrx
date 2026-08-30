@@ -281,8 +281,7 @@ export interface ScannerStatusResponse {
 export type SystemTaskTrigger =
   ApiComponents["schemas"]["SystemTaskTriggerInfo"];
 
-export type SystemTaskLastRun =
-  ApiComponents["schemas"]["SystemTaskLastRun"];
+export type SystemTaskLastRun = ApiComponents["schemas"]["SystemTaskLastRun"];
 
 export type SystemTaskResponse = ApiComponents["schemas"]["SystemTaskItem"];
 
@@ -296,35 +295,16 @@ export type SystemTaskPatchRequest =
 //
 // Wire types for `/scheduling/admin/db-jobs` — the database's own scheduled
 // jobs (`cron.job`, SQL running inside Postgres), on the same console per
-// Arman's 2026-08-29 extension of the schedules ruling. Hand-written mirrors
-// of aidream's DbJob* Pydantic models (aidream/api/routers/scheduling.py):
-// the generated api-types contract gains them on the next live sync, at
-// which point these become aliases.
+// Arman's 2026-08-29 extension of the schedules ruling. The live generated
+// OpenAPI contract is authoritative; aliases keep every consumer synchronized.
 
-export interface DbJobLastRun {
-  status: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  return_message: string | null;
-}
+export type DbJobLastRun = ApiComponents["schemas"]["DbJobLastRun"];
 
-export interface DbJobResponse {
-  jobid: number;
-  jobname: string | null;
-  schedule: string;
-  command: string;
-  active: boolean;
-  last_run: DbJobLastRun | null;
-}
+export type DbJobResponse = ApiComponents["schemas"]["DbJobItem"];
 
-export interface DbJobListResponse {
-  jobs: DbJobResponse[];
-}
+export type DbJobListResponse = ApiComponents["schemas"]["DbJobsResponse"];
 
-export interface DbJobPatchRequest {
-  schedule?: string;
-  active?: boolean;
-}
+export type DbJobPatchRequest = ApiComponents["schemas"]["DbJobPatchRequest"];
 
 // ── List query params ──────────────────────────────────────────────────────
 

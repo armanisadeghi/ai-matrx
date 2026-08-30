@@ -219,6 +219,9 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-29` — Registered the mandate creation leaf as an owned route of the
+  canonical Mandates destination, keeping the admin catalog exact without a
+  duplicate navigation row.
 - `2026-08-22` — Added canonical shell-header clearance to the shared `FeatureAdminPage`, fixing every core feature admin map that previously began underneath the transparent AppShell header.
 - `2026-08-20` — Relocated the per-feature admin map (`FeatureAdminMap`) contract and design rules here from CLAUDE.md (charter rewrite); CLAUDE.md keeps a pointer.
 
@@ -339,7 +342,7 @@ that existing editor; private keys and client secrets remain outside
   impossible to type into the real `<input>`), and length ceilings the manifest
   description interpolates so the contract and the enforcement cannot drift.
   Staging only — the admin still presses Send Email, and `POST
-  /api/admin/email` is never reached by an agent. The recipients (mode, typed
+/api/admin/email` is never reached by an agent. The recipients (mode, typed
   address list, selected users) and the custom From address deliberately have
   NO write path: they are identity and blast radius, not authored copy. There
   is no send target by design.
