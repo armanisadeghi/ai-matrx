@@ -23,7 +23,20 @@
  *   - We cap the wait at 30 seconds — if the image still hasn't loaded
  *     by then, something is genuinely wrong; reject with a clear
  *     message rather than hang.
+ *
+ * Deliberately NOT `@ai-matrx/print/core`'s openPrintWindow/buildPrintDocument
+ * lane, for two reasons — this is a different mechanism, not drift:
+ *   1. openPrintWindow uses `window.open()` (pop-up-blockable, and on block it
+ *      silently downloads an .html file). A per-image toolbar button must print
+ *      in place from the current document, and must be able to REPORT failure
+ *      to the caller — hence the hidden iframe and the rejected promise.
+ *   2. buildPrintDocument wraps the body in a reader shell (Print / Close
+ *      buttons plus `.content` document typography). This document is a bare,
+ *      edge-to-edge, zero-margin image page with no chrome at all.
+ * The escaping IS shared — `escapeHtml` below comes from the package.
  */
+
+import { escapeHtml } from "@ai-matrx/print/core";
 
 export interface PrintImageOptions {
   /** Browser tab title while the print dialog is open. */
@@ -154,18 +167,10 @@ export async function printImage(
     </style>
   </head>
   <body>
-    <img src="${escapeAttr(imageUrl)}" alt="" />
+    <img src="${escapeHtml(imageUrl)}" alt="" />
   </body>
 </html>`;
 
     document.body.appendChild(iframe);
   });
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function escapeAttr(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
