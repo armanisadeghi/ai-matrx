@@ -859,6 +859,11 @@ function BindingEditorDialog({
             existing?.surfaceName === surfaceName
               ? (existing?.writePolicies ?? undefined)
               : undefined,
+          // Same round-trip for the binding's auto-run answer.
+          autoRun:
+            existing?.surfaceName === surfaceName
+              ? existing?.autoRun
+              : undefined,
         }),
       ).unwrap();
 

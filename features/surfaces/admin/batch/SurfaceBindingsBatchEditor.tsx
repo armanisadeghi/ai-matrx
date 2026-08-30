@@ -266,6 +266,13 @@ export function SurfaceBindingsBatchEditor({
     )?.writePolicies ?? {};
   const policiesFor = (surfaceName: string): WritePolicyMap =>
     policyEditsBySurface[surfaceName] ?? storedPoliciesFor(surfaceName);
+  /** The stored auto-run answer at this tier — this editor never changes it,
+   * but the wholesale payload replacement would erase it. */
+  const autoRunFor = (surfaceName: string): boolean =>
+    bindings.find(
+      (b) =>
+        b.surfaceName === surfaceName && bindingMatchesScope(b, scope, scopeId),
+    )?.autoRun ?? false;
 
   // Surfaces in the batch that declare write targets — only these render a
   // policy editor; the rest still round-trip their stored overrides on apply.
@@ -321,6 +328,9 @@ export function SurfaceBindingsBatchEditor({
       scope: scopeInput,
       valueMappings: structuredClone(sharedMappings),
       writePolicies: { ...policiesFor(surfaceName) },
+      // Round-trip: the payload is replaced wholesale per surface, so a
+      // binding that already runs instantly must keep doing so.
+      autoRun: autoRunFor(surfaceName),
     }));
 
     setApplying(true);
