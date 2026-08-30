@@ -41,6 +41,7 @@ import {
   Lock,
   SlidersHorizontal,
   Trash2,
+  TriangleAlert,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -233,7 +234,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   // we can't rely on that — drive it ourselves.
   useEffect(() => {
     if (!userId) return;
-    if (treeStatus === "idle" || treeStatus === "error") {
+    if (treeStatus === "idle") {
       void dispatch(loadUserFileTree({ userId }));
     }
   }, [userId, treeStatus, dispatch]);
@@ -432,6 +433,11 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   };
 
   const isLoading = treeStatus === "loading" || treeStatus === "idle";
+  const handleRetryTree = () => {
+    if (userId) {
+      void dispatch(loadUserFileTree({ userId }));
+    }
+  };
   const imageCountLabel = `${imageFiles.length} image${imageFiles.length !== 1 ? "s" : ""}`;
 
   // Total non-deleted images in the whole library, ignoring search/filters —
@@ -584,7 +590,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     >
       <TooltipProvider delayDuration={300}>
         <NonEditableContextMenu
-        sourceFeature="files"
+          sourceFeature="files"
           surfaceName={IMAGES_SURFACE_NAME}
           getApplicationScope={getImagesScope}
           contentSource={{ type: "raw" }}
@@ -668,7 +674,17 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                   </h4>
                 ) : null}
 
-                {isLoading && allFiles.length === 0 ? (
+                {treeStatus === "error" ? (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5">
+                    <EmptyStateCard
+                      title="Couldn’t load your images"
+                      description="The image library could not be refreshed. Check your connection, then try again."
+                      icon={TriangleAlert}
+                      buttonText="Try again"
+                      onButtonClick={handleRetryTree}
+                    />
+                  </div>
+                ) : isLoading && allFiles.length === 0 ? (
                   <CloudLoadingState />
                 ) : imageFiles.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border/80 bg-card/30">

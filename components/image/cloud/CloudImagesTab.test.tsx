@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CloudImagesTab } from "@/components/image/cloud/CloudImagesTab";
 
 const mockFiles = {
+  treeStatus: "success",
   allFiles: [] as Array<{
     id: string;
     fileName: string;
@@ -14,7 +15,13 @@ const mockFiles = {
 };
 
 jest.mock("@/components/official/SearchInput", () => ({
-  SearchInput: ({ value, placeholder }: { value: string; placeholder: string }) => (
+  SearchInput: ({
+    value,
+    placeholder,
+  }: {
+    value: string;
+    placeholder: string;
+  }) => (
     <div data-official-search-input="true" data-value={value}>
       {placeholder}
     </div>
@@ -25,7 +32,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: (selector: unknown) => {
     if (selector === "selectActiveUserId") return "user-1";
-    if (selector === "selectTreeStatus") return "success";
+    if (selector === "selectTreeStatus") return mockFiles.treeStatus;
     if (selector === "selectAllFilesArray") return mockFiles.allFiles;
     return undefined;
   },
@@ -74,6 +81,7 @@ jest.mock("@/components/image/shared/ImageGrid", () => ({
 
 describe("CloudImagesTab", () => {
   beforeEach(() => {
+    mockFiles.treeStatus = "success";
     mockFiles.allFiles = [];
   });
 
@@ -107,5 +115,15 @@ describe("CloudImagesTab", () => {
     const html = renderToStaticMarkup(<CloudImagesTab />);
 
     expect(html).toContain('aria-label="2 images loaded"');
+  });
+
+  it("surfaces a recoverable load error instead of claiming the library is empty", () => {
+    mockFiles.treeStatus = "error";
+
+    const html = renderToStaticMarkup(<CloudImagesTab />);
+
+    expect(html).toContain("Couldn’t load your images");
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("No images in your cloud yet");
   });
 });
