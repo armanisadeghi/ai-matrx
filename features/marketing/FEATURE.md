@@ -44,45 +44,69 @@ underlying evidence never dead-ends. The nested
 `matrx-user/marketing-authority` surface exposes the loaded verdict, pages,
 candidate allowlist, and recommendations to platform agents without refetching.
 
-## The feature is multi-pillar — websites are ONE pillar
+## THE AGENCY MODEL — two planes, the brand is the tenant (2026-08-28)
 
-Marketing owns **eight peer pillars**, declared ONCE in
-`features/marketing/lib/marketing-nav.ts` (`MARKETING_PILLARS`) and rendered by
-the `/marketing` hub, `/marketing/tools`, the shell nav (generated —
-`marketingNavChildren()`), and the route metadata. One declaration, four
-surfaces; they cannot drift.
+The user is an **agency**; a brand is one of their **clients**. The URL tree has
+exactly two planes (design + migration map:
+`docs/handoffs/marketing-agency-restructure.md` and the ratified "Marketing
+Tree" artifact):
 
-| Pillar                         | Live today                                                                                                                                | Reserved (coming soon)                         |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Brands & Websites              | `/marketing/brands`, `/marketing/sites`, `/marketing/local`                                                                               | —                                              |
-| Strategy & Planning            | `/marketing/content-plan`, `/marketing/initiatives`                                                                                       | `/calendar`, `/audience`                       |
-| Discovery, Search & Visibility | `/marketing/capabilities`, `/marketing/keyword-research`, `/marketing/discovery/youtube`, `/marketing/ranks`, `/marketing/search-console` | —                                              |
-| Content & Channels             | `/marketing/email`, `/marketing/outreach` (front doors)                                                                                   | `/marketing/content-studio`, `/social`, `/ads` |
-| Market Intelligence            | `/marketing/competitors`, `/marketing/monitoring` (front door)                                                                            | —                                              |
-| Measurement                    | `/marketing/cost`, `/marketing/reports`                                                                                                   | `/marketing/analytics`                         |
-| SEO Tools                      | `/marketing/tools` → the PUBLIC analyzers on `/seo/*`                                                                                     | —                                              |
-| Data & Operations              | `/marketing/connections`                                                                                                                  | `/marketing/automations`                       |
+- **AGENCY plane** — only what concerns no single client. `MARKETING_PILLARS`
+  (`lib/marketing-nav.ts`) declares it ONCE for the `/marketing` hub, the shell
+  nav, the landing, and metadata: `brands` (roster, + `brands/new-website`),
+  `reports{,/cost,/ranks}`, `operations/{connections,automations,approvals,data-quality}`,
+  `tools{,/youtube}`.
+- **CLIENT workspace** — everything else, under `/marketing/[brandId]`.
+  `MARKETING_BRAND_SECTIONS` (`lib/brand-sections.ts`) declares its 17 sections:
+  `identity/*` (the brand home — media, knowledge, offerings, guidelines,
+  audience), `websites/[siteId]/*` (INVENTORY: pages, structure, sitemaps,
+  media, crawls, settings), `seo/[siteId]/*` (the PRACTICE: 17 sections in
+  `MARKETING_SEO_SECTIONS`), `locations`, `socials`, `content`, `email`, `pr`,
+  `ads`, `intelligence/*`, `analytics`, `planning/*`, `inbox`, `settings`.
+
+### The address system
+
+- **Segments are DUAL-MODE** — brand/site URL keys (`web.brand.slug` globally
+  unique; `web.site.slug` unique per brand) or UUIDs. Server layouts resolve via
+  `lib/keys-server.ts` and canonicalize UUID→key; reserved words live in
+  `lib/keys.ts` (`MARKETING_RESERVED_SEGMENTS`), lockstep with
+  `migrations/marketing_brand_site_url_slugs.sql`.
+- **Route params are ADDRESSES, never identifiers.** Client code takes UUIDs
+  from `useMarketingBrand()`/`useMarketingSite()` (`lib/brand-context.tsx`);
+  server code from `resolveBrandParam`/`resolveSiteParam`.
+- **Never hand-build a `/marketing/...` path** — `marketingRoutes`
+  (`lib/routes.ts`) is the one builder; its legacy signatures emit the new tree
+  via `MARKETING_SITE_SECTION_HOMES`.
+- **Every legacy address redirects.** `brands/[brandId]/[[...rest]]`,
+  `sites/[siteId]/[...rest]`, the retired flat pillars, and the cross-branch
+  `[...rest]` mappers under both `[siteId]` branches all translate through
+  `lib/legacy-marketing-urls.ts` — ONE mapping, never per-shim copies.
 
 ### Rules
 
-- **No marketing surface gets a root-level route.** Content planning and keyword
-  research were mounted at `/content-plan` and `/seo/keyword-research`; both moved
-  under `/marketing/*` on 2026-07-25 (permanent redirects in `next.config.js`).
+- **No marketing surface gets a root-level route.** (`/content-plan` and
+  `/seo/keyword-research` moved under `/marketing/*` 2026-07-25, permanent
+  redirects in `next.config.js`.)
 - **`/seo/*` is reserved for the `(public)` route group** — anonymous lead-gen
   analyzers that must render without a session. Never add an authed `/seo/*` route.
-- **Adding or shipping a Marketing surface means editing `marketing-nav.ts`** —
-  never the hub page, the tools page, the sidebar, or the metadata individually.
-- **Every site/crawl child URL is a visible mode.** Declare it once in
-  `lib/route-sections.ts`; the header, sibling-site switching, crawl subnav, and
-  route metadata consume that registry. Root modes are exact-only.
-  `route-sections.test.ts` compares both registries to the App Router filesystem,
-  so a new child page without navigation fails.
-- **Every customer-facing top-level Marketing page is in the Marketing map.**
-  `marketing-route-navigation.test.ts` compares the live App Router directories
-  with `marketing-nav.ts` in both directions; privileged `/marketing/admin` is
-  the sole explicit exception.
-- The brands/websites pillar is the largest, not the most important. `/marketing`
-  is a list view of all pillars — it must never redirect into one of them.
+- **Adding or shipping a Marketing surface means editing the owning registry** —
+  `marketing-nav.ts` (agency plane), `brand-sections.ts` (client sections), or
+  `route-sections.ts` (website/seo/crawl sections) — never one menu by hand.
+  The sidebar's four states (agency / brand / website / seo —
+  `components/shell/MarketingSidebarMenu.tsx`, resolved by
+  `lib/sidebar-site-context.ts`) and route metadata render only registry data.
+- **Every screen a user can be ON is a ROUTE.** `?view=`/`?tab=` never selects
+  a screen — query params carry filters/selection only (settings tabs, keyword
+  views, content-plan views, and identity media rooms are all routes now).
+- **Drift tests enforce filesystem ↔ registry lockstep in both directions:**
+  `route-sections.test.ts`, `marketing-route-navigation.test.ts` (also proves
+  every legacy shim actually redirects), `marketing-nav.test.ts`,
+  `sidebar-site-context.test.ts`. `/marketing/admin` is the sole internal
+  exception.
+- **A tenant boundary is not a rollup.** Cross-client numbers live on the agency
+  plane (`reports/*`); a client's numbers live in its workspace. One concept,
+  one home — the SEO tools index (`tools`), keywords (`seo/[siteId]/keywords`),
+  and AI visibility (`seo/[siteId]/ai-visibility`) each have exactly one door.
 - **The scraper is NOT part of Marketing.** `/scraper/*` and `features/scraper/`
   are shared platform infrastructure that Marketing's crawler borrows. Do not
   move them in, and do not fork a second crawler here.
@@ -90,26 +114,32 @@ surfaces; they cannot drift.
 ### Reserved routes — the coming-soon contract
 
 Each reserved surface is a **real route** rendering
-`features/marketing/components/MarketingComingSoon.tsx`, not a dead link. Three
-declarations must exist together, or the placeholder throws at render:
+`features/marketing/components/MarketingComingSoon.tsx`, not a dead link. The
+declarations that must exist together:
 
-1. an entry in `MARKETING_PILLARS` with `status: "coming-soon"` + `comingSoonId`,
+1. `status: "coming-soon"` + `comingSoonId` on its declaration — a
+   `MARKETING_PILLARS` entry (agency plane), a `MARKETING_BRAND_SECTIONS` row,
+   or a `MARKETING_BRAND_SUBROUTE_PROMISES` row (brand sub-routes:
+   `identity/audience`, `planning/calendar`, `content/studio`, the `ads`
+   center),
 2. a `marketing.*` row in `lib/coming-soon/registry.ts` (the user-facing promise —
    see that FEATURE.md: a promise is tracked like a defect), and
 3. a builder in `lib/routes.ts` (`marketingRoutes`).
 
+Coming-soon sections stay **VISIBLE in the brand sidebar with a "Soon" tag** —
+the client workspace's promised shape is part of the map (Arman, 2026-08-28).
 **Shipping one:** build the real page at the SAME URL, delete its registry row,
-and drop `status`/`comingSoonId` from its nav entry. The href never changes —
-that permanence is the whole point of reserving it.
+and drop `status`/`comingSoonId`. The href never changes — that permanence is
+the whole point of reserving it.
 
 ### Front doors — when the capability already ships elsewhere
 
-Some pillar routes name a capability that is real but lives outside Marketing —
-in `/crm/*`, or inside a website's own workspace. Those routes ship as **front
-doors**: a page of doors with live counts, never a second copy of the workspace.
-`/marketing/outreach`, `/marketing/email` and `/marketing/monitoring` are the
-three (2026-08-19). Contract, invariants, and the primitive they share:
+A route that names a capability living outside Marketing (CRM's outreach and
+media lists) ships as a **front door**: a page of doors with live counts, never
+a second copy of the workspace. Contract:
 [`features/marketing/front-doors/FEATURE.md`](./front-doors/FEATURE.md).
+Email and Monitoring stopped being doors in the restructure — they are real
+client sections now (`[brandId]/email`, `[brandId]/intelligence/monitoring`).
 
 **A front door is still "shipped"** — registry row deleted, nav status dropped.
 When only PART of a promise is kept, the unbuilt remainder is re-registered as
@@ -118,8 +148,9 @@ attached to a route that no longer says "coming soon").
 
 ## AI citation reverse engineer (2026-08-11)
 
-`/marketing/ai-visibility` is the cross-site home; every managed site also has
-`.../sites/[siteId]/ai-visibility` in its permanent mode rail. A user supplies the
+**The ONE home is `/marketing/[brandId]/seo/[siteId]/ai-visibility`** (the old
+`/marketing/ai-visibility` is a redirect shim; `/marketing/ai-visibility/runs/[runId]`
+stays as the shared-run door). A user supplies the
 exact buyer question and chooses ChatGPT, Claude, Gemini, and/or Perplexity. Work
 goes directly to aidream's streamed durable command; saved evidence reads directly
 from Supabase.
@@ -602,6 +633,16 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-28 — **THE AGENCY-MODEL RESTRUCTURE.** The whole `/marketing` tree
+  rebuilt around agency plane + client workspace (`/marketing/[brandId]/…`,
+  dual-mode slug/UUID segments, UUID 308s to the key address). Site screens
+  split across `websites/` (inventory) and `seo/` (practice); business
+  knowledge (discovery ladder, offerings, guidelines) moved to
+  `identity/*`; flat pillars retired to redirect shims via
+  `lib/legacy-marketing-urls.ts`; sidebar rebuilt with four states +
+  breadcrumb trail; every `?view=` screen became a route; admin map
+  regenerated. Design + remaining work:
+  `docs/handoffs/marketing-agency-restructure.md`.
 - 2026-08-29 — C9 adoption: `BottomSheet`/`TabbedBottomSheet`, `EditableLabel`, `SegmentedControl`, `ScoreRing`, and `useScrollFade` now import from `@ai-matrx/design-system` 0.2.0 (npm); the local originals under `components/official/` and `components/ui/segmented-control.tsx` are deleted. Behavior identical (verbatim ports; host keeps the glass/pb-safe/matrx-scroll-fade CSS contracts in `app/globals.css`).
 - 2026-08-28 — Codex: **Surface check v2: pass (5 hierarchy fixes) — Keyword
   Value is a workbench again, not a stack of competing dashboards.** The useful

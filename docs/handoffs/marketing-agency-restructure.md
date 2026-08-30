@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-28
+updated: 2026-08-29
 repos: [matrx-frontend]
 scope: program
 feature: Marketing
@@ -9,50 +9,40 @@ vision: []
 
 # Marketing agency-model restructure
 
-**What this is:** Rebuild the `/marketing` URL tree, nav, and breadcrumbs around the agency model — a small agency plane (roster, roll-ups, machinery, generic tools) plus everything else nested inside the client brand at `/marketing/[brandKey]/…`, with human-readable keys as the canonical addresses and every screen a real route.
+**What this is:** The `/marketing` tree was rebuilt around the agency model — small agency plane + everything nested in the client brand at `/marketing/[brandKey]/…` with dual-mode key/UUID addresses; this handoff carries the follow-ups that finish the edges.
 **Scope:** Program
 **Feature:** Marketing
-**Vision:** VISION MISSING as a doc — but Arman's own words from the 2026-08-28 design session are quoted verbatim below and the ratified design is the "The Marketing Tree" artifact (Claude artifact `b24b3316-a67d-4229-b3f0-09c4d90f4cb9`; ask Arman to share/export it if unreachable).
-
-## Vision — Arman's words (2026-08-28 session, verbatim)
-
-- "The user here is assumed to be a marketing agency and the brand is one of their clients. Therefore, the only things that would live outside of the brand are things that have nothing to do with any one single client, brand, site, etc."
-- "Brand is where all of the core assets should live. The company's media, brand guides, kits, locations, their offerings, and anything that has to do with that entire brand as a whole needs to live in one place."
-- "For social media, a normal route would be: marketing/[brand-id]/socials/instagram/account-id/ or possibly without 'instagram'."
-- "I also want to make sure that we completely annihilate the concept of tabs that do not have routes. … Everything will need to have a route for proper NextJS routing."
-- "Realistically, you are not going to have enough brands that this will ever matter in the short term so a unique brand slug system-wide is fine."
-- Ratified rulings: brand keys globally unique (auto-suffix colliders); site/account/location keys unique per brand; UUID URLs 308-forward to key URLs (also fix this back in the org-scope system); breadcrumb handling ported from the scope system.
+**Vision:** VISION MISSING as a doc — Arman's verbatim rulings (2026-08-28 session) are quoted in `features/marketing/FEATURE.md` § THE AGENCY MODEL and the ratified design is the "The Marketing Tree" artifact (Claude artifact `b24b3316-a67d-4229-b3f0-09c4d90f4cb9`).
 
 ## Resources
 
-- Design (both trees, migration map, key rules, breadcrumb spec): the "The Marketing Tree" artifact above — read it FIRST; it is the spec.
-- Nav source of truth: `features/marketing/lib/marketing-nav.ts` + `features/marketing/lib/route-sections.ts` + drift tests `features/marketing/__tests__/marketing-route-navigation.test.ts`, `route-sections.test.ts`.
-- URL builders: `features/marketing/lib/routes.ts` (`marketingRoutes`) — add `segFor(entity) = slug ?? id` preference, mirroring `features/scope-system/utils/scopeRoutes.ts` `scopeSeg()`.
-- Key system to mirror: `features/scope-system/utils/slugify.ts` (`toSlug`, `isValidSlug`, `RESERVED_SCOPE_SLUGS`), `features/organizations/service.ts` `getOrganizationBySlugOrId`, slug-availability via RPC never RLS-filtered select.
-- Breadcrumb to port: `features/scope-system/components/ScopeBreadcrumb.tsx` (+ `MobileBreadcrumbDrawer`, `useBreadcrumbOrgOptions`) mounted from `app/(core)/organizations/[orgId]/layout.tsx`.
-- Legacy shim pattern for moved routes: `app/(core)/marketing/sites/[siteId]/[...rest]/page.tsx`.
-- DB: `web.brand.slug` (globally unique) + `web.site.slug` (unique per brand) — migration `migrations/marketing_brand_site_url_slugs.sql`. Reserved-word list lives in that migration; keep FE validation in lockstep.
-- Marketing feature docs: `features/marketing/FEATURE.md` (1361 lines; update as routes move — its AI-visibility "cross-site home" claim is already stale).
-- Admin map to regenerate at the end: `app/(core)/marketing/admin/page.tsx` (`MARKETING_ADMIN_MAP` routes[] is stale today).
+- **The shipped system**: `features/marketing/FEATURE.md` § THE AGENCY MODEL (planes, address system, registries, drift tests) — read it first; this doc lists only what remains.
+- Spine: `features/marketing/lib/{keys.ts,keys-server.ts,brand-context.tsx,routes.ts,brand-sections.ts,route-sections.ts,marketing-nav.ts,sidebar-site-context.ts,legacy-marketing-urls.ts}` · sidebar `components/shell/MarketingSidebarMenu.tsx` · crumb `components/brand/MarketingBrandCrumb.tsx`.
+- DB: `migrations/marketing_brand_site_url_slugs.sql` (reserved-word list is the FE lockstep twin in `lib/keys.ts`).
+- Tests (all green): `route-sections.test.ts`, `marketing-route-navigation.test.ts`, `marketing-nav.test.ts`, `sidebar-site-context.test.ts`, `route-metadata.test.ts`, `site-subviews.test.ts`, `site-subnav.test.ts`.
 
 ## Remaining work (in order)
 
-1. **Key plumbing (FE).** `features/marketing/lib/keys.ts`: slugify + reserved list (same array as the migration) + `isUuid` branch; brand resolver `getBrandBySlugOrId` (global) and site resolver (per brand); slug written at creation (`NewSiteForm`, brand create) with availability check via RPC; `segFor()` preference in `marketingRoutes`.
-2. **Stand up the two-plane tree.** New `app/(core)/marketing/[brandId]/` (dual-mode segment; server layout resolves slug-or-id, 308s UUID→slug, provides brand context) with sections per the artifact: `identity/*`, `websites/[siteId]/*`, `socials/*` (coming-soon, full reserved depth), `locations/*`, `seo/[siteId]/*`, `content/*`, `ads/*` (coming-soon center; current Google Ads workspace folds in), `email/*`, `pr/*`, `intelligence/*`, `analytics/*`, `planning/*`, `inbox`, `settings`. Agency plane: `brands`, `reports`, `operations/*`, `tools/*`. Move section-by-section, leaving shims at old paths (existing shim pattern). Every coming-soon leaf = registered route per `lib/coming-soon/registry.ts` contract.
-3. **Tabs → routes.** Convert every `?view=`/`?tab=`-switched screen to real routes as its section moves: content-plan views, site keywords views, site settings tabs, value settings, capabilities/search-console `?site=`, email front-door sections. Query params stay only for filters/selection.
-4. **Breadcrumbs.** Port `ScopeBreadcrumb` into a marketing trail mounted in `[brandId]/layout.tsx`: Agency › Brand › Section › Entity › Item, each crumb a sibling switcher; mobile bottom-sheet reused. Demote `RouteModeNav` pills to sibling sub-views only.
-5. **Nav reshape.** `marketing-nav.ts` pillars → the two planes/fourteen client sections; sidebar modes (agency / brand / site / seo) per the artifact §7; keep the drift tests green — they are the lockstep guard.
-6. **Collapse duplicates last** (once each single home is live): `tools` pillar → agency `tools/analyzers`; `keyword-intelligence` + `keyword-research` → `seo/[siteId]/keywords`; orphaned `/marketing/ai-visibility` → `seo/[siteId]/ai-visibility`; `discovery/youtube` → agency `tools/youtube`; `calendar` (mislabeled GSC sweep) → `operations/connections`. Delete dead hubs per no-legacy.
-7. **Finish line.** Regenerate the admin map; update `features/marketing/FEATURE.md` + Change Log; run `pnpm check:dead-ends`, `check:agent-disclosure`, nav drift tests, `pnpm type-check`.
-8. **Back-port the canonical redirect to the org-scope system** (Arman-ratified fix): UUID segments 308 to slug URLs in `/organizations/[orgId]/scopes/…`, and `/scopes/s/[scopeId]` targets slug URLs.
+1. **Back-port ID→key canonicalization to the org-scope system** (Arman-ratified): UUID segments 308 to slug URLs across `/organizations/[orgId]/scopes/…`, and `/scopes/s/[scopeId]` emits slug segments. Mirror `features/marketing/lib/keys-server.ts` + the `CanonicalSegment` client helper.
+2. **aidream/ORM brand+site creates don't stamp slugs** — a brand created server-side lands with `slug NULL` (seen live 2026-08-29) and falls back to UUID addresses. Port the FE's `insertWithSlug` rule (slugify name, reserved-word suffix, collision suffix) into aidream's create paths, then run a NULL-slug backfill sweep (the migration's DO-block is rerunnable).
+3. **Sweep `${sitePath}` composition to `marketingRoutes`.** `MarketingSiteContext.sitePath` is now the BRANCH base; ~130 call sites compose `${sitePath}/<section>` and cross-branch ones ride the `[...rest]` mappers (one 308 hop). Replace with `marketingRoutes.site(brandId, siteId, sub)` (maps directly via `MARKETING_SITE_SECTION_HOMES`) as files are touched; then delete the two `[...rest]` mappers.
+4. **Reputation sub-view switcher**: `ReputationWorkspace` reads `useMarketingSubView("reputation")` but no header renders its five pills at `[brandId]/intelligence/reputation/[siteId]` (the site header's subnav only serves the websites/seo branches). Render the pills from `MARKETING_SITE_SUBVIEWS` on that page.
+5. **Keywords pills still write `?view=`** for start/performance/workbench (the routes exist and match); flip the `keywords` entry in `site-subviews.ts` to `hrefStyle: "path"` and map ids→sub-routes so header pills emit the canonical addresses.
+6. **Brand-scope the org-wide mounts**: `[brandId]/websites` (SitesPortfolio), `content/plan` (PlanSitesList), `planning/initiatives`, `email`, `pr`, `intelligence/monitoring` all mount org-wide components with a NOTE comment; thread a brand filter through each.
+7. **FEATURE.md deep sections** (Entry points / flows tables, ~L200–580) still show pre-restructure URL examples — they all redirect, but sweep them to the new addresses.
+8. **Rename affordance + alias ledger**: brand/site keys are immutable in UI until renames ship WITH the alias table + 308s (ratified rule; don't build the ledger before the affordance).
+9. **Socials/Ads build-out**: reserved structure is live (`socials` coming-soon; `ads` mounts the Google Ads workspace as the center's first room) — the full per-account depth (`socials/[accountId]/{posts,schedule,inbox,audience,performance}`, `ads/[accountId]/campaigns/…`) is the artifact's spec when those systems are built.
 
-Traps: shared checkout (commit per section with `--only`); brand keys must never collide with agency-plane static segments (reserved list); slug lookups must not rely on RLS-filtered selects for availability; alias ledger for renames ships WITH the rename affordance, not before (slugs immutable in UI until then).
+Traps: shared checkout (parallel sessions sweep working files into their commits — verify content, not commit messages); Bing OAuth callback stays at `/marketing/connections/bing/callback` (registered redirect URI — move only with the Bing app registration + `BING_WEBMASTER_OAUTH_REDIRECT_URI` in aidream); pre-existing GA4 `campaign-pause.test.ts` failure is logged in `FOUND_DEFECTS.md`, not this program's.
 
 ## Done
 
-- Design ratified by Arman — "The Marketing Tree" artifact (as-built tree, agency-model tree, key rules, breadcrumb spec, migration map).
-- DB: `web.brand.slug` + `web.site.slug` added, backfilled, format-checked, unique-indexed — `migrations/marketing_brand_site_url_slugs.sql`.
+- Design ratified — "The Marketing Tree" artifact; rules mirrored into `features/marketing/FEATURE.md` § THE AGENCY MODEL.
+- DB slugs live + backfilled (`migrations/marketing_brand_site_url_slugs.sql`); FE creates write slugs (`insertWithSlug`, `features/marketing/data/service.ts`); `NewSiteForm` accepts key or UUID in `?brand=`.
+- Two-plane tree built (~120 live pages) — see the spine files above and `app/(core)/marketing/`.
+- Legacy lattice: brands/sites catch-alls, flat-pillar shims, cross-branch mappers, resolver doors — all through `lib/legacy-marketing-urls.ts`; browser-verified (old canonical → seo branch, UUID → slug, flat door → branch, `assets?view=` → identity media room).
+- Four-state sidebar + breadcrumb trail + route metadata + admin map regenerated; drift tests rewritten and green; repo type-check clean.
 
 ## Decisions needed
 
-- None open — key scoping, ID→key forwarding, and breadcrumb port were all ratified 2026-08-28.
+- None open.
