@@ -325,12 +325,26 @@ export async function tusUploadRaw(
         },
         onBeforeRequest: async (req) => {
           // FRESH auth on EVERY request — long uploads outlive a JWT.
+          //
+          // `buildHeaders` (lib/python-client.ts) is mandatory-org, fail-closed:
+          // it resolves the organization the SAME way `bindUploadOrganization`
+          // in cloudUpload.ts already committed it (that gate dispatches into
+          // Redux BEFORE this ever runs — see OrganizationGateDialog's
+          // `resolveOrganizationForBlockedAction` — so the selection is already
+          // there by the time the first chunk goes out). Until this fix,
+          // X-Organization-Id was computed here and then silently dropped —
+          // only Authorization and X-Guest-Fingerprint were copied onto the
+          // TUS request, so every resumable upload reached the server
+          // completely unscoped (aidream commit 8e5ee0b93 now 400s that).
           const { headers } = await buildHeaders({}, false);
           if (headers.Authorization) {
             req.setHeader("Authorization", headers.Authorization);
           }
           if (headers["X-Guest-Fingerprint"]) {
             req.setHeader("X-Guest-Fingerprint", headers["X-Guest-Fingerprint"]);
+          }
+          if (headers["X-Organization-Id"]) {
+            req.setHeader("X-Organization-Id", headers["X-Organization-Id"]);
           }
           if (req.getMethod() === "POST") {
             // Creation only — one intended upload, one key.

@@ -28,6 +28,7 @@ jest.mock("@/lib/python-client", () => ({
     headers: {
       Authorization: "Bearer fresh-token",
       "X-Guest-Fingerprint": "fp-1",
+      "X-Organization-Id": "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
     },
     requestId: "req-1",
   })),
@@ -249,6 +250,12 @@ describe("tusUploadRaw (injected HttpStack)", () => {
     expect(post!.url).toBe("https://api.test/files/upload/tus");
     expect(post!.headers["X-Idempotency-Key"]).toBe("idem-key-1");
     expect(post!.headers.Authorization).toBe("Bearer fresh-token");
+    // The resolvable organization from buildHeaders must reach the wire —
+    // pre-fix, this header was computed and then silently dropped, so every
+    // resumable upload reached the server completely unscoped.
+    expect(post!.headers["X-Organization-Id"]).toBe(
+      "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+    );
     // Upload-Metadata carries the base64 metadata_json envelope.
     expect(post!.headers["Upload-Metadata"]).toContain("metadata_json ");
 
@@ -258,6 +265,9 @@ describe("tusUploadRaw (injected HttpStack)", () => {
       // Fresh auth on EVERY request, idempotency key ONLY on creation.
       expect(patch.headers.Authorization).toBe("Bearer fresh-token");
       expect(patch.headers["X-Idempotency-Key"]).toBeUndefined();
+      expect(patch.headers["X-Organization-Id"]).toBe(
+        "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+      );
     }
     expect(TUS_CHUNK_SIZE_BYTES).toBe(16 * 1024 * 1024);
   });
