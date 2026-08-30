@@ -83,10 +83,21 @@ function FallbackHeader() {
   );
 }
 
+export type MarketingSiteShellBranch = "websites" | "seo" | "reputation";
+
 export function MarketingSiteLayoutClient({
   children,
+  branch,
 }: {
   children: React.ReactNode;
+  /**
+   * Which family this shell is mounted under. The two site branches are
+   * derivable from the URL; a mount OUTSIDE them (Reputation under
+   * intelligence/) must say so or the header sniffs "websites" and renders
+   * the wrong base, no pills, and a branch-jumping site switcher
+   * (adversarial audit, 2026-08-30).
+   */
+  branch?: MarketingSiteShellBranch;
 }) {
   const params = useParams<{ brandId: string; siteId: string }>();
   const pathname = usePathname();
@@ -99,10 +110,12 @@ export function MarketingSiteLayoutClient({
   const siteId = resolvedSite?.id ?? params.siteId;
   const brandSeg = resolvedBrand?.seg ?? params.brandId;
   const siteSeg = resolvedSite?.seg ?? params.siteId;
-  // Which of the site's two branches this layout is shelling: the INVENTORY
-  // (`/marketing/<brand>/websites/<site>`) or the SEO PRACTICE (`…/seo/…`).
-  // Read off the URL, so one shell serves both without either layout saying so.
-  const isSeoBranch = pathname.split("/").filter(Boolean)[2] === "seo";
+  // Which family this layout is shelling. The two site branches read off the
+  // URL; other mounts pass `branch` explicitly.
+  const branchKind: MarketingSiteShellBranch =
+    branch ??
+    (pathname.split("/").filter(Boolean)[2] === "seo" ? "seo" : "websites");
+  const isSeoBranch = branchKind === "seo";
   const site = useSite(siteId);
   // The URL names the brand, and every agent surface under this layout builds
   // its context from the brand row — so a brand the viewer cannot read is an
@@ -117,10 +130,16 @@ export function MarketingSiteLayoutClient({
   const crawlActivity = useSiteCrawlActivity(siteId);
   // Computed from the URL alone, so it can sit above the loading/access gates
   // where every hook must run unconditionally.
-  const branchBase = isSeoBranch
-    ? marketingRoutes.seoSite(brandSeg, siteSeg)
-    : marketingRoutes.website(brandSeg, siteSeg);
-  const subNav = useMarketingSiteSubNav(branchBase);
+  const branchBase =
+    branchKind === "reputation"
+      ? marketingRoutes.brandReputation(brandSeg, siteSeg)
+      : isSeoBranch
+        ? marketingRoutes.seoSite(brandSeg, siteSeg)
+        : marketingRoutes.website(brandSeg, siteSeg);
+  const subNav = useMarketingSiteSubNav(
+    branchBase,
+    branchKind === "reputation" ? "reputation" : undefined,
+  );
 
   if (site.isLoading) {
     return (
@@ -240,9 +259,12 @@ export function MarketingSiteLayoutClient({
             ? // A site with no brand link cannot be addressed in the client
               // tree; the flat door resolves (or refuses) it honestly.
               marketingRoutes.site(null, option.id)
-            : isSeoBranch
-              ? `${marketingRoutes.seoSite(option.brand_id, option.id)}${marketingSeoSectionSuffix(pathname, base)}`
-              : `${marketingRoutes.website(option.brand_id, option.id)}${marketingWebsiteSectionSuffix(pathname, base)}`,
+            : branchKind === "reputation"
+              ? // Same screen, sibling site — never a silent branch jump.
+                marketingRoutes.brandReputation(option.brand_id, option.id)
+              : isSeoBranch
+                ? `${marketingRoutes.seoSite(option.brand_id, option.id)}${marketingSeoSectionSuffix(pathname, base)}`
+                : `${marketingRoutes.website(option.brand_id, option.id)}${marketingWebsiteSectionSuffix(pathname, base)}`,
           active: option.id === siteId,
         }))}
         modes={subNav.modes}

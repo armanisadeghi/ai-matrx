@@ -44,7 +44,7 @@ export default async function BrandReputationSiteLayout({
       }}
     >
       <CanonicalSiteSegment expected={seg} param={siteId} />
-      <MarketingSiteLayoutClient>{children}</MarketingSiteLayoutClient>
+      <MarketingSiteLayoutClient branch="reputation">{children}</MarketingSiteLayoutClient>
     </MarketingSiteProvider>
   );
 }

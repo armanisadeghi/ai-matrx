@@ -189,15 +189,17 @@ describe("marketing site sub-view registry", () => {
     // became a section (`valuation`), and `value` lost its three
     // business-knowledge rooms (offerings, guidelines, discovery) to the
     // brand's Identity home: sub-views 52 - 3 = 49.
+    // 2026-08-30 — adversarial-audit repairs: `keywords:research` declared (the
+    // routed Research workbench under seo keywords). Sub-views 49 + 1 = 50.
     expect(MARKETING_SITE_SECTIONS.length).toBe(24);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(49);
+    ).toBe(50);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      73,
+      74,
     );
   });
 });
