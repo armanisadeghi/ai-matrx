@@ -119,6 +119,24 @@
       },
       "previousEventHash": "6ea1c474b28db7d16a8bb149a2a5081e5fa2a0369debe6be1d369abd6e2c4849",
       "eventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd"
+    },
+    {
+      "sequence": 9,
+      "state": "delivered",
+      "at": "2026-08-30T08:49:54.945Z",
+      "actor": "release-controller",
+      "summary": "Certified scope candidate integrated to origin/main and queued for fleet release",
+      "evidence": [
+        "candidate and certification record are ancestors of origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "562eaed419b332de4a1cf31136642fcf1e9248ae",
+        "preservedRef": "refs/heads/patrol-runs/P13/20260830T083100Z",
+        "integratedSha": "e6c6a35eca1266bfd5804edd0c755d79f7b0e5b3",
+        "release": "release-queued"
+      },
+      "previousEventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd",
+      "eventHash": "8c2ff1b6dabbdb250c1674f99757f8d923363712ae67f2b1ac78d114df8fb4ff"
     }
   ]
 }

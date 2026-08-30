@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P13",
   "runId": "20260830T083100Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T08:49:28.489Z",
-  "summary": "Certified scope candidate queued for fast integration",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T08:49:54.945Z",
+  "summary": "Certified scope candidate integrated to origin/main and queued for fleet release",
   "source": "20260830T083100Z.json",
-  "eventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd"
+  "eventHash": "8c2ff1b6dabbdb250c1674f99757f8d923363712ae67f2b1ac78d114df8fb4ff"
 }
