@@ -383,9 +383,15 @@ function AssignToItemPanel({
                   {type!.label_plural}
                 </span>
                 <CornerDownRight className="h-3 w-3 text-muted-foreground" />
-                <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">
-                  {org?.name}
-                </span>
+                {org && (
+                  <EntityRef
+                    token="organization"
+                    id={org.id}
+                    name={org.name}
+                    showIcon={false}
+                    className="rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -1182,9 +1188,13 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
               </span>
             ) : (
               <>
-                <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
-                  {org.name}
-                </span>
+                <EntityRef
+                  token="organization"
+                  id={org.id}
+                  name={org.name}
+                  showIcon={false}
+                  className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs font-medium"
+                />
                 {chips.map((ch) => {
                   const c = resolveColor(ch.type);
                   return (
@@ -2137,10 +2147,10 @@ export default function ContextLabPage() {
           <div className="flex gap-2 text-sm text-muted-foreground">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div>
-              Gap list status: assignment field ✓ · active mode (A + composer
-              bar B) ✓ · assign-to-item + cascade ✓ · lateral/promotion
-              suggestions ✓ · live rows panel ✓ · scope-as-value ✓ ·
-              required-slots/gaps ✓ · context hints ✓. Open decisions for Arman:
+              Completed gap-list items: assignment field · active mode (A +
+              composer bar B) · assign-to-item + cascade · lateral/promotion
+              suggestions · live rows panel · scope-as-value ·
+              required-slots/gaps · context hints. Open decisions for Arman:
               org changeable vs locked · where the field surfaces · variation
               A/B for chat · §7.2 cardinality + §7.3 enforcement.
             </div>

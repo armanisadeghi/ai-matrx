@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, ButtonProps } from '@/components/ui/button'; // Adjust this import path as necessary
+import { Star } from 'lucide-react';
 
 const ButtonTest: React.FC = () => {
     const variants: ButtonProps['variant'][] = ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'];
@@ -26,8 +27,8 @@ const ButtonTest: React.FC = () => {
                 <h3 className="text-lg font-medium mb-2">Icon Buttons</h3>
                 <div className="flex gap-2">
                     {variants.map((variant) => (
-                        <Button key={`icon-${variant}`} variant={variant} size="icon">
-                            <span className="w-4 h-4">★</span>
+                        <Button key={`icon-${variant}`} variant={variant} size="icon" aria-label={`${variant} favorite`}>
+                            <Star aria-hidden="true" className="h-4 w-4" />
                         </Button>
                     ))}
                 </div>
