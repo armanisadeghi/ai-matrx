@@ -288,6 +288,25 @@
       },
       "previousEventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503",
       "eventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352"
+    },
+    {
+      "sequence": 19,
+      "state": "delivered",
+      "at": "2026-08-30T14:48:39.891Z",
+      "actor": "/root",
+      "summary": "Certified candidate is already integrated on origin/main; recorded delivery without invoking the release lane.",
+      "evidence": [
+        "candidate is ancestor of origin/main",
+        "authority preserves exact candidate tree"
+      ],
+      "delivery": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-30T141622Z",
+        "integratedSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "release": "integration-only; release not requested"
+      },
+      "previousEventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352",
+      "eventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3"
     }
   ]
 }

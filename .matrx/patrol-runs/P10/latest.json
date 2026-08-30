@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:48:32.282Z",
-  "summary": "CERTIFIED: schema-backed agent JSON ingress and corrected candidate-tree authority publication.",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T14:48:39.891Z",
+  "summary": "Certified candidate is already integrated on origin/main; recorded delivery without invoking the release lane.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352"
+  "eventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3"
 }
