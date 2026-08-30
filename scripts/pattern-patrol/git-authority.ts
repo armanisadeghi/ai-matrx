@@ -133,11 +133,23 @@ export function publishPatrolRunAuthority(input: {
       );
     }
     if (!candidateAlreadyPreserved) {
-      const replacementWasAuthorized = record.events
-        .slice(prior.events.length)
-        .some(
-          (event) => event.state === "rejected" || event.state === "reversed",
-        );
+      // The controller publishes rejection/reversal immediately so the remote
+      // history cannot lose that decision. On the next fixing/certifying turn
+      // it is therefore already the LAST event in the remote prefix, not a new
+      // suffix event. Requiring authorization only after `prior.events.length`
+      // made every correctly published reversal unable to preserve its
+      // replacement candidate.
+      const priorEndsWithReplacementAuthorization = [
+        "rejected",
+        "reversed",
+      ].includes(prior.events.at(-1)?.state ?? "");
+      const replacementWasAuthorized =
+        priorEndsWithReplacementAuthorization ||
+        record.events
+          .slice(prior.events.length)
+          .some(
+            (event) => event.state === "rejected" || event.state === "reversed",
+          );
       if (!replacementWasAuthorized) {
         throw new Error(
           `authority ref ${authorityRef} does not preserve candidate ${candidateSha}, and no later rejection or reversal authorizes replacement`,

@@ -117,6 +117,21 @@ describe("Pattern Patrol remote run authority", () => {
       actor: "certifier",
       summary: "Rejected first candidate",
     });
+    const rejectedAuthority = publishPatrolRunAuthority({
+      repoRoot: repo,
+      record: rejected,
+      candidateSha: firstCandidate,
+      authorityRef,
+      actor: "controller",
+    });
+    expect(
+      git(repo, [
+        "merge-base",
+        "--is-ancestor",
+        firstAuthority,
+        rejectedAuthority,
+      ]),
+    ).toBe("");
     const fixing = appendPatrolRunEvent(rejected, {
       state: "fixing",
       at: "2026-08-14T12:04:00.000Z",
@@ -138,7 +153,7 @@ describe("Pattern Patrol remote run authority", () => {
       git(repo, [
         "merge-base",
         "--is-ancestor",
-        firstAuthority,
+        rejectedAuthority,
         correctedAuthority,
       ]),
     ).toBe("");
