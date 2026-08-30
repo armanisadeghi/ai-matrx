@@ -407,6 +407,11 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-30` — **Agent-definition JSON reads validate their runtime contracts at ingress.**
+  Messages, variable definitions, settings, context policies, and output schemas now use shared
+  runtime parsers instead of double assertions. All three `agx_get_version_snapshot` consumers
+  validate the complete generated RPC row before it enters Redux or feature services; malformed
+  stored contracts fail loudly while valid provider and schema extension keys remain intact.
 - `2026-08-29` — **Ambient assistants no longer cover page endings or disappear behind overlay keyboards.** Education, Notes, Data, and shared module landings apply the canonical `scroll-page-end-space` runway to their real scroll owner; `ambient-assistant-dock` lifts every text/voice/loading/error launcher by the shell's keyboard inset. `VisualViewportSync` now tracks touch-primary and touch-capable desktop-width displays, not width alone, and classifies a viewport delta as keyboard space only while a real text-entry control is focused.
 - `2026-08-29` — **Guest ambient assistants stop at the auth boundary.** The Education text/voice launcher renders a sign-in affordance without mounting `useMandateChain`, `useMandate`, `SmartAgentInput`, or a conversation; only the authenticated subtree resolves `ambient.page_guidance` and `voice.communicator`.
 
