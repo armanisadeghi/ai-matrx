@@ -7,6 +7,7 @@ import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
   ChefHat,
   Clock,
+  Check,
   CheckCircle2,
   Circle,
   Maximize2,
@@ -544,7 +545,17 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                                     : "bg-blue-500 dark:bg-blue-600 text-white"
                                 }`}
                               >
-                                {isCompleted ? "✓" : index + 1}
+                                {isCompleted ? (
+                                  <>
+                                    <Check
+                                      className="h-3.5 w-3.5"
+                                      aria-hidden="true"
+                                    />
+                                    <span className="sr-only">Completed</span>
+                                  </>
+                                ) : (
+                                  index + 1
+                                )}
                               </div>
                               <div
                                 className={`flex-1 min-w-0 font-semibold text-xs leading-snug ${

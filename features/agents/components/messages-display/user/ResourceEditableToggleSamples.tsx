@@ -73,8 +73,8 @@ export function ResourceEditableToggleSamples() {
           with one of every resource type. Editable-capable types (Note, Task,
           Table, List, Data, Webpage) show the Lock/Pencil toggle in the right
           control column; files, media, YouTube, and text show the remove
-          control only. Click a lock/pencil to toggle, ✕ to remove, hover a chip
-          for its preview. On a touch device, long-press any chip for a
+          control only. Click a lock/pencil to toggle, use Remove to delete a
+          chip, and hover a chip for its preview. On a touch device, long-press any chip for a
           full-size menu. Writable references send the visible decision exactly:
           <code className="text-[10px]"> editable: false</code> when locked and
           <code className="text-[10px]"> editable: true</code> when unlocked.

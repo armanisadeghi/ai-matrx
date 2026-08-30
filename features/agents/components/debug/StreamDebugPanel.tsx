@@ -590,7 +590,9 @@ function timelineSummary(
     }
     case "structured_output": {
       const so = entry.data;
-      const status = so.success ? "✓" : `✗ ${so.reason ?? "failed"}`;
+      const status = so.success
+        ? "success"
+        : `failed: ${so.reason ?? "unknown reason"}`;
       const schema = so.schema_name ? ` [${so.schema_name}]` : "";
       const count =
         so.match_count != null ? ` · ${so.match_count} match(es)` : "";
@@ -1628,7 +1630,7 @@ function RawEventsTab({ request }: { request: ActiveRequest }) {
                   )
                     ? `${((d.data as Record<string, unknown>).items as unknown[]).length} item(s)`
                     : "";
-                  const ok = d.success ? "✓" : "✗";
+                  const ok = d.success ? "success" : "failed";
                   return [ok, schema, items].filter(Boolean).join(" · ");
                 }
                 if (d.event) return `event: ${d.event}`;

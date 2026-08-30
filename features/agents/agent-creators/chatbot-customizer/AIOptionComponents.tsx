@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleOption, SliderOption, SelectOption, MultiSelectOption, RadioGroupOption, InputOption, OptionId, OptionValue } from "./types";
+import { Check } from "lucide-react";
 
 // Toggle component
 export const ToggleControl: React.FC<{
@@ -198,13 +199,16 @@ export const MultiSelectControl: React.FC<{
                         key={item.id}
                         type="button"
                         onClick={() => handleToggle(item.id)}
+                        aria-pressed={value.includes(item.id)}
                         className={`py-2 px-3 text-sm border rounded-lg flex items-center ${
                             value.includes(item.id)
                                 ? "border-primary bg-primary/10 text-primary"
                                 : "border-border hover:border-muted-foreground hover:bg-accent/50"
                         }`}
                     >
-                        {value.includes(item.id) && <span className="mr-1.5 text-primary">✓</span>}
+                        {value.includes(item.id) && (
+                            <Check className="mr-1.5 h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                        )}
                         {item.label}
                     </button>
                 ))}
