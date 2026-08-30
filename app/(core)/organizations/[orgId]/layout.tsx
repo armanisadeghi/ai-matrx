@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { ScopesRouteHeader } from "@/features/scope-system/components/ScopesRouteHeader";
+import { ScopeAddressCanonicalizer } from "@/features/scope-system/components/ScopeAddressCanonicalizer";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -47,6 +48,9 @@ export default function OrganizationLayout({
 }) {
   return (
     <>
+      {/* The segments below are ADDRESSES (slug or UUID), never identifiers —
+          this rewrites a UUID address to the canonical slug one in place. */}
+      <ScopeAddressCanonicalizer />
       <ScopesRouteHeader />
       {children}
     </>

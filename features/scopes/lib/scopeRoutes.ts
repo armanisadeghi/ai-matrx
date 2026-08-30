@@ -15,6 +15,60 @@ export function scopeSeg(entity: Slugged): string {
   return entity.slug || entity.id;
 }
 
+// ── Address canonicalization ────────────────────────────────────────────────
+//
+// Every dynamic scope segment RESOLVES from a UUID or a slug, but exactly ONE
+// address is canonical: the slug. Two addresses for one screen split history,
+// bookmarks, copied links and analytics — so a UUID address is rewritten in
+// place, client-side, once the row behind it is known.
+//
+// Back-ported from the marketing key system
+// (features/marketing/components/brand/CanonicalSegment.tsx). The difference:
+// marketing rewrites ONE segment per level, matched by value; the scope tree
+// stacks up to FOUR nested segments (org / type / scope / item) whose slugs can
+// legitimately collide across levels — an org slug `sales` and a scope type
+// slug `sales` are both valid. So substitutions are applied in ROUTE ORDER with
+// a moving cursor, never by a bare value search, and the whole path is rewritten
+// in a single navigation instead of one `router.replace` per level.
+
+/** One segment's current address and the canonical segment it should become. */
+export interface ScopeSegmentSubstitution {
+  /** The segment exactly as it appears in the URL right now. */
+  param: string;
+  /** The canonical segment for the resolved row (`scopeSeg(row)`). */
+  expected: string;
+}
+
+/**
+ * Rewrite the `/organizations/…` path so every substitution sits at its
+ * canonical segment. `subs` MUST be in route order (org, then type, then scope,
+ * then item) — each is matched at or after the previous match, so a slug that
+ * repeats at another level can never capture the wrong segment.
+ *
+ * Returns null when nothing needs to change (already canonical, unknown rows,
+ * or a path this helper does not own) — the caller then navigates nowhere.
+ */
+export function canonicalizeScopePath(
+  pathname: string,
+  subs: ScopeSegmentSubstitution[],
+): string | null {
+  if (!pathname.startsWith("/organizations/") || subs.length === 0) return null;
+  const segments = pathname.split("/");
+  // ["", "organizations", <org>, …] — the org segment is the first candidate.
+  let cursor = 2;
+  let changed = false;
+  for (const { param, expected } of subs) {
+    const index = segments.indexOf(param, cursor);
+    if (index < cursor) continue;
+    cursor = index + 1;
+    if (param !== expected) {
+      segments[index] = expected;
+      changed = true;
+    }
+  }
+  return changed ? segments.join("/") : null;
+}
+
 export function orgHref(orgSlugOrId: string): string {
   return `/organizations/${orgSlugOrId}`;
 }

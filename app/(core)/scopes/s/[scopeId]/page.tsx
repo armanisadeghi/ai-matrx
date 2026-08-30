@@ -1,11 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { contextDb } from "@/utils/supabase/contextDb";
+import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 
 /**
  * Short-link resolver for a scope: /scopes/s/[scopeId] → the canonical
- * org-scoped workspace route
- * (/organizations/{orgId}/scopes/{typeId}/{scopeId}).
+ * org-scoped workspace route, in its CANONICAL slug form
+ * (/organizations/{org-slug}/scopes/{type-slug}/{scope-slug}, each falling back
+ * to its id).
  *
  * THE DOOR LAW: a scope is named all over the app — assigned-scope chips, the
  * scopes hub, association cards, agent context — and every one of those places
@@ -38,14 +40,40 @@ export default async function ScopeShortLink({
 
   const { data, error } = await contextDb(supabase)
     .from("scopes")
-    .select("id, organization_id, scope_type_id")
+    .select("id, slug, organization_id, scope_type_id")
     .eq("id", scopeId)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
   if (!data) notFound();
 
+  // Land on the CANONICAL address, not an id one. A short link that redirected
+  // to ids handed every visitor the non-canonical URL and left the client-side
+  // canonicalizer to rewrite it a moment later — a visible second navigation on
+  // every share of a scope. Resolve the org + type slugs here instead.
+  //
+  // These two reads are decoration, never gates: a null row (RLS, a race, a
+  // row without a slug) falls back to the id segment, which the routes resolve
+  // exactly as before. Only the SCOPE read above decides 404.
+  const [{ data: scopeType }, { data: org }] = await Promise.all([
+    contextDb(supabase)
+      .from("scope_types")
+      .select("id, slug")
+      .eq("id", data.scope_type_id)
+      .maybeSingle(),
+    supabase
+      .schema("iam")
+      .from("organizations")
+      .select("id, slug")
+      .eq("id", data.organization_id)
+      .maybeSingle(),
+  ]);
+
   redirect(
-    `/organizations/${data.organization_id}/scopes/${data.scope_type_id}/${data.id}`,
+    scopeHref(
+      scopeSeg(org ?? { id: data.organization_id }),
+      scopeType ?? { id: data.scope_type_id },
+      data,
+    ),
   );
 }

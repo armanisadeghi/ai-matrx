@@ -114,7 +114,19 @@ this directory.
   `categoryHierarchy.ts`, `slugify.ts` (key/slug rules shared app-wide),
   `scopeValuePayload.ts` (raw input → `value_*` column routing),
   `customComponent.ts` (jsonb → `VariableCustomComponent` narrowing).
-- Routes: `app/(core)/scopes/` (`page`, `manage`, `s/[scopeId]`, `templates`, `settings`) and
+- `lib/scopeRoutes.ts` — the canonical URL builders (`scopeSeg`, `scopeHref`,
+  `scopeItemHref`, `contextItemHref`, …) plus `canonicalizeScopePath`. 🚨 **Every scope
+  segment is an ADDRESS, never an identifier, and exactly ONE address is canonical: the
+  slug.** A UUID address is rewritten in place by
+  `features/scope-system/components/ScopeAddressCanonicalizer.tsx`, mounted once in
+  `app/(core)/organizations/[orgId]/layout.tsx` beside `ScopesRouteHeader` — it reads the
+  already-resolved org / type / scope / item out of Redux (it dispatches NOTHING) and
+  `router.replace`s org, type, scope and item segments together in a single navigation,
+  deep path and query string preserved. Substitutions go in ROUTE ORDER; a bare
+  value search would let a slug that repeats at two levels rewrite the wrong segment.
+  Back-port of the marketing key system's `CanonicalSegment.tsx` — fix the two together.
+- Routes: `app/(core)/scopes/` (`page`, `manage`, `s/[scopeId]`, `templates`, `settings`)
+  and
   `app/(core)/organizations/[orgId]/scopes/**` (the root page is the canonical
   `ScopesManager`; the deeper per-type/per-scope editors are still legacy
   `features/scope-system/` pending their own teardown wave).
@@ -246,6 +258,14 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-30 — **Address canonicalization (marketing key-system back-port)**: the org
+  scope tree now has exactly ONE canonical address per screen. `canonicalizeScopePath`
+  (`lib/scopeRoutes.ts`, tested) + `ScopeAddressCanonicalizer`
+  (`features/scope-system/components/`, mounted in the `[orgId]` layout) rewrite a UUID
+  org / type / scope / item segment to its slug in one `router.replace`, preserving the
+  deep path and query. `/scopes/s/[scopeId]` now redirects to slug segments instead of
+  raw ids (each falling back to its id). No data-shape, RLS or not-found change — the
+  scope read still alone decides 404, and the two decorative slug reads never gate.
 - 2026-08-30 — The global Supabase diagnostic boundary keeps the handled
   `assoc_add` non-conveying-edge `42501` authorization verdict local and
   non-persisting; unrelated association permission failures remain red.
