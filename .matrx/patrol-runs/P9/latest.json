@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P9",
   "runId": "01a05301-8fab-7d50-87f1-ea38599319d4",
-  "state": "discovered",
-  "updatedAt": "2026-08-30T14:17:59.383Z",
-  "summary": "Resumed P9 in ERADICATION from the retained backlog; build detector and interaction proof, then repair the first reachable promises in bounded certified waves.",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:36:02.522Z",
+  "summary": "Batch 1 independently CERTIFIED with no concrete batch-caused defect.",
   "source": "01a05301-8fab-7d50-87f1-ea38599319d4.json",
-  "eventHash": "f60a461fd2bfe23e080b8b484664568a8fad843a99a90e209366c57e170b3b1e"
+  "eventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179"
 }
