@@ -87,7 +87,7 @@ export function TriadInputSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<DraftInput[]>(draftInputs);
   const [saving, setSaving] = useState(false);
-  const convert = useMandateRunner(KIND_CONVERTER_MANDATE_KEY);
+  const convert = useMandateRunner(KIND_CONVERTER_MANDATE_KEY, { optional: true });
   const [converting, setConverting] = useState(false);
 
   const save = async () => {
@@ -278,7 +278,7 @@ export function TriadGoalSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(goal ?? "");
   const [saving, setSaving] = useState(false);
-  const refine = useMandateRunner(GOAL_WRITER_MANDATE_KEY);
+  const refine = useMandateRunner(GOAL_WRITER_MANDATE_KEY, { optional: true });
   const [refining, setRefining] = useState(false);
 
   const save = async () => {

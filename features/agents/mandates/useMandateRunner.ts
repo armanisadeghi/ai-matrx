@@ -54,8 +54,19 @@ export interface UseMandateRunner {
   reset: () => void;
 }
 
-export function useMandateRunner(mandateKey: string): UseMandateRunner {
-  const { mandate, loading: mandateLoading, error: mandateError } = useMandate(mandateKey);
+export interface UseMandateRunnerOptions {
+  /** A deliberately unassigned automation is disabled without error capture. */
+  optional?: boolean;
+}
+
+export function useMandateRunner(
+  mandateKey: string,
+  options: UseMandateRunnerOptions = {},
+): UseMandateRunner {
+  const { mandate, loading: mandateLoading, error: mandateError } = useMandate(
+    mandateKey,
+    { optional: options.optional },
+  );
   const { run, running, error, reset } = useRunAgent();
 
   const runMandate = useCallback(

@@ -64,7 +64,10 @@ export function useMandate(
   const epoch = state.epoch;
   useEffect(() => {
     let cancelled = false;
-    resolveMandate(mandateKey)
+    const resolution = options.optional
+      ? resolveMandate(mandateKey, { optional: true })
+      : resolveMandate(mandateKey);
+    resolution
       .then((mandate) => {
         if (!cancelled) {
           setState((prev) => ({

@@ -165,9 +165,23 @@ function assertExecutableHolder(
   return holderType;
 }
 
+export interface ResolveMandateOptions {
+  /** An unassigned optional Mandate disables its affordance without error capture. */
+  optional?: boolean;
+}
+
+export function resolveMandate(
+  mandateKey: string,
+  options: { optional: true },
+): Promise<ResolvedMandate | null>;
+export function resolveMandate(
+  mandateKey: string,
+  options?: ResolveMandateOptions,
+): Promise<ResolvedMandate>;
 export async function resolveMandate(
   mandateKey: string,
-): Promise<ResolvedMandate> {
+  options: ResolveMandateOptions = {},
+): Promise<ResolvedMandate | null> {
   const cached = cache.get(mandateKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
@@ -182,6 +196,7 @@ export async function resolveMandate(
     .maybeSingle();
   if (error) throw error;
   if (!mandate) {
+    if (options.optional) return null;
     throw recordUnavailable({
       entity: "mandate",
       reason: "unknown",

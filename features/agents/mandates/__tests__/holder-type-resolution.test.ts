@@ -53,6 +53,7 @@ const MANDATE_ROW: Row = {
 };
 
 let scenario: Scenario = { userId: null, orgBindings: [], userBinding: null };
+let mandateRow: Row | null = MANDATE_ROW;
 
 interface Chain {
   select: (columns?: string) => Chain;
@@ -72,7 +73,7 @@ function makeChain(table: string): Chain {
     limit: async () => ({ data: scenario.orgBindings, error: null }),
     maybeSingle: async () => ({
       // Post-1W tables: mandate.definition / mandate.binding.
-      data: table === "definition" ? MANDATE_ROW : scenario.userBinding,
+      data: table === "definition" ? mandateRow : scenario.userBinding,
       error: null,
     }),
   };
@@ -96,12 +97,28 @@ jest.mock("@/utils/supabase/client", () => ({
 import { invalidateMandateCache, resolveMandate } from "../service";
 
 beforeEach(() => {
+  mandateRow = MANDATE_ROW;
   scenario = {
     userId: "cccccccc-dddd-4eee-8fff-000000000000",
     orgBindings: [],
     userBinding: null,
   };
   invalidateMandateCache();
+});
+
+describe("resolveMandate — deliberately optional keys", () => {
+  it("returns null for an absent optional automation", async () => {
+    mandateRow = null;
+    await expect(resolveMandate("mandates.goal_writer", { optional: true })).resolves.toBeNull();
+  });
+
+  it("keeps executable resolution strict for the same absent key", async () => {
+    mandateRow = null;
+    await expect(resolveMandate("mandates.goal_writer")).rejects.toMatchObject({
+      name: "RecordUnavailableError",
+      recordId: "mandates.goal_writer",
+    });
+  });
 });
 
 describe("parseBindingWave1 — the declared holder type, verbatim", () => {
