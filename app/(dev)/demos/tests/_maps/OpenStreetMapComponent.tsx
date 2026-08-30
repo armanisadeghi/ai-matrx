@@ -139,13 +139,13 @@ const DEFAULT_LAYERS = {
       url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       name: "OpenStreetMap Standard",
-      icon: "🗺️"
+      icon: "Map"
     },
     dark: {
       url: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png",
       attribution: '&copy; <a href="https://www.stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       name: "Stadia Dark",
-      icon: "🗺️"
+      icon: "Map"
     }
   },
   satellite: {
@@ -153,13 +153,13 @@ const DEFAULT_LAYERS = {
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
       name: "ESRI Satellite",
-      icon: "🛰️"
+      icon: "Sat"
     },
     dark: {
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
       name: "ESRI Satellite",
-      icon: "🛰️"
+      icon: "Sat"
     }
   },
   topo: {
@@ -167,13 +167,13 @@ const DEFAULT_LAYERS = {
       url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
       attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
       name: "OpenTopoMap",
-      icon: "⛰️"
+      icon: "Topo"
     },
     dark: {
       url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
       attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
       name: "OpenTopoMap",
-      icon: "⛰️"
+      icon: "Topo"
     }
   }
 };

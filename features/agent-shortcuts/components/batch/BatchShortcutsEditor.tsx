@@ -189,6 +189,13 @@ export function BatchShortcutsEditor({
 
   const targets = useMemo(() => buildBindingTargets(agent), [agent]);
 
+  // Census #47 — how many of the rows this grid edits actually arrived with a
+  // mandate identity from the active storage. Rendered, never logged only.
+  const mandateBackedRows = useMemo(
+    () => shortcutsForAgent.filter((row) => row.mandateKey).length,
+    [shortcutsForAgent],
+  );
+
   // Initialize / reset per-target binding state when the template changes.
   // Every target defaults to per-row (the whole point of this tool).
   useEffect(() => {
@@ -615,6 +622,27 @@ export function BatchShortcutsEditor({
             <span className="text-[11px] text-muted-foreground ml-auto hidden sm:block">
               Unset fields inherit from{" "}
               {templateId === STANDARD ? "standard defaults" : "the template"}.
+            </span>
+            {/* 🚨 THE BATCH GENERALIZATION, COUNTED AND VISIBLE (census #47).
+                This grid edits MANDATE-backed rows, not shortcut-table rows:
+                every load and save goes through `shortcutTable()`, and the row
+                type now carries the mandate identity the router supplies. This
+                badge is the proof, in the UI, of which storage answered — and
+                it screams while the answer is still the legacy one. */}
+            <span
+              className={cn(
+                "shrink-0 rounded border px-1.5 py-0.5 font-mono text-[10px]",
+                mandateBackedRows > 0
+                  ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                  : "border-amber-500/40 text-amber-600 dark:text-amber-400",
+              )}
+              title={
+                mandateBackedRows > 0
+                  ? "Rows are mandate-backed: the active storage supplied a mandate identity for them."
+                  : "SHORTCUT_STORAGE_CUTOVER is OFF, so the active storage supplies no mandate identity. The grid is already storage-agnostic — it reads and writes through the router — but until the switch flips these rows have no mandate behind them."
+              }
+            >
+              mandate-backed {mandateBackedRows}/{shortcutsForAgent.length}
             </span>
           </div>
 

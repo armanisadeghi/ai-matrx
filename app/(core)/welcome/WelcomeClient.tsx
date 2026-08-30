@@ -126,7 +126,7 @@ export function WelcomeClient({ firstName }: { firstName: string | null }) {
   }
 
   return (
-    <div className="h-full overflow-hidden bg-textured">
+    <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
       <div className="h-full overflow-y-auto">
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center px-5 py-10">
           <header className="text-center">

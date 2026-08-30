@@ -37,6 +37,7 @@ import {
 import { GENERATED_CONTRACT_FAMILY_VALUES } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { Json } from "@/types/database.types";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
+import { Textarea } from "@/components/ui/textarea";
 
 const PASTED = "__pasted__";
 
@@ -256,7 +257,7 @@ export default function KindGateTab({
       )}
 
       {selectedId === PASTED && (
-        <textarea
+        <Textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
           placeholder={`{ "__kind": "${kind}", ... }`}

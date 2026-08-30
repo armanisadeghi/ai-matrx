@@ -19,6 +19,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
+import { useAvailableHere } from "@/features/surfaces/runtime/available-here";
 import { locateSurfaceValueOnPage } from "@/features/surfaces/utils/locate-on-page";
 import { listLiveWriteTargets } from "@/features/surfaces/runtime/surface-writeback";
 import type { ResolvedSurfaceValue } from "@/features/surfaces/types";
@@ -92,6 +93,16 @@ export default function SurfaceContextWindow({
   isEditable = false,
 }: SurfaceContextWindowProps) {
   const live = useLiveSurfaceScope({ enabled: isOpen, surfaceName });
+  /**
+   * THE AVAILABILITY HALF (census #52, THE-MODEL law 3). This window's whole
+   * job is completeness — what this page declares, supplies, and can be
+   * written to. It stopped one question short: what the contract MAKES
+   * POSSIBLE. An item is available here iff every surface value it consumes
+   * has a read path here, so "declared + runtime keys" and "which portable AI
+   * runs here" are the same fact seen twice — and the second view is the one
+   * that shows the cost of a missing declaration. Same gate as the menu.
+   */
+  const availableHere = useAvailableHere({ surfaceName, enabled: isOpen });
   const manifest = getManifest(surfaceName);
   const declared = manifest?.values ?? [];
   const declaredNames = new Set(declared.map((value) => value.name));
@@ -183,6 +194,20 @@ export default function SurfaceContextWindow({
     (entry) => !surfaceName || entry.surfaceName === surfaceName,
   );
   const unwiredTargets = liveWriteTargets.filter((entry) => !entry.hasHandler);
+  // Refusals tallied by the KEY that caused them — the most actionable number
+  // this window can show: "declare `file_name` here and 12 more items become
+  // available". Only `missing_keys` refusals count; out-of-scope and
+  // valve-excluded items are authoring decisions, not completeness defects.
+  const missingKeyTally = new Map<string, number>();
+  for (const item of availableHere.unavailable) {
+    if (item.refusal.kind !== "missing_keys") continue;
+    for (const key of item.refusal.missing) {
+      missingKeyTally.set(key, (missingKeyTally.get(key) ?? 0) + 1);
+    }
+  }
+  const topMissingKeys = [...missingKeyTally.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 8);
   const presentation = statusPresentation(live.status);
   // THE NAMING LAW — only the canonical manifest label, never an override.
   const friendlySurfaceName = surfaceName
@@ -245,6 +270,7 @@ export default function SurfaceContextWindow({
                 supplied,
                 writeTargets: liveWriteTargets.length,
                 unwiredWriteTargets: unwiredTargets.length,
+                availableHere: availableHere.available.length,
               },
               context: {
                 surface: friendlySurfaceName,
@@ -268,6 +294,14 @@ export default function SurfaceContextWindow({
                   description: entry.target.description,
                   hasHandler: entry.hasHandler,
                 })),
+                // Availability = capability: what the contract above makes
+                // possible, and which single missing key unlocks how much.
+                availableHere: availableHere.available.map((item) => ({
+                  label: item.label,
+                  requirements: item.requirements,
+                  mandateKey: item.mandateKey,
+                })),
+                missingKeyUnlocks: Object.fromEntries(topMissingKeys),
               },
             })}
           />
@@ -429,6 +463,50 @@ export default function SurfaceContextWindow({
           {runtimeOnlyKeys.length > 0 && (
             <span>{runtimeOnlyKeys.length} runtime-only</span>
           )}
+          {/* AVAILABILITY = CAPABILITY (#52). What the declared contract makes
+              possible here, and what one more declaration would unlock. */}
+          {availableHere.loaded && (
+            <span
+              title={
+                availableHere.available.length > 0
+                  ? `Available here:\n${availableHere.available
+                      .map((item) => `• ${item.label}`)
+                      .join("\n")}`
+                  : "Nothing portable qualifies on this surface yet."
+              }
+            >
+              <b className="text-foreground">
+                {availableHere.available.length}
+              </b>{" "}
+              available here
+            </span>
+          )}
+          {topMissingKeys.length > 0 && (
+            <span
+              className="text-amber-600 dark:text-amber-400"
+              title={`Declare (or emit) one of these and the count in brackets becomes available here:\n${topMissingKeys
+                .map(([key, count]) => `• ${key} — unlocks ${count}`)
+                .join("\n")}`}
+            >
+              {missingKeyTally.size} key
+              {missingKeyTally.size === 1 ? "" : "s"} away from{" "}
+              {availableHere.unavailable.filter(
+                (item) => item.refusal.kind === "missing_keys",
+              ).length}{" "}
+              more
+            </span>
+          )}
+          {/* 🚨 LOUD, COUNTED, VISIBLE — the KNOWN-VALUES clause of census #52
+              is NOT delivered here. It is gated on the known-values design
+              (PLAN 7.6, un-approved), so this window shows which items are
+              available but cannot yet show which known values resolve. Said in
+              the UI rather than left as a silent gap. */}
+          <span
+            className="text-amber-600 dark:text-amber-400"
+            title="Census #52 has two clauses. The availability clause is live above. The known-values clause needs the known-values design (PLAN 7.6), which is not approved — so no known-value resolution is shown here, and none is implied."
+          >
+            known values: not yet
+          </span>
         </div>
       }
       footerRight={

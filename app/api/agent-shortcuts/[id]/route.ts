@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 const SHORTCUT_UPDATE_FIELDS = [
   "category_id",
@@ -61,9 +62,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { data, error } = await shortcutTable(supabase)
       .select("*")
       .is("deleted_at", null)
       .eq("id", id)
@@ -130,9 +129,7 @@ export async function PATCH(
       );
     }
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { data, error } = await shortcutTable(supabase)
       .update(updatePayload as never)
       .eq("id", id)
       .select()
@@ -183,9 +180,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error, count } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { error, count } = await shortcutTable(supabase)
       .delete({ count: "exact" })
       .eq("id", id);
 

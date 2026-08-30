@@ -10,7 +10,12 @@ import {
   type PatrolRunEventInput,
   type PatrolRunState,
 } from "./run-record";
-import { loadPatrolRun, patrolRunPath, savePatrolRun, withPatrolRunLease } from "./storage";
+import {
+  loadPatrolRun,
+  patrolRunPath,
+  savePatrolRun,
+  withPatrolRunLease,
+} from "./storage";
 import { publishPatrolRunAuthority } from "./git-authority";
 
 interface Args {
@@ -25,7 +30,9 @@ function parseArgs(argv: string[]): Args {
     const flag = rest[index];
     const value = rest[index + 1];
     if (!flag?.startsWith("--") || value === undefined) {
-      throw new Error(`expected --name value pairs; got ${rest.slice(index).join(" ")}`);
+      throw new Error(
+        `expected --name value pairs; got ${rest.slice(index).join(" ")}`,
+      );
     }
     const key = flag.slice(2);
     values.set(key, [...(values.get(key) ?? []), value]);
@@ -53,7 +60,7 @@ function now(args: Args): string {
 
 function usage(): never {
   throw new Error(
-    "usage: patrol-run init|transition|verify|certify|deliver|record-escape|reconcile --patrol P# --run <task-id> [command options]",
+    "usage: patrol-run init|transition|verify|certify|queue|deliver|reverse|record-escape|reconcile --patrol P# --run <task-id> [command options]",
   );
 }
 
@@ -120,7 +127,9 @@ function main(): void {
 
   if (args.command === "verify") {
     const record = loadPatrolRun(path);
-    console.log(`${path}: valid (${record.events.length} events, ${record.events.at(-1)?.state})`);
+    console.log(
+      `${path}: valid (${record.events.length} events, ${record.events.at(-1)?.state})`,
+    );
     return;
   }
   if (args.command === "publish") {
@@ -185,20 +194,58 @@ function main(): void {
     console.log(savedPath);
     return;
   }
+  if (args.command === "queue") {
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "delivery_queued",
+        at: now(args),
+        actor,
+        summary: one(args, "summary"),
+        evidence: many(args, "evidence"),
+        delivery: {
+          candidateSha,
+          preservedRef: authorityRef,
+          integratedSha: one(args, "integrated-sha", false),
+        },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
   if (args.command === "deliver") {
     const authorityRef = one(args, "authority-ref");
     const candidateSha = one(args, "candidate");
     const integratedSha = one(args, "integrated-sha");
     const release = one(args, "release");
     const actor = one(args, "actor");
-    execFileSync("git", ["merge-base", "--is-ancestor", candidateSha, integratedSha], {
-      cwd: repoRoot,
-      stdio: "ignore",
-    });
-    execFileSync("git", ["merge-base", "--is-ancestor", integratedSha, "origin/main"], {
-      cwd: repoRoot,
-      stdio: "ignore",
-    });
+    execFileSync(
+      "git",
+      ["merge-base", "--is-ancestor", candidateSha, integratedSha],
+      {
+        cwd: repoRoot,
+        stdio: "ignore",
+      },
+    );
+    execFileSync(
+      "git",
+      ["merge-base", "--is-ancestor", integratedSha, "origin/main"],
+      {
+        cwd: repoRoot,
+        stdio: "ignore",
+      },
+    );
     const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
       const record = loadPatrolRun(path);
       const next = appendPatrolRunEvent(record, {
@@ -213,6 +260,31 @@ function main(): void {
           integratedSha,
           release,
         },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
+  if (args.command === "reverse") {
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "reversed",
+        at: now(args),
+        actor,
+        summary: one(args, "summary"),
+        evidence: many(args, "evidence"),
       });
       publishPatrolRunAuthority({
         repoRoot,
@@ -274,6 +346,11 @@ function main(): void {
           candidateSha,
           escapedEventHash,
           checks: many(args, "check"),
+          outcome: one(args, "outcome", false) as
+            | "exact_candidate_certified"
+            | "exact_candidate_rejected"
+            | undefined,
+          replacementCandidateSha: one(args, "replacement-candidate", false),
         },
       });
       publishPatrolRunAuthority({

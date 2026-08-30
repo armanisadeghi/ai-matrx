@@ -23,7 +23,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -43,6 +42,7 @@ import {
   describeUrlSupport,
   classifyIngestUrl,
 } from "../formatSupport";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 
 type InputMode = "upload" | "paste" | "link";
@@ -369,7 +369,7 @@ function InputPanel({
         )}
 
         {props.mode === "paste" && (
-          <Textarea
+          <ProTextarea
             value={props.pasteText}
             onChange={(e) => props.onPaste(e.target.value)}
             placeholder="Paste your notes, an article, a transcript — anything you want to study."

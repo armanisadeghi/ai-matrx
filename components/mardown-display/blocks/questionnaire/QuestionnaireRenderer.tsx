@@ -16,13 +16,13 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
 import { useQuestionnaireContext } from "./QuestionnaireContext";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export type QuestionOption = { name: string };
 
@@ -580,7 +580,7 @@ const TextQuestion = ({
   value?: unknown;
   theme: ThemeColors;
 }) => (
-  <Textarea
+  <ProTextarea
     className={`w-full min-h-[100px] ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
     value={typeof value === "string" ? value : ""}
     onChange={(e) => onChange(e.target.value)}

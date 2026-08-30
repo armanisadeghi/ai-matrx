@@ -24,7 +24,6 @@ interface SaveTemplateModalProps {
     currentContent: string;
     onSave: (label: string, content: string, tags: string[]) => void;
 }
-
 // Auto-resizing textarea component
 const AutoResizeTextarea = React.forwardRef<
     HTMLTextAreaElement,
@@ -369,4 +368,3 @@ export function SaveTemplateModal({
         </Dialog>
     );
 }
-

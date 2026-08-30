@@ -1,9 +1,10 @@
 /**
- * Drift guard: every coming-soon surface Marketing declares (pillar entries
- * AND public tool categories) must have its promise registered in
+ * Drift guard: every coming-soon surface Marketing declares — agency pillar
+ * entries, public tool categories, AND the client-workspace declarations in
+ * brand-sections.ts — must have its promise registered in
  * lib/coming-soon/registry.ts, and every marketing-owned registry row must be
- * rendered somewhere in the Marketing declaration. `MarketingComingSoon`
- * throws at render for pillar routes, but the public-tool cards never call
+ * rendered somewhere in those declarations. `MarketingComingSoon` throws at
+ * render for reserved routes, but the public-tool cards never call
  * `announceComingSoon`, so without this test a tools↔registry orphan would be
  * silent.
  */
@@ -14,17 +15,27 @@ import {
   MARKETING_PUBLIC_TOOLS,
   listMarketingComingSoon,
 } from "./marketing-nav";
+import {
+  MARKETING_BRAND_SECTIONS,
+  MARKETING_BRAND_SUBROUTE_PROMISES,
+} from "./brand-sections";
 import { COMING_SOON } from "@/lib/coming-soon/registry";
 
 const declaredComingSoonIds = [
-  ...MARKETING_PILLARS.flatMap((p) => p.entries),
-  ...MARKETING_PUBLIC_TOOL_CATEGORIES.flatMap((c) => c.tools),
-]
-  .filter((e) => e.status === "coming-soon")
-  .map((e) => e.comingSoonId);
+  ...[
+    ...MARKETING_PILLARS.flatMap((p) => p.entries),
+    ...MARKETING_PUBLIC_TOOL_CATEGORIES.flatMap((c) => c.tools),
+  ]
+    .filter((e) => e.status === "coming-soon")
+    .map((e) => e.comingSoonId),
+  ...MARKETING_BRAND_SECTIONS.filter(
+    (s) => "status" in s && s.status === "coming-soon",
+  ).map((s) => ("comingSoonId" in s ? s.comingSoonId : undefined)),
+  ...MARKETING_BRAND_SUBROUTE_PROMISES.map((p) => p.comingSoonId),
+];
 
-describe("marketing-nav ↔ coming-soon registry", () => {
-  it("every coming-soon entry declares a comingSoonId", () => {
+describe("marketing declarations ↔ coming-soon registry", () => {
+  it("every coming-soon declaration carries a comingSoonId", () => {
     expect(declaredComingSoonIds.every(Boolean)).toBe(true);
   });
 
@@ -44,15 +55,13 @@ describe("marketing-nav ↔ coming-soon registry", () => {
   const NON_ROUTE_PROMISES = new Set([
     // Lives on the existing site media view, not at a URL of its own.
     "marketing.generate-video",
-    // The three Marketing front doors SHIPPED on 2026-08-19, so their routes
-    // are live and carry no `comingSoonId`. What is still promised is the
-    // unbuilt REMAINDER inside each live page — Lane A opt-in email, and
-    // review monitoring + alerting — printed on the page it belongs to.
+    // The email/monitoring front doors shipped; what is still promised is the
+    // unbuilt REMAINDER inside each live page, printed where it belongs.
     "marketing.email.opt-in-campaigns",
     "marketing.monitoring.alerts",
   ]);
 
-  it("every route-backed marketing registry row is declared in marketing-nav", () => {
+  it("every route-backed marketing registry row is declared somewhere", () => {
     const declared = new Set(declaredComingSoonIds);
     const orphans = Object.values(COMING_SOON)
       .filter((e) => e.owner === "marketing")
@@ -62,8 +71,6 @@ describe("marketing-nav ↔ coming-soon registry", () => {
   });
 
   it("every non-route promise still exists in the registry", () => {
-    // Guards the exemption list itself: a stale entry here would silently
-    // re-open the hole it was carved for.
     for (const id of NON_ROUTE_PROMISES) {
       expect(COMING_SOON[id]).toBeDefined();
     }

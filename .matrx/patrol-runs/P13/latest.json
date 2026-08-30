@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P13",
+  "runId": "20260830T083100Z",
+  "state": "closed",
+  "updatedAt": "2026-08-30T08:50:00.521Z",
+  "summary": "Closed certified scope repair run after Git integration; fleet release queued by release owner",
+  "source": "20260830T083100Z.json",
+  "eventHash": "19b31e7e035f2f3b86bab66095357edf6f663dacbe08e0291ba4adc07d128392"
+}

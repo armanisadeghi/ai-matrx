@@ -71,7 +71,7 @@ const menuItems: MenuItem[] = [
     action: () => {
       console.log('Deleted!');
     },
-    disabled: true  // Coming soon feature
+    disabled: true  // Disabled-state example
   }
 ];
 
@@ -210,4 +210,3 @@ const menuItems: MenuItem[] = [
     </ComponentDisplayWrapper>
   );
 }
-

@@ -26,6 +26,13 @@ export function AgentAppRenderer({
     agent_id: app.agent_id,
     agent_version_id: app.agent_version_id,
     use_latest: app.use_latest,
+    mandate_id: app.mandate_id,
+    mandate_key: "mandate_key" in app ? app.mandate_key : null,
+    mandate_agent_id: "mandate_agent_id" in app ? app.mandate_agent_id : null,
+    mandate_agent_version_id:
+      "mandate_agent_version_id" in app
+        ? app.mandate_agent_version_id
+        : null,
     app_kind: app.app_kind,
     shared_context_policies: app.shared_context_policies,
     search_tsv: app.search_tsv,

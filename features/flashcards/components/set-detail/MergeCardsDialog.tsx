@@ -24,13 +24,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { fcService } from "../../data/fcService";
 import { studyFaces } from "../../utils/cardVariants";
 import type { CardWithDetails } from "../../data/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Join distinct face texts; identical faces collapse to one. */
 export function composeMergedFace(values: string[]): string {
@@ -149,7 +149,7 @@ export function MergeCardsDialog({
             <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Merged front
             </p>
-            <Textarea
+            <ProTextarea
               value={front}
               onChange={(e) => setFront(e.target.value)}
               rows={3}
@@ -164,7 +164,7 @@ export function MergeCardsDialog({
             <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Merged back
             </p>
-            <Textarea
+            <ProTextarea
               value={back}
               onChange={(e) => setBack(e.target.value)}
               rows={4}

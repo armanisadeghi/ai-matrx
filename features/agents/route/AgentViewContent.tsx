@@ -63,10 +63,12 @@ import {
   AiModelRef,
   AiToolRef,
 } from "@/components/official/entity-ref/AiIdentityRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import MarkdownStream from "@/components/MarkdownStream";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { agentDefinitionSummary } from "@/features/agents/format";
+import { agentHref } from "@/features/agents/browse/agentPaths";
 import { buildSystemAgentAiPayload } from "@/features/agents/route/buildSystemAgentAiPayload";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
@@ -514,20 +516,34 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                 <span className="text-muted-foreground shrink-0">
                   Agent ID:
                 </span>
+                <EntityRef
+                  token="agent"
+                  id={liveAgentId}
+                  name={agent.name}
+                  href={agentHref({
+                    id: liveAgentId,
+                    agent_type: agent.agentType,
+                  })}
+                  showIcon={false}
+                  wrap
+                  className="font-mono text-foreground/90"
+                >
+                  {liveAgentId}
+                  {version != null && (
+                    <span className="ml-1 whitespace-nowrap text-muted-foreground/70">
+                      · v{version}
+                    </span>
+                  )}
+                </EntityRef>
                 <button
                   type="button"
                   onClick={() =>
                     handleCopy("agent-id", liveAgentId, "Agent ID copied")
                   }
-                  className="group inline-flex items-center gap-1 font-mono text-foreground/90 hover:text-foreground transition-colors min-w-0"
+                  className="group inline-flex shrink-0 items-center text-foreground/90 transition-colors hover:text-foreground"
                   title="Copy agent ID"
+                  aria-label="Copy agent ID"
                 >
-                  <span className="truncate">{liveAgentId}</span>
-                  {version != null && (
-                    <span className="text-muted-foreground/70 shrink-0">
-                      · v{version}
-                    </span>
-                  )}
                   {copied === "agent-id" ? (
                     <Check className="w-3 h-3 text-emerald-500 shrink-0" />
                   ) : (

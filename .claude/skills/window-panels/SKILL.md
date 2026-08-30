@@ -123,7 +123,7 @@ The bottom-right minimized-window dock. Mount **exactly one** `<WindowTray />` h
 
 - Stacked right→left (newest right); single-click restores (drag suppresses the click); chips reorder via drag (`moveTraySlot`).
 - **`<WindowTraySync />`** mounts once alongside it — a single debounced (500 ms) resize listener that recomputes tray slot positions and clamps every docked window back into a shrunken viewport. Fire-and-forget, zero re-renders.
-- Chip dimensions + responsive helpers live in `constants/tray.ts`; minimize-time thumbnails flow through `WindowTray/traySnapshotMap.ts` (window passes `captureTraySnapshot`).
+- Chip dimensions + responsive helpers live in `constants/tray.ts`; minimize-time thumbnails flow through `WindowTray/traySnapshotMap.ts`. Capture precedence: `captureTraySnapshot` prop → registry entry → `WindowTray/defaultTraySnapshotCapture.ts` (the fleet-wide default for windows without a semantic `renderTrayPreview`). Double-click anywhere on a minimized card restores it.
 
 ---
 

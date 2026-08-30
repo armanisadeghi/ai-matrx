@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -36,6 +35,7 @@ import {
   type BrandAssetKind,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Kinds that don't reference a file/URL (value lives in notes/data). */
 const URL_OPTIONAL_KINDS: readonly BrandAssetKind[] = ["color", "font"];
@@ -280,7 +280,7 @@ function BrandAssetEditorDialogBody({
             <Label htmlFor="asset-notes" className="text-xs">
               Notes
             </Label>
-            <Textarea
+            <ProTextarea
               id="asset-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}

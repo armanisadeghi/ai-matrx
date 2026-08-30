@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowUpRight,
   CircleDot,
@@ -14,6 +14,7 @@ import {
   MapPin,
   RefreshCw,
   ScanSearch,
+  Star,
   Swords,
   Target,
 } from "lucide-react";
@@ -35,13 +36,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCompetitorsScope } from "@/features/surfaces/manifests/marketing-competitors.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { toast } from "@/lib/toast";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { supabase } from "@/utils/supabase/client";
@@ -82,8 +83,15 @@ import { LandscapeBriefCard } from "./LandscapeBriefCard";
 import {
   discoverCompetitors,
   discoverLocalCompetitors,
+  humanizeLocation,
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
+import { ProTextarea } from "@/components/official/ProTextarea";
+
+import {
+  competitorOpportunityCopyRow,
+  competitorOpportunityHuman,
+} from "./copy";
 
 type Artifact = {
   executive_verdict?: string;
@@ -112,12 +120,25 @@ function competitorView(raw: string | null): CompetitorView {
   return COMPETITOR_VIEWS.find((view) => view.id === raw)?.id ?? "run";
 }
 
-function competitorViewHref(view: CompetitorView, siteId: string | null): string {
+/**
+ * 🚨 A TAB MUST STAY ON THE ROUTE IT WAS CLICKED FROM (2026-08-30). These
+ * hrefs were hardcoded to the FLAT `/marketing/competitors` route, so inside a
+ * brand (`/marketing/<brand>/intelligence/competitors`) five of the six tabs —
+ * Review, Opportunities, Competitors, Evidence, History — navigated off the
+ * brand entirely, and the flat route bounced the user to the clients list with
+ * every bit of context lost. Only the default Run tab appeared to work. The
+ * base is now whatever route the workspace is actually mounted on.
+ */
+function competitorViewHref(
+  view: CompetitorView,
+  siteId: string | null,
+  basePath: string,
+): string {
   const params = new URLSearchParams();
   if (siteId) params.set("siteId", siteId);
   if (view !== "run") params.set("view", view);
   const query = params.toString();
-  return `${marketingRoutes.competitors()}${query ? `?${query}` : ""}`;
+  return `${basePath}${query ? `?${query}` : ""}`;
 }
 
 function siteBrandLabel(site: CompetitorSite): string {
@@ -229,9 +250,16 @@ function OpportunityDetail({ row }: { row: CompetitorOpportunityRow }) {
   );
 }
 
-export default function CompetitorAutopsyWorkspace() {
+export default function CompetitorAutopsyWorkspace({
+  brandId,
+}: {
+  /** Brand scope. Supplied by the brand route so the workspace can never fall
+   * back to another client's site — see useCompetitorAutopsy's brandId note. */
+  brandId?: string | null;
+} = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const requestedSiteId = searchParams.get("siteId");
   const activeView = competitorView(searchParams.get("view"));
   const [domains, setDomains] = useState("");
@@ -240,8 +268,11 @@ export default function CompetitorAutopsyWorkspace() {
   const [forceRefresh, setForceRefresh] = useState(false);
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
-  const { sites, workspace, run, start, resolvedSiteId } =
-    useCompetitorAutopsy(requestedSiteId);
+  const { sites, scopedSites, workspace, run, start, resolvedSiteId } =
+    useCompetitorAutopsy(requestedSiteId, brandId);
+  // The route this workspace is mounted on — the brand route when brand-scoped,
+  // the flat route otherwise. Every tab href is built from it.
+  const basePath = pathname ?? marketingRoutes.competitors();
 
   const data = workspace.data;
   const completedRun = data?.runs.find((item) => item.status === "completed");
@@ -255,7 +286,7 @@ export default function CompetitorAutopsyWorkspace() {
     () => data?.competitors.filter((item) => item.classification_status === "proposed") ?? [],
     [data?.competitors],
   );
-  const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
+  const selectedSite = scopedSites.find((site) => site.id === resolvedSiteId) ?? null;
   const [discovering, setDiscovering] = useState(false);
   const [localKeyword, setLocalKeyword] = useState("");
   const [localArea, setLocalArea] = useState("");
@@ -760,7 +791,7 @@ export default function CompetitorAutopsyWorkspace() {
     [],
   );
 
-  const availableSites = sites.data ?? [];
+  const availableSites = scopedSites;
   const brandSiteCounts = new Map<string, number>();
   for (const site of availableSites) {
     const label = siteBrandLabel(site);
@@ -769,7 +800,7 @@ export default function CompetitorAutopsyWorkspace() {
   const headerModes = COMPETITOR_VIEWS.map((view) => ({
     name: view.name,
     icon: view.icon,
-    href: competitorViewHref(view.id, resolvedSiteId),
+    href: competitorViewHref(view.id, resolvedSiteId, basePath),
   }));
   const headerOptions = availableSites.map((site) => {
     const brandLabel = siteBrandLabel(site);
@@ -778,10 +809,18 @@ export default function CompetitorAutopsyWorkspace() {
         (brandSiteCounts.get(brandLabel) ?? 0) > 1
           ? `${brandLabel} · ${site.domain}`
           : brandLabel,
-      href: competitorViewHref(activeView, site.id),
+      href: competitorViewHref(activeView, site.id, basePath),
       active: site.id === resolvedSiteId,
     };
   });
+  const copyContext = {
+    site: selectedSite ? siteBrandLabel(selectedSite) : "Choose a brand",
+    site_id: resolvedSiteId,
+    total_competitors: data?.competitors.length ?? 0,
+    tracked_competitors: tracked,
+    open_actions: openActions,
+    coverage_percent: latestArtifact?.already_have_percentage ?? null,
+  };
 
   return (
     <SurfaceRuntimeProvider
@@ -789,7 +828,7 @@ export default function CompetitorAutopsyWorkspace() {
       getScope={() =>
         createMarketingCompetitorsScope({
           site_id: resolvedSiteId ?? undefined,
-          site: sites.data?.find((site) => site.id === resolvedSiteId) as
+          site: scopedSites.find((site) => site.id === resolvedSiteId) as
             Record<string, unknown> | undefined,
           competitors: data?.competitors as
             Array<Record<string, unknown>> | undefined,
@@ -815,7 +854,7 @@ export default function CompetitorAutopsyWorkspace() {
         }
         entityOptions={headerOptions}
         modes={headerModes}
-        activeModeHref={competitorViewHref(activeView, resolvedSiteId)}
+        activeModeHref={competitorViewHref(activeView, resolvedSiteId, basePath)}
         actions={[
           {
             label: "Refresh",
@@ -917,7 +956,7 @@ export default function CompetitorAutopsyWorkspace() {
                           (optional)
                         </span>
                       </Label>
-                      <Textarea
+                      <ProTextarea
                         id="competitor-domains"
                         value={domains}
                         onChange={(event) => setDomains(event.target.value)}
@@ -1062,7 +1101,7 @@ export default function CompetitorAutopsyWorkspace() {
                 size="sm"
                 className="shrink-0"
                 onClick={() =>
-                  router.push(competitorViewHref("review", resolvedSiteId))
+                  router.push(competitorViewHref("review", resolvedSiteId, basePath))
                 }
               >
                 Review them
@@ -1179,12 +1218,16 @@ export default function CompetitorAutopsyWorkspace() {
               {localResult ? (
                 <div className="mt-3 space-y-1">
                   <p className="text-xs font-medium">
-                    “{localResult.keyword}” in {localResult.canonical_location}
+                    “{localResult.keyword}” in {humanizeLocation(localResult.canonical_location)}
                   </p>
                   {localResult.businesses.length === 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      Google showed no local pack for this search — try a service
-                      keyword a customer would actually type.
+                      Google Maps lists no businesses for this search. That is a
+                      real answer about the local index, not an error — the
+                      competitors below come from keyword overlap with your site
+                      instead. Try the words a customer would actually type (for
+                      example “electronics recycling” rather than an industry
+                      term), or add a competitor by name.
                     </p>
                   ) : (
                     <ul className="divide-y divide-border rounded-md border border-border">
@@ -1207,9 +1250,20 @@ export default function CompetitorAutopsyWorkspace() {
                             </Badge>
                           )}
                           {business.rating != null ? (
-                            <span className="text-xs text-muted-foreground">
-                              ★ {business.rating}
-                              {business.reviews != null ? ` (${business.reviews})` : ""}
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Star className="h-3 w-3" aria-hidden="true" />
+                              <span className="sr-only">
+                                Rating {business.rating}
+                                {business.reviews != null
+                                  ? `, ${business.reviews} reviews`
+                                  : ""}
+                              </span>
+                              <span aria-hidden="true">
+                                {business.rating}
+                                {business.reviews != null
+                                  ? ` (${business.reviews})`
+                                  : ""}
+                              </span>
                             </span>
                           ) : null}
                           {business.domain ? (
@@ -1248,6 +1302,42 @@ export default function CompetitorAutopsyWorkspace() {
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
+              copy={{
+                label: "Competitor opportunity",
+                listLabel: "Competitor opportunities",
+                location: webLocation(
+                  `Competitor autopsy — ${selectedSite ? siteBrandLabel(selectedSite) : "Choose a brand"}`,
+                ),
+                rowKind: "web-competitor-opportunity",
+                listKind: "web-competitor-opportunities",
+                rowDescription:
+                  "One prioritized competitor opportunity with the verdict, evidence, and recommended action shown in its record window.",
+                listDescription:
+                  "The current filtered and sorted competitor opportunity worklist.",
+                humanRow: competitorOpportunityHuman,
+                agentRow: (row) =>
+                  competitorOpportunityCopyRow(row, copyContext),
+                rowAttributes: (row) => ({
+                  id: row.id,
+                  site_id: copyContext.site_id,
+                  status: row.status,
+                  priority: row.priority,
+                  total_competitors: copyContext.total_competitors,
+                  tracked_competitors: copyContext.tracked_competitors,
+                  open_actions: copyContext.open_actions,
+                  coverage_percent: copyContext.coverage_percent,
+                }),
+                listAttributes: (visible, all) => ({
+                  site_id: copyContext.site_id,
+                  visible_opportunities: visible.length,
+                  total_opportunities: all.length,
+                  total_competitors: copyContext.total_competitors,
+                  tracked_competitors: copyContext.tracked_competitors,
+                  open_actions: copyContext.open_actions,
+                  coverage_percent: copyContext.coverage_percent,
+                }),
+                listContext: () => copyContext,
+              }}
               // MSR-19/20: row click opens the canonical WindowPanel, never
               // the side drawer. `detail: { enabled: false }` removes the
               // drawer entirely; `onOpen` is required or the opener falls

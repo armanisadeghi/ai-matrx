@@ -14,7 +14,13 @@
 // Deliberately absent: any "send" call. Sending goes through the server's own
 // gate (`send_through_identity`), never an endpoint a client can aim.
 
-import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  buildPath,
+} from "@/lib/api/typed-client";
 import { getJson } from "@/lib/python-client";
 import type {
   BringUpReadiness,
@@ -37,7 +43,9 @@ export async function listSendingIdentities(
   return data;
 }
 
-export async function getSendingIdentity(id: string): Promise<SendingIdentityDetail> {
+export async function getSendingIdentity(
+  id: string,
+): Promise<SendingIdentityDetail> {
   const { data } = await apiGet(buildPath(IDENTITY_PATH, { identity_id: id }));
   return data;
 }
@@ -73,14 +81,19 @@ export async function updateSendingIdentity(
   id: string,
   patch: Record<string, unknown>,
 ): Promise<SendingIdentityDetail> {
-  const { data } = await apiPatch(buildPath(IDENTITY_PATH, { identity_id: id }), patch);
+  const { data } = await apiPatch(
+    buildPath(IDENTITY_PATH, { identity_id: id }),
+    patch,
+  );
   return data;
 }
 
 /** Resolve the DNS TXT challenge. The only path to a verified domain. */
 export async function checkDomain(id: string): Promise<CheckReport> {
   const { data } = await apiPost(
-    buildPath("/sending-identities/{identity_id}/check-domain", { identity_id: id }),
+    buildPath("/sending-identities/{identity_id}/check-domain", {
+      identity_id: id,
+    }),
     {},
   );
   return data;
@@ -89,7 +102,9 @@ export async function checkDomain(id: string): Promise<CheckReport> {
 /** Measure SPF, DKIM and DMARC against live DNS. */
 export async function checkAuthentication(id: string): Promise<CheckReport> {
   const { data } = await apiPost(
-    buildPath("/sending-identities/{identity_id}/check-authentication", { identity_id: id }),
+    buildPath("/sending-identities/{identity_id}/check-authentication", {
+      identity_id: id,
+    }),
     {},
   );
   return data;
@@ -97,7 +112,9 @@ export async function checkAuthentication(id: string): Promise<CheckReport> {
 
 export async function startWarmup(id: string): Promise<SendingIdentityDetail> {
   const { data } = await apiPost(
-    buildPath("/sending-identities/{identity_id}/start-warmup", { identity_id: id }),
+    buildPath("/sending-identities/{identity_id}/start-warmup", {
+      identity_id: id,
+    }),
     {},
   );
   return data;
@@ -118,7 +135,9 @@ export async function pauseSendingIdentity(
  * Lift a pause. The system never calls this — when the breaker pauses an
  * identity, a person has to look at the health and decide.
  */
-export async function resumeSendingIdentity(id: string): Promise<SendingIdentityDetail> {
+export async function resumeSendingIdentity(
+  id: string,
+): Promise<SendingIdentityDetail> {
   const { data } = await apiPost(
     buildPath("/sending-identities/{identity_id}/resume", { identity_id: id }),
     {},
@@ -126,9 +145,13 @@ export async function resumeSendingIdentity(id: string): Promise<SendingIdentity
   return data;
 }
 
-export async function refreshIdentityHealth(id: string): Promise<SendingIdentityDetail> {
+export async function refreshIdentityHealth(
+  id: string,
+): Promise<SendingIdentityDetail> {
   const { data } = await apiPost(
-    buildPath("/sending-identities/{identity_id}/refresh-health", { identity_id: id }),
+    buildPath("/sending-identities/{identity_id}/refresh-health", {
+      identity_id: id,
+    }),
     {},
   );
   return data;
@@ -182,10 +205,15 @@ export async function setSendingPolicy(
 export async function getBringUpReadiness(
   organizationId?: string,
 ): Promise<BringUpReadiness> {
+  const query = new URLSearchParams({
+    // A saved Vault key or deployment setting must turn the checklist green
+    // immediately. The server also sends Cache-Control: no-store; the unique
+    // URL evicts any stale negative cached before that header was deployed.
+    readiness_check: Date.now().toString(),
+  });
+  if (organizationId) query.set("organization_id", organizationId);
   const { data } = await getJson<BringUpReadiness>(
-    organizationId
-      ? `/sending-identities/bring-up-readiness?organization_id=${encodeURIComponent(organizationId)}`
-      : "/sending-identities/bring-up-readiness",
+    `/sending-identities/bring-up-readiness?${query.toString()}`,
   );
   return data;
 }

@@ -61,11 +61,11 @@ export default async function ResearchTopicLayout({
     notFound();
   }
 
-  const [topic, overview, intents] = await Promise.all([
-    getTopicServer(topicId),
-    getTopicOverviewServer(topicId),
-    getResearchIntentsServer(),
-  ]);
+  // Resolve access before starting reads that require an accessible topic.
+  // A guest/expired session returns no topic; launching the overview RPC in
+  // parallel would throw and replace the canonical AccessGate with Next's
+  // opaque production Server Components error.
+  const topic = await getTopicServer(topicId);
 
   // Was `notFound()`. A server read returning nothing means denied, deleted,
   // never-existed, or an expired session — four different answers that a 404
@@ -83,6 +83,11 @@ export default async function ResearchTopicLayout({
       </div>
     );
   }
+
+  const [overview, intents] = await Promise.all([
+    getTopicOverviewServer(topicId),
+    getResearchIntentsServer(),
+  ]);
 
   const intentLabel = topic.intent_key
     ? (intents.find((i) => i.key === topic.intent_key)?.label ?? null)

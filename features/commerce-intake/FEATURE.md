@@ -8,7 +8,11 @@ manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/in
 (print run detail) · `/l/[code]` (public label resolver) · `/commerce/intake/admin` (map) ·
 `/commerce/intake/v2` + `/v2/instant` (ISOLATED iPhone-style rebuild on `features/capture-camera/`
 — same engine and write rules, new chrome; replaces `/commerce/intake` only after Arman approves;
-read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before touching it). Project brief + contracts:
+read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before touching it) ·
+`/commerce/intake/v3` + `/v3/instant` (ISOLATED vertical-rail chrome, `CameraCaptureV3` from
+`@ai-matrx/capture` 0.3.x — one hold-shutter, right rail + chevron, expanding serial entry, the
+library drawer as the ONE media door; same engine and write rules; a candidate chrome alongside
+v2, same approval gate). Project brief + contracts:
 `/Users/armanisadeghi/code/common-docs/projects/ebay-store-management/BUILD.md` (W4) +
 `PROTOTYPE-CONCEPTS.md` (the concepts are REQUIREMENTS; the prototype's storage is not).
 
@@ -77,7 +81,7 @@ independently.
 ## The label pool (2026-08-29 — `labels/` module)
 
 `commerce.label_batch` (a print run) + `commerce.label_code` (one pooled code) over the
-`lib/label-print` seam. Codes are MINTED rows first (state `available`, no asset) —
+`@ai-matrx/print/labels` seam (the extracted npm package; was `lib/label-print`). Codes are MINTED rows first (state `available`, no asset) —
 14 chars from a confusable-free alphabet (no 0/O/1/I/L, ≈69 bits entropy, `labels/codes.ts`);
 the printed QR payload is the resolver URL **`https://aimatrx.com/l/<code>`**; a scan accepts
 BOTH the URL and the bare code (`normalizeScannedCode`). Uniqueness is DB-enforced:
@@ -88,13 +92,13 @@ reverse lookup (`resolveScannedValue`) is one indexed read.
 **The claim-on-scan decision table** (`useIntakeSession.processQrCode` — the DECISION function
 changed; the 5-round-reviewed qrChain serialization plumbing did NOT):
 
-| Scan resolves to | Behavior |
-|---|---|
-| Live identifier on the CURRENT asset | No-op ("assigned") |
-| Live identifier on ANOTHER asset | Switch to/open that asset (`resumeAsset`) — never a duplicate row |
-| Pooled `available` code | Normal assign/switch flow, then `claimLabelCode` stamps `available → assigned` (state-guarded CAS + identifier back-link) |
-| `void` code | Refused with a toast |
-| Unknown value | Legacy behavior (fresh `our_qr` row) |
+| Scan resolves to                     | Behavior                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Live identifier on the CURRENT asset | No-op ("assigned")                                                                                                        |
+| Live identifier on ANOTHER asset     | Switch to/open that asset (`resumeAsset`) — never a duplicate row                                                         |
+| Pooled `available` code              | Normal assign/switch flow, then `claimLabelCode` stamps `available → assigned` (state-guarded CAS + identifier back-link) |
+| `void` code                          | Refused with a toast                                                                                                      |
+| Unknown value                        | Legacy behavior (fresh `our_qr` row)                                                                                      |
 
 The old "same code after 4 s absence = next unit as a NEW asset" is superseded — per-org
 uniqueness forbids the duplicate row by design; re-scan now opens the existing asset.
@@ -222,6 +226,26 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-30 — **Real-phone round: flip, video swipe, hold semantics.** (1) Camera flip in v1/v2/v3 is now a FACING toggle (`environment ↔ user`; deviceId cleared so the persisted preferred camera can't pin the side; preview mirrors while front-facing) — the deviceId cycle walked the iPhone's several BACK lenses and rarely reached the front ("flip doesn't work"). Host adapter exposes `facing`. (2) `@ai-matrx/capture` 0.4.0: viewer video slides are a control-less tap-to-play player (paused glyph + progress bar) so the stage owns all gestures and videos swipe exactly like photos; v1's `MediaPager` keeps native controls pending replacement. (3) HoldShutter: the 1.2s auto-latch is gone — recording follows the finger; slide UP ~64px to the lock target to latch deliberately, then tap stops. Flip needs a real phone to verify (this machine has one camera).
+
+- 2026-08-30 — Upload failures retain the canonical file-transport incident
+  (including request identity) without emitting a duplicate route-level
+  `console-error`; the failed capture chip and off-screen failure toast remain.
+
+- 2026-08-30 — **v3: the vertical-rail chrome (`/commerce/intake/v3` + `/v3/instant`).** `IntakeCaptureScreenV3` maps commerce onto `CameraCaptureV3` (`@ai-matrx/capture` 0.3.1): ONE hold-shutter (tap photo / hold video; mic warms on `onRecordIntent` so iOS never prompts mid-take — warm-hold keyed off intent, released 5s after recording ends), QR/Notes/Process as RIGHT-RAIL actions above the package's core set (extras collapse behind the chevron), serial entry as the expanding `topEntry` pill (commits on Enter/blur/unmount), Next/Break in `shutterTrailing`, voice note above the shutter, and the library drawer as the ONE door to existing media with Upload inside it (`CloudLibrarySheet.onUpload`; no UPLOAD mode). Same engine, session, media mapping and QR gating as v2 — deliberately no timing modes and no feature-promo tile. 0.3.1 package fixes found on first render: the rail survives a blocked camera (host actions stay usable; core camera actions disable) and status chips clear the `topCenter` line. Verified in-browser: expanding field, chevron expand/collapse, blocked-state rail, chips. v1/v2 untouched.
+
+- 2026-08-29 — **Asset route identity guard.** `/commerce/intake/assets/[id]` classifies its
+  segment before rendering client readers: UUIDs reach the asset workspace, the reserved
+  `v2` segment redirects to `/commerce/intake/v2`, and every other segment returns the route's
+  not-found boundary. Literal route names can no longer reach UUID-backed commerce reads.
+- 2026-08-29 — **Mobile header actions collapse to icons.** The assets hub, answer queue,
+  and asset detail keep their full labeled actions at `sm+`, while every labeled shell-header
+  action uses the canonical tap target's `mobileIconOnly` mode below `sm`; accessible names
+  remain explicit, and the header no longer overflows into the shell controls on phones.
+- 2026-08-29 — **v2 round 3: package-completeness + adversarial-review fixes.** `@ai-matrx/capture` 0.2.x absorbs the whole review loop (filmstrip → swipe viewer → edit-with-REPLACE, tuned gestures, neighbor preload, package media-resolution cache, delete-with-consequence, audio items) — `IntakeCaptureScreenV2` now passes a `media` session (items with `src`/`resolve` via the new imperative `fetchFileBlobUrl` in `features/files/hooks/useFileBlob.ts`) and deleted its own filmstrip/pager/editor wiring. Host fixes from the 22-finding adversarial review: removal of a still-uploading artifact now deletes the row its upload creates (the second half of "edit didn't replace"); QR scanning pauses under any overlay (`onReviewOpenChange` + library/process gates); QR failures toast; upload failures after Next toast; flip hidden+guarded while recording; double-tap shutter guard; shutter-failure toast; video-probe 10s timeout; serial draft commits on unmount; library sheet paginates (60/page); v1 `MediaPager` preload slides no longer steal touches (`interactive={false}` on hidden copies). Type gate green on these files.
+
+- 2026-08-29 — **v2 real-phone round 2 (Arman's pager/edit feedback).** Edit now REPLACES: saving from `ImageEditSheet` adds the edited frame, removes the source artifact (`session.removeArtifact`), and closes the viewer — returning to the uncropped original was a defect. Shared `MediaPager`: swipe thresholds tuned for real flicks (40px / 200 velocity, was 60/400) and a hidden NEIGHBOR-PRELOAD layer keeps ±2 photos (±1 videos) mounted so page turns stop paying mount + resolve + full-JPEG decode (the perceived "refetch" lag). My files type-clean (repo gate red on unrelated in-flight HR work).
+
 - 2026-08-29 — **Guest-boot read guard.** The assets hub now waits for Redux auth hydration,
   a real user id, the browser access token, and the selected organization before issuing any
   `commerce` PostgREST reads. This closes the cold-boot race where persisted org context could
@@ -240,7 +264,7 @@ On a phone, logged into an org:
   index on live `asset_identifier (org, kind, value)` (precheck found zero duplicates) and
   unique `label_code (org, value)`; records `migrations/commerce_label_pool_2026_08_29.sql` +
   `commerce_labels_knobs_2026_08_29.sql`, ledgered. Code: `labels/` module (mint / claim /
-  resolve / import / print through the lib/label-print seam), `/commerce/labels` routes,
+  resolve / import / print through the @ai-matrx/print/labels seam), `/commerce/labels` routes,
   `/l/[code]` resolver, claim-on-scan decision table in `useIntakeSession.processQrCode`
   (serialization plumbing untouched), `replaceIdentifier` lifecycle write, AssetDetail
   Print-label + Retire, `commerce.labels` knobs (default_template / qr_ec_level /

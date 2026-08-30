@@ -14,6 +14,7 @@ import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 interface Row {
   label: string | null;
@@ -29,9 +30,7 @@ export default function ShortcutPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .schema("agent")
-        .from("shortcut")
+      const { data } = await shortcutTable(supabase)
         .select("label, description, created_at")
         .is("deleted_at", null)
         .eq("id", id)

@@ -5,7 +5,7 @@
  *
  * 🚨 A mandate is handled IN PLACE (Arman, 2026-08-26). Anywhere the UI names
  * the AI doing a job, the name opens THIS window over the page — never a
- * `<Link>` to `/agents/mandates` or `/administration/agents/mandates`, which
+ * `<Link>` to `/mandates` or `/administration/mandates`, which
  * costs the user the surface they were standing on.
  *
  * Pass the surface's own fixed-job mandate keys as `mandateKeys` so the window

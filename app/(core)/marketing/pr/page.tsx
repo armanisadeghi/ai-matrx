@@ -1,47 +1,11 @@
-// app/(core)/marketing/pr/page.tsx
-//
-// THE PRESS ROOM — the hub for the Press & PR pillar of the marketing platform.
-//
-// Server Component. It owns route chrome and nothing else; everything
-// interactive lives in `features/marketing/pr/`. The workspace reads its whole
-// state from the URL (`?brand`, `?site`, `?view`, `?focus`, `?data`), so this
-// route needs no props and no server-side branch.
-//
-// `(core)` route conventions: chrome via <PageHeader>, whose center slot is
-// already bounded before the shell's user-menu avatar, and a Suspense boundary
-// because the workspace reads search params on the client.
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-import type { Metadata } from "next";
-import { Suspense } from "react";
-
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import PressRoomWorkspace from "@/features/marketing/pr/PressRoomWorkspace";
-
-export const metadata: Metadata = {
-  title: "Press Room",
-  description:
-    "What is newsworthy about this business, the proof each story still needs, the journalists asking for it right now, and the coverage it produced.",
-};
-
-export default function PressRoomPage() {
-  return (
-    <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Press Room
-          </h1>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Find the story · prove it · pitch it · prove it landed
-          </span>
-        </div>
-      </PageHeader>
-      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-        <Suspense fallback={<LoadingSurface label="Loading the press room…" />}>
-          <PressRoomWorkspace />
-        </Suspense>
-      </div>
-    </>
-  );
+/**
+ * Legacy flat pillar. PR now lives on the brand, at /marketing/[brand]/pr.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingPressShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

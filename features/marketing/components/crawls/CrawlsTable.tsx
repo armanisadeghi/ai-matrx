@@ -27,7 +27,8 @@ import {
   useDeleteCrawlSession,
 } from "@/features/marketing/data/hooks";
 import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
+
 import type { CrawlSession } from "@/features/marketing/types";
 import {
   humanLines,
@@ -222,11 +223,21 @@ export function CrawlsTable() {
       filter: false,
       sortable: false,
       cellKind: "text",
-      cell: (row) => (
-        <span className="block max-w-56 truncate text-xs text-destructive">
-          {row.error || "—"}
-        </span>
-      ),
+      // The raw column can hold a full backend dump (ANSI codes, the failing
+      // SQL, a developer hint). A person gets the sentence; the untouched text
+      // stays on the title for whoever needs it.
+      cell: (row) => {
+        const readable = humanizeBackendError(row.error);
+        if (!readable) return <span className="text-xs">—</span>;
+        return (
+          <span
+            title={row.error ?? undefined}
+            className="block max-w-56 truncate text-xs text-destructive"
+          >
+            {readable}
+          </span>
+        );
+      },
     },
   ];
 

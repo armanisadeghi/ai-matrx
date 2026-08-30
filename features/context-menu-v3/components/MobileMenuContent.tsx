@@ -180,12 +180,10 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         id: entry.id,
         label: entry.label,
         icon: ItemIcon,
-        // Parity with desktop `categoryGroupNode`: legacy-matched rows show
-        // red, keyboard shortcuts show as the trailing hint (hardware
-        // keyboards exist on tablets).
-        iconClass: entry.legacyMatch
-          ? "text-red-600 dark:text-red-400"
-          : undefined,
+        // Parity with desktop `categoryGroupNode`: keyboard shortcuts show as
+        // the trailing hint (hardware keyboards exist on tablets). Phase 6.7
+        // removed the red legacy-match row — availability is derived, so an
+        // item either qualifies here or is absent.
         disabled: isDisabled,
         hint:
           entry.entryType === "agent_shortcut" && entry.keyboardShortcut

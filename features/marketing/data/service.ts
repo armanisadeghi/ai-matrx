@@ -91,6 +91,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { toMarketingKey } from "@/features/marketing/lib/keys";
 import { readAllRows } from "@ai-matrx/data/db";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import {
@@ -315,6 +316,7 @@ function mergeSiteListRow(
 export async function listSites(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
+  brandId?: string | null,
 ): Promise<PagedResult<SiteListRow>> {
   const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
@@ -340,6 +342,14 @@ export async function listSites(
     .select(SITE_COLUMNS, { count: "exact" })
     .is("deleted_at", null);
 
+  // 🚨 BRAND SCOPE (2026-08-30). `/marketing/<brand>/websites` mounted this
+  // portfolio unscoped, so a client's own workspace listed EVERY client's
+  // websites — 15 sites across 14 brands inside All Green Recycling's shell.
+  // The page carried a comment acknowledging the gap ("no brand-scoped list
+  // component exists") and deferring it; deferring it is what shipped one
+  // client's roster into another's workspace.
+  if (brandId) query = query.eq("brand_id", brandId);
+
   const search = cleanSearch(state.search);
   if (search) {
     query = query.or(
@@ -348,10 +358,12 @@ export async function listSites(
   }
   const name = textFilter(state, "name");
   const domain = textFilter(state, "domain");
+  const siteId = textFilter(state, "id");
   const status = selectFilter(state, "status");
   const visibility = visibilityFilter(state);
   if (name) query = query.ilike("name", `%${name}%`);
   if (domain) query = query.ilike("domain", `%${domain}%`);
+  if (siteId) query = query.eq("id", siteId);
   if (status) query = query.eq("status", status);
   if (visibility) query = query.eq("visibility", visibility);
 
@@ -450,7 +462,11 @@ export async function listSites(
     const kpisBySite = new Map(kpiRows.map((row) => [row.site_id, row]));
     return {
       rows: ordered.map((site) =>
-        mergeSiteListRow(site, scoreBySite.get(site.id), kpisBySite.get(site.id)),
+        mergeSiteListRow(
+          site,
+          scoreBySite.get(site.id),
+          kpisBySite.get(site.id),
+        ),
       ),
       total,
     };
@@ -486,6 +502,31 @@ export async function listSites(
     ),
     total: response.count ?? 0,
   };
+}
+
+/**
+ * Load one site in the exact enriched shape consumed by the shared Quick view.
+ * Reusing `listSites` keeps health, page, and GSC metric semantics in one query
+ * and one merge implementation.
+ */
+export async function getSiteListRow(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteListRow> {
+  const result = await listSites(
+    {
+      page: 1,
+      pageSize: 1,
+      search: "",
+      anyOf: "",
+      columnFilters: { id: { kind: "text", value: siteId } },
+      sort: { id: "updated_at", direction: "desc" },
+    },
+    signal,
+  );
+  const site = result.rows.find((row) => row.id === siteId);
+  if (!site) throw new Error(`Site ${siteId} is no longer available.`);
+  return site;
 }
 
 /** Site-level daily GSC rollup for the KPI peek chart. */
@@ -836,7 +877,20 @@ export async function createSite(
     // An explicit brand ALWAYS wins; name-match-or-create only when absent.
     ...(input.brandId ? { p_brand_id: input.brandId } : {}),
   });
-  return assertData(response.data, response.error);
+  const site = assertData(response.data, response.error);
+  // URL key (unique per brand) — the RPC predates keys, so stamp it here.
+  // A site left keyless still routes by UUID, so a failure here must surface.
+  const db = await authenticatedWebDb(supabase);
+  return insertWithSlug<MarketingSite>(
+    toMarketingKey(input.domain || input.name),
+    (slug) =>
+      db
+        .from("site")
+        .update({ slug })
+        .eq("id", site.id)
+        .select(SITE_COLUMNS)
+        .single(),
+  );
 }
 
 /**
@@ -1433,7 +1487,8 @@ export async function updatePageIntent(
         .eq("id", input.pageId)
         .is("deleted_at", null)
         .maybeSingle(),
-    conflictMessage: "This page changed in another session. Reload and try again.",
+    conflictMessage:
+      "This page changed in another session. Reload and try again.",
   });
 }
 
@@ -2828,34 +2883,67 @@ export async function getSitemapCoverage(
 // Brand CRUD — full user control over everything user-editable
 // ============================================================================
 
+/** Postgres unique-violation — the slug candidate is already taken. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === "23505"
+  );
+}
+
+/**
+ * Insert with a URL key, walking `-2`, `-3`, … suffixes on collision.
+ * Availability can't be pre-checked with an RLS-filtered select (rows you
+ * can't see make every key look free), so the unique index is the check.
+ */
+async function insertWithSlug<T>(
+  baseSlug: string,
+  attempt: (slug: string) => PromiseLike<{ data: T | null; error: unknown }>,
+): Promise<T> {
+  for (let n = 1; n <= 30; n += 1) {
+    const candidate =
+      n === 1 ? baseSlug : `${baseSlug.slice(0, 50 - `${n}`.length - 1)}-${n}`;
+    const response = await attempt(candidate);
+    if (!response.error) return assertData(response.data, response.error);
+    if (!isUniqueViolation(response.error)) {
+      return assertData(response.data, response.error);
+    }
+  }
+  throw new Error(
+    `Could not find a free URL key for "${baseSlug}" after 30 attempts`,
+  );
+}
+
 export async function createBrand(
   input: CreateBrandInput,
 ): Promise<MarketingBrand> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("brand")
-    .insert({
-      organization_id: input.organizationId,
-      name: input.name,
-      industry: input.industry,
-      description: input.description,
-      website_url: input.websiteUrl,
-      logo_url: input.logoUrl,
-      favicon_url: input.faviconUrl,
-      og_image_url: input.ogImageUrl,
-      notes: input.notes,
-      status: input.status,
-      // Omitted visibility inherits the web.brand column default
-      // (platform.entity_default_visibility('web_brand')).
-      ...(input.visibility !== undefined
-        ? { visibility: input.visibility }
-        : {}),
-      ...(input.profile !== undefined ? { profile: input.profile } : {}),
-    })
-    .select(BRAND_COLUMNS)
-    .single();
-  return assertData(response.data, response.error);
+  const db = await authenticatedWebDb(supabase);
+  return insertWithSlug<MarketingBrand>(toMarketingKey(input.name), (slug) =>
+    db
+      .from("brand")
+      .insert({
+        organization_id: input.organizationId,
+        name: input.name,
+        slug,
+        industry: input.industry,
+        description: input.description,
+        website_url: input.websiteUrl,
+        logo_url: input.logoUrl,
+        favicon_url: input.faviconUrl,
+        og_image_url: input.ogImageUrl,
+        notes: input.notes,
+        status: input.status,
+        // Omitted visibility inherits the web.brand column default
+        // (platform.entity_default_visibility('web_brand')).
+        ...(input.visibility !== undefined
+          ? { visibility: input.visibility }
+          : {}),
+        ...(input.profile !== undefined ? { profile: input.profile } : {}),
+      })
+      .select(BRAND_COLUMNS)
+      .single(),
+  );
 }
 
 export async function updateBrand(
@@ -3066,7 +3154,8 @@ export async function listDismissedPages(
   const requestedSort = state.sort?.id ?? "dismissed_at";
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "deleted_at";
-  const ascending = state.sort?.direction === "asc" && requestedSort in sortColumns;
+  const ascending =
+    state.sort?.direction === "asc" && requestedSort in sortColumns;
 
   let query = db
     .from("page")
@@ -3496,7 +3585,9 @@ export async function fetchSiteAuditRollup(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<SiteAuditRollup> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .rpc("site_audit_rollup", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return parseSiteAuditRollup(assertData(response.data, response.error));
@@ -3506,7 +3597,9 @@ export async function fetchSiteAuditTrend(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<AuditTrendPoint[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .rpc("site_audit_trend", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return parseSiteAuditTrend(assertData(response.data, response.error));
@@ -3768,7 +3861,9 @@ export async function listBusinessLocations(
   brandId: string,
   signal?: AbortSignal,
 ): Promise<BusinessLocation[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("business_location")
     .select(BUSINESS_LOCATION_COLUMNS)
     .eq("brand_id", brandId)
@@ -3810,7 +3905,9 @@ export async function getBusinessLocation(
 export async function createBusinessLocation(
   input: CreateBusinessLocationInput,
 ): Promise<BusinessLocation> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("business_location")
     .insert({
       organization_id: input.organizationId,
@@ -3853,8 +3950,12 @@ export async function updateBusinessLocation(
   });
 }
 
-export async function deleteBusinessLocation(locationId: string): Promise<void> {
-  const response = await (await authenticatedWebDb(supabase))
+export async function deleteBusinessLocation(
+  locationId: string,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("business_location")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", locationId)
@@ -3867,7 +3968,9 @@ export async function deleteBusinessLocation(locationId: string): Promise<void> 
 export async function listVisibleBrandOptions(
   signal?: AbortSignal,
 ): Promise<Array<Pick<MarketingBrand, "id" | "name" | "organization_id">>> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("brand")
     .select("id, name, organization_id")
     .is("deleted_at", null)
@@ -3882,7 +3985,9 @@ export async function listVisibleBrandOptions(
 export async function listListingPublishers(
   signal?: AbortSignal,
 ): Promise<ListingPublisher[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("listing_publisher")
     .select(LISTING_PUBLISHER_COLUMNS)
     .is("deleted_at", null)
@@ -3896,7 +4001,9 @@ export async function listLocationListings(
   locationId: string,
   signal?: AbortSignal,
 ): Promise<LocationListing[]> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("location_listing")
     .select(LOCATION_LISTING_COLUMNS)
     .eq("location_id", locationId)
@@ -3973,7 +4080,11 @@ export async function addDiscoveredPublisher(
     existingRows,
   );
   if (match?.existing) {
-    return { publisher: match.existing, created: false, matchedBy: match.matchedBy };
+    return {
+      publisher: match.existing,
+      created: false,
+      matchedBy: match.matchedBy,
+    };
   }
 
   const db = await authenticatedWebDb(supabase);

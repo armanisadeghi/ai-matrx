@@ -1,5 +1,7 @@
-import { MarketingConnectionsWorkspace } from "@/features/marketing/components/integrations/MarketingConnectionsWorkspace";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingGoogleConnectionPage() {
-  return <MarketingConnectionsWorkspace />;
+/** Legacy address — Google connection setup is an agency operation now. */
+export default function MarketingGoogleConnectionShim() {
+  permanentRedirect(marketingRoutes.connectionsGoogle());
 }

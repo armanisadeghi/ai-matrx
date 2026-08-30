@@ -67,7 +67,10 @@ describe("applyIrKindRoute", () => {
       JSON.stringify({ __kind: "not_registered_anywhere", a: 1 }),
     );
     expect(envelope.root.kind).toBe("not_registered_anywhere");
-    expect(envelope.root.kindState).toBe("raw");
+    // No schema was ever registered, so nothing checked it: unverified.
+    // It still reaches the generic floor, but as "unregistered" (the honest
+    // repair: create the shape) rather than an accusation about the value.
+    expect(envelope.root.kindState).toBe("unverified");
     const block = {
       type: "code",
       content: "x",
@@ -86,16 +89,16 @@ describe("applyIrKindRoute", () => {
     });
   });
 
-  it("routes a REGISTERED kind's schema-race raw to the generic viewer (never raw JSON)", () => {
-    // The db-kind case the preservation was built for: the kind's definition
-    // IS registered (schema arrived — e.g. via the eager fetch — after the
-    // region ended raw). Known-but-unrenderable → generic structured viewer
-    // with the unverified affordance.
+  it("routes a REGISTERED kind with NO component to the generic viewer (never raw JSON)", () => {
+    // The kind's definition IS registered but nothing render-trusted claims
+    // it, so the generic floor is correct here — and the reason is
+    // "no-component" (author one), NOT "broken-instance". Nothing checked this
+    // value: the envelope lost the schema race and is `unverified`.
     const envelope = envelopeFor(
       JSON.stringify({ __kind: "route_race_registered_kind", a: 1 }),
     );
     expect(envelope.root.kind).toBe("route_race_registered_kind");
-    expect(envelope.root.kindState).toBe("raw");
+    expect(envelope.root.kindState).toBe("unverified");
     kindRegistry.upsertDefinition({
       kind: "route_race_registered_kind",
       schema: { kind: "route_race_registered_kind", fields: {} },
@@ -111,7 +114,7 @@ describe("applyIrKindRoute", () => {
     expect(routed.type).toBe("generic_structured");
     expect(
       (routed.metadata as Record<string, unknown>).__ir_route,
-    ).toMatchObject({ by: "generic", unverified: true });
+    ).toMatchObject({ by: "generic", unverified: true, reason: "no-component" });
   });
 
   it("passes through genuinely kind-less raw JSON by reference (no __kind → legacy rendering)", () => {

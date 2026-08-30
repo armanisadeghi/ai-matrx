@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
@@ -42,6 +41,7 @@ import { MARKETING_BRAND_ASSETS_SURFACE_NAME } from "@/features/marketing/lib/sc
 import type { MediaOrderDraft } from "@/features/marketing/lib/site-media-write-targets";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { BrandAssetKind } from "@/features/marketing/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Which library kind a generated image of each preset lands under. */
 const PRESET_ASSET_KIND: Partial<Record<MediaOrderPresetId, BrandAssetKind>> = {
@@ -267,7 +267,7 @@ export function GenerateMediaView({
         <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-foreground/70">
           2 · Describe the subject
         </h3>
-        <Textarea
+        <ProTextarea
           value={subject}
           onChange={(event) => patch({ brief: event.target.value })}
           minHeight={64}

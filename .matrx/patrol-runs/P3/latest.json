@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P3",
-  "runId": "2026-08-27T131727Z",
-  "state": "reconciled",
-  "updatedAt": "2026-08-29T14:43:18.521Z",
-  "summary": "Reconciled the preserved release-before-certification incident after exact-checkout representative interaction proof and a certified fail-closed controller repair.",
-  "source": "2026-08-27T131727Z.json",
-  "eventHash": "fa1f2fec27bba592b0432555c89baca6df32459ad610188bed721683ed443b63"
+  "runId": "20260830T143951Z",
+  "state": "closed",
+  "updatedAt": "2026-08-30T15:16:36.512Z",
+  "summary": "Hover repair unit 1 closed; P3 remains in ERADICATION with routed actionable backlog",
+  "source": "20260830T143951Z.json",
+  "eventHash": "88270b7dbff11a45c129e82cac85f115b3e56f331a711a221cc9fb123b22df7a"
 }

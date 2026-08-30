@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandateChain } from "@/features/agents/mandates/useMandateChain";
+import { useMandateChain } from "@/features/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
@@ -83,7 +83,7 @@ export default function ScrollAssistantLauncherImpl({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed bottom-5 left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
+        "ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200",
         inputVariant === "multiline"
           ? "w-[min(420px,calc(100vw-2rem))]"
           : "w-[min(380px,calc(100vw-2rem))]",

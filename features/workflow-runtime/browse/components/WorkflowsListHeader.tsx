@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { Workflow as WorkflowIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { WaitingBadge } from "@/features/workflow-runtime/discovery/components/WaitingBadge";
 
 export function WorkflowsListHeader() {

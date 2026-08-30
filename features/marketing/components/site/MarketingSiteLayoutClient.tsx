@@ -29,10 +29,14 @@ import {
   type SiteCommandMode,
 } from "@/features/marketing/crawler/site-commands";
 import {
-  listMarketingSiteModes,
-  marketingSiteSectionSuffix,
+  marketingSeoSectionSuffix,
+  marketingWebsiteSectionSuffix,
 } from "@/features/marketing/lib/route-sections";
 import { useMarketingSiteSubNav } from "@/features/marketing/lib/useMarketingSubView";
+import {
+  useMarketingBrandOptional,
+  useMarketingSiteOptional as useResolvedSiteOptional,
+} from "@/features/marketing/lib/brand-context";
 
 /**
  * A site reached through the wrong brand's URL is a broken link, not a locked
@@ -70,21 +74,48 @@ function FallbackHeader() {
   return (
     <RouteHeader
       left={
-        <ChevronLeftTapButton href="/marketing/sites" ariaLabel="All sites" />
+        <ChevronLeftTapButton
+          href={marketingRoutes.brands()}
+          ariaLabel="All clients"
+        />
       }
     />
   );
 }
 
+export type MarketingSiteShellBranch = "websites" | "seo" | "reputation";
+
 export function MarketingSiteLayoutClient({
   children,
+  branch,
 }: {
   children: React.ReactNode;
+  /**
+   * Which family this shell is mounted under. The two site branches are
+   * derivable from the URL; a mount OUTSIDE them (Reputation under
+   * intelligence/) must say so or the header sniffs "websites" and renders
+   * the wrong base, no pills, and a branch-jumping site switcher
+   * (adversarial audit, 2026-08-30).
+   */
+  branch?: MarketingSiteShellBranch;
 }) {
   const params = useParams<{ brandId: string; siteId: string }>();
   const pathname = usePathname();
-  const brandId = params.brandId;
-  const siteId = params.siteId;
+  // Route params under the agency tree are ADDRESSES (usually readable keys),
+  // so identifiers come from the resolved context the server layout provides.
+  // The params remain the fallback for hosts that mount this shell without it.
+  const resolvedBrand = useMarketingBrandOptional();
+  const resolvedSite = useResolvedSiteOptional();
+  const brandId = resolvedBrand?.id ?? params.brandId;
+  const siteId = resolvedSite?.id ?? params.siteId;
+  const brandSeg = resolvedBrand?.seg ?? params.brandId;
+  const siteSeg = resolvedSite?.seg ?? params.siteId;
+  // Which family this layout is shelling. The two site branches read off the
+  // URL; other mounts pass `branch` explicitly.
+  const branchKind: MarketingSiteShellBranch =
+    branch ??
+    (pathname.split("/").filter(Boolean)[2] === "seo" ? "seo" : "websites");
+  const isSeoBranch = branchKind === "seo";
   const site = useSite(siteId);
   // The URL names the brand, and every agent surface under this layout builds
   // its context from the brand row — so a brand the viewer cannot read is an
@@ -99,7 +130,16 @@ export function MarketingSiteLayoutClient({
   const crawlActivity = useSiteCrawlActivity(siteId);
   // Computed from the URL alone, so it can sit above the loading/access gates
   // where every hook must run unconditionally.
-  const subNav = useMarketingSiteSubNav(marketingRoutes.site(brandId, siteId));
+  const branchBase =
+    branchKind === "reputation"
+      ? marketingRoutes.brandReputation(brandSeg, siteSeg)
+      : isSeoBranch
+        ? marketingRoutes.seoSite(brandSeg, siteSeg)
+        : marketingRoutes.website(brandSeg, siteSeg);
+  const subNav = useMarketingSiteSubNav(
+    branchBase,
+    branchKind === "reputation" ? "reputation" : undefined,
+  );
 
   if (site.isLoading) {
     return (
@@ -129,8 +169,8 @@ export function MarketingSiteLayoutClient({
               : undefined
           }
           onRetry={() => void site.refetch()}
-          fallbackHref="/marketing/sites"
-          fallbackLabel="All sites"
+          fallbackHref={marketingRoutes.brands()}
+          fallbackLabel="All clients"
         />
       </>
     );
@@ -149,8 +189,8 @@ export function MarketingSiteLayoutClient({
           id={brandId}
           error={brand.error}
           onRetry={() => void brand.refetch()}
-          fallbackHref="/marketing/sites"
-          fallbackLabel="All sites"
+          fallbackHref={marketingRoutes.brands()}
+          fallbackLabel="All clients"
         />
       </>
     );
@@ -171,7 +211,7 @@ export function MarketingSiteLayoutClient({
       </>
     );
   }
-  const base = marketingRoutes.site(brandId, siteId);
+  const base = branchBase;
   const activeCrawl = crawlActivity.activeCrawl;
   const fetched = activeCrawl
     ? jsonNumber(activeCrawl.stats, ["pages_fetched"])
@@ -213,7 +253,18 @@ export function MarketingSiteLayoutClient({
         }
         entityOptions={(options.data ?? []).map((option) => ({
           label: option.name,
-          href: `${marketingRoutes.site(option.brand_id, option.id)}${marketingSiteSectionSuffix(pathname, base)}`,
+          // Switching sibling sites keeps the section you are on, inside the
+          // branch you are on — the two registries are separate lists.
+          href: !option.brand_id
+            ? // A site with no brand link cannot be addressed in the client
+              // tree; the flat door resolves (or refuses) it honestly.
+              marketingRoutes.site(null, option.id)
+            : branchKind === "reputation"
+              ? // Same screen, sibling site — never a silent branch jump.
+                marketingRoutes.brandReputation(option.brand_id, option.id)
+              : isSeoBranch
+                ? `${marketingRoutes.seoSite(option.brand_id, option.id)}${marketingSeoSectionSuffix(pathname, base)}`
+                : `${marketingRoutes.website(option.brand_id, option.id)}${marketingWebsiteSectionSuffix(pathname, base)}`,
           active: option.id === siteId,
         }))}
         modes={subNav.modes}

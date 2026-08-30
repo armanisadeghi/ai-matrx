@@ -19,7 +19,7 @@ import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistor
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";

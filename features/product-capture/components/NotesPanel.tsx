@@ -14,7 +14,7 @@ import React, { useEffect, useRef } from "react";
 import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface NotesPanelProps {
   open: boolean;
@@ -59,7 +59,7 @@ export function NotesPanel({
               : "Saved automatically"}
         </span>
       </div>
-      <Textarea
+      <ProTextarea
         ref={textareaRef}
         value={notes}
         onChange={(e) => onChange(e.target.value)}

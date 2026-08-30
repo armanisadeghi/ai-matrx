@@ -238,6 +238,18 @@ export interface ExecutionInstance {
   initialAgentId?: string | null;
   /** Agent version that started this conversation (pinned for shortcuts/apps). */
   initialAgentVersionId?: string | null;
+  /**
+   * THE MANDATE DOOR. When set, this conversation's FIRST turn is POSTed to
+   * `/ai/mandates/{mandateKey}` instead of `/ai/agents/{agentId}` — the server
+   * resolves the principal's binding and decides which agent actually answers.
+   *
+   * `agentId` on a mandate-driven conversation is DISPLAY IDENTITY ONLY (the
+   * name/avatar the surface paints before the stream starts). It is never the
+   * run target, which is why an org/user rebind changes who answers with no
+   * client deploy. Turn 2+ continues on `/ai/conversations/{id}` exactly as
+   * before — the conversation is already bound to the agent the server chose.
+   */
+  mandateKey?: string | null;
   /** Model id used on the most recent assistant turn. */
   lastModelId?: string | null;
 
@@ -1045,14 +1057,20 @@ export interface ManagedAgentOptions {
   agentId?: string;
   /**
    * Agent-mandate key (`<domain>.<step>`, e.g. `plan_client.shape_planner`) —
-   * the mandate-first alternative to `agentId`. The launch thunk resolves it via
-   * `resolveMandate` (system default → the caller's own user binding) and
-   * applies BOTH halves of the binding: the resolved agent id AND the
-   * binding's `config_overrides`, which are merged over `config.llmOverrides`
-   * (the binding wins per key — a user who set "run this step on a cheaper
-   * model" means it) and seeded into the instance-model-overrides slice so
-   * every turn's request carries them as `config_overrides`.
-   * Mutually exclusive with `agentId` and `shortcutId`.
+   * THE MANDATE DOOR. Turn 1 POSTs `/ai/mandates/{mandateKey}` and aidream
+   * resolves principal → system default → org binding → user binding, applies
+   * the binding's `config_overrides` and the provision/variable contract, then
+   * runs the identical downstream pipeline. A rebind therefore changes which
+   * agent answers with NO client deploy.
+   *
+   * `agentId` may be passed ALONGSIDE this key: it is then DISPLAY IDENTITY
+   * only (the agent row the surface paints before the stream starts, e.g.
+   * `/chat/new`'s SSR-resolved default) and this launch resolves nothing
+   * client-side. Omit `agentId` and the thunk reads one through
+   * `resolveMandate` purely to snapshot the instance — still a display read,
+   * never the run decision.
+   *
+   * Mutually exclusive with `shortcutId`.
    */
   mandateKey?: string;
   shortcutId?: string;

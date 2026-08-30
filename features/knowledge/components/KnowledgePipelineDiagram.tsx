@@ -140,7 +140,7 @@ const PHASES: Phase[] = [
   },
   {
     id: "ask",
-    badge: "★",
+    badge: "Ask",
     title: "The Ask — what it's all for",
     blurb:
       "An agent resolves a real question end-to-end: structural filter → semantic search → pull canonical → verify each fact to its provenance root → apply a skill → return a cited, accurate, traceable answer.",

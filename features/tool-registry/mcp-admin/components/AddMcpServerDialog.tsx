@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
   type ProvisionMcpServerInput,
   type ProvisionMcpServerResult,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * The authored half of the identity step. It lives in `McpServersAdminPage`
@@ -336,7 +336,7 @@ export function AddMcpServerDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Description</Label>
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Short, agent-facing summary of what this server provides"

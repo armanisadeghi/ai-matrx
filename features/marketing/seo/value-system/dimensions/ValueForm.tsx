@@ -12,8 +12,8 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { IDENTITY_PATTERN, toIdentitySlug } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface ValueFormValue {
   value: string;
@@ -83,7 +83,7 @@ export function ValueForm({
         <label className="text-xs font-semibold text-foreground">
           What counts as this answer?
         </label>
-        <Textarea
+        <ProTextarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           rows={2}

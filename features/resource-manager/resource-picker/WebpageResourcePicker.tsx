@@ -27,6 +27,7 @@ import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface WebpageResourcePickerProps {
   onBack: () => void;
@@ -482,7 +483,8 @@ export function WebpageResourcePickerCore({
                         </button>
                       </div>
                     </div>
-                    <textarea
+                    <ProTextarea
+                      wrapperClassName="min-h-0 flex-1"
                       value={
                         charLimit > 0
                           ? editedContent.slice(0, charLimit)

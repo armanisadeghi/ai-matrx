@@ -41,7 +41,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { renderIcon } from "@ai-matrx/icons";
@@ -62,6 +61,7 @@ import {
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 import { isRegisteredOrLucideIconName } from "@ai-matrx/icons";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * Surface-write input guards. These THROW rather than coercing — the writeback
@@ -630,7 +630,7 @@ export default function AgentAppsCategoriesAdminPage() {
                     </div>
                     <div>
                       <Label htmlFor="edit-description">Description</Label>
-                      <Textarea
+                      <ProTextarea
                         id="edit-description"
                         value={editData.description ?? ""}
                         onChange={(e) =>
@@ -738,7 +738,7 @@ export default function AgentAppsCategoriesAdminPage() {
             </div>
             <div>
               <Label htmlFor="create-description">Description</Label>
-              <Textarea
+              <ProTextarea
                 id="create-description"
                 value={createData.description ?? ""}
                 onChange={(e) =>

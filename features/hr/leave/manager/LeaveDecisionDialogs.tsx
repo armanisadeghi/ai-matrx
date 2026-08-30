@@ -40,7 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
@@ -56,6 +55,7 @@ import { fetchHrDirectory } from "@/features/hr/service";
 import type { HrDirectoryRow } from "@/features/hr/types";
 
 import type { LeaveQueueRow } from "./useLeaveQueue";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const INTENT_TITLE: Record<"approve" | "reject" | "return", string> = {
   approve: "Approve this time off",
@@ -215,7 +215,7 @@ export function LeaveDecisionDialog({
             <Label htmlFor="leave-decision-reason" className="text-xs">
               {reasonRequired ? "Reason (required)" : "Reason (optional)"}
             </Label>
-            <Textarea
+            <ProTextarea
               id="leave-decision-reason"
               rows={3}
               value={reason}
@@ -376,7 +376,7 @@ export function LeaveReassignDialog({
             <Label htmlFor="leave-reassign-reason" className="text-xs">
               Why (optional)
             </Label>
-            <Textarea
+            <ProTextarea
               id="leave-reassign-reason"
               rows={2}
               value={reason}

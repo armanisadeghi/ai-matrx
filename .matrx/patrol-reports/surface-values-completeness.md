@@ -1,129 +1,67 @@
 # P12 · Surface Values completeness
 
-Run: `20260828T162115Z`
+Run: `2026-08-30T141811Z`
 
-Base: `c50b4cfbcb557c66dbc2d128caa574f3788b48b1`
+Base: `b029fd439333075600bd9ae7522f3907e3dd3395`
 
-Scope: structural novelty since the prior P12 artifact plus the periodic full inventory of route leaves, canonical overlays, manifest readiness, live providers, and direct dialog/drawer/sheet/tab roots.
+State: **INFRASTRUCTURE BLOCKED** — the three-Surface source candidate and database mirror are complete and independently static-clean, but this task did not expose the required isolated in-app Browser controller. The manifests therefore remain honestly `partial`; no product candidate is certified or released.
 
-Run classification: **inventory/machinery**, not a product Surface completion. No live Surface UI was enhanced in this run.
+Candidate: `ded49823bc44dee83d4d1012f235ac92fee92ab9`, preserved at `refs/heads/patrol-runs/P12/2026-08-30T141811Z-candidate`.
 
 ## Outcome
 
-- Verified open surface units: **374**
-  - **161** canonical overlay ids have no Surface manifest.
-  - **95** `(core)` route leaves are undeclared after canonical resolution and deliberate-unmapped handling.
-  - **118** declared surfaces have not earned verified readiness: 105 partial + 13 stub.
-- Product findings fixed: **1** — `keywordQuickAnswersWindow` appeared twice in the canonical overlay-id union. The duplicate identity was removed, leaving 189 total and 189 unique ids without changing runtime behavior.
-- Patrol machinery fixed: **1** — `pnpm check:surface-interactive-roots` now classifies direct canonical interaction roots by identity, explicit state, component role, action/size exclusions, and nearby provider evidence. Its output is explicitly an audit queue, never automatic findings. `check:surface-overlays` now also fails on duplicate canonical ids.
-- Product UI, runtime behavior, manifests, database, and schema changed: **none**.
-- Human decisions required: **1 existing product decision** — whether `/education/learn` remains intentionally non-emitting, gets a thin client identity shell while preserving server rendering, or becomes client-rendered.
-- Exceptions proposed or approved: **0**.
-- Certification: **CERTIFIED** for exact candidate `2470f82af0a2726af49786c4a25a8451282e7a76`. The independent certifier found no batch-caused defect.
-- Delivery: **DELIVERED** — the certified candidate is preserved at `refs/heads/patrol-runs/P12/20260828T162115Z`, is an ancestor of release commit `e1968d0a6e`, and shipped successfully in `v0.4.1392`. Later releases continue to contain it; no redundant release is required.
+- Ranked Surface findings taken: **3**.
+- Source/mirror implementations completed: **3**.
+- Independently certified: **0**.
+- Verdict: **INFRASTRUCTURE BLOCKED**, not rejected. No candidate-caused source defect remains.
+- Human approvals required: **0**.
+- Release: **none**. The candidate has no containing release tag, so the production URLs below are target test addresses, not a claim that the update is deployed.
+- Integration defects caught and repaired before the final candidate: **2** — the Page Research canonical label mismatch, and a shared-checkout merge that stripped 1,084 lines of runtime wiring. The preserved first candidate supplied the exact recovery source.
 
-## Ranked Surface Queue
+## Three completed source contracts
 
-This queue is the work authority for the next run. Consume the first `ready`
-rows before broad discovery. A row leaves only after its canonical Surface ID,
-complete manifest and values, live provider/emitter, route or host resolution,
-Locate anchors, applicable write/mirror contract, honest readiness, independent
-certification, and browser proof are recorded. A blocked row is retained and
-the next ready row replaces it toward the three-Surface floor.
+| Surface | Canonical identity | Declared contract | Safe writes |
+| --- | --- | --- | --- |
+| Quick Answers | `matrx-user/keyword-quick-answers` / `keywordQuickAnswersWindow` | 28 values, 5 resolved groups, nested provider, live question/batch/session scope, read/edit v3 menus, Locate anchors | `reason_draft` (reversible draft), `active_dimension_slug` (ask-gated UI); answer persistence stays on the existing user buttons |
+| Keyword Research window | `matrx-user/keyword-research-window` / `keywordResearchWindow` | 35 values, 5 resolved groups, selected-site/library/durable-run scope, v3 menu, Locate anchors, honest load/retry state | `selected_site_id`, `library_search`, `explorer_open`, `research_input_keyword`; the paid Research action remains human-only |
+| Page Research | `matrx-user/page-research` / `pageResearchWindow` | 29 values, 4 resolved groups, page/draft/run composites, editable and read-only menus, Pro inputs, Locate anchors, recoverable attachment/run errors | `topic_name`, `keywords`, both ask-gated drafts; Start Research and attachment remain human-only |
 
-| Rank | Queue key                   | Canonical Surface ID target        | Host and interaction path                                                                | Status  |
-| ---: | --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
-|    1 | `keywordQuickAnswersWindow` | `matrx-user/keyword-quick-answers` | Keyword Value Workbench → **Quick Answers**                                              | `ready` |
-|    2 | `keywordResearchWindow`     | `matrx-user/keyword-research`      | Any authenticated AppShell route → **Tools** → **Keyword Research**                      | `ready` |
-|    3 | `pageResearchWindow`        | `matrx-user/page-research`         | `/marketing/content-plan/[siteId]` → select a page node → **Run research for this page** | `ready` |
+The existing routed `matrx-user/keyword-research` workbench keeps its identity. The floating window has the distinct `matrx-user/keyword-research-window` identity so route and overlay ownership do not collide.
 
-These three form the first coherent pilot family: all are registered floating
-marketing/research windows with canonical components and live openers but no
-own manifest declaration. The completion run must replace route patterns with
-exact production URLs for the live records it certifies. After closing the
-tranche, promote the next three verified entries from the measured 374-unit
-backlog before doing optional detector work.
+The canonical mirror sync completed with **92 values, 4 agent roles, and 8 write targets** across the three declarations. Count-only re-reads confirmed all three `ui.ui_surface` rows and their exact focused mirror totals.
 
-## Baseline and delta diagnostics
+## Exact interaction paths for Browser retry
 
-- Isolation: the automation ran only in `/Users/armanisadeghi/.codex/worktrees/b923/matrx-frontend`; dependencies were installed locally with `pnpm install --offline --frozen-lockfile` and were never symlinked.
-- Worktree recovery: after certification, the isolated worktree was unexpectedly removed. It was recreated at the exact certified candidate and dependencies were reinstalled offline. The remote candidate and hash-chained authority record prevented code or evidence loss.
-- `pnpm type-check`: baseline and candidate both PASS with byte-identical output hash `414f6f5ac4bb546e075d4c8298e3f99977a43fa48cf878c4b806144a2ad00702`. An intermediate unsafe import-map inference was caught and repaired before candidacy.
-- `pnpm check:surface-drift`: PASS — 194 manifests, 4,751 values, 427 write targets, 6 client tools.
-- `pnpm check:surface-routes`: PASS — 703 `(core)` routes; 581 resolved, 27 deliberately unmapped, 95 undeclared.
-- `pnpm check:surface-overlays`: PASS — 189 total ids, 189 unique ids, 28 declared, 161 undeclared.
-- `pnpm check:surface-interactive-roots`: PASS — 7,752 tracked runtime TSX files, 764 canonical roots, 756 with explicit state, 502 subordinate or uncertain roots excluded, 254 independent audit candidates; 4 candidates have provider evidence and 250 do not.
-- Structural novelty since prior artifact `6947c913`: 148 new `(core)` route leaves and 63 new signature TSX/TS files; 24 enter the conservative direct-root audit queue.
-- `pnpm check:patrol-contracts`: the P12 prompt matches the canonical manifest. The command still reports unrelated fleet prompt/status drift and Fleet Health debt; those baseline failures are not P12 findings.
-- `pnpm check:migrations`: exits successfully but cannot compare the shared ledger without Supabase credentials. This batch has no database or migration change.
-- `pnpm check:reuse-index`: exits successfully with four unrelated stale paths.
-- Preview lease: another checkout owned the machine preview. No preview was reused and no visual certification was required because this batch changes no rendered or runtime product behavior.
+These are the exact live-production-shaped URLs for the selected safe test fixture. They are **not yet deployed URLs** because certification and release are still blocked.
 
-## Independent certification
+1. Quick Answers target: `https://aimatrx.com/marketing/370f9281-2c10-41bf-af9e-5784aaee5838/seo/98853cae-68f4-4c81-b1c0-7ef09340a4f5/keywords/value`
+   - Interaction: open the page, then choose **Quick Answers** in the KPI band.
+2. Keyword Research target: `https://aimatrx.com/marketing/keyword-research?panels=keyword_research`
+   - Interaction: the route-owned URL hydrator opens **Keyword Research**; alternatively use **Tools → Keyword Research**.
+3. Page Research target: `https://aimatrx.com/marketing/370f9281-2c10-41bf-af9e-5784aaee5838/content/plan/98853cae-68f4-4c81-b1c0-7ef09340a4f5?node=f155cc1a-8a3f-43a1-9365-a9ef7f8eccaf`
+   - Interaction: open the selected **Contact** node, find its Research section, then choose **Run research for this page**. Do not press the paid Start action during declaration proof.
 
-- Verdict: **CERTIFIED** — exact candidate `2470f82af0a2726af49786c4a25a8451282e7a76`, certifier task `/root/p12_certifier`.
-- Focused Jest tests: 5/5 passed, covering controlled substantial dialogs, aliased tabs, provider evidence, fake/subordinate roots, action-dialog exclusion, and explicit state.
-- Scoped ESLint, Prettier, `git diff --check`, type-check, surface drift, route, overlay, and interactive-root checks passed.
-- Counts independently reproduced: 189 total overlay ids, 189 unique, 0 duplicates.
-- Mutation proof: reintroducing the removed duplicate made `check:surface-overlays` exit nonzero and name `keywordQuickAnswersWindow`; restoring the candidate returned the detector to clean.
-- Adversarial in-memory assertions confirmed aliased imports, fake primitives, explicit state, action/subordinate exclusion, and provider-present/provider-absent classification.
-- The certifier confirmed the scanner labels all 254 results as audit candidates rather than automatic findings.
+The Browser retry must confirm the exact window identity, Surface Context values and groups, no missing Always values, no undeclared runtime-only keys, Locate behavior, context-menu posture, safe draft/UI writes, and clean console/error-inspector state. Only then may readiness become `verified`, independent certification be recorded, and the candidate enter the release lane.
 
-## Inventory evidence
+## Evidence
 
-### Declared surfaces
+- `pnpm type-check`: PASS on the corrected candidate.
+- Focused ESLint: PASS; seven metadata barrel warnings are unchanged baseline debt.
+- `pnpm check:surface-drift`: PASS — 197 surfaces, 4,849 values, 435 write targets, 6 client tools.
+- `pnpm check:surface-routes`: PASS — 783 core routes, 631 resolved, 27 deliberately unmapped, 125 audit backlog.
+- `pnpm check:surface-overlays`: PASS — 190 unique overlays, 31 declared, 159 undeclared.
+- Strict impact checks: PASS for all three focused Surface IDs against the live database mirror.
+- Responsive keyword-research Jest contract: 2/2 PASS.
+- Scoped `git diff --check`: PASS.
+- Independent certifier: `/root/p12_certifier`; exact SHA `ded49823bc44dee83d4d1012f235ac92fee92ab9`; no static/source regression.
+- Preview lease: canonical checkout preview remained on port 3001. It was not reused through an alternate browser.
 
-| Readiness | Count | Meaning                                                             |
-| --------- | ----: | ------------------------------------------------------------------- |
-| Verified  |    76 | Browser-earned contract evidence recorded                           |
-| Partial   |   105 | At least one declaration/emitter/Locate/mirror/browser item remains |
-| Stub      |    13 | Vocabulary only or no live emitter                                  |
-| Total     |   194 | Current code manifests                                              |
+## Queue and backlog
 
-Readiness counts are taken from `ALL_MANIFESTS`; green manifest drift proves internal declaration consistency, not live completeness.
+These three rows remain the first P12 queue entries with status `browser-proof-blocked`. The next P12 wake must resume this exact run and candidate before scanning or taking another Surface family.
 
-### Canonical overlays
-
-- Canonical ids: 189 total and 189 unique after removing the duplicate.
-- Manifests declaring an overlay id: 28.
-- Undeclared canonical ids: **161**.
-- A duplicate canonical id is now a hard detector failure; undeclared ids remain a printed C/R backlog until each surface earns a complete declaration.
-
-The exact live backlog is emitted by:
-
-```bash
-pnpm check:surface-overlays
-```
-
-### Undeclared routes
-
-The 95 undeclared route leaves group into 55 HR routes, 18 workflow routes, 12 RAG routes, 6 tool/product-capture routes, 2 Google review routes, 1 launchpad route, and 1 trash route. These are inventory candidates until route resolution and host ownership are audited; they are not safe targets for mass-generated manifests.
-
-### Direct interactive roots
-
-The new conservative classifier found 254 independent audit candidates from 764 canonical roots. It excluded 502 subordinate or uncertain roots using component identity and action/size evidence. Only 4 candidates have a nearby `SurfaceRuntimeProvider`; absence is evidence to inspect ownership, not proof that the child requires a new manifest.
-
-## Finding routes
-
-### Standing-authority repair backlog
-
-1. Audit undeclared overlay ids in coherent surface families, at no more than 15 files per certified batch. Complete identity, values, live provider, typed scopes, Locate anchors, readiness evidence, and any mirror contract together.
-2. Resolve the 95 route leaves against canonical hosts before declaring new surfaces. A route leaf may be an alias, a deliberate non-emitter, or an independent surface.
-3. Use the 254 direct-root candidates as a conservative review queue. Responsive Dialog/Drawer twins and nested action dialogs should resolve to their owner rather than acquire duplicate manifests.
-4. Promote partial or stub readiness only from recorded live evidence; manifest-only consistency is not closure.
-
-### Missing evidence or machinery
-
-1. The direct-root classifier still needs owner-level deduplication for responsive Drawer/Dialog twins.
-2. Route, overlay, manifest, and provider outputs remain separate evidence sets; correlating them by canonical owner would reduce repeated manual triage without turning candidates into findings.
-3. Supabase-backed checks remain unmeasured in this isolated environment, though this batch does not touch database state.
-
-### Genuine human decision
-
-`matrx-user/education-learn` is a public, server-rendered reader. Three outcomes remain legitimate: keep it non-emitting, add a thin client identity shell while retaining server-rendered article content, or make the reader client-rendered. No prior approval was found, and the patrol does not choose that product reachability tradeoff.
+Current measured inventory is 159 undeclared overlays + 125 unresolved routes + 121 declared surfaces below verified readiness. These evidence sets can overlap; they are prioritization inputs, not a claim of 405 unique product screens.
 
 ## Recursive learning
 
-Identity + explicit state + action/size evidence removed 502 subordinate or uncertain roots from the raw interaction inventory. The smallest next precision gain is owner-level deduplication of responsive Drawer/Dialog twins, followed by correlation of route, overlay, manifest, and provider evidence under one canonical owner.
-
-User-facing acceptance must distinguish inventory from completion. Future product-completion runs select one ranked Surface family, complete its full contract end to end, and report the exact live URL plus the interaction path that exposes the changed Surface. A detector-only run is labeled **inventory/machinery** and must not imply that a live Surface was enhanced.
+The permanent candidate ref prevented a shared-checkout merge from silently converting complete runtime surfaces back into declaration-only manifests. The smallest next machinery improvement is a P12 integration guard that fails when a newly declared overlay loses its expected host-side `SurfaceRuntimeProvider`, canonical menu, scope builder, or Locate anchors. That guard complements Browser proof; it does not replace it.

@@ -6,7 +6,7 @@ import { Check, ExternalLink, Search } from "lucide-react";
 import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { ConnectorMark } from "./ConnectorMark";
 import { useLiveConnectors } from "./useLiveConnectors";
 
 /** The canonical, live-only integrations directory used by the chat window. */
@@ -82,7 +82,6 @@ export function LiveIntegrationsList() {
           ) : (
             <div role="list" aria-label="Live integrations">
               {filteredItems.map(({ connector, status, actionLabel }) => {
-                const Logo = connector.logo;
                 const connected = status === "connected";
                 const busy = connectingId === connector.id || isNavigating;
                 const label = `${actionLabel} ${connector.name}`;
@@ -115,15 +114,10 @@ export function LiveIntegrationsList() {
                     role="listitem"
                     className="flex items-center gap-3 border-b border-border/70 px-4 py-3 last:border-b-0 sm:px-5"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-card">
-                      <Logo
-                        colored={connected}
-                        className={cn(
-                          "h-5 w-5",
-                          !connected && "text-muted-foreground",
-                        )}
-                      />
-                    </div>
+                    <ConnectorMark
+                      connector={connector}
+                      className="h-8 w-8 rounded-lg"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 text-sm">
                         {identity}

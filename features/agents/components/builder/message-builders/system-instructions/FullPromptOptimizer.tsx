@@ -22,7 +22,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Rainbow,
@@ -38,6 +37,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ---------------------------------------------------------------------------
 // Minimal normalization helpers (inlined from features/prompts/utils so this
@@ -375,7 +375,7 @@ export function FullPromptOptimizer({
               <Label className="text-xs text-gray-600 dark:text-gray-400">
                 Additional Guidance (Optional)
               </Label>
-              <Textarea
+              <ProTextarea
                 value={additionalGuidance}
                 onChange={(e) => setAdditionalGuidance(e.target.value)}
                 placeholder="e.g., 'Focus on improving variable names' or 'Optimize for better token efficiency'"

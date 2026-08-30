@@ -690,6 +690,10 @@ export interface TimesheetEditHistoryEntry {
  * two concrete uuids, and until `hr_c4_55` producing them was left to the page. `basis` is the
  * honesty field — a closed period rendered silently as "your timesheet" would be the same class of
  * defect as a negative bookable balance, so `most_recent` always arrives with a `periodNote`.
+ *
+ * It also resolves a PUNCH into a period (`p_punch_id`), which is how a punch-correction notice's
+ * deep link lands on the right hours. The `focus*` fields below are that answer; they are the
+ * server's, and `focusNote` is the server's SENTENCE — printed, never re-derived here.
  */
 export interface MyTimesheetContext {
   employmentId: string | null;
@@ -699,12 +703,31 @@ export interface MyTimesheetContext {
   periodStartOn: string | null;
   periodEndOn: string | null;
   periodState: string | null;
-  /** `current` — a period contains today · `most_recent` — the last one they were in · `none`. */
-  basis: "current" | "most_recent" | "none" | null;
+  /**
+   * `current` — a period contains today · `most_recent` — the last one they were in ·
+   * `punch` — the period covering `focusLocalWorkDate`, chosen because `p_punch_id` was asked for
+   * and honoured, NOT because it covers today · `none`.
+   */
+  basis: "current" | "most_recent" | "punch" | "none" | null;
   /** Set on `most_recent` only. Rendered verbatim above the hours. */
   periodNote: string | null;
   /** Set on `none` only. The reason, in the three shapes it comes in. Rendered verbatim. */
   noPeriodReason: string | null;
+
+  /**
+   * The punch the page should focus — echoed back ONLY when `p_punch_id` resolved and belonged to
+   * the caller. Null when no punch was asked for, or when the id was unknown and ignored.
+   * 🚨 Never rendered: it is a uuid, and it steers highlighting, not text.
+   */
+  focusPunchId: string | null;
+  /** `YYYY-MM-DD`, the work date that punch is attributed to. The day row that opens and scrolls. */
+  focusLocalWorkDate: string | null;
+  /**
+   * The server's honest sentence about the punch link, present ONLY when there is something the
+   * reader must be told — which period this is and why, or that the punch could not be found.
+   * Rendered VERBATIM, exactly like `periodNote`. Nothing here re-words or re-derives it.
+   */
+  focusNote: string | null;
 }
 
 /** `hr_timesheet_get` — the single read behind routes 5 and 29. */

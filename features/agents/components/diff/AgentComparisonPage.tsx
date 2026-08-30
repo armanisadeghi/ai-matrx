@@ -19,7 +19,8 @@ import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, Loader2 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const AgentDiffViewer = dynamic(
@@ -98,7 +99,9 @@ export function AgentComparisonPage({
 
   // Preselected sides start already pointed at their agent, so a deep link
   // renders the diff instead of an empty picker on the first paint.
-  const [left, setLeft] = useState<SideState>(() => sideFor(initialLeftAgentId));
+  const [left, setLeft] = useState<SideState>(() =>
+    sideFor(initialLeftAgentId),
+  );
   const [right, setRight] = useState<SideState>(() =>
     sideFor(initialRightAgentId),
   );
@@ -142,7 +145,6 @@ export function AgentComparisonPage({
     dispatch(fetchAgentsListFull())
       .unwrap()
       .finally(() => setAgentsLoading(false));
-     
   }, []);
 
   // Load whatever the URL preselected. State for those sides is already set
@@ -150,7 +152,6 @@ export function AgentComparisonPage({
   useEffect(() => {
     if (initialLeftAgentId) loadSideData("left", initialLeftAgentId);
     if (initialRightAgentId) loadSideData("right", initialRightAgentId);
-     
   }, [initialLeftAgentId, initialRightAgentId]);
 
   const handleAgentChange = (side: "left" | "right", agentId: string) => {
@@ -229,12 +230,7 @@ export function AgentComparisonPage({
       : "Select right side";
 
   if (agentsLoading) {
-    return (
-      <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        <span className="text-sm">Loading agents...</span>
-      </div>
-    );
+    return <SuspenseLoader message="Loading agents…" />;
   }
 
   return (
@@ -367,7 +363,9 @@ function SideSelector({
           options={versionOptions}
           value={selectedVersion?.toString() ?? undefined}
           onChange={onVersionChange}
-          placeholder={versionsLoading ? "Loading..." : "Version..."}
+          placeholder={
+            versionsLoading ? "Loading agent versions…" : "Version..."
+          }
           searchPlaceholder="Search versions..."
         />
       </div>

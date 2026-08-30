@@ -22,7 +22,13 @@
  * later learns the pattern from (P24).
  */
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -36,7 +42,6 @@ import {
 
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { toast } from "@/lib/toast";
@@ -46,15 +51,31 @@ import { formatCount } from "@/features/marketing/search-console/types";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { getBatchQuestion, type BatchKeyword } from "./batch";
+import {
+  ProTextarea,
+  type ProTextareaElement,
+} from "@/components/official/ProTextarea";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import {
+  KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
+  createKeywordQuickAnswersScope,
+  keywordQuickAnswersManifest,
+} from "@/features/surfaces/manifests/keyword-quick-answers.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
-export function QuickAnswers({
-  siteId,
-  siteLabel,
-  dimensionSlug,
-  onDimensionChange,
-  onAnswered,
-  className,
-}: {
+export interface QuickAnswersSurfaceHandle {
+  /** Full live window scope, assembled only when a launcher asks for it. */
+  getScope: () => SurfaceScopePayload;
+  /** Draft-only write twin; never submits an answer. */
+  setReasonDraft: (value: unknown) => void;
+  /** UI-only write twin; never submits an answer. */
+  setActiveDimensionSlug: (value: unknown) => void;
+}
+
+interface QuickAnswersProps {
   siteId: string;
   siteLabel?: string | null;
   /** Null lets the server choose the question worth asking next. */
@@ -63,11 +84,29 @@ export function QuickAnswers({
   /** Fires after every landed write so a host can refresh what it shows. */
   onAnswered?: () => void;
   className?: string;
-}) {
+  /** Window-owned bridge for the nested SurfaceRuntimeProvider. */
+  surfaceHandleRef?: Ref<QuickAnswersSurfaceHandle>;
+}
+
+const V = surfaceValueLabels(keywordQuickAnswersManifest);
+
+export function QuickAnswers({
+  siteId,
+  siteLabel,
+  dimensionSlug,
+  onDimensionChange,
+  onAnswered,
+  className,
+  surfaceHandleRef,
+}: QuickAnswersProps) {
   const [seen, setSeen] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [answered, setAnswered] = useState(0);
-  const [done, setDone] = useState<Record<string, string>>({});
+  const [doneState, setDoneState] = useState<{
+    dimensionSlug: string | null;
+    values: Record<string, string>;
+  }>({ dimensionSlug: null, values: {} });
+  const reasonRef = useRef<ProTextareaElement | null>(null);
 
   const catalog = useQuery({
     queryKey: ["marketing", "seo", "dimension-catalog", siteId],
@@ -98,11 +137,7 @@ export function QuickAnswers({
     [dimensions, activeSlug],
   );
   const values = activeDimension?.values ?? [];
-
-  // A new question is a clean slate — the keywords behind it are different.
-  useEffect(() => {
-    setDone({});
-  }, [activeSlug]);
+  const done = doneState.dimensionSlug === activeSlug ? doneState.values : {};
 
   const stamp = useMutation({
     mutationFn: async (input: {
@@ -119,10 +154,11 @@ export function QuickAnswers({
       return input;
     },
     onSuccess: (input) => {
-      setDone((prior) => {
-        const next = { ...prior };
+      setDoneState((prior) => {
+        const next =
+          prior.dimensionSlug === activeSlug ? { ...prior.values } : {};
         for (const id of input.keywordIds) next[id] = input.valueLabel;
-        return next;
+        return { dimensionSlug: activeSlug, values: next };
       });
       setAnswered((n) => n + input.keywordIds.length);
       toast.success(
@@ -140,9 +176,115 @@ export function QuickAnswers({
   const outstanding = keywords.filter((k) => !done[k.keywordId]);
   const allDone = keywords.length > 0 && outstanding.length === 0;
 
+  const getScope = () => {
+    const isLoading = catalog.isFetching || batch.isFetching;
+    const isSaving = stamp.isPending;
+    return createKeywordQuickAnswersScope({
+      site_summary: { id: siteId, label: siteLabel ?? null },
+      site_id: siteId,
+      site_label: siteLabel ?? undefined,
+      dimension_catalog: dimensions,
+      active_dimension: activeDimension ?? undefined,
+      active_dimension_id: activeDimension?.dimension_id,
+      active_dimension_slug: activeSlug ?? undefined,
+      active_dimension_label:
+        activeDimension?.label ?? batch.data?.dimensionLabel ?? undefined,
+      active_dimension_scope: activeDimension?.scope,
+      active_dimension_choices: values,
+      current_question: batch.data,
+      question_reason: batch.data?.why ?? undefined,
+      remaining_unanswered: batch.data?.remaining,
+      current_keywords: keywords,
+      outstanding_keywords: outstanding,
+      answered_results: done,
+      reason_draft: reason,
+      answered_this_session: answered,
+      seen_keyword_ids: seen,
+      all_done: allDone,
+      is_loading: isLoading,
+      is_saving: isSaving,
+      session_progress: {
+        answered,
+        seen: seen.length,
+        visible: keywords.length,
+        outstanding: outstanding.length,
+        all_done: allDone,
+        loading: isLoading,
+        saving: isSaving,
+      },
+      content: reason,
+      context: {
+        site: { id: siteId, label: siteLabel ?? null },
+        active_question: {
+          slug: activeSlug,
+          label: activeDimension?.label ?? batch.data?.dimensionLabel ?? null,
+          why: batch.data?.why ?? null,
+          choices: values,
+        },
+        current_keywords: keywords,
+        outstanding_keyword_ids: outstanding.map((row) => row.keywordId),
+        answered_results: done,
+      },
+    });
+  };
+
+  const getEditableApplicationScope = () => {
+    const element = reasonRef.current;
+    const start = element?.selectionStart ?? 0;
+    const end = element?.selectionEnd ?? start;
+    const selectedText = element
+      ? element.value.slice(Math.min(start, end), Math.max(start, end))
+      : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: element
+        ? { type: "editable", element, start, end }
+        : null,
+      contextData: getScope(),
+    });
+  };
+
+  const getReadOnlyApplicationScope = () =>
+    buildApplicationScopeFromMenuContext({
+      selectedText:
+        typeof window === "undefined"
+          ? ""
+          : (window.getSelection()?.toString() ?? ""),
+      selectionRange: null,
+      contextData: getScope(),
+    });
+
+  const setReasonDraft = (value: unknown) => {
+    if (typeof value !== "string") {
+      throw new Error("reason_draft expects a string.");
+    }
+    setReason(value);
+  };
+
+  const setActiveDimensionSlug = (value: unknown) => {
+    if (typeof value !== "string" || !value.trim()) {
+      throw new Error("active_dimension_slug expects a non-empty string.");
+    }
+    const next = dimensions.find(
+      (dimension) => dimension.slug === value.trim(),
+    );
+    if (!next) {
+      throw new Error(
+        `active_dimension_slug must name one of the ${dimensions.length} loaded questions.`,
+      );
+    }
+    onDimensionChange(next.slug);
+  };
+
+  useImperativeHandle(surfaceHandleRef, () => ({
+    getScope,
+    setReasonDraft,
+    setActiveDimensionSlug,
+  }));
+
   const nextBatch = () => {
     setSeen((prior) => [...prior, ...keywords.map((k) => k.keywordId)]);
-    setDone({});
+    setDoneState({ dimensionSlug: activeSlug, values: {} });
   };
 
   if (catalog.isError || batch.isError) {
@@ -159,121 +301,202 @@ export function QuickAnswers({
   }
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      {/* ── the question ── */}
-      <div className="shrink-0 border-b border-primary/25 bg-primary/5 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-              <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
-              {activeDimension?.label ?? "Pick a question"}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-foreground/70">
-              {batch.data?.why ? `Asked because it ${batch.data.why}. ` : ""}
-              {batch.data?.remaining
-                ? `${formatCount(batch.data.remaining)} keywords still have no answer.`
-                : null}
-            </p>
-          </div>
-          <CreatablePicker
-            value={activeDimension?.dimension_id ?? null}
-            options={dimensions.map((dimension) => ({
-              value: dimension.dimension_id,
-              label: dimension.label,
-              hint: dimension.scope === "site" ? "yours" : undefined,
-            }))}
-            onSelect={(dimensionId) => {
-              const next = dimensions.find(
-                (dimension) => dimension.dimension_id === dimensionId,
-              );
-              onDimensionChange(next?.slug ?? null);
-            }}
-            placeholder="Question"
-            searchPlaceholder="Ask a different question…"
-            noun="dimension"
-            loading={catalog.isLoading}
-            ariaLabel="Which question these keywords are being asked"
-            className="w-52"
-          />
-        </div>
-      </div>
-
-      {/* ── the five ── */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3 scrollbar-thin">
-        {batch.isLoading ? (
-          <CardLoading />
-        ) : keywords.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
-            <CheckCircle2 className="h-5 w-5 text-success" />
-            <p className="text-sm font-medium text-foreground">
-              Nothing left to ask here
-            </p>
-            <p className="max-w-xs text-xs text-muted-foreground">
-              Every keyword with demand on {siteLabel ?? "this site"} has an
-              answer for this one. Pick a different question above.
-            </p>
-          </div>
-        ) : (
-          keywords.map((row) => (
-            <KeywordRow
-              key={row.keywordId}
-              row={row}
-              answeredAs={done[row.keywordId] ?? null}
-              values={values}
-              busy={stamp.isPending}
-              onAnswer={(valueId, valueLabel) =>
-                stamp.mutate({
-                  keywordIds: [row.keywordId],
-                  valueId,
-                  valueLabel,
-                })
-              }
-            />
-          ))
-        )}
-
-        {/* Same answer for everything still open — the reason this is a batch. */}
-        {outstanding.length > 1 && values.length > 0 ? (
-          <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-2.5">
-            <p className="text-xs font-semibold text-primary">
-              Same answer for the {outstanding.length} still open
-            </p>
-            <div className="mt-1.5 flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin">
-              {values.map((value) => (
-                <button
-                  key={value.value_id}
-                  type="button"
-                  disabled={stamp.isPending}
-                  title={value.description ?? undefined}
-                  onClick={() =>
-                    stamp.mutate({
-                      keywordIds: outstanding.map((k) => k.keywordId),
-                      valueId: value.value_id,
-                      valueLabel: value.label,
-                    })
-                  }
-                  className="shrink-0 rounded-md border border-primary/35 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
+    <div
+      className={cn("flex h-full min-h-0 flex-col", className)}
+      data-surface-value="site_id"
+    >
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        surfaceName={KEYWORD_QUICK_ANSWERS_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getReadOnlyApplicationScope}
+        contentSource={{ type: "raw" }}
+        entity={{
+          type: "web_site",
+          id: siteId,
+          title: siteLabel ?? siteId,
+          resourceType: "web_site",
+        }}
+      >
+        <div
+          className="flex min-h-0 flex-1 flex-col"
+          data-surface-value="current_question"
+        >
+          {/* ── the question ── */}
+          <div
+            className="shrink-0 border-b border-primary/25 bg-primary/5 px-4 py-3"
+            data-surface-value="active_dimension"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0" data-surface-value="active_dimension_id">
+                <p
+                  className="flex items-center gap-1.5 text-sm font-medium text-foreground"
+                  data-surface-value="active_dimension_label"
                 >
-                  {value.label}
-                </button>
-              ))}
+                  <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+                  {activeDimension?.label ?? "Pick a question"}
+                </p>
+                <p
+                  className="mt-0.5 truncate text-xs text-foreground/70"
+                  data-surface-value="question_reason"
+                >
+                  {batch.data?.why
+                    ? `Asked because it ${batch.data.why}. `
+                    : ""}
+                  <span data-surface-value="remaining_unanswered">
+                    {batch.data?.remaining
+                      ? `${formatCount(batch.data.remaining)} keywords still have no answer.`
+                      : null}
+                  </span>
+                </p>
+              </div>
+              <div data-surface-value="dimension_catalog">
+                <div data-surface-value="active_dimension_scope">
+                  <div data-surface-value="active_dimension_slug">
+                    <CreatablePicker
+                      value={activeDimension?.dimension_id ?? null}
+                      options={dimensions.map((dimension) => ({
+                        value: dimension.dimension_id,
+                        label: dimension.label,
+                        hint: dimension.scope === "site" ? "yours" : undefined,
+                      }))}
+                      onSelect={(dimensionId) => {
+                        const next = dimensions.find(
+                          (dimension) => dimension.dimension_id === dimensionId,
+                        );
+                        onDimensionChange(next?.slug ?? null);
+                      }}
+                      placeholder="Question"
+                      searchPlaceholder="Ask a different question…"
+                      noun="dimension"
+                      loading={catalog.isLoading}
+                      ariaLabel="Which question these keywords are being asked"
+                      className="w-52"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        ) : null}
-      </div>
+
+          {/* ── the five ── */}
+          <div
+            className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3 scrollbar-thin"
+            data-surface-value="current_keywords"
+          >
+            <div data-surface-value="answered_results">
+              {batch.isLoading ? (
+                <div data-surface-value="is_loading">
+                  <CardLoading />
+                </div>
+              ) : keywords.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                  <p className="text-sm font-medium text-foreground">
+                    Nothing left to ask here
+                  </p>
+                  <p className="max-w-xs text-xs text-muted-foreground">
+                    Every keyword with demand on {siteLabel ?? "this site"} has
+                    an answer for this one. Pick a different question above.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2" data-surface-value="is_saving">
+                  {keywords.map((row) => (
+                    <KeywordRow
+                      key={row.keywordId}
+                      row={row}
+                      answeredAs={done[row.keywordId] ?? null}
+                      values={values}
+                      busy={stamp.isPending}
+                      onAnswer={(valueId, valueLabel) =>
+                        stamp.mutate({
+                          keywordIds: [row.keywordId],
+                          valueId,
+                          valueLabel,
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Same answer for everything still open — the reason this is a batch. */}
+            {outstanding.length > 1 && values.length > 0 ? (
+              <div
+                className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-2.5"
+                data-surface-value="outstanding_keywords"
+              >
+                <p className="text-xs font-semibold text-primary">
+                  Same answer for the {outstanding.length} still open
+                </p>
+                <div
+                  className="mt-1.5 flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin"
+                  data-surface-value="active_dimension_choices"
+                >
+                  {values.map((value) => (
+                    <button
+                      key={value.value_id}
+                      type="button"
+                      disabled={stamp.isPending}
+                      title={value.description ?? undefined}
+                      onClick={() =>
+                        stamp.mutate({
+                          keywordIds: outstanding.map((k) => k.keywordId),
+                          valueId: value.value_id,
+                          valueLabel: value.label,
+                        })
+                      }
+                      className="shrink-0 rounded-md border border-primary/35 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
+                    >
+                      {value.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </NonEditableContextMenu>
 
       {/* ── the reason, and the way on ── */}
-      <div className="shrink-0 space-y-2 border-t border-border px-3 py-2">
-        <Textarea
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          placeholder="Add a reason (optional)"
-          rows={2}
-          className="min-h-0 resize-none bg-card text-sm"
-          aria-label="Your reason"
-        />
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] text-muted-foreground">
+      <div
+        className="shrink-0 space-y-2 border-t border-border px-3 py-2"
+        data-surface-value="session_progress"
+      >
+        <div data-surface-value="reason_draft">
+          <EditableContextMenu
+            sourceFeature="marketing"
+            surfaceName={KEYWORD_QUICK_ANSWERS_SURFACE_NAME}
+            menuVersion={1}
+            getTextarea={() => reasonRef.current}
+            getApplicationScope={getEditableApplicationScope}
+            contentSource={{ type: "raw" }}
+            onTextReplace={setReason}
+          >
+            <ProTextarea
+              ref={reasonRef}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Add a reason (optional)"
+              rows={2}
+              className="min-h-0 resize-none bg-card text-sm"
+              aria-label={V.reason_draft}
+              surfaceName={KEYWORD_QUICK_ANSWERS_SURFACE_NAME}
+              sourceFeature="marketing"
+              getApplicationScope={getEditableApplicationScope}
+            />
+          </EditableContextMenu>
+        </div>
+        <div
+          className="flex items-center justify-between gap-2"
+          data-surface-value="seen_keyword_ids"
+        >
+          <p
+            className="text-[11px] text-muted-foreground"
+            data-surface-value="answered_this_session"
+          >
             {answered > 0
               ? `${answered} answered this session`
               : "Nothing answered yet"}
@@ -284,6 +507,7 @@ export function QuickAnswers({
             className="h-7 gap-1.5 text-xs"
             disabled={batch.isFetching || keywords.length === 0}
             onClick={nextBatch}
+            data-surface-value="all_done"
           >
             {batch.isFetching ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

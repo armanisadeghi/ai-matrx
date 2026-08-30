@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   open: boolean;
@@ -136,7 +137,7 @@ export function AnalyzeCurationDialog({
           </div>
         )}
 
-        <textarea
+        <ProTextarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           spellCheck={false}

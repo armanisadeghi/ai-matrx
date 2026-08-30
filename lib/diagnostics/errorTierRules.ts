@@ -93,6 +93,8 @@ export interface DowngradeRule {
   reason: string;
   /** Optional ISO date the rule was added — pure documentation. */
   addedAt?: string;
+  /** False keeps a known local-only class out of the durable repair queue. */
+  persist?: boolean;
   /** What this rule targets. */
   match: ErrorMatch;
 }
@@ -204,7 +206,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       source: "api-network",
       code: "network_error",
       relation: "GET /mandates/code-truth",
-      routeIncludes: "/administration/agents/mandates",
+      routeIncludes: "/administration/mandates",
     },
   },
   {
@@ -299,6 +301,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
   {
     id: "supabase-browser-transport-loss",
     tier: "yellow",
+    persist: false,
     reason:
       "The browser lost network connectivity before Supabase returned an HTTP response. Keep the failed operation visible locally for retry UX, but a client wifi/sleep/deploy handoff is not a server defect for the repair queue.",
     addedAt: "2026-08-18",
@@ -507,6 +510,8 @@ export function errorMatchesRule(e: CapturedError, match: ErrorMatch): boolean {
 
 export interface TierClassification {
   tier: ErrorTier;
+  /** False means the matched class is useful locally but never actionable durably. */
+  persist?: boolean;
   /** The rule that produced a downgrade, if any. */
   ruleId?: string;
   /** The rule's reason, for display. */
@@ -521,7 +526,12 @@ export function classifyTier(e: CapturedError): TierClassification {
   for (const rule of DOWNGRADE_RULES) {
     try {
       if (errorMatchesRule(e, rule.match)) {
-        return { tier: rule.tier, ruleId: rule.id, reason: rule.reason };
+        return {
+          tier: rule.tier,
+          ruleId: rule.id,
+          reason: rule.reason,
+          persist: rule.persist,
+        };
       }
     } catch {
       // A broken rule must never break capture — skip it.

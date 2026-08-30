@@ -37,6 +37,10 @@ jest.mock("../useHrContext", () => ({
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/hr/tasks",
+  // `HrPageState` reads `?org=` so a context-level refusal can name the employer
+  // the link asked for (the SMS-deep-link case). These tests are about the
+  // substitution disclosure, so the link asks for nothing.
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 import { HrDisclosureClaimed, HrPageState } from "../HrStates";

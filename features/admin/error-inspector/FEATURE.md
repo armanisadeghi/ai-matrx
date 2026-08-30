@@ -74,7 +74,8 @@ second symptom instead of deduping the incident.
   and replaying the exact builder is safe; only an exhausted recovery alarms.
   **Browser transport loss stays local:** a status-0 `TypeError` means no HTTP
   response reached the browser, so the Inspector preserves it for retry UX but
-  does not file a server repair job. A cancelled request is normalized
+  marks it non-durable and never files a server repair job, including during
+  pre-auth hydration and the new-account observation window. A cancelled request is normalized
   to `name: "AbortError"` here: postgrest-js RESOLVES an aborted fetch with an
   error object (no throw), so it takes the `supabase-postgrest` resolved-error
   path — tagging it with the canonical abort name lets the one `request-aborted`
@@ -88,6 +89,11 @@ second symptom instead of deduping the incident.
   serialize nested `Error` instances (`name`/`message`/`stack`/`cause` + custom
   fields) and terminate circular objects; `{ err: Error(...) }` must never become
   `{ err: {} }` in Copy for AI or persistence.
+  - The fully opaque browser sentinel `Script error.` (no error object, source
+    URL, line, or column) remains visible locally but is `durable: false`.
+    Cross-origin isolation has erased the producer and stack, so it is not an
+    actionable implementation-repair record; any runtime error retaining real
+    evidence remains durable.
   - **The `console.error` wrapper runs only OUTSIDE development.** Reassigning
     global `console.error` inserts our frame between the caller and Next.js's dev
     error overlay, corrupting its origin attribution (it would blame this file).
@@ -191,6 +197,10 @@ volume boundary.
 local timestamp comparison. A database boolean would become stale after day
 seven and require more infrastructure than the check it replaces.
 
+Rules may set `persist: false` for a proven local-only class. This explicit
+non-durable verdict overrides the guest/new-account observation policy;
+call-site `durable` remains authoritative when a producer supplies it.
+
 ## Tiers + downgrade rules (`lib/diagnostics/errorTierRules.ts`)
 
 Every error is classified into a **visibility tier** (NOT a log level) at capture
@@ -205,7 +215,8 @@ call is normal agent operation — the agent adapts; e.g. the sql guard rejectin
 `grant`/`delete from`) and **redux-rejected → orange**. User toasts stay red by
 default: showing a failure to the user does not prove it expected or harmless.
 Supabase status-0 browser transport loss is yellow: wifi, sleep, and deployment
-handoffs are locally retryable client conditions, while every actual HTTP or
+handoffs are locally retryable client conditions and explicitly non-durable,
+while every actual HTTP or
 database response stays red.
 Successfully guarded delimiter recovery is yellow on every route: model, tool,
 file, and transcript text are arbitrary content, and the renderer has already
@@ -323,6 +334,11 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-30 — **Local-only downgrade rules enforce non-durability.** `persist: false` now keeps proven local recoveries out of `ops.system_error` even during pre-auth hydration and the guest/new-account observation window; the status-0 Supabase transport rule is the first forcing case.
+- 2026-08-30 — **Evidence-free cross-origin script sentinels stay local.** The
+  exact browser `Script error.` shape with no error object, URL, line, or column
+  is still visible in Error Inspector but cannot enter `system_error`; nearby
+  runtime failures retaining any source evidence remain durable.
 - 2026-08-29 — **Successfully guarded Markdown delimiter repairs stay local.** `markdown-delimiters` is yellow on every route because arbitrary model/tool/file/transcript text can contain delimiter tokens and the renderer neutralizes them before Markdown sees them; renderer crashes and unguarded failures remain red.
 - 2026-08-27 — **Web Scraper domain failures are visible and singular.** The scraper can return HTTP 200 while an individual result row carries `success: false`; `useScraperApi` previously converted that row into local panel state, bypassing every rejection-based capture adapter. The new `scraper` adapter records that domain failure with its full diagnostics while standing down for HTTP/network and typed stream errors already captured centrally. Focused tests pin all three boundaries; live verification produced exactly one red Error Inspector row for a controlled failed target.
 - 2026-08-25 — **Shell icon registry failures are structured and singular.** A rejected shell icon now arrives as `shell-navigation` with `SHELL_ICON_UNREGISTERED`, `relation=icon:<name>`, the `CircleHelp` recovery, and its stack. The production console adapter promotes the tagged error instead of also creating a generic `console-error` symptom; focused tests pin both the typed branch and the ordinary console fallback.

@@ -326,3 +326,18 @@ export async function discoverCompetitors(
     fallbackError: "Competitor discovery failed",
   }).then((payload) => payload.count ?? 0);
 }
+
+/**
+ * SerpAPI's canonical place names are comma-joined with NO spaces
+ * (`Irvine,California,United States`) — a provider wire format, not English.
+ * Never render the raw value to a person (mirrors aidream's
+ * `competitor_autopsy.humanize_location`).
+ */
+export function humanizeLocation(canonical: string | null | undefined): string {
+  if (!canonical) return "the requested area";
+  return canonical
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
+}

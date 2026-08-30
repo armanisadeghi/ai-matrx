@@ -12,10 +12,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
 import type { HrRefusal } from "@/features/hr/tasks/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * The HR inbox's action dialog — one confirm-plus-reason surface for every control that changes
@@ -109,7 +109,7 @@ export function HrActionDialog({
                         {extra}
                         {reasonMode === "none" ? null : (
                             <div className="space-y-1">
-                                <Textarea
+                                <ProTextarea
                                     value={reason}
                                     onChange={(e) => onReasonChange(e.target.value)}
                                     onBlur={() => setTouched(true)}

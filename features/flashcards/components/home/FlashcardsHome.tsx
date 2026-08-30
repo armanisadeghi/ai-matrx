@@ -422,7 +422,7 @@ export function FlashcardsHome() {
       icon: "BrainCircuit",
       label: "Flashcard agents",
       onPress: () =>
-        goTo("__mandates__", "/agents/mandates?feature=flashcards"),
+        goTo("__mandates__", "/mandates?feature=flashcards"),
     },
     {
       icon: "FileSearch",

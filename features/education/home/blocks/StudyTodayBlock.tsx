@@ -16,7 +16,7 @@
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Coffee, Flame, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { InstallStudyAppButton } from "../../components/InstallStudyAppButton";
 import type { EducationSnapshot } from "../types";
 

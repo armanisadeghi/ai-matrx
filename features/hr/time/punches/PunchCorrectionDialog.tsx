@@ -38,7 +38,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 
@@ -53,6 +52,7 @@ import type { PunchRow } from "../api/types";
 import { formatStampedTimeWithZone, pluralize } from "../shared/format";
 import { RefusalNotice } from "../shared/RefusalNotice";
 import { PUNCH_KIND_LABELS } from "../shared/vocabulary";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** §4.1: *"Reason is required and cannot be a single character."* */
 const MIN_REASON_LENGTH = 2;
@@ -269,7 +269,7 @@ export function PunchCorrectionDialog({
               <label htmlFor="punch-reason" className="block text-sm font-medium">
                 Why? This is required.
               </label>
-              <Textarea
+              <ProTextarea
                 id="punch-reason"
                 rows={3}
                 value={reason}

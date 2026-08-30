@@ -102,12 +102,11 @@ export const DEFAULT_TASKS_SHORTCUT_ID =
 // sentinel, never a real row. Each module still ships its `buildScope` and
 // `parseRun`, so authoring the shortcut in the DB and pasting its id here is
 // the whole remaining step. Until then these modules cannot run.
-export const DEFAULT_FLASHCARDS_SHORTCUT_ID =
+export const UNAUTHORED_SHORTCUT_SENTINEL =
   "00000000-0000-0000-0000-000000000000";
-export const DEFAULT_DECISIONS_SHORTCUT_ID =
-  "00000000-0000-0000-0000-000000000000";
-export const DEFAULT_QUIZ_SHORTCUT_ID =
-  "00000000-0000-0000-0000-000000000000";
+export const DEFAULT_FLASHCARDS_SHORTCUT_ID = UNAUTHORED_SHORTCUT_SENTINEL;
+export const DEFAULT_DECISIONS_SHORTCUT_ID = UNAUTHORED_SHORTCUT_SENTINEL;
+export const DEFAULT_QUIZ_SHORTCUT_ID = UNAUTHORED_SHORTCUT_SENTINEL;
 
 // Default cadence per Column 4 module. Modules can override this in their
 // metadata; per-session overrides land in studio_session_settings.
@@ -118,7 +117,7 @@ export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 // (studio_documents) via ctx_patch.
 //
 // At RUN TIME the assistant is decided by the Mandate below (system default →
-// the user's binding at /agents/mandates), resolved via `resolveMandate` in the
+// the user's binding at /mandates), resolved via `resolveMandate` in the
 // thunks and `useMandate` in the settings picker; the surface-config
 // `assistant` role (per-user/org surface choice) still wins above it.
 export const TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY =

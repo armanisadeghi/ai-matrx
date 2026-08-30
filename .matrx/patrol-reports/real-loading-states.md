@@ -1,11 +1,11 @@
 # P8 — Real loading states
 
-- Run date: 2026-08-17
+- Run date: 2026-08-30
 - Delivery reconciliation: 2026-08-29
 - Run kind: scheduled structural-novelty pass plus open-sighting reconciliation
 - Authority: mixed Tier M / Tier R under the dedicated `real-loading-states` skill
 - Scan-start commit: `edc63f092`
-- Worktree: canonical automation worktree `/Users/armanisadeghi/code/matrx-frontend`; baseline diagnostics captured before mutation
+- Checkout: canonical shared checkout `/Users/armanisadeghi/code/matrx-frontend`; baseline diagnostics and unrelated dirty paths captured before mutation
 
 ## Scope scanned
 
@@ -20,7 +20,7 @@
 - Verified findings in current scope: **19 files**.
 - Standing-authority fixes: **17 files / 19 callsites**, split into independently certified 15-file and 2-file batches.
 - Genuine human decisions required: **0**.
-- Backlog retained: **68 files** — 33 compact/control or identity cases still lack a verified owning-control mapping, and 35 page/panel/list/tree/editor/preview cases need a proven surface-shaped skeleton or chunk-boundary decision.
+- Backlog retained: **53 files** — 18 compact/control or identity cases still require a verified owning-control mapping, and 35 page/panel/list/tree/editor/preview cases need a proven surface-shaped skeleton or chunk-boundary decision.
 - Excluded as compliant or false positive: `ChaseboxPage.tsx`'s detector match is comment-only; `PipelineStageNode.tsx` is an active-node transition overlay with exact context; the remaining reviewed visual signatures are contextual or established component-library states.
 
 ### Standing-authority fixes
@@ -45,25 +45,19 @@ Every repair uses the existing canonical `SuspenseLoader` with a deterministic u
 - `MandateAgentPicker.tsx` → `Loading mandate details…`
 - `OrchestraBuilderCanvas.tsx` → `Loading orchestra canvas…`
 
-### Backlog retained — compact/control/identity mapping not yet proven (33 files)
+### 2026-08-30 eradication wave — compact/control mappings closed (15 files)
+
+The first ready compact tranche was mapped to its owning React-node, submit-button, select-placeholder, status, or identity slot and repaired without changing control flow, wrappers, chunk entry, responsive behavior, or theme behavior. Exact corrected candidate `5d46322225ddc07a366620b9c304513ccaf4e6ec` is independently **CERTIFIED** by `/root/p8_batch1_certifier`, preserved at `refs/heads/patrol-runs/P8/ae48b585-c52d-4f15-a576-8ab736c3065e`, and already an ancestor of `origin/main`. It is queued for the serialized release lane; no redundant release was created.
+
+- Inline canonical `SuspenseLoader`: administration email, feedback parent, data truncator sample, email compose default sender, and shortcut agent identity.
+- Contextual string contracts: login/sign-up providers, tool-testing checks, launch inspector, JSON detector controls, Slack channel refresh, version/surface/scope pickers, and agent comparison version history.
+- Adversarial correction: the first candidate was rejected because `AgentComparisonPage` changed established spinner geometry/theme. The corrected candidate restores that block byte-for-byte and retains only `Loading agent versions…`.
+- Gates: exact candidate blobs and remote ref match; bare generic literal grep is zero; independent type-check passes; auth tests pass 83/83; scoped ESLint is unchanged baseline only; diff/format checks pass. Public `/login` and `/sign-up` preview smokes returned HTTP 200. In-app Browser control was unavailable, so transient loading geometry was certified statically and no alternate user browser was used.
+
+### Backlog retained — compact/control/identity mapping not yet proven (18 files)
 
 These are certain bare-loading states, but the exact safe primitive mapping is not yet proven: many sit in string-only props, select placeholders, button pending text, or identity/title slots where inserting an inline loader could alter geometry or require extending a shared control. A focused mapping pass must name the owning primitive and settled geometry before any approval request.
 
-- `app/(admin)/administration/users/email/page.tsx`
-- `app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx`
-- `app/(auth-pages)/login/page.tsx`
-- `app/(auth-pages)/sign-up/page.tsx`
-- `app/(dev)/demos/api-tests/tool-testing/ToolTestingClient.tsx`
-- `app/(dev)/demos/context-menu/launch-inspector/page.dev.tsx`
-- `app/(dev)/demos/json-block-detector/page.dev.tsx`
-- `app/(dev)/demos/tests/slack/components/SlackManager.tsx`
-- `app/(public)/free/data-truncator/page.tsx`
-- `components/admin/EmailComposeSheet.tsx`
-- `features/agent-shortcuts/components/next/CompactVersionPicker.tsx`
-- `features/agent-shortcuts/components/next/SurfacePicker.tsx`
-- `features/agent-shortcuts/components/ShortcutQuickCreateBody.tsx`
-- `features/agent-shortcuts/components/ShortcutScopePicker.tsx`
-- `features/agents/components/diff/AgentComparisonPage.tsx`
 - `features/agents/components/settings/AgentSettingsWorkspace.tsx`
 - `features/ai-models/components/smart/SmartModelSelect.tsx`
 - `features/canvas/components/CanvasArtifactDebugPanel.tsx`
@@ -161,8 +155,8 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 - Route-tree baseline: 1,041 tracked `page.tsx` / `page.dev.tsx` leaves; sorted path-list SHA-256 `4bd3aa12fd3419b593d0547eacbab9796c96560aaaa20fa0604121ec350eebc3`.
 - P8 literal-signature baseline: 145 files; sorted path-list SHA-256 `277c61b6934be67f953da27277654c759571942b678ea7445cd2b9a106172f02`.
 - Feature-directory baseline: 127 top-level directories; sorted basename SHA-256 `f052952a00d278ac20fa8f06cdb4790dfb3168658992f3c9f0cbdd7a0e9de28a`.
-- Open verified P8 inventory: 68 files retained with the missing mapping/design evidence above; no human approval is pending.
-- Next non-monthly run: compare structural route/signature/feature sets, re-verify the open inventory, and prioritize extending the owning select/read-only-field primitives for the two string-only cases.
+- Open verified P8 inventory: 53 files retained with the missing mapping/design evidence above; no human approval is pending.
+- Next repair wave starts with `AgentSettingsWorkspace.tsx`, `SmartModelSelect.tsx`, and `CanvasArtifactDebugPanel.tsx`, then continues in ranked order. Resume after the certified candidate exits the serialized delivery queue.
 - Next monthly run: repeat the full repository pass regardless of structural deltas.
 
 ## Cadence health and candidates

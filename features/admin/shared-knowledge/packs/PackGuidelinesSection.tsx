@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -34,11 +34,11 @@ export function PackGuidelinesSection({ detail, onChanged }: { detail: AdminPack
       <p className="text-xs text-muted-foreground">
         Who the real buyer is, which signals mean consumer vs enterprise, what looks valuable but is not, what is always high value — with clearly marked blanks for what only the business can answer. Every classifier and valuation agent is handed this text for a site in the industry.
       </p>
-      <Textarea
+      <ProTextarea
         value={text}
         disabled={!canAuthor}
         onChange={(e) => setText(e.target.value)}
-        className="min-h-[28rem] font-mono text-xs leading-relaxed"
+        className="min-h-[28rem] text-sm leading-relaxed"
         placeholder="Who buys. What a consumer query looks like. What an enterprise query looks like. [BLANK: the business's service area]. …"
       />
       <div className="flex items-center justify-between">

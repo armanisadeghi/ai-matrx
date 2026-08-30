@@ -45,13 +45,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listBusinessLocations } from "@/features/marketing/data/service";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { GeoPlacePicker } from "../rules/GeoPlacePicker";
 import { parseTokens, unsafeTokens, type GeoPlace } from "../rules/types";
 import type { StarterPackGeoAreaItem } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** What the caller hands to `adoptStarterPack`, keyed by pack item id. */
 export interface GeoPlacesDraft {
@@ -151,7 +151,7 @@ function AreaRow({
         <summary className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground">
           Somewhere the list does not have? Type it
         </summary>
-        <Textarea
+        <ProTextarea
           value={draft.tokensText}
           onChange={(event) => onChange({ ...draft, tokensText: event.target.value })}
           rows={2}

@@ -14,7 +14,6 @@ import { Copy, Loader2, Save, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -33,6 +32,11 @@ import { AgentAppCategoryPicker } from "@/features/agent-apps/components/inputs/
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
 import { AgentBindingCompact } from "@/features/agent-apps/components/inputs/AgentBindingCompact";
 import { AgentVersionCompact } from "@/features/agent-apps/components/inputs/AgentVersionCompact";
+import { AppMandateBinding } from "@/features/agent-apps/components/inputs/AppMandateBinding";
+import {
+  APP_MANDATE_CUTOVER,
+  useAppHolder,
+} from "@/features/agent-apps/lib/appHolder";
 import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
 import { AgentAppHierarchyCascade } from "@/features/agent-apps/components/inputs/AgentAppHierarchyCascade";
 import { ShellPicker } from "@/features/agent-apps/components/builder/ShellPicker";
@@ -58,6 +62,7 @@ import {
   validateAppTags,
 } from "./agent-app-entity-writes";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AgentAppSettingsContentProps {
   appId: string;
@@ -95,8 +100,12 @@ export function AgentAppSettingsContent({
 }: AgentAppSettingsContentProps) {
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
+  // What this app RUNS — pinned today, the mandate's Holder after the cutover.
+  // Read through the router so the Agent tab and the run seam can never
+  // disagree about which agent a user is looking at.
+  const holder = useAppHolder(app);
   const agent = useAppSelector((state) =>
-    app?.agent_id ? selectAgentById(state, app.agent_id) : undefined,
+    holder.agentId ? selectAgentById(state, holder.agentId) : undefined,
   );
 
   const [name, setName] = useState(app?.name ?? "");
@@ -449,7 +458,7 @@ export function AgentAppSettingsContent({
                 saveField("description", description.trim() || null)
               }
             >
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="text-[16px] min-h-24"
@@ -473,25 +482,34 @@ export function AgentAppSettingsContent({
 
           {/* ── Agent ──────────────────────────────────────────────────── */}
           <TabsContent value="agent" className="space-y-3">
-            <AgentBindingCompact
-              agentId={app.agent_id}
-              agentName={agent?.name}
-              onChange={handleAgentChange}
-              disabled={savingField === "agent_id"}
-            />
-            <AgentVersionCompact
-              agentId={app.agent_id}
-              agentVersionId={app.agent_version_id}
-              useLatest={app.use_latest}
-              onAgentVersionIdChange={(next) =>
-                saveField("agent_version_id", next)
-              }
-              onUseLatestChange={(next) => saveField("use_latest", next)}
-              disabled={
-                savingField === "agent_version_id" ||
-                savingField === "use_latest"
-              }
-            />
+            {APP_MANDATE_CUTOVER ? (
+              /* ONE UI for one fact: after the cutover the app's agent IS the
+                 mandate's Holder, edited on the mandate page. This states what
+                 runs and links there — it never forks a second editor. */
+              <AppMandateBinding holder={holder} agentName={agent?.name} />
+            ) : (
+              <>
+                <AgentBindingCompact
+                  agentId={app.agent_id}
+                  agentName={agent?.name}
+                  onChange={handleAgentChange}
+                  disabled={savingField === "agent_id"}
+                />
+                <AgentVersionCompact
+                  agentId={app.agent_id}
+                  agentVersionId={app.agent_version_id}
+                  useLatest={app.use_latest}
+                  onAgentVersionIdChange={(next) =>
+                    saveField("agent_version_id", next)
+                  }
+                  onUseLatestChange={(next) => saveField("use_latest", next)}
+                  disabled={
+                    savingField === "agent_version_id" ||
+                    savingField === "use_latest"
+                  }
+                />
+              </>
+            )}
           </TabsContent>
 
           {/* ── Layout (shell + config) ────────────────────────────────── */}

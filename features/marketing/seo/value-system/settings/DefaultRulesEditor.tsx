@@ -33,6 +33,7 @@ import {
   type DefaultRule,
 } from "./default-rules-data";
 import { defaultRuleValidationMessage } from "./default-rules-validation";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 
 const RULES_KEY = ["marketing", "seo", "platform-default-rules"] as const;
 
@@ -399,7 +400,17 @@ export function DefaultRulesEditor() {
         </div>
       ) : null}
 
-      {rules.isLoading ? (
+      {rules.isError ? (
+        // 🚨 A failed read is NOT "you have none" (2026-08-30). Without this
+        // branch, isLoading went false, data stayed undefined, and the surface
+        // told the owner "No default rules yet" — asserting a false fact about
+        // their own data, with no retry.
+        <InlineQueryError
+          what="your default rules"
+          error={rules.error}
+          onRetry={() => void rules.refetch()}
+        />
+      ) : rules.isLoading ? (
         <p className="text-xs text-foreground/80">Loading rules…</p>
       ) : list.length === 0 ? (
         <p className="rounded-md border border-border bg-card p-3 text-xs text-foreground/80">

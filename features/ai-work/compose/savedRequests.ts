@@ -44,6 +44,7 @@ import { guardedUpdate } from "@ai-matrx/data/db";
 import type { Json } from "@/types/database.types";
 import type { WorkDestinationId } from "./destinations";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { SHORTCUT_RPCS, shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 /** The one platform-seeded category that marks a shortcut row as a saved request. */
 export const SAVED_REQUEST_CATEGORY_ID = "3f2d5c8a-1b47-4e6d-9c0f-7a5e2d13b904";
@@ -179,7 +180,7 @@ function buildMetadata(input: {
 }
 
 function shortcuts() {
-  return createClient().schema("agent").from("shortcut");
+  return shortcutTable(createClient());
 }
 
 /**
@@ -236,8 +237,7 @@ export async function createSavedRequest(
 ): Promise<SavedRequest> {
   const supabase = createClient();
   const organizationId = await ensureOrgId(undefined);
-  const { data: newId, error: createError } = await supabase.rpc(
-    "agx_create_shortcut",
+  const { data: newId, error: createError } = await supabase.rpc(SHORTCUT_RPCS.create,
     {
       p_agent_id: input.agentId,
       p_category_id: SAVED_REQUEST_CATEGORY_ID,

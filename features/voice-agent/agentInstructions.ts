@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import type { RootState } from "@/lib/redux/store";
 
 /** The agent row's system message, or "" when it has none. */

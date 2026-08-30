@@ -36,10 +36,24 @@ export interface FrontDoorSiteState {
   error: unknown;
 }
 
-export function useFrontDoorSite(): FrontDoorSiteState {
+export function useFrontDoorSite(
+  /**
+   * 🚨 BRAND SCOPE (2026-08-30). A front door mounted inside
+   * `/marketing/<brand>/...` used to pick `options[0]` — the first site on the
+   * PLATFORM — so All Green Recycling's Monitoring page opened on AI Matrx's
+   * website, and every door beneath it (Coverage, Link changes, AI visibility,
+   * Reputation) linked into that other client's workspace. Choosing the site
+   * from outside the brand also made the picker look dead: selecting All Green
+   * wrote `?site=`, then this resolver kept returning the same foreign default.
+   * When a brand is in scope the options ARE that brand's sites, so neither can
+   * happen.
+   */
+  brandId?: string | null,
+): FrontDoorSiteState {
   const params = useSearchParams();
   const sites = useSiteOptions();
-  const options = sites.data ?? [];
+  const all = sites.data ?? [];
+  const options = brandId ? all.filter((item) => item.brand_id === brandId) : all;
   const requested = params.get("site");
   const site =
     options.find((item) => item.id === requested) ?? options[0] ?? null;

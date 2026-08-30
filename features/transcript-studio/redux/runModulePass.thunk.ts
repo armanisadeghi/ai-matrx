@@ -25,6 +25,7 @@ import {
   insertAgentRun,
   insertModuleSegments,
 } from "../service/studioService";
+import { UNAUTHORED_SHORTCUT_SENTINEL } from "../constants";
 import { getModule } from "../modules/registry";
 import type { TriggerCause } from "../types";
 import {
@@ -64,7 +65,12 @@ export const runModulePassThunk = createAsyncThunk<
   if (!moduleDef) return { status: "skipped", reason: "no-module" };
 
   const shortcutId = args.shortcutId ?? moduleDef.defaultShortcutId;
-  if (!shortcutId) return { status: "skipped", reason: "no-shortcut" };
+  // The all-zero UUID is the "no shortcut authored yet" sentinel from
+  // constants.ts — it is truthy, so without this check a launch was attempted
+  // and failed inside ensureShortcutLoaded (Phase 6.6 sentinel-guard fix).
+  if (!shortcutId || shortcutId === UNAUTHORED_SHORTCUT_SENTINEL) {
+    return { status: "skipped", reason: "no-shortcut" };
+  }
 
   const rawIds = state.transcriptStudio.rawIdsBySession[sessionId] ?? [];
   const rawSegments = rawIds

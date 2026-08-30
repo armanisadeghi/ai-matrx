@@ -5,13 +5,16 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import { HrActionDialog } from "@/features/hr/tasks/components/HrActionDialog";
+import { HrCorrectiveAckPanel } from "@/features/hr/tasks/components/HrCorrectiveAckPanel";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
-import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
+import {
+    HrRefusalNotice,
+    HrRefusalReference,
+} from "@/features/hr/tasks/components/HrRefusalNotice";
 import {
     cancelInstance,
     decideStep,
@@ -22,7 +25,11 @@ import {
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { hrTasksHref } from "@/features/hr/routes";
-import { HrEmployerSubstitutionNotice } from "@/features/hr/shared/HrStates";
+import { HrAccessDenied } from "@/features/hr/shared/HrAccessDenied";
+import {
+    HrEmployerSubstitutionNotice,
+    useHrRescueRefusal,
+} from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
@@ -37,6 +44,7 @@ import {
     HR_DECISION_VERB,
     isRefusal,
 } from "@/features/hr/tasks/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Row = Record<string, unknown>;
 
@@ -103,6 +111,9 @@ export function HrDecisionPanel({
       defect that becomes a live one the day that lane scopes, and a visibly wrong URL either way.
     */
     const { orgRef } = useHrContext();
+    // 🚨 The route every HR notification deep-links to, with no `HrShell` above
+    // it. See `useHrRescueRefusal`: null in every ordinary case.
+    const rescueRefusal = useHrRescueRefusal();
 
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
@@ -230,6 +241,23 @@ export function HrDecisionPanel({
       from the login on the subject's employment.
     */
     const viewerIsSubject = bool(shownStep, "viewer_is_subject");
+
+    /*
+      🚨 THE ONE FLOW WHOSE SELF-STEP IS THE POINT. `corrective_action_ack`'s
+      `acknowledge` step resolves to the SUBJECT (`resolver_kind: fixed_user`,
+      `employment_source: subject`, `allows_self: true`) — so the subject is the
+      decider and both of the branches below are wrong for them. Keyed on the flow
+      key and the step key, never on "the viewer is the subject", because plenty of
+      other flows have a subject looking at their own request who genuinely may not
+      decide it. `target_id` IS the corrective action's id: the instance targets the
+      record, and the acknowledge door finds the open step from it, so nothing here
+      has to teach a person what a workflow instance is.
+    */
+    const isCorrectiveAck =
+        str(instance, "flow_key") === "corrective_action_ack" &&
+        str(activeStep, "step_key") === "acknowledge" &&
+        viewerIsSubject;
+    const correctiveActionId = isCorrectiveAck ? str(instance, "target_id") : null;
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
@@ -270,6 +298,12 @@ export function HrDecisionPanel({
             setBusy(false);
         }
     }
+
+    // 🚨 BEFORE ANYTHING ELSE: a deep link that named an employer this person has
+    // no HR standing in gets the canonical refusal about THAT employer, not a
+    // panel about a different one. `embedded` keeps its host's chrome, so the
+    // refusal replaces the panel body there too.
+    if (rescueRefusal) return rescueRefusal;
 
     if (error) {
         return (
@@ -320,7 +354,39 @@ export function HrDecisionPanel({
             )}
 
             <div className="flex-1 min-h-0 space-y-6 overflow-y-auto p-4">
-                {refusal ? <HrRefusalNotice refusal={refusal} action="Opening this request" /> : null}
+                {/*
+                    🚨 A REFUSAL TO OPEN IS A READ GATE, AND READ GATES ARE THE
+                    PLATFORM'S SCREEN (owner ruling, 2026-08-30). With no detail
+                    beside it, this notice WAS the page — a bespoke HR panel
+                    where every other blocked surface in the product shows one
+                    canonical refusal. It now renders through that frame, still
+                    carrying the engine's own sentence and its Refusal reference.
+
+                    ABSOLUTE, with no request affordance: a workflow instance can
+                    be an incident or a corrective action, so "Request access"
+                    here would confirm to an accused person that a case about
+                    them exists — the §5 subject-exclusion veto. There is no
+                    `employerRef`, so `HrAccessDenied` stays absolute by default.
+
+                    A refusal that arrives ALONGSIDE a rendered detail is a
+                    partial one (a withheld section, a refused action) — that
+                    stays the inline notice, which is the right instrument for a
+                    fact inside a page the person can otherwise read.
+                */}
+                {refusal && !detail ? (
+                    <HrAccessDenied
+                        sentence={
+                            refusal.detail?.trim() ||
+                            "This request isn't yours to open here."
+                        }
+                        fallbackHref={hrTasksHref(orgRef)}
+                        fallbackLabel="All HR tasks"
+                        footer={<HrRefusalReference refusal={refusal} />}
+                    />
+                ) : null}
+                {refusal && detail ? (
+                    <HrRefusalNotice refusal={refusal} action="Opening this request" />
+                ) : null}
                 {loading && !detail ? (
                     <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />
                 ) : null}
@@ -449,7 +515,28 @@ export function HrDecisionPanel({
                                         </span>
                                     ) : null}
                                 </div>
-                                {viewerIsSubject ? (
+                                {/* 🚨 A SELF-STEP IS NOT A SELF-APPROVAL, AND THE TWO MUST NOT
+                                    SHARE A BRANCH. `corrective_action_ack`'s `acknowledge` step
+                                    is `allows_self` BY DESIGN — the subject is the decider,
+                                    because the whole point is that the person being warned reads
+                                    it and responds. Falling into `viewerIsSubject` would tell
+                                    them "it is not yours to decide" and render NO controls, which
+                                    is the acknowledgment being blocked by a sentence about
+                                    somebody else's approval. And falling into the generic branch
+                                    would offer them Approve / Reject / Return / Escalate on a
+                                    warning about themselves — inviting the reading that signing
+                                    means agreeing, which §4.8's preserved-disagreement rule
+                                    exists to prevent. So this flow gets its own panel, before
+                                    both. */}
+                                {isCorrectiveAck && correctiveActionId ? (
+                                    <HrCorrectiveAckPanel
+                                        correctiveActionId={correctiveActionId}
+                                        onDone={() => {
+                                            void load();
+                                            onDecided?.();
+                                        }}
+                                    />
+                                ) : viewerIsSubject ? (
                                     <p className="text-sm text-muted-foreground">
                                         This is your own request, so it is not yours to
                                         decide — somebody else approves it. You can see
@@ -457,7 +544,7 @@ export function HrDecisionPanel({
                                     </p>
                                 ) : (
                                   <>
-                                <Textarea
+                                <ProTextarea
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     placeholder={

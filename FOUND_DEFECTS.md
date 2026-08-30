@@ -15,6 +15,59 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D293 — duplicating or promoting a shortcut silently drops its value mappings and write policies
+
+`agx_duplicate_shortcut` / `agx_promote_shortcut_to_global` (and their `_m` mirrors on
+`mandate.vw_shortcut`) build their INSERT from an explicit column list that omits
+`value_mappings` — verified live on all four functions, 2026-08-30. So "Duplicate" and
+"Promote to global" produce a shortcut whose surface consumption map is empty, and since
+census #20 moved the write policies onto `mandate.treatment.config.write_policies` (exposed as
+`mandate.vw_shortcut.write_policies`), the new column is missing from those INSERTs too. The
+copy runs against different inputs than the original and nothing says so.
+
+Pre-existing on BOTH sides, so 6.6 parity is intact — this is not a cutover regression, and the
+`_m` mirrors were generated from originals that already had the hole.
+
+Fix: add `value_mappings` (and `write_policies` on the `_m` pair) to the four INSERT column
+lists + VALUES. Found while closing census #20; unrelated to the editor work, so filed rather
+than fixed.
+
+### D292 — the mandate routes bounce signed-out users to `/agents` and lose the destination
+
+`app/(core)/mandates/page.tsx:23` and `app/(core)/mandates/[mandateKey]/page.tsx:20` do
+`if (!isAuthenticated) redirect("/agents")`. Two problems, both pre-existing (found during the
+2026-08-30 mandate detach, curl-proven: anonymous `GET /mandates` → 307 `/agents`):
+
+1. It violates the destination law — a user bounced for auth must keep where they were going
+   (`utils/auth/FEATURE.md`); `/administration/mandates` does this correctly (307 to
+   `/login?redirectTo=…`). These two send you to an unrelated page with no way back.
+2. `/agents` is now the wrong page anyway: a mandate is fulfilled by an Agent, an Orchestra,
+   OR a Workflow, so mandates are no longer a child of agents.
+
+Fix: use the one auth-bounce primitive in `utils/auth/` with `redirectTo` set to the requested
+mandate URL. Left untouched by the detach sweep on purpose — it is an auth-path change, not a
+path move.
+
+### D290 — two tables ship `organization_id NOT NULL` with no backstop trigger
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-08-30, rule
+`org_not_null_no_backstop`. Of the 89 objects in the unacked backlog, 85 have since gained a
+backstop trigger and 2 no longer exist. These two have neither, verified live against
+`pg_trigger` on 2026-08-30:
+
+- `platform.knob_override_audit` — shipped 2026-08-29 with the scoped-configuration ruling
+  (the per-change override history). New table, new gap.
+- `workflow.trigger_event`
+
+Same remainder class as D232's original eleven. The column is NOT NULL, so a write that omits
+it fails loudly rather than landing org-less — but the backstop is what makes the org derivable
+instead of the caller's problem, and every sibling table has one.
+
+**Fix:** add the standard `organization_id` backstop trigger to both, matching the pattern the
+other 85 use.
+
+---
+
 ### D288 — kind-render cracks still open after the 2026-08-29 audit (grouped remainder)
 
 The 2026-08-29 "kind slips through the cracks" audit found 27 ways a `__kind` payload renders as raw JSON/generic. The four production-dominant ones were fixed same-session (readAllRows on `content_ir` warm reads; miss TTL + `refresh()` + `kind-definitions` invalidation on `kindRegistry`; splitter structural brace counting; kind preservation on structural raws + `broken-instance` route in the 0.3.0 packages) plus the in-band Errors tab / `KindEscapedNotice` tripwire. Open remainder, in expected-volume order:
@@ -1497,7 +1550,7 @@ became REQUIRED server-side — `clear_notes` in `features/secrets/*`, `store` i
 `features/voice-agent/services/realtimeToolService.ts`, `country_code`/
 `search_type` in the scraper pages, `max_chars`/`top_n`/`debug` in
 `features/transcripts/service/autoLabelTranscript.ts`, `passes_user_input` and
-`blocking` in `features/admin/mandates/*`, and more).
+`blocking` in `features/mandates/admin/*`, and more).
 
 So the spec says the backend already demands values these callsites never send:
 each error is a live 422 waiting to happen, hidden only because the TS mirror is
@@ -2405,6 +2458,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D291** (filed 2026-08-30 as "D289", renumbered — that id was already used by the resolved shortcuts-panel jest defect below) — the six SECURITY DEFINER `agx_*_m` mandate RPC mirrors (the Phase 6.6 flip's serving path, named in `lib/supabase/shortcutStorage.ts` `MANDATE_RPCS`) had EXECUTE stripped by the `definer_client_grant_revoked` guard because no `platform.client_callable_door` row existed; with `SHORTCUT_STORAGE_CUTOVER=true` every client call would have died with permission denied. **FIXED 2026-08-30** by migration `d289_agx_m_mirror_doors_and_grants`: seven door rows declared (the six + the INVOKER menu builder, reasons mirroring each original's posture) and EXECUTE re-granted to `authenticated` — the guard revoked the migration's own grants because they ran before the door inserts, so they were re-applied after; lesson: door row FIRST, grant second. **Proven through PostgREST with a real Supabase-signed admin JWT (generate_link+verify), not a service-role session**: `agx_get_user_shortcuts_m`/`agx_get_shortcuts_for_context_m`/`agx_list_non_global_shortcuts_for_admin_m`/`agx_build_shortcut_menu_m` → 200 with data; `agx_duplicate_shortcut_m` on a nonexistent id → P0001 "Shortcut not found" (execution entered the function body — the wall is gone). anon posture matches the originals (menu builder anon-callable like its original; the rest denied). The flip is no longer blocked by this. 2026-08-30.
+
 - **D289** — the `shortcuts-panel-doors` jest suite failed 5/5 because `AgentShortcutsPanel` mounts `LinkAgentToShortcutModal`, whose own state selectors the suite never mocked (`shortcuts.filter` on undefined). **FIXED 2026-08-29** in `features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx`: the modal is stubbed (its behaviour is its own concern, and the panel's door law is what this suite asserts), and the suite's `next/link` mock now drops `prefetch` instead of forwarding it to a bare `<a>`. 5/5 green. **Still true and NOT fixed:** the file runs in no CI jest job (jest jobs are scoped to content-ir/workflow-runtime/hr), so it can rot silently again. 2026-08-29.
 
 - **D286** — `esign._notify` composed a notice-less deep link for INTERNAL (user) signers (`/sign/e/<envelope>`), the third notice-less producer after `hr._wf_notify`/`hr.wf_pending`/`hr.wf_inbox` — following it stamped no `read_at` (§5.2). **FIXED 2026-08-28 by `hr_c4_51`** (the esign twin of the DEFECT-1 fix): `esign._notify` is the single shared inserter and the link is built before the row id exists, so for `user` rows only it folds `?notice=<own id>` into `deep_link` AFTER insert, keyed by `mark_notification_read`'s `recipient_user_id=auth.uid()` gate so cross-viewer stamping can't happen. **Outsider (`actor_token`) rows are left untouched** — two guards (`v_kind='user'` + `position('#')=0`) — because their secret rides the URL fragment (`/x/sign#t=…`, §5.4) and they read via the `esign.envelope_event` ledger, not spine `read_at`. Proven 7/0 (`scripts/hr/hrb001_esign_notify_read_ref_proof.py`): the internal signer's link stamps read_at when followed; the outsider fragment link is byte-identical. 2026-08-28.
@@ -2587,10 +2642,15 @@ bug, and nothing enforces it. Worth a guard or a shared "call when sendable" pri
 ## `retired-slot-producer.test.ts` asserts a table name no mandate service writes — 2026-08-28
 
 Pre-existing at HEAD (verified with `git show HEAD:<file> | grep`), not caused by the run-affordance
-work that found it. `features/admin/mandates/__tests__/retired-slot-producer.test.ts:21` asserts the
+work that found it. `features/mandates/admin/__tests__/retired-slot-producer.test.ts:21` asserts the
 runtime mandate sources contain `.from("mandate")`, but every one of the four files it reads goes
 through the `mandateDefinitions()` / `mandateBindings()` helpers in `lib/supabase/mandateStorage.ts`
 instead — so the string is absent and the suite fails. The CONTRACT the test guards (no reads/writes
 against the retired `slot_*` tables) still holds; only its positive assertion is stale. Fix is either
 to assert on the storage helpers or to have the test read `lib/supabase/mandateStorage.ts` too. Left
 alone here because changing what a guard asserts is not a change to make inside an unrelated task.
+
+## 2026-08-28 — GA4 campaign-pause test failing (pre-existing, unrelated to marketing restructure)
+`features/marketing/analytics/campaign-pause.test.ts` › "refuses a stale manual caller before dispatch" fails with
+`Cannot read properties of undefined (reading 'error')` inside the GA4 sync path (`features/marketing/analytics/data.ts` / `syncSiteAnalytics`).
+None of these files changed in the agency-model restructure commits; last touched by `d13ebb0a3b fix(org): bind GA4 stream to site tenant` (2026-08-24). Owner of the GA4 stream/tenant work should re-run the suite.

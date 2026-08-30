@@ -23,6 +23,11 @@
  * sub-nav registry (`site-subviews.ts`) is the WEBSITE's second level, and
  * borrowing it here would put a website's navigation on a brand route.
  *
+ * Since the agency restructure each view is its OWN ROUTE under the brand's
+ * identity section (`identity/media`, `…/research`, `…/sources`, `…/generate`)
+ * and the route passes `view`. The legacy `?view=`/`?tab=` reading stays as the
+ * fallback for hosts that still address the desk with a query.
+ *
  * The URL still owns the view, so every old `?view=library` link, agent-held
  * URL, and browser Back press lands where it should — the site's media route
  * server-redirects the four moved values here.
@@ -30,7 +35,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Globe2, Images, Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -74,9 +79,15 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 
-export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
+export function BrandAssetsWorkspace({
+  brandId,
+  view: routeView,
+}: {
+  brandId: string;
+  /** Set by the route that owns this view; falls back to `?view=`. */
+  view?: MarketingBrandAssetsView;
+}) {
   const router = useRouter();
-  const pathname = usePathname();
   const params = useSearchParams();
 
   const brand = useBrand(brandId);
@@ -85,9 +96,8 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
   const assets = useBrandAssets(brandId);
 
   const rawView = params.get("view") ?? params.get("tab");
-  const view: MarketingBrandAssetsView = isMarketingBrandAssetsView(rawView)
-    ? rawView
-    : "library";
+  const view: MarketingBrandAssetsView =
+    routeView ?? (isMarketingBrandAssetsView(rawView) ? rawView : "library");
 
   /**
    * The Generate view's image order, owned HERE rather than in that view so it
@@ -108,33 +118,37 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
     [],
   );
 
+  /**
+   * Discrete view switch — Back returns to the previous view. Each view is its
+   * own route now, so a drafted image brief travels in `?brief=` rather than in
+   * component state: the destination route remounts this workspace and seeds
+   * the order from the URL, exactly as a crawled image on a website does when
+   * it hands an order across the level boundary.
+   */
   const goToView = useCallback(
-    (next: MarketingBrandAssetsView) => {
-      const base = pathname ?? marketingRoutes.brandAssets(brandId);
-      // Discrete view switch — Back returns to the previous view.
-      router.push(next === "library" ? base : `${base}?view=${next}`, {
+    (next: MarketingBrandAssetsView, brief?: string) => {
+      router.push(marketingRoutes.brandAssets(brandId, next, brief), {
         scroll: false,
       });
     },
-    [router, pathname, brandId],
+    [router, brandId],
   );
 
   const useResearchBrief = useCallback(
     (image: ResearchImageRow) => {
-      setBrief(
-        [
-          "Create an original image inspired by a reference found in research.",
-          image.alt || image.caption
-            ? `The reference shows: ${image.alt ?? image.caption}.`
-            : null,
-          image.sourceHostname
-            ? `Reference source: ${image.sourceHostname} (do NOT copy it — original work only).`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" "),
-      );
-      goToView("generate");
+      const brief = [
+        "Create an original image inspired by a reference found in research.",
+        image.alt || image.caption
+          ? `The reference shows: ${image.alt ?? image.caption}.`
+          : null,
+        image.sourceHostname
+          ? `Reference source: ${image.sourceHostname} (do NOT copy it — original work only).`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      setBrief(brief);
+      goToView("generate", brief);
     },
     [goToView, setBrief],
   );
@@ -301,7 +315,7 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
             {order.brief.trim() && view !== "generate" ? (
               <button
                 type="button"
-                onClick={() => goToView("generate")}
+                onClick={() => goToView("generate", order.brief)}
                 title={order.brief}
                 className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[10px] text-primary transition-colors hover:bg-primary/10"
               >

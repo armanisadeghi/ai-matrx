@@ -15,7 +15,10 @@ import { useMemo, useState } from "react";
 import { CheckCheck, Loader2, Route, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useMandateRunner } from "@/features/agents/mandates/useMandateRunner";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useMandate } from "@/features/mandates/useMandate";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import {
   buildMapperVariables,
@@ -69,9 +72,22 @@ export function BindingSuggestionsTab({
   onAccept,
 }: BindingSuggestionsTabProps) {
   const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
-  const { runMandate, running, unavailable, mandateError } =
-    useMandateRunner(BINDING_MAPPER_MANDATE_KEY);
-  const [streamedChars, setStreamedChars] = useState(0);
+  // Resolution is DISPLAY-side here — it gates the affordance. The RUN goes
+  // through THE MANDATE DOOR (`mandateKey` → `/ai/mandates/{key}`), where the
+  // server resolves the Holder and applies the binding; the browser never
+  // names an agent id and never echoes binding config back.
+  const { error: mandateError } = useMandate(BINDING_MAPPER_MANDATE_KEY);
+  const unavailable = mandateError !== null;
+  const {
+    run: runMandate,
+    isRunning: running,
+    activeRequestId,
+  } = useHeadlessAgentJson();
+  // The live answer length, straight off the run's own request — the same
+  // "writing (N)" progress the drained-string runner used to count locally.
+  const streamedChars = useAppSelector((state) =>
+    activeRequestId ? selectAnswerText(activeRequestId)(state).length : 0,
+  );
   const [proposal, setProposal] = useState<MapperProposal | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
 
@@ -88,9 +104,14 @@ export function BindingSuggestionsTab({
   const handleSuggest = async () => {
     setRunError(null);
     setProposal(null);
-    setStreamedChars(0);
     try {
-      const raw = await runMandate({
+      const raw = await runMandate<string>({
+        mandateKey: BINDING_MAPPER_MANDATE_KEY,
+        surfaceKey: `mandate:${BINDING_MAPPER_MANDATE_KEY}`,
+        sourceFeature:
+          sourceFeatureFromSurfaceName(surfaceName) ?? "ai-results",
+        expect: "text",
+        initiation: "user",
         variables: buildMapperVariables({
           surfaceName,
           surfaceLabel,
@@ -98,10 +119,6 @@ export function BindingSuggestionsTab({
           surfaceValues: availableSurfaceValues,
           writeTargets,
         }),
-        sourceApp: "matrx-frontend",
-        sourceFeature:
-          sourceFeatureFromSurfaceName(surfaceName) ?? "ai-results",
-        onChunk: (full) => setStreamedChars(full.length),
       });
       const parsed = parseMapperResult({
         raw,

@@ -105,6 +105,19 @@ interface ChatRoomClientProps {
    * mid-sentence in.
    */
   buildConversationHref?: (conversationId: string) => string;
+  /**
+   * THE MANDATE DOOR for this room. When the surface knows WHICH JOB it is
+   * (`/chat/new` is the `chat.default_new_chat` mandate), pass the key: the
+   * first turn POSTs `/ai/mandates/{key}` and aidream resolves the Holder for
+   * this principal. `agentId` stays the DISPLAY identity the page already
+   * resolved at SSR — it paints the header and input bar, and never decides
+   * who answers. That is what makes an org/user rebind take effect with no
+   * client deploy.
+   *
+   * Omit it on rooms that are genuinely agent-addressed (`/chat/a/[agentId]`,
+   * where the user picked THAT agent).
+   */
+  mandateKey?: string;
 }
 
 const defaultConversationHref = (conversationId: string) =>
@@ -133,6 +146,7 @@ export function ChatRoomClient({
   landingContent,
   aboveInput,
   buildConversationHref = defaultConversationHref,
+  mandateKey,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -216,6 +230,8 @@ export function ChatRoomClient({
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
+    // Mandate-driven room: the run goes through the server's mandate door.
+    ...(mandateKey ? { mandateKey } : {}),
     ready: !isInitializing && isFreshRoute,
     config: { responseDensity: "compact" },
     // `surfaceName: null` — EXPLICIT surface opt-out. This launch IS the chat

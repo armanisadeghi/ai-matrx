@@ -46,9 +46,49 @@ export const GSC_COMPACT_COLUMN_LABELS = {
   level: "LEVEL",
 } as const;
 
+/**
+ * Google reports search appearance as its own SHOUTING enum
+ * (AMP_TOP_STORIES, PRODUCT_SNIPPETS, RICHCARD). Until 2026-08-30 the
+ * Appearance breakdown rendered those verbatim, sitting in the same column
+ * that already showed "United States" and "Mobile" for the other two
+ * dimensions — machine text beside human text, in the table the owner reads
+ * most.
+ */
+const SEARCH_APPEARANCE_LABELS: Record<string, string> = {
+  AMP_BLUE_LINK: "AMP result",
+  AMP_TOP_STORIES: "Top stories (AMP)",
+  AMP_STORY: "Web story",
+  RICHCARD: "Rich result",
+  RICH_SNIPPET: "Rich result",
+  PRODUCT_SNIPPETS: "Product result",
+  REVIEW_SNIPPET: "Review stars",
+  FAQ_RICH_SNIPPET: "FAQ result",
+  HOW_TO_RICH_SNIPPET: "How-to result",
+  RECIPE_FEATURE: "Recipe result",
+  RECIPE_RICH_SNIPPET: "Recipe result",
+  VIDEO: "Video result",
+  WEBLITE: "Web Light result",
+  ORGANIC_SHOPPING: "Shopping result",
+  TRANSLATED_RESULT: "Translated result",
+  EVENT_RICH_RESULT: "Event result",
+  JOB_LISTING: "Job listing",
+  PRACTICE_PROBLEMS: "Practice problems",
+  MATH_SOLVERS: "Math solver",
+  EDU_Q_AND_A: "Education Q&A",
+};
+
+export function searchAppearanceLabel(key: string): string {
+  const mapped = SEARCH_APPEARANCE_LABELS[key.trim().toUpperCase()];
+  if (mapped) return mapped;
+  // An appearance Google adds tomorrow still reads as words, not as an enum.
+  const words = key.trim().toLowerCase().replaceAll("_", " ");
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : key;
+}
+
 export function gscKeyCell(dimension: GscDimension, key: string): string {
   if (dimension === "country") return countryLabel(key);
   if (dimension === "device") return deviceLabel(key);
+  if (dimension === "search_appearance") return searchAppearanceLabel(key);
   return key;
 }
 

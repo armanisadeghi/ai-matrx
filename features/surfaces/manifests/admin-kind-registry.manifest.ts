@@ -157,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kind_detail_tab",
     label: "Kind detail tab",
     description:
-      'Which detail tab is active: "preview", "code", "examples", "assets", "try-input", "gate", "schema", "inputs", or "variants". Present only on kind_registry_section=detail.',
+      'Which detail tab is active: "preview", "code", "examples", "assets", "try-input", "gate", "schema", "template", "inputs", "variants", "stream", or "instances". Present only on kind_registry_section=detail.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -459,8 +459,11 @@ export function createAdminKindRegistryScope(values: {
     | "try-input"
     | "gate"
     | "schema"
+    | "template"
     | "inputs"
-    | "variants";
+    | "variants"
+    | "stream"
+    | "instances";
   kind_detail_summary?: Record<string, unknown>;
   kind_detail_schema?: Record<string, unknown>;
   kind_detail_doctor_row?: Record<string, unknown>;

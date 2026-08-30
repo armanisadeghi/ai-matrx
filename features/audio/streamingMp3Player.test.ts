@@ -102,14 +102,40 @@ describe("createStreamingMp3Player", () => {
 
   it("declines live playback when the browser cannot stream MP3", () => {
     FakeMediaSource.isTypeSupported.mockReturnValueOnce(false);
-    const consoleSpy = jest
+    const infoSpy = jest
+      .spyOn(console, "info")
+      .mockImplementation(() => undefined);
+    const errorSpy = jest
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
 
     expect(createStreamingMp3Player()).toBeNull();
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(infoSpy).toHaveBeenCalledWith(
       expect.stringContaining("live playback disabled"),
     );
-    consoleSpy.mockRestore();
+    expect(errorSpy).not.toHaveBeenCalled();
+    infoSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("treats an unavailable MediaSource as an expected canonical-file fallback", () => {
+    Object.defineProperty(globalThis, "MediaSource", {
+      configurable: true,
+      value: undefined,
+    });
+    const infoSpy = jest
+      .spyOn(console, "info")
+      .mockImplementation(() => undefined);
+    const errorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    expect(createStreamingMp3Player()).toBeNull();
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.stringContaining("MediaSource is unavailable"),
+    );
+    expect(errorSpy).not.toHaveBeenCalled();
+    infoSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });

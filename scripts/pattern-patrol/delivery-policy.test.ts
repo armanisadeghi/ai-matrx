@@ -184,6 +184,95 @@ describe("Pattern Patrol delivery policy", () => {
     }
   });
 
+  it("does not treat an explicit older-candidate delivery append as certification for unrelated shared-checkout product edits", () => {
+    const root = mkdtempSync(join(tmpdir(), "patrol-delivery-projection-"));
+    try {
+      git(root, ["init"]);
+      git(root, ["config", "user.name", "Patrol Test"]);
+      git(root, ["config", "user.email", "patrol@example.com"]);
+      git(root, ["commit", "--allow-empty", "-m", "base"]);
+      const baseSha = git(root, ["rev-parse", "HEAD"]);
+      mkdirSync(join(root, "features"), { recursive: true });
+      writeFileSync(join(root, "features", "p7.tsx"), "export const fixed = true;\n");
+      git(root, ["add", "features/p7.tsx"]);
+      git(root, ["commit", "-m", "fix: remove native dialog"]);
+      const p7Candidate = git(root, ["rev-parse", "HEAD"]);
+
+      let record = createPatrolRunRecord({
+        patrolId: "P7",
+        runId: "run-7",
+        baseSha,
+        createdAt: "2026-08-29T14:20:00.000Z",
+        actor: "p7-worker",
+        summary: "P7 repair started",
+      });
+      record = appendPatrolRunEvent(record, {
+        state: "fixing",
+        at: "2026-08-29T14:21:00.000Z",
+        actor: "p7-worker",
+        summary: "Removed native dialog",
+      });
+      record = appendPatrolRunEvent(record, {
+        state: "certifying",
+        at: "2026-08-29T14:22:00.000Z",
+        actor: "p7-worker",
+        summary: "Independent review started",
+      });
+      record = appendPatrolRunEvent(record, {
+        state: "certified",
+        at: "2026-08-29T14:23:00.000Z",
+        actor: "p7-certifier",
+        summary: "Exact P7 candidate certified",
+        certification: {
+          verdict: "CERTIFIED",
+          certifierTaskId: "p7-certifier",
+          candidateSha: p7Candidate,
+          checks: ["exact diff", "scoped detector"],
+        },
+      });
+      record = appendPatrolRunEvent(record, {
+        state: "delivery_queued",
+        at: "2026-08-29T14:24:00.000Z",
+        actor: "p7-worker",
+        summary: "P7 candidate queued",
+        delivery: {
+          candidateSha: p7Candidate,
+          preservedRef: "refs/heads/patrol-runs/P7/run-7",
+        },
+      });
+      writeRecord(root, record);
+      git(root, ["add", ".matrx"]);
+      git(root, ["commit", "-m", "chore: record P7 certification"]);
+
+      record = appendPatrolRunEvent(record, {
+        state: "delivered",
+        at: "2026-08-30T14:20:00.000Z",
+        actor: "p7-controller",
+        summary: "P7 candidate delivered",
+        delivery: {
+          candidateSha: p7Candidate,
+          preservedRef: "refs/heads/patrol-runs/P7/run-7",
+          integratedSha: p7Candidate,
+          release: "v1.0.0",
+        },
+      });
+      writeRecord(root, record);
+      writeFileSync(
+        join(root, "features", "unrelated.tsx"),
+        "export const unrelated = true;\n",
+      );
+      git(root, ["add", ".matrx", "features/unrelated.tsx"]);
+      git(root, ["commit", "-m", "wip: shared checkout checkpoint"]);
+      const head = git(root, ["rev-parse", "HEAD"]);
+
+      expect(
+        checkPatrolCommits({ repoRoot: root, base: `${head}^`, head }),
+      ).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps a P9-style escaped delivery blocked and truthful until later exact certification", () => {
     const root = mkdtempSync(join(tmpdir(), "patrol-delivery-p9-"));
     try {

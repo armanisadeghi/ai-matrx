@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P9",
+  "runId": "01a05301-8fab-7d50-87f1-ea38599319d4",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:17:59.383Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:17:59.383Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Resumed P9 in ERADICATION from the retained backlog; build detector and interaction proof, then repair the first reachable promises in bounded certified waves.",
+      "evidence": [
+        "baseline:type-check-pass",
+        "baseline:123-files-182-lines",
+        "baseline:81-registry-entries",
+        "ownership:canonical-shared-checkout",
+        "other-owner:P10-run-records"
+      ],
+      "previousEventHash": null,
+      "eventHash": "f60a461fd2bfe23e080b8b484664568a8fad843a99a90e209366c57e170b3b1e"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:36:01.308Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Built the P9 static detector and repaired the first reachable promise cases in two bounded path-scoped batches.",
+      "evidence": [
+        "detector:12851-files",
+        "registry:81-to-84",
+        "batch1:advanced-menu-and-image-generate",
+        "batch2:files-activity-requests-starred"
+      ],
+      "previousEventHash": "f60a461fd2bfe23e080b8b484664568a8fad843a99a90e209366c57e170b3b1e",
+      "eventHash": "c1530e713e7e7dd2bf14d08604430c9335618f62eba93acde86fffc1a4bbb47c"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:36:01.934Z",
+      "actor": "p9-certification-controller",
+      "summary": "Dispatched independent adversarial review for both bounded P9 batches.",
+      "evidence": [
+        "candidate:8f0041cebc",
+        "brief:assume-this-batch-broke-something"
+      ],
+      "previousEventHash": "c1530e713e7e7dd2bf14d08604430c9335618f62eba93acde86fffc1a4bbb47c",
+      "eventHash": "1d9fa122ffa12d3a7b7076cf062d0359a41ac8ea06828ad599e13db0347af79a"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-30T14:36:02.522Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "Batch 1 independently CERTIFIED with no concrete batch-caused defect.",
+      "evidence": [
+        "scope:batch1-seven-paths",
+        "detector:101-repair-now-112-review"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "8f0041cebc",
+        "certifierTaskId": "/root/p9_repair_certifier",
+        "checks": [
+          "focused-jest:7-of-7",
+          "type-check:pass",
+          "scoped-eslint:unchanged-baseline-only",
+          "diff-check:pass",
+          "advanced-menu:interaction-pass",
+          "image-generate:behavior-preserved"
+        ]
+      },
+      "previousEventHash": "1d9fa122ffa12d3a7b7076cf062d0359a41ac8ea06828ad599e13db0347af79a",
+      "eventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179"
+    },
+    {
+      "sequence": 5,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:36:08.834Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Batch 2 has no behavioral defect but delivery is blocked by the generated route-manifest lockfile: 174 unrelated drifts plus three truthful P9 status changes, and this patrol is forbidden to edit generated files.",
+      "evidence": [
+        "certifier:/root/p9_certifier_retry",
+        "focused-jest:9-of-9",
+        "type-check:pass",
+        "route-drift:174-baseline-plus-3-P9"
+      ],
+      "blocker": {
+        "prerequisite": "An authorized route-manifest owner must regenerate and certify the lockfile outside this patrol's generated-file prohibition.",
+        "preservedRef": "refs/heads/patrol-runs/P9/01a05301-8fab-7d50-87f1-ea38599319d4-batch2-candidate",
+        "preservedSha": "8f0041cebc"
+      },
+      "previousEventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179",
+      "eventHash": "15e5723e68cc840a036b8febc21089acd5ee1e9f6eb5c2c549572ef427db86d7"
+    },
+    {
+      "sequence": 6,
+      "state": "fixing",
+      "at": "2026-08-30T14:56:04.775Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Added typed reconciliation for a rejected escaped candidate and its certified delivered replacement.",
+      "evidence": [
+        "candidate:afa75585af",
+        "escape:5bf578b",
+        "replacement:e8ea694"
+      ],
+      "previousEventHash": "15e5723e68cc840a036b8febc21089acd5ee1e9f6eb5c2c549572ef427db86d7",
+      "eventHash": "6082b5ddf88f0ba7ca46dc4c4ce22824cd6e06abc7089f54bf0ae96a44160bd3"
+    },
+    {
+      "sequence": 7,
+      "state": "certifying",
+      "at": "2026-08-30T14:56:05.402Z",
+      "actor": "p9-certification-controller",
+      "summary": "Started adversarial certification of rejected-escape reconciliation.",
+      "evidence": [
+        "candidate:afa75585af"
+      ],
+      "previousEventHash": "6082b5ddf88f0ba7ca46dc4c4ce22824cd6e06abc7089f54bf0ae96a44160bd3",
+      "eventHash": "15d6c0cbfd08a2488bdb2bda6d085a9a7933d4196bb58a3d81bf7401913bca91"
+    },
+    {
+      "sequence": 8,
+      "state": "rejected",
+      "at": "2026-08-30T14:56:06.006Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "REJECTED: a later different-candidate rejection could be borrowed for the escaped candidate.",
+      "evidence": [
+        "defect:cross-candidate-rejection-binding"
+      ],
+      "previousEventHash": "15d6c0cbfd08a2488bdb2bda6d085a9a7933d4196bb58a3d81bf7401913bca91",
+      "eventHash": "d141c94d3ffcdc3864fe8cefc21b124d96c149dbb3b751f51441a485bca191cb"
+    },
+    {
+      "sequence": 9,
+      "state": "fixing",
+      "at": "2026-08-30T14:56:06.713Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Bound rejection to the event immediately after the exact-candidate certification attempt and added a cross-candidate negative regression.",
+      "evidence": [
+        "candidate:05ad7aa37e"
+      ],
+      "previousEventHash": "d141c94d3ffcdc3864fe8cefc21b124d96c149dbb3b751f51441a485bca191cb",
+      "eventHash": "fefde92928ec9f1dd3829fde6d2bb0dcd97f696116ea1f307d40f487000a4dc7"
+    },
+    {
+      "sequence": 10,
+      "state": "certifying",
+      "at": "2026-08-30T14:56:07.355Z",
+      "actor": "p9-certification-controller",
+      "summary": "Retried adversarial certification of exact-attempt rejection binding.",
+      "evidence": [
+        "candidate:05ad7aa37e"
+      ],
+      "previousEventHash": "fefde92928ec9f1dd3829fde6d2bb0dcd97f696116ea1f307d40f487000a4dc7",
+      "eventHash": "074d03aeb8c1d6db4cf8e12ceccc8912931652d72800d18459d029a9cb177ea0"
+    },
+    {
+      "sequence": 11,
+      "state": "rejected",
+      "at": "2026-08-30T14:56:07.981Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "REJECTED: selecting the first exact attempt incorrectly refused a legitimate blocked-then-retried exact candidate.",
+      "evidence": [
+        "defect:exact-candidate-retry-false-negative"
+      ],
+      "previousEventHash": "074d03aeb8c1d6db4cf8e12ceccc8912931652d72800d18459d029a9cb177ea0",
+      "eventHash": "eb4ce14a73d034501bbc2f3b64eae6f14b0203db5aec58a1e6a1298b85b8239f"
+    },
+    {
+      "sequence": 12,
+      "state": "fixing",
+      "at": "2026-08-30T14:56:08.608Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Changed validation to find an adjacent exact-candidate certifying-to-rejected pair and added positive retry plus negative cross-candidate regressions.",
+      "evidence": [
+        "candidate:57d8d60d3974525dd346a9f250d82b1726470d6a"
+      ],
+      "previousEventHash": "eb4ce14a73d034501bbc2f3b64eae6f14b0203db5aec58a1e6a1298b85b8239f",
+      "eventHash": "188a24fd5701a6b34ba92745f56a958ee2039088792daa3f91b1d93f1547bfdc"
+    },
+    {
+      "sequence": 13,
+      "state": "certifying",
+      "at": "2026-08-30T14:56:09.239Z",
+      "actor": "p9-certification-controller",
+      "summary": "Started final adversarial review of the adjacent-pair validator.",
+      "evidence": [
+        "candidate:57d8d60d3974525dd346a9f250d82b1726470d6a"
+      ],
+      "previousEventHash": "188a24fd5701a6b34ba92745f56a958ee2039088792daa3f91b1d93f1547bfdc",
+      "eventHash": "3e7f988026c1fd7379be1cfe65d478f03e0bebbfb44461bd201563decceb159d"
+    },
+    {
+      "sequence": 14,
+      "state": "certified",
+      "at": "2026-08-30T14:56:09.840Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "Rejected-escape reconciliation controller is independently CERTIFIED.",
+      "evidence": [
+        "prior-rejections:2",
+        "records:legacy-14-current-13"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "57d8d60d3974525dd346a9f250d82b1726470d6a",
+        "certifierTaskId": "/root/p9_repair_certifier",
+        "checks": [
+          "focused-tests:20-of-20",
+          "cross-candidate-bypass:refused",
+          "exact-candidate-retry:accepted",
+          "adjacent-pair-variant:accepted",
+          "diff-check:pass",
+          "type-check:unrelated-post-candidate-debt-only"
+        ]
+      },
+      "previousEventHash": "3e7f988026c1fd7379be1cfe65d478f03e0bebbfb44461bd201563decceb159d",
+      "eventHash": "450cc731254dfed6902dd8c80e31a345f2e9cb8147566f395def573bfa38b35a"
+    },
+    {
+      "sequence": 15,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:56:19.115Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Restored the unreleased Files batch as the final state: no behavioral defect, delivery blocked only by the generated route-manifest lockfile prohibition.",
+      "evidence": [
+        "controller:CERTIFIED",
+        "files-batch:INFRASTRUCTURE-BLOCKED",
+        "route-drift:174-baseline-plus-3-P9"
+      ],
+      "blocker": {
+        "prerequisite": "An authorized route-manifest owner must regenerate and certify the lockfile outside this patrol's generated-file prohibition.",
+        "preservedRef": "refs/heads/patrol-runs/P9/01a05301-8fab-7d50-87f1-ea38599319d4-batch2-candidate",
+        "preservedSha": "8f0041cebc"
+      },
+      "previousEventHash": "450cc731254dfed6902dd8c80e31a345f2e9cb8147566f395def573bfa38b35a",
+      "eventHash": "14a0c756b3da7483e8112060fc0e7c60aebb054e8eb5cad39c4155ec34c605a1"
+    }
+  ]
+}

@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +56,7 @@ import { PackMeaningSection } from "./PackMeaningSection";
 import { PackTopicsSection } from "./PackTopicsSection";
 import { PackBandsSection } from "./PackBandsSection";
 import { PackGuidelinesSection } from "./PackGuidelinesSection";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function PackDetail({
   packId,
@@ -303,7 +303,7 @@ export function PackDetail({
         title={`Ratify “${pack.name}”?`}
         description="You are signing off these defaults as a domain expert. Ratified packs can be published to an industry or to everyone; every later edit bumps the version and adopted sites see what changed."
         content={
-          <Textarea
+          <ProTextarea
             value={ratifyNotes}
             onChange={(e) => setRatifyNotes(e.target.value)}
             placeholder="Ratification notes (what you checked, what you changed, what stays open)…"

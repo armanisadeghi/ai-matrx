@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { RecordUnavailableNotice } from "@/features/marketing/components/shared/RecordUnavailableNotice";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import { isJsonRecord } from "@/features/marketing/types";
 import type { BackendFailureExplanation } from "@/lib/api/errors";
@@ -177,8 +177,23 @@ export function QueryError({
             <p className="text-sm font-medium text-foreground">
               Could not load this data
             </p>
-            <p className="mt-1 break-words text-xs text-muted-foreground">
-              {extractErrorMessage(error)}
+            {/* 🚨 The DETAIL is for whoever can act on it, not for the person
+                reading the screen (2026-08-30). This printed
+                `extractErrorMessage`, which joins PostgREST's message + details
+                + hint + code — the same function whose own docstring says that
+                output is "not sentences a person can act on" and is for logs.
+                So every failed read across SEO reports, authority routing,
+                local listings, outreach and monitoring showed a business owner
+                raw database prose. The humanized reading goes on screen; the
+                exact text stays on `title`. */}
+            <p
+              className="mt-1 break-words text-xs text-muted-foreground"
+              title={extractErrorMessage(error)}
+            >
+              {humanizeBackendError(
+                extractErrorMessage(error),
+                "Something went wrong on our side. Try again in a moment.",
+              )}
             </p>
             {onRetry ? (
               <Button
@@ -224,7 +239,10 @@ export function InlineQueryError({
         Could not load {what}
       </span>
       <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-        {extractErrorMessage(error)}
+        {humanizeBackendError(
+          extractErrorMessage(error),
+          "Something went wrong on our side. Try again in a moment.",
+        )}
       </span>
       {onRetry ? (
         <Button

@@ -30,6 +30,8 @@ const ScrollVoiceAssistantLauncherImpl = dynamic(
 /**
  * Tiny front door for the ambient page assistant. The expensive agent/chat
  * graph is not requested until a desktop user actually scrolls the surface.
+ * Its scrolling host uses `scroll-page-end-space`; the fixed implementation
+ * uses `ambient-assistant-dock` so overlay keyboards cannot cover the input.
  */
 export function ScrollAssistantLauncher({
   inputVariant = "single-line",

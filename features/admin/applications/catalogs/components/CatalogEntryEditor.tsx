@@ -45,7 +45,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -83,6 +82,7 @@ import type {
   EntryPrefill,
 } from "@/features/admin/applications/catalogs/types";
 import type { Json } from "@/types/database.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CatalogEntryEditorProps {
   app: string;
@@ -819,7 +819,7 @@ export function CatalogEntryEditor({
 
       <section className="space-y-1.5">
         <Label htmlFor="catalog-notes">Notes</Label>
-        <Textarea
+        <ProTextarea
           id="catalog-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

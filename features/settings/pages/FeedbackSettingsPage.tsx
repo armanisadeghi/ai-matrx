@@ -40,7 +40,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -55,6 +54,7 @@ import {
   feedbackScreenshotHref,
   getFeedbackScreenshotRefs,
 } from "@/features/feedback/screenshot-refs";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ──────────────────────────────────────────────────
 // Progress Stepper - User-facing stage definitions
@@ -622,7 +622,7 @@ function FeedbackItem({
 
             {isEditing ? (
               <div className="space-y-2">
-                <Textarea
+                <ProTextarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="min-h-[100px] text-sm"
@@ -756,7 +756,7 @@ function FeedbackItem({
               {/* Reply input — only when in user_review status */}
               {isUserReview && (
                 <div className="space-y-2 pt-2 border-t">
-                  <Textarea
+                  <ProTextarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Type your response... Does the fix work? Any remaining issues?"

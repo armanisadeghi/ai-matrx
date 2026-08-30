@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import { ArrowUp, Paperclip } from "lucide-react";
+import { ConnectorMark } from "@/features/connectors/ConnectorMark";
 import { ConnectorStrip } from "@/features/connectors/ConnectorStrip";
 import { CONNECTORS, connectorsFor } from "@/features/connectors/registry";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** A stand-in for the smart agent input, so the strip is judged in context. */
 function FakeAgentInput({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-2 shadow-sm">
       <div className="flex items-end gap-2">
-        <textarea
+        <ProTextarea
+          wrapperClassName="min-w-0 flex-1"
           rows={2}
           placeholder="Ask anything…"
           className="min-h-[2.5rem] flex-1 resize-none bg-transparent text-base leading-snug text-foreground outline-none placeholder:text-muted-foreground/60 sm:text-sm"
@@ -180,7 +183,7 @@ export default function ConnectorStripDemo() {
                     key={c.id}
                     className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
                   >
-                    <c.logo className="h-3 w-3" />
+                    <ConnectorMark connector={c} className="h-3 w-3" />
                     <span className="text-foreground">{c.name}</span>
                     <span className="truncate">{c.blurb}</span>
                   </li>

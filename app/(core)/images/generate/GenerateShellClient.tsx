@@ -41,6 +41,7 @@ import {
   IMAGE_GENERATE_SURFACE_NAME,
   createImageGenerateScope,
 } from "@/features/surfaces/manifests/image-generate.manifest";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function GenerateShellClient() {
   const [prompt, setPrompt] = useState("");
@@ -51,10 +52,6 @@ export default function GenerateShellClient() {
   const [results, setResults] = useState<GeneratedImageFile[]>([]);
 
   const handleGenerate = async () => {
-    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate) {
-      toast.info("Image generation is coming soon.");
-      return;
-    }
     if (!prompt.trim()) {
       toast.info("Type a prompt to generate.");
       return;
@@ -73,10 +70,9 @@ export default function GenerateShellClient() {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generate failed";
-      const notImpl = /404|not.*found|not.*implement/i.test(msg);
       toast.info(
-        notImpl
-          ? "Generate endpoint ships next wave — see features/images/AI-AGENTS.md"
+        /404|not.*found|not.*implement/i.test(msg)
+          ? "Image generation is temporarily unavailable. Please try again later."
           : msg,
       );
     } finally {
@@ -200,7 +196,7 @@ export default function GenerateShellClient() {
       <aside className="flex flex-col gap-3 min-h-0">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium">Prompt</label>
-          <textarea
+          <ProTextarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="A cozy reading nook by a rainy window, warm lamp light, photorealistic"
@@ -275,13 +271,6 @@ export default function GenerateShellClient() {
           )}
           Generate
         </Button>
-
-        {!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate && (
-          <p className="text-xs text-muted-foreground">
-            Image generation is coming soon. Upload or select an existing image
-            to use the available editing tools.
-          </p>
-        )}
 
         <div className="hidden md:block rounded-md border border-border bg-card/30 p-3 text-xs text-muted-foreground space-y-1.5">
           <div className="flex items-center gap-1.5 font-medium text-foreground">

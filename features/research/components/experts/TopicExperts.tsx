@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   ExternalLink,
   GraduationCap,
@@ -44,7 +44,8 @@ import type {
 const TIER_STYLE: Record<ExpertCandidateTier, string> = {
   strong:
     "border-emerald-500/20 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  probable: "border-amber-500/20 bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  probable:
+    "border-amber-500/20 bg-amber-500/15 text-amber-600 dark:text-amber-400",
   weak: "border-border bg-muted text-muted-foreground",
 };
 
@@ -53,6 +54,9 @@ const TIER_LABEL: Record<ExpertCandidateTier, string> = {
   probable: "Probable",
   weak: "Weak",
 };
+
+const CHECKBOX_TAP_AREA =
+  "relative max-lg:before:absolute max-lg:before:left-1/2 max-lg:before:top-1/2 max-lg:before:h-11 max-lg:before:w-11 max-lg:before:-translate-x-1/2 max-lg:before:-translate-y-1/2 max-lg:before:content-['']";
 
 function statusLabel(raw: string | null): string | null {
   if (!raw) return null;
@@ -80,7 +84,7 @@ function CandidateRow({
         disabled={disabled || Boolean(already)}
         onCheckedChange={() => onToggle(candidate.key)}
         aria-label={`Select ${candidate.display_name}`}
-        className="mt-0.5"
+        className={cn("mt-0.5", CHECKBOX_TAP_AREA)}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -187,7 +191,7 @@ export default function TopicExperts() {
         ),
       );
     } catch (e) {
-      toast.error(extractErrorMessage(e));
+      toastErrorAlreadyCaptured(extractErrorMessage(e));
     } finally {
       setScanning(false);
     }
@@ -215,7 +219,7 @@ export default function TopicExperts() {
       setSelected(new Set());
       await Promise.all([loadRoster(), scan()]);
     } catch (e) {
-      toast.error(extractErrorMessage(e));
+      toastErrorAlreadyCaptured(extractErrorMessage(e));
     } finally {
       setPromoting(false);
     }
@@ -235,7 +239,7 @@ export default function TopicExperts() {
   );
 
   return (
-    <div className="h-full overflow-y-auto px-3 pb-8 pt-3">
+    <div className="matrx-touch-targets h-full overflow-y-auto px-3 pb-8 pt-3">
       <div className="mx-auto max-w-4xl space-y-4">
         {/* ── Roster ─────────────────────────────────────────────────────── */}
         <section className="rounded-md border border-border bg-card">
@@ -342,6 +346,7 @@ export default function TopicExperts() {
                     id="include-weak"
                     checked={includeWeak}
                     onCheckedChange={(next) => setIncludeWeak(next === true)}
+                    className={CHECKBOX_TAP_AREA}
                   />
                   <label
                     htmlFor="include-weak"

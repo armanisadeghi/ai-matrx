@@ -1,49 +1,36 @@
-"use client";
+import { notFound, permanentRedirect } from "next/navigation";
 
-// LEGACY URL shim for the bare /marketing/sites/[siteId] path — see
-// ./[...rest]/page.tsx for the sub-path variant and the rationale.
+import { mapLegacySiteRest } from "@/features/marketing/lib/legacy-marketing-urls";
+import { resolveLegacySiteDoor } from "@/features/marketing/lib/legacy-site-door";
 
-import { use, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSite } from "@/features/marketing/data/hooks";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+type SearchParams = Record<string, string | string[] | undefined>;
 
-export default function LegacySiteRedirect({
+function toSearchParams(query: SearchParams): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value))
+      value.forEach((entry) => params.append(key, entry));
+    else if (value !== undefined) params.set(key, value);
+  }
+  return params;
+}
+
+/**
+ * LEGACY door for the bare flat site address — see `./[...rest]/page.tsx` for
+ * the sub-path variant. A site's home is now its website inventory overview
+ * inside the owning client.
+ */
+export default async function LegacyFlatSiteRedirect({
   params,
+  searchParams,
 }: {
   params: Promise<{ siteId: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
-  const { siteId } = use(params);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const site = useSite(siteId);
-  const brandId = site.data?.brand_id ?? null;
-
-  useEffect(() => {
-    if (!brandId) return;
-    const query = searchParams.toString();
-    router.replace(
-      `${marketingRoutes.site(brandId, siteId)}${query ? `?${query}` : ""}`,
-    );
-  }, [brandId, router, searchParams, siteId]);
-
-  // The read failed, or came back empty. Same four possibilities as anywhere
-  // else — the gate resolves which, names the site and its owner, and offers a
-  // request. It also handles the "you DO have access, that was a blip" case
-  // that a hand-written error can never tell you about.
-  if (site.isError || (!site.isLoading && !site.data)) {
-    return (
-      <AccessGate
-        token="web_site"
-        id={siteId}
-        error={site.error}
-        onRetry={() => void site.refetch()}
-        fallbackHref="/marketing/sites"
-        fallbackLabel="All sites"
-      />
-    );
-  }
-  return <LoadingSurface label="Opening site…" />;
+  const [{ siteId }, query] = await Promise.all([params, searchParams]);
+  const door = await resolveLegacySiteDoor(siteId);
+  if (!door) notFound();
+  permanentRedirect(
+    mapLegacySiteRest(door.brandSeg, door.siteSeg, [], toSearchParams(query)),
+  );
 }

@@ -442,16 +442,22 @@ export function getPunchRegister(
  * question, self-scoped, which is `hr.my_timesheet_context`.
  *
  * A refusal THROWS as `HrRpcError` like every call in this lane — `hr_timesheet_context_not_self`
- * is the one a deep link to somebody else's employment raises, and its `userMessage` is the page
- * text.
+ * is the one a deep link to somebody else's employment raises (a punch belonging to somebody else
+ * raises the same one), and its `userMessage` is the page text.
+ *
+ * `punchId` is the second question this door answers: WHICH period covers the punch a correction
+ * notice pointed at. Both arguments are nullable and `p_punch_id: null` is byte-identical to the
+ * one-argument call. It is a resolver input, never a filter — the answer comes back as
+ * `basis: 'punch'` with `focusPunchId` / `focusLocalWorkDate` / `focusNote`.
  */
 export function getMyTimesheetContext(
   employmentId: string | null,
+  punchId: string | null,
   opts?: HrRpcOptions,
 ): Promise<MyTimesheetContext> {
   return callHrTimeRpc<MyTimesheetContext>(
     "hr_my_timesheet_context",
-    { p_employment_id: employmentId },
+    { p_employment_id: employmentId, p_punch_id: punchId },
     opts,
   );
 }

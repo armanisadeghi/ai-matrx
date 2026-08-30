@@ -25,6 +25,7 @@ import {
   presentLiveCrawlEvent,
   type PresentedCrawlEvent,
 } from "@/features/marketing/components/crawls/live-crawl-event-presenter";
+import { humanizeBackendError } from "@/utils/errors";
 
 /** A long run must not degrade the tab: render only the newest rows. */
 const MAX_RENDERED_ROWS = 150;
@@ -111,15 +112,6 @@ function timingEntries(
  * to reach the user — but a raw upstream crash arrives wearing ANSI colour
  * codes and a ruler of dashes. Strip the terminal decoration, keep every word.
  */
-function readableFailure(message: string): string {
-  return message
-    .replace(/\u001b\[[0-9;]*m/g, "")
-    .replace(/\[\d{1,3}m/g, "")
-    .replace(/-{6,}/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function elapsedLabel(run: SiteCommandRunState, now: number): string {
   const end = run.finishedAt ?? now;
   const seconds = Math.max(0, Math.round((end - run.startedAt) / 1000));
@@ -227,7 +219,7 @@ export function SiteCommandFeed({
             run.status === "failed" ? "text-destructive" : "text-foreground",
           )}
         >
-          {run.error ? readableFailure(run.error) : run.message}
+          {run.error ? humanizeBackendError(run.error) : run.message}
         </p>
       </div>
 

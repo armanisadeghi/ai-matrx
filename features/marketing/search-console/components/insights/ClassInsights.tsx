@@ -11,7 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Gem, PanelTop, Scale, Tags } from "lucide-react";
+import { ArrowRight, Gem, PanelTop, Scale, Tags, X } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -839,19 +839,23 @@ export function QualityView({
         {trafficClass ? (
           <button
             type="button"
-            className="rounded border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => setTrafficClass(null)}
+            aria-label={`Clear class filter ${trafficClass}`}
           >
-            Class: {trafficClass} ✕
+            Class: {trafficClass}
+            <X className="h-3 w-3" aria-hidden="true" />
           </button>
         ) : null}
         {valueLevel ? (
           <button
             type="button"
-            className="rounded border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => setValueLevel(null)}
+            aria-label={`Clear level filter ${levelLabel(valueLevel)}`}
           >
-            Level: {levelLabel(valueLevel)} ✕
+            Level: {levelLabel(valueLevel)}
+            <X className="h-3 w-3" aria-hidden="true" />
           </button>
         ) : null}
         {!trafficClass && !valueLevel ? (

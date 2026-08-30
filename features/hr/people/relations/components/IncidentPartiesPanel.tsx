@@ -61,7 +61,6 @@ export function IncidentPartiesPanel({
   const [role, setRole] = useState<HrIncidentPartyRole>("witness");
   const [employmentId, setEmploymentId] = useState<string | null>(null);
   const [externalName, setExternalName] = useState("");
-  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
   if (parties === undefined) return null;
@@ -89,14 +88,12 @@ export function IncidentPartiesPanel({
       role,
       employmentId,
       externalName: externalName.trim() || null,
-      note: note.trim() || null,
     });
     setSaving(false);
 
     if (result.ok) {
       setEmploymentId(null);
       setExternalName("");
-      setNote("");
       setAdding(false);
       // The write may have just revoked the writer. A refresh that comes back
       // denied is handled by the case surface, which redirects neutrally.
@@ -180,16 +177,6 @@ export function IncidentPartiesPanel({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="party-note">Note</Label>
-            <Input
-              id="party-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="min-h-11 sm:min-h-9"
-            />
-          </div>
-
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -233,11 +220,6 @@ export function IncidentPartiesPanel({
               <span className="min-w-0 truncate text-sm text-foreground">
                 {party.display_name ?? party.external_name}
               </span>
-              {party.note ? (
-                <span className="min-w-0 truncate text-xs text-muted-foreground">
-                  {party.note}
-                </span>
-              ) : null}
             </li>
           ))}
         </ul>

@@ -20,15 +20,27 @@
 "use client";
 
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { listGeneratedFrom, type GeneratedArtifact } from "@/features/education/convert/lineage";
+import {
+  listGeneratedFrom,
+  type GeneratedArtifact,
+} from "@/features/education/convert/lineage";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
+import {
+  libraryRowStats,
+  type LibraryRowStats,
+} from "@/features/education/library/types";
 import { studyMediaService } from "@/features/education/media/service";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { TargetKind } from "@/features/education/convert/types";
 import type { Json } from "@/types/database.types";
 
 /** Artifact entity tokens a kit can contain (the converter's four writers). */
-const KIT_ARTIFACT_TYPES = ["fc_set", "study_media", "assessment", "note"] as const;
+const KIT_ARTIFACT_TYPES = [
+  "fc_set",
+  "study_media",
+  "assessment",
+  "note",
+] as const;
 
 /** Page size for the artifact scan. PostgREST caps a bare select at 1000, so
  *  this stays well under it and the read PAGES to exhaustion instead. */
@@ -48,6 +60,64 @@ export interface StudyKit {
   artifacts: GeneratedArtifact[];
   /** When the kit was first generated. */
   createdAt: string;
+}
+
+/** Keyed by the artifact's real entity identity, never by its display order. */
+export type KitArtifactStats = Record<string, LibraryRowStats>;
+
+export function kitArtifactKey(
+  artifact: Pick<GeneratedArtifact, "artifactType" | "artifactId">,
+): string {
+  return `${artifact.artifactType}:${artifact.artifactId}`;
+}
+
+/**
+ * Read the SAME per-artifact facts the canonical Education Library shows.
+ *
+ * The kit used to fetch a flashcard-only mastery rollup and present it as the
+ * mastery of the whole kit. This exact-id read keeps each format's evidence on
+ * its own artifact instead: coverage / accuracy / due work for decks and
+ * assessments, and duration for media. No second KPI model is created here.
+ *
+ * We try the access scopes in their normal precedence because a kit can be
+ * assembled from owned, shared, or public material. The RPC's `id` filter is
+ * load-bearing: without it this route would scan a learner's entire library to
+ * find eight rows.
+ */
+export async function readKitArtifactStats(
+  artifacts: GeneratedArtifact[],
+): Promise<KitArtifactStats> {
+  const remaining = new Map(
+    artifacts.map((artifact) => [kitArtifactKey(artifact), artifact]),
+  );
+  const result: KitArtifactStats = {};
+
+  for (const scope of ["mine", "shared", "public"] as const) {
+    if (remaining.size === 0) break;
+    const ids = [...new Set([...remaining.values()].map((a) => a.artifactId))];
+    const page = await fetchEducationLibraryPage(
+      {
+        ...DEFAULT_ENTITY_LIST_QUERY,
+        scope: { kind: scope },
+        filters: { id: { kind: "select", values: ids } },
+      },
+      {
+        sort: "updated",
+        direction: "desc",
+        favoritesFirst: false,
+        pageSize: Math.max(1, ids.length),
+      },
+    );
+
+    for (const row of page.rows) {
+      const key = `${row.kind}:${row.id}`;
+      if (!remaining.has(key)) continue;
+      result[key] = libraryRowStats(row);
+      remaining.delete(key);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -120,7 +190,11 @@ function kitName(members: GeneratedArtifact[]): string {
  * replaced with what is true now. One query per kit, only when it has media.
  */
 function liveDetail(
-  row: { status: string | null; media_kind: string; duration_seconds: number | null },
+  row: {
+    status: string | null;
+    media_kind: string;
+    duration_seconds: number | null;
+  },
   frozen: string | null,
 ): string | null {
   if (row.status === "generating") return "Still being produced";
@@ -292,7 +366,9 @@ export async function listKits(): Promise<StudyKit[]> {
       };
     })
     .filter((kit) => kit.artifacts.length > 0)
-    .sort((a, b) => b.artifacts[0].createdAt.localeCompare(a.artifacts[0].createdAt));
+    .sort((a, b) =>
+      b.artifacts[0].createdAt.localeCompare(a.artifacts[0].createdAt),
+    );
 }
 
 /** The kit hub route for an anchor. */

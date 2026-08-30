@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:17:30.069Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:17:30.069Z",
+      "actor": "/root",
+      "summary": "ERADICATION backlog wave: claimed the first four compact/control mapping items for disjoint repair-now execution.",
+      "evidence": [
+        "Canonical shared checkout base 857dcd2c3b7bed591441c6a175caf72eb1397ec4 equals origin/main.",
+        "Pre-edit pnpm type-check: PASS.",
+        "Pre-edit scoped detector captured all generic loading signatures in the four claimed files.",
+        "Pre-edit scoped ESLint: nine baseline errors (three email page, six feedback dialog); auth pages clean.",
+        "Unrelated dirty paths owned by P10: .matrx/patrol-runs/P10/latest.json and .matrx/patrol-runs/P10/2026-08-30T141622Z.json."
+      ],
+      "previousEventHash": null,
+      "eventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:23:52.462Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "First compact/control wave repaired across 15 bounded files; exact candidate published for baseline-delta gates.",
+      "evidence": [
+        "candidate=18a0f0ce19e24dd879242cb06f850aaa95ca0392",
+        "preserved-ref=refs/heads/codex/p8-eradication-20260830-batch1",
+        "mapping classes: ReactNode inline content, submit-button pendingText, select placeholders, compact button labels, contextual full-region loader",
+        "unrelated shared-checkout dirty paths were not staged or edited"
+      ],
+      "previousEventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252",
+      "eventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:25:17.716Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Candidate 18a0f0ce19 entered independent adversarial certification for the exact 15-file compact/control batch.",
+      "evidence": [
+        "pre-edit type-check PASS at 857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+        "post-edit type-check currently reports only concurrent non-P8 files: AdvancedMenu.coming-soon.test.tsx, UnwiredConsole.tsx, parse-messages-variables.ts",
+        "scoped bare Loading literal grep: zero",
+        "scoped ESLint: unchanged baseline rules only; no P8-delta rule introduced",
+        "candidate ref refs/heads/codex/p8-eradication-20260830-batch1"
+      ],
+      "previousEventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1",
+      "eventHash": "71a32cb5a682c3cbb3c3a3fd65397f6a206963dfd0da825f12e5887344b7b6a3"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:31:19.642Z",
+      "actor": "/root/p8_batch1_certifier",
+      "summary": "REJECTED: AgentComparisonPage replacement changed preserved wrapper, spinner geometry, and theme classes.",
+      "evidence": [
+        "candidate=18a0f0ce19e24dd879242cb06f850aaa95ca0392",
+        "concrete defect: default SuspenseLoader changed 20px primary spinner to 16px half-opacity muted and introduced new width/min-height geometry"
+      ],
+      "previousEventHash": "71a32cb5a682c3cbb3c3a3fd65397f6a206963dfd0da825f12e5887344b7b6a3",
+      "eventHash": "4c294b8ae80c668181cb32ac6fa645324325a4644cf701125c51152749b4ef30"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:31:20.602Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Correcting rejected AgentComparisonPage delta while preserving the exact contextual wrapper and spinner styling.",
+      "evidence": [
+        "restore established Loader2 wrapper; retain only Loading agent versions contextual placeholder repair"
+      ],
+      "previousEventHash": "4c294b8ae80c668181cb32ac6fa645324325a4644cf701125c51152749b4ef30",
+      "eventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:32:21.371Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Corrected candidate 5d46322225 restores exact AgentComparison wrapper/theme/geometry and re-enters independent certification.",
+      "evidence": [
+        "rejected candidate 18a0f0ce19 remains ancestor",
+        "corrected candidate=5d46322225ddc07a366620b9c304513ccaf4e6ec",
+        "authority-ref=refs/heads/codex/p8-eradication-20260830-batch1",
+        "only legitimate AgentComparison repair retained: Loading agent versions contextual placeholder"
+      ],
+      "previousEventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3",
+      "eventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T14:36:43.468Z",
+      "actor": "/root/p8_batch1_certifier",
+      "summary": "CERTIFIED after correction: exact 15-file compact/control P8 batch has no batch-caused regression.",
+      "evidence": [
+        "rejected predecessor 18a0f0ce19 corrected before certification",
+        "all 15 candidate blobs match preserved remote ref",
+        "AgentComparison established wrapper/theme/geometry restored byte-for-byte",
+        "in-app Browser control unavailable; transient-state geometry proved statically and public auth routes returned HTTP 200"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "5d46322225ddc07a366620b9c304513ccaf4e6ec",
+        "certifierTaskId": "/root/p8_batch1_certifier",
+        "checks": [
+          "bare generic Loading literal grep: zero across 15 files",
+          "pnpm type-check: PASS in independent certification",
+          "auth destination tests: 83/83 PASS",
+          "scoped ESLint: unchanged baseline only (13 errors, 1 warning)",
+          "diff and formatting checks: PASS"
+        ]
+      },
+      "previousEventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae",
+      "eventHash": "36af12ffdd6318616af20392474d84b2d94f4343b059381f840e79b4cc391a4e"
+    },
+    {
+      "sequence": 8,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:36:48.911Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Corrected certified candidate is integrated on origin/main and queued for the serialized release lane; no redundant release created.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/ae48b585-c52d-4f15-a576-8ab736c3065e"
+      ],
+      "delivery": {
+        "candidateSha": "5d46322225ddc07a366620b9c304513ccaf4e6ec",
+        "preservedRef": "refs/heads/patrol-runs/P8/ae48b585-c52d-4f15-a576-8ab736c3065e"
+      },
+      "previousEventHash": "36af12ffdd6318616af20392474d84b2d94f4343b059381f840e79b4cc391a4e",
+      "eventHash": "30f5885d581873a3fe44c5719720a07413c9ea9b8e680e95ac3f8a5806bb90be"
+    }
+  ]
+}

@@ -20,6 +20,7 @@ export function AssetDetailHeader({ assetId }: { assetId: string }) {
         <TapTargetButtonSolid
           icon={<Camera className="h-4 w-4" />}
           label="Capture"
+          mobileIconOnly
           href={`/commerce/intake?asset=${assetId}`}
           ariaLabel="Capture more on this item"
         />

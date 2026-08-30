@@ -274,12 +274,12 @@ export default function JsonComparator() {
               <div className="text-red-600">{comparison.error}</div>
             ) : comparison.identical ? (
               <div className="text-green-600 font-medium">
-                ✓ JSON objects are identical
+                JSON objects are identical
               </div>
             ) : (
               <div>
                 <div className="text-red-600 font-medium mb-3">
-                  ✗ JSON objects are different (
+                  JSON objects are different (
                   {comparison.differences?.length ?? 0} differences found)
                 </div>
                 <div className="max-h-40 overflow-y-auto">

@@ -24,7 +24,7 @@
  * over hours and no timestamp subtraction anywhere below — see `scripts/check-hr-time-arithmetic.ts`.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Layers, SunMoon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -53,15 +53,34 @@ import { HOURS_CATEGORY_LABELS, HOURS_CATEGORY_ORDER } from "../shared/vocabular
 
 export type TimesheetViewer = "employee" | "manager";
 
+/**
+ * The DOM id of one day row. Stable and derived from the local work date, which is unique within a
+ * timesheet — the focus scroll below finds the row through this and nothing else.
+ */
+export function timesheetDayElementId(localWorkDate: string): string {
+  return `hr-timesheet-day-${localWorkDate}`;
+}
+
 export function TimesheetWeeks({
   timesheet,
   viewer,
   onOpenPunch,
+  focusPunchId = null,
+  focusLocalWorkDate = null,
   className,
 }: {
   timesheet: Timesheet;
   viewer: TimesheetViewer;
   onOpenPunch?: (punchId: string) => void;
+  /**
+   * 🚨 THE DAY A LINK POINTED AT (SPEC-TIME §4.1). A punch-correction notice deep-links the
+   * employee to their timesheet; `hr_my_timesheet_context` resolves that punch to a work date, and
+   * the day row for it opens itself, scrolls into view and carries an accent. Without this the
+   * reader lands on a grid of collapsed days and has to hunt for the change they were told about.
+   * Both are server-resolved: nothing here works out which day a punch belongs to.
+   */
+  focusPunchId?: string | null;
+  focusLocalWorkDate?: string | null;
   className?: string;
 }) {
   return (
@@ -74,6 +93,8 @@ export function TimesheetWeeks({
           periodStartOn={timesheet.payPeriod.periodStartOn}
           periodEndOn={timesheet.payPeriod.periodEndOn}
           onOpenPunch={onOpenPunch}
+          focusPunchId={focusPunchId}
+          focusLocalWorkDate={focusLocalWorkDate}
         />
       ))}
 
@@ -103,12 +124,16 @@ function WeekBlock({
   periodStartOn,
   periodEndOn,
   onOpenPunch,
+  focusPunchId,
+  focusLocalWorkDate,
 }: {
   week: TimesheetWeek;
   viewer: TimesheetViewer;
   periodStartOn: string;
   periodEndOn: string;
   onOpenPunch?: (punchId: string) => void;
+  focusPunchId: string | null;
+  focusLocalWorkDate: string | null;
 }) {
   const ww = week.workweek;
   const weekLastDate = lastDateOfWorkweek(ww.weekStartLocalDate);
@@ -194,6 +219,8 @@ function WeekBlock({
             workweek={ww}
             viewer={viewer}
             onOpenPunch={onOpenPunch}
+            focusPunchId={focusPunchId}
+            focused={focusLocalWorkDate !== null && day.localWorkDate === focusLocalWorkDate}
           />
         ))}
       </div>
@@ -373,17 +400,57 @@ function DayRow({
   workweek,
   viewer,
   onOpenPunch,
+  focusPunchId,
+  focused,
 }: {
   day: TimesheetDay;
   workweek: WorkweekRow;
   viewer: TimesheetViewer;
   onOpenPunch?: (punchId: string) => void;
+  /** The corrected punch inside this day, marked in the raw chain. Never rendered as text. */
+  focusPunchId: string | null;
+  /** This is the day the `?punch=` link pointed at. */
+  focused: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  /*
+   * 🚨 THE FOCUSED DAY STARTS OPEN. A person who followed "your punch was corrected" must SEE the
+   * correction, not a collapsed row they have to guess at — the raw punch chain, with the void
+   * struck through, only exists in the expanded day view (§5.1). `useState`'s initialiser, so it
+   * is the row's starting state and the reader can still collapse it like any other.
+   */
+  const [open, setOpen] = useState(focused);
   const hasContent = day.intervals.length > 0 || day.punches.length > 0;
+  const elementId = timesheetDayElementId(day.localWorkDate);
+
+  /*
+   * Scroll it into view ONCE, after paint. The short timeout is the same pattern the leave policy
+   * editor uses to focus a violation's field: the row above it may still be laying out (week
+   * headers carry conditional notices), and centring before that settles lands in the wrong place.
+   */
+  useEffect(() => {
+    if (!focused) return;
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(elementId);
+      if (element instanceof HTMLElement) {
+        element.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [focused, elementId]);
 
   return (
-    <div className={cn("px-4 py-3", open && "bg-muted/20")}>
+    <div
+      id={elementId}
+      className={cn(
+        "px-4 py-3",
+        open && "bg-muted/20",
+        /*
+         * The accent that says "this is the day you were sent to". Design tokens only — a
+         * hardcoded colour here would be invisible or garish in one of the two themes.
+         */
+        focused && "bg-primary/5 ring-2 ring-inset ring-primary/60",
+      )}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -464,7 +531,11 @@ function DayRow({
           <div className="space-y-3 pt-1">
             <IntervalTable day={day} workweek={workweek} />
             {/* The raw block. Beneath, distinct, never interleaved. */}
-            <PunchChain punches={day.punches} onOpenPunch={onOpenPunch} />
+            <PunchChain
+              punches={day.punches}
+              onOpenPunch={onOpenPunch}
+              highlightPunchId={focused ? focusPunchId : null}
+            />
           </div>
         ) : null}
       </div>

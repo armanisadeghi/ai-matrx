@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface ContextContentProps {
   updateContent?: (content: string) => void;
@@ -45,7 +45,7 @@ const ContextContent: React.FC<ContextContentProps> = ({ updateContent }) => {
         <Label htmlFor="context-details" className="text-gray-700 dark:text-gray-300">
           Context Details
         </Label>
-        <Textarea
+        <ProTextarea
           id="context-details"
           placeholder="Provide relevant background information, data, or context to help the AI understand the situation better"
           value={contextDetails}

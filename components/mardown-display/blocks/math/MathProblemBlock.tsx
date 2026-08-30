@@ -9,7 +9,7 @@ import { downloadMathProblem, uploadMathProblem } from "@/features/math/utils/ma
 import ContentBlockWrapper from "../common/ContentBlockWrapper";
 import { mathPrinter } from "./math-printer";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
-import { PrintOptionsDialog, usePrintOptions } from "@/lib/block-print/PrintOptionsDialog";
+import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 
 interface MathProblemBlockProps {
     problemData: {

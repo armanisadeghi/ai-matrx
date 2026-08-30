@@ -454,6 +454,16 @@ const LAB_NOTES_EXTRAS = createNotesEditorExtraSections({
   onDelete: () => {},
 });
 
+/**
+ * The lab is an inspector, not a surface: it must show every item the fetch
+ * returned so the JSON panes are honest. A Proxy-backed set that answers
+ * `has()` with true declares "every key is readable here", which is exactly
+ * the lab's contract.
+ */
+const LAB_ALL_KEYS: ReadonlySet<string> = {
+  has: () => true,
+} as unknown as ReadonlySet<string>;
+
 export default function ContextMenuDemoPage() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
@@ -655,6 +665,12 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
     enabled: true,
     scope,
     scopeId: resolvedScopeId,
+    // The lab inspects the RAW hook output, so it declares the widest
+    // possible surface: everything qualifies, nothing is excluded. The menu
+    // component rendered beside it runs the real derived gate.
+    surfaceName: null,
+    availableKeys: LAB_ALL_KEYS,
+    hasSelection: true,
   });
 
   // -- Redux mirrors for the inspectors -----------------------------------

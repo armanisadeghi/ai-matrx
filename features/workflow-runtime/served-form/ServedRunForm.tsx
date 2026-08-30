@@ -30,7 +30,7 @@
  */
 
 import { useState } from "react";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, TriangleAlert } from "lucide-react";
 
 import {
   buildSubmission,
@@ -197,12 +197,18 @@ export function ServedRunForm({
                   } before this run can start:`}
             </p>
             {serverGaps.length === 0 && (
-              <p className="mt-1 text-[11px] text-amber-800/80 dark:text-amber-200/80">
-                🚨 The 409 carried <code className="font-mono">inputs_required</code>{" "}
-                but no <code className="font-mono">missing</code> list — aidream&apos;s
-                error middleware flattens the detail and drops it. Server-side
-                defect: carry the gap list through the normalizer. Nothing you
-                entered was lost.
+              <p className="mt-1 flex items-start gap-1.5 text-[11px] text-amber-800/80 dark:text-amber-200/80">
+                <TriangleAlert
+                  className="mt-0.5 h-3 w-3 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>
+                  The 409 carried <code className="font-mono">inputs_required</code>{" "}
+                  but no <code className="font-mono">missing</code> list — aidream&apos;s
+                  error middleware flattens the detail and drops it. Server-side
+                  defect: carry the gap list through the normalizer. Nothing you
+                  entered was lost.
+                </span>
               </p>
             )}
             <ul className="mt-1 space-y-0.5">

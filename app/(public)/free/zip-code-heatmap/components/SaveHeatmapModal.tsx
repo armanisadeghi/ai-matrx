@@ -5,7 +5,6 @@ import { Share2, Loader2, Copy, Check, Globe2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
@@ -22,6 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ZipCodeData } from '../page';
 import type { ColorScaleOptions } from './ColorScaleSelector';
 import type { ViewMode } from './ViewModeSelector';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SaveHeatmapModalProps {
   isOpen: boolean;
@@ -170,7 +170,7 @@ export default function SaveHeatmapModal({
 
               <div className="space-y-2">
                 <Label htmlFor="desc">Description (Optional)</Label>
-                <Textarea
+                <ProTextarea enableVoice={false} enableCleanup={false}
                   id="desc"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

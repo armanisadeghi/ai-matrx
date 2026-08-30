@@ -8,7 +8,7 @@
  * the map — both strips read it here, so the resolution posture is identical.
  */
 
-import { useMandateSet } from "@/features/agents/mandates/useMandateSet";
+import { useMandateSet } from "@/features/mandates/useMandateSet";
 import {
   RESPONSE_MODE_MANDATE_MAP,
   RESPONSE_MODES,

@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Ghost, Link2, Pencil, Search, Settings, X } from 'lucide-react';
 
 export default function ColorTestPage() {
   return (
@@ -480,7 +481,9 @@ export default function ColorTestPage() {
               <Button size="sm">Small</Button>
               <Button size="default">Default</Button>
               <Button size="lg">Large</Button>
-              <Button size="icon">🔍</Button>
+              <Button size="icon" aria-label="Search">
+                <Search aria-hidden="true" />
+              </Button>
             </div>
           </div>
 
@@ -504,42 +507,42 @@ export default function ColorTestPage() {
                     <td className="py-2 px-2 text-center"><Button variant="default" size="sm">Sm</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="default" size="default">Default</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="default" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="default" size="icon">🔍</Button></td>
+                    <td className="py-2 px-2 text-center"><Button variant="default" size="icon" aria-label="Search"><Search aria-hidden="true" /></Button></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Destructive</td>
                     <td className="py-2 px-2 text-center"><Button variant="destructive" size="sm">Sm</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="destructive" size="default">Default</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="destructive" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="destructive" size="icon">❌</Button></td>
+                    <td className="py-2 px-2 text-center"><Button variant="destructive" size="icon" aria-label="Close"><X aria-hidden="true" /></Button></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Outline</td>
                     <td className="py-2 px-2 text-center"><Button variant="outline" size="sm">Sm</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="outline" size="default">Default</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="outline" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="outline" size="icon">📝</Button></td>
+                    <td className="py-2 px-2 text-center"><Button variant="outline" size="icon" aria-label="Edit"><Pencil aria-hidden="true" /></Button></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Secondary</td>
                     <td className="py-2 px-2 text-center"><Button variant="secondary" size="sm">Sm</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="secondary" size="default">Default</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="secondary" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="secondary" size="icon">⚙️</Button></td>
+                    <td className="py-2 px-2 text-center"><Button variant="secondary" size="icon" aria-label="Settings"><Settings aria-hidden="true" /></Button></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Ghost</td>
                     <td className="py-2 px-2 text-center"><Button variant="ghost" size="sm">Sm</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="ghost" size="default">Default</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="ghost" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="ghost" size="icon">👻</Button></td>
+                    <td className="py-2 px-2 text-center"><Button variant="ghost" size="icon" aria-label="Ghost"><Ghost aria-hidden="true" /></Button></td>
                   </tr>
                   <tr>
                     <td className="py-2 px-2 font-semibold">Link</td>
                     <td className="py-2 px-2 text-center"><Button variant="link" size="sm">Sm</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="link" size="default">Default</Button></td>
                     <td className="py-2 px-2 text-center"><Button variant="link" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="link" size="icon">🔗</Button></td>
+                    <td className="py-2 px-2 text-center"><Button variant="link" size="icon" aria-label="Link"><Link2 aria-hidden="true" /></Button></td>
                   </tr>
                 </tbody>
               </table>
@@ -646,7 +649,7 @@ export default function ColorTestPage() {
                 </div>
               </div>
               <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded text-xs">
-                <div className="font-semibold mb-1">🔍 Debugging Hint:</div>
+                <div className="font-semibold mb-1">Debugging Hint:</div>
                 <div className="text-muted-foreground">
                   If hover doesn't work, the issue is likely that Tailwind 4 isn't generating opacity modifiers for custom CSS variables. 
                   Check if classes like `bg-primary/90` and `bg-secondary/80` exist in compiled CSS.
@@ -664,7 +667,7 @@ export default function ColorTestPage() {
             <div>Theme System: CSS Variables (HSL)</div>
             <div>Dark Mode: Class-based (.dark)</div>
             <div className="pt-2 text-muted-foreground">
-              ⚠️ If hover states don't work, the issue is likely with Tailwind 4 not generating utilities for custom CSS variables
+              If hover states don't work, the issue is likely with Tailwind 4 not generating utilities for custom CSS variables
             </div>
           </div>
         </section>
@@ -672,4 +675,3 @@ export default function ColorTestPage() {
     </div>
   );
 }
-

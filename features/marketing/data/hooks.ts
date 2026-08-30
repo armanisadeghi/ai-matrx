@@ -209,10 +209,15 @@ export const marketingKeys = {
   ) => [...marketingKeys.crawl(siteId, crawlId), "events", state] as const,
 };
 
-export function useSites(state: MatrxDataTableQueryState) {
+export function useSites(
+  state: MatrxDataTableQueryState,
+  /** Brand scope. Inside a brand workspace this MUST be set, or the portfolio
+   * lists every client's websites — see listSites' brand-scope note. */
+  brandId?: string | null,
+) {
   return useQuery({
-    queryKey: marketingKeys.sites(state),
-    queryFn: ({ signal }) => listSites(state, signal),
+    queryKey: [...marketingKeys.sites(state), brandId ?? "all"] as const,
+    queryFn: ({ signal }) => listSites(state, signal, brandId),
     placeholderData: keepPreviousData,
   });
 }

@@ -205,7 +205,7 @@ function Cell<T>({ col, row }: { col: AuditColumnDef<T>; row: T }) {
   const display = value == null || value === "" ? "—" : String(value);
 
   return (
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="matrx-touch-targets flex min-w-0 items-center gap-1">
       <span
         className={cn("truncate", col.monospace && "font-mono")}
         title={display}
@@ -215,7 +215,7 @@ function Cell<T>({ col, row }: { col: AuditColumnDef<T>; row: T }) {
       {col.copyable && display !== "—" ? (
         <button
           type="button"
-          className="shrink-0 opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-40"
+          className="shrink-0 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-40 sm:[@media(hover:hover)]:hover:opacity-100 focus-visible:opacity-100"
           title="Copy"
           onClick={(e) => {
             e.stopPropagation();

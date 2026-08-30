@@ -2,7 +2,7 @@
 
 Three-tier architecture for printing AI response messages, plus the reusable
 printing core that other surfaces build on. **The core lives in
-`lib/block-print/`** — chat-specific tiers live with the conversation feature.
+the `@ai-matrx/print` npm package** (extracted 2026-08-29; source `aidream/apps/shared/print`) — chat-specific tiers live with the conversation feature.
 
 ## Architecture Overview
 
@@ -20,12 +20,12 @@ Tier 2 — Full Message (DOM screenshot)
 
 Tier 3 — Per-Block (best quality, block owns its output)
   Print button in each block's header → either HTML template printer or DOM capture
-  Dialog + hook: lib/block-print/PrintOptionsDialog.tsx (usePrintOptions)
+  Dialog + hook: @ai-matrx/print/react (PrintOptionsDialog, usePrintOptions)
 ```
 
 ## The BlockPrinter Interface
 
-Source of truth: `lib/block-print/block-print-utils.ts`
+Source of truth: `@ai-matrx/print/core` (BlockPrinter, PrintVariant, PrintSetting, PrintSettings)
 
 ```typescript
 interface BlockPrinter {
@@ -56,27 +56,27 @@ If `variants.length === 0` AND `settings.length === 0`, `usePrintOptions` calls 
 
 | Block / surface | Strategy | File |
 |---|---|---|
-| FlashcardsBlock | HTML template | `components/mardown-display/blocks/flashcards/flashcards-printer.ts` |
+| FlashcardsBlock | HTML template | `@ai-matrx/print/flashcards` (flashcardsPrinter) |
 | MultipleChoiceQuiz | HTML template | `components/mardown-display/blocks/quiz/quiz-printer.ts` |
 | MathProblemBlock | HTML template | `components/mardown-display/blocks/math/math-printer.ts` |
 | DiagramBlock | HTML template | `components/mardown-display/blocks/diagram/diagram-printer.ts` |
 | PD rating report | HTML template | `features/legal/wc/pd-ratings/print/pd-report-printer.ts` |
 | Performance review report | HTML template | `features/employee-performance-reviews/review-report.ts` |
-| **QR label sheets** | HTML template (registry-driven grid) | `lib/label-print/qr-labels-printer.ts` — Avery-stock QR labels; template registry, calibration page, on-screen preview + jsPDF lane. See `lib/label-print/FEATURE.md` |
-| Various display blocks | DOM capture | inline in component via `lib/block-print/dom-capture-block-printer.ts` |
+| **QR label sheets** | HTML template (registry-driven grid) | `@ai-matrx/print/labels` (qrLabelsPrinter) — Avery + roll stock QR labels; template registry, calibration page, LabelSheetPreview (in /react) + jsPDF lane |
+| Various display blocks | DOM capture | inline in component via `@ai-matrx/print/pdf` (captureBlockElement) |
 
 ## Adding an HTML Template Printer
 
 1. Create `<block-name>-printer.ts` alongside the component file.
-2. Import `buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter, type PrintSettings` from `@/lib/block-print/block-print-utils`.
+2. Import `buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter, type PrintSettings` from `@ai-matrx/print/core`.
 3. Define `variants` and optional `settings` arrays.
 4. In `print(data, variantId = "default", settings?)`:
    - Cast and guard: `if (!typed?.items?.length) { openPrintWindow(buildPrintDocument("<p>No data.</p>", ...), "fallback"); return; }`
    - Call `escapeHtml()` on every user string.
    - Read settings as: `const show = (settings?.showX ?? false) as boolean`.
-5. In the component: call `usePrintOptions(printer, data)` (from `@/lib/block-print/PrintOptionsDialog`), wire `triggerPrint` to a `<Printer>` button, render `<PrintOptionsDialog>` outside (not inside) the block wrapper.
+5. In the component: call `usePrintOptions(printer, data)` (from `@ai-matrx/print/react`), wire `triggerPrint` to a `<Printer>` button, render `<PrintOptionsDialog>` outside (not inside) the block wrapper.
 
-Full examples: `flashcards-printer.ts` (variants + boolean settings + FIT_TEXT auto-shrink), `lib/label-print/qr-labels-printer.ts` (all four setting types, inch-exact `@page` geometry, data-URI images).
+Full examples in the package source (`aidream/apps/shared/print/src/`): `flashcards.ts` (variants + boolean settings + fit-text auto-shrink), `labels.ts` (all four setting types, inch-exact `@page` geometry, data-URI images).
 
 ## Adding a DOM Capture Block
 
@@ -90,7 +90,7 @@ const handlePrint = useCallback(async () => {
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-        const { captureBlockElement } = await import('@/lib/block-print/dom-capture-block-printer');
+        const { captureBlockElement } = await import('@ai-matrx/print/pdf');
         await captureBlockElement(blockContentRef.current, 'filename', 'landscape'); // or 'portrait'
     } catch (err) {
         console.error('[BlockName] Print failed:', err);
@@ -119,13 +119,13 @@ Pass `isCapturing` to the message options menu as a prop. The menu item should b
 
 ## Key Utilities
 
-All in `lib/block-print/`:
+All in `@ai-matrx/print` (`/core`, `/pdf`, `/react`); markdown→PDF deps are wired by the host seam `lib/print/markdown-pdf.ts`:
 
 - `buildPrintDocument(bodyHtml, title?, extraStyles?)` → complete `<!DOCTYPE html>` string
 - `openPrintWindow(htmlDoc, filename?)` → popup window; falls back to `.html` download if popup blocked. **The window is a fresh unauthenticated document — inline every image as a data URI, never fetch.**
 - `printHtmlContent(bodyHtml, title?, extraStyles?)` → shorthand combo
 - `captureBlockElement(el, filename, orientation?)` → delegates to `captureToPDF` with scale:2
-- Fixed-geometry sheets (`@page { size: …; margin: 0 }`, inch-exact cells, screen-only "100% scale, no margins" banner, FIT_TEXT auto-shrink): patterns in `flashcards-printer.ts` (Avery 5388) and, generalized to a template registry, `lib/label-print/`
+- Fixed-geometry sheets (`@page { size: …; margin: 0 }`, inch-exact cells, screen-only "100% scale, no margins" banner, FIT_TEXT auto-shrink): patterns in the package's `flashcards.ts` (Avery 5388) and, generalized to a template registry, `labels.ts`
 
 ## Common Bugs to Watch For
 

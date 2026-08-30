@@ -106,9 +106,8 @@ export function AgentAppFullyCustomShell({
 
   // ── Hook (Tier-3 contract) ────────────────────────────────────────────
   const ctx = useAgentApp({
-    agentId: app.agent_id,
-    agentVersionId: app.agent_version_id,
-    useLatest: app.use_latest,
+    // See AgentAppFormToResultShell: the row carries the app's JOB.
+    app,
     appId: app.id,
     autoRun: config.autoRun ?? false,
     allowChat: config.allowChat ?? true,

@@ -77,6 +77,7 @@ import {
   warmLocalEngineForConversation,
 } from "./resolve-base-url";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
+import { resolveStartPath } from "../utils/resolve-start-path";
 import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
@@ -947,18 +948,26 @@ export const executeInstance = createAsyncThunk<
         //
         // Always: client id + is_new:true. `store` decides whether the
         // server writes a row (false for ephemeral).
-        const pinnedVersionId = instance.initialAgentVersionId ?? null;
-        const targetId = pinnedVersionId ?? instance.agentId;
-        const agentPath = resolveEndpointPath(
-          "/ai/agents/{agent_id}",
+        // ── THE DOOR CHOICE (mandate vs agent) ──────────────────────────────
+        // A mandate-driven conversation POSTs `/ai/mandates/{key}` with the
+        // SAME AgentStartRequest body, and the SERVER resolves who answers —
+        // which is what makes an org/user REBIND take effect with no client
+        // deploy. There is no client-side re-resolve behind it: a 404
+        // `mandate_unfulfilled` surfaces verbatim through the normal stream
+        // error path. The rule itself lives in `resolveStartPath` so it can be
+        // pinned by a test instead of hiding inline here.
+        const start = resolveStartPath({
+          agentId: instance.agentId,
+          pinnedVersionId: instance.initialAgentVersionId ?? null,
+          mandateKey: instance.mandateKey ?? null,
           overrideConfig,
-        ).replace("{agent_id}", encodeURIComponent(targetId));
-        url = `${baseUrl}${agentPath}`;
+        });
+        url = `${baseUrl}${start.path}`;
         routedPayload = {
           ...payload,
           ...buildAgentStartLifecycleFields(conversationId, isEphemeral),
           ...(priorMessages?.length && { prior_messages: priorMessages }),
-          ...(pinnedVersionId && { is_version: true }),
+          ...(start.isVersion && { is_version: true }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
         } as Record<string, unknown>;
       }

@@ -30,11 +30,15 @@
 import {
   Boxes,
   BrainCircuit,
+  ClipboardCopy,
   Eye,
   FileJson,
   FlaskConical,
+  FormInput,
+  Images,
   Pencil,
   Radio,
+  ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { revealAndFlash } from "@/lib/dom/flash-attention";
@@ -45,9 +49,13 @@ import {
   SHAPES_SURFACE_NAME,
   SHAPE_BUILDER_ROLE,
   shapeDetailHref,
+  shapeExamplesHref,
+  shapeGateHref,
+  shapeInputsHref,
   shapeInstancesHref,
   shapeSchemaHref,
   shapeStreamHref,
+  shapeTemplateHref,
   shapeTestHref,
 } from "@/features/content-ir/studio/constants";
 import {
@@ -133,11 +141,20 @@ export default function ShapeDetailHeader({
       backHref={SHAPES_ALL_HREF}
       entityLabel={label}
       modes={[
+        // ONE SET OF TABS (Arman, 2026-08-29). Examples/Gate/Template/Inputs
+        // existed only on the admin registry page; a user could not see their
+        // own shape's samples, run its gate, or copy its emit template
+        // anywhere. Same components, same routes — what a viewer may CHANGE is
+        // the only difference.
         { name: "Preview", href: detailHref, icon: Eye },
         { name: "Test", href: shapeTestHref(kind), icon: FlaskConical },
         { name: "Stream", href: shapeStreamHref(kind), icon: Radio },
+        { name: "Examples", href: shapeExamplesHref(kind), icon: Images },
         { name: "Instances", href: shapeInstancesHref(kind), icon: Boxes },
         { name: "Schema", href: shapeSchemaHref(kind), icon: FileJson },
+        { name: "Template", href: shapeTemplateHref(kind), icon: ClipboardCopy },
+        { name: "Inputs", href: shapeInputsHref(kind), icon: FormInput },
+        { name: "Gate", href: shapeGateHref(kind), icon: ShieldCheck },
       ]}
       actions={
         isOwnedByViewer

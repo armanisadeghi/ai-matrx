@@ -6,7 +6,7 @@
  * Both mandates are declared against provision `scraper.page_analysis`, which
  * offers `content` — the scraped page text — so the tabs send exactly that
  * variable. No agent id lives here: binding an agent to a tab is a rebind on
- * /agents/mandates, never a code change. An unresolved mandate (not yet seeded
+ * /mandates, never a code change. An unresolved mandate (not yet seeded
  * or bound) renders the tab's unbound state with the picker + the door — it
  * never silently runs a hardcoded id.
  */

@@ -95,6 +95,14 @@ export interface PanelMember {
   role: MembershipRole;
   joinedAt: string;
   user?: UserLike;
+  /**
+   * Optional facts rendered by a host-owned row seam. Shared copy/export must
+   * carry those facts too, otherwise the payload is less faithful than the UI.
+   */
+  copyDetails?: {
+    fields: Record<string, unknown>;
+    summary: Array<[label: string, value: string | number | null | undefined]>;
+  };
 }
 
 export interface MembersPanelProps {

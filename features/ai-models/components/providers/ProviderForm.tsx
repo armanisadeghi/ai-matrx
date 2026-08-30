@@ -3,7 +3,6 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -15,6 +14,7 @@ import {
 import { Lock, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AiProviderRow, DocSource } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Form data shape ────────────────────────────────────────────────────────
 // Mirrors ai.provider's editable identity fields as plain strings (like
@@ -116,7 +116,7 @@ export default function ProviderForm({
       </div>
 
       <FormField label="Company Description">
-        <Textarea
+        <ProTextarea
           value={data.company_description}
           onChange={set("company_description")}
           placeholder="Short description of the provider"

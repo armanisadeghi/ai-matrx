@@ -15,7 +15,6 @@
 import { useState } from "react";
 import { Check, Loader2, Send, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -29,6 +28,7 @@ import type {
   AccessDeniedContext,
   RequestedLevel,
 } from "@/features/access-gate/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface RequestAccessPanelProps {
   context: AccessDeniedContext;
@@ -217,7 +217,7 @@ export function RequestAccessPanel({
         </div>
       ) : null}
 
-      <Textarea
+      <ProTextarea
         className="mt-3 min-h-16 text-base md:text-sm"
         placeholder={`Why you need this ${kind} (optional)`}
         value={note}

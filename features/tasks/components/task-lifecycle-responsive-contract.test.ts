@@ -69,6 +69,15 @@ describe("task lifecycle responsive contract", () => {
     );
   });
 
+  it("keeps live-state copy actions in the mobile task editor", () => {
+    const mobileDetails = source("mobile/MobileTaskDetails.tsx");
+
+    expect(mobileDetails).toContain("TaskEditorCopyButtonsForDraft");
+    expect(mobileDetails).toContain('location="Tasks — mobile task editor"');
+    expect(mobileDetails).toContain("description,");
+    expect(mobileDetails).toContain("isDirty,");
+  });
+
   it("keeps search on the project task list", () => {
     const projectTasks = projectSource("ProjectTaskList.tsx");
 

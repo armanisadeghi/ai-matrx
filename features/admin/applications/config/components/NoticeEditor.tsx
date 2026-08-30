@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import {
   NOTICE_LEVELS,
@@ -94,7 +94,7 @@ export function NoticeEditor({ notice, onChange, errors }: NoticeEditorProps) {
 
           <div className="space-y-1.5">
             <Label htmlFor="app-config-notice-body">Body</Label>
-            <Textarea
+            <ProTextarea
               id="app-config-notice-body"
               value={notice.body}
               onChange={(e) => onChange({ ...notice, body: e.target.value })}

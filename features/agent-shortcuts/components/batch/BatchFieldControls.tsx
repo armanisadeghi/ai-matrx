@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { BatchFieldDef } from "./batchModel";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface ScalarControlProps {
   def: BatchFieldDef;
@@ -107,7 +108,7 @@ export function ScalarValueControl({
   const str = value == null ? "" : String(value);
   if (c.multiline && !compact) {
     return (
-      <Textarea
+      <ProTextarea
         value={str}
         onChange={(e) => onChange(e.target.value || null)}
         rows={2}

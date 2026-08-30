@@ -140,6 +140,11 @@ is the same class of lie this feature exists to kill.
   `deleted`, `missing`, `signed-out`, or `ok`. A fully rendered `denied` path is
   expected authorization and becomes yellow/Silent; resolver `error` leaves
   `unknown` red, and every other resolved state remains red.
+- **A record-unavailable read is deterministic and is never automatically
+  retried.** The shared React Query provider refuses replay for
+  `RecordUnavailableError`, so one stale/deleted/denied route visit produces
+  one capture for AccessGate to reconcile. The visible Retry action remains
+  available for the user to request a fresh read.
 - **Recipients (owner ruling, 2026-08-11):** the owner **and** the org's
   owners/admins when the org is shared. First to act wins, so a request never
   dies with one person. A personal workspace routes to the owner only — no
@@ -255,8 +260,12 @@ surface means importing them too, never reimplementing the RPC call.
 
 ## Change Log
 
+- **2026-08-29** — The shared React Query boundary no longer automatically
+  retries deterministic `RecordUnavailableError` results; a deleted, missing,
+  or denied route visit now produces one reconciled capture while preserving
+  the user's explicit Retry action.
 - **2026-08-29** — Access-request decision surfaces consume the canonical permission-level vocabulary from `utils/permissions`; no feature-local viewer/editor/admin ladder remains.
-- **2026-08-29** — Access Gate refusal actions opt into the shared responsive 44px touch-target floor, including the governed-action dialog and standalone CMS missing-site fallback doors.
+- **2026-08-29** — Access Gate refusal actions opt into the shared responsive 44px touch-target floor, including the governed-action dialog's named close control and standalone CMS missing-site fallback doors.
 - **2026-08-24** — **Governed write refusals became conversations, starting
   with website deletion.** The exact edit-but-not-full `42501` now opens one
   polished `GovernedActionDialog`, never a raw toast. The editor can ask the

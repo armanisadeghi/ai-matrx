@@ -36,7 +36,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -473,7 +473,7 @@ function ResourceEditor({
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">
           Content
         </Label>
-        <Textarea
+        <ProTextarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={6}

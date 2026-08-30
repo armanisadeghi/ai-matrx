@@ -24,8 +24,8 @@
  *       super-admins, under an explicit "Platform setup" section: the Google
  *       Cloud reply pipe (Pub/Sub topic + push subscription + the two server
  *       settings), the server actually listening, and the gmail.readonly
- *       grant (queued behind Google's review of OUR OAuth app — platform
- *       work, nothing any org can act on). These read deployment env config
+ *       grant (a separate restricted-scope campaign after the current ordinary
+ *       Google review — platform work, nothing any org can act on). These read deployment env config
  *       (`GMAIL_INBOUND_PUBSUB_TOPIC` / `OUTREACH_INBOUND_PUSH_TOKEN`), the
  *       same for every org on the server.
  *
@@ -59,8 +59,17 @@ export interface BringUpContext {
 
 /** Mirror of the shared-address list the send authority refuses (crm_07 §4). */
 const ROLE_LOCAL_PARTS = new Set([
-  "info", "sales", "hello", "contact", "support", "admin", "noreply",
-  "no-reply", "marketing", "team", "office",
+  "info",
+  "sales",
+  "hello",
+  "contact",
+  "support",
+  "admin",
+  "noreply",
+  "no-reply",
+  "marketing",
+  "team",
+  "office",
 ]);
 
 function isNamedMailbox(identity: SendingIdentityView): boolean {
@@ -163,7 +172,8 @@ export const bringUpChecklist = registerChecklist<BringUpContext>({
           ? { status: "pass" }
           : {
               status: "fail",
-              reason: "One step left: read the sending rules and agree to them — it takes a minute.",
+              reason:
+                "One step left: read the sending rules and agree to them — it takes a minute.",
               fix: {
                 label: "Read and accept the sending rules",
                 run: (ctx as BringUpContext).requestAcceptRules,
@@ -233,7 +243,8 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
         },
         {
           label: "Where the push subscription delivers",
-          value: "https://server.app.matrxserver.com/outreach/inbound/gmail/<delivery-secret>",
+          value:
+            "https://server.app.matrxserver.com/outreach/inbound/gmail/<delivery-secret>",
           hint: "Replace <delivery-secret> with the same secret you set as the server's delivery secret below.",
         },
         {
@@ -265,8 +276,10 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
       check: (ctx) =>
         readinessOrUnknown(ctx, (readiness) => {
           const missing: string[] = [];
-          if (!readiness.pubsub_topic_configured) missing.push("the topic's full name");
-          if (!readiness.push_token_configured) missing.push("the delivery secret");
+          if (!readiness.pubsub_topic_configured)
+            missing.push("the topic's full name");
+          if (!readiness.push_token_configured)
+            missing.push("the delivery secret");
           if (missing.length > 0) {
             return {
               status: "fail",
@@ -282,23 +295,27 @@ export const platformBringUpChecklist = registerChecklist<BringUpContext>({
       id: "reply_permission",
       title: "Permission to read replies (gmail.readonly)",
       description:
-        "Google grants this to OUR OAuth app — it is queued behind Google's review, and no customer action can hurry it. Shown here so its state is visible.",
+        "This is a separate restricted-scope campaign scheduled after the current ordinary Google review. That review does not include or grant inbox-reading access.",
       optional: true,
       check: (ctx) =>
         readinessOrUnknown(ctx, (readiness) => {
           if (readiness.connected_mailboxes === 0) {
             return {
               status: "unknown",
-              reason: "This org has no connected mailbox yet — the permission attaches to one.",
+              reason:
+                "This org has no connected mailbox yet — the permission attaches to one.",
             };
           }
           if (readiness.gmail_readonly_granted) {
-            return { status: "pass", detail: "A connected mailbox can already read replies." };
+            return {
+              status: "pass",
+              detail: "A connected mailbox can already read replies.",
+            };
           }
           return {
             status: "fail",
             reason:
-              "Not granted yet. The moment Google approves it, reconnecting the mailbox turns this green — until then, campaigns correctly refuse to run rather than send without listening.",
+              "Not granted. After the current review closes, AI Matrx must submit gmail.readonly separately, complete Google's restricted-scope requirements, and reconnect the mailbox. Campaigns correctly refuse to run rather than send without listening.",
             fix: { label: "Check again", run: ctx.refreshReadiness },
           };
         }),

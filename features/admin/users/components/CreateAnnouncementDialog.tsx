@@ -6,7 +6,6 @@ import { AnnouncementType } from '@/types/feedback.types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from "@/lib/toast";
@@ -14,6 +13,7 @@ import { Eye, EyeOff, AlertCircle, AlertTriangle, Info, Megaphone, X } from 'luc
 import { Card } from '@/components/ui/card';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
 import { useRegisterAnnouncementEditor } from './FeedbackConsoleEditorStore';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CreateAnnouncementDialogProps {
     open: boolean;
@@ -175,7 +175,7 @@ export default function CreateAnnouncementDialog({ open, onOpenChange, onSuccess
                     {/* Message */}
                     <div className="space-y-2">
                         <Label htmlFor="message">Message *</Label>
-                        <Textarea
+                        <ProTextarea
                             id="message"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}

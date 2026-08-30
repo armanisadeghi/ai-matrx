@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -25,6 +24,7 @@ import {
   validateSlugsInBatch,
 } from "../services/slug-service";
 import type { AppDisplayMode, CreateAgentAppInput } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CreateAgentAppFormProps {
   onSubmit: (input: CreateAgentAppInput) => Promise<void> | void;
@@ -163,7 +163,7 @@ export function CreateAgentAppForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="agent-app-description">Description</Label>
-        <Textarea
+        <ProTextarea
           id="agent-app-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}

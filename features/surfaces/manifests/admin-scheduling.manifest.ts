@@ -314,6 +314,39 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 470,
     group: "system_jobs",
   },
+  {
+    name: "db_job_count",
+    label: "Database job count",
+    description:
+      "Number of pg_cron jobs (SQL scheduled inside Postgres) returned by aidream's admin db-jobs endpoint — the page's second section since 2026-08-29. Absent outside the System jobs tab and until that list resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 2,
+    sortOrder: 472,
+    group: "system_jobs",
+  },
+  {
+    name: "db_job_active_count",
+    label: "Active database job count",
+    description:
+      "How many of those pg_cron jobs are currently active. Absent outside the System jobs tab and until the list resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 2,
+    sortOrder: 474,
+    group: "system_jobs",
+  },
+  {
+    name: "db_jobs_load_error",
+    label: "Database jobs load error",
+    description:
+      "Why the pg_cron job list could not be loaded from aidream. Absent when the list loaded fine, and outside the System jobs tab.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 476,
+    group: "system_jobs",
+  },
 
   // ── Orphan leases ────────────────────────────────────────────────────────
   {
@@ -603,7 +636,7 @@ READ THE COUNTS CORRECTLY: despite the console's cross-user framing, scheduler.s
 
 Overview carries the health counters. Tasks and Runs report how many rows the SERVER returned (each capped at 200); their tables also have their own search boxes and column filters, which narrow the screen without changing these counts and which the page cannot read — so never infer \"what the admin is looking at\" from them. Runs additionally exposes its two server-side filters. Orphan leases counts runs whose claim lease expired without completing — these should self-heal on the next scanner tick; a persistent nonzero count means something is wrong upstream. Scanner health mirrors aidream's live scanner process state.
 
-System jobs lists the platform's recurring SERVER jobs (kind=tool), read from aidream's admin-gated system-tasks endpoints — genuinely platform-wide, unlike the D140-scoped tabs. It is the one tab where a HUMAN changes what the platform runs (enable/disable behind a confirm, trigger edits, Run now); those controls are not agent write targets, so you can read its counts and report, never operate them.
+System jobs lists the platform's recurring SERVER jobs (kind=tool), read from aidream's admin-gated system-tasks endpoints — genuinely platform-wide, unlike the D140-scoped tabs. Since 2026-08-29 the same page carries a second section, Database jobs: the pg_cron jobs running SQL inside Postgres (db_job_count / db_job_active_count), with the same view/edit/enable-disable controls and deliberately no Run now. It is the one tab where a HUMAN changes what the platform runs (enable/disable behind a confirm, trigger/schedule edits, Run now for server jobs); those controls are not agent write targets, so you can read its counts and report, never operate them.
 
 Templates has no backing data source yet (hardcoded starter examples pending a real table) and is deliberately undeclared.
 
@@ -662,6 +695,9 @@ export type AdminSchedulingScopeValues = {
   system_job_count?: number;
   system_job_enabled_count?: number;
   system_jobs_load_error?: string;
+  db_job_count?: number;
+  db_job_active_count?: number;
+  db_jobs_load_error?: string;
   orphan_lease_row_count?: number;
   cron_expression?: string;
   cron_timezone?: string;

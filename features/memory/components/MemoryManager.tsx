@@ -25,6 +25,7 @@ import {
   deleteMemory,
   type MemoryEntry,
 } from "../service/memoryService";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const PATH_RE = /^[A-Za-z0-9._/-]+$/;
 
@@ -249,7 +250,8 @@ export default function MemoryManager() {
                   </button>
                 )}
               </div>
-              <textarea
+              <ProTextarea
+                wrapperClassName="min-h-0 flex-1"
                 value={draft}
                 onChange={(ev) => setDraft(ev.target.value)}
                 placeholder="# Notes the agent should remember…"

@@ -5,7 +5,6 @@ import { Save, Loader2, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import { supabase } from '@/utils/supabase/client';
 import { createTable, addRow } from '@/utils/user-table-utls/table-utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ZipCodeData } from '../page';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SaveToTableModalProps {
   isOpen: boolean;
@@ -159,7 +159,7 @@ export default function SaveToTableModal({
 
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
+            <ProTextarea enableVoice={false} enableCleanup={false}
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

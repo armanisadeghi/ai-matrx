@@ -2,10 +2,10 @@
  * `launch_agent` — accepting the assist opens the shared agent-run window,
  * pre-filled with the composed intent (pre-fill only; the user reviews and
  * sends). The agent comes from a direct id or an agent-mandate key resolved at
- * click time (swappable from /agents/mandates, no deploy).
+ * click time (swappable from /mandates, no deploy).
  */
 
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import {
   registerAssistAction,
   type AssistActionResult,

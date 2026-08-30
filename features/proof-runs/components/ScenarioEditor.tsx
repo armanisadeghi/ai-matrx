@@ -50,6 +50,7 @@ import type {
   ProofMandateOption,
   ProofScenario,
 } from "@/features/proof-runs/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MARKER_PATTERN = /\{\{marker:([a-zA-Z0-9_]+)\}\}/g;
 
@@ -220,7 +221,7 @@ function ExpectationRow({
             <Label className="text-xs">
               Proves — why passing this means the work was done
             </Label>
-            <Textarea
+            <ProTextarea
               value={expectation.proves ?? ""}
               onChange={(e) => set({ proves: e.target.value })}
               placeholder="The route universe is closed, so any other route is invention."
@@ -302,7 +303,7 @@ function ExpectationRow({
               <Label className="text-xs">
                 Rubric — the question the judge answers
               </Label>
-              <Textarea
+              <ProTextarea
                 value={expectation.rubric ?? ""}
                 onChange={(e) => set({ rubric: e.target.value })}
                 placeholder="PASS if the differentiator names a specific subject and contrasts it with a sibling's territory. FAIL if it is generic filler."
@@ -468,7 +469,7 @@ export function ScenarioEditor({
 
       <div className="space-y-1">
         <Label className="text-xs">What this scenario traps</Label>
-        <Textarea
+        <ProTextarea
           value={scenario.description}
           onChange={(e) =>
             setScenario((s) => ({ ...s, description: e.target.value }))

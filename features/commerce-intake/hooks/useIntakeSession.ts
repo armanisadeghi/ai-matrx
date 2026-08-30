@@ -160,11 +160,18 @@ function probeVideoDurationMs(file: File): Promise<number> {
       resolve(Math.max(1, Math.round(ms)));
     };
     video.preload = "metadata";
+    // Some codecs never fire loadedmetadata OR error (seen on iOS) — without
+    // a deadline the promise hangs and the upload silently never starts.
+    const deadline = setTimeout(() => done(1), 10_000);
     video.onloadedmetadata = () => {
+      clearTimeout(deadline);
       const seconds = video.duration;
       done(Number.isFinite(seconds) ? seconds * 1000 : 1);
     };
-    video.onerror = () => done(1);
+    video.onerror = () => {
+      clearTimeout(deadline);
+      done(1);
+    };
     video.src = url;
   });
 }
@@ -181,6 +188,16 @@ export function useIntakeSession(
   const [batch, setBatch] = useState<IntakeBatch | null>(null);
   const [currentAsset, setCurrentAsset] = useState<IntakeAsset | null>(null);
   const [artifacts, setArtifacts] = useState<PendingIntakeArtifact[]>([]);
+  // Mirror for imperative reads (removal side effects stay OUT of the state
+  // updater — StrictMode replays impure updaters).
+  const artifactsRef = useRef<PendingIntakeArtifact[]>([]);
+  useEffect(() => {
+    artifactsRef.current = artifacts;
+  }, [artifacts]);
+  // Artifacts removed while their upload was still in flight: the upload
+  // completion must delete the server row it just created, or a "removed"
+  // photo (e.g. an edit-replaced original) lands on the asset anyway.
+  const removedWhileUploadingRef = useRef<Set<string>>(new Set());
   const [notes, setNotesState] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
   const [sessionSeq, setSessionSeq] = useState(0);
@@ -860,6 +877,19 @@ export function useIntakeSession(
           isDelineator: opts.isDelineator,
           durationMs: opts.durationMs ?? null,
         });
+        if (removedWhileUploadingRef.current.has(localId)) {
+          // The user removed this capture while it was uploading (delete, or
+          // an edit-replace of the original) — honor the removal by deleting
+          // the row the upload just created.
+          removedWhileUploadingRef.current.delete(localId);
+          void deleteArtifact(artifact.id).catch((delErr: unknown) => {
+            console.warn(
+              "[commerce-intake] post-removal artifact delete failed",
+              delErr,
+            );
+          });
+          return { asset, artifact };
+        }
         patchArtifact(localId, {
           fileId: artifact.fileId ?? undefined,
           artifactId: artifact.id,
@@ -867,7 +897,22 @@ export function useIntakeSession(
         });
         return { asset, artifact };
       } catch (err) {
-        console.error("[commerce-intake] upload failed", err);
+        // The canonical file transport already captures the failed request
+        // with its request id. Keep a local breadcrumb without creating a
+        // second, lower-fidelity console-error incident for the same upload.
+        console.warn("[commerce-intake] upload failed", err);
+        removedWhileUploadingRef.current.delete(localId);
+        // If the chip is no longer on screen (Next item cleared the strip, or
+        // the artifact was removed), the red-ring surface can't tell the user
+        // — say it out loud instead of losing the capture silently.
+        const stillVisible = artifactsRef.current.some(
+          (a) => a.localId === localId,
+        );
+        if (!stillVisible) {
+          toast.error(
+            `A ${kind === "photo" ? "photo" : kind === "video" ? "video" : "voice note"} failed to save and is not on this item — capture it again.`,
+          );
+        }
         patchArtifact(localId, {
           status: "error",
           error: err instanceof Error ? err.message : "Upload failed",
@@ -972,20 +1017,24 @@ export function useIntakeSession(
   );
 
   const removeArtifact = useCallback((localId: string) => {
-    setArtifacts((prev) => {
-      const target = prev.find((a) => a.localId === localId);
-      if (target?.artifactId) {
-        void deleteArtifact(target.artifactId).catch((err: unknown) => {
-          console.warn("[commerce-intake] artifact delete failed", err);
-        });
-      }
-      const url = previewUrlsRef.current.get(localId);
-      if (url) {
-        revokeTrackedObjectUrl(url);
-        previewUrlsRef.current.delete(localId);
-      }
-      return prev.filter((a) => a.localId !== localId);
-    });
+    // Side effects OUTSIDE the state updater (StrictMode replays updaters,
+    // which double-fired the server delete when this lived inside).
+    const target = artifactsRef.current.find((a) => a.localId === localId);
+    if (target?.artifactId) {
+      void deleteArtifact(target.artifactId).catch((err: unknown) => {
+        console.warn("[commerce-intake] artifact delete failed", err);
+      });
+    } else if (target?.status === "uploading") {
+      // No server row yet — flag it so the in-flight upload deletes the row
+      // it is about to create.
+      removedWhileUploadingRef.current.add(localId);
+    }
+    const url = previewUrlsRef.current.get(localId);
+    if (url) {
+      revokeTrackedObjectUrl(url);
+      previewUrlsRef.current.delete(localId);
+    }
+    setArtifacts((prev) => prev.filter((a) => a.localId !== localId));
   }, []);
 
   // On unmount: flush notes still inside the debounce window (an SPA route

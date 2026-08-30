@@ -20,9 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { createMap } from "./service";
 import { draftMapFromLines, mapHref, starterMap } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const EXAMPLE = `Patient calls
 Front desk takes details
@@ -114,7 +114,7 @@ export function NewMapDialog({
                 (optional)
               </span>
             </Label>
-            <Textarea
+            <ProTextarea
               id="map-steps"
               value={steps}
               onChange={(e) => setSteps(e.target.value)}

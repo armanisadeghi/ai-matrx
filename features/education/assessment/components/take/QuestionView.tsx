@@ -12,7 +12,6 @@
 import { CheckCircle2, XCircle, MinusCircle, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
@@ -23,6 +22,7 @@ import { StepBreakdown } from "../StepBreakdown";
 import { canPhotographAnswer } from "./useTakeAssessment";
 import type { GradedAnswer } from "../../data/grading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "../../data/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function optionsOf(item: AssessmentItemRow): string[] {
   const raw = item.options;
@@ -160,7 +160,7 @@ export function QuestionView({
           />
         ) : (
           <div className="flex flex-col gap-3">
-            <Textarea
+            <ProTextarea
               value={response}
               onChange={(e) => onResponseChange(e.target.value)}
               placeholder={

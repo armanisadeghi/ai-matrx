@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 const SHORTCUT_FIELDS = [
   "id",
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
     const placementType = searchParams.get("placement_type");
     const isActive = searchParams.get("is_active");
 
-    let query = supabase.schema("agent").from("shortcut").select("*").is("deleted_at", null);
+    let query = shortcutTable(supabase).select("*").is("deleted_at", null);
 
     if (scope === "global") {
       // Global/platform content now lives in the system org (was NULL org).
@@ -195,9 +196,7 @@ export async function POST(request: NextRequest) {
     delete scoped.project_id;
     delete scoped.task_id;
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("shortcut")
+    const { data, error } = await shortcutTable(supabase)
       .insert(scoped as never)
       .select()
       .single();

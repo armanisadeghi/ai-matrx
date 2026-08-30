@@ -39,7 +39,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -68,6 +67,7 @@ import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import {
   createSeoChange,
   getMetricEvidence,
@@ -88,6 +88,7 @@ import {
   type SeoPageOption,
   type UntrackedSnapshotChange,
 } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const STATUS_OPTIONS = [
   "planned",
@@ -400,7 +401,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="What is changing?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.summary}
                 onChange={(event) => set("summary", event.target.value)}
                 className="min-h-20"
@@ -408,7 +409,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Why make this change?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.rationale}
                 onChange={(event) => set("rationale", event.target.value)}
                 className="min-h-20"
@@ -447,7 +448,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="If we do this, what should happen?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.hypothesis}
                 onChange={(event) => set("hypothesis", event.target.value)}
                 className="min-h-20"
@@ -455,7 +456,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Why should it happen?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.mechanism}
                 onChange={(event) => set("mechanism", event.target.value)}
                 className="min-h-20"
@@ -463,7 +464,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="How does this create business value?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.businessLink}
                 onChange={(event) => set("businessLink", event.target.value)}
                 className="min-h-20"
@@ -471,7 +472,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Business outcome" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.businessOutcome}
                 onChange={(event) => set("businessOutcome", event.target.value)}
                 className="min-h-20"
@@ -962,7 +963,16 @@ function ImplementationItem({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   return (
     <div className="rounded-lg border bg-card p-3">
@@ -1106,7 +1116,16 @@ function EvidenceCard({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
 
   if (!bundle.change.deployed_at)
@@ -1269,7 +1288,16 @@ function ManualEvidenceCard({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -1608,7 +1636,16 @@ function ChangeEditForm({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   return (
     <div className="mx-auto grid max-w-xl gap-5 overflow-auto p-6">
@@ -1792,7 +1829,16 @@ export function SeoChangeTrackingWorkspace() {
       toast.success("SEO experiment documented");
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   const rows = changes.data ?? [];
   // The parent site layout rejects a route whose site has no matching brand;
@@ -1857,13 +1903,27 @@ export function SeoChangeTrackingWorkspace() {
         header: "Theories",
         accessorFn: (row) => row.theory_count ?? 0,
         cell: (row) => (
-          <span className="tabular-nums">
+          <span className="inline-flex items-center gap-1.5 tabular-nums">
             {row.theory_count ?? 0}{" "}
-            <span className="text-emerald-600">
-              ✓{row.supported_theory_count ?? 0}
+            <span
+              className="inline-flex items-center gap-0.5 text-emerald-600"
+              title={`${row.supported_theory_count ?? 0} supported`}
+            >
+              <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">
+                {row.supported_theory_count ?? 0} supported
+              </span>
+              <span aria-hidden="true">{row.supported_theory_count ?? 0}</span>
             </span>{" "}
-            <span className="text-destructive">
-              ×{row.refuted_theory_count ?? 0}
+            <span
+              className="inline-flex items-center gap-0.5 text-destructive"
+              title={`${row.refuted_theory_count ?? 0} refuted`}
+            >
+              <XCircle className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">
+                {row.refuted_theory_count ?? 0} refuted
+              </span>
+              <span aria-hidden="true">{row.refuted_theory_count ?? 0}</span>
             </span>
           </span>
         ),

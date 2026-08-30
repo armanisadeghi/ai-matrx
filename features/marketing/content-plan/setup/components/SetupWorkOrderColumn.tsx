@@ -26,13 +26,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { humanizeKey, slugify, type ExpandedArchetype } from "../archetypes";
 import type { Concept, ResolvedConcept } from "../concepts";
 import type { Readiness } from "../readiness";
 import { SetupSection, Stat } from "./SetupSection";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MAX_COUNT = 500;
 
@@ -800,7 +800,7 @@ function NameBox({
         );
       }}
     >
-      <Textarea
+      <ProTextarea
         name="names"
         defaultValue={initial.join("\n")}
         rows={6}

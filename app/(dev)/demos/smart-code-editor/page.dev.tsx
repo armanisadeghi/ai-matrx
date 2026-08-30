@@ -24,6 +24,7 @@ import {
   PROMPT_APP_UI_EDITOR_AGENT,
 } from "@/features/code-editor/agent-code-editor/agents";
 import { TYPESCRIPT_SNIPPET, ADDITIONAL_CONTEXT_SNIPPET } from "./snippets";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ── Editing jobs (mandate keys — the DB decides which agent runs each) ──────
 
@@ -266,7 +267,7 @@ function SlotTextarea({
       <Label className="text-[10px] font-mono text-muted-foreground">
         {label}
       </Label>
-      <Textarea
+      <ProTextarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows ?? 2}

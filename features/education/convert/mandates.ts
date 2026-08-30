@@ -3,8 +3,8 @@
 // Mandate keys used by the converter's own generators. These are MANDATE KEYS,
 // not agent ids: each key resolves LIVE (system default → org binding → user
 // binding) to whatever agent the DATABASE currently binds — agent identity
-// never lives in code. Swap the agent at /agents/mandates; no code change, no
-// deploy. See features/agents/mandates/FEATURE.md.
+// never lives in code. Swap the agent at /mandates; no code change, no
+// deploy. See features/mandates/FEATURE.md.
 //
 // Feature-owned generators (memory_aid → memory, mind_map → media) reference
 // THEIR feature's mandates — only the converter/ingest flow's own lanes live

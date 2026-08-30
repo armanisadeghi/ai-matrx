@@ -317,11 +317,13 @@ export interface ContextMenuV3CoreProps {
     "callbacks" | "extensions"
   >;
 
-  // ── Context filters for AI Actions ──────────────────────────────────────
-  /** Contexts ADDED to the default `{general}` allow-set. */
-  addedContexts?: string[];
-  /** Contexts REMOVED from the allow-set after `addedContexts`. */
-  excludedContexts?: string[];
+  // ── Placement layout ────────────────────────────────────────────────────
+  // NOTE (Phase 6.7): `addedContexts` / `excludedContexts` are GONE. They fed
+  // the 16 hardcoded `enabled_features` slugs that used to decide which AI
+  // Actions a surface saw. Availability is now DERIVED from what the surface
+  // can read — see `model/requirement-gate.ts`. A host that wants to refuse a
+  // qualifying item uses the exclusion valve (the `menu` surface-config
+  // namespace), which is authored per PLACE and survives a remount.
   /** Per-placement visibility. Defaults to "show" for every placement. */
   placementMode?: PlacementMode;
 
@@ -451,9 +453,6 @@ export interface MenuContentProps {
   selectionRange: SelectionRange | null;
   fallbackContent: string;
 
-  // AI-actions filters
-  addedContexts?: string[];
-  excludedContexts?: string[];
   placementMode?: PlacementMode;
   scope: Scope;
   scopeId: string | null;

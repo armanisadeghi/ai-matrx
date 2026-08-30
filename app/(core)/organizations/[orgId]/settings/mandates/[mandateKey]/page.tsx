@@ -13,7 +13,7 @@ import {
   useUserRole,
 } from "@/features/organizations/hooks";
 import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
-import { MandateWorkspace } from "@/features/agents/mandates/workspace/MandateWorkspace";
+import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 
 export default function OrgMandateWorkspacePage() {
   const params = useParams();

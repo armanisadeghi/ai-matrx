@@ -18,6 +18,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { describeBackendFailure } from "@/lib/api/errors";
+import { classifyGscAccessFailure } from "@/features/marketing/google/gsc-property";
 import Link from "next/link";
 import { Compass, History, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -237,6 +238,41 @@ export function SearchConsoleWorkspace() {
     });
   };
 
+  /**
+   * A sync failure caused by broken Google access must NAME the cause and
+   * CARRY the door — a raw provider error in a toast with no path to the
+   * repair page is the exact defect recorded on 2026-08-29 (24 silent
+   * collection failures, the user hunting for the connections page).
+   */
+  const reportGscSyncFailure = (error: unknown, failedSiteId: string | null) => {
+    const described = describeBackendFailure(error);
+    const access = classifyGscAccessFailure(described.chain.join("\n"));
+    if (access) {
+      const failedSite =
+        siteOptions.data?.find((s) => s.id === failedSiteId) ?? null;
+      const fixHref = failedSiteId
+        ? marketingRoutes.siteSettings(
+            failedSite?.brand_id ?? null,
+            failedSiteId,
+            "integrations",
+          )
+        : marketingRoutes.connectionsGoogle();
+      toast.error("Google's Search Console connection is broken", {
+        description: `${access.remedy} (${described.cause})`,
+        action: {
+          label: "Fix the connection",
+          onClick: () => startNavigation(() => router.push(fixHref)),
+        },
+        duration: 12_000,
+      });
+      return;
+    }
+    toast.error(described.headline, {
+      description:
+        described.cause !== described.headline ? described.cause : undefined,
+    });
+  };
+
   const runSync = async (
     mode: "incremental" | "backfill" = "incremental",
     target?: { siteId: string; organizationId: string | null },
@@ -316,15 +352,9 @@ export function SearchConsoleWorkspace() {
         );
       }
     } catch (error) {
-      // describeBackendFailure surfaces the REAL cause (expired Google
-      // credential, quota, permission) instead of the generic
-      // "failed unexpectedly" template — the same helper the other
-      // marketing surfaces already use.
-      const described = describeBackendFailure(error);
-      toast.error(described.headline, {
-        description:
-          described.cause !== described.headline ? described.cause : undefined,
-      });
+      // Names the real cause; when the cause is broken Google access, the
+      // toast also carries the door to the repair page.
+      reportGscSyncFailure(error, syncSiteId);
     } finally {
       // In `finally`, not the success arm: a sync that persisted rows and
       // THEN threw would otherwise leave every cache stale behind an error
@@ -411,11 +441,7 @@ export function SearchConsoleWorkspace() {
         `Loaded ${totalCreated.toLocaleString()} older rows so far, but the horizon was not reached after several rounds — press Fetch older history again to continue.`,
       );
     } catch (error) {
-      const described = describeBackendFailure(error);
-      toast.error(described.headline, {
-        description:
-          described.cause !== described.headline ? described.cause : undefined,
-      });
+      reportGscSyncFailure(error, state.siteId);
     } finally {
       await queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
       setHistoryNote(null);
@@ -625,6 +651,11 @@ export function SearchConsoleWorkspace() {
               onSync={() => void runSync()}
               syncing={syncing}
               canSync={gscBound}
+              fixConnectionHref={marketingRoutes.siteSettings(
+                site?.brand_id ?? null,
+                state.siteId,
+                "integrations",
+              )}
               suppressed={knownEmpty}
             />
             {/* This site's insight assists (money-page decay, CTR gap,

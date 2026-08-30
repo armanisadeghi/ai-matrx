@@ -12,11 +12,13 @@
  * actually open.
  */
 
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Loader2, RefreshCw, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { getGscIngestionHealth } from "@/features/marketing/search-console/data";
+import { classifyGscAccessFailure } from "@/features/marketing/google/gsc-property";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   humanLines,
@@ -28,12 +30,18 @@ export function IngestionHealthBanner({
   onSync,
   syncing,
   canSync,
+  fixConnectionHref,
   suppressed = false,
 }: {
   siteId: string;
   onSync: () => void;
   syncing: boolean;
   canSync: boolean;
+  /** Where the broken-connection repair lives for THIS site (its Integrations
+   *  settings). A named cause without its door is the exact failure this
+   *  banner exists to prevent (2026-08-29: 24 recorded auth failures, zero
+   *  user-visible path to the fix). */
+  fixConnectionHref: string;
   /** The caller already renders a full "never synced" empty state. Showing a
    *  red alarm directly above it said the same thing twice, one of them in
    *  alarm styling — the fastest way to teach people to ignore this banner. */
@@ -71,8 +79,19 @@ export function IngestionHealthBanner({
   // fix, which is exactly what "The nightly job is failing" did on 2026-08-23
   // while the job was in fact paused.
   const dispatcherOff = row.dispatcher_enabled === false;
-  const tone =
-    row.severity === "info"
+  // A run that failed because GOOGLE'S ACCESS is broken is its own cause with
+  // its own repair: no amount of "Sync now" helps, and the reader needs the
+  // door to the connection, not a staleness lecture (2026-08-29 incident).
+  const accessFailure = classifyGscAccessFailure(row.last_run_error);
+  const connectionBroken =
+    accessFailure !== null && row.severity !== "info" && !dispatcherOff;
+  const tone = connectionBroken
+    ? {
+        box: "border-destructive/40 bg-destructive/10",
+        icon: "text-destructive",
+        title: "Google's Search Console connection is broken for this site",
+      }
+    : row.severity === "info"
       ? {
           box: "border-border bg-muted/40",
           icon: "text-muted-foreground",
@@ -110,7 +129,11 @@ export function IngestionHealthBanner({
       <AlertTriangle className={cn("h-4 w-4 shrink-0", tone.icon)} />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-foreground">{tone.title}</p>
-        <p className="text-[11px] text-muted-foreground">{row.problem}</p>
+        <p className="text-[11px] text-muted-foreground">
+          {connectionBroken && accessFailure
+            ? `${accessFailure.reason} ${accessFailure.remedy}`
+            : row.problem}
+        </p>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <CopyButtons
@@ -148,6 +171,14 @@ export function IngestionHealthBanner({
           })}
           json={() => row}
         />
+        {connectionBroken ? (
+          <Button asChild size="sm" className="h-6 gap-1 text-[11px]">
+            <Link href={fixConnectionHref}>
+              <Wrench className="h-3 w-3" />
+              Fix the connection
+            </Link>
+          </Button>
+        ) : null}
         {canSync ? (
           <Button
             size="sm"

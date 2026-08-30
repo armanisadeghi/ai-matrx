@@ -36,12 +36,12 @@ import type { PodcastType } from "@/features/podcasts/generator/types";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import {

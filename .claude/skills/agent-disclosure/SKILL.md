@@ -31,7 +31,7 @@ If a task or old document tells you to render it, that instruction is stale and
 must not be followed.
 
 Cross-repo source of truth:
-`../../../common-docs/systems/agents/mandates/CLIENT-SURFACES.md` § THE
+`../../../common-docs/systems/mandates/CLIENT-SURFACES.md` § THE
 DISCLOSURE LAW. Frontend detail:
 [`features/surfaces/FEATURE.md`](../../../features/surfaces/FEATURE.md).
 
@@ -149,7 +149,7 @@ openMandate({
 ```
 
 The existing menu row is the door. A link from a working surface to
-`/agents/mandates` or `/administration/agents/mandates` is a regression.
+`/mandates` or `/administration/mandates` is a regression.
 
 ## Decision table
 

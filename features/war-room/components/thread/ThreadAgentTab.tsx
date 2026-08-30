@@ -23,8 +23,8 @@ import { AssociationEntitySelect } from "@/features/scopes/components/associatio
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
-import { useMandate } from "@/features/agents/mandates/useMandate";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { useMandate } from "@/features/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import {
   selectActiveAudioSessionId,

@@ -43,6 +43,10 @@
  * tappable. The row reserves their width either way (this cluster is
  * `shrink-0`), so pinning them costs no layout.
  *
+ * Link doors carry `data-tap-target` so a host's `matrx-touch-targets` scope
+ * can raise these intentionally compact desktop controls to the 44px
+ * coarse-pointer floor without treating prose links as controls.
+ *
  * 🚨 **MOUNTING THIS INSIDE A DISMISS-ON-OUTSIDE-CLICK CONTAINER? FIX THE
  * CONTAINER FIRST.** The peek renders through `ResourcePeekHost` → a Radix
  * `Dialog`, which PORTALS to `document.body` — outside your popover's ref. A
@@ -158,6 +162,7 @@ export function EntityDoorControls({
         {resolvedHref && showOpen && (
           <Link
             href={resolvedHref}
+            data-tap-target
             onClick={stop}
             title={`Open ${label}`}
             aria-label={`Open ${label}`}
@@ -169,6 +174,7 @@ export function EntityDoorControls({
         {resolvedHref && !disableNewTab && (
           <Link
             href={resolvedHref}
+            data-tap-target
             target="_blank"
             rel="noopener noreferrer"
             onClick={stop}

@@ -52,9 +52,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { WorkflowGallery, makeGallerySelect } from "./WorkflowGallery";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type WorkflowId = "brainstorm" | "research" | "plan" | "write" | "podcast";
 
@@ -304,7 +304,7 @@ export function NewAppConceptClient() {
               The strip beneath holds the selected workflow's fields. */}
           <div className="mt-10 w-full max-w-3xl rounded-3xl border border-border bg-card p-2 shadow-[0_20px_70px_rgba(15,23,42,0.10)] focus-within:border-primary/40 dark:shadow-[0_20px_70px_rgba(0,0,0,0.35)]">
             <div className="px-3 pt-2">
-              <Textarea
+              <ProTextarea
                 id="concept-input"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}

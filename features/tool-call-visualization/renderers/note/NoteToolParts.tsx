@@ -12,6 +12,7 @@ import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import MarkdownStream from "@/components/MarkdownStream";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { NOTE_ACCENT, type NoteToolMode } from "./useNoteToolData";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -252,7 +253,7 @@ export function NoteEditArea({
   minHeightPx?: number;
 }) {
   return (
-    <textarea
+    <ProTextarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}

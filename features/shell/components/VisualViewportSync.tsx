@@ -12,20 +12,85 @@
 //
 //   height: calc(var(--visual-viewport-height, 100dvh) - var(--shell-header-h))
 //
-// Only active on mobile (max-width: 1023px). Falls back to 100dvh on desktop
-// or when the API is unavailable (SSR, older browsers).
+// Active on narrow OR touch-primary devices. Width alone is not sufficient:
+// large tablets and vehicle browsers can expose a desktop-width layout while
+// their virtual keyboard still overlays the page. Falls back to 100dvh when
+// the API is unavailable (SSR, older browsers).
 //
 // Pattern mirrors NavActiveSync — mounts once, zero re-renders.
 
 import { useEffect } from "react";
+
+const VIEWPORT_TRACKING_QUERY =
+  "(max-width: 1023px), (pointer: coarse), (any-pointer: coarse)";
+const MIN_KEYBOARD_INSET = 80;
+
+/** Distinguish a real overlay keyboard from browser chrome and pinch zoom. */
+export function calculateKeyboardInset({
+  innerHeight,
+  viewportHeight,
+  viewportOffsetTop,
+  viewportScale,
+  textEntryFocused,
+}: {
+  innerHeight: number;
+  viewportHeight: number;
+  viewportOffsetTop: number;
+  viewportScale: number;
+  textEntryFocused: boolean;
+}): number {
+  const coveredBottom = Math.max(
+    0,
+    Math.round(innerHeight - viewportHeight - viewportOffsetTop),
+  );
+  return textEntryFocused &&
+    viewportScale <= 1.05 &&
+    coveredBottom >= MIN_KEYBOARD_INSET
+    ? coveredBottom
+    : 0;
+}
+
+function isTextEntryElement(element: Element | null): boolean {
+  if (!element) return false;
+  if (element instanceof HTMLTextAreaElement) {
+    return !element.disabled && !element.readOnly;
+  }
+  if (element instanceof HTMLInputElement) {
+    return (
+      !element.disabled &&
+      !element.readOnly &&
+      ![
+        "button",
+        "checkbox",
+        "color",
+        "file",
+        "hidden",
+        "image",
+        "radio",
+        "range",
+        "reset",
+        "submit",
+      ].includes(element.type)
+    );
+  }
+  return element instanceof HTMLElement && element.isContentEditable;
+}
 
 function updateViewportVars() {
   const vv = window.visualViewport;
   if (!vv) return;
 
   const height = Math.round(vv.height);
-  const windowHeight = Math.round(window.innerHeight);
-  const keyboardHeight = Math.max(0, windowHeight - height);
+  // Browser chrome and pinch zoom also change the visual viewport. Only a
+  // focused text-entry control may promote that delta to "keyboard" space,
+  // and the floor filters small toolbar movements.
+  const keyboardHeight = calculateKeyboardInset({
+    innerHeight: window.innerHeight,
+    viewportHeight: vv.height,
+    viewportOffsetTop: vv.offsetTop,
+    viewportScale: vv.scale,
+    textEntryFocused: isTextEntryElement(document.activeElement),
+  });
 
   document.documentElement.style.setProperty(
     "--visual-viewport-height",
@@ -44,10 +109,11 @@ function clearViewportVars() {
 
 export default function VisualViewportSync() {
   useEffect(() => {
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
     if (!window.visualViewport) return undefined;
 
-    if (!isMobile) return undefined;
+    const mq = window.matchMedia(VIEWPORT_TRACKING_QUERY);
+    const shouldTrack = () => mq.matches || navigator.maxTouchPoints > 0;
+    if (!shouldTrack()) return undefined;
 
     // Initial value
     updateViewportVars();
@@ -55,25 +121,36 @@ export default function VisualViewportSync() {
     window.visualViewport.addEventListener("resize", updateViewportVars);
     window.visualViewport.addEventListener("scroll", updateViewportVars);
 
-    // Also handle media query changes (e.g. rotation)
-    const mq = window.matchMedia("(max-width: 1023px)");
+    // Also handle responsive/pointer changes (e.g. rotation or a touch display
+    // being attached). Focus events reset the keyboard inset even when a
+    // browser delays its visualViewport resize until after focus/blur.
     const handleMqChange = (e: MediaQueryListEvent) => {
-      if (e.matches) {
+      if (e.matches || navigator.maxTouchPoints > 0) {
         updateViewportVars();
         window.visualViewport?.addEventListener("resize", updateViewportVars);
         window.visualViewport?.addEventListener("scroll", updateViewportVars);
       } else {
         clearViewportVars();
-        window.visualViewport?.removeEventListener("resize", updateViewportVars);
-        window.visualViewport?.removeEventListener("scroll", updateViewportVars);
+        window.visualViewport?.removeEventListener(
+          "resize",
+          updateViewportVars,
+        );
+        window.visualViewport?.removeEventListener(
+          "scroll",
+          updateViewportVars,
+        );
       }
     };
     mq.addEventListener("change", handleMqChange);
+    document.addEventListener("focusin", updateViewportVars);
+    document.addEventListener("focusout", updateViewportVars);
 
     return () => {
       window.visualViewport?.removeEventListener("resize", updateViewportVars);
       window.visualViewport?.removeEventListener("scroll", updateViewportVars);
       mq.removeEventListener("change", handleMqChange);
+      document.removeEventListener("focusin", updateViewportVars);
+      document.removeEventListener("focusout", updateViewportVars);
       clearViewportVars();
     };
   }, []);

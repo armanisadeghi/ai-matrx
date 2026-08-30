@@ -46,12 +46,7 @@ export function CanvasLeaderboard({
         }
     };
 
-    const getRankBadge = (rank: number) => {
-        if (rank === 1) return '🥇';
-        if (rank === 2) return '🥈';
-        if (rank === 3) return '🥉';
-        return `#${rank}`;
-    };
+    const getRankBadge = (rank: number) => `#${rank}`;
 
     const getInitials = (name: string) => {
         return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -133,4 +128,3 @@ export function CanvasLeaderboard({
         </div>
     );
 }
-

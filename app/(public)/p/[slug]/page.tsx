@@ -132,6 +132,14 @@ export default async function PublicAppPage({
     agent_id: rpcRow.agent_id,
     agent_version_id: rpcRow.agent_version_id,
     use_latest: rpcRow.use_latest,
+    // The app's JOB, plus the system-default Holder the RPC resolved for us.
+    // A guest cannot read `mandate.definition` and has no bindings, so this IS
+    // their whole resolution — see `features/agent-apps/lib/appHolder.ts`.
+    // Ignored entirely while APP_MANDATE_CUTOVER is OFF.
+    mandate_id: rpcRow.mandate_id,
+    mandate_key: rpcRow.mandate_key,
+    mandate_agent_id: rpcRow.mandate_agent_id,
+    mandate_agent_version_id: rpcRow.mandate_agent_version_id,
     app_kind: "custom",
     shared_context_policies: null,
     search_tsv: null,

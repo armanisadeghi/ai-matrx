@@ -46,7 +46,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -54,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { clearHrKnob, setHrKnob } from "../../service";
 import { isHrDenied } from "../../types";
 import type { HrPresentedKnob } from "../types";
+import { Textarea } from "@/components/ui/textarea";
 
 // ── Value rendering ─────────────────────────────────────────────────────────
 

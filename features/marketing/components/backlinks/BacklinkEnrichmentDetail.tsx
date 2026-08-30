@@ -15,7 +15,6 @@ import {
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import {
   backlinkAnalysisDirectiveState,
@@ -41,6 +40,7 @@ import type { Json } from "@/types/database.types";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -955,7 +955,7 @@ export function BacklinkEnrichmentDetail({
                   <option value="needs_change">Needs correction</option>
                   <option value="dismissed">Dismiss action</option>
                 </select>
-                <Textarea
+                <ProTextarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Optional context only your team knows…"

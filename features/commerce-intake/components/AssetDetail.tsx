@@ -17,7 +17,6 @@ import { Camera, Loader2, QrCode, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import {
@@ -38,6 +37,7 @@ import {
   setAssetNotes,
 } from "../service";
 import { PrintLabelDialog } from "../labels/components/PrintLabelDialog";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AttributeRow {
   key: string;
@@ -254,7 +254,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
       </PanelSection>
 
       <PanelSection title="Notes">
-        <Textarea
+        <ProTextarea
           value={notesDraft}
           rows={4}
           onChange={(e) => setNotesDraft(e.target.value)}

@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
@@ -26,6 +25,7 @@ import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVar
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ============================================================================
 // TYPES
@@ -169,7 +169,7 @@ function GuidedSelect({
         )}
       </div>
       {showOther && (
-        <Textarea
+        <ProTextarea
           value={otherText}
           onChange={(e) => {
             setOtherText(e.target.value);
@@ -302,7 +302,7 @@ function GuidedCheckbox({
         )}
       </div>
       {showOther && (
-        <Textarea
+        <ProTextarea
           value={otherText}
           onChange={(e) => {
             setOtherText(e.target.value);
@@ -459,7 +459,7 @@ function GuidedTextarea({
   variableName: string;
 }) {
   return (
-    <Textarea
+    <ProTextarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={`Type your ${variableName.toLowerCase()}...`}

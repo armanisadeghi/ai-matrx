@@ -42,13 +42,13 @@ import { createClient } from "@/utils/supabase/client";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type {
   DuplicateSkillCandidate,
   DuplicateSkillCase,
 } from "@/features/content-ir/admin/duplicate-skill-analysis";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * Monaco is ~2MB and browser-only. ONE `next/dynamic({ssr:false})` boundary,
@@ -337,7 +337,7 @@ function CaseCard({ item }: { item: DuplicateSkillCase }) {
         >
           Decision note (stored with the declaration, optional)
         </label>
-        <Textarea
+        <ProTextarea
           id={`note-${item.kind}-${item.syntax}`}
           value={note}
           onChange={(e) => setNote(e.target.value)}

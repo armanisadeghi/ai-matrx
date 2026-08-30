@@ -62,6 +62,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { resolveBaseUrlForPath, newRequestId } from "@/lib/python-client";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -745,7 +746,7 @@ export function CloudFilesDebugClient() {
               </Button>
             </div>
             {(rawMethod === "POST" || rawMethod === "PATCH") && (
-              <textarea
+              <Textarea
                 value={rawBody}
                 onChange={(e) => setRawBody(e.target.value)}
                 placeholder='{"key": "value"}'

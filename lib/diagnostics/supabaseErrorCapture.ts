@@ -32,10 +32,24 @@ interface ChainContext {
   operation?: CapturedOperation;
   schema?: string;
   relation?: string;
+  captureEnabled?: boolean;
 }
 
 /** Marks a proxy so we never double-wrap. */
 const WRAPPED = Symbol.for("matrx.supabaseCaptureWrapped");
+const SET_CAPTURE_ENABLED = Symbol.for("matrx.supabaseCaptureEnabled");
+
+/** Opt one query out when its caller owns retry plus final capture. */
+export function suppressSupabaseErrorCapture<T>(builder: T): T {
+  if (
+    builder &&
+    (typeof builder === "object" || typeof builder === "function")
+  ) {
+    const setEnabled = Reflect.get(builder as object, SET_CAPTURE_ENABLED);
+    if (typeof setEnabled === "function") setEnabled(false);
+  }
+  return builder;
+}
 
 /** DML verbs whose presence in the chain tells us the operation type. */
 const OPERATION_METHODS: Record<string, CapturedOperation> = {
@@ -225,6 +239,11 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
   const proxy = new Proxy(builder, {
     get(target, prop, receiver) {
       if (prop === WRAPPED) return true;
+      if (prop === SET_CAPTURE_ENABLED) {
+        return (enabled: boolean) => {
+          ctx.captureEnabled = enabled;
+        };
+      }
 
       // Track the operation verb as the chain is constructed.
       if (typeof prop === "string" && prop in OPERATION_METHODS) {
@@ -257,7 +276,9 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
                 }
                 try {
                   if (res && typeof res === "object" && "error" in res) {
-                    captureResult(ctx, res as PostgrestLikeResult, caller);
+                    if (ctx.captureEnabled !== false) {
+                      captureResult(ctx, res as PostgrestLikeResult, caller);
+                    }
                   }
                 } catch {
                   /* capture must never break the caller */
@@ -266,7 +287,9 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
               },
               (err: unknown) => {
                 try {
-                  captureException(ctx, err, caller);
+                  if (ctx.captureEnabled !== false) {
+                    captureException(ctx, err, caller);
+                  }
                 } catch {
                   /* capture must never break the caller */
                 }

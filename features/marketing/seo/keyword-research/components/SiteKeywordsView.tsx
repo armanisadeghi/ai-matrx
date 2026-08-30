@@ -35,13 +35,21 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { SiteKeywordPerformanceWorkspace } from "./SiteKeywordPerformanceWorkspace";
 
-export function SiteKeywordsView() {
-  const view = useMarketingSubView("keywords");
+/**
+ * `view` fixes the screen from the ROUTE (the agency-model tree gives each
+ * keyword screen its own URL: `…/seo/[site]/keywords`, `/performance`,
+ * `/workbench`). Left out, the view still comes from `?view=` — the shape the
+ * site header's pills and every pre-restructure bookmark speak.
+ */
+export function SiteKeywordsView({ view: fixedView }: { view?: string } = {}) {
+  const queryView = useMarketingSubView("keywords");
+  const view = fixedView ?? queryView;
   // A retired `?view=classification` link (and its legacy `?tab=classification`
   // alias) is a legitimate old bookmark, not a typo — send it to the
   // Workbench rather than falling all the way back to "Start here".
   const searchParams = useSearchParams();
   const isLegacyClassificationLink =
+    !fixedView &&
     (searchParams.get("view") ?? searchParams.get("tab")) === "classification";
   const effectiveView = isLegacyClassificationLink ? "workbench" : view;
 

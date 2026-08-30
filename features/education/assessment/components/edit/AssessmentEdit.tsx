@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,6 +43,7 @@ import type {
   AssessmentRow,
   QuestionType,
 } from "../../data/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const TYPE_LABEL: Record<QuestionType, string> = {
   multiple_choice: "Multiple choice",
@@ -332,7 +332,7 @@ function ItemEditor({
         </div>
       </div>
 
-      <Textarea
+      <ProTextarea
         value={item.prompt}
         onChange={(e) => onChange({ prompt: e.target.value })}
         className="mt-2 min-h-[56px] text-sm"
@@ -372,7 +372,7 @@ function ItemEditor({
         />
       )}
 
-      <Textarea
+      <ProTextarea
         value={item.explanation ?? ""}
         onChange={(e) => onChange({ explanation: e.target.value })}
         className="mt-2 min-h-[44px] text-sm"

@@ -40,8 +40,9 @@ import { useHrPersona } from "@/features/hr/shared/useHrPersona";
 import { useHrRelationsCases } from "../hooks/useRelationsCases";
 import type { HrRelationsFilter } from "../service";
 import {
-  HR_CORRECTIVE_ACTION_STATES,
   HR_INCIDENT_STATES,
+  HR_INCIDENT_STATE_LABELS,
+  HR_INCIDENT_STATE_TOKEN,
   type HrRelationsCase,
 } from "../types";
 import { NewCorrectiveActionDialog } from "./NewCorrectiveActionDialog";
@@ -74,12 +75,24 @@ export function RelationsCaseList() {
           ) : (
             <Gavel className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           )}
+          {/* A voided record STAYS ON THE LIST, struck through. Removing it
+              from the queue would be the deletion the void exists instead of. */}
           <Link
             href={hrRelationsCaseHref(row.id, orgRef, row.caseKind)}
-            className="truncate text-sm font-medium text-foreground underline-offset-2 hover:underline"
+            className={`truncate text-sm font-medium underline-offset-2 hover:underline ${
+              row.voided
+                ? "text-muted-foreground line-through"
+                : "text-foreground"
+            }`}
+            title={row.voided ? (row.voidReason ?? "Set aside") : undefined}
           >
             {row.kindLabel}
           </Link>
+          {row.voided ? (
+            <Badge variant="outline" className="shrink-0 text-xs">
+              Set aside
+            </Badge>
+          ) : null}
         </span>
       ),
     },
@@ -177,11 +190,26 @@ export function RelationsCaseList() {
     >
       <div className="flex h-full min-h-0 flex-col gap-3 p-4 sm:p-6">
         {list?.partial ? (
-          // hr_admin holds corrective actions but NOT incidents (SPEC-ACCESS
-          // §3.2). Saying so beats a list that silently shows half the truth.
+          // 🚨 THIS BANNER ONCE MADE A COMPLETENESS CLAIM OVER A DOOR THAT HAD
+          // REFUSED. Verified on production v0.4.1474: the corrective-action side
+          // was 400ing (wrong-tier token), the failure was swallowed into
+          // log_client_error, `partial` went true, and the surface printed
+          // "Nothing is hidden inside what you can see." above a list of two
+          // incidents while two corrective actions for that same admin sat
+          // unlisted. The sentence was FALSE and the reader had no way to know.
+          //
+          // Two things changed. The seam is fixed (see relations/service.ts), so
+          // a partial list is now only ever a real access split — hr_admin holds
+          // corrective actions but NOT incidents, SPEC-ACCESS §3.2. And the
+          // banner NAMES WHICH SIDE it is showing instead of gesturing at "one of
+          // the two", because a person cannot check a claim they cannot read.
+          // It no longer promises anything about what it cannot see.
           <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            You hold one of the two relations records here, so this list shows
-            that one. Nothing is hidden inside what you can see.
+            You hold{" "}
+            {list.correctiveActionsGranted ? "corrective actions" : "incidents"}{" "}
+            here, not{" "}
+            {list.correctiveActionsGranted ? "incidents" : "corrective actions"},
+            so that is what this list shows.
           </p>
         ) : null}
 
@@ -214,25 +242,66 @@ export function RelationsCaseList() {
                       value === "all"
                         ? null
                         : (value as HrRelationsFilter["caseKind"]),
+                    // The other half of the pairing above: a state has no
+                    // meaning off the incident side, and leaving one set while
+                    // the user moves to corrective actions (or back to All)
+                    // sends it to the door that raises 42703 on it.
+                    state: value === "incident" ? f.state : null,
                   })),
               },
               {
                 id: "state",
                 type: "button-group",
-                label: "State",
+                // Named for what it actually filters. See the block below: a
+                // state question only has an answer on the incident side.
+                label: "Incident state",
                 value: filter.state ?? "all",
+                // 🚨 THIS CONTROL ASKED THE DOOR TWO QUESTIONS IT CANNOT ANSWER.
+                // Both probed live against `hr_relations_list` on 2026-08-29:
+                //
+                //  1. EVERY CORRECTIVE-ACTION STATE RAISED. `hr._door_list`'s
+                //     allowlist names `state` for `hr_corrective_action`, and
+                //     that table HAS NO `state` COLUMN — the filter went
+                //     straight into SQL and came back **42703 `column "state"
+                //     does not exist`**, swallowed by the transport into a
+                //     toast. Those choices are ABSENT until the door can serve
+                //     them; a corrective action's state is DERIVED from
+                //     `outcome` / `employee_acknowledgement_kind` /
+                //     `employee_acknowledged_at` (see `correctiveActionState`)
+                //     and only the server can filter on a derivation. Offering
+                //     a button that 400s is worse than not offering it.
+                //
+                //  2. THE INCIDENT STATES WERE SPELLED THE UI's WAY, NOT THE
+                //     COLUMN'S. `hr.incident.state` holds `intake` and
+                //     `action_pending`; this sent `open` and `action-pending`.
+                //     Filtering by **Open** — the first choice on the control —
+                //     returned **0 of 9 real open incidents**, `granted: true`,
+                //     rendered as "nothing here". `HR_INCIDENT_STATE_TOKEN` is
+                //     the translation and it existed the whole time.
+                //
+                // And the labels are words now, not raw enum values: this list
+                // used to print `action-pending` and `outcome-recorded` at a
+                // person.
                 options: [
                   { value: "all", label: "All" },
-                  ...HR_INCIDENT_STATES.map((s) => ({ value: s, label: s })),
-                  ...HR_CORRECTIVE_ACTION_STATES.map((s) => ({
-                    value: s,
-                    label: s,
+                  ...HR_INCIDENT_STATES.map((s) => ({
+                    value: HR_INCIDENT_STATE_TOKEN[s],
+                    label: HR_INCIDENT_STATE_LABELS[s],
                   })),
                 ],
+                // 🚨 A STATE ALSO PINS THE RECORD KIND, AND IT HAS TO.
+                // `hr_relations_list` asks BOTH doors with the SAME filter, so
+                // any `state` at all reaches the corrective-action side and
+                // raises 42703 there — which is why this control could never
+                // work while "All records" was selected, whatever it sent. It
+                // is not magic and it is not hidden: the Record filter visibly
+                // snaps to Incidents, and clearing the state clears nothing
+                // else. The alternative is a control that always errors.
                 onChange: (value) =>
                   setFilter((f) => ({
                     ...f,
                     state: value === "all" ? null : value,
+                    caseKind: value === "all" ? f.caseKind : "incident",
                   })),
               },
               {

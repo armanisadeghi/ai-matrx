@@ -1,6 +1,7 @@
 import {
   isSchemaCacheUnavailableResult,
   postgrestResultErrorMessage,
+  suppressSupabaseErrorCapture,
   wrapClientForCapture,
 } from "@/lib/diagnostics/supabaseErrorCapture";
 import {
@@ -134,5 +135,23 @@ describe("schema-cache recovery", () => {
       tier: "yellow",
       tierRuleId: "supabase-browser-transport-loss",
     });
+  });
+
+  it("lets a retry owner suppress premature capture for one builder", async () => {
+    const transportLoss = {
+      data: null,
+      error: { code: "", message: "TypeError: Load failed" },
+      status: 0,
+    };
+    const builder = {
+      then(onFulfilled: (value: unknown) => unknown) {
+        return Promise.resolve(onFulfilled(transportLoss));
+      },
+    };
+    const client = wrapClientForCapture({ rpc: () => builder });
+
+    const request = suppressSupabaseErrorCapture(client.rpc());
+    await expect(Promise.resolve(request)).resolves.toEqual(transportLoss);
+    expect(getSnapshot()).toHaveLength(0);
   });
 });

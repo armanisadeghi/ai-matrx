@@ -20,6 +20,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   CmsCollectionService,
   ItemValidationError,
@@ -311,15 +312,25 @@ export function CollectionItemEditorDialog({
           ))}
         </select>
       );
-    } else if (field.type === "richtext" || field.type === "json") {
+    } else if (field.type === "richtext") {
+      control = (
+        <ProTextarea
+          id={`item-field-${field.key}`}
+          value={value}
+          onChange={(e) => set(field.key, e.target.value)}
+          rows={6}
+          className="text-sm"
+        />
+      );
+    } else if (field.type === "json") {
       control = (
         <Textarea
           id={`item-field-${field.key}`}
           value={value}
           onChange={(e) => set(field.key, e.target.value)}
-          rows={field.type === "json" ? 4 : 6}
-          placeholder={field.type === "json" ? "{ }" : undefined}
-          className={`text-sm ${field.type === "json" ? "font-mono" : ""}`}
+          rows={4}
+          placeholder="{ }"
+          className="font-mono text-sm"
         />
       );
     } else {
@@ -380,7 +391,7 @@ export function CollectionItemEditorDialog({
             Additional data
           </label>
         </div>
-        <Textarea
+        <ProTextarea
           id="item-extras"
           value={extrasJson}
           onChange={(e) => setExtrasJson(e.target.value)}

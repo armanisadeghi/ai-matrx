@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface MotivationContentProps {
   updateContent?: (content: string) => void;
@@ -80,7 +80,7 @@ const MotivationContent: React.FC<MotivationContentProps> = ({ updateContent }) 
         <Label htmlFor="motivation-details" className="text-gray-700 dark:text-gray-300">
           Motivation Details
         </Label>
-        <Textarea
+        <ProTextarea
           id="motivation-details"
           placeholder="Explain why this request is important or what problem it's trying to solve"
           value={motivationDetails}

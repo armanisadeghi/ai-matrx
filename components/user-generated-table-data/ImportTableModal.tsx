@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -48,6 +47,8 @@ import {
   isServiceFailure,
   type BulkInsertOp,
 } from "@/features/data-tables/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ImportTableModalProps {
   isOpen: boolean;
@@ -537,7 +538,7 @@ export default function ImportTableModal({
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description (optional)</Label>
-                  <Textarea
+                  <ProTextarea
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}

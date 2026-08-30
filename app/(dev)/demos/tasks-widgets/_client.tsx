@@ -23,6 +23,7 @@ import {
   ListPlus,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { selectAllNotesList } from "@/features/notes/redux/selectors";
 import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
@@ -76,7 +77,7 @@ export default function TasksWidgetsDemo() {
   const allTasks = useAppSelector(selectAllTasksFlat);
   const allNotes = useAppSelector(selectAllNotesList);
 
-  const firstTaskId = allTasks[0]?.id ?? null;
+  const firstTask = allTasks[0] ?? null;
   const firstNote = allNotes[0] ?? null;
 
   const [previewOpen, setPreviewOpen] = React.useState(false);
@@ -221,9 +222,17 @@ export default function TasksWidgetsDemo() {
           <div className="rounded-lg border border-border bg-card p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium">
-                {firstNote?.label ?? "Sample note"}
-              </span>
+              {firstNote ? (
+                <EntityRef
+                  token="note"
+                  id={firstNote.id}
+                  name={firstNote.label}
+                  showIcon={false}
+                  className="font-medium"
+                />
+              ) : (
+                <span className="font-medium">Sample note</span>
+              )}
             </div>
             <TaskChipRow
               entityType="note"
@@ -342,12 +351,18 @@ export default function TasksWidgetsDemo() {
         title="TaskAttachmentsPanel"
         summary="Shown inside TaskEditor. Collapsible sections per entity type — notes, files, messages, conversations. Powered by one RPC (get_task_associations)."
       >
-        {firstTaskId ? (
+        {firstTask ? (
           <div className="rounded-lg border border-border bg-card p-3">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              Live data for task: {firstTaskId}
+              Live data for task:{" "}
+              <EntityRef
+                token="task"
+                id={firstTask.id}
+                name={firstTask.title}
+                showIcon={false}
+              />
             </div>
-            <TaskAttachmentsPanel taskId={firstTaskId} />
+            <TaskAttachmentsPanel taskId={firstTask.id} />
           </div>
         ) : (
           <p className="text-xs text-muted-foreground italic">

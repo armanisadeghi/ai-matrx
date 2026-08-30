@@ -337,7 +337,7 @@ export default function MonacoTestPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold mb-2">✅ Syntax Highlighting</h4>
+                <h4 className="font-semibold mb-2">Syntax Highlighting</h4>
                 <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                   <li>Keywords should be colored (function, const, let, if, etc.)</li>
                   <li>Strings should be colored</li>
@@ -348,7 +348,7 @@ export default function MonacoTestPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">✅ IntelliSense (JS/TS/TSX)</h4>
+                <h4 className="font-semibold mb-2">IntelliSense (JS/TS/TSX)</h4>
                 <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                   <li>Type "console." and you should see method suggestions</li>
                   <li>Type "document." and you should see DOM API suggestions</li>
@@ -359,7 +359,7 @@ export default function MonacoTestPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">✅ TypeScript Features</h4>
+                <h4 className="font-semibold mb-2">TypeScript Features</h4>
                 <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                   <li>TypeScript: interface and type declarations work without errors</li>
                   <li>TSX: JSX syntax works in TypeScript files</li>
@@ -369,7 +369,7 @@ export default function MonacoTestPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">✅ Code Validation</h4>
+                <h4 className="font-semibold mb-2">Code Validation</h4>
                 <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                   <li>Syntax errors should be underlined in red</li>
                   <li>JSON: Invalid JSON should show errors</li>

@@ -53,7 +53,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { AddToOutreachListDialog } from "@/features/crm/components/outreach-lists/AddToOutreachListDialog";
 import {
   InlineQueryError,
@@ -99,6 +98,8 @@ import {
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { humanizeBackendError } from "@/utils/errors";
 
 const BACKLINKS_SURFACE_NAME = "matrx-user/marketing-backlinks";
 const KEYWORD_EXPANDER_ROLE = "keyword_expander";
@@ -430,7 +431,7 @@ function ImportListDialog({
             placeholder="What is this list? e.g. Conference sponsors 2026"
             className="h-8 text-xs"
           />
-          <Textarea
+          <ProTextarea
             value={text}
             onChange={(event) => {
               setText(event.target.value);
@@ -746,7 +747,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
         >
           What should we search for?
         </label>
-        <Textarea
+        <ProTextarea
           id="serp-prospecting-keywords"
           value={draft}
           onChange={(event) => applyDraft(event.target.value)}
@@ -874,7 +875,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
         ) : null}
         {run.status === "error" && run.error ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-            {run.error}
+            {humanizeBackendError(run.error)}
           </p>
         ) : null}
         {run.status === "done" && run.receipt ? (

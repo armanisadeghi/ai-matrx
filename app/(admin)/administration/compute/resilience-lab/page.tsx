@@ -50,6 +50,7 @@ import { useRequestRecovery } from "@/features/request-recovery/providers/Reques
 import { selectActiveNetRequests } from "@/lib/redux/net/selectors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type RunResult = { ok: true; detail: string } | { ok: false; error: string };
 
@@ -802,7 +803,7 @@ export default function ResilienceLabPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <textarea
+          <ProTextarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             className="w-full min-h-[60px] rounded-md border border-border bg-background text-sm p-2"

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P11",
-  "runId": "2026-08-29T161426Z",
-  "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-29T16:26:03.128Z",
-  "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
-  "source": "2026-08-29T161426Z.json",
-  "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
+  "runId": "20260830T153806Z",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T15:46:47.513Z",
+  "summary": "Certified corrected wave-2 candidate integrated with candidate ancestry preserved",
+  "source": "20260830T153806Z.json",
+  "eventHash": "30aa6fd8495048806ce303ee10b89cd760b8d034edcafd8754a3b795ab4cfb30"
 }

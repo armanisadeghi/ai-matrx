@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { marketingSeg } from "@/features/marketing/lib/keys";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
@@ -70,20 +72,26 @@ export default async function MarketingPageShortLink({
   // them is ever rendered in that lane, so access is not widened.
   const siteResponse = await db
     .from("site")
-    .select("id, brand_id")
+    .select("id, slug, brand_id")
     .eq("id", page.site_id)
     .maybeSingle();
-  const brandId = siteResponse.error ? null : siteResponse.data?.brand_id;
-  if (brandId) {
+  const site = siteResponse.error ? null : siteResponse.data;
+  if (site?.brand_id) {
     const brandResponse = await db
       .from("brand")
-      .select("id")
-      .eq("id", brandId)
+      .select("id, slug")
+      .eq("id", site.brand_id)
       .maybeSingle();
     if (!brandResponse.error && brandResponse.data) {
-      // Full parent access — the nested workspace will not gate them out.
+      // Full parent access — the nested workspace will not gate them out. A
+      // page is website INVENTORY, so the nested lane lands on the websites
+      // branch; slug segments so the layout has nothing to canonicalize.
       redirect(
-        `/marketing/brands/${brandId}/sites/${page.site_id}/pages/${pageId}`,
+        marketingRoutes.sitePage(
+          marketingSeg(brandResponse.data),
+          marketingSeg(site),
+          pageId,
+        ),
       );
     }
   }

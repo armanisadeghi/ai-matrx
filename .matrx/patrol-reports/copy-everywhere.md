@@ -1,121 +1,92 @@
 # Pattern Patrol P5 — Copy everywhere
 
-**Run:** 2026-08-19 (America/Los_Angeles)
+**Run:** `2026-08-30-copy-everywhere-eradication`
 
-**Authority:** standing Tier-M adoption repairs plus detector precision
+**Mode:** ERADICATION · Tier M/R · canonical shared checkout
 
-**Certification:** CERTIFIED — exact candidate `8196a478e530cd541714a5611faf5bfdf86bf95b`
+**Certification:** CERTIFIED — exact clean candidate
+`80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b`
 
-**Delivery:** integrated as `872394e1a8502441adef9e279efffb81c9a8bb57`
-and released on `origin/main` as `v0.4.840`
+**Integration:** candidate preserved as an ancestor of `origin/main` by
+`dd524d507a40462ff6fcfa8af5f6a10509b196c9`
+
+A later shared merge briefly selected the stale one-icon side despite retaining
+the certified parent. Canonical reconciliation descendants `cd2167a85c`,
+`b83f6fe33c`, `2df34d5581`, and `e0a0963770` restored the certified product,
+documentation, skill, and contract-check behavior on current `origin/main`.
+
+**Delivery:** queued for the serialized release watch; no redundant release was
+started.
 
 ## Outcome
 
-- The full `MatrxDataTable` detector returned **4 auto-approved candidates**.
-- Verification found **3 real adoption gaps** and **1 detector false positive**.
-- **2 gaps are fixed**: the Assists manager and Keyword Research library now
-  consume the canonical `MatrxDataTable.copy` system for row, current-view,
-  JSON, AI, and export actions.
-- **1 gap remains open as missing machinery**: the Unwired console already has
-  a bespoke per-row “Copy brief” action. Adding the standard pair without a
-  row-level AI-variant seam would create three copy controls and violate the
-  canonical consolidation rule.
-- The custom table-copy workspace is not an adoption target. It is the
-  canonical workspace opened by the table copy system itself, so the detector
-  now excludes it explicitly.
-
-## Scope and routing
-
-The run performed the periodic full AST detector pass plus the open P5 ledger
-review. It did not scope from raw Git churn.
-
-| Candidate                                                                         | Verified route                                                                                                                     |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `features/assists/manager/AssistsManager.tsx`                                     | Fixed under standing authority with live manager filters, counts, warnings, and rendered row fields in the payload.                |
-| `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx` | Fixed under standing authority using the existing `buildKeywordBrief`, `humanLines`, and `webLocation` primitives.                 |
-| `features/admin/unwired/UnwiredConsole.tsx`                                       | Open machinery task: extend the canonical table copy config with row-level AI variants, then fold “Copy brief” into that dropdown. |
-| `features/data-tables/components/TableCustomCopyWindow.tsx`                       | Detector false positive: canonical custom-copy workspace, now excluded with regression coverage.                                   |
-
-The 23 pre-existing review-only table rows remain Tier R. Native tables,
-JSON/code blocks, lists, and detail panes remain outside the mechanical class.
-
-## Detector baseline
-
-| Status              | Before | Candidate | Meaning                                                                   |
-| ------------------- | -----: | --------: | ------------------------------------------------------------------------- |
-| compliant           |     87 |        89 | Two verified gaps now use the canonical config.                           |
-| auto-approved       |      4 |         0 | Every narrow candidate was routed.                                        |
-| equivalent controls |      1 |         1 | Existing canonical controls; do not duplicate.                            |
-| review              |     23 |        24 | Unwired moved here because consolidation needs new row-variant machinery. |
-| excluded            |      8 |         9 | The canonical custom-copy workspace is now classified with the primitive. |
-
-Detector regression coverage grew from 6 to 8 cases: bespoke copy actions stay
-review-only, and the canonical custom-copy workspace stays excluded.
-
-## Verification
-
-- Pre-edit: `pnpm type-check` green; P5 detector tests 6/6; detector
-  87 compliant / 4 auto-approved / 1 equivalent / 23 review / 8 excluded;
-  scoped status clean; patrol contracts green.
-- Post-edit: `pnpm type-check` green; scoped ESLint green;
-  `pnpm check:doctrine` green; P5 detector tests 8/8; detector
-  89 / 0 / 1 / 24 / 9; `git diff --check` green.
-- Canonical interaction and payload coverage: CopyButtons, AI copy menu,
-  controlled MatrxDataTable, empty-view list context, and Assist formatter
-  suites passed **5 suites / 19 tests**.
-- Independent review of candidate `809b7964f` returned **REJECTED** with one
-  concrete batch-caused defect: the Assist projection omitted the visible
-  flagged, unseen, low-confidence, decision-note, action-description, and
-  Everything-count states. Those omissions are corrected in the replacement
-  candidate, and a focused formatter regression test now covers them.
-- Re-review of candidate `0356e90a5` returned **REJECTED** because row envelope
-  attributes still omitted the visible status KPIs, and an empty view had no
-  row body in which to carry page context. The canonical table copy contract
-  now accepts live `listContext`, so empty views keep their rendered scope in
-  `<context>`; every Assist row attribute set also mirrors all visible status
-  counts, including Everything.
-- Final independent review of exact candidate `8196a478e` returned
-  **CERTIFIED**. Both rejected candidates remain ancestors, all required gates
-  pass, and no concrete batch-caused defect remains.
-- The certified candidate was integrated to `origin/main` in merge
-  `872394e1a`, then the serialized release lane published `v0.4.840` at
-  `ef97be6b2`. The permanent record is closed with 13 valid hash-chained events.
-- Final delivery verification exposed a process contradiction: the permanent
-  state machine permits `delivered -> closed`, while the delivery policy only
-  accepted a latest `delivered` state. Exact process repair `b1fa1a9d5` now
-  accepts `closed` only after the same exact candidate was delivered with the
-  deterministic authority ref. Independent review returned **CERTIFIED**;
-  focused tests passed 2 suites / 11 tests and the real delivery check is green.
-- The managed preview lease is owned by
-  `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
-  This run will not reuse or stop that foreign preview. The candidate changes
-  no shared primitive, layout, theme, or chunk boundary; exact-source static
-  coverage plus canonical rendered-component tests are the bounded fallback.
-
-## Reuse and inventory proof
-
-- Searched `MatrxDataTable.copy`, `CopyButtons`, `buildKeywordBrief`, keyword
-  copy/format helpers, assist formatters, entity registries, peek registries,
-  overlay openers, and item action registries.
-- Reused the canonical table copy configuration, the existing keyword brief,
-  Marketing `humanLines` / `webLocation`, assist urgency/source/expiry
-  formatters, the keyword window opener, and existing row doors/actions.
-- Added one pure Assist formatter module because no shared Assist row-copy
-  projection existed, and extended the canonical table copy config with one
-  `listContext` callback so live view state survives empty result sets. No
-  component, hook, service, table, overlay, route, or chunk boundary was
-  created.
-
-## Decisions, exceptions, and learning
-
+- Findings verified: **2**.
+- Fixed: **2**.
 - Human approvals needed: **0**.
 - Exceptions proposed or approved: **0**.
-- Degradation: **none**. The release's non-blocking post-push advisory sweep
-  stalled in `check-dead-relations` after the tag and branch were published;
-  the orphaned process was terminated and its exit trap released the delivery
-  lane. All P5-required gates and the exact-candidate certification passed.
-- Focused machinery task: add row-level AI variants to the canonical
-  `MatrxDataTable.copy` contract before repairing the Unwired console.
-- Learning: detector auto-approval must stop when a table file already owns a
-  bespoke clipboard action, and empty views need canonical `copy.listContext`
-  so visible KPIs, filters, and errors survive without row bodies.
+- Final detector snapshot: **105 compliant / 26 auto-approved / 0 equivalent
+  controls / 33 review / 17 excluded**.
+
+The open Unwired machinery task is complete. `MatrxDataTable.copy` now accepts
+row-scoped AI variants and threads them through one shared row-copy seam used by
+mobile cards, desktop rows, side panels, and row windows. Unwired's bespoke
+“Copy brief” button and context-menu action were removed; the existing
+finish-the-wiring prompt now appears inside the row's Copy-for-AI menu, so the
+surface has the canonical compact Copy / Copy-for-AI pair and no third control.
+
+The first verified review-row repair is also complete. The competitor
+opportunities table now uses canonical row/view copy with a rendered
+opportunity projection, record-window evidence, and the page's live site,
+competitor, open-action, and coverage KPIs in both payload body and attributes.
+The two later form/history callsites remain review-only because their copy must
+be draft-aware rather than a raw saved-row dump.
+
+## Contract repair
+
+The first exact candidate was rejected because the typed P5 manifest required
+two compact icons while the then-current skill and primitive had drifted to one
+unified icon. The replacement restores the manifest-owned contract:
+
+- first icon: human-readable Copy;
+- second icon: Copy JSON, faithful Copy for AI, shaped AI variants, domain
+  variants such as Unwired's repair brief, exports, destinations, and Groomer;
+- no large labels and no third JSON/domain control.
+
+`check:patrol-contracts` now reads the P5 recipe and rejects semantic drift back
+to a single-icon doctrine, rather than checking only prompt generation.
+
+## Verification and certification
+
+- Focused Jest: **6 suites / 36 tests passed**.
+- Full `pnpm type-check`: passed.
+- Scoped ESLint: 0 errors; one unchanged barrel warning in table `types.ts`.
+- P5 detector tests: **8/8 passed**.
+- `pnpm check:patrol-contracts`: passed, including the P5 recipe guard.
+- `git diff --check`: passed.
+- Independent competitor payload certification: CERTIFIED exact
+  `0b9729b4e6cdfd24e4323bf2eaf23351726dfe69`.
+- First core candidate `a48dda0a079abac8bc27990da4b0e3c63e10da20`:
+  REJECTED for the concrete two-icon contract defect.
+- Final clean 12-path candidate
+  `80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b`: CERTIFIED; no candidate-caused
+  defect remains.
+- The permanent record is valid with 14 hash-chained events and is
+  `delivery_queued` on its deterministic authority ref.
+- A final origin/main check confirms the certified candidate remains an
+  ancestor and the live tree still renders the two-icon contract; ancestry
+  alone was not accepted as delivery proof.
+
+## Infrastructure evidence
+
+The required in-app Browser control runtime could not be selected because the
+session did not expose the required `node_repl js` tool. The canonical preview
+lease remained untouched. This is infrastructure evidence, not product
+rejection; rendered component tests cover the compact pair, mobile row actions,
+desktop rows, and the row variant seam.
+
+## Learning
+
+The smallest durable improvement is now enforced: patrol-contract validation
+must compare P5's typed run instruction with its recipe doctrine, because a
+generated prompt can be current while the shared primitive and skill silently
+move to a contradictory interaction contract.

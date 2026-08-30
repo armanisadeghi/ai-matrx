@@ -26,8 +26,7 @@ interface ReferencesBulkCopyButtonGroupedProps {
 }
 
 type ReferencesBulkCopyButtonProps = (
-  | ReferencesBulkCopyButtonSingleProps
-  | ReferencesBulkCopyButtonGroupedProps
+  ReferencesBulkCopyButtonSingleProps | ReferencesBulkCopyButtonGroupedProps
 ) & {
   /** Toast + tooltip label, e.g. "3 projects". */
   toastLabel: string;
@@ -120,7 +119,9 @@ export function ReferencesBulkCopyButton({
         "transition-all duration-150",
         "text-muted-foreground hover:text-primary hover:bg-primary/10",
         copied && "text-primary",
-        size === "sm" ? "h-6 w-6" : "h-8 w-8",
+        size === "sm"
+          ? "h-11 w-11 shrink-0 lg:h-6 lg:w-6"
+          : "h-11 w-11 shrink-0 lg:h-8 lg:w-8",
         isDisabled && "opacity-40 pointer-events-none",
         className,
       )}

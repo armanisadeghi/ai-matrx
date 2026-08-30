@@ -21,8 +21,8 @@ import {
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
-import { flashcardsPrinter } from "./flashcards-printer";
-import { usePrintOptions } from "@/lib/block-print/PrintOptionsDialog";
+import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { usePrintOptions } from "@ai-matrx/print/react";
 
 export type LayoutMode = "grid" | "list";
 

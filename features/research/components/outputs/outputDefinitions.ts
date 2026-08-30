@@ -27,7 +27,7 @@
  * stable keys in `research.rs_context_bundle`
  * (migrations/research_system_context_bundles.sql) — that row's `agent_id` is a
  * SEED MIRROR of the mandate's system default, not a second authority.
- * SoR: common-docs/systems/agents/mandates/FEATURE.md.
+ * SoR: common-docs/systems/mandates/FEATURE.md.
  */
 
 import type { OutputKind } from "./outputs";

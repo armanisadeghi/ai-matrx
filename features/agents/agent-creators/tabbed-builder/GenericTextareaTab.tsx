@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { promptTemplateSource } from './constants';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface GenericTextareaContentProps {
   updateContent?: (content: string) => void;
@@ -74,7 +74,7 @@ const GenericTextareaContent: React.FC<GenericTextareaContentProps> = ({
         <Label htmlFor={`${id}-content`} className="text-gray-700 dark:text-gray-300">
           {label}
         </Label>
-        <Textarea
+        <ProTextarea
           id={`${id}-content`}
           placeholder={placeholder}
           value={content}

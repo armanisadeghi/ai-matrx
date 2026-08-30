@@ -7,6 +7,7 @@ import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
   ChefHat,
   Clock,
+  Check,
   CheckCircle2,
   Circle,
   Maximize2,
@@ -173,7 +174,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     setIsPrinting(true);
     try {
       const { captureBlockElement } =
-        await import("@/lib/block-print/dom-capture-block-printer");
+        await import("@ai-matrx/print/pdf");
       await captureBlockElement(
         blockContentRef.current,
         recipe.title.replace(/\s+/g, "-").toLowerCase() || "recipe",
@@ -544,7 +545,14 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                                     : "bg-blue-500 dark:bg-blue-600 text-white"
                                 }`}
                               >
-                                {isCompleted ? "✓" : index + 1}
+                                {isCompleted ? (
+                                  <Check
+                                    className="h-3.5 w-3.5"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  index + 1
+                                )}
                               </div>
                               <div
                                 className={`flex-1 min-w-0 font-semibold text-xs leading-snug ${

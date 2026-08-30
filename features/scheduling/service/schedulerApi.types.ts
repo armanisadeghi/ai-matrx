@@ -30,6 +30,7 @@ export interface TaskResponse {
   enabled: boolean;
   expires_at: string | null;
   tags: string[];
+  taxonomy_node_id: string | null;
   next_due_at: string | null;
   last_run_at: string | null;
   created_at: string;
@@ -173,6 +174,8 @@ export interface TaskCreateRequest {
   enabled?: boolean;
   expires_at?: string | null;
   tags?: string[];
+  /** Canonical Feature Registry identity; required by the API for tool jobs. */
+  taxonomy_node_id?: string | null;
   agent_task?: AgentTaskCreate | null;
   trigger?: TriggerCreate | null;
   /**
@@ -275,25 +278,33 @@ export interface ScannerStatusResponse {
 // The contract is deliberately defensive: aidream may return nulls for any
 // nested field, so consumers must not assume `trigger` / `last_run` exist.
 
-export interface SystemTaskTrigger {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
-  enabled: boolean;
-  next_due_at: string | null;
-}
+export type SystemTaskTrigger =
+  ApiComponents["schemas"]["SystemTaskTriggerInfo"];
 
-export type SystemTaskLastRun =
-  ApiComponents["schemas"]["SystemTaskLastRun"];
+export type SystemTaskLastRun = ApiComponents["schemas"]["SystemTaskLastRun"];
 
 export type SystemTaskResponse = ApiComponents["schemas"]["SystemTaskItem"];
 
-export interface SystemTaskListResponse {
-  tasks: SystemTaskResponse[];
-}
+export type SystemTaskListResponse =
+  ApiComponents["schemas"]["SystemTasksResponse"];
 
 export type SystemTaskPatchRequest =
   ApiComponents["schemas"]["SystemTaskPatchRequest"];
+
+// ── DB jobs (admin, pg_cron) ───────────────────────────────────────────────
+//
+// Wire types for `/scheduling/admin/db-jobs` — the database's own scheduled
+// jobs (`cron.job`, SQL running inside Postgres), on the same console per
+// Arman's 2026-08-29 extension of the schedules ruling. The live generated
+// OpenAPI contract is authoritative; aliases keep every consumer synchronized.
+
+export type DbJobLastRun = ApiComponents["schemas"]["DbJobLastRun"];
+
+export type DbJobResponse = ApiComponents["schemas"]["DbJobItem"];
+
+export type DbJobListResponse = ApiComponents["schemas"]["DbJobsResponse"];
+
+export type DbJobPatchRequest = ApiComponents["schemas"]["DbJobPatchRequest"];
 
 // ── List query params ──────────────────────────────────────────────────────
 

@@ -6,6 +6,7 @@ import {
   Save,
   Loader2,
   CheckCircle2,
+  Circle,
   Zap,
   ChevronDown,
   ChevronUp,
@@ -55,13 +56,19 @@ function CapabilityToggle({
   return (
     <button
       onClick={() => onChange(!value)}
+      aria-pressed={value}
       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border transition-colors ${
         value
           ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300"
           : "bg-muted text-muted-foreground border-border hover:border-primary/30"
       } ${isRequired && !value ? "ring-1 ring-destructive" : ""}`}
     >
-      {value ? "✓" : "○"} {CAPABILITY_LABELS[capKey]}
+      {value ? (
+        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+      ) : (
+        <Circle className="h-3 w-3" aria-hidden="true" />
+      )}
+      {CAPABILITY_LABELS[capKey]}
     </button>
   );
 }

@@ -9,7 +9,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -48,6 +47,7 @@ import {
 } from "@/features/marketing/crawler/crawl-options";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { extractErrorMessage } from "@/utils/errors";
+import { Textarea } from "@/components/ui/textarea";
 
 type RunStatus =
   | "idle"

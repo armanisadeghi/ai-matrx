@@ -17,7 +17,7 @@ import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
-import { updateMandateDefinition } from "@/features/admin/mandates/service";
+import { updateMandateDefinition } from "@/features/mandates/admin/service";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;

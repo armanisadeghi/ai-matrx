@@ -4,7 +4,7 @@
  * Context Menu v3 — Scenario Matrix
  *
  * Five live panels, each pinning a different combination of:
- *   - addedContexts / excludedContexts
+ *   - derived availability (requirement-gate) + placementMode layout
  *   - placementMode ("show" | "hide" | "disable" per placement)
  *   - isEditable vs read-only
  *   - contextData shape (content, context, custom keys)
@@ -37,8 +37,8 @@ export default function ContextMenuScenariosPage() {
     `Panel 3 — read-only block.\nContent Blocks and Quick Actions are HIDDEN here.\nOnly the AI-action submenus for general + content-editor remain.`,
   );
 
-  // ── Panel 4: Restrictive filter — explicit addedContexts API ───────────
-  const restrictiveInitial = `// Same /code context shape as panel 1, but general shortcuts\n// are excluded via explicit addedContexts/excludedContexts (not contextFilter).\nfunction greet(name: string): number {\n  return "Hello, " + name;\n}\n`;
+  // ── Panel 4: same shape as panel 1, no contextFilter key ──────────────
+  const restrictiveInitial = `// Same /code context shape as panel 1, but general shortcuts\n// are no longer excluded by slugs at all — availability is derived.\nfunction greet(name: string): number {\n  return "Hello, " + name;\n}\n`;
 
   // ── Panel 5: Showcase of "disable" mode ─────────────────────────────────
   const [showcaseValue, setShowcaseValue] = useState(
@@ -78,9 +78,8 @@ export default function ContextMenuScenariosPage() {
               2. Content editor (editable)
             </h2>
             <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>{`['content-editor']`}</code>
-              <br />
-              excludedContexts: none
+              availability: derived (every key these items consume is
+              readable here)
               <br />
               placements: all show
             </p>
@@ -91,7 +90,6 @@ export default function ContextMenuScenariosPage() {
             onTextReplace={(v) => setContentValue(v)}
             onTextInsertBefore={(t) => setContentValue(t + contentValue)}
             onTextInsertAfter={(t) => setContentValue(contentValue + t)}
-            addedContexts={["content-editor"]}
             contextData={{
               content: contentValue,
               context: "panel-2-content",
@@ -112,7 +110,7 @@ export default function ContextMenuScenariosPage() {
           <header>
             <h2 className="text-sm font-semibold">3. Read-only paragraph</h2>
             <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>{`['content-editor']`}</code>
+              availability: derived
               <br />
               placements:{" "}
               <code>{`{ content-block: 'hide', quick-action: 'hide' }`}</code>
@@ -120,7 +118,6 @@ export default function ContextMenuScenariosPage() {
           </header>
           <NonEditableContextMenu
             sourceFeature="code-editor"
-            addedContexts={["content-editor"]}
             placementMode={{
               "content-block": "hide",
               "quick-action": "hide",
@@ -137,15 +134,15 @@ export default function ContextMenuScenariosPage() {
           </NonEditableContextMenu>
         </section>
 
-        {/* ── 4 ── Same filter via explicit addedContexts API */}
+        {/* ── 4 ── No contextFilter key on contextData */}
         <CodeEditorDemoPanel
           title="4. Code editor (explicit filter API)"
           description={
             <>
-              Identical shortcut filter to panel 1, but uses{" "}
-              <code>addedContexts</code> + <code>excludedContexts</code> instead
-              of <code>contextFilter</code> in contextData. Still full{" "}
-              <code>vsc_*</code> shape.
+              Identical to panel 1 but sets no <code>contextFilter</code> key.
+              Since Phase 6.7 both panels offer the SAME items: availability is
+              derived from the keys this surface can read, not from slugs.
+              Still full <code>vsc_*</code> shape.
             </>
           }
           initialContent={restrictiveInitial}
@@ -168,7 +165,6 @@ export default function ContextMenuScenariosPage() {
             sourceFeature="code-editor"
             getTextarea={() => showcaseRef.current}
             onTextReplace={(v) => setShowcaseValue(v)}
-            addedContexts={["content-editor"]}
             placementMode={{
               "content-block": "disable",
               "organization-tool": "disable",
@@ -211,7 +207,7 @@ export default function ContextMenuScenariosPage() {
               </li>
               <li>
                 Code editor (explicit API) — same shortcut set as panel 1 via{" "}
-                <code>addedContexts</code>/<code>excludedContexts</code>.
+                derived availability (see <code>requirement-gate.ts</code>).
               </li>
               <li>
                 Disable showcase — Content Blocks and Organization Tools

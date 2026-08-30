@@ -64,7 +64,7 @@ import type {
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationTutorScope } from "@/features/surfaces/manifests/education-tutor.manifest";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { TUTOR_MANDATE_KEY } from "../mandates";
 import {
   TUTOR_TEACHING_MODES,
@@ -133,7 +133,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
         </p>
         <p className="max-w-md text-xs text-muted-foreground">
           The {TUTOR_MANDATE_KEY} mandate could not resolve: {error}. Fix its
-          binding at /agents/mandates.
+          binding at /mandates.
         </p>
       </div>
     );

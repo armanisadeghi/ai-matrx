@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { setMemberControls } from "../service";
 import type { OrgAdminMember } from "../types";
 import { bytesToGb, gbToBytes, usdToMcents } from "../utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   orgId: string;
@@ -101,7 +102,7 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="notes">Admin notes</Label>
-        <textarea
+        <ProTextarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

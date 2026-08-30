@@ -115,7 +115,7 @@ export function StudioSidebar({
           Sessions
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {sessions.length > 0 && (
+          {isHydrated && sessions.length > 0 && (
             <>
               <CopyButtons
                 size="xs"

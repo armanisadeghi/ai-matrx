@@ -88,11 +88,6 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
       "cascades over existing organizations, scope types, scopes, and context items; each record is created on its owning management surface",
   },
   {
-    match: /ResearchTopicSelect/,
-    reason:
-      "selects an existing completed, human-reviewed research topic; topic creation belongs to the canonical research workflow",
-  },
-  {
     match: /SurfaceSimulatorSelect/,
     reason:
       "selects registered platform UI surfaces; an ad-hoc surface would bypass the canonical surface registry",

@@ -1,11 +1,8 @@
-import { Plug } from "lucide-react";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import { lucideMark } from "./marks";
 import { connectorsFor, getConnector } from "./registry";
 import type { ConnectorDefinition } from "./types";
 
-const GenericMcpMark = lucideMark(Plug);
 const FIRST_PARTY_IDS = new Set(["google-workspace", "gmail"]);
 const LIVE_SERVER_STATUSES = new Set(["active", "beta", "community"]);
 
@@ -35,7 +32,8 @@ function definitionFromMcp(entry: McpCatalogEntry): ConnectorDefinition {
     blurb:
       entry.description?.trim() ||
       `Connect ${entry.name} so agents can use it in conversations`,
-    logo: GenericMcpMark,
+    iconUrl: entry.iconUrl,
+    brandColor: entry.color,
     surfaces: ["strip", "directory"],
     manageHref: `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
   };

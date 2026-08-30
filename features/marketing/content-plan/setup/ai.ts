@@ -582,7 +582,7 @@ export function useSetupAgents(siteId: string | null) {
     setLiveLabel(label);
     // Which agent runs this step is a MANDATE, never a hardcoded id: the system
     // default is managed in the admin console and any user may bind their own
-    // agent at /agents/mandates. Resolution is loud — an unresolvable mandate throws
+    // agent at /mandates. Resolution is loud — an unresolvable mandate throws
     // here rather than silently running the wrong agent. The round-trip itself
     // is the canonical headless primitive (useHeadlessAgentJson, D126).
     return runHeadless<T>({

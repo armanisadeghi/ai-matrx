@@ -17,13 +17,15 @@ export default async function AgentShortcutsRoute({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <AgentShortcutsPanel
-        agentId={id}
-        agentName={agent.name}
-        agentDescription={agent.description}
-        agentVariableDefinitions={agent.variableDefinitions ?? []}
-        linkScope="user"
-      />
+      <div className="h-full pt-[var(--shell-header-h)]">
+        <AgentShortcutsPanel
+          agentId={id}
+          agentName={agent.name}
+          agentDescription={agent.description}
+          agentVariableDefinitions={agent.variableDefinitions ?? []}
+          linkScope="user"
+        />
+      </div>
     </>
   );
 }

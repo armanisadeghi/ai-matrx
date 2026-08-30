@@ -23,7 +23,12 @@ import {
   marketingSubViewHref,
   marketingSubViewHrefStyle,
 } from "@/features/marketing/lib/site-subviews";
-import { listMarketingSiteModes } from "@/features/marketing/lib/route-sections";
+import {
+  listMarketingSeoModes,
+  listMarketingWebsiteModes,
+  type MarketingSeoMode,
+  type MarketingWebsiteMode,
+} from "@/features/marketing/lib/route-sections";
 import { marketingSubViewIcon } from "@/features/marketing/lib/site-subview-icons";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
@@ -82,17 +87,65 @@ export interface MarketingSiteSubNav {
  * header renders on any given URL is directly testable — the hook below is a
  * three-line shell over it.
  */
+/** Sub-nav for one KNOWN section family anchored at `baseHref`. */
+function buildFixedSectionSubNav(
+  baseHref: string,
+  section: string,
+  pathname: string,
+  rawViewParam: string | null,
+): MarketingSiteSubNav {
+  const pathView =
+    marketingSubViewHrefStyle(section) === "path"
+      ? (pathname.slice(baseHref.length).split("/").filter(Boolean)[0] ?? null)
+      : null;
+  const view = resolveMarketingSubView(section, pathView ?? rawViewParam);
+  const views = listMarketingSubViews(section);
+  return {
+    section,
+    modes: views.map((subView) => ({
+      name: subView.label,
+      href: marketingSubViewHref(baseHref, section, subView.id),
+      icon: marketingSubViewIcon(section, subView.id),
+      description: subView.purpose,
+    })),
+    activeHref: marketingSubViewHref(baseHref, section, view),
+  };
+}
+
 export function buildMarketingSubNav(
   sitePath: string,
   pathname: string,
   rawViewParam: string | null,
+  /**
+   * A mount whose section is not derivable from a branch registry (the
+   * Reputation workspace under intelligence/) names its family explicitly;
+   * `sitePath` is then the family's base href.
+   */
+  fixedSection?: string,
 ): MarketingSiteSubNav {
-  const active = resolveActiveRouteMode(
-    listMarketingSiteModes(sitePath),
-    pathname,
-  );
+  if (fixedSection) {
+    return buildFixedSectionSubNav(sitePath, fixedSection, pathname, rawViewParam);
+  }
+  // A site's screens live in two registries — the website INVENTORY and the
+  // SEO PRACTICE — and the base path says which branch is being navigated
+  // (`/marketing/<brand>/{websites|seo}/<site>`), so the header never offers a
+  // section that does not exist on the branch the user is on.
+  const modes: (MarketingWebsiteMode | MarketingSeoMode)[] =
+    sitePath.split("/").filter(Boolean)[2] === "seo"
+      ? listMarketingSeoModes(sitePath)
+      : listMarketingWebsiteModes(sitePath);
+  const active = resolveActiveRouteMode(modes, pathname);
   const section = active?.slug ?? "";
   const sectionHref = active?.href ?? sitePath;
+  // The Keyword Value family is a ROUTED room inside Keywords
+  // (`keywords/value/*`) — its five screens carry their own pills, not the
+  // Keywords ones (adversarial audit, 2026-08-30).
+  if (section === "keywords") {
+    const valueBase = `${sectionHref}/value`;
+    if (pathname === valueBase || pathname.startsWith(`${valueBase}/`)) {
+      return buildFixedSectionSubNav(valueBase, "value", pathname, rawViewParam);
+    }
+  }
   const pathView =
     marketingSubViewHrefStyle(section) === "path"
       ? (pathname.slice(sectionHref.length).split("/").filter(Boolean)[0] ??
@@ -132,9 +185,12 @@ export function buildMarketingSubNav(
  * A section with no sub-views contributes nothing, and the header centre is
  * simply empty — the page's own title already says where you are.
  */
-export function useMarketingSiteSubNav(sitePath: string): MarketingSiteSubNav {
+export function useMarketingSiteSubNav(
+  sitePath: string,
+  fixedSection?: string,
+): MarketingSiteSubNav {
   const pathname = usePathname() ?? sitePath;
   const params = useSearchParams();
   const viewParam = params.get("view") ?? params.get("tab");
-  return buildMarketingSubNav(sitePath, pathname, viewParam);
+  return buildMarketingSubNav(sitePath, pathname, viewParam, fixedSection);
 }

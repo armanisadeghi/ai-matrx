@@ -38,7 +38,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -68,6 +67,7 @@ import type {
   PcEpisodeWithShow,
   PcShowRssSettings,
 } from "@/features/podcasts/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://aimatrx.com"
@@ -380,7 +380,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="show-desc">Description</Label>
-                <Textarea
+                <ProTextarea
                   id="show-desc"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

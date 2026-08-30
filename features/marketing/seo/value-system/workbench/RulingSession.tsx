@@ -51,7 +51,6 @@ import {
 
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { toast } from "@/lib/toast";
@@ -74,6 +73,7 @@ import { TrialPanel } from "./session/TrialPanel";
 import { VerifyPanel } from "./session/VerifyPanel";
 import type { SessionRuling } from "./session/trial";
 import { trialDimensionSlug } from "./session/trial";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface SessionRulingInput {
   keywordIds: string[];
@@ -661,7 +661,7 @@ export function RulingSession({
               </div>
             </div>
 
-            <Textarea
+            <ProTextarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Why? (optional — this sentence is what the system learns from)"

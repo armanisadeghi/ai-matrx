@@ -102,8 +102,11 @@ describe("Radix dialog accessibility semantics", () => {
     const close = document.querySelector('[data-slot="dialog-close"]');
 
     expect(header?.classList.contains("pr-12")).toBe(true);
-    expect(close?.classList.contains("h-10")).toBe(true);
-    expect(close?.classList.contains("w-10")).toBe(true);
+    expect(close?.getAttribute("aria-label")).toBe("Close");
+    expect(close?.classList.contains("h-11")).toBe(true);
+    expect(close?.classList.contains("w-11")).toBe(true);
+    expect(close?.classList.contains("lg:h-10")).toBe(true);
+    expect(close?.classList.contains("lg:w-10")).toBe(true);
   });
 
   it("contains long dialog content instead of letting intrinsic width escape", () => {

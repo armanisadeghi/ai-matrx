@@ -12,9 +12,9 @@ import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import type { EntityTypeDisabledMap } from "@/components/entity-types/EntityTypeCombobox";
 import { SharePolicyColumnEditor } from "./SharePolicyColumnEditor";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface ShareableEditorState {
   mode: "create" | "edit";
@@ -318,7 +318,7 @@ export function ShareableResourceForm({
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium">Notes</span>
-        <Textarea
+        <ProTextarea
           value={editor.notes}
           onChange={(e) => onChange({ ...editor, notes: e.target.value })}
           rows={3}

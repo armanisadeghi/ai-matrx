@@ -38,7 +38,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -60,6 +59,7 @@ import type {
   PcEpisodeWithShow,
   PcDisplayMode,
 } from "@/features/podcasts/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const ACCEPT_AUDIO = "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
 
@@ -362,7 +362,7 @@ export function UploadEpisodeDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ep-desc">Description</Label>
-            <Textarea
+            <ProTextarea
               id="ep-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

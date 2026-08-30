@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "20260830T141852Z",
+  "baseSha": "53b4144f21d8d32b8062033500ef9c72a7f32f2c",
+  "createdAt": "2026-08-30T14:18:53.171Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:53.171Z",
+      "actor": "p3-eradication",
+      "summary": "Resume P3 ERADICATION from the open provider-sync mobile-header sighting and hover-only detector queue.",
+      "evidence": [
+        "Canonical shared checkout was clean at 53b4144f21d8d32b8062033500ef9c72a7f32f2c; managed preview owned by this checkout; baseline type-check and patrol contracts passed.",
+        "375x812 in-app Browser reproduction showed provider stats compressed into one-character columns with legend and Copy/Refresh overlap."
+      ],
+      "previousEventHash": null,
+      "eventHash": "107afc1c7799cdebeb272d6af444573a259aa68736caf587f7cdaa124502c17a"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:18:53.739Z",
+      "actor": "p3-eradication",
+      "summary": "Verified provider-sync mobile header defect; beginning bounded canonical responsive repair while detector machinery runs in a disjoint scripts-only unit.",
+      "evidence": [
+        "Desktop behavior will remain under sm breakpoint; mobile toolbar receives explicit full-width rows."
+      ],
+      "previousEventHash": "107afc1c7799cdebeb272d6af444573a259aa68736caf587f7cdaa124502c17a",
+      "eventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:23:57.878Z",
+      "actor": "p3-eradication",
+      "summary": "Provider-sync responsive toolbar repair is preserved at exact candidate 141d52a518e50714c865419f020c0aa81f028566; requesting independent four-quadrant certification.",
+      "evidence": [
+        "Owned path delta from pre-edit base 79ed448edf: ProviderSyncDashboard toolbar, feature changelog, responsive regression test.",
+        "Local in-app Browser: 375x812 light/dark no overlaps or overflow, 44px actions; 1440x900 light/dark compact 45px toolbar and 28px actions.",
+        "Focused Jest 2/2 passed; post-edit type-check failures are concurrent in AdvancedMenu test, UnwiredConsole, and parse-messages-variables, with no owned-path diagnostic."
+      ],
+      "previousEventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020",
+      "eventHash": "49ff609d56c2fca1969d31194294afce11fadc3b97ce97aec9333c43c3a5e937"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-30T14:39:24.078Z",
+      "actor": "p3-provider-certifier-fresh",
+      "summary": "Exact provider-sync candidate independently certified in canonical IAB matrix",
+      "evidence": [
+        "candidate integrated by shared checkpoint before certification; ordering failure preserved",
+        "owned blobs unchanged at certification"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "141d52a518e50714c865419f020c0aa81f028566",
+        "certifierTaskId": "/root/p3_provider_certifier_fresh",
+        "checks": [
+          "375x812 light and dark: no overflow, no overlap, 44px mobile actions",
+          "1440x900 light and dark: compact single row preserved",
+          "focused Jest 2/2, type-check, and diff-check passed"
+        ]
+      },
+      "previousEventHash": "49ff609d56c2fca1969d31194294afce11fadc3b97ce97aec9333c43c3a5e937",
+      "eventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:39:29.429Z",
+      "actor": "root",
+      "summary": "Queue already-integrated certified provider-sync candidate; no new release requested",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P3/20260830T141852Z"
+      ],
+      "delivery": {
+        "candidateSha": "141d52a518e50714c865419f020c0aa81f028566",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T141852Z"
+      },
+      "previousEventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1",
+      "eventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-30T14:39:36.956Z",
+      "actor": "root",
+      "summary": "Certified provider-sync candidate already present on origin/main; release lane intentionally not invoked",
+      "evidence": [
+        "shared checkpoint integration preceded certification; immutable event ordering retained"
+      ],
+      "delivery": {
+        "candidateSha": "141d52a518e50714c865419f020c0aa81f028566",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T141852Z",
+        "integratedSha": "f7c8e22764418a14fa3b191762b71561f77ea8f6",
+        "release": "integration-only-no-new-release"
+      },
+      "previousEventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58",
+      "eventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-30T14:39:44.754Z",
+      "actor": "root",
+      "summary": "Provider-sync repair unit delivered to main and closed; eradication backlog remains open in subsequent run",
+      "evidence": [
+        "no redundant release created"
+      ],
+      "previousEventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5",
+      "eventHash": "2b4b0f75e365752236213f09d3f87f398209450c64f420352f8c480efdcf225d"
+    }
+  ]
+}

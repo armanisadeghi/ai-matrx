@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P12",
-  "runId": "20260828T162115Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-28T16:52:53.049Z",
-  "summary": "Certified P12 candidate is integrated and contained in release v0.4.1392.",
-  "source": "20260828T162115Z.json",
-  "eventHash": "194aabcbf7f186e5cbf252038c231c56952047ebb4005e11913cc4fa95a03299"
+  "runId": "2026-08-30T141811Z",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:51:14.447Z",
+  "summary": "Corrected three-Surface candidate is static-clean and mirror-synced but cannot earn verified readiness without the required isolated in-app Browser proof",
+  "source": "2026-08-30T141811Z.json",
+  "eventHash": "98d89b3460d0637dc1dde467023e6c07916c9eed86b01b9c0d9ee8014ee4e1d9"
 }

@@ -23,7 +23,6 @@ import Link from "next/link";
 import { ExternalLink, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { hrTimeExceptionsHref } from "@/features/hr/routes";
@@ -46,6 +45,7 @@ import {
   RESOLUTION_LABELS,
   SEVERITY_RANK,
 } from "./vocabulary";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MIN_NOTE_LENGTH = 2;
 
@@ -323,7 +323,7 @@ export function ExceptionResolveControls({
           >
             Why is this being {RESOLUTION_LABELS[pending].toLowerCase()}d? A note is required.
           </label>
-          <Textarea
+          <ProTextarea
             id={`exc-note-${exception.id}`}
             rows={2}
             value={note}

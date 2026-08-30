@@ -485,16 +485,24 @@ export function resolvedPartyRef(resolved: ResolvedParty): PartyRef {
  * live rows. Soft-deleted parties are dropped — callers render what remains
  * and treat a missing id as an unlinked/trashed record, never an error.
  */
-export async function fetchPartiesByIds(ids: string[]): Promise<PartyRow[]> {
+export async function fetchPartiesByIds(
+  ids: string[],
+  options: { includeDiscovered?: boolean } = {},
+): Promise<PartyRow[]> {
   if (ids.length === 0) return [];
-  const { data, error } = await supabase
+  let query = supabase
     .schema("crm")
     .from("party")
     .select("*")
     .in("id", ids)
     .is("deleted_at", null)
-    .is("canonical_id", null)
-    .eq("record_class", CRM_PRIMARY_RECORD_CLASS);
+    .is("canonical_id", null);
+  // General selectors remain contact-only. Dedicated discovered-record
+  // surfaces (research experts) opt in after resolving exact edge-backed ids.
+  if (!options.includeDiscovered) {
+    query = query.eq("record_class", CRM_PRIMARY_RECORD_CLASS);
+  }
+  const { data, error } = await query;
   if (error) throw pgError(error);
   return data ?? [];
 }
@@ -546,7 +554,10 @@ export async function fetchTopicExperts(
     (edge) => edge.sourceType === "party" && edge.role === EXPERT_EDGE_ROLE,
   );
   if (edges.length === 0) return [];
-  const parties = await fetchPartiesByIds(edges.map((e) => e.sourceId));
+  const parties = await fetchPartiesByIds(
+    edges.map((e) => e.sourceId),
+    { includeDiscovered: true },
+  );
   const byId = new Map(parties.map((p) => [p.id, p]));
   return edges
     .map((edge) => {

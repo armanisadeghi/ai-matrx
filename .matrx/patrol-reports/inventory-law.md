@@ -1,13 +1,45 @@
 # Pattern Patrol P2 — Inventory Law
 
-**Run:** 2026-08-18 weekly structural-novelty + full detector pass (America/Los_Angeles)
-**Authority:** Tier C/R catalogue plus a bounded two-file Tier-M standing-authority repair
-**Base:** `4f0e491c03460506c9ee440e0cff3140d4c3ba61`
-**Candidate:** `2f491773093442f46036fe14cbb266fe79466311`
-**Certification:** **CERTIFIED** — exact candidate `2f491773093442f46036fe14cbb266fe79466311`
-**Delivery:** **DELIVERED** — integrated as ancestor of `82bb374523d1ef83f559f0c3d08a455c766b3e21`; first shipped in `v0.4.779` (`03bb4b60e51c1ef5862696525bb20ca1f9336f37`)
+**Run:** 2026-08-30 ERADICATION, ranked catalogue item 12 (America/Los_Angeles)
+**Authority:** Tier C/R catalogue plus one bounded standing-authority adoption batch
+**Base:** `bb330ff93d2561da4edd9d3c5b5aa43f1032c114`
+**Candidate:** `478fc4a234136bdf2c5d938bf90b704335c6cf96`
+**Certification:** **CERTIFIED** — independent exact-candidate archive proof
+**Delivery:** **DELIVERED** — first contained in existing release `v0.4.1499`; no redundant release was created
 
 ## Outcome
+
+- **1 verified finding in this eradication unit is fixed:** the brand Content
+  Plan site list at `/marketing/<brand>/content/plan` no longer owns a private
+  site-action menu. Its rows consume the same seven-action site authority as
+  `/marketing/sites` while retaining Plan, Table, Pillar Map, Entities, Setup,
+  and conditional CMS destinations as host-only sections.
+- Existing local paging, search, column filters, saved sort/page-size/column
+  preferences, plan aggregates, row links, mobile table behavior, full-row
+  click, plan copy payloads, New site flow, and surface runtime values remain.
+  The shared site actions add real-KPI Quick view, live site, Marketing
+  workspace, human/AI copy, the canonical site editor, and governed delete.
+- Quick view never fabricates zero KPIs from the list's basic `MarketingSite`.
+  It loads one real enriched `SiteListRow` on demand through `listSites`' exact
+  id filter. The shared Quick view now has one `lazyOverlay` front door reused
+  by both list hosts, with no heavy-implementation static bypass.
+- Exact candidate verification: full type-check PASS, focused ESLint PASS, 3
+  Jest suites / 9 tests PASS, both owned dead-end detector scopes clean, diff
+  check PASS, and independent adversarial verdict **CERTIFIED**. The in-app
+  Browser runtime was unavailable; the canonical preview lease remained
+  healthy, so this infrastructure limit did not reject a batch with no concrete
+  defect.
+- **28 prior catalogue units remain** after closing ranked action-authority item
+  12. The prior `/marketing/sites` conversion remains delivered in
+  `v0.4.1495`; this Content Plan adoption first shipped in existing release
+  `v0.4.1499`.
+- **Only genuine product decision remains unchanged:** after a comparison is
+  revealed, should each agent name in the comparison header become a canonical
+  new-tab agent door? Blind mode must keep every identity-bearing link, title,
+  peek control, and accessible label out of the DOM.
+- No exception was proposed or approved.
+
+## Prior weekly outcome — 2026-08-18
 
 - **4 detector-verified findings this run:** two bounded canonical-agent-door repairs, one blind-comparison product decision, and one skill-resource item blocked on missing populated evidence.
 - **2 fixed in this run:** the summary sub-agent in `ContextPolicyDetailSheet` and selected agent in `SurfaceAgentBindPanel` now use canonical `EntityRef` doors. Both preserve the current work by opening the label in a new tab and expose the registered agent peek.
@@ -124,9 +156,9 @@ Stale worklist claims closed during triage:
 
 Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang refactor. Any implementation must invoke the relevant named skill and receive adversarial certification before shipping.
 
-### Rank 1 — canonical list shell (8 open findings)
+### Rank 1 — canonical list shell (7 open findings, 1 fixed and delivered)
 
-1. **`/marketing/sites` — `SitesPortfolio.tsx`.** Convert the route to an `EntityListPage` config, keeping server paging/filter counts, card/table behavior, inline edit, copy payloads, and all seven site actions. Extract the site action registry first so the shell, cards, rows, and right-click share it. Verify every visible column sorts and filters server-side.
+1. **FIXED + CERTIFIED + DELIVERED (`v0.4.1495`) — `/marketing/sites` — `SitesPortfolio.tsx`.** Replacement candidate `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` adopts `EntityListPage`, delegates to canonical `listSites`, preserves paging/search/name/status filters, all eight table/mobile presentations, editor and agent-write behavior, copy payloads, governed delete, Quick view, and all seven site actions through one authority. It is the independently recertified restoration of first candidate `01e441fdf9`, whose bytes were later reversed by the shared integration lane. The shared shell now preserves explicit `sortable:false`, so Connections cannot silently fall through to `updated_at`. Numeric KPI filters remain a focused generic-vocabulary/server-query machinery task; none is falsely advertised.
 2. **`/schedules` — `ScheduleList.tsx` + `ScheduleRow.tsx`.** Build the scoped page/count/facet service required by `EntityListPage`, then replace the bespoke roster. Preserve the surface runtime scope emitter, error Retry, New schedule path, and schedule-specific status/action behavior.
 3. **`/agents/orchestras` — `OrchestrasBrowser.tsx` + `OrchestraCard.tsx`.** Add an Orchestra list config and one Orchestra action registry. Preserve Generate orchestrator/Create Orchestra dialogs, search semantics, card presentation, and the canonical `orchestratorId` identity.
 4. **`/documents` — `DocumentsHubTable.tsx`.** Move the hub onto the canonical shell and its controlled table path. Preserve document-kind routing, existing `EntityRef` behavior, copy/export actions, and the persisted view mapping; do not collapse distinct document entity tokens.
@@ -135,11 +167,11 @@ Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang
 8. **`/files/all` — `FileTable`/grid/list.** Do not flatten the hierarchy blindly. First decide and build the canonical shell seam for hierarchical folder navigation, then have table/grid/list consume one file/folder action registry and one server-scoped service.
 9. **`/crm` — `CrmListPage.tsx`.** Prerequisites first: add the canonical scoped page/count/facet RPC trio, shell `presentation` support, the surface-runtime slot, and the non-scope segmented-control seam. Only then replace the bespoke page. Preserve People/Companies, archive/trash semantics, inline edit, and agent surface values.
 
-### Rank 2 — one action authority per entity (9 findings)
+### Rank 2 — one action authority per entity (8 open findings, 1 delivered)
 
 10. **`AgentListDropdown.tsx`.** It now has 45 importing surfaces and still does not consume `useAgentRowActions`. Decide the singleton-host contract first (page-owned host or provider); do not instantiate dialog hosts per row/dropdown. Adapt its row shape, then feed the canonical registry without changing selection behavior.
 11. **`AgentActionModal.tsx`.** Replace its seven hard-coded actions with the same canonical agent menu used by table/cards/rows. Preserve the modal as a chooser when that is the primary click; delete only actions made redundant by the registry.
-12. **`SitesPortfolio.tsx` + `PlanSitesList.tsx`.** Build one `buildSiteMenu`/`useSiteRowActions` authority. Keep each surface’s unique section (portfolio management vs plan navigation) while sharing copy, Copy for AI, edit, delete, peek, and live-site actions. Mount dialog hosts once.
+12. **FIXED + CERTIFIED + DELIVERED (`v0.4.1499`) — `/marketing/<brand>/content/plan` — `PlanSitesList.tsx`.** The list now surrounds canonical `buildSiteMenu` actions with its Plan/Table/Pillar Map/Entities/Setup and conditional CMS sections, supplies its established plan-specific copy payload, and owns singleton Quick view, site editor, delete confirmation, and governed-denial hosts. The on-demand Quick view hydrates a real `SiteListRow` through the canonical `listSites` path; no plan KPI or site KPI is fabricated.
 13. **`CrmListPage.tsx`.** Extract its inline `ItemMenuConfig` into the CRM entity registry created with the list-shell conversion; table, cards, rows, and right-click must consume the same config.
 14. **`KeywordResearchWorkbench.tsx`.** Extract the inline menu builder into a keyword-research entity action registry and reuse it from every keyword row presentation; retain workbench-only actions as an appended section.
 15. **`SiteKeywordPerformanceWorkspace.tsx`.** Extract `rowMenuConfig` into the same keyword/site-performance authority used by sibling performance surfaces; verify action availability against server capabilities.

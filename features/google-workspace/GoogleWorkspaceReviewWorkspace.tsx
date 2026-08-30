@@ -69,6 +69,7 @@ import {
   preferredGoogleConnectionId,
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type BusyAction =
   | "connect-files"
@@ -711,7 +712,7 @@ export function GoogleWorkspaceReviewWorkspace({
                           <Label htmlFor="document-append">
                             Text to append
                           </Label>
-                          <Textarea
+                          <ProTextarea
                             id="document-append"
                             value={documentAppend}
                             onChange={(event) =>
@@ -888,7 +889,7 @@ export function GoogleWorkspaceReviewWorkspace({
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="email-body">Message body</Label>
-                      <Textarea
+                      <ProTextarea
                         id="email-body"
                         value={emailBody}
                         onChange={(event) =>

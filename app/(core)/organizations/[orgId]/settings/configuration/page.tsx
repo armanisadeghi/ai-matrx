@@ -83,7 +83,7 @@ export default function OrgConfigurationPage() {
           ]}
         />
       </PageHeader>
-      <div className="h-full overflow-y-auto">
+      <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
         <div className="mx-auto max-w-4xl space-y-8 p-6">
           <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <p className="font-medium">

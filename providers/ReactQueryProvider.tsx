@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 
 const ReactQueryDevtools =
   process.env.NODE_ENV === "development"
@@ -18,7 +19,12 @@ const ReactQueryDevtools =
 export const REACT_QUERY_DEFAULT_OPTIONS = {
   queries: {
     staleTime: 60 * 1000,
-    retry: 1,
+    // A zero-row single-record read is a deterministic lifecycle/access
+    // result. Replaying it only duplicates the structured capture before the
+    // AccessGate can reconcile the first one. Keep the one retry for genuinely
+    // transient query failures.
+    retry: (failureCount: number, error: unknown) =>
+      !isRecordUnavailableError(error) && failureCount < 1,
     refetchOnWindowFocus: false,
   },
   mutations: {

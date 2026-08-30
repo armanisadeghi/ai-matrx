@@ -68,6 +68,7 @@ import {
   usePublishUiClients,
   usePublishUiSurfaces,
 } from "./LookupsSurfaceRuntime";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type TabKey = "clients" | "surfaces" | "executors";
 
@@ -426,7 +427,7 @@ function UiClientDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
-            <Textarea
+            <ProTextarea
               value={description ?? ""}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -728,7 +729,7 @@ function UiSurfaceDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
-            <Textarea
+            <ProTextarea
               value={description ?? ""}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -995,7 +996,7 @@ function ToolExecutorDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
-            <Textarea
+            <ProTextarea
               value={description ?? ""}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}

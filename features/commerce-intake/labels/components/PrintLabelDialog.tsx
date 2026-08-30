@@ -33,10 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
-import {
-  printQrLabelSheet,
-  type QrEcLevel,
-} from "@/lib/label-print/qr-labels-printer";
+import { printQrLabelSheet, type QrEcLevel } from "@ai-matrx/print/labels";
 import { toast } from "@/lib/toast";
 
 import type { AssetIdentifier, IntakeAsset } from "../../types";

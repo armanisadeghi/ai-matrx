@@ -1,41 +1,45 @@
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
 /**
- * The seven parent categories a website's sections fall into, in sidebar order.
+ * Section registries for the agency-model marketing tree (2026-08-28).
  *
- * A website had 26 first-level sections and no parent/child relationship at
- * all, which is why the header could never render more than icons. These groups
- * are what the marketing sidebar renders; no group holds more than five.
+ * A site's screens split across TWO branches with different jobs:
  *
- * Names avoid colliding with any section name (a "Changes" group holding a
- * "Changes" section reads as a bug) and avoid jargon — the person inside this
- * UI is a world-class expert at their own field and a novice at SEO.
+ *   • WEBSITE INVENTORY — `/marketing/[brand]/websites/[site]/…`
+ *     What the site IS: pages, structure, sitemaps, media, crawls, settings.
+ *
+ *   • SEO PRACTICE — `/marketing/[brand]/seo/[site]/…`
+ *     How the outside world finds it, and the work of improving that:
+ *     keywords, rankings, search console, technical health, links & authority,
+ *     AI visibility, and the programs that run it.
+ *
+ * This is Arman's two-lanes ruling carried into the URL itself ("you sort of
+ * have SEO on one side, and then you have, like, the actual website on the
+ * other") — the old single 22-section list buried SEO inside the website and
+ * nobody could find anything. Sidebar, headers, metadata, and the filesystem
+ * drift tests all consume these declarations; adding a screen means adding it
+ * HERE, never to one menu by hand.
  */
-/**
- * THE TWO LANES (Arman's ruling, 2026-08-25). A website divides into what you
- * PUBLISH and how people FIND it — "you sort of have SEO on one side, and then
- * you have, like, the actual website on the other." Seven groups over
- * twenty-two sections meant nobody could find their own features; two lanes
- * plus a short program list is the shape a marketing director already has in
- * their head.
- *
- * Placement rule, so a new section has one obvious home: does it describe
- * something YOU control and ship (a page, a sitemap, a crawl of it, its speed,
- * its defects)? That is The Website. Does it describe how the OUTSIDE WORLD
- * meets you (a search, a rank, a citation, a link, a mention)? That is
- * Search & SEO. Anything that runs the site end to end across both lanes is a
- * Program.
- */
-export const MARKETING_SITE_SECTION_GROUPS = [
+
+export const MARKETING_WEBSITE_SECTION_GROUPS = [
   "Start",
   "The Website",
-  "Search & SEO",
-  "Programs",
   "Configuration",
 ] as const;
 
-export type MarketingSectionGroup =
-  (typeof MARKETING_SITE_SECTION_GROUPS)[number];
+export const MARKETING_SEO_SECTION_GROUPS = [
+  "Keywords & Search",
+  "Technical",
+  "Links & Authority",
+  "Visibility",
+  "Programs",
+  "Setup",
+] as const;
+
+export type MarketingWebsiteSectionGroup =
+  (typeof MARKETING_WEBSITE_SECTION_GROUPS)[number];
+export type MarketingSeoSectionGroup =
+  (typeof MARKETING_SEO_SECTION_GROUPS)[number];
 
 export interface MarketingRouteSection {
   /** Empty string denotes the route family's root view. */
@@ -49,38 +53,16 @@ export interface MarketingRouteSection {
   exact?: boolean;
 }
 
-/**
- * A SITE section. Grouping is site-only: a crawl's six modes already fit the
- * header as icon+label, so they stay a flat list and keep the base shape.
- */
-export interface MarketingSiteRouteSection extends MarketingRouteSection {
-  /** Parent category in the sidebar. Every site section has one. */
-  group: MarketingSectionGroup;
+export interface MarketingWebsiteRouteSection extends MarketingRouteSection {
+  group: MarketingWebsiteSectionGroup;
 }
 
-/**
- * Website URLs retained only as redirects after their surfaces moved.
- * The filesystem inventory test subtracts exactly this list before comparing
- * live site sections, so a redirect can never masquerade as a visible surface.
- */
-export const MARKETING_SITE_LEGACY_REDIRECTS = [
-  "access",
-  "capabilities",
-  "discovery",
-  "integrations",
-  "intake",
-] as const;
-
-export interface MarketingRouteMode extends MarketingRouteSection {
-  href: string;
+export interface MarketingSeoRouteSection extends MarketingRouteSection {
+  group: MarketingSeoSectionGroup;
 }
 
-/**
- * Every visible mode under `/marketing/brands/[brandId]/sites/[siteId]`.
- * The site header, sibling-site switching, metadata, and filesystem drift test
- * all consume this one declaration.
- */
-export const MARKETING_SITE_SECTIONS = [
+/** Every visible mode under `/marketing/[brandId]/websites/[siteId]`. */
+export const MARKETING_WEBSITE_SECTIONS = [
   {
     slug: "",
     name: "Overview",
@@ -89,24 +71,6 @@ export const MARKETING_SITE_SECTIONS = [
     letter: "So",
     group: "Start",
     exact: true,
-  },
-  {
-    slug: "automations",
-    name: "Automations",
-    titlePrefix: "Automations",
-    description:
-      "Run the keyword-coverage engines by hand for this brand, and author the schedule that overrides the organization and system defaults.",
-    letter: "Am",
-    group: "Programs",
-  },
-  {
-    slug: "growth-loop",
-    name: "Growth Loop",
-    titlePrefix: "Growth Loop",
-    description:
-      "Run this site end to end — research, plan, write, publish, crawl, measure, improve — and act on whatever the loop is waiting on.",
-    letter: "Gl",
-    group: "Programs",
   },
   {
     slug: "pages",
@@ -134,14 +98,6 @@ export const MARKETING_SITE_SECTIONS = [
     group: "The Website",
   },
   {
-    slug: "coverage",
-    name: "Coverage",
-    titlePrefix: "Coverage",
-    description: "Compare sitemap, crawl, and search coverage for this site.",
-    letter: "Cv",
-    group: "The Website",
-  },
-  {
     slug: "media",
     name: "Media",
     titlePrefix: "Site Media",
@@ -159,123 +115,6 @@ export const MARKETING_SITE_SECTIONS = [
     group: "The Website",
   },
   {
-    slug: "audit",
-    name: "Audit",
-    titlePrefix: "Site Audit",
-    description:
-      "Review deterministic site-wide indexability, search metadata, social, heading, and URL-quality checks.",
-    letter: "Au",
-    group: "The Website",
-  },
-  {
-    slug: "findings",
-    name: "Findings",
-    titlePrefix: "Findings",
-    description: "Review durable marketing findings and evidence.",
-    letter: "Fi",
-    group: "The Website",
-  },
-  {
-    slug: "analysis",
-    name: "Analysis",
-    titlePrefix: "Analysis",
-    description: "Review prioritized marketing analysis for this site.",
-    letter: "An",
-    group: "Programs",
-  },
-  {
-    slug: "performance",
-    name: "Performance",
-    titlePrefix: "Site Performance",
-    description:
-      "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
-    letter: "Pf",
-    group: "The Website",
-  },
-  {
-    slug: "changes",
-    name: "Changes",
-    titlePrefix: "SEO Changes",
-    description:
-      "Track site interventions, implementation evidence, and measured outcomes.",
-    letter: "Ch",
-    group: "Programs",
-  },
-  {
-    slug: "keywords",
-    name: "Keywords",
-    titlePrefix: "Keywords",
-    // The section's front door is its `start` sub-view — the map of every
-    // screen that gives keywords meaning (see `site-subviews.ts`).
-    description:
-      "Start here: what people searched, what your keywords mean, and how to say so.",
-    letter: "Kw",
-    group: "Search & SEO",
-  },
-  {
-    slug: "value",
-    name: "Keyword value",
-    titlePrefix: "Keyword Value",
-    // "Value" alone read as a generic word on a sidebar of 22 sections and
-    // gave no clue it was the other half of Keywords (2026-08-24).
-    description:
-      "Decide what your search traffic is worth: dimensions, the rulebook, offerings, and the scores and levels they produce.",
-    letter: "Vl",
-    group: "Search & SEO",
-  },
-  {
-    slug: "ranks",
-    name: "Ranks",
-    titlePrefix: "Site Ranks",
-    description: "Track keyword positions and movement for this site.",
-    letter: "Rn",
-    group: "Search & SEO",
-  },
-  {
-    slug: "ai-visibility",
-    name: "AI Visibility",
-    titlePrefix: "AI Visibility",
-    description:
-      "See where AI assistants cite this site, which competitors answer instead, and what closes the gap.",
-    letter: "Av",
-    group: "Search & SEO",
-  },
-  {
-    slug: "backlinks",
-    name: "Backlinks",
-    titlePrefix: "Backlinks",
-    description:
-      "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
-    letter: "Bl",
-    group: "Search & SEO",
-  },
-  {
-    slug: "links",
-    name: "Links",
-    titlePrefix: "Links",
-    description: "Inspect accepted link evidence for this site.",
-    letter: "Ln",
-    group: "Search & SEO",
-  },
-  {
-    slug: "authority",
-    name: "Authority",
-    titlePrefix: "Authority Router",
-    description:
-      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
-    letter: "Ar",
-    group: "Search & SEO",
-  },
-  {
-    slug: "reputation",
-    name: "Reputation",
-    titlePrefix: "Digital PR & Reputation",
-    description:
-      "Review evidence-backed publication opportunities and reputation handling decisions.",
-    letter: "Pr",
-    group: "Search & SEO",
-  },
-  {
     slug: "settings",
     name: "Settings",
     titlePrefix: "Settings",
@@ -284,7 +123,179 @@ export const MARKETING_SITE_SECTIONS = [
     letter: "Se",
     group: "Configuration",
   },
-] as const satisfies readonly MarketingSiteRouteSection[];
+] as const satisfies readonly MarketingWebsiteRouteSection[];
+
+/**
+ * Every visible mode under `/marketing/[brandId]/seo/[siteId]`.
+ * The branch root redirects to `keywords` — the "start here" screen.
+ */
+export const MARKETING_SEO_SECTIONS = [
+  {
+    slug: "keywords",
+    name: "Keywords",
+    titlePrefix: "Keywords",
+    description:
+      "Start here: what people searched, what your keywords mean, and what that traffic is worth.",
+    letter: "Kw",
+    group: "Keywords & Search",
+  },
+  {
+    slug: "rankings",
+    name: "Rankings",
+    titlePrefix: "Rank Tracking",
+    description: "Track keyword positions and movement for this site.",
+    letter: "Rn",
+    group: "Keywords & Search",
+  },
+  {
+    slug: "search-console",
+    name: "Search Console",
+    titlePrefix: "Search Console",
+    description:
+      "The full Search Console dataset for this site — queries, pages, countries, devices.",
+    letter: "Sc",
+    group: "Keywords & Search",
+  },
+  {
+    slug: "audit",
+    name: "Audit",
+    titlePrefix: "Site Audit",
+    description:
+      "Review deterministic site-wide indexability, search metadata, social, heading, and URL-quality checks.",
+    letter: "Au",
+    group: "Technical",
+  },
+  {
+    slug: "findings",
+    name: "Findings",
+    titlePrefix: "Findings",
+    description: "Review durable marketing findings and evidence.",
+    letter: "Fi",
+    group: "Technical",
+  },
+  {
+    slug: "analysis",
+    name: "Analysis",
+    titlePrefix: "Analysis",
+    description: "Review prioritized marketing analysis for this site.",
+    letter: "An",
+    group: "Technical",
+  },
+  {
+    slug: "coverage",
+    name: "Coverage",
+    titlePrefix: "Coverage",
+    description: "Compare sitemap, crawl, and search coverage for this site.",
+    letter: "Cv",
+    group: "Technical",
+  },
+  {
+    slug: "performance",
+    name: "Performance",
+    titlePrefix: "Site Performance",
+    description:
+      "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
+    letter: "Ps",
+    group: "Technical",
+  },
+  {
+    slug: "changes",
+    name: "Changes",
+    titlePrefix: "SEO Changes",
+    description:
+      "Track site interventions, implementation evidence, and measured outcomes.",
+    letter: "Ch",
+    group: "Technical",
+  },
+  {
+    slug: "backlinks",
+    name: "Backlinks",
+    titlePrefix: "Backlinks",
+    description:
+      "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
+    letter: "Bl",
+    group: "Links & Authority",
+  },
+  {
+    slug: "links",
+    name: "Link Graph",
+    titlePrefix: "Links",
+    description: "Inspect accepted link evidence for this site.",
+    letter: "Ln",
+    group: "Links & Authority",
+  },
+  {
+    slug: "authority",
+    name: "Authority",
+    titlePrefix: "Authority Router",
+    description:
+      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
+    letter: "Ar",
+    group: "Links & Authority",
+  },
+  {
+    slug: "valuation",
+    name: "Link Valuation",
+    titlePrefix: "Backlink Valuation",
+    description:
+      "Score a candidate backlink on quality, relevance and placement, and price what it is worth paying.",
+    letter: "Lv",
+    group: "Links & Authority",
+  },
+  {
+    slug: "ai-visibility",
+    name: "AI Visibility",
+    titlePrefix: "AI Visibility",
+    description:
+      "See where AI assistants cite this site, which competitors answer instead, and what closes the gap.",
+    letter: "Av",
+    group: "Visibility",
+  },
+  {
+    slug: "growth-loop",
+    name: "Growth Loop",
+    titlePrefix: "Growth Loop",
+    description:
+      "Run this site end to end — research, plan, write, publish, crawl, measure, improve — and act on whatever the loop is waiting on.",
+    letter: "Gl",
+    group: "Programs",
+  },
+  {
+    slug: "automations",
+    name: "Automations",
+    titlePrefix: "Automations",
+    description:
+      "Run the keyword-coverage engines by hand for this site, and author the schedule that overrides the organization and system defaults.",
+    letter: "Am",
+    group: "Programs",
+  },
+  {
+    slug: "capabilities",
+    name: "Capabilities",
+    titlePrefix: "SEO Capabilities",
+    description:
+      "What's measured and switched on for this site, and each capability's evidence.",
+    letter: "Cp",
+    group: "Setup",
+  },
+] as const satisfies readonly MarketingSeoRouteSection[];
+
+/**
+ * Compatibility registry for brand-first site shells while their callers move
+ * onto the website/SEO split. It is derived from the canonical registries, so
+ * it cannot drift into a third source of route truth.
+ */
+export const MARKETING_SITE_SECTIONS = [
+  ...MARKETING_WEBSITE_SECTIONS,
+  ...MARKETING_SEO_SECTIONS,
+] as const;
+
+export const MARKETING_SITE_LEGACY_REDIRECTS = [
+  "access",
+  "discovery",
+  "integrations",
+  "intake",
+] as const;
 
 /** Every visible mode under one durable crawl session. */
 export const MARKETING_CRAWL_SECTIONS = [
@@ -308,7 +319,7 @@ export const MARKETING_CRAWL_SECTIONS = [
     name: "Reports",
     titlePrefix: "Crawl Reports",
     description: "Browse dedicated technical SEO reports for this crawl.",
-    letter: "Rp",
+    letter: "Cw",
   },
   {
     slug: "snapshots",
@@ -333,11 +344,11 @@ export const MARKETING_CRAWL_SECTIONS = [
   },
 ] as const satisfies readonly MarketingRouteSection[];
 
-export type MarketingSiteMode = (typeof MARKETING_SITE_SECTIONS)[number] & {
+export type MarketingWebsiteMode =
+  (typeof MARKETING_WEBSITE_SECTIONS)[number] & { href: string };
+export type MarketingSeoMode = (typeof MARKETING_SEO_SECTIONS)[number] & {
   href: string;
-  exact?: boolean;
 };
-
 export type MarketingCrawlMode = (typeof MARKETING_CRAWL_SECTIONS)[number] & {
   href: string;
   exact?: boolean;
@@ -347,6 +358,26 @@ function hrefForSection(basePath: string, slug: string): string {
   return slug ? `${basePath}/${slug}` : basePath;
 }
 
+export function listMarketingWebsiteModes(
+  websitePath: string,
+): MarketingWebsiteMode[] {
+  return MARKETING_WEBSITE_SECTIONS.map((section) => ({
+    ...section,
+    href: hrefForSection(websitePath, section.slug),
+  }));
+}
+
+export function listMarketingSeoModes(seoPath: string): MarketingSeoMode[] {
+  return MARKETING_SEO_SECTIONS.map((section) => ({
+    ...section,
+    href: hrefForSection(seoPath, section.slug),
+  }));
+}
+
+export type MarketingSiteMode = (typeof MARKETING_SITE_SECTIONS)[number] & {
+  href: string;
+};
+
 export function listMarketingSiteModes(sitePath: string): MarketingSiteMode[] {
   return MARKETING_SITE_SECTIONS.map((section) => ({
     ...section,
@@ -354,24 +385,38 @@ export function listMarketingSiteModes(sitePath: string): MarketingSiteMode[] {
   }));
 }
 
-export interface MarketingSiteModeGroup {
-  label: MarketingSectionGroup;
-  modes: MarketingSiteMode[];
+export interface MarketingModeGroup<TMode> {
+  label: string;
+  modes: TMode[];
 }
 
-/**
- * The site's sections as the sidebar renders them: grouped, in declared group
- * order, section order preserved inside each group. Groups with no sections are
- * omitted rather than rendered empty.
- */
-export function listMarketingSiteModeGroups(
-  sitePath: string,
-): MarketingSiteModeGroup[] {
-  const modes = listMarketingSiteModes(sitePath);
-  return MARKETING_SITE_SECTION_GROUPS.map((label) => ({
+export function listMarketingWebsiteModeGroups(
+  websitePath: string,
+): MarketingModeGroup<MarketingWebsiteMode>[] {
+  const modes = listMarketingWebsiteModes(websitePath);
+  return MARKETING_WEBSITE_SECTION_GROUPS.map((label) => ({
     label,
     modes: modes.filter((mode) => mode.group === label),
   })).filter((group) => group.modes.length > 0);
+}
+
+export function listMarketingSeoModeGroups(
+  seoPath: string,
+): MarketingModeGroup<MarketingSeoMode>[] {
+  const modes = listMarketingSeoModes(seoPath);
+  return MARKETING_SEO_SECTION_GROUPS.map((label) => ({
+    label,
+    modes: modes.filter((mode) => mode.group === label),
+  })).filter((group) => group.modes.length > 0);
+}
+
+export function listMarketingSiteModeGroups(
+  sitePath: string,
+): MarketingModeGroup<MarketingSiteMode>[] {
+  return [
+    ...listMarketingWebsiteModeGroups(sitePath),
+    ...listMarketingSeoModeGroups(sitePath),
+  ];
 }
 
 export function listMarketingCrawlModes(
@@ -381,6 +426,18 @@ export function listMarketingCrawlModes(
     ...section,
     href: hrefForSection(crawlPath, section.slug),
   }));
+}
+
+export function getMarketingWebsiteSection(
+  slug: string,
+): MarketingRouteSection | undefined {
+  return MARKETING_WEBSITE_SECTIONS.find((section) => section.slug === slug);
+}
+
+export function getMarketingSeoSection(
+  slug: string,
+): MarketingRouteSection | undefined {
+  return MARKETING_SEO_SECTIONS.find((section) => section.slug === slug);
 }
 
 export function getMarketingSiteSection(
@@ -395,13 +452,35 @@ export function getMarketingCrawlSection(
   return MARKETING_CRAWL_SECTIONS.find((section) => section.slug === slug);
 }
 
-/** Preserve the current registered site mode when switching sibling sites. */
+/** Preserve the current registered mode when switching sibling sites. */
+export function marketingWebsiteSectionSuffix(
+  pathname: string,
+  websitePath: string,
+): string {
+  const active = resolveActiveRouteMode(
+    listMarketingWebsiteModes(websitePath),
+    pathname,
+  );
+  return active?.slug ? `/${active.slug}` : "";
+}
+
 export function marketingSiteSectionSuffix(
   pathname: string,
   sitePath: string,
 ): string {
   const active = resolveActiveRouteMode(
     listMarketingSiteModes(sitePath),
+    pathname,
+  );
+  return active?.slug ? `/${active.slug}` : "";
+}
+
+export function marketingSeoSectionSuffix(
+  pathname: string,
+  seoPath: string,
+): string {
+  const active = resolveActiveRouteMode(
+    listMarketingSeoModes(seoPath),
     pathname,
   );
   return active?.slug ? `/${active.slug}` : "";

@@ -1,0 +1,4014 @@
+{
+    "door_expected_tier": {
+        "hr_confidential_get": "confidential",
+        "hr_confidential_list": "confidential",
+        "hr_employee_profile": "confidential",
+        "hr_restricted_get": "restricted",
+        "hr_restricted_list": "restricted"
+    },
+    "doors": {
+        "hr_access_audit_query": {
+            "args": {
+                "p_from": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_include_self": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_limit": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_target_token": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_to": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_access_explain": {
+            "args": {
+                "p_id": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_token": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_user": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_activate_employer": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "department_name",
+                        "display_name",
+                        "ein",
+                        "employee_number",
+                        "hire_date",
+                        "jurisdiction_id",
+                        "legal_first_name",
+                        "legal_last_name",
+                        "legal_name",
+                        "location_name",
+                        "nominee_user_id",
+                        "organization_id",
+                        "tz"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_activation_seed": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_attendance_exception_list": {
+            "args": {
+                "p_filters": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_page": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                },
+                "p_page": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_attendance_exception_resolve": {
+            "args": {
+                "p_exception_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_note": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_premium_earning_code_id": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_resolution_state": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_authority_delegate": {
+            "args": {
+                "p_delegation_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_authority_delegation_end": {
+            "args": {
+                "p_delegation_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_authority_delegation_request": {
+            "args": {
+                "p_authority_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_delegate_employment_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_effective_from": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_effective_to": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 5,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_authority_grant": {
+            "args": {
+                "p_action_type": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_effective_from": {
+                    "ord": 9,
+                    "required": false
+                },
+                "p_effective_to": {
+                    "ord": 10,
+                    "required": false
+                },
+                "p_holder_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_holder_kind": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_limits": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 12,
+                    "required": false
+                },
+                "p_rank": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_reason": {
+                    "ord": 11,
+                    "required": false
+                },
+                "p_scope_employment_ids": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_scope_id": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_scope_kind": {
+                    "ord": 4,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_limits": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_authority_revoke": {
+            "args": {
+                "p_authority_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_break_glass": {
+            "args": {
+                "p_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_justification": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_purpose": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_calendar_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "holiday_pay_counts_toward_ot",
+                        "id",
+                        "is_default",
+                        "jurisdiction_id",
+                        "name",
+                        "organization_id"
+                    ],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_clock_state": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_code_upsert": {
+            "args": {
+                "p_kind": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "code",
+                        "counts_toward_hours_of_service",
+                        "counts_toward_ot",
+                        "counts_toward_sick_accrual",
+                        "deduction_kind",
+                        "external_code_map",
+                        "flat_amount",
+                        "hours_category",
+                        "id",
+                        "is_active",
+                        "is_overtime",
+                        "is_statutory_premium",
+                        "jurisdiction_rule_class",
+                        "multiplier",
+                        "name",
+                        "organization_id",
+                        "provider_ref"
+                    ],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_compensation_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "effective_from",
+                        "employment_id"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_confidential_get": {
+            "args": {
+                "p_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_purpose": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_confidential_list": {
+            "args": {
+                "p_cursor": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_filter": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_limit": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_purpose": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_filter": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_corrective_action_acknowledge": {
+            "args": {
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "employee_statement",
+                        "esign_request_id",
+                        "kind",
+                        "refusal_note",
+                        "signed_file_id",
+                        "witness_employment_id",
+                        "witness_name"
+                    ],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_corrective_action_issue": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "acknowledgement_kind",
+                        "attendance_exception_id",
+                        "confidentiality_tier",
+                        "consequence_if_unmet",
+                        "employment_id",
+                        "entry_door",
+                        "expected_improvement",
+                        "follow_up_on",
+                        "incident_on",
+                        "issued_on",
+                        "level",
+                        "policy_cited",
+                        "policy_document_file_id",
+                        "prior_action_id",
+                        "reason_category",
+                        "summary"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_corrective_action_outcome": {
+            "args": {
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_outcome": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "follow_up_outcome",
+                        "outcome_on"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_directory_list": {
+            "args": {
+                "p_direction": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_filter": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_limit": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_offset": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_sort": {
+                    "ord": 5,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filter": {
+                    "analyzable": true,
+                    "reads": [
+                        "department_id",
+                        "job_title_id",
+                        "location_id",
+                        "manager_employee_id",
+                        "my_team",
+                        "search",
+                        "status",
+                        "worker_class"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_duplicate_scan": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_probe": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_probe": {
+                    "analyzable": true,
+                    "reads": [
+                        "display_name",
+                        "party_id",
+                        "personal_email",
+                        "ssn_hmac_hex",
+                        "work_email"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_earning_code_id": {
+            "args": {
+                "p_code": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_emergency_contact_remove": {
+            "args": {
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_emergency_contact_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "address",
+                        "alt_phone",
+                        "email",
+                        "employee_id",
+                        "full_name",
+                        "id",
+                        "is_primary",
+                        "phone",
+                        "position",
+                        "relationship_category_id"
+                    ],
+                    "unresolved_refs": 3
+                }
+            }
+        },
+        "hr_employee_by_party": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_party_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_employee_create": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "adjusted_service_date",
+                        "auto_renew",
+                        "change_reason_category_id",
+                        "compensation_amount",
+                        "cost_center",
+                        "currency",
+                        "department_id",
+                        "directory_opt_out",
+                        "display_name",
+                        "earning_code_id",
+                        "employee_number",
+                        "engagement_ends_on",
+                        "engagement_terms",
+                        "flsa_exemption_basis",
+                        "flsa_status",
+                        "fte",
+                        "hire_date",
+                        "home_address",
+                        "is_rehire",
+                        "is_supervisor",
+                        "job_title_id",
+                        "legal_first_name",
+                        "legal_last_name",
+                        "legal_middle_name",
+                        "legal_name_suffix",
+                        "link_user_id",
+                        "location_id",
+                        "mailing_address",
+                        "manager_employment_id",
+                        "organization_id",
+                        "original_hire_date",
+                        "party_id",
+                        "pay_basis",
+                        "pay_group_id",
+                        "per_unit",
+                        "personal_email",
+                        "personal_phone",
+                        "photo_file_id",
+                        "platform_external_id",
+                        "platform_of_record",
+                        "platform_url",
+                        "preferred_first_name",
+                        "preferred_last_name",
+                        "prior_employment_id",
+                        "probation_end_date",
+                        "pronouns",
+                        "schedule_class",
+                        "standard_hours_per_week",
+                        "work_email",
+                        "work_phone",
+                        "worker_class"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_employee_grant_missing_membership": {
+            "args": {
+                "p_employee_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_employee_invite": {
+            "args": {
+                "p_email": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_employee_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_expires_at": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_employee_profile": {
+            "args": {
+                "p_as_of": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_employee_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_employee_restore": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "employee_id"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_employee_update": {
+            "args": {
+                "p_employee_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_expected_version": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_patch": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_patch": {
+                    "analyzable": false,
+                    "reads": [
+                        "custom",
+                        "directory_opt_out",
+                        "legal_first_name",
+                        "legal_last_name",
+                        "legal_middle_name",
+                        "legal_name_suffix",
+                        "name_change_reason",
+                        "photo_file_id",
+                        "preferred_first_name",
+                        "preferred_last_name",
+                        "private",
+                        "pronouns",
+                        "work_email",
+                        "work_phone"
+                    ],
+                    "unresolved_refs": 9
+                }
+            }
+        },
+        "hr_employer_profile_update": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "applicability_override",
+                        "applicability_override_reason",
+                        "dba_name",
+                        "ein",
+                        "entity_form",
+                        "everify_required_states",
+                        "formation_state",
+                        "is_aca_ale",
+                        "is_eeo1_filer",
+                        "is_federal_contractor",
+                        "is_fmla_covered",
+                        "legal_name",
+                        "organization_id",
+                        "primary_address",
+                        "workers_comp_policy"
+                    ],
+                    "unresolved_refs": 8
+                }
+            }
+        },
+        "hr_employment_history": {
+            "args": {
+                "p_employee_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_employment_set_pay_group": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_pay_group_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_engagement_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "agreement_file_id",
+                        "auto_renew",
+                        "employment_id",
+                        "ends_on",
+                        "engagement_terms",
+                        "id",
+                        "platform_external_id",
+                        "platform_of_record",
+                        "platform_url",
+                        "sow_file_id",
+                        "starts_on",
+                        "status",
+                        "w9_file_id"
+                    ],
+                    "unresolved_refs": 7
+                }
+            }
+        },
+        "hr_establishment_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "address",
+                        "annual_average_employees",
+                        "eeo1_establishment_id",
+                        "id",
+                        "is_headquarters",
+                        "jurisdiction_id",
+                        "naics_code",
+                        "name",
+                        "organization_id",
+                        "osha_establishment_name",
+                        "total_hours_worked"
+                    ],
+                    "unresolved_refs": 3
+                }
+            }
+        },
+        "hr_external_identity_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "employee_id",
+                        "external_id",
+                        "external_url",
+                        "payload",
+                        "system_key"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_holiday_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "actual_on",
+                        "applies_to_schedule_class",
+                        "earning_code_id",
+                        "holiday_calendar_id",
+                        "id",
+                        "is_paid",
+                        "location_ids",
+                        "name",
+                        "observed_on",
+                        "organization_id"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_incident_advance": {
+            "args": {
+                "p_incident_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_state": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "follow_up_on",
+                        "osha_privacy_case",
+                        "osha_recordable",
+                        "resolution_summary"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_incident_assign": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_incident_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_incident_create": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "assigned_to_employment_id",
+                        "emergency_room",
+                        "establishment_id",
+                        "follow_up_on",
+                        "hospitalized_overnight",
+                        "incident_kind",
+                        "injury_body_part",
+                        "injury_event_description",
+                        "injury_nature",
+                        "injury_object_substance",
+                        "occurred_at",
+                        "organization_id",
+                        "osha_privacy_case",
+                        "physician_name",
+                        "provider_ref",
+                        "reported_anonymously",
+                        "reporter_employment_id",
+                        "return_to_work_on",
+                        "subject_employment_id",
+                        "subject_excluded",
+                        "summary",
+                        "treatment_beyond_first_aid",
+                        "treatment_facility",
+                        "work_restrictions",
+                        "workers_comp_claim_ref"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_incident_party_add": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "employment_id",
+                        "external_contact",
+                        "external_name",
+                        "incident_id",
+                        "interviewed_at",
+                        "party_role",
+                        "position"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_incident_status": {
+            "args": {
+                "p_incident_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_invite_accept": {
+            "args": {
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_jurisdiction_rule_set_status": {
+            "args": {
+                "p_new_status": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_rule_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_authenticate": {
+            "args": {
+                "p_device_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_device_secret": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_claim_pairing": {
+            "args": {
+                "p_device_fingerprint": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_pairing_code": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_device_list": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_device_set_capture": {
+            "args": {
+                "p_device_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_require_geo": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_require_photo": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_device_set_trust": {
+            "args": {
+                "p_device_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_trust_state": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_pairing_code_create": {
+            "args": {
+                "p_device_id": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_device_name": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_location_id": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_pin_reset": {
+            "args": {
+                "p_new_pin": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_session_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_punch": {
+            "args": {
+                "p_attestation": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_device_reported_at": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_employee_pin": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_geo": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_idempotency_key": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_kind": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_photo_file_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_session_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_attestation": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 2
+                },
+                "p_geo": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_kiosk_session_close": {
+            "args": {
+                "p_reason": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_session_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_session_heartbeat": {
+            "args": {
+                "p_session_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_kiosk_session_open": {
+            "args": {
+                "p_employee_number": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_employment_pin": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_session_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_knob_clear": {
+            "args": {
+                "p_feature": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_key": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_scope_id": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_scope_kind": {
+                    "ord": 4,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_knob_index": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_overridden_only": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_knob_set": {
+            "args": {
+                "p_feature": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_key": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_scope_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_scope_kind": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_value": {
+                    "ord": 4,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_value": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_law_portal_data": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_accrual_apply": {
+            "args": {
+                "p_actor_employment_id": {
+                    "ord": 18,
+                    "required": false
+                },
+                "p_actor_type": {
+                    "ord": 17,
+                    "required": false
+                },
+                "p_actor_user_id": {
+                    "ord": 19,
+                    "required": false
+                },
+                "p_amount": {
+                    "ord": 15,
+                    "required": false
+                },
+                "p_calc": {
+                    "ord": 11,
+                    "required": false
+                },
+                "p_clamps": {
+                    "ord": 13,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_engine_key": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_engine_version": {
+                    "ord": 9,
+                    "required": false
+                },
+                "p_entry_kind": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_exception": {
+                    "ord": 23,
+                    "required": false
+                },
+                "p_hours_delta": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_jurisdiction_key": {
+                    "ord": 22,
+                    "required": false
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_note": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_occurred_on": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_period_key": {
+                    "ord": 6,
+                    "required": true
+                },
+                "p_prospective": {
+                    "ord": 20,
+                    "required": false
+                },
+                "p_rate": {
+                    "ord": 16,
+                    "required": false
+                },
+                "p_rule_version_ids": {
+                    "ord": 10,
+                    "required": false
+                },
+                "p_snapshot_inputs": {
+                    "ord": 12,
+                    "required": false
+                },
+                "p_source_workweek_id": {
+                    "ord": 14,
+                    "required": false
+                },
+                "p_subject_id": {
+                    "ord": 21,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_calc": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_clamps": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 3
+                },
+                "p_exception": {
+                    "analyzable": false,
+                    "reads": [
+                        "class",
+                        "code",
+                        "jurisdiction_key",
+                        "message",
+                        "org_config_ref",
+                        "rule_id",
+                        "rule_version"
+                    ],
+                    "unresolved_refs": 1
+                },
+                "p_snapshot_inputs": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_adjust": {
+            "args": {
+                "p_confirm_below_floor": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_direction": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_hours": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_note": {
+                    "ord": 6,
+                    "required": true
+                },
+                "p_reason_category": {
+                    "ord": 5,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_balances": {
+            "args": {
+                "p_filters": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_scope": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_balances_export": {
+            "args": {
+                "p_filters": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_scope": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_calendar": {
+            "args": {
+                "p_filters": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_from": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_to": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_calendar_ics": {
+            "args": {
+                "p_filters": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_from": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_to": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_case_entitlement": {
+            "args": {
+                "p_as_of": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_case_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_case_get": {
+            "args": {
+                "p_case_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_case_list": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_case_open": {
+            "args": {
+                "p_case_kind": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_concurrent_policy_ids": {
+                    "ord": 9,
+                    "required": false
+                },
+                "p_continuity": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_entitlement_hours": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_entitlement_measure": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_expected_return_on": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_leave_request_id": {
+                    "ord": 10,
+                    "required": false
+                },
+                "p_runs_concurrent_with_pto": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_starts_on": {
+                    "ord": 4,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_enroll": {
+            "args": {
+                "p_effective_from": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_employment_ids": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_override_reason": {
+                    "ord": 4,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_ledger_export": {
+            "args": {
+                "p_as_of": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_ledger_view": {
+            "args": {
+                "p_as_of": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_policy_deactivate": {
+            "args": {
+                "p_disposition": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_migrate_to_policy_id": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_note": {
+                    "ord": 4,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_policy_floors": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_policy_list": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_policy_save": {
+            "args": {
+                "p_accept_warnings": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_policy_validate": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_reinstate_on_rehire": {
+            "args": {
+                "p_new_employment_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_request_cancel": {
+            "args": {
+                "p_hours": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_request_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_request_discard": {
+            "args": {
+                "p_reason": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_request_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_leave_request_preview": {
+            "args": {
+                "p_day_parts": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_ends_on": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_starts_on": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_day_parts": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_leave_request_submit": {
+            "args": {
+                "p_day_parts": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_ends_on": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_idempotency_key": {
+                    "ord": 9,
+                    "required": false
+                },
+                "p_leave_case_id": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_leave_policy_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_reason_category_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_reason_note": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_starts_on": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_day_parts": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_member_employee_links": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_user_ids": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_mint_investigation_token": {
+            "args": {
+                "p_incident_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_investigator_email": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_investigator_name": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 4,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_mint_records_request_token": {
+            "args": {
+                "p_delivery_address": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_request_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_scope": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_module_set_enabled": {
+            "args": {
+                "p_enabled": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_my_compensation": {
+            "args": {
+                "p_as_of": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_my_context": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_my_incident_reports": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_my_time_off": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_my_timesheet_context": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_punch_id": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_org_chart": {
+            "args": {
+                "p_on": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_org_jurisdiction_rule_deactivate": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_rule_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_org_jurisdiction_rule_save": {
+            "args": {
+                "p_accept_warnings": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_org_jurisdiction_rule_set_applies": {
+            "args": {
+                "p_applies": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_jurisdiction_key": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_rule_class": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_org_summary": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_overtime_preapproval_create": {
+            "args": {
+                "p_covers_from": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_covers_to": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason_category_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_reason_note": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_request_kind": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_requested_hours": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_shift_ids": {
+                    "ord": 8,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_overtime_preapproval_get": {
+            "args": {
+                "p_preapproval_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_overtime_preapproval_list": {
+            "args": {
+                "p_filters": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_page": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                },
+                "p_page": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_pay_group_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "default_earning_code_id",
+                        "first_period_start_on",
+                        "holiday_calendar_id",
+                        "id",
+                        "is_active",
+                        "name",
+                        "organization_id",
+                        "pay_date_rule",
+                        "pay_frequency",
+                        "timesheet_required",
+                        "workweek_effective_from",
+                        "workweek_start_dow",
+                        "workweek_start_time"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_pay_period_generate": {
+            "args": {
+                "p_pay_group_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_through_date": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_pay_period_get": {
+            "args": {
+                "p_pay_period_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_pay_period_list": {
+            "args": {
+                "p_filters": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_page": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                },
+                "p_page": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_pay_period_transition": {
+            "args": {
+                "p_pay_period_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_to_state": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_payroll_export_list": {
+            "args": {
+                "p_limit": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_pay_period_id": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_pending_change_cancel": {
+            "args": {
+                "p_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_kind": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_pending_changes": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_position_change": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "effective_from",
+                        "employment_id"
+                    ],
+                    "unresolved_refs": 3
+                }
+            }
+        },
+        "hr_punch_correct": {
+            "args": {
+                "p_category": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_new_values": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_punch_ids": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_new_values": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_punch_record": {
+            "args": {
+                "p_attestation": {
+                    "ord": 9,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_geo": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_idempotency_key": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_kind": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_kiosk_session_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_occurred_at": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_photo_file_id": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_source": {
+                    "ord": 4,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_attestation": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                },
+                "p_geo": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_punch_register": {
+            "args": {
+                "p_filters": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_page": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_page": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_punch_void": {
+            "args": {
+                "p_punch_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_recompute_apply": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_engine": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_idempotency_key": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_intervals": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_workweek": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_engine": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_intervals": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_workweek": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_relations_list": {
+            "args": {
+                "p_filter": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_limit": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_filter": {
+                    "analyzable": false,
+                    "reads": [
+                        "case_kind"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_reporting_line_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "change_reason_category_id",
+                        "effective_from",
+                        "effective_to",
+                        "employment_id",
+                        "id",
+                        "line_kind",
+                        "manager_employment_id",
+                        "scope_note"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_resolve_rules": {
+            "args": {
+                "p_as_of": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_classes": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_jurisdiction_key": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_restricted_get": {
+            "args": {
+                "p_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_justification": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_purpose": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_restricted_list": {
+            "args": {
+                "p_cursor": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_filter": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_limit": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_purpose": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_filter": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_restricted_note_add": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "body",
+                        "body_file_id",
+                        "note_kind",
+                        "occurred_at",
+                        "organization_id",
+                        "redacted_summary",
+                        "subject_id",
+                        "subject_token",
+                        "title"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_role_assign": {
+            "args": {
+                "p_effective_from": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_effective_to": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_role_key": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_scope_employment_ids": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_scope_id": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_scope_kind": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_role_revoke": {
+            "args": {
+                "p_assignment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_self_update": {
+            "args": {
+                "p_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_patch": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_patch": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 5
+                }
+            }
+        },
+        "hr_separation_record": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "beneficiary_contact",
+                        "corrective_action_id",
+                        "employment_id",
+                        "initiated_by_employment_id",
+                        "initiator",
+                        "is_deceased",
+                        "last_day_worked",
+                        "layoff_batch_id",
+                        "notice_given_on",
+                        "reason_category_id",
+                        "rehire_eligible",
+                        "rehire_eligible_note",
+                        "separation_category",
+                        "termination_date"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_set_employment_pin": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_pin": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_ssn_probe_authorize": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_ssn_store": {
+            "args": {
+                "p_ciphertext": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_employee_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_hmac": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_key_id": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_last4": {
+                    "ord": 5,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_structure_deactivate": {
+            "args": {
+                "p_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_kind": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_structure_list": {
+            "args": {
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_structure_upsert": {
+            "args": {
+                "p_kind": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "address",
+                        "category_id",
+                        "code",
+                        "cost_center",
+                        "default_flsa_status",
+                        "default_pay_basis",
+                        "description",
+                        "eeo1_job_category",
+                        "establishment_id",
+                        "geo_lat",
+                        "geo_lng",
+                        "geofence_radius_m",
+                        "grade",
+                        "head_employment_id",
+                        "id",
+                        "is_active",
+                        "is_remote",
+                        "is_supervisor",
+                        "job_family",
+                        "job_level",
+                        "jurisdiction_id",
+                        "name",
+                        "organization_id",
+                        "parent_department_id",
+                        "pay_range_max",
+                        "pay_range_min",
+                        "title",
+                        "tz"
+                    ],
+                    "unresolved_refs": 13
+                }
+            }
+        },
+        "hr_tax_registration_upsert": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "account_number",
+                        "id",
+                        "jurisdiction_id",
+                        "new_hire_report_endpoint",
+                        "organization_id",
+                        "rate",
+                        "rate_effective_on",
+                        "registered_on",
+                        "registration_kind",
+                        "status"
+                    ],
+                    "unresolved_refs": 2
+                }
+            }
+        },
+        "hr_time_adjustment_create": {
+            "args": {
+                "p_amount_delta": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_earning_code_id": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_hours_delta": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_original_pay_period_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_reason_category_id": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_reason_note": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_work_date": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_time_adjustment_list": {
+            "args": {
+                "p_filters": {
+                    "ord": 1,
+                    "required": false
+                },
+                "p_page": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                },
+                "p_page": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_time_rounding_config_check": {
+            "args": {
+                "p_as_of": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_jurisdiction_keys": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_rounding_minutes": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_rounding_mode": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_timesheet_get": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_pay_period_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_timesheet_period_grid": {
+            "args": {
+                "p_filters": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_page": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_pay_period_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                },
+                "p_page": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_transfer": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [
+                        "employment_id",
+                        "to_organization_id"
+                    ],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_verification_consent": {
+            "args": {
+                "p_granted": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_note": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_verification_deliver": {
+            "args": {
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_method": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "outsider_token_ref"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_verification_deny": {
+            "args": {
+                "p_basis": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_verification_generate_apply": {
+            "args": {
+                "p_file_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_generated_at": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_letter_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_snapshot": {
+                    "ord": 3,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_snapshot": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_verification_request_create": {
+            "args": {
+                "p_payload": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": true,
+                    "reads": [
+                        "as_of_date",
+                        "employment_id",
+                        "request_source",
+                        "requester_email",
+                        "requester_name",
+                        "requester_organization",
+                        "verification_kind"
+                    ],
+                    "unresolved_refs": 0
+                }
+            }
+        },
+        "hr_wf_bulk_decide": {
+            "args": {
+                "p_decision": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_step_ids": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_cancel": {
+            "args": {
+                "p_instance_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_decide": {
+            "args": {
+                "p_decision": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_step_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_wf_delegate": {
+            "args": {
+                "p_action_type": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_ends_at": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_reason": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_scope_id": {
+                    "ord": 4,
+                    "required": false
+                },
+                "p_starts_at": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_to_holder_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_to_holder_kind": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_escalate": {
+            "args": {
+                "p_reason": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_step_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_for_target": {
+            "args": {
+                "p_target_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_target_token": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_inbox": {
+            "args": {
+                "p_employment_id": {
+                    "ord": 2,
+                    "required": false
+                },
+                "p_filters": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_scope": {
+                    "ord": 1,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_filters": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_wf_instance": {
+            "args": {
+                "p_instance_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_publish_definition": {
+            "args": {
+                "p_definition_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_reassign_step": {
+            "args": {
+                "p_reason": {
+                    "ord": 3,
+                    "required": false
+                },
+                "p_step_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_to_employment_id": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_record_result": {
+            "args": {
+                "p_result": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_step_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_verified": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_result": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_wf_request": {
+            "args": {
+                "p_as_draft": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_flow_key": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_idempotency_key": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 5,
+                    "required": false
+                },
+                "p_subject_employment_id": {
+                    "ord": 6,
+                    "required": false
+                },
+                "p_target_id": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_target_token": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_wf_resolve_failure": {
+            "args": {
+                "p_action": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_failure_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_note": {
+                    "ord": 3,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_resubmit": {
+            "args": {
+                "p_instance_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_payload": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_payload": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
+        },
+        "hr_wf_submit": {
+            "args": {
+                "p_instance_id": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
+        "hr_wf_withdraw": {
+            "args": {
+                "p_instance_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": false
+                }
+            },
+            "jsonb_params": {}
+        }
+    },
+    "doors_with_no_args": [
+        "hr_jurisdiction_rules_admin_data",
+        "hr_my_verification_consents"
+    ],
+    "generated_at": "2026-08-30T00:50:24.183542+00:00",
+    "regenerate": "pnpm hr:door-snapshot  (scripts/hr/hr_door_snapshot.sql)",
+    "source": "pg_proc / hr._door_spec / platform.entity_types on db.matrxserver.com (project brsgrqvjdzwihsvnfqkf)",
+    "tokens": {
+        "hr_access_audit": {
+            "has_door": false,
+            "tier": "restricted"
+        },
+        "hr_access_role": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_accommodation_request": {
+            "has_door": true,
+            "tier": "restricted"
+        },
+        "hr_ai_evidence": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_alert_routing_rule": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_application": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_approval_authority": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_approval_delegation": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_asset": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_asset_assignment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_attendance_exception": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_auto_close_rule": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_availability": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_background_check": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_benefits_event": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_calculation_snapshot": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_candidate": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_candidate_conversion": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_candidate_message": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_careers_portal": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_checklist_item": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_checklist_run": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_checklist_template": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_checklist_template_item": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_compensation": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_corrective_action": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_course": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_course_version": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_credential": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_crew": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_deduction_code": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_department": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_derived_grant": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_disposition_event": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_earning_code": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_eeo_response": {
+            "has_door": false,
+            "tier": "restricted"
+        },
+        "hr_emergency_contact": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_employee": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_employee_private": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_employer_profile": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_employment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_employment_pin": {
+            "has_door": false,
+            "tier": "restricted"
+        },
+        "hr_engagement": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_establishment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_external_identity": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_field_policy": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_holiday": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_holiday_calendar": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_i9": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_i9_document": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_incident": {
+            "has_door": true,
+            "tier": "restricted"
+        },
+        "hr_incident_party": {
+            "has_door": true,
+            "tier": "restricted"
+        },
+        "hr_interview": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_interview_kit": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_job_title": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_jurisdiction": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_jurisdiction_rule": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_jurisdiction_rule_class": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_jurisdiction_rule_org_decision": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_jurisdiction_rule_test": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_kiosk_device": {
+            "has_door": false,
+            "tier": "restricted"
+        },
+        "hr_kiosk_session": {
+            "has_door": false,
+            "tier": "restricted"
+        },
+        "hr_labor_target": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_leave_case": {
+            "has_door": true,
+            "tier": "restricted"
+        },
+        "hr_leave_enrollment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_leave_ledger": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_leave_policy": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_leave_request": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_legal_hold": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_legal_hold_item": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_location": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_new_hire_report": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_offer": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_opening": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_overtime_alert": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_overtime_alert_rule": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_overtime_preapproval": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_pay_group": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_pay_period": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_pay_period_employment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_payroll_export": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_payroll_export_line": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_position_assignment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_posting": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_posting_publication": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_provider_binding": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_provider_event": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_provisioning_result": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_punch": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_recalculation_batch": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_record_class": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_records_request": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_reference_check": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_reporting_line": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_requisition": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_restricted_note": {
+            "has_door": true,
+            "tier": "restricted"
+        },
+        "hr_retention_rule": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_role_assignment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_schedule": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_schedule_change": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_schedule_guidance": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_schedule_template": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_schedule_template_shift": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_scorecard": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_separation": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_shift": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_shift_claim": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_staffing_requirement": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_survey": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_survey_invitation": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_survey_question": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_survey_response": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_tax_registration": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_tax_withholding": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_time_adjustment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_training_assignment": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_training_attempt": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_transcript_entry": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_verification_letter_request": {
+            "has_door": true,
+            "tier": "confidential"
+        },
+        "hr_work_interval": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_binding": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_decision": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_definition": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_event": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_failure": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_flow_type": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_instance": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_step": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workflow_step_definition": {
+            "has_door": false,
+            "tier": null
+        },
+        "hr_workweek": {
+            "has_door": false,
+            "tier": null
+        }
+    }
+}

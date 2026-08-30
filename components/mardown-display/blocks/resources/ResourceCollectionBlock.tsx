@@ -92,7 +92,7 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
     setIsPrinting(true);
     try {
       const { captureBlockElement } =
-        await import("@/lib/block-print/dom-capture-block-printer");
+        await import("@ai-matrx/print/pdf");
       await captureBlockElement(
         blockContentRef.current,
         collection.title.replace(/\s+/g, "-").toLowerCase() || "resources",

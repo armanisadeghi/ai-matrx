@@ -27,7 +27,7 @@ export default async function DataLayout({
   if (!isAuthenticated) return <TablesLanding />;
   return (
     <>
-      <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-muted/40 text-foreground scrollbar-none">
+      <div className="scroll-page-end-space h-full w-full overflow-y-auto overflow-x-hidden bg-muted/40 text-foreground scrollbar-none">
         {children}
       </div>
       <ScrollAssistantLauncher inputVariant="single-line" />

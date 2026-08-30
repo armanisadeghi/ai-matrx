@@ -67,7 +67,8 @@ export async function resolveLaunchMappingLayers(
   const result = mergeValueMappingLayers(layers);
   if (
     Object.keys(result.merged).length === 0 &&
-    Object.keys(result.writePolicies).length === 0
+    Object.keys(result.writePolicies).length === 0 &&
+    result.autoRun === null
   ) {
     return null;
   }

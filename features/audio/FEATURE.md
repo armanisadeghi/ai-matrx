@@ -231,6 +231,13 @@ Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and 
 
 ## Change log
 
+- `2026-08-30` — The eager chunk journal now owns its retry boundary end to
+  end: transient PostgREST transport losses are not globally captured on the
+  first idempotent upsert attempt, while an exhausted three-attempt write is
+  captured exactly once with structured schema/relation/operation detail.
+  Recovered mobile-network blips no longer create false repair rows, and real
+  cross-device recovery failures remain actionable.
+
 - `2026-08-28` — **Listening voice/speed/language moved onto the tiered surface-config `listening` namespace — the model for system → org → user settings.** Resolution home: [`service/listeningConfig.ts`](service/listeningConfig.ts) (`selectListening*` for React, framework-free `getListeningSettings()` for `speak()`/adapters); writes: [`service/useListeningSettings.ts`](service/useListeningSettings.ts) (one targeted row at the user's tier — ends the whole-preferences-body clobber that reverted voice choices from stale tabs). System default = the platform-global row on `matrx-user/assistant-message`, centrally editable at `/administration/ui/surfaces/matrx-user/assistant-message` (Config namespaces); org rows override it; the user row wins. Every Cartesia consumer resolves through it (`speak()`, `cartesiaAdapter`, `useCartesiaSpeaker`, the app-root streaming speaker, the Listen panel + Settings → Voice panes). The adapter now resolves voice params at START time (items carry only explicit overrides), so queued items and history replays honor settings changed after enqueue. Legacy `userPreferences.voice.{voice,speed,language}` remain ONLY as the pre-fetch boot fallback; existing values were backfilled into user-tier rows (33 users) and a global row was seeded.
 
 - `2026-08-27` — **Media panel no longer auto-opens on a lone first utterance.** `AudioPlaybackHost`'s queued-behind rising edge now also requires `snapshot.currentId` to be set: `enqueuePlayback` notifies before `startItem` claims the first item, so a single first Speak briefly read as "queued" with nothing active and popped the Media window over whatever the user was doing (observed covering the Listen panel). A second utterance genuinely lining up behind an active one still opens the panel; cross-path takeovers unchanged.

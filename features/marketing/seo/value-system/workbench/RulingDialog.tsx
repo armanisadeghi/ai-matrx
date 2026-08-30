@@ -25,11 +25,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import type { BandMeta } from "../lib";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface RulingDraft {
   keywordIds: string[];
@@ -155,7 +155,7 @@ export function RulingDialog({
               (optional, travels with the ruling)
             </span>
           </p>
-          <Textarea
+          <ProTextarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             placeholder={

@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SendSmsResponseData {
   sid?: string;
@@ -102,7 +102,7 @@ export default function SendSMS() {
 
           <div className="space-y-2">
             <Label htmlFor="message">Message</Label>
-            <Textarea
+            <ProTextarea
               id="message"
               placeholder="Enter your message here..."
               value={message}

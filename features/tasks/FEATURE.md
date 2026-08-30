@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-08-28`
+**Last updated:** `2026-08-30`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -144,6 +144,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-08-30` — **Mobile task copy obeys the live-state law.** `MobileTaskDetails` now reuses the editor's canonical Copy / Copy-for-AI control through a click-time draft getter, so typed-but-unsaved title, description, lifecycle, dates, recurrence, priority, and task context reach the payload with an explicit `unsaved_changes` diff. The saved full task tree remains the named `Full task tree (fetched)` variant.
 - `2026-08-28` — **Task-list search + long-title containment.** The project workspace task table now has local search across title, description, priority, and due date; a matching subtask keeps its parent visible for hierarchy context, and matching completed tasks open the Done section while search is active. Its Task / Priority / Due / Actions columns now use a fixed table contract so priority, due date, and actions cannot be pushed off the surface by a long task name. Long names truncate with the full value available on hover. The same one-line truncation + tooltip rule now covers `CompactTaskItem` (All Tasks and Quick Tasks), the editable legacy task card title, the mobile task list, and task chips; existing `EntityRef` task rows already provided both truncation and full-title hover text. Mobile priority pills use the compact label and all priority pills retain 44px touch height through tablet widths. Browser verification also surfaced and removed the mobile row's nested button/checkbox hydration defect while retaining a 44px checkbox hit area. Added responsive contract coverage for fixed metadata columns, hover labels, valid mobile completion controls, and project search tree behavior.
 - `2026-08-27` — **Google Tasks can enter the existing deliberate import flow without changing the source.** The internal-test Google read-only workspace loads a bounded real Google Tasks preview through the canonical vault-backed connection, maps the returned list/task hierarchy into `ImportTasksModal`, and lets the user choose which rows and destination project to create in AI Matrx. The provider adapter has no complete/edit/delete operation, and ordinary users cannot request the unapproved scope.
 - `2026-08-27` — **Smart-view targets stay touch-sized wherever their responsive surface is visible.** The desktop sidebar controls remain compact at large widths and grow to 44px through tablet widths; mobile overflow items were already 44px.

@@ -211,6 +211,11 @@ export function ShortcutScopePicker({
                   ? "No organizations found"
                   : "No projects found"
               }
+              loadingText={
+                scope === AGENT_SCOPES.ORGANIZATION
+                  ? "Loading organizations…"
+                  : "Loading projects…"
+              }
               options={entityOptions}
               value={scopeId}
               onChange={handleScopeIdChange}
@@ -231,6 +236,7 @@ function NamedEntitySelect({
   icon,
   placeholder,
   emptyText,
+  loadingText,
   options,
   value,
   onChange,
@@ -240,6 +246,7 @@ function NamedEntitySelect({
   icon: React.ReactNode;
   placeholder: string;
   emptyText: string;
+  loadingText: string;
   options: NamedOption[];
   value?: string;
   onChange: (next: string) => void;
@@ -261,14 +268,14 @@ function NamedEntitySelect({
             icon
           )}
           <span className="min-w-0 flex-1 truncate text-left">
-            <SelectValue placeholder={loading ? "Loading…" : placeholder} />
+            <SelectValue placeholder={loading ? loadingText : placeholder} />
           </span>
         </div>
       </SelectTrigger>
       <SelectContent>
         {options.length === 0 ? (
           <div className="px-2 py-3 text-xs text-muted-foreground">
-            {loading ? "Loading…" : emptyText}
+            {loading ? loadingText : emptyText}
           </div>
         ) : (
           options.map((option) => (

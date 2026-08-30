@@ -13,13 +13,13 @@
  * in one and a plain box in the other.
  */
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 import { ChoiceInput } from "./ChoiceInput";
 
 import { parseFieldInput } from "@/lib/field-formats/format";
 import { getFieldFormat } from "@/lib/field-formats/registry";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const OWNED_EDITORS = new Set([
   "email",
@@ -112,7 +112,7 @@ export function FormatAwareInput({
 
     case "textarea":
       return (
-        <Textarea
+        <ProTextarea
           id={id}
           value={text}
           rows={5}

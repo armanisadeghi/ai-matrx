@@ -20,6 +20,7 @@ import {
 } from "@/features/access-gate/components/AccessDenied";
 import { classifyDataError } from "@/features/access-gate/classifyDataError";
 import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
+import type { AccessRequestability } from "@/features/access-gate/types";
 
 export interface AccessGateProps {
   /** Canonical entity token of the record the surface tried to open. */
@@ -54,6 +55,17 @@ export interface AccessGateProps {
    * end: it says what went wrong and leaves the user to re-navigate.
    */
   suggestions?: AccessDeniedSuggestion[];
+  /**
+   * `"absolute"` removes the request affordance entirely — for a door closed by
+   * law, where the ask itself would leak. Defaults to `"requestable"`.
+   */
+  requestability?: AccessRequestability;
+  /** The surface's own worded reason, in place of the generic explanation. */
+  reason?: string;
+  /** The surface's own headline, in place of the kind-naming generic one. */
+  headline?: string;
+  /** The surface's own trailing disclosure (a reference code, an audit id). */
+  footer?: React.ReactNode;
 }
 
 export function AccessGate({
@@ -66,6 +78,10 @@ export function AccessGate({
   relatedReads = [],
   renderFault,
   suggestions,
+  requestability,
+  reason,
+  headline,
+  footer,
 }: AccessGateProps) {
   // A hard fault (network, timeout, malformed query) is not an access story.
   // Surfaces with a good error component keep using it; everyone else gets the
@@ -92,6 +108,10 @@ export function AccessGate({
         fallbackHref={fallbackHref}
         fallbackLabel={fallbackLabel}
         suggestions={suggestions}
+        requestability={requestability}
+        reason={reason}
+        headline={headline}
+        footer={footer}
       />
     </>
   );

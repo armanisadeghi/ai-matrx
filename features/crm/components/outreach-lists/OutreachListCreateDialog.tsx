@@ -10,7 +10,6 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +26,7 @@ import type {
 } from "../../outreach-lists/types";
 import { LIST_KINDS } from "../../outreach-lists/types";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const KIND_LABELS: Record<OutreachListKind, string> = {
   call: "Calling",
@@ -140,7 +140,7 @@ export function OutreachListCreateDialog({
               Description{" "}
               <span className="text-muted-foreground">(optional)</span>
             </Label>
-            <Textarea
+            <ProTextarea
               id="outreach list-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

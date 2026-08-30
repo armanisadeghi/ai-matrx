@@ -18,7 +18,6 @@ import { useMemo, useState } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -57,6 +56,7 @@ import {
 } from "@/features/industries/types";
 import type { SharedKnowledgeDirectory } from "../types";
 import { IndustryCuratorsPanel } from "./IndustryCuratorsPanel";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface IndustryFormState {
   slug: string;
@@ -548,7 +548,7 @@ export function IndustriesTab({
               <label className="text-xs font-medium text-muted-foreground">
                 Description
               </label>
-              <Textarea
+              <ProTextarea
                 value={form.description}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, description: e.target.value }))

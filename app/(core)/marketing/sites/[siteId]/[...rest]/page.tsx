@@ -1,77 +1,58 @@
-"use client";
+import { notFound, permanentRedirect } from "next/navigation";
+
+import { mapLegacySiteRest } from "@/features/marketing/lib/legacy-marketing-urls";
+import { resolveLegacySiteDoor } from "@/features/marketing/lib/legacy-site-door";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function toSearchParams(query: SearchParams): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value))
+      value.forEach((entry) => params.append(key, entry));
+    else if (value !== undefined) params.set(key, value);
+  }
+  return params;
+}
+
+function withQuery(path: string, params: URLSearchParams): string {
+  const search = params.toString();
+  return search ? `${path}?${search}` : path;
+}
 
 /**
- * LEGACY URL shim. The canonical site URL is brand-first:
- * /marketing/brands/[brandId]/sites/[siteId]/... — this client route resolves
- * the site's brand under the caller's own session (browser ↔ Supabase, per
- * the feature doctrine) and replaces the URL with the canonical location.
- * Old bookmarks and cross-links built from rows that only know site_id keep
+ * LEGACY URL shim. The canonical site URL is client-first and split by job:
+ * `/marketing/[brandKey]/websites/[siteKey]/…` for what the site IS, and
+ * `/marketing/[brandKey]/seo/[siteKey]/…` for the practice on it. This route
+ * resolves the owning brand server-side and 308s to the real address, so old
+ * bookmarks and cross-links built from rows that only know `site_id` keep
  * working forever.
  */
-
-import { use, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSite } from "@/features/marketing/data/hooks";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import {
-  LoadingSurface,
-  QueryError,
-} from "@/features/marketing/components/shared/MarketingUi";
-
-export default function LegacySiteRedirect({
+export default async function LegacyFlatSiteSectionRedirect({
   params,
+  searchParams,
 }: {
   params: Promise<{ siteId: string; rest?: string[] }>;
+  searchParams: Promise<SearchParams>;
 }) {
-  const { siteId, rest } = use(params);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const site = useSite(siteId);
-  const brandId = site.data?.brand_id ?? null;
+  const [{ siteId, rest = [] }, query] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const search = toSearchParams(query);
 
-  useEffect(() => {
-    if (!brandId) return;
-    const query = searchParams.toString();
-    // Site-level cost was retired with the dead web.batch projection. Old
-    // bookmarks still owe the user a door, so send that one legacy URL to the
-    // live workspace-wide provider-spend surface instead of a brand-first 404.
-    if (rest?.length === 1 && rest[0] === "cost") {
-      router.replace(`${marketingRoutes.cost()}${query ? `?${query}` : ""}`);
-      return;
-    }
-    const suffix = rest?.length ? `/${rest.join("/")}` : "";
-    router.replace(
-      `${marketingRoutes.site(brandId, siteId)}${suffix}${query ? `?${query}` : ""}`,
-    );
-  }, [brandId, rest, router, searchParams, siteId]);
+  // Site-level cost was retired with the dead web.batch projection. Old
+  // bookmarks still owe the user a door, so that one legacy URL goes to the
+  // live workspace-wide provider-spend surface instead of a 404 — and it needs
+  // no brand, so it answers before the lookup.
+  if (rest.length === 1 && rest[0] === "cost") {
+    permanentRedirect(withQuery(marketingRoutes.cost(), search));
+  }
 
-  // The read failed, or came back empty. Same four possibilities as anywhere
-  // else — the gate resolves which, names the site and its owner, and offers a
-  // request. It also handles the "you DO have access, that was a blip" case
-  // that a hand-written error can never tell you about.
-  if (site.isError || (!site.isLoading && !site.data)) {
-    return (
-      <AccessGate
-        token="web_site"
-        id={siteId}
-        error={site.error}
-        onRetry={() => void site.refetch()}
-        fallbackHref="/marketing/sites"
-        fallbackLabel="All sites"
-      />
-    );
-  }
-  if (site.data && !site.data.brand_id) {
-    return (
-      <QueryError
-        error={
-          new Error(
-            "This site has no brand link — a data integrity bug. Report it.",
-          )
-        }
-      />
-    );
-  }
-  return <LoadingSurface label="Opening site…" />;
+  const door = await resolveLegacySiteDoor(siteId);
+  if (!door) notFound();
+  permanentRedirect(
+    mapLegacySiteRest(door.brandSeg, door.siteSeg, rest, search),
+  );
 }

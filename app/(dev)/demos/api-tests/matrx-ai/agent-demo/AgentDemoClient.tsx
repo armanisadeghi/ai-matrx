@@ -51,6 +51,7 @@ import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -562,7 +563,7 @@ export default function AgentDemoClient() {
                 {/* User Input */}
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold">User Input</Label>
-                  <Textarea
+                  <ProTextarea
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     placeholder="Message sent to the agent (optional)"

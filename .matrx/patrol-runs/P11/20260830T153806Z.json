@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P11",
+  "runId": "20260830T153806Z",
+  "baseSha": "e1439c28d4",
+  "createdAt": "2026-08-30T15:38:18.190Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T15:38:18.190Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "P11 eradication wave 2: normalize agent, operations, podcast, and organization body roots to canonical shell-header clearance",
+      "evidence": [
+        "Ten verified product files use missing, hard-coded, or obsolete header clearance",
+        "Batch is path-disjoint from concurrent P2, HR, Marketing router, and auth work"
+      ],
+      "previousEventHash": null,
+      "eventHash": "d8af1802ef48f2265a379c5b30425f7ac289d30cdedcf91148d9ea41a43b2389"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T15:38:18.868Z",
+      "actor": "codex-root",
+      "summary": "Applying canonical shell-header body clearance to ten verified route surfaces",
+      "evidence": [
+        "Behavior and navigation remain unchanged; only body root clearance and full-height ownership are normalized"
+      ],
+      "previousEventHash": "d8af1802ef48f2265a379c5b30425f7ac289d30cdedcf91148d9ea41a43b2389",
+      "eventHash": "762db898f64dfcf6323edeee35c54b7f567b3f79c2a6e8bf3a4ea6a70015fdfb"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T15:38:47.464Z",
+      "actor": "codex-root",
+      "summary": "Ten-file wave passed repository type-check and strict shell gates; preparing exact independent candidate",
+      "evidence": [
+        "All ten body roots now reserve var(--shell-header-h); hard-coded pt-10/pt-12 and obsolete --header-height removed from owned paths",
+        "type-check PASS; page-header strict PASS; scroll-chain strict PASS; diff-check PASS"
+      ],
+      "previousEventHash": "762db898f64dfcf6323edeee35c54b7f567b3f79c2a6e8bf3a4ea6a70015fdfb",
+      "eventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T15:40:25.722Z",
+      "actor": "codex-root",
+      "summary": "Delivery ordering was violated by concurrent integration before exact-candidate certification",
+      "evidence": [
+        "Product bytes are preserved on origin/main in contaminated commit de83ae2cdd; no valid work reverted"
+      ],
+      "blocker": {
+        "prerequisite": "Independent certification of reconstructed exact candidate 1414cbcb79 followed by explicit reconciliation",
+        "preservedRef": "refs/heads/patrol-candidates/P11/20260830T153806Z-wave2",
+        "preservedSha": "1414cbcb79cd4de5d0320052ab56afabf613cf17"
+      },
+      "previousEventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1",
+      "eventHash": "b527852c49b3583b6703ca71a5d6c6bf2c131802bcadc37b6c5b5210da035d90"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T15:40:26.334Z",
+      "actor": "codex-root",
+      "summary": "Recorded integration-before-certification escape; exact clean candidate reconstructed and sent for independent certification",
+      "evidence": [
+        "Contaminated de83ae2cdd includes the exact ten product file deltas plus unrelated P2, HR, Marketing router, and auth work",
+        "Clean candidate 1414cbcb79 contains exactly the ten P11 product files against base e1439c28d4"
+      ],
+      "escape": {
+        "candidateSha": "1414cbcb79cd4de5d0320052ab56afabf613cf17",
+        "integratedSha": "de83ae2cdd3ae6cf5ef6fc3e70ac08b3160303af",
+        "release": "not-released",
+        "reason": "Concurrent integration process swept the ten owned product paths into a contaminated WIP commit before exact-candidate certification"
+      },
+      "previousEventHash": "b527852c49b3583b6703ca71a5d6c6bf2c131802bcadc37b6c5b5210da035d90",
+      "eventHash": "7e6b1b8d3751c8fef30a2f35770cc728b611ffeee461668a99fdea52392bbea4"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T15:44:57.028Z",
+      "actor": "codex-root",
+      "summary": "Corrected exact candidate restored explicit core/admin host ownership after two adversarial rejections",
+      "evidence": [
+        "Candidate c245945c9f contains exactly 15 files and both prior double-offset defects are removed"
+      ],
+      "previousEventHash": "7e6b1b8d3751c8fef30a2f35770cc728b611ffeee461668a99fdea52392bbea4",
+      "eventHash": "cb0a408002060fc10650d48647fb20f438d2a70634aa4224f11c34856b4cde61"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T15:45:30.024Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "REJECTED escaped candidate lineage after two concrete double-offset defects",
+      "evidence": [
+        "candidate:1414cbcb79cd4de5d0320052ab56afabf613cf17",
+        "1414cbcb79 placed shell clearance inside shared admin/core components; 1ed246e528 preserved obsolete hard-coded core offsets and doubled clearance",
+        "Replacement candidate c245945c9f assigns spacing explicitly to core and admin hosts"
+      ],
+      "previousEventHash": "cb0a408002060fc10650d48647fb20f438d2a70634aa4224f11c34856b4cde61",
+      "eventHash": "30d0d051a1f2674dd1f682824a96c6518c254f052aa9ee8d3d424598b1e670bb"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T15:45:30.643Z",
+      "actor": "codex-root",
+      "summary": "Repaired rejected shared-component and obsolete-token ownership defects",
+      "evidence": [
+        "Shared components neutral; core hosts canonical; admin hosts preserve prior visual spacing"
+      ],
+      "previousEventHash": "30d0d051a1f2674dd1f682824a96c6518c254f052aa9ee8d3d424598b1e670bb",
+      "eventHash": "232c1310a2ad73dc29af01173f30ab5af4c365195c17b29f54170040492bfbf8"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T15:45:31.275Z",
+      "actor": "codex-root",
+      "summary": "Submitted final 15-file replacement candidate c245945c9f for independent recertification",
+      "evidence": [
+        "candidate:c245945c9fb3f65f6df937536d192d22781915e3"
+      ],
+      "previousEventHash": "232c1310a2ad73dc29af01173f30ab5af4c365195c17b29f54170040492bfbf8",
+      "eventHash": "945b5c7ad1497b8f04527927afdae0411ca0c7244f212551df6224e459114639"
+    },
+    {
+      "sequence": 10,
+      "state": "certified",
+      "at": "2026-08-30T15:45:31.842Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "CERTIFIED final wave-2 replacement candidate after explicit host-ownership repair",
+      "evidence": [
+        "Shared Apps, Shortcuts, and Batch Editor components are neutral; core and admin hosts own their distinct spacing contracts"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "c245945c9fb3f65f6df937536d192d22781915e3",
+        "certifierTaskId": "/root/p11_certifier_4b060808",
+        "checks": [
+          "Exact diff contains 15 files and diff-check PASS",
+          "type-check PASS",
+          "core page-header strict PASS",
+          "scroll-chain strict PASS across 8007 files, 1084 route pages, and 279 layouts"
+        ]
+      },
+      "previousEventHash": "945b5c7ad1497b8f04527927afdae0411ca0c7244f212551df6224e459114639",
+      "eventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81"
+    },
+    {
+      "sequence": 11,
+      "state": "delivery_queued",
+      "at": "2026-08-30T15:46:09.285Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified corrected wave-2 candidate queued after escape repair",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P11/20260830T153806Z"
+      ],
+      "delivery": {
+        "candidateSha": "c245945c9fb3f65f6df937536d192d22781915e3",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153806Z"
+      },
+      "previousEventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81",
+      "eventHash": "badbf3d892b88daa72c7e46473e7447caee99a50deb8499439d7ab1fd2cc5454"
+    },
+    {
+      "sequence": 12,
+      "state": "delivered",
+      "at": "2026-08-30T15:46:47.513Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified corrected wave-2 candidate integrated with candidate ancestry preserved",
+      "evidence": [
+        "Merge 87d68803eb preserves c245945c9f as an ancestor and is on origin/main",
+        "Release lane unchanged after v0.4.1499"
+      ],
+      "delivery": {
+        "candidateSha": "c245945c9fb3f65f6df937536d192d22781915e3",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153806Z",
+        "integratedSha": "87d68803eb",
+        "release": "not-released"
+      },
+      "previousEventHash": "badbf3d892b88daa72c7e46473e7447caee99a50deb8499439d7ab1fd2cc5454",
+      "eventHash": "30aa6fd8495048806ce303ee10b89cd760b8d034edcafd8754a3b795ab4cfb30"
+    }
+  ]
+}

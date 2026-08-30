@@ -15,7 +15,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../../constants";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { toast } from "@/lib/toast";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {

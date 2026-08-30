@@ -195,9 +195,9 @@ agent_runner_adapter.py` and writes results back with `claim_token`
 
 ## Tests
 
-| Layer   | Count                                           | Location                                  |
-| ------- | ----------------------------------------------- | ----------------------------------------- |
-| Python  | 25 (cron + edge cases + DST + malformed inputs) | `aidream/packages/matrx-scheduler/tests/` |
+| Layer   | Count                                             | Location                                                                     |
+| ------- | ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Python  | 25 (cron + edge cases + DST + malformed inputs)   | `aidream/packages/matrx-scheduler/tests/`                                    |
 | FE Jest | triggerHumanize + validation + run org provenance | `features/scheduling/utils/__tests__/`, `lib/scheduler-client/claim.test.ts` |
 
 Run: `pnpm exec jest features/scheduling/` and (inside aidream)
@@ -213,6 +213,40 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-29** — Replaced the temporary handwritten `DbJob*` HTTP wire
+  mirrors with direct aliases to the live generated OpenAPI schemas.
+
+- **2026-08-29** — System jobs no longer exist by display name alone. Every
+  server `kind=tool` task carries a required FK to one canonical
+  `platform.taxonomy_node`; every pg_cron job is anchored from that same
+  registry through `taxonomy_node.anchors.db_cron_jobs`. Both tables now show
+  the full Domain / Feature / Sub-feature path, every segment opens the exact
+  Feature Registry node, search/copy/context include the identity, and both
+  edit dialogs can intentionally reclassify the job. The taxonomy admin search
+  now persists `?q=` so those identity doors land on the named node. The API
+  and DB boundaries scream on a missing identity, and generic creation of a
+  tool schedule is rejected without `taxonomy_node_id`. The scheduling client
+  also resolves aidream through the canonical admin API target, so the shell's
+  Production/Localhost switch controls this console instead of being ignored.
+
+- **2026-08-29** — The System jobs tab gained a second section, **Database
+  jobs (pg_cron)** — the ~12 jobs running SQL inside Postgres itself (log
+  pruning, webhook tick, partition upkeep; register:
+  `common-docs/operations/db-scheduled-jobs.md`). Same control surface via the
+  new admin-gated `GET/PATCH /scheduling/admin/db-jobs` endpoints
+  (`listDbJobs`/`patchDbJob` in `schedulerClient.ts`, generated wire types in
+  `schedulerApi.types.ts`): job,
+  schedule (with cronstrue hint), Active/Inactive, last run from
+  `cron.job_run_details`, command; row actions Enable/Disable (confirm in BOTH
+  directions — disabling stops real database maintenance) and Edit (schedule
+  string only; pg_cron accepts 5-field cron or "30 seconds", validated
+  server-side by `cron.alter_job`) plus Feature Registry classification.
+  Deliberately NO Run now: pg_cron has no
+  run-once primitive and several jobs are destructive purges. Manifest gained
+  `db_job_count` / `db_job_active_count` / `db_jobs_load_error`. Per Arman's
+  2026-08-29 extension of the schedules ruling ("As for the database level
+  jobs, I definitely agree that we need to have that").
 
 - **2026-08-28** — New **System jobs** tab in the Scheduling admin console
   (`/administration/automation/scheduling/system-jobs`), per Arman's ruling
@@ -387,11 +421,11 @@ routed a human to them. **Recording is not routing.**
 super-admin gated (the protected-resources pattern; RLS untouched, no new
 security layer) — returns ONLY schedules needing a human:
 
-| alarm | means |
-|---|---|
-| `suspended` | the repeat guard switched an enabled schedule off — nothing runs until a person re-enables it |
-| `overdue` | enabled, due in the past, past its grace window — the scanner may be down or the trigger is not firing |
-| `failing` | enabled, and its most recent run failed (the run's own `error_message`) |
+| alarm       | means                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------ |
+| `suspended` | the repeat guard switched an enabled schedule off — nothing runs until a person re-enables it          |
+| `overdue`   | enabled, due in the past, past its grace window — the scanner may be down or the trigger is not firing |
+| `failing`   | enabled, and its most recent run failed (the run's own `error_message`)                                |
 
 Healthy rows are deliberately absent: a health read that lists healthy rows
 becomes wallpaper. Read it through `fetchSystemScheduleAlarms()` in

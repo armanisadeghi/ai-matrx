@@ -53,6 +53,8 @@ import type {
   AiProvider,
   ProviderModelEntry,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AiModelDetailPanelProps {
   model: AiModel | null;
@@ -835,7 +837,7 @@ function RawModelJsonTab({
         </div>
       </div>
 
-      <textarea
+      <Textarea
         value={jsonText}
         onChange={(e) => onJsonChange(e.target.value)}
         spellCheck={false}

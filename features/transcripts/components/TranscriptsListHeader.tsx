@@ -1,7 +1,7 @@
 "use client";
 
 import { TranscriptsModeController } from "@/features/transcripts/components/TranscriptsModeController";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 /** Shared transcripts shell header — route nav + THE DOOR to Scribe's agents. */
 export function TranscriptsListHeader() {

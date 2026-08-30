@@ -30,7 +30,6 @@ import { toast } from "@/lib/toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +57,7 @@ import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -773,7 +773,7 @@ export function AccountsTableClient() {
             Sends a direct message from you into the user&apos;s in-app inbox
             (the DM system). They see it in Messages.
           </p>
-          <Textarea
+          <ProTextarea
             data-surface-value="dm_draft"
             value={dmContent}
             onChange={(e) => setDmContent(e.target.value)}

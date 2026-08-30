@@ -26,6 +26,7 @@ import {
   ROOM_ICON_NAMES,
   ROOM_ICONS,
 } from "./roomIdentity";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function RoomIdentityEditor({
   sessionId,
@@ -104,7 +105,7 @@ export function RoomIdentityEditor({
         <span className="text-[11px] font-medium text-muted-foreground">
           Description
         </span>
-        <textarea
+        <ProTextarea
           value={descDraft}
           onChange={(e) => setDescDraft(e.target.value)}
           onBlur={commitDescription}

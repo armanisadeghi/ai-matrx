@@ -6,9 +6,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { calcCols } from "./useContainerColumns";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Overrides base SelectTrigger nowrap/line-clamp so long values wrap in-panel. */
 const dropdownTriggerClassName = (compact: boolean) =>
@@ -135,7 +135,7 @@ export function SelectInput({
               </button>
               {selectedOption === "Other" && (
                 <div className="pt-1">
-                  <Textarea
+                  <ProTextarea
                     value={customText}
                     onChange={(e) => handleCustomTextChange(e.target.value)}
                     placeholder="Enter any text, markdown, or custom value..."
@@ -179,7 +179,7 @@ export function SelectInput({
       </Select>
 
       {selectedOption === "Other" && (
-        <Textarea
+        <ProTextarea
           value={customText}
           onChange={(e) => handleCustomTextChange(e.target.value)}
           placeholder="Enter any text, markdown, or custom value..."

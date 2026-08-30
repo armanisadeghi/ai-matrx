@@ -44,7 +44,7 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 - `mindmap/linkCards.ts` — resolves generated diagram nodes → their source cards (label/text
   match, precision-tuned ~9/10 on a deck-grounded map). Stamps `node.metadata.cardId`.
 - `mindmap/mandates.ts` — the Study Mind Map mandate (`education.mindmap_generate`, emits
-  `diagram_spec`; resolved live to the DB-bound agent — swap at `/agents/mandates`).
+  `diagram_spec`; resolved live to the DB-bound agent — swap at `/mandates`).
 
 **Key components**
 - `audio/components/` — `AudioStudyHome`, `AudioStudyNew`, `AudioStudyDetail` (live run + durable

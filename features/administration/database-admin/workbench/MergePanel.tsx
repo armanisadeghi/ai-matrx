@@ -430,7 +430,7 @@ export function MergePanel({
                               {s.observedMatches !== null &&
                                 s.observedMatches > 0 && (
                                   <span className="text-emerald-600 dark:text-emerald-400 font-sans">
-                                    ✓{s.observedMatches}
+                                    {s.observedMatches} matches
                                   </span>
                                 )}
                             </button>

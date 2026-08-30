@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "20260830T143951Z",
+  "baseSha": "a48dda0a079abac8bc27990da4b0e3c63e10da20",
+  "createdAt": "2026-08-30T14:40:03.759Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:40:03.759Z",
+      "actor": "root",
+      "summary": "P3 hover-only interaction eradication unit 1",
+      "evidence": [
+        "canonical checkout; no worktree used",
+        "detector exact 029667a044490df629fc088506558e5d1ae4b77a: 156 actionable, 3 review, 93 decoration, 201 safe",
+        "candidate was checkpoint-integrated before independent certification; ordering failure preserved"
+      ],
+      "previousEventHash": null,
+      "eventHash": "9481bfe18a8c91252954860d76e752a799d23a36a38a070d185d2140288021b9"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:40:04.374Z",
+      "actor": "root",
+      "summary": "Repair 17 verified hover-only controls across 15 files",
+      "evidence": [
+        "decorative imported Link icons excluded by corrected detector"
+      ],
+      "previousEventHash": "9481bfe18a8c91252954860d76e752a799d23a36a38a070d185d2140288021b9",
+      "eventHash": "7b5b15af75ac5338700cbf67a95386db7250c1746314f1b540ea2e6ccd0286c2"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:40:05.128Z",
+      "actor": "root",
+      "summary": "Exact 15-file owned slice ready for adversarial certification",
+      "evidence": [
+        "candidate:6eb60cb7d51bb6437fd101c7168440260c38596c",
+        "path-scoped repair base:a48dda0a079abac8bc27990da4b0e3c63e10da20",
+        "all current owned blobs matched candidate before concurrent shared edits resumed"
+      ],
+      "previousEventHash": "7b5b15af75ac5338700cbf67a95386db7250c1746314f1b540ea2e6ccd0286c2",
+      "eventHash": "a2febc6939d08c411bd9a1dbd645615922600695656bfe96998f2a65ae721fd6"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:41:32.259Z",
+      "actor": "root",
+      "summary": "Canonical preview lost the proposed hover repair bytes after a concurrent semantic rollback",
+      "evidence": [
+        "all 15 owned blobs differ from candidate and restore hover-only opacity behavior",
+        "no candidate-caused defect; exact candidate remains preserved remotely"
+      ],
+      "blocker": {
+        "prerequisite": "reapply repair onto current canonical main and serve those bytes in the canonical preview",
+        "preservedRef": "refs/remotes/origin/patrol/P3/2026-08-30-hover-repair-unit-1",
+        "preservedSha": "6eb60cb7d51bb6437fd101c7168440260c38596c"
+      },
+      "previousEventHash": "a2febc6939d08c411bd9a1dbd645615922600695656bfe96998f2a65ae721fd6",
+      "eventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:41:32.897Z",
+      "actor": "root",
+      "summary": "Resume same bounded hover repair on current canonical main",
+      "evidence": [
+        "do not certify stale candidate; produce a new exact candidate after reapplication"
+      ],
+      "previousEventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a",
+      "eventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:44:43.951Z",
+      "actor": "root",
+      "summary": "Reapplied exact 15-file hover repair slice is ready for adversarial certification",
+      "evidence": [
+        "candidate:38173c5d5011a6e594c3e9aa0eecf4c86a735527",
+        "path-scoped repair base:aa02307e8d8e5c6cff71056d6ee4079682e7bd26",
+        "shared controller absorbed the 15 repair blobs while holding index.lock; two unrelated co-committed paths excluded from owned slice",
+        "current canonical blobs match candidate on all 15 owned paths"
+      ],
+      "previousEventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf",
+      "eventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T14:58:28.778Z",
+      "actor": "p3-hover-certifier-fresh",
+      "summary": "Exact retry candidate hides a mobile action when the browser reports a hover-capable pointer",
+      "evidence": [
+        "375x812 dark /workbooks: Delete workbook 44x44 but computed opacity 0; Quick look 44x44 opacity 1; page scrollWidth 375",
+        "candidate used hover-capable media without a viewport breakpoint, so mobile visibility was not guaranteed"
+      ],
+      "previousEventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069",
+      "eventHash": "fefd9c2895d6010a1f308697622594e4f61e6109f069a6370e943ae5a1bed28b"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T14:58:29.329Z",
+      "actor": "root",
+      "summary": "Correct all repaired hide/reveal rules with an explicit desktop breakpoint",
+      "evidence": [
+        "preserve base mobile visibility and desktop hover behavior"
+      ],
+      "previousEventHash": "fefd9c2895d6010a1f308697622594e4f61e6109f069a6370e943ae5a1bed28b",
+      "eventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f"
+    },
+    {
+      "sequence": 9,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T15:03:02.776Z",
+      "actor": "root",
+      "summary": "Shared release lane published the breakpoint repair before independent certification completed",
+      "evidence": [
+        "candidate c4eed060429b9941c5325d3e8ff88a10edfd90e8 is tagged v0.4.1495 and is an ancestor of origin/main",
+        "ordering failure must remain append-only; do not create another release"
+      ],
+      "blocker": {
+        "prerequisite": "independently certify exact released candidate and reconcile delivery without a redundant release",
+        "preservedRef": "refs/remotes/origin/patrol/P3/2026-08-30-hover-repair-unit-1-retry2",
+        "preservedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8"
+      },
+      "previousEventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f",
+      "eventHash": "e67cecac4b921cbf9509db4188008e93b69aa4bab1cca788adbf408b98c4cad9"
+    },
+    {
+      "sequence": 10,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T15:03:03.348Z",
+      "actor": "root",
+      "summary": "Record release-before-certification escape without rewriting history",
+      "evidence": [
+        "exact candidate preserved on durable patrol ref"
+      ],
+      "escape": {
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "integratedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "release": "v0.4.1495",
+        "reason": "shared release lane checkpointed the active candidate before certification"
+      },
+      "previousEventHash": "e67cecac4b921cbf9509db4188008e93b69aa4bab1cca788adbf408b98c4cad9",
+      "eventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292"
+    },
+    {
+      "sequence": 11,
+      "state": "certifying",
+      "at": "2026-08-30T15:03:10.034Z",
+      "actor": "root",
+      "summary": "Breakpoint-gated replacement awaits exact independent certification",
+      "evidence": [
+        "candidate:c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "owned current blobs match candidate on all 15 paths",
+        "no redundant release will be created"
+      ],
+      "previousEventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292",
+      "eventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86"
+    },
+    {
+      "sequence": 12,
+      "state": "certified",
+      "at": "2026-08-30T15:16:22.867Z",
+      "actor": "p3-hover-certifier-retry3",
+      "summary": "Breakpoint-gated hover repair independently certified across exact four-quadrant IAB proof",
+      "evidence": [
+        "mobile dark proof from /root/p3_hover_certifier_retry2 plus mobile light and desktop light/dark proof from /root/p3_hover_certifier_retry3",
+        "release-before-certification escape remains visible in prior immutable events"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "certifierTaskId": "/root/p3_hover_certifier_retry3",
+        "checks": [
+          "all 15 owned blobs matched exact candidate before and after browser proof",
+          "375x812 light and dark: actions visible at opacity 1, 44x44, no overflow or overlap; Quick Look activated",
+          "1440x900 light and dark: desktop actions hidden at rest and revealed by hover and keyboard focus; dense geometry preserved",
+          "type-check, path diff, syntax, and detector Jest 15/15 passed"
+        ]
+      },
+      "previousEventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86",
+      "eventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77"
+    },
+    {
+      "sequence": 13,
+      "state": "delivered",
+      "at": "2026-08-30T15:16:29.539Z",
+      "actor": "root",
+      "summary": "Reconcile exact certified candidate to its existing v0.4.1495 delivery without another release",
+      "evidence": [
+        "escaped delivery was recorded before certification and is not erased",
+        "candidate remains ancestor of origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T143951Z",
+        "integratedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "release": "v0.4.1495"
+      },
+      "previousEventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77",
+      "eventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef"
+    },
+    {
+      "sequence": 14,
+      "state": "closed",
+      "at": "2026-08-30T15:16:36.512Z",
+      "actor": "root",
+      "summary": "Hover repair unit 1 closed; P3 remains in ERADICATION with routed actionable backlog",
+      "evidence": [
+        "17 verified controls fixed and certified; detector reports 169 actionable and 4 review remaining",
+        "no approval or exception requested"
+      ],
+      "previousEventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef",
+      "eventHash": "88270b7dbff11a45c129e82cac85f115b3e56f331a711a221cc9fb123b22df7a"
+    }
+  ]
+}

@@ -33,7 +33,10 @@ import {
   type ValueMappingMap,
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
-import type { WritePolicyMap } from "@/features/surfaces/types";
+import type {
+  SurfaceBindingPayload,
+  WritePolicyMap,
+} from "@/features/surfaces/types";
 import type { Json, Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -66,6 +69,13 @@ export interface AgentSurfaceBinding {
   valueMappings: ValueMappingMap;
   /** Per-write-target applyPolicy overrides (surface_binding payload v2). */
   writePolicies: WritePolicyMap;
+  /**
+   * THE AUTO-RUN INVERSION (surface_binding payload v3, THE-MODEL law 7):
+   * true = triggering this binding on its surface sends the run immediately
+   * instead of stopping at the input panel. Default false — every binding
+   * written before v3 keeps the prompting behavior.
+   */
+  autoRun: boolean;
   createdAt: string;
 }
 
@@ -79,6 +89,7 @@ interface MenuSurfaceBindingRow {
   task_id: string | null;
   value_mappings: unknown;
   write_policies: unknown;
+  auto_run: unknown;
   created_at: string;
   /** Tier-encoded edge role — the ONLY reliable tier signal (assoc_add stamps
    * an access org on EVERY edge, so `organization_id` alone cannot identify
@@ -180,17 +191,41 @@ function fromRow(row: MenuSurfaceBindingRow): AgentSurfaceBinding {
       ? (row.value_mappings as ValueMappingMap)
       : {},
     writePolicies: sanitizeWritePolicyMap(row.write_policies),
+    autoRun: row.auto_run === true,
     createdAt: row.created_at,
   };
 }
 
 const MENU_SURFACE_COLUMNS =
-  "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, write_policies, created_at, role";
+  "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, write_policies, auto_run, created_at, role";
 
 
 // ---------------------------------------------------------------------------
 // Writes
 // ---------------------------------------------------------------------------
+
+/**
+ * The `surface_binding` edge payload (v3), built in ONE place so every writer
+ * produces the same shape the DB trigger validates.
+ *
+ * Empty/false fields are OMITTED rather than written: they are the schema
+ * defaults, and storing them explicitly would make every untouched binding
+ * look like somebody made a decision about them.
+ */
+export function buildSurfaceBindingPayload(args: {
+  valueMappings: ValueMappingMap;
+  writePolicies?: WritePolicyMap;
+  autoRun?: boolean;
+}): SurfaceBindingPayload {
+  const { valueMappings, writePolicies, autoRun } = args;
+  return {
+    value_mappings: valueMappings,
+    ...(writePolicies && Object.keys(writePolicies).length > 0
+      ? { write_policies: writePolicies }
+      : {}),
+    ...(autoRun === true ? { auto_run: true } : {}),
+  };
+}
 
 export interface BindAgentToSurfaceScope extends ScopeInput {}
 
@@ -208,6 +243,13 @@ export interface BindAgentToSurfaceArgs {
    */
   writePolicies?: WritePolicyMap;
   /**
+   * THE AUTO-RUN INVERSION (payload v3). Omitted/false stores nothing and the
+   * binding keeps prompting; true is only meaningful when the mapping is
+   * complete — the bind panel enforces that at the offer, and the launcher
+   * re-checks it against the live page before honoring it.
+   */
+  autoRun?: boolean;
+  /**
    * Org required by `assoc_add` for access checks. Prefer the explicit
    * organization scope; otherwise pass the caller's personal/active org so
    * user-tier binds still clear `iam.has_org_access`.
@@ -221,6 +263,7 @@ export interface BoundAgentSurface {
   surfaceName: string;
   surfaceId: string;
   valueMappings: ValueMappingMap;
+  autoRun: boolean;
 }
 
 /**
@@ -231,8 +274,15 @@ export interface BoundAgentSurface {
 export async function bindAgentToSurface(
   args: BindAgentToSurfaceArgs,
 ): Promise<BoundAgentSurface> {
-  const { agentId, surfaceName, scope, valueMappings, writePolicies, accessOrgId } =
-    args;
+  const {
+    agentId,
+    surfaceName,
+    scope,
+    valueMappings,
+    writePolicies,
+    autoRun,
+    accessOrgId,
+  } = args;
 
   if (!surfaceAcceptsAgentBindings(surfaceName)) {
     throw new Error(
@@ -370,12 +420,11 @@ export async function bindAgentToSurface(
     role: bindingRoleForScope(scope),
     metadata,
     payloadKind: "surface_binding",
-    payload: {
-      value_mappings: valueMappings,
-      ...(writePolicies && Object.keys(writePolicies).length > 0
-        ? { write_policies: writePolicies }
-        : {}),
-    },
+    payload: buildSurfaceBindingPayload({
+      valueMappings,
+      writePolicies,
+      autoRun,
+    }),
   });
 
   if (!result.ok) {
@@ -390,6 +439,7 @@ export async function bindAgentToSurface(
     surfaceName,
     surfaceId: surface.id,
     valueMappings,
+    autoRun: autoRun === true,
   };
 }
 
@@ -404,8 +454,10 @@ export async function upsertAgentSurfaceBinding(args: {
   scope: ScopeInput;
   valueMappings: ValueMappingMap;
   writePolicies?: WritePolicyMap;
+  autoRun?: boolean;
 }): Promise<AgentSurfaceBinding> {
-  const { agentId, surfaceName, scope, valueMappings, writePolicies } = args;
+  const { agentId, surfaceName, scope, valueMappings, writePolicies, autoRun } =
+    args;
   const accessOrgId = await ensureOrgId(scope.organizationId ?? null);
   const saved = await bindAgentToSurface({
     agentId,
@@ -413,6 +465,7 @@ export async function upsertAgentSurfaceBinding(args: {
     scope,
     valueMappings,
     writePolicies,
+    autoRun,
     accessOrgId,
   });
   return {
@@ -425,6 +478,7 @@ export async function upsertAgentSurfaceBinding(args: {
     taskId: scope.taskId ?? null,
     valueMappings,
     writePolicies: writePolicies ? sanitizeWritePolicyMap(writePolicies) : {},
+    autoRun: saved.autoRun,
     createdAt: new Date().toISOString(),
   };
 }
@@ -524,6 +578,9 @@ export interface BulkUpsertBindingInput {
    * stored override for the binding.
    */
   writePolicies?: WritePolicyMap;
+  /** THE AUTO-RUN INVERSION (payload v3). Same wholesale-replace caveat as
+   * `writePolicies`: omitting it clears a stored `auto_run: true`. */
+  autoRun?: boolean;
 }
 
 export interface BulkUpsertResult {
@@ -544,6 +601,7 @@ export async function bulkUpsertAgentSurfaceBindings(args: {
         scope: b.scope,
         valueMappings: b.valueMappings,
         writePolicies: b.writePolicies,
+        autoRun: b.autoRun,
       }),
     ),
   );
@@ -609,12 +667,15 @@ export async function fetchSurfaceBindingLayers(
 
   const rows = ((data ?? []) as unknown as MenuSurfaceBindingRow[])
     .map(fromRow)
-    // A binding that maps nothing but overrides a write policy is still a
-    // real layer — dropping it would silently discard the user's choice.
+    // A binding that maps nothing but overrides a write policy — or turns
+    // auto-run on, which an agent with no variables legitimately does — is
+    // still a real layer. Dropping it would silently discard the user's
+    // choice.
     .filter(
       (r) =>
         Object.keys(r.valueMappings).length > 0 ||
-        Object.keys(r.writePolicies).length > 0,
+        Object.keys(r.writePolicies).length > 0 ||
+        r.autoRun,
     );
 
   const layers: MappingLayer[] = [];
@@ -634,6 +695,7 @@ export async function fetchSurfaceBindingLayers(
         name: `binding:${prefix}global`,
         mappings: globalRow.valueMappings,
         writePolicies: globalRow.writePolicies,
+        autoRun: globalRow.autoRun,
       });
     }
     const orgRows = forSurface
@@ -646,6 +708,7 @@ export async function fetchSurfaceBindingLayers(
         name: `binding:${prefix}org:${organizationId.slice(0, 8)}`,
         mappings: row.valueMappings,
         writePolicies: row.writePolicies,
+        autoRun: row.autoRun,
       });
     }
     const userRow = forSurface.find((r) => r.userId !== null);
@@ -654,6 +717,7 @@ export async function fetchSurfaceBindingLayers(
         name: `binding:${prefix}user`,
         mappings: userRow.valueMappings,
         writePolicies: userRow.writePolicies,
+        autoRun: userRow.autoRun,
       });
     }
   }

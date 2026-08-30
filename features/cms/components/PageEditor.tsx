@@ -47,7 +47,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -1202,7 +1201,7 @@ export default function PageEditor({
                       <label className="text-sm font-medium text-foreground block mb-1.5">
                         Excerpt
                       </label>
-                      <Textarea
+                      <ProTextarea
                         value={excerpt}
                         onChange={(e) => setExcerpt(e.target.value)}
                         placeholder="Short description for listing pages…"

@@ -1479,9 +1479,23 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
   // ═════════════════════════════════════════════════════════════════════════════════════════════
 
   /*
-    Route 5's self/current resolver. The four cases are the four answers a real person gets, and
+    Route 5's self/current/PUNCH resolver. The cases are the answers a real person gets, and
     `empty`/`edge` are the two that used to render as *"that link is not wired up yet"*:
     a worker class with no pay group at all, and somebody whose last period closed yesterday.
+
+    `edge` and `edge2` are the two punch-link answers, which is the other thing this door decides.
+    They are the expensive-to-discover-late pair: a punch that resolves into a DIFFERENT period
+    than the one covering today, and a punch id that resolves into nothing at all. The second used
+    to be indistinguishable from success — the page ignored `?punch=` entirely, so an employee sent
+    by a correction notice landed on the current period with no mention of the correction and no
+    hint the link had failed.
+
+    🚨 THE UNKNOWN-PUNCH ANSWER RIDES ON `edge` RATHER THAN GETTING ITS OWN CASE, and that is a
+    ceiling and not a choice: `HrFixtureCase` is `happy | empty | error | edge | edge2` (generated,
+    `features/hr/__fixtures__/registry.generated.ts`), all five of which this operation now uses.
+    It composes honestly — an ignored punch means normal resolution runs, so `edge`'s `most_recent`
+    answer is exactly the shape it arrives in — and it earns its keep by exercising the one layout
+    nothing else does: `period_note` and `focus_note` stacked, two honest sentences at once.
   */
   hr_my_timesheet_context: {
     happy: {
@@ -1496,6 +1510,10 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         basis: "current",
         period_note: null,
         no_period_reason: null,
+        // No punch was asked for. All three are null and the answer is byte-identical to before.
+        focus_punch_id: null,
+        focus_local_work_date: null,
+        focus_note: null,
       },
     },
     empty: {
@@ -1512,6 +1530,9 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         no_period_reason:
           "You are not in a pay group yet, so no pay periods have been created for you and there " +
           "is no timesheet to total. HR sets this up on your position.",
+        focus_punch_id: null,
+        focus_local_work_date: null,
+        focus_note: null,
       },
     },
     error: {
@@ -1539,6 +1560,42 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
           "No pay period is open for today. These are your hours for Feb 16 to Feb 28, 2026, the " +
           "most recent period you were in.",
         no_period_reason: null,
+        /*
+          The UNKNOWN-PUNCH answer (see the note above this operation). A `?punch=` was asked for
+          and could not be resolved, so the door ignored it and resolved normally — and SAYS SO.
+          `focus_punch_id` is null, which is what stops the surface highlighting a day at random.
+        */
+        focus_punch_id: null,
+        focus_local_work_date: null,
+        focus_note:
+          "We could not find the punch that link points to, so this is your timesheet as it " +
+          "normally opens. If you were told a punch had been corrected, ask your manager or HR.",
+      },
+    },
+    /*
+      The PUNCH answer. `basis: 'punch'` means this period was chosen because it covers the work
+      date of the punch in the link — NOT because it covers today — so the sentence explaining that
+      is mandatory, and it is the server's.
+    */
+    edge2: {
+      ok: true,
+      data: {
+        employment_id: EMPLOYMENT,
+        pay_group_id: "44444444-0000-4000-8000-000000000001",
+        // The period the `hr_timesheet_get` fixture below renders, so the focused day row this
+        // resolves to is one that actually exists on screen when the mock lane is driven.
+        pay_period_id: "33333333-3333-4333-8333-333333333334",
+        period_start_on: "2026-03-16",
+        period_end_on: "2026-03-31",
+        period_state: "open",
+        basis: "punch",
+        period_note: null,
+        no_period_reason: null,
+        focus_punch_id: PUNCH_CLOCK_IN.id,
+        focus_local_work_date: PUNCH_CLOCK_IN.localWorkDate,
+        focus_note:
+          "These are your hours for Mar 16 to Mar 31, 2026 — the period that covers the day your " +
+          "punch was corrected.",
       },
     },
   },
@@ -1620,7 +1677,7 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         closedAt: null, reopenedAt: null, reopenReason: null,
         boundaryWorkweekIds: [WORKWEEK, "22222222-2222-4222-8222-222222222223"],
         counts: { employments: 288, approved: 285, open: 0, attested: 285, disputed: 3 },
-        boundaryNote: "2 workweek(s) straddle this period's edges. Overtime for those weeks is computed on the whole workweek and attributed to the period containing the week's end date.",
+        boundaryNote: "2 workweeks straddle this period's edges. Overtime for those weeks is computed on the whole workweek and attributed to the period containing the week's end date.",
         reopenAllowed: true,
         reopenNotice: "Reopening does NOT un-export and does NOT re-pay. A delivered export is never regenerated in place, because that pays the same hours twice. The fix is an adjustment.",
         adjustmentsTaggedHere: 1,
@@ -1694,7 +1751,7 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         reopenedAt: null, reopenReason: null,
         boundaryWorkweekIds: [WORKWEEK, "22222222-2222-4222-8222-222222222223"],
         counts: { employments: 288, approved: 288, open: 0, attested: 288, disputed: 1 },
-        boundaryNote: "2 workweek(s) straddle this period's edges. Overtime for those weeks is computed on the whole workweek and attributed to the period containing the week's end date.",
+        boundaryNote: "2 workweeks straddle this period's edges. Overtime for those weeks is computed on the whole workweek and attributed to the period containing the week's end date.",
         reopenAllowed: true,
         reopenNotice: "Reopening does NOT un-export and does NOT re-pay. A delivered export is never regenerated in place, because that pays the same hours twice. The fix is an adjustment.",
         adjustmentsTaggedHere: 2,

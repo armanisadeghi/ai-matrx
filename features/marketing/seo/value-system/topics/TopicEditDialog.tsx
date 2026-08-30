@@ -23,9 +23,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import { ROOT_TYPE_META, rootTypeMeta } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface TopicEditDraft {
   topicId: string | null;
@@ -138,7 +138,7 @@ export function TopicEditDialog({
             <Label htmlFor="topic-description" className="text-xs">
               Notes (optional)
             </Label>
-            <Textarea
+            <ProTextarea
               id="topic-description"
               value={description}
               onChange={(event) => setDescription(event.target.value)}

@@ -19,7 +19,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
@@ -34,6 +33,7 @@ import {
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { selectFullContextStatus } from "@/features/agent-context/redux/hierarchySlice";
 import type { TaskWithProject } from "@/features/tasks/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface AssociateTaskButtonProps {
   /** What we are associating. Writes a platform.associations edge on pick. */
@@ -360,7 +360,7 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
               className="h-8 text-sm"
               style={{ fontSize: "16px" }}
             />
-            <Textarea
+            <ProTextarea
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Description (optional)"

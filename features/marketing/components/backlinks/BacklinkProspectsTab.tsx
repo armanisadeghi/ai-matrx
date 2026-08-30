@@ -77,6 +77,7 @@ import {
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
+import { humanizeBackendError } from "@/utils/errors";
 
 function scoreCell(row: LinkGapDomainRow) {
   return (
@@ -498,7 +499,7 @@ export function BacklinkProspectsTab({
             ) : null}
             {run.status === "error" && run.error ? (
               <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-                {run.error}
+                {humanizeBackendError(run.error)}
               </p>
             ) : null}
             {run.status === "done" && run.receipt ? (

@@ -46,7 +46,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import { isHrDenied } from "@/features/hr/types";
@@ -59,6 +58,7 @@ import {
   type LeaveAdjustRefusal,
   type LeaveBalanceRow,
 } from "./api/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NOTE_MIN = 20;
 const NOTE_MIN_OTHER = 60;
@@ -242,7 +242,7 @@ export function LeaveAdjustDialog({
             <Label htmlFor="leave-adjust-note" className="text-xs">
               What happened
             </Label>
-            <Textarea
+            <ProTextarea
               id="leave-adjust-note"
               rows={3}
               value={note}

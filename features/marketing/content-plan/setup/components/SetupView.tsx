@@ -1975,6 +1975,7 @@ export function SetupView() {
         <SetupAiBar
           selectedTopicId={researchTopicId}
           onSelectTopic={selectTopic}
+          organizationId={site?.organization_id ?? null}
           researchPlanHref={researchPlanHref}
           document={researchDoc.data ?? null}
           documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
@@ -2050,6 +2051,7 @@ export function SetupView() {
             open={buildDialogOpen}
             onOpenChange={setBuildDialogOpen}
             siteName={site.name}
+            organizationId={site.organization_id}
             reportReady={Boolean(researchReport)}
             reportPending={Boolean(researchTopicId) && !researchReport}
             selectedTopicId={researchTopicId}

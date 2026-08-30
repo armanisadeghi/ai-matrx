@@ -41,6 +41,12 @@ import {
   type ValueMappingMap,
   type WritePolicyMap,
 } from "@/features/surfaces/types";
+import {
+  mandateIdOfShortcutRow,
+  mandateKeyOfShortcutRow,
+  writePoliciesOfShortcutRow,
+  SHORTCUT_WRITE_POLICIES_ON_TREATMENT,
+} from "@/lib/supabase/shortcutStorage";
 
 // ---------------------------------------------------------------------------
 // Supabase row types
@@ -89,14 +95,22 @@ function rJsonObject<T>(row: LooseRow, key: string): T | null {
  * Reserved key inside the shortcut's `value_mappings` JSONB that carries the
  * shortcut's per-write-target apply-policy overrides (`WritePolicyMap`).
  *
- * Storage decision (no DDL): `agent.shortcut` has no metadata JSONB, and
- * every shortcut read path (direct row, the four RPCs, the REST rows)
- * already returns `value_mappings` wholesale — so the policies ride inside
- * it under this key. The pair below is the ONE serializer/deserializer:
- * `parseValueMappings` STRIPS the key (so `isValueMappingMap` consumers
- * never see it), `parseShortcutWritePolicies` LIFTS it, and
- * `packShortcutValueMappings` nests it back on write. Never read or write
- * the key anywhere else.
+ * LEGACY, and only while `agent.shortcut` is the active storage: that table
+ * has no metadata JSONB, and every shortcut read path (direct row, the four
+ * RPCs, the REST rows) already returns `value_mappings` wholesale — so the
+ * policies rode inside it under this key. The pair below is the ONE
+ * serializer/deserializer for that shape: `parseValueMappings` STRIPS the key
+ * (so `isValueMappingMap` consumers never see it),
+ * `parseShortcutWritePolicies` LIFTS it, `packShortcutValueMappings` nests it
+ * back on write. Never read or write the key anywhere else.
+ *
+ * Census #20: a write policy is TREATMENT, not consumption (THE-MODEL law 4).
+ * Once `SHORTCUT_STORAGE_CUTOVER` flips, policies live at
+ * `mandate.treatment.config.write_policies` and reach the client as
+ * `mandate.vw_shortcut.write_policies` — a column of its own, so the two
+ * halves stop sharing a blob and this key stops being written. Route every
+ * read through `readShortcutWritePolicies` and every write through
+ * `packShortcutMappingColumns`, never through the two functions directly.
  */
 export const SHORTCUT_WRITE_POLICIES_KEY = "__write_policies";
 
@@ -108,7 +122,10 @@ export function parseValueMappings(raw: unknown): ValueMappingMap | null {
   return isValueMappingMap(rest) ? rest : null;
 }
 
-/** Lift the shortcut's stored write-policy overrides out of `value_mappings`. */
+/** Lift the shortcut's stored write-policy overrides out of `value_mappings`
+ * — the PRE-cutover shape only. Row-level callers use
+ * `readShortcutWritePolicies` so the treatment-backed column wins once the
+ * storage router points at `mandate.vw_shortcut`. */
 export function parseShortcutWritePolicies(
   raw: unknown,
 ): WritePolicyMap | null {
@@ -117,6 +134,56 @@ export function parseShortcutWritePolicies(
   if (nested === undefined || nested === null) return null;
   const sanitized = sanitizeWritePolicyMap(nested);
   return Object.keys(sanitized).length > 0 ? sanitized : null;
+}
+
+/**
+ * THE read seam for a shortcut's write policies (census #20). A policy is
+ * TREATMENT, not consumption: after the storage cutover it comes off the
+ * view's own `write_policies` column (backed by
+ * `mandate.treatment.config.write_policies`); before it, off the reserved key
+ * nested in `value_mappings`, which is the only home `agent.shortcut` has.
+ * Every read path — direct rows, the four RPCs, the REST rows — goes through
+ * here so the flip is one constant, never a sweep.
+ */
+export function readShortcutWritePolicies(
+  row: Record<string, unknown>,
+): WritePolicyMap | null {
+  if (SHORTCUT_WRITE_POLICIES_ON_TREATMENT) {
+    const raw = writePoliciesOfShortcutRow(row);
+    if (!raw) return null;
+    const sanitized = sanitizeWritePolicyMap(raw);
+    return Object.keys(sanitized).length > 0 ? sanitized : null;
+  }
+  return parseShortcutWritePolicies(row.value_mappings);
+}
+
+/**
+ * THE write seam — the mapping COLUMNS for an insert/update payload.
+ *
+ * Post-cutover the two halves are independent columns, so a one-sided patch is
+ * safe and the shared-column scream below goes quiet. Pre-cutover they share
+ * `value_mappings` and a one-sided patch CLEARS the other half, which is why
+ * every caller passes both and the seams below scream when one is missing.
+ */
+export function packShortcutMappingColumns(
+  valueMappings: ValueMappingMap | null,
+  writePolicies: WritePolicyMap | null,
+): Record<string, unknown> {
+  if (SHORTCUT_WRITE_POLICIES_ON_TREATMENT) {
+    return {
+      value_mappings: valueMappings,
+      write_policies: writePolicies ? sanitizeWritePolicyMap(writePolicies) : {},
+    };
+  }
+  return {
+    value_mappings: packShortcutValueMappings(valueMappings, writePolicies),
+  };
+}
+
+/** True while the two halves share ONE JSONB column — the condition the
+ * one-sided-patch screams exist for. */
+export function shortcutMappingColumnsAreShared(): boolean {
+  return !SHORTCUT_WRITE_POLICIES_ON_TREATMENT;
 }
 
 /**
@@ -185,7 +252,7 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
     surfaceName: rString(loose, "surface_name"),
     scopeMappings: (row.scope_mappings as Record<string, string>) ?? null,
     valueMappings: parseValueMappings(loose.value_mappings),
-    writePolicies: parseShortcutWritePolicies(loose.value_mappings),
+    writePolicies: readShortcutWritePolicies(loose),
     contextMappings: rJsonObject<Record<string, string>>(
       loose,
       "context_mappings",
@@ -265,6 +332,12 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
     llmOverrides: rJsonObject<Partial<LLMParams>>(loose, "llm_overrides"),
     jsonExtraction: rJsonObject<JsonExtractionConfig>(loose, "json_extraction"),
 
+    // The mandate behind the row on the ACTIVE storage (census #47). Null in
+    // both positions until SHORTCUT_STORAGE_CUTOVER flips — by the helpers'
+    // own design, not by omission here.
+    mandateId: mandateIdOfShortcutRow(loose),
+    mandateKey: mandateKeyOfShortcutRow(loose),
+
     isActive: row.is_active,
 
     userId: row.created_by,
@@ -340,10 +413,10 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
     enabled_features: shortcut.enabledFeatures,
     surface_name: shortcut.surfaceName,
     scope_mappings: shortcut.scopeMappings,
-    value_mappings: packShortcutValueMappings(
+    ...(packShortcutMappingColumns(
       shortcut.valueMappings,
       shortcut.writePolicies ?? null,
-    ),
+    ) as Pick<ShortcutInsert, "value_mappings">),
     context_mappings: shortcut.contextMappings,
 
     display_mode: shortcut.displayMode,
@@ -409,13 +482,16 @@ export function agentShortcutToUpdate(
     partial.valueMappings !== undefined ||
     partial.writePolicies !== undefined
   ) {
-    // Both halves live in ONE JSONB column; a one-sided patch clears the
-    // other half. The thunk seams (saveShortcut / saveShortcutField /
-    // updateShortcut) fill the missing half from the existing record —
-    // reaching here one-sided means a caller bypassed them.
+    // Pre-cutover both halves live in ONE JSONB column, so a one-sided patch
+    // clears the other half. The thunk seams (saveShortcut /
+    // saveShortcutField / updateShortcut) fill the missing half from the
+    // existing record — reaching here one-sided means a caller bypassed them.
+    // Post-cutover policies are treatment (their own column) and a one-sided
+    // patch is simply a one-column patch.
     if (
-      partial.valueMappings === undefined ||
-      partial.writePolicies === undefined
+      shortcutMappingColumnsAreShared() &&
+      (partial.valueMappings === undefined ||
+        partial.writePolicies === undefined)
     ) {
       console.error(
         "[agent-shortcuts] value_mappings patch is one-sided — valueMappings and writePolicies share one column; the missing half is being CLEARED. Pass both (the thunks do this automatically).",
@@ -425,10 +501,15 @@ export function agentShortcutToUpdate(
         },
       );
     }
-    update.value_mappings = packShortcutValueMappings(
+    const columns = packShortcutMappingColumns(
       partial.valueMappings ?? null,
       partial.writePolicies ?? null,
-    );
+    ) as Record<string, unknown>;
+    if (shortcutMappingColumnsAreShared() || partial.valueMappings !== undefined)
+      update.value_mappings = columns.value_mappings as ShortcutUpdate["value_mappings"];
+    if (!shortcutMappingColumnsAreShared() && partial.writePolicies !== undefined)
+      (update as Record<string, unknown>).write_policies =
+        columns.write_policies;
   }
   if (partial.contextMappings !== undefined)
     update.context_mappings = partial.contextMappings;

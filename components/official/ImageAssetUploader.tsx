@@ -28,6 +28,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { useDropzone } from "react-dropzone";
 import {
   AlertCircle,
@@ -680,7 +681,7 @@ function GenerateTabContent({
 
   return (
     <div className="flex flex-col gap-2 py-1">
-      <textarea
+      <ProTextarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={(e) => {

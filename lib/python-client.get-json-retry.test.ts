@@ -22,7 +22,7 @@ jest.mock("@/lib/diagnostics/capturePythonClientError", () => ({
 }));
 
 import { capturePythonClientError } from "@/lib/diagnostics/capturePythonClientError";
-import { getJson, postJson } from "@/lib/python-client";
+import { getJson, postJson, requestRaw } from "@/lib/python-client";
 
 const captureMock = jest.mocked(capturePythonClientError);
 
@@ -82,12 +82,14 @@ describe("python-client caller-owned error classification", () => {
   });
 
   it("does not capture a POST failure when the caller owns classification", async () => {
-    global.fetch = jest.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ error: "not_found", message: "run not found" }),
-        { status: 404, headers: { "content-type": "application/json" } },
-      ),
-    );
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ error: "not_found", message: "run not found" }),
+          { status: 404, headers: { "content-type": "application/json" } },
+        ),
+      );
 
     await expect(
       postJson(
@@ -104,18 +106,73 @@ describe("python-client caller-owned error classification", () => {
   });
 
   it("still captures an unexpected POST failure by default", async () => {
-    global.fetch = jest.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ error: "not_found", message: "run not found" }),
-        { status: 404, headers: { "content-type": "application/json" } },
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ error: "not_found", message: "run not found" }),
+          { status: 404, headers: { "content-type": "application/json" } },
+        ),
+      );
+
+    await expect(
+      postJson(
+        "/podcast/runs/missing/reconcile",
+        {},
+        {
+          baseUrlOverride: "https://server.example.test",
+        },
       ),
+    ).rejects.toMatchObject({ status: 404 });
+
+    expect(captureMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not capture an expected raw-response authorization denial", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: "forbidden",
+            message: "viewer access required",
+          }),
+          { status: 403, headers: { "content-type": "application/json" } },
+        ),
+      );
+
+    await expect(
+      requestRaw(
+        "/research/topics/topic-id/experts",
+        {},
+        {
+          baseUrlOverride: "https://server.example.test",
+          expectedErrorStatuses: [403],
+        },
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it("still captures an unexpected raw-response server failure", async () => {
+    global.fetch = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "failed" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
     );
 
     await expect(
-      postJson("/podcast/runs/missing/reconcile", {}, {
-        baseUrlOverride: "https://server.example.test",
-      }),
-    ).rejects.toMatchObject({ status: 404 });
+      requestRaw(
+        "/research/topics/topic-id/experts",
+        {},
+        {
+          baseUrlOverride: "https://server.example.test",
+          expectedErrorStatuses: [403],
+        },
+      ),
+    ).rejects.toMatchObject({ status: 500 });
 
     expect(captureMock).toHaveBeenCalledTimes(1);
   });

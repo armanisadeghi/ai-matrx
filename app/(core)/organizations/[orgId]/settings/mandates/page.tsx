@@ -2,7 +2,7 @@
 
 // /organizations/[orgId]/settings/mandates — the ORG-scoped mandate surface.
 // The organization is fixed by the route (Arman's ruling: the personal
-// /agents/mandates page carries NO org editing; admins manage their org HERE).
+// /mandates page carries NO org editing; admins manage their org HERE).
 // Same canonical list shell; the doors lead to the org-principal workspace.
 
 import { useParams } from "next/navigation";
@@ -22,9 +22,13 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import type { ItemMenuConfig } from "@/components/official/item/types";
-import { mandateListConfig } from "@/features/agents/mandates/browse/listConfig";
-import { mandateListService } from "@/features/agents/mandates/browse/service";
-import type { MandateListRow } from "@/features/agents/mandates/browse/types";
+import { mandateListConfig } from "@/features/mandates/browse/listConfig";
+import type { MandateListRow } from "@/features/mandates/browse/types";
+import { MandateCoverageProvider } from "@/features/mandates/browse/CoverageBadge";
+import {
+  MandateCoverageNotice,
+  useCoverageList,
+} from "@/features/mandates/browse/useCoverageList";
 
 function orgMandateRoute(orgId: string, row: Pick<MandateListRow, "mandate_key">) {
   return `/organizations/${encodeURIComponent(orgId)}/settings/mandates/${encodeURIComponent(row.mandate_key)}`;
@@ -38,6 +42,16 @@ export default function OrgMandatesPage() {
   const { loading: roleLoading, isOwner, isAdmin } = useUserRole(
     organizationId ?? undefined,
   );
+
+  // THE OWNERSHIP LAW (THE-MODEL law 5: screams follow ownership) — an org page
+  // shows the ORG's coverage, so the report is scoped to this organization's
+  // own mandates. A platform mandate this org does not own is NOT painted green
+  // here; it carries no verdict, because this report does not answer for it.
+  const { view: coverage, service } = useCoverageList({
+    scope: { kind: "org", orgId: organizationId ?? "" },
+    organizationId,
+    enabled: Boolean(organizationId),
+  });
 
   // Route-scoped row actions: everything opens the ORG workspace route. The
   // window panel stays personal-principal, so it is deliberately absent here.
@@ -101,29 +115,36 @@ export default function OrgMandatesPage() {
           ]}
         />
       </PageHeader>
-      <EntityListPage
-        config={{
-          ...mandateListConfig,
-          surfaceKey: "org-mandates",
-          // THE ORG'S resolution, not the admin's. "Fulfilled by" and
-          // "Decided by" on this page must answer for every member of this
-          // organization; asking for the caller's own scope showed the admin
-          // their personal override winning on an org-settings page.
-          service: mandateListService({ kind: "org", orgId: organizationId }),
-          door: { hrefFor: (row) => orgMandateRoute(orgId, row) },
-          useRowActions: useOrgRowActions,
-        }}
-        notice={
-          <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-            Bindings made here apply to every member of{" "}
-            <span className="font-medium text-foreground">{organization.name}</span>{" "}
-            (a member&apos;s personal override still wins for themselves).{" "}
-            <Link href="/agents/mandates" className="underline">
-              Your personal surface
-            </Link>
-          </p>
-        }
-      />
+      <MandateCoverageProvider value={coverage}>
+        <EntityListPage
+          config={{
+            ...mandateListConfig,
+            surfaceKey: "org-mandates",
+            // THE ORG'S resolution, not the admin's. "Fulfilled by" and
+            // "Decided by" on this page must answer for every member of this
+            // organization; asking for the caller's own scope showed the admin
+            // their personal override winning on an org-settings page.
+            service,
+            door: { hrefFor: (row) => orgMandateRoute(orgId, row) },
+            useRowActions: useOrgRowActions,
+          }}
+          notice={(list) => (
+            <div className="space-y-2">
+              <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
+                Bindings made here apply to every member of{" "}
+                <span className="font-medium text-foreground">
+                  {organization.name}
+                </span>{" "}
+                (a member&apos;s personal override still wins for themselves).{" "}
+                <Link href="/mandates" className="underline">
+                  Your personal surface
+                </Link>
+              </p>
+              <MandateCoverageNotice list={list} />
+            </div>
+          )}
+        />
+      </MandateCoverageProvider>
     </>
   );
 }

@@ -18,6 +18,7 @@ import {
     HrEmployerSubstitutionNotice,
 } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { useHrRescueRefusal } from "@/features/hr/shared/HrStates";
 import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
 import { bulkDecide } from "@/features/hr/tasks/service";
@@ -99,6 +100,10 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
       and only because it rebuilds the WHOLE query string rather than composing a new one.
     */
     const { orgRef } = useHrContext();
+    // 🚨 `/hr/tasks` has no `HrShell` and does not run `HrPageState`, so it owes
+    // the deep-link refusal itself — see `useHrRescueRefusal`. Null in every
+    // ordinary case; a hook, so it is called unconditionally.
+    const rescueRefusal = useHrRescueRefusal();
 
     const { inbox, refusal, error, loading, reload } = useHrInbox(scope, flowKey);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -188,6 +193,8 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
             </div>
         );
     }
+
+    if (rescueRefusal) return rescueRefusal;
 
     const scopeRows = inbox?.scope_rows ?? [];
     const mine = inbox?.needs_my_decision ?? [];

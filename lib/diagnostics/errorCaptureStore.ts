@@ -557,6 +557,9 @@ export function captureError(input: CaptureInput): string {
     entry.tier = c.tier;
     entry.tierRuleId = c.ruleId;
     entry.tierReason = c.reason;
+    if (input.durable === undefined && c.persist !== undefined) {
+      entry.durable = c.persist;
+    }
   } catch {
     entry.tier = "red";
   }

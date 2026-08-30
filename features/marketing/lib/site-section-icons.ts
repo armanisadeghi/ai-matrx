@@ -1,16 +1,15 @@
 /**
- * One icon per site section, keyed by the slug in `MARKETING_SITE_SECTIONS`.
+ * One icon per website/SEO section, keyed by slug from `route-sections.ts`.
  *
- * Lives here rather than in a component because two surfaces render the same
- * sections — the site header (`MarketingSiteLayoutClient`) and the marketing
- * sidebar (`MarketingSidebarMenu`) — and a section shown with two different
- * glyphs reads as two different destinations.
+ * Lives here rather than in a component because multiple surfaces render the
+ * same sections — the site headers and the marketing sidebar — and a section
+ * shown with two different glyphs reads as two different destinations.
  *
- * Not in `features/shell/shellIconMap.ts` deliberately: twelve of these are
+ * Not in `features/shell/shellIconMap.ts` deliberately: most of these are
  * marketing-only, and that registry is the shell's curated set for
  * `nav-data.ts`. Growing it for one feature makes every consumer carry them.
  *
- * The map is exhaustive by type — adding a section without an icon is a
+ * The maps are exhaustive by type — adding a section without an icon is a
  * compile error, not a blank square.
  */
 
@@ -29,45 +28,56 @@ import {
   Link2,
   Map,
   Network,
-  Newspaper,
   Radar,
   RefreshCw,
   Route,
   ScanSearch,
+  SearchCheck,
   Settings,
   Timer,
   TrendingUp,
   Workflow,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
-import { MARKETING_SITE_SECTIONS } from "./route-sections";
+import {
+  MARKETING_SEO_SECTIONS,
+  MARKETING_WEBSITE_SECTIONS,
+} from "./route-sections";
 
-export const MARKETING_SITE_SECTION_ICONS: Record<
-  (typeof MARKETING_SITE_SECTIONS)[number]["slug"],
+export const MARKETING_WEBSITE_SECTION_ICONS: Record<
+  (typeof MARKETING_WEBSITE_SECTIONS)[number]["slug"],
   LucideIcon
 > = {
   "": Gauge,
-  automations: Workflow,
-  "growth-loop": RefreshCw,
-  performance: Timer,
-  sitemaps: Map,
-  coverage: Grid3x3,
-  audit: ClipboardCheck,
   pages: FileText,
   structure: Network,
+  sitemaps: Map,
   media: Images,
   crawls: ScanSearch,
-  analysis: Activity,
+  settings: Settings,
+};
+
+export const MARKETING_SEO_SECTION_ICONS: Record<
+  (typeof MARKETING_SEO_SECTIONS)[number]["slug"],
+  LucideIcon
+> = {
+  keywords: KeyRound,
+  rankings: TrendingUp,
+  "search-console": SearchCheck,
+  audit: ClipboardCheck,
   findings: AlertTriangle,
+  analysis: Activity,
+  coverage: Grid3x3,
+  performance: Timer,
+  changes: FlaskConical,
+  backlinks: BadgeCheck,
   links: Link2,
   authority: Route,
-  backlinks: BadgeCheck,
-  changes: FlaskConical,
-  reputation: Newspaper,
-  keywords: KeyRound,
-  value: CircleDollarSign,
-  ranks: TrendingUp,
+  valuation: CircleDollarSign,
   "ai-visibility": Radar,
-  settings: Settings,
+  "growth-loop": RefreshCw,
+  automations: Workflow,
+  capabilities: Wrench,
 };

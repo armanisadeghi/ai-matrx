@@ -51,7 +51,7 @@ import {
   selectAnswerText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 
 /**
  * WHO runs each step is a MANDATE (`agent.mandate`), never an agent id in this
@@ -59,7 +59,7 @@ import { resolveMandate } from "@/features/agents/mandates/service";
  * the user's own binding), and `runHeadlessAgent` passes the key straight
  * into `launchAgentExecution({ mandateKey })` so BOTH halves of the binding
  * (agent AND `config_overrides`) apply. Inputs ride as the provision's
- * offered values. Recipe: `features/agents/mandates/FEATURE.md`
+ * offered values. Recipe: `features/mandates/FEATURE.md`
  * §"Migrating a hardcoded call site".
  */
 
@@ -75,7 +75,7 @@ export const PAGE_IMAGE_MANDATE_KEY = "marketing.page_image";
  * The premium single-run job: prompt-engineers AND renders in one run —
  * provision offers `intent_or_content`, `style`, `count`. Deliberately NOT
  * the default path, and currently SEEDLESS (declared, no system default):
- * until an agent is bound at /agents/mandates the path refuses with a typed
+ * until an agent is bound at /mandates the path refuses with a typed
  * `step: "mandate"` outcome naming this key — it never silently falls back
  * to the two-step pipeline.
  */
@@ -368,7 +368,7 @@ export function generatePageImage(args: GeneratePageImageArgs) {
 
 /** Loud, step-attributed outcome — the card toasts WHICH step failed.
  *  `step: "mandate"` = the job's mandate could not resolve (unbound / disabled),
- *  so NOTHING ran; `mandateKey` names the job to bind at /agents/mandates. */
+ *  so NOTHING ran; `mandateKey` names the job to bind at /mandates. */
 export type PageImageResult =
   | { ok: true; fileId: string }
   | { ok: false; step: "prompt" | "image"; message: string }
@@ -392,7 +392,7 @@ async function mandateGate(
       ok: false,
       step: "mandate",
       mandateKey,
-      message: `No agent is bound to the "${mandateKey}" job — bind one at /agents/mandates. ${
+      message: `No agent is bound to the "${mandateKey}" job — bind one at /mandates. ${
         error instanceof Error ? error.message : ""
       }`.trim(),
     };

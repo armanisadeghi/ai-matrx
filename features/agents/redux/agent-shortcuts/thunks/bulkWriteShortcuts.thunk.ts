@@ -12,6 +12,10 @@ import { upsertShortcuts } from "../slice";
 import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import {
+  SHORTCUT_STORAGE_CUTOVER,
+  shortcutTable,
+} from "@/lib/supabase/shortcutStorage";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -74,9 +78,7 @@ export const bulkCreateShortcuts = createAsyncThunk<
     }),
   );
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("shortcut")
+  const { data, error } = await shortcutTable(supabase)
     .insert(rows)
     .select();
   if (error) throw pgErrorToError(error);
@@ -106,14 +108,30 @@ export const bulkUpdateShortcuts = createAsyncThunk<
     id: r.id,
   }));
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("shortcut")
-    .upsert(rows, { onConflict: "id" })
-    .select();
-  if (error) throw pgErrorToError(error);
-
-  const saved = (data ?? []).map(dbRowToAgentShortcut);
+  let saved: AgentShortcut[];
+  if (SHORTCUT_STORAGE_CUTOVER) {
+    // Postgres rejects `INSERT ... ON CONFLICT` on a trigger-updatable view,
+    // so on the mandate storage the "upsert of complete existing rows" (see
+    // the docstring — callers always pass EXISTING shortcuts, merged) becomes
+    // per-row full UPDATEs through mandate.vw_shortcut's INSTEAD OF trigger.
+    const results = await Promise.all(
+      rows.map(({ id, ...rest }) =>
+        shortcutTable(supabase).update(rest).eq("id", id).select().single(),
+      ),
+    );
+    const firstError = results.find((r) => r.error)?.error;
+    if (firstError) throw pgErrorToError(firstError);
+    saved = results
+      .map((r) => r.data)
+      .filter((d): d is NonNullable<typeof d> => Boolean(d))
+      .map(dbRowToAgentShortcut);
+  } else {
+    const { data, error } = await shortcutTable(supabase)
+      .upsert(rows, { onConflict: "id" })
+      .select();
+    if (error) throw pgErrorToError(error);
+    saved = (data ?? []).map(dbRowToAgentShortcut);
+  }
   if (saved.length > 0) dispatch(upsertShortcuts(saved));
   return saved;
 });

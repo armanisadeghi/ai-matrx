@@ -123,6 +123,58 @@ describe("WindowPanel minimize boundary", () => {
     expect(entry.preMinimizedRect).not.toBeNull();
   });
 
+  it("restores on double-click anywhere on the minimized card", async () => {
+    const store = configureStore({
+      reducer: {
+        overlays: overlayReducer,
+        windowManager: windowManagerReducer,
+        adminDebug: adminDebugReducer,
+        urlSync: urlSyncReducer,
+      },
+    });
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <WindowPanel
+            id="dblclick-restore-window"
+            title="Double click me"
+            onClose={() => undefined}
+          >
+            body
+          </WindowPanel>
+        </Provider>,
+      );
+      await Promise.resolve();
+    });
+
+    const minimize = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Minimize"]',
+    );
+    await act(async () => {
+      minimize?.click();
+      await Promise.resolve();
+    });
+    expect(
+      store.getState().windowManager.windows["dblclick-restore-window"].state,
+    ).toBe("minimized");
+
+    const minimizedHeader = document.querySelector<HTMLElement>(
+      '[data-window-panel-state="minimized"]',
+    );
+    expect(minimizedHeader).not.toBeNull();
+    await act(async () => {
+      minimizedHeader?.dispatchEvent(
+        new MouseEvent("dblclick", { bubbles: true }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(
+      store.getState().windowManager.windows["dblclick-restore-window"].state,
+    ).toBe("windowed");
+  });
+
   it("retains a stateful body across minimize and restore when opted in", async () => {
     const store = configureStore({
       reducer: {

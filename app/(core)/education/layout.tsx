@@ -41,7 +41,7 @@ export default function EducationLayout({
           header. Education uses a shared static route header, so every screen
           must begin below it; owning that clearance here keeps all present and
           future education routes aligned without per-page offsets. */}
-      <div className="box-border h-full min-h-0 pt-[var(--shell-header-h)]">
+      <div className="education-scroll-boundary scroll-page-end-space box-border h-full min-h-0 pt-[var(--shell-header-h)]">
         {children}
       </div>
       <ScrollAssistantLauncher inputVariant="text-voice" />

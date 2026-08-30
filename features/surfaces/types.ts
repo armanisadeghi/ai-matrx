@@ -534,7 +534,7 @@ export type ValueMappingType =
  * - `unmapped`      — explicit suppression of auto-name-match for this key.
  * - `offered_value` — the NEUTRAL consume-one-offered-value type used by the
  *   Mandate consumption map (`agent.mandate_binding.consumption_map` — see
- *   `features/agents/mandates/provisions.ts`). Not a surface-binding map type:
+ *   `features/mandates/provisions.ts`). Not a surface-binding map type:
  *   the surface resolver refuses it loudly. Legacy persisted `code_value`
  *   entries normalize to this shape on read (ONE funnel, no second parser).
  */
@@ -582,6 +582,31 @@ export type ValueMapping =
 
 /** Keys are agent variable / context-policy names, or tool arg names. */
 export type ValueMappingMap = Record<string, ValueMapping>;
+
+/**
+ * The typed `surface_binding` edge payload — the JSONB body of an
+ * agent → surface edge in `platform.associations`, schema-validated by the DB
+ * trigger against `platform.edge_payload_kind` (currently v3).
+ *
+ * Snake_case because this IS the stored shape; the TS-facing camelCase view is
+ * `AgentSurfaceBinding` in bind-agent-to-surface.service.ts.
+ */
+export interface SurfaceBindingPayload {
+  value_mappings: ValueMappingMap;
+  /** v2 — per-write-target applyPolicy overrides. */
+  write_policies?: WritePolicyMap;
+  /**
+   * v3 — THE AUTO-RUN INVERSION (THE-MODEL law 7): when true, triggering this
+   * binding on its surface sends the run immediately instead of stopping at
+   * the input panel. Absent/false = today's behavior (the panel opens and
+   * waits for Run), which is why every pre-v3 binding is unaffected.
+   *
+   * Intent, never a bypass: the launcher refuses to honor `true` when the
+   * mapping did not resolve every required variable for the live page — see
+   * `features/surfaces/utils/binding-auto-run.ts`.
+   */
+  auto_run?: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // Drift report — produced by the manifest sync service.

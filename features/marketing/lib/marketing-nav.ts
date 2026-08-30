@@ -1,12 +1,14 @@
 /**
- * The Marketing hub's structure, declared ONCE.
+ * The Marketing hub's AGENCY-PLANE structure, declared ONCE.
  *
- * Marketing is a multi-pillar feature: brands/websites are only one of them.
- * Content planning, keyword & search intelligence, the public tool suite, and
- * operations are peers — not sub-features of "sites". Anything that renders a
- * map of Marketing (the `/marketing` hub, `/marketing/tools`, the shell nav)
- * reads this file so a new surface can never be added to one menu and missed
- * by the others.
+ * The user is an agency; a brand is one of their clients (2026-08-28
+ * agency-model restructure — docs/handoffs/marketing-agency-restructure.md).
+ * These pillars are ONLY what concerns no single client: the roster,
+ * cross-client roll-ups, operations, and generic tools. Everything else lives
+ * in the client workspace (`/marketing/[brandId]/…`, declared in
+ * `lib/brand-sections.ts`). Anything that renders a map of Marketing (the
+ * `/marketing` hub, `/marketing/tools`, the shell nav) reads this file so a
+ * new surface can never be added to one menu and missed by the others.
  *
  * Consumed by:
  *   • app/(core)/marketing/page.tsx        — the hub landing
@@ -342,294 +344,61 @@ export const MARKETING_PUBLIC_TOOLS: readonly MarketingNavEntry[] =
 
 export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
   {
-    key: "brands",
-    label: "Brands & Websites",
+    key: "clients",
+    label: "Clients & Brands",
     description:
-      "The properties you market — brand identity, sites, canonical pages, crawls, and audits.",
+      "Every client you manage. Open a brand for its whole workspace — identity, websites, socials, locations, SEO, content, email, PR, ads, intelligence, and planning.",
     iconName: "Landmark",
     landingItems: [
-      "Brand cockpit + assets",
-      "Crawls + canonical pages",
-      "Audit + coverage",
-      "Links + backlinks",
+      "One workspace per client brand",
+      "Identity: assets, guides, offerings",
+      "Websites, socials, and locations",
+      "SEO, content, email, PR, and ads",
     ],
+    landingHref: "/marketing/brands",
     entries: [
       {
         label: "Brands",
         href: marketingRoutes.brands(),
         description:
-          "Brand identity, properties, assets, and durable business facts.",
+          "The client roster. Everything about one client lives inside its brand.",
         iconName: "Landmark",
       },
-      {
-        label: "Websites",
-        href: marketingRoutes.sites(),
-        description:
-          "Every site across brands — canonical pages, crawls, findings, and audits.",
-        iconName: "Globe",
-      },
-      {
-        label: "Local & Listings",
-        href: marketingRoutes.local(),
-        description:
-          "Google Business Profiles, directory listings, reviews, and map-pack rank.",
-        iconName: "MapPin",
-      },
     ],
   },
   {
-    key: "planning",
-    label: "Strategy & Planning",
+    key: "reports",
+    label: "Reports & Roll-ups",
     description:
-      "What you intend to publish and promote — plans, initiatives, calendar, and who it is for.",
-    iconName: "ListTree",
+      "Cross-client measurement — the numbers that span every brand you manage.",
+    iconName: "FileBarChart",
     landingItems: [
-      "Content plan tree",
-      "Briefs + keywords",
-      "Initiatives + calendar",
-      "Audience + personas",
-    ],
-    entries: [
-      {
-        label: "Content Plan",
-        href: marketingRoutes.contentPlan(),
-        description:
-          "Plan every URL a site should have — pillars, clusters, briefs, owners.",
-        iconName: "ListTree",
-      },
-      {
-        label: "Initiatives",
-        href: marketingRoutes.initiatives(),
-        description:
-          "The container above channels — goal, budget, timeline, assets, and shared attribution.",
-        iconName: "Target",
-      },
-      {
-        label: "Calendar",
-        href: marketingRoutes.calendar(),
-        description:
-          "One publishing timeline across content, social, email, and paid.",
-        iconName: "CalendarDays",
-        status: "coming-soon",
-        comingSoonId: "marketing.calendar",
-      },
-      {
-        label: "Audience & Personas",
-        href: marketingRoutes.audience(),
-        description:
-          "Segments, ICPs, and personas that every brief, campaign, and agent reads from.",
-        iconName: "Users",
-        status: "coming-soon",
-        comingSoonId: "marketing.audience",
-      },
-    ],
-  },
-  {
-    key: "search",
-    label: "Discovery, Search & Visibility",
-    description:
-      "Find expert source material, understand how the market searches, and track where you appear.",
-    iconName: "Search",
-    landingItems: [
-      "SEO capability catalogue",
-      "Search Console dashboard",
-      "Keyword research",
-      "Cross-site rank tracking",
-    ],
-    entries: [
-      {
-        label: "Keyword Intelligence",
-        iconName: "Brain",
-        href: "/marketing/keyword-intelligence",
-        description:
-          "The front door: every screen that gives your keywords meaning, for every website you run.",
-      },
-      {
-        label: "SEO Capabilities",
-        href: marketingRoutes.capabilities(),
-        description:
-          "Browse the shared measurement catalogue and open each capability's evidence for a managed website.",
-        iconName: "Wrench",
-      },
-      {
-        label: "Keyword Research",
-        href: marketingRoutes.keywordResearch(),
-        description:
-          "Map keyword relationships with AI research and live market volume data.",
-        iconName: "Search",
-      },
-      {
-        label: "YouTube Discovery",
-        href: marketingRoutes.youtubeDiscovery(),
-        description:
-          "Find videos and compare creator authority, engagement, and research value.",
-        iconName: "Video",
-      },
-      {
-        label: "Search Console",
-        href: marketingRoutes.searchConsole(),
-        description:
-          "The full Search Console dataset — queries, pages, countries, devices — with drill-downs, comparisons, and 16 months of history.",
-        iconName: "SearchCheck",
-      },
-      {
-        label: "Rank Tracking",
-        href: marketingRoutes.ranks(),
-        description:
-          "Every tracked keyword across every brand and site — position, movement, and freshness in one view.",
-        iconName: "TrendingUp",
-      },
-    ],
-  },
-  {
-    key: "channels",
-    label: "Content & Channels",
-    description:
-      "Where the work actually ships — drafts, social, email, paid, and outreach.",
-    iconName: "Megaphone",
-    landingItems: [
-      "Content studio",
-      "Social publishing",
-      "Email marketing",
-      "Backlink valuation + outreach",
-    ],
-    entries: [
-      {
-        label: "Content Studio",
-        href: marketingRoutes.contentStudio(),
-        description:
-          "Brief to draft to review to published — the production lane between Content Plan and the CMS.",
-        iconName: "PenLine",
-        status: "coming-soon",
-        comingSoonId: "marketing.content-studio",
-      },
-      {
-        label: "Social",
-        href: marketingRoutes.social(),
-        description:
-          "Connected accounts, scheduled posts, and one engagement inbox across networks.",
-        iconName: "Share2",
-        status: "coming-soon",
-        comingSoonId: "marketing.social",
-      },
-      {
-        label: "Email",
-        href: marketingRoutes.email(),
-        description:
-          "The mailbox you send from, the templates you send, and the sequences that send them.",
-        iconName: "Mail",
-      },
-      {
-        label: "Paid Ads",
-        href: marketingRoutes.ads(),
-        description:
-          "Google, Meta, and LinkedIn spend with creative, keyword, and ROAS rollups.",
-        iconName: "BadgeDollarSign",
-        status: "coming-soon",
-        comingSoonId: "marketing.ads",
-      },
-      {
-        label: "Backlink Valuation",
-        href: marketingRoutes.backlinkValuation(),
-        description:
-          "Score a candidate backlink on quality, relevance and placement, and price what it is worth paying.",
-        iconName: "Link2",
-      },
-      {
-        label: "Outreach",
-        href: marketingRoutes.outreach(),
-        description:
-          "Link and PR prospecting, sequenced contact, and earned-placement tracking.",
-        iconName: "Send",
-      },
-    ],
-  },
-  {
-    key: "press",
-    label: "Press & PR",
-    description:
-      "Find what is newsworthy about you, pitch the right journalist, and prove the coverage landed.",
-    iconName: "Newspaper",
-    landingItems: [
-      "Story angles worth pitching",
-      "Live journalist source requests",
-      "Media lists and journalist intelligence",
-      "Coverage won, tied to the angle",
-    ],
-    entries: [
-      {
-        label: "Press Room",
-        href: marketingRoutes.press(),
-        description:
-          "The Story Engine: what is genuinely newsworthy about this business, ranked, with the proof a newsroom would ask for — plus live journalist requests on deadline.",
-        iconName: "Newspaper",
-      },
-      {
-        label: "Media Lists",
-        href: "/crm/outreach-lists",
-        description:
-          "Journalist and outlet lists with beat, activity and role-change intelligence. Lives in the CRM because a journalist is a person, not a copy of one.",
-        iconName: "Users",
-      },
-    ],
-  },
-  {
-    key: "intelligence",
-    label: "Market Intelligence",
-    description:
-      "Who else is winning the space, and what is being said about you.",
-    iconName: "Radar",
-    landingItems: [
-      "Competitor tracking",
-      "Share of voice",
-      "Content + keyword gaps",
-      "Brand monitoring",
-    ],
-    entries: [
-      {
-        label: "Competitors",
-        href: marketingRoutes.competitors(),
-        description:
-          "Tracked rivals, share of voice, keyword and content gaps, and their movement.",
-        iconName: "Swords",
-      },
-      {
-        label: "Monitoring",
-        href: marketingRoutes.monitoring(),
-        description:
-          "Who wrote about you, what happened to your links, and whether the answer engines cite you.",
-        iconName: "Radar",
-      },
-    ],
-  },
-  {
-    key: "measurement",
-    label: "Measurement",
-    description:
-      "What it did and what it cost — traffic, conversion, attribution, and client-ready reporting.",
-    iconName: "ChartNoAxesColumn",
-    landingItems: [
-      "Cost attribution",
-      "Cross-channel analytics",
       "Client-ready reports",
-      "Provider spend ceilings",
+      "Cross-client rank roll-up",
+      "Provider cost against ceilings",
+      "Cross-channel analytics",
     ],
     entries: [
-      {
-        label: "Analytics",
-        href: marketingRoutes.analytics(),
-        description:
-          "Cross-channel traffic, conversion, and attribution over connected data sources.",
-        iconName: "ChartNoAxesColumn",
-        status: "coming-soon",
-        comingSoonId: "marketing.analytics",
-      },
       {
         label: "Reports",
         href: marketingRoutes.reports(),
         description:
           "Scheduled, branded, client-ready reports assembled from live marketing data.",
         iconName: "FileBarChart",
+      },
+      {
+        label: "Rank Roll-up",
+        href: marketingRoutes.ranksRollup(),
+        description:
+          "Every tracked keyword across every brand and site — position, movement, freshness.",
+        iconName: "TrendingUp",
+      },
+      {
+        label: "Search Console",
+        href: marketingRoutes.searchConsoleRollup(),
+        description:
+          "The full Search Console dataset across every client — pick a property and drill in.",
+        iconName: "SearchCheck",
       },
       {
         label: "Cost",
@@ -641,45 +410,21 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     ],
   },
   {
-    key: "tools",
-    label: "SEO Tools",
-    description:
-      "Focused analyzers that work on any URL — no site setup required.",
-    iconName: "Wrench",
-    landingItems: [
-      "Meta title + description",
-      "Page audit",
-      "Social preview",
-      "Structured data + robots",
-    ],
-    entries: [
-      {
-        label: "All SEO Tools",
-        href: marketingRoutes.tools(),
-        description: "The full analyzer suite in one index.",
-        iconName: "Wrench",
-      },
-      ...MARKETING_PUBLIC_TOOLS.slice(0, 3).map((tool) => ({
-        ...tool,
-        navHidden: true,
-      })),
-    ],
-  },
-  {
     key: "operations",
-    label: "Data & Operations",
-    description: "The plumbing — provider connections and automation.",
+    label: "Operations",
+    description:
+      "The agency's machinery — provider connections, automation engines, approvals, and data quality.",
     iconName: "Plug",
     landingItems: [
       GOOGLE_SEARCH_CONSOLE_PROVIDER.label,
       "GA4 + PageSpeed",
       BING_PROVIDER.label,
-      "DataForSEO",
+      "Automation run consoles",
     ],
     landingStatus: "Bring your own",
     entries: [
       {
-        label: "Data Connections",
+        label: "Connections",
         href: marketingRoutes.connections(),
         description:
           "Connect Google, Bing, and other providers, then bind them to sites.",
@@ -692,6 +437,59 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
           "Drive the coverage engines by hand and author the schedule for the brands your organization controls.",
         iconName: "Workflow",
       },
+      {
+        label: "Approvals",
+        href: marketingRoutes.approvals(),
+        description:
+          "Every pending AI proposal across your clients, in one review queue.",
+        iconName: "BadgeCheck",
+      },
+      {
+        label: "SEO Capabilities",
+        href: marketingRoutes.capabilitiesCatalog(),
+        description:
+          "The shared measurement catalogue — what's on for each website, with evidence.",
+        iconName: "ClipboardCheck",
+      },
+      {
+        label: "Data Quality",
+        href: marketingRoutes.dataQuality(),
+        description:
+          "Controls for the keyword classifier and topic assigner.",
+        iconName: "Wrench",
+      },
+    ],
+  },
+  {
+    key: "tools",
+    label: "SEO Tools & Research",
+    description:
+      "Focused analyzers and research that work on any URL — no client setup required.",
+    iconName: "Wrench",
+    landingItems: [
+      "Meta title + description",
+      "Page audit",
+      "Social preview",
+      "YouTube research",
+    ],
+    entries: [
+      {
+        label: "All SEO Tools",
+        href: marketingRoutes.tools(),
+        description: "The full analyzer suite in one index.",
+        iconName: "Wrench",
+      },
+      {
+        label: "YouTube Research",
+        href: marketingRoutes.youtubeDiscovery(),
+        description:
+          "Find videos and compare creator authority, engagement, and research value.",
+        iconName: "Video",
+      },
+      ...MARKETING_PUBLIC_TOOLS.slice(0, 3).map((tool) => ({
+        ...tool,
+        navHidden: true,
+      })),
     ],
   },
 ];

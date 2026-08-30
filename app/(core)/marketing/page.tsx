@@ -8,7 +8,7 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MarketingHub } from "@/features/marketing/components/MarketingHub";
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 export default function MarketingPage() {
   return (

@@ -313,7 +313,7 @@ const AgentSettingsWindow = lazyOverlay(
   { ssr: false },
 );
 const MandateWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/MandateWindow"),
+  () => import("@/features/window-panels/windows/mandates/MandateWindow"),
   { ssr: false },
 );
 const AgentSidebarOverlay = lazyOverlay(

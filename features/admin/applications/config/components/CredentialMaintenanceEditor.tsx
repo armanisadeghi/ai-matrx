@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   CREDENTIAL_ID_REGEX,
   getCredentialExpiryStatus,
@@ -22,6 +21,7 @@ import {
   type CredentialMaintenanceEntry,
 } from "@/features/admin/applications/config/credential-maintenance";
 import { formatText } from "@ai-matrx/kit/text-case";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CredentialMaintenanceEditorProps {
   entries: Record<string, CredentialMaintenanceEntry>;
@@ -353,7 +353,7 @@ export function CredentialMaintenanceEditor({
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label htmlFor={`${id}-notes`}>Rotation notes</Label>
-                <Textarea
+                <ProTextarea
                   id={`${id}-notes`}
                   value={entry.notes ?? ""}
                   onChange={(event) =>

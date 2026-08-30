@@ -10,6 +10,7 @@ import { ErrorInspectorMenuItem } from "./ErrorInspectorMenuItem";
 import { NotificationsMenuItem } from "./NotificationsMenuItem";
 import { MessagesMenuItem } from "./MessagesMenuItem";
 import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
+import { CopyShortLinkMenuItem } from "./CopyShortLinkMenuItem";
 import { SignOutMenuItem } from "./SignOutMenuItem";
 import { UserProfileHeader } from "./UserProfileHeader";
 import UserMenuOrgSection from "./UserMenuOrgSection";
@@ -90,6 +91,7 @@ export default function UserMenuPanel({
 
       {divider}
 
+      <CopyShortLinkMenuItem />
       <ThemeToggleMenuItem />
       {SETTINGS_ITEMS.map((item) => (
         <OverlayMenuItem key={item.overlayId} {...item} />

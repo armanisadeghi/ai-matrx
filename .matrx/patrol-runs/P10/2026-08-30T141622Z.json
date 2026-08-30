@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-30T141622Z",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:16:31.422Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:16:31.422Z",
+      "actor": "/root",
+      "summary": "P10 schema-backed eradication tranche: five agent-definition JSON reads and snapshot RPC boundary.",
+      "evidence": [
+        "canonical-checkout:/Users/armanisadeghi/code/matrx-frontend",
+        "baseline-type-check:PASS",
+        "baseline-converter-hatches:5-as-unknown-as",
+        "baseline-working-tree:clean"
+      ],
+      "previousEventHash": null,
+      "eventHash": "b0109a9c51c4b2a12f2e5d4d7e8e1c051a9cb77e98eb04449785380b68440826"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:16:32.062Z",
+      "actor": "/root",
+      "summary": "Claimed disjoint parser modules and upstream snapshot boundary for parallel implementation.",
+      "evidence": [
+        "messages+variables parser unit",
+        "settings+context-policies parser unit",
+        "output-schema+snapshot-RPC unit"
+      ],
+      "previousEventHash": "b0109a9c51c4b2a12f2e5d4d7e8e1c051a9cb77e98eb04449785380b68440826",
+      "eventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:28:47.668Z",
+      "actor": "/root",
+      "summary": "Candidate reached origin/main through shared-checkout integration before independent certification could start.",
+      "evidence": [
+        "candidate:d28f75c13e",
+        "origin/main-ancestor:yes"
+      ],
+      "blocker": {
+        "prerequisite": "Independent exact-candidate certification and escaped-delivery reconciliation"
+      },
+      "previousEventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41",
+      "eventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:29:06.539Z",
+      "actor": "/root",
+      "summary": "Recorded schema-ingress candidate d28f75c13e as escaped delivery pending independent certification.",
+      "evidence": [
+        "candidate is ancestor of origin/main",
+        "focused-tests:58-pass",
+        "scoped-hatches:zero"
+      ],
+      "escape": {
+        "candidateSha": "d28f75c13e",
+        "integratedSha": "d28f75c13e",
+        "release": "integration-only; release not requested",
+        "reason": "The canonical shared-checkout integrator committed and pushed the repair while the fixing wave was still assembling; no prior CERTIFIED event or delivery queue existed."
+      },
+      "previousEventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2",
+      "eventHash": "d0a34234701830e99759e5fab7b3f5dca250668fd1480d65a4f512f68522c40f"
+    },
+    {
+      "sequence": 5,
+      "state": "certifying",
+      "at": "2026-08-30T14:29:22.802Z",
+      "actor": "/root",
+      "summary": "Frozen exact integrated candidate d28f75c13e for independent adversarial certification.",
+      "evidence": [
+        "base:857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+        "candidate:d28f75c13e",
+        "owned-batch:11-product-doc-test-files"
+      ],
+      "previousEventHash": "d0a34234701830e99759e5fab7b3f5dca250668fd1480d65a4f512f68522c40f",
+      "eventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4"
+    },
+    {
+      "sequence": 6,
+      "state": "rejected",
+      "at": "2026-08-30T14:34:16.224Z",
+      "actor": "/root/p10_certifier",
+      "summary": "REJECTED: exact candidate d28f75c13e rejected historical null input_kind rows.",
+      "evidence": [
+        "candidate-caused runtime TypeError for input_kind:null",
+        "focused tests lacked historical nullable row"
+      ],
+      "previousEventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4",
+      "eventHash": "1c3b9b50a099a4c2e56862aefcadfeedcfc7628915f7e79fd51bebcf2b8b1d5a"
+    },
+    {
+      "sequence": 7,
+      "state": "fixing",
+      "at": "2026-08-30T14:34:17.279Z",
+      "actor": "/root",
+      "summary": "Repairing the rejected nullable input_kind runtime contract and adding regression coverage.",
+      "evidence": [
+        "input_kind:string|null runtime schema",
+        "historical-null regression test"
+      ],
+      "previousEventHash": "1c3b9b50a099a4c2e56862aefcadfeedcfc7628915f7e79fd51bebcf2b8b1d5a",
+      "eventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4"
+    },
+    {
+      "sequence": 8,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:35:36.132Z",
+      "actor": "/root",
+      "summary": "Corrected candidate 248f777479 reached origin/main before recertification through the canonical shared checkout.",
+      "evidence": [
+        "candidate:248f7774798ced21810e14770d447eb586218554",
+        "origin/main-ancestor:yes"
+      ],
+      "blocker": {
+        "prerequisite": "Independent exact-candidate recertification and reconciliation"
+      },
+      "previousEventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4",
+      "eventHash": "6a305d47a9c11d7cd133efa7e7e42c96defa9c0464bf28830dc0944043a0cb22"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T14:35:42.287Z",
+      "actor": "/root",
+      "summary": "Frozen corrected exact candidate 248f777479 for independent adversarial recertification.",
+      "evidence": [
+        "prior rejection repaired",
+        "candidate:248f7774798ced21810e14770d447eb586218554"
+      ],
+      "previousEventHash": "6a305d47a9c11d7cd133efa7e7e42c96defa9c0464bf28830dc0944043a0cb22",
+      "eventHash": "03362ee5812f9f44956336c62e89c82970a7bc259a9577e36d4827e6ff4387e9"
+    },
+    {
+      "sequence": 10,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:37:56.345Z",
+      "actor": "/root",
+      "summary": "Authority retry machinery repaired; freezing replacement candidate dd870bc58d that contains product and lifecycle fixes.",
+      "evidence": [
+        "candidate:dd870bc58d71e02d1781e8c6ee53216a03f3d69b",
+        "authority-retry-tests:2-pass"
+      ],
+      "blocker": {
+        "prerequisite": "Record escaped replacement candidate and independently recertify"
+      },
+      "previousEventHash": "03362ee5812f9f44956336c62e89c82970a7bc259a9577e36d4827e6ff4387e9",
+      "eventHash": "5860af1dfd062bb2aa311a484833a835909250aa86c438c3a5c0ccc3889e785c"
+    },
+    {
+      "sequence": 11,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:37:56.966Z",
+      "actor": "/root",
+      "summary": "Recorded replacement candidate dd870bc58d as escaped delivery with immutable prior history preserved.",
+      "evidence": [
+        "historical input_kind:null regression test passes",
+        "focused-product-tests:59-pass",
+        "authority-retry-tests:2-pass",
+        "full-type-check:PASS"
+      ],
+      "escape": {
+        "candidateSha": "dd870bc58d71e02d1781e8c6ee53216a03f3d69b",
+        "integratedSha": "dd870bc58d71e02d1781e8c6ee53216a03f3d69b",
+        "release": "integration-only; release not requested",
+        "reason": "The corrected product candidate and required authority retry machinery were already on origin/main before recertification; the prior rejected candidate authority is retained as first-parent history and this replacement as merge ancestry."
+      },
+      "previousEventHash": "5860af1dfd062bb2aa311a484833a835909250aa86c438c3a5c0ccc3889e785c",
+      "eventHash": "c888dbe76416d57e0e2ede1966d1670ccabcfa7103ccc9e0559a36064d507b7d"
+    },
+    {
+      "sequence": 12,
+      "state": "certifying",
+      "at": "2026-08-30T14:38:03.813Z",
+      "actor": "/root",
+      "summary": "Frozen replacement candidate dd870bc58d for independent adversarial recertification.",
+      "evidence": [
+        "prior concrete rejection repaired",
+        "authority branch preserves old and replacement candidates"
+      ],
+      "previousEventHash": "c888dbe76416d57e0e2ede1966d1670ccabcfa7103ccc9e0559a36064d507b7d",
+      "eventHash": "9297ed6358c865e8f3dbde0dcdd254e603a8e74171127a885e34a64ee30d0d64"
+    },
+    {
+      "sequence": 13,
+      "state": "rejected",
+      "at": "2026-08-30T14:45:49.244Z",
+      "actor": "/root/p10_certifier",
+      "summary": "REJECTED: candidate dd870bc58d preserved corrected ancestry but published the stale prior authority tree.",
+      "evidence": [
+        "authority tree restored rejected product bytes",
+        "empty-commit test failed to exercise product-tree preservation"
+      ],
+      "previousEventHash": "9297ed6358c865e8f3dbde0dcdd254e603a8e74171127a885e34a64ee30d0d64",
+      "eventHash": "652a4f8b3a0cbaee58a20a44c8feba6dc022c236a0c479b97e3f9aec010347b6"
+    },
+    {
+      "sequence": 14,
+      "state": "fixing",
+      "at": "2026-08-30T14:45:50.413Z",
+      "actor": "/root",
+      "summary": "Corrected authority publication to build from candidate bytes and added a non-empty product-fixture assertion.",
+      "evidence": [
+        "git-authority read-tree:candidateSha",
+        "corrected product fixture survives authority publication"
+      ],
+      "previousEventHash": "652a4f8b3a0cbaee58a20a44c8feba6dc022c236a0c479b97e3f9aec010347b6",
+      "eventHash": "a483be97c2903414d880ad35ba112d500976252b10fa845b0fe0e172d386dd6b"
+    },
+    {
+      "sequence": 15,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:45:51.787Z",
+      "actor": "/root",
+      "summary": "Replacement candidate d3a4cd79b6 is integrated; recording escaped delivery before recertification.",
+      "evidence": [
+        "candidate:d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "origin/main-ancestor:yes"
+      ],
+      "blocker": {
+        "prerequisite": "Exact-candidate recertification"
+      },
+      "previousEventHash": "a483be97c2903414d880ad35ba112d500976252b10fa845b0fe0e172d386dd6b",
+      "eventHash": "71dee340a49f12f3cfec698a97e3a0362e9c3469f71e13e3506c4bc05aade7d0"
+    },
+    {
+      "sequence": 16,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:45:53.380Z",
+      "actor": "/root",
+      "summary": "Recorded replacement candidate d3a4cd79b6 with corrected candidate-tree authority preservation.",
+      "evidence": [
+        "focused-tests:61-pass",
+        "full-type-check:PASS",
+        "P10-record:hash-valid-marker-free"
+      ],
+      "escape": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "integratedSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "release": "integration-only; release not requested",
+        "reason": "The corrected product and candidate-tree authority machinery entered origin/main before exact recertification; prior rejected authority history remains immutable while the authority tree now derives from this replacement candidate."
+      },
+      "previousEventHash": "71dee340a49f12f3cfec698a97e3a0362e9c3469f71e13e3506c4bc05aade7d0",
+      "eventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae"
+    },
+    {
+      "sequence": 17,
+      "state": "certifying",
+      "at": "2026-08-30T14:46:01.188Z",
+      "actor": "/root",
+      "summary": "Frozen replacement candidate d3a4cd79b6 for independent adversarial recertification.",
+      "evidence": [
+        "prior product and authority defects repaired",
+        "authority branch exact candidate tree plus P10 projections"
+      ],
+      "previousEventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae",
+      "eventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503"
+    },
+    {
+      "sequence": 18,
+      "state": "certified",
+      "at": "2026-08-30T14:48:32.282Z",
+      "actor": "/root/p10_certifier",
+      "summary": "CERTIFIED: schema-backed agent JSON ingress and corrected candidate-tree authority publication.",
+      "evidence": [
+        "candidate:d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "certifier:/root/p10_certifier"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "certifierTaskId": "/root/p10_certifier",
+        "checks": [
+          "61 focused tests passed",
+          "full pnpm type-check passed",
+          "scoped ESLint 0 errors; 4 unchanged warnings",
+          "five JSON assertions and three snapshot-row assertions removed with no new hatches",
+          "authority tree parity outside the two P10 projections"
+        ]
+      },
+      "previousEventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503",
+      "eventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352"
+    },
+    {
+      "sequence": 19,
+      "state": "delivered",
+      "at": "2026-08-30T14:48:39.891Z",
+      "actor": "/root",
+      "summary": "Certified candidate is already integrated on origin/main; recorded delivery without invoking the release lane.",
+      "evidence": [
+        "candidate is ancestor of origin/main",
+        "authority preserves exact candidate tree"
+      ],
+      "delivery": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-30T141622Z",
+        "integratedSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "release": "integration-only; release not requested"
+      },
+      "previousEventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352",
+      "eventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3"
+    },
+    {
+      "sequence": 20,
+      "state": "closed",
+      "at": "2026-08-30T14:48:48.931Z",
+      "actor": "/root",
+      "summary": "Closed the certified schema-backed tranche after delivery bookkeeping.",
+      "evidence": [
+        "ready schema-backed agent-definition queue exhausted",
+        "repository-wide P10 ratchet remains open"
+      ],
+      "previousEventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3",
+      "eventHash": "d88a3b97efb1c705003cdf17b3a3148cb586dccbaa992b2588c3ddf329c9414a"
+    },
+    {
+      "sequence": 21,
+      "state": "reconciled",
+      "at": "2026-08-30T14:48:50.322Z",
+      "actor": "/root",
+      "summary": "Reconciled escaped delivery after later exact-candidate certification and delivery proof.",
+      "evidence": [
+        "CERTIFIED:/root/p10_certifier",
+        "focused-tests:61-pass",
+        "full-type-check:PASS"
+      ],
+      "reconciliation": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "escapedEventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae",
+        "checks": [
+          "candidate d3a4cd79b6 is an ancestor of origin/main",
+          "authority tree matches candidate outside P10 record projections",
+          "P10 record and latest pointer are hash-valid and marker-free"
+        ]
+      },
+      "previousEventHash": "d88a3b97efb1c705003cdf17b3a3148cb586dccbaa992b2588c3ddf329c9414a",
+      "eventHash": "912aa986dbd2d45f169f6525c99636ea3fdc48297e6e5d73cb3db87193daae70"
+    }
+  ]
+}

@@ -8,9 +8,9 @@
 // the WHOLE result set — never a re-sort of the loaded page.
 //
 // Three behaviours worth stating plainly:
-//   * EVERY column sorts and filters (app policy). The controlled
-//     `columnFilters` state maps 1:1 onto `<feature>_list_scoped(p_filters)`,
-//     and finite-valued columns get real options with counts from the facets.
+//   * Every DECLARED capability is server-owned. Sort/filter controls map 1:1
+//     onto `<feature>_list_scoped(p_filters)`; an explicit `false` stays false
+//     when a source cannot truthfully serve that capability.
 //   * The WHOLE ROW fires the surface's onOpenRow. The kebab carries the full
 //     ItemMenu — the ONE action list.
 //   * Declared-editable columns edit in place; edits stay local until the
@@ -26,6 +26,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
+import { entityColumnSortable } from "../columns";
 import { entityListDoorColumnId, entityListRowHref } from "../doors";
 import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
 
@@ -165,8 +166,10 @@ export function EntityListTable<TRow>({
           (spec.id === doorColumn
             ? (row: TRow) => entityListRowHref(config, row)
             : undefined),
-        // Every column sorts — the RPC's ORDER BY whitelist covers all of them.
-        sortable: true,
+        // Default to the canonical sortable-column policy, but preserve an
+        // explicit false. Inventing a client control when the server has no
+        // matching ORDER BY branch silently sorts by its fallback instead.
+        sortable: entityColumnSortable(spec),
         // Finite value sets get real options WITH counts, so the user picks
         // from what exists instead of guessing at a text box. Columns that
         // declare their own fixed options (the date buckets) keep them.

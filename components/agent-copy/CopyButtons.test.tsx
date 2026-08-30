@@ -2,24 +2,29 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { copyActionCellClass } from "@/components/agent-copy/CopyActionGroup";
 
 jest.mock("@/components/agent-copy/AiCopyMenu", () => ({
   AiCopyMenu: ({
     variants,
     size,
     groomer,
+    exportConfig,
+    appearance,
   }: {
     variants: Array<{ id: string; label: string; build: () => unknown }>;
     size: "xs" | "icon" | "sm";
     groomer?: () => unknown;
+    exportConfig?: { items: Array<{ id: string; label: string }> };
+    appearance?: string;
   }) => (
     <div
       data-testid="ai-menu"
       data-size={size}
       data-has-groomer={String(groomer !== undefined)}
+      data-export-count={String(exportConfig?.items.length ?? 0)}
+      data-appearance={appearance}
     >
-      <button type="button" aria-label="Mock Copy for AI menu" />
+      <button type="button" aria-label="Mock Copy-for-AI menu" />
       <ol data-testid="ai-variants">
         {variants.map((variant) => (
           <li key={variant.id}>{variant.label}</li>
@@ -30,6 +35,11 @@ jest.mock("@/components/agent-copy/AiCopyMenu", () => ({
           variants.find((variant) => variant.id === "json")?.build() ?? "",
         )}
       </output>
+      <ol data-testid="export-items">
+        {exportConfig?.items.map((item) => (
+          <li key={item.id}>{item.label}</li>
+        ))}
+      </ol>
     </div>
   ),
 }));
@@ -79,7 +89,7 @@ describe("CopyButtons AI variants", () => {
     ).toEqual(["Errors", "Errors with prompt"]);
   });
 
-  it("renders exactly two icon-only top-level controls at header size", () => {
+  it("renders the canonical two icon-only controls at header size", () => {
     act(() => {
       root.render(
         <CopyButtons
@@ -93,14 +103,17 @@ describe("CopyButtons AI variants", () => {
 
     const buttons = [...container.querySelectorAll("button")];
     expect(buttons).toHaveLength(2);
-    expect(buttons.map((button) => button.textContent)).toEqual(["", ""]);
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
-      "Copy Plan tree (human-readable)",
-      "Copy Plan tree for AI agent",
-    ]);
+    expect(buttons.every((button) => button.textContent === "")).toBe(true);
+    expect(buttons[0]?.getAttribute("aria-label")).toBe("Copy Plan tree");
+    expect(buttons[1]?.getAttribute("aria-label")).toBe("Mock Copy-for-AI menu");
+    expect(
+      [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
+        (item) => item.textContent,
+      ),
+    ).toEqual(["Copy for AI"]);
   });
 
-  it("moves pretty-printed JSON into the AI dropdown without adding a third control", () => {
+  it("keeps Copy JSON and Copy for AI behind the second control", () => {
     act(() => {
       root.render(
         <CopyButtons
@@ -123,13 +136,13 @@ describe("CopyButtons AI variants", () => {
       [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
         (item) => item.textContent,
       ),
-    ).toEqual(["JSON", "Everything"]);
+    ).toEqual(["Copy JSON", "Copy for AI"]);
     expect(
       container.querySelector("[data-testid='json-payload']")?.textContent,
     ).toBe('{\n  "node": "pillar",\n  "depth": 1\n}');
   });
 
-  it("renders Copy, Copy-for-AI, and Export as one even-width group", () => {
+  it("folds Copy-for-AI variants and Export into the second menu", () => {
     act(() => {
       root.render(
         <CopyButtons
@@ -156,31 +169,20 @@ describe("CopyButtons AI variants", () => {
     });
 
     expect(container.querySelector("[data-copy-action-group]")).not.toBeNull();
-    const groupClassName = container.querySelector(
-      "[data-copy-action-group]",
-    )?.className;
-    expect(groupClassName).toContain("lg:h-7");
-    expect(groupClassName).toContain("border-0");
-    expect(groupClassName).toContain("bg-transparent");
-    expect(groupClassName).toContain("shrink-0");
-    expect(groupClassName).toContain("w-max");
-    expect(groupClassName).toContain("min-w-max");
-    expect(groupClassName).toContain("max-w-none");
-    expect(groupClassName).toContain("lg:border-border");
-    expect(groupClassName).toContain("lg:bg-background");
-    expect(copyActionCellClass("icon")).toContain("shrink-0");
-    const buttons = [
-      ...container.querySelectorAll("[data-copy-action-group] button"),
-    ];
-    expect(buttons).toHaveLength(3);
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
-      "Copy Integrations (human-readable)",
-      "Mock Copy for AI menu",
-      "Export Integrations",
-    ]);
+    expect(container.querySelectorAll("button")).toHaveLength(2);
+    expect(
+      container
+        .querySelector("[data-testid='ai-menu']")
+        ?.getAttribute("data-export-count"),
+    ).toBe("1");
+    expect(
+      [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
+        (item) => item.textContent,
+      ),
+    ).toEqual(["Copy for AI", "Brief"]);
   });
 
-  it("hides Export and still groups the remaining Copy + AI pair", () => {
+  it("hides Export without creating a third icon", () => {
     act(() => {
       root.render(
         <CopyButtons
@@ -207,17 +209,15 @@ describe("CopyButtons AI variants", () => {
     });
 
     expect(container.querySelector("[data-copy-action-group]")).not.toBeNull();
-    const buttons = [
-      ...container.querySelectorAll("[data-copy-action-group] button"),
-    ];
-    expect(buttons).toHaveLength(2);
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
-      "Copy Integration DeepWiki (human-readable)",
-      "Copy Integration DeepWiki for AI agent",
-    ]);
+    expect(container.querySelectorAll("button")).toHaveLength(2);
+    expect(
+      container
+        .querySelector("[data-testid='ai-menu']")
+        ?.getAttribute("data-export-count"),
+    ).toBe("0");
   });
 
-  it("supports opt-in bare chrome without changing the default group", () => {
+  it("passes bare chrome through to the canonical pair", () => {
     act(() => {
       root.render(
         <CopyButtons
@@ -230,16 +230,11 @@ describe("CopyButtons AI variants", () => {
       );
     });
 
-    const group = container.querySelector("[data-copy-action-group]");
-    expect(group?.getAttribute("data-copy-action-appearance")).toBe("bare");
-    expect(group?.className).not.toContain("lg:border-border");
-
-    const copyButton = container.querySelector(
-      'button[aria-label="Copy CRM activity (human-readable)"]',
-    );
-    expect(copyButton?.className).toContain("hover:bg-transparent");
-    expect(copyButton?.className).toContain("focus-visible:ring-0");
-    expect(copyButton?.className).toContain("[&_svg]:size-[18px]");
+    expect(
+      container
+        .querySelector("[data-testid='ai-menu']")
+        ?.getAttribute("data-appearance"),
+    ).toBe("bare");
   });
 
   it("opens a caller-owned modal from an AI menu item instead of copying", () => {
@@ -265,7 +260,7 @@ describe("CopyButtons AI variants", () => {
       [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
         (item) => item.textContent,
       ),
-    ).toEqual(["Customize…", "Everything"]);
+    ).toEqual(["Copy for AI", "Customize…"]);
     expect(onSelect).not.toHaveBeenCalled();
   });
 

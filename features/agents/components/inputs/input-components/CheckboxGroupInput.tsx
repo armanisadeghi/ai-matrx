@@ -1,7 +1,7 @@
 import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { calcCols } from "./useContainerColumns";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CheckboxGroupInputProps {
   value: string;
@@ -151,7 +151,7 @@ export function CheckboxGroupInput({
             </label>
             {isOtherChecked && (
               <div className="pt-1">
-                <Textarea
+                <ProTextarea
                   value={customText}
                   onChange={(e) => handleCustomTextChange(e.target.value)}
                   placeholder="Enter any text, markdown, or custom value..."

@@ -16,8 +16,8 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
+import { useMandate } from "@/features/mandates/useMandate";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import {
   assistantBlockedReasonLabel,
@@ -121,12 +121,12 @@ export function SmsAssistantSettingsSection() {
           </div>
         </SettingsRow>
         {/* THE DOOR LAW: deep-link filtered to this feature's domain — the
-            bare /agents/mandates lands on 264 mandates across 45 domains,
+            bare /mandates lands on 264 mandates across 45 domains,
             which is a scroll, not a door. */}
         <SettingsLink
           label="Mandate controls"
           description="Open the full Mandate editor to inspect provenance, version policy, and reset your Binding."
-          href="/agents/mandates?feature=sms"
+          href="/mandates?feature=sms"
           actionLabel="Open Mandates"
         />
         {state?.chatConversationId ? (

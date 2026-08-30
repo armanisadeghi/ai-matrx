@@ -7,7 +7,6 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export type TranscriptInsertTarget = "start" | "end";
 
@@ -77,7 +77,7 @@ export function TranscriptInsertDialog({
       }}
       className="space-y-2"
     >
-      <Textarea
+      <ProTextarea
         autoFocus
         value={value}
         onChange={(event) => {

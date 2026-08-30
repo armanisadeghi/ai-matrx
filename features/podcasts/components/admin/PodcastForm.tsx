@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -29,6 +28,7 @@ import type {
   PcEpisodeFormData,
   PcDisplayMode,
 } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ── Show Form ─────────────────────────────────────────────────────────────────
 
@@ -233,7 +233,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
 
       <div className="grid gap-1.5">
         <Label htmlFor="show-desc">Description</Label>
-        <Textarea
+        <ProTextarea
           id="show-desc"
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
@@ -627,7 +627,7 @@ export function EpisodeForm({
 
       <div className="grid gap-1.5">
         <Label htmlFor="ep-desc">Description</Label>
-        <Textarea
+        <ProTextarea
           id="ep-desc"
           value={form.description}
           onChange={(e) => set("description", e.target.value)}

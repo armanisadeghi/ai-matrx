@@ -18,9 +18,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import type { ToolUiIncidentRow } from "@/features/tool-call-visualization/admin/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -360,7 +360,7 @@ function IncidentCard({
               <Label className="text-[11px] font-medium text-slate-500 mb-1 block">
                 Resolution Notes
               </Label>
-              <Textarea
+              <ProTextarea
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
                 className="text-xs min-h-[60px]"

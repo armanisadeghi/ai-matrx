@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -27,6 +26,7 @@ import {
   INITIATIVE_STATUSES,
   type Initiative,
 } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function InitiativeEditorDialog({
   open,
@@ -130,7 +130,7 @@ export function InitiativeEditorDialog({
           </div>
           <div className="space-y-1">
             <Label htmlFor="initiative-description">Description</Label>
-            <Textarea
+            <ProTextarea
               id="initiative-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

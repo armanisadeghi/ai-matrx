@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 import { SLACK_BROKER_IDS } from './BrokerSlackClient';
+import { X } from 'lucide-react';
 
 export function TokenManager() {
   const dispatch = useAppDispatch();
@@ -90,7 +91,7 @@ export function TokenManager() {
                 className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 aria-label="Remove token"
               >
-                ✕
+                <X aria-hidden="true" className="h-4 w-4" />
               </button>
             </div>
           ))}

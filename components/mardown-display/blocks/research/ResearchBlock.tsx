@@ -113,7 +113,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } = await import('@/lib/block-print/dom-capture-block-printer');
+      const { captureBlockElement } = await import('@ai-matrx/print/pdf');
       await captureBlockElement(blockContentRef.current, research.title.replace(/\s+/g, '-').toLowerCase() || 'research', 'portrait');
     } catch (err) {
       console.error('[ResearchBlock] Print failed:', err);

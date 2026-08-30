@@ -1285,6 +1285,52 @@ button.shell-nav-flyout-item {
   margin-top: calc(-1 * var(--shell-header-h));
 }
 
+/* Natural-height reading/list surfaces keep a generous final runway so fixed
+   page affordances never cover the last content. The pseudo-element adds
+   scroll range without shrinking full-height children. When an overlay-style
+   virtual keyboard is present, the runway grows enough to keep the focused
+   composer and the page beneath it movable. Full-height editors/runners opt
+   out by simply not using this class. */
+.scroll-page-end-space,
+.education-scroll-boundary > .overflow-y-auto,
+.education-scroll-boundary > .overflow-auto {
+  scroll-padding-bottom: max(
+    clamp(10rem, 22dvh, 15rem),
+    calc(var(--keyboard-inset-height, 0px) + 6rem)
+  );
+}
+
+.scroll-page-end-space::after,
+.education-scroll-boundary > .overflow-y-auto::after,
+.education-scroll-boundary > .overflow-auto::after {
+  content: "";
+  display: block;
+  inline-size: 100%;
+  block-size: max(
+    clamp(10rem, 22dvh, 15rem),
+    calc(var(--keyboard-inset-height, 0px) + 6rem)
+  );
+  pointer-events: none;
+}
+
+/* Education contains both natural-height pages and full-height pages whose
+   leaf owns the actual scroll. Give exactly ONE of them the runway: the leaf
+   when present, otherwise the route boundary itself. This keeps new education
+   tools covered by the shared layout without a per-page padding sweep. */
+.education-scroll-boundary:has(> .overflow-y-auto)::after,
+.education-scroll-boundary:has(> .overflow-auto)::after {
+  display: none;
+}
+
+/* Fixed ambient composers sit above keyboards that overlay rather than resize
+   the layout viewport (large tablets, vehicle browsers, embedded webviews). */
+.ambient-assistant-dock {
+  bottom: calc(
+    1.25rem + var(--keyboard-inset-height, 0px) +
+      env(safe-area-inset-bottom, 0px)
+  );
+}
+
 /* Admin tree compatibility — the `/administration/*` pages predate this shell
    and were authored for the old ResponsiveLayout: a 2.5rem (`h-10`) header with
    content BELOW it (`<main className="pt-10">`), and ~30 pages hardcode

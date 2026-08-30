@@ -4,32 +4,31 @@
  * Marketing's route menu, rendered INSIDE the app shell sidebar in place of the
  * global nav (registered in `features/shell/constants/route-menu-registry.ts`).
  *
- * Why the sidebar and not the header: marketing is five levels deep — Marketing
- * → Brand → Site → Section → Sub-view — and a header can only ever show ONE of
- * them. A website's 26 sections could never fit across the top, so
- * `RouteModeNav` collapsed them to bare icons; and the moment you opened a site
- * the pillar nav disappeared entirely. A sidebar shows three levels at once.
+ * The agency model gives the menu FOUR states, resolved structurally from the
+ * URL (`lib/sidebar-site-context.ts`) and all driven by the same declarations
+ * every other marketing map reads — so this menu cannot drift from the hub,
+ * the landing, or the drift tests:
  *
- * Three states, one component, all driven by the SAME declarations every other
- * marketing map reads — so this menu cannot drift from the hub, the landing, or
- * the global flyout:
- *   • general Marketing → `MARKETING_PILLARS` (lib/marketing-nav.ts)
- *   • unselected Websites → the website-workspace subset of those pillars
- *   • selected website → `listMarketingSiteModeGroups`
- *     (lib/route-sections.ts)
- *
- * Website context is resolved once in `lib/sidebar-site-context.ts`; it follows
- * the website across brand-first pages, legacy redirects, Content Plan, Search
- * Console, and Capabilities instead of changing menus when the URL shape does.
+ *   • AGENCY  — `MARKETING_PILLARS` (lib/marketing-nav.ts): roster, roll-ups,
+ *     operations, tools. Small by design.
+ *   • BRAND   — one client's workspace: `MARKETING_BRAND_SECTIONS`
+ *     (lib/brand-sections.ts). Coming-soon sections stay VISIBLE with a tag —
+ *     the client workspace's promised shape is part of the map (Arman,
+ *     2026-08-28).
+ *   • WEBSITE — one site's inventory: `MARKETING_WEBSITE_SECTIONS`, plus the
+ *     door into the SEO practice on that site (the menu points at the
+ *     practice; it never re-contains it).
+ *   • SEO     — the practice on one site: `MARKETING_SEO_SECTIONS`, plus the
+ *     door back to the site's inventory.
  *
  * `RouteMenuSlot` owns switching, collapse, the mobile presentation, and the
  * reversible Main Menu control. This component only renders registry data.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronLeft, Globe, Plus, TrendingUp } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ChevronLeft, Globe, Search, TrendingUp } from "lucide-react";
 
 import { IconResolver } from "@ai-matrx/icons";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
@@ -40,26 +39,25 @@ import {
 } from "@/features/shell/constants/route-menu-style";
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { resolveMarketingSidebarContext } from "@/features/marketing/lib/sidebar-site-context";
 import {
-  isMarketingWebsiteWorkspace,
-  resolveMarketingSidebarSiteContext,
-} from "@/features/marketing/lib/sidebar-site-context";
-import { listMarketingSiteModeGroups } from "@/features/marketing/lib/route-sections";
-import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
-import { useSite } from "@/features/marketing/data/hooks";
+  listMarketingSeoModeGroups,
+  listMarketingWebsiteModeGroups,
+} from "@/features/marketing/lib/route-sections";
+import { listMarketingBrandModeGroups } from "@/features/marketing/lib/brand-sections";
+import {
+  MARKETING_SEO_SECTION_ICONS,
+  MARKETING_WEBSITE_SECTION_ICONS,
+} from "@/features/marketing/lib/site-section-icons";
+import {
+  useBrandBySegment,
+  useSiteBySegment,
+} from "@/features/marketing/data/keys-hooks";
 import { cn } from "@/lib/utils";
 
 interface MarketingSidebarMenuProps {
   expanded: boolean;
 }
-
-const WEBSITE_WORKSPACE_HREFS = new Set([
-  marketingRoutes.sites(),
-  marketingRoutes.contentPlan(),
-  marketingRoutes.searchConsole(),
-  marketingRoutes.capabilities(),
-  marketingRoutes.ranks(),
-]);
 
 /**
  * A group heading. Collapsed, the label would be unreadable at rail width, so
@@ -81,52 +79,75 @@ function GroupHeading({
   );
 }
 
-/** The site's grouped sections, plus the stable door back to all websites. */
-function SiteSections({
-  brandId,
-  siteId,
-  pathname,
-  expanded,
-}: {
-  brandId: string | null;
-  siteId: string;
-  pathname: string;
-  expanded: boolean;
-}) {
-  // Canonical site routes share this cache with MarketingSiteLayoutClient.
-  // Context-preserving routes (Content Plan, Search Console, Capabilities and
-  // legacy links) also need the row to recover the canonical brand-first base.
-  // access-errors: ok — this is navigation enrichment only; a failed read keeps every section reachable through the legacy site base and the owning workspace surfaces its own primary read error
-  const site = useSite(siteId);
-  const resolvedBrandId = brandId ?? site.data?.brand_id ?? null;
-  const base = marketingRoutes.site(resolvedBrandId, siteId);
-  const groups = listMarketingSiteModeGroups(base);
-  // One resolver for the whole flat list so a nested route (a page workspace, a
-  // crawl detail) still lights up its parent section rather than nothing.
-  const active = resolveActiveRouteMode(
-    groups.flatMap((group) => group.modes),
-    pathname,
+function BackRow({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      title={label}
+      aria-label={label}
+      className={ROUTE_MENU_NAV_ITEM_CLASS}
+    >
+      <span className="shell-nav-icon">
+        <ChevronLeft
+          size={ROUTE_MENU_ICON_SIZE}
+          strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+        />
+      </span>
+      <span className="shell-nav-label truncate">{label}</span>
+    </Link>
   );
+}
 
-  // Twenty-six rows in seven groups do not fit the sidebar, so landing on a
-  // section low in the list showed the top of the menu and no sign of where you
-  // were. `nearest` moves the menu's own scroller the minimum needed and leaves
-  // the page scroll alone.
-  //
-  // It has to WAIT for the switch, though: this menu is portaled in while the
-  // sidebar is still showing the main nav, so on first paint it sits inside a
-  // `display: none` subtree where scrollIntoView silently does nothing and every
-  // measurement reads 0. Observing the shell's own view attribute scrolls
-  // exactly once, when there is something to scroll.
+function NavRow({
+  href,
+  label,
+  title,
+  icon,
+  active,
+  soon,
+  activeRef,
+}: {
+  href: string;
+  label: string;
+  title?: string;
+  icon: ReactNode;
+  active: boolean;
+  soon?: boolean;
+  activeRef?: (el: HTMLAnchorElement | null) => void;
+}) {
+  return (
+    <Link
+      ref={activeRef}
+      href={href}
+      title={title ?? label}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(ROUTE_MENU_NAV_ITEM_CLASS, active && "shell-active-pill")}
+    >
+      <span className="shell-nav-icon">{icon}</span>
+      <span className="shell-nav-label flex min-w-0 items-center gap-1.5">
+        <span className="truncate">{label}</span>
+        {soon ? (
+          <span className="rounded-sm bg-muted px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Soon
+          </span>
+        ) : null}
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * Scroll the active row into view once the menu is actually laid out. This
+ * menu is portaled in while the sidebar may still show the main nav, so on
+ * first paint it can sit inside a `display: none` subtree where scrollIntoView
+ * silently does nothing — watch the container's size and scroll exactly once.
+ */
+function useScrollActiveIntoView(activeHref: string | undefined) {
   const activeRef = useRef<HTMLAnchorElement | null>(null);
   useEffect(() => {
     const scrollToActive = () => {
       const el = activeRef.current;
-      // Zero height means the menu is still inside the hidden half of the
-      // sidebar. Watching the container's SIZE rather than the shell's view
-      // attribute covers both ways that resolves — the attribute flipping, and
-      // the menu simply being laid out on a later frame when the shell was
-      // already showing the route view.
       if (!el || el.clientHeight === 0) return false;
       el.scrollIntoView({ block: "nearest" });
       return true;
@@ -141,163 +162,12 @@ function SiteSections({
     });
     observer.observe(container);
     return () => observer.disconnect();
-  }, [active?.href]);
-
-  return (
-    <>
-      <Link
-        href={marketingRoutes.sites()}
-        title="All websites"
-        aria-label="All websites"
-        className={ROUTE_MENU_NAV_ITEM_CLASS}
-      >
-        <span className="shell-nav-icon">
-          <ChevronLeft
-            size={ROUTE_MENU_ICON_SIZE}
-            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
-          />
-        </span>
-        <span className="shell-nav-label truncate">All websites</span>
-      </Link>
-
-      <Link
-        href={base}
-        title={site.data?.name ?? "This website"}
-        aria-label={site.data?.name ?? "This website"}
-        className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "font-medium")}
-      >
-        <span className="shell-nav-icon">
-          <Globe
-            size={ROUTE_MENU_ICON_SIZE}
-            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
-          />
-        </span>
-        <span className="shell-nav-label truncate">
-          {site.data?.name ?? "This website"}
-        </span>
-      </Link>
-
-      {groups.map((group) => (
-        <div key={group.label}>
-          <GroupHeading label={group.label} expanded={expanded} />
-          {group.modes.map((mode) => {
-            const Icon = MARKETING_SITE_SECTION_ICONS[mode.slug];
-            const isActive = active?.href === mode.href;
-            return (
-              <Link
-                key={mode.href}
-                ref={isActive ? activeRef : undefined}
-                href={mode.href}
-                title={mode.name}
-                aria-label={mode.name}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  ROUTE_MENU_NAV_ITEM_CLASS,
-                  isActive && "shell-active-pill",
-                )}
-              >
-                <span className="shell-nav-icon">
-                  <Icon
-                    size={ROUTE_MENU_ICON_SIZE}
-                    strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
-                  />
-                </span>
-                <span className="shell-nav-label truncate">{mode.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-      ))}
-    </>
-  );
+  }, [activeHref]);
+  return activeRef;
 }
 
-/** The Websites family before one managed site has been selected. */
-function WebsiteWorkspaces({
-  pathname,
-  expanded,
-}: {
-  pathname: string;
-  expanded: boolean;
-}) {
-  const entries = MARKETING_PILLARS.flatMap((pillar) => pillar.entries).filter(
-    (entry) => WEBSITE_WORKSPACE_HREFS.has(entry.href),
-  );
-
-  return (
-    <>
-      <Link
-        href={marketingRoutes.home()}
-        title="Back to Marketing"
-        aria-label="Back to Marketing"
-        className={ROUTE_MENU_NAV_ITEM_CLASS}
-      >
-        <span className="shell-nav-icon">
-          <ChevronLeft
-            size={ROUTE_MENU_ICON_SIZE}
-            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
-          />
-        </span>
-        <span className="shell-nav-label truncate">Back to Marketing</span>
-      </Link>
-
-      <GroupHeading label="Websites" expanded={expanded} />
-      {entries.map((entry) => {
-        const isActive = pathname === entry.href;
-        return (
-          <Link
-            key={entry.href}
-            href={entry.href}
-            title={entry.description}
-            aria-label={entry.label}
-            aria-current={isActive ? "page" : undefined}
-            className={cn(
-              ROUTE_MENU_NAV_ITEM_CLASS,
-              isActive && "shell-active-pill",
-            )}
-          >
-            <span className="shell-nav-icon">
-              <IconResolver
-                iconName={entry.iconName}
-                size={ROUTE_MENU_ICON_SIZE}
-                style={{
-                  width: ROUTE_MENU_ICON_SIZE,
-                  height: ROUTE_MENU_ICON_SIZE,
-                  strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
-                }}
-              />
-            </span>
-            <span className="shell-nav-label truncate">{entry.label}</span>
-          </Link>
-        );
-      })}
-
-      <Link
-        href={marketingRoutes.newSite()}
-        title="Add website"
-        aria-label="Add website"
-        aria-current={
-          pathname === marketingRoutes.newSite() ? "page" : undefined
-        }
-        className={cn(
-          ROUTE_MENU_NAV_ITEM_CLASS,
-          pathname === marketingRoutes.newSite() && "shell-active-pill",
-        )}
-      >
-        <span className="shell-nav-icon">
-          <Plus
-            size={ROUTE_MENU_ICON_SIZE}
-            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
-          />
-        </span>
-        <span className="shell-nav-label truncate">Add website</span>
-      </Link>
-    </>
-  );
-}
-
-/** Every pillar's live surfaces — the same set the global flyout renders. */
-function MarketingPillars({
+/** AGENCY state — the roster, roll-ups, operations, and tools. */
+function AgencyMenu({
   pathname,
   expanded,
 }: {
@@ -326,8 +196,6 @@ function MarketingPillars({
       </Link>
 
       {MARKETING_PILLARS.map((pillar) => {
-        // Reserved surfaces are real routes, but they are promises rather than
-        // destinations — the hub advertises them, the working menu does not.
         const entries = pillar.entries.filter(
           (entry) => entry.status !== "coming-soon" && !entry.navHidden,
         );
@@ -335,43 +203,266 @@ function MarketingPillars({
         return (
           <div key={pillar.key}>
             <GroupHeading label={pillar.label} expanded={expanded} />
-            {entries.map((entry) => {
-              const isActive = pathname.startsWith(entry.href);
-              return (
-                <Link
-                  key={entry.href}
-                  href={entry.href}
-                  title={entry.description}
-                  aria-label={entry.label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    ROUTE_MENU_NAV_ITEM_CLASS,
-                    isActive && "shell-active-pill",
-                  )}
-                  {...(entry.external
-                    ? { target: "_blank", rel: "noopener noreferrer" }
-                    : {})}
-                >
-                  <span className="shell-nav-icon">
-                    <IconResolver
-                      iconName={entry.iconName}
-                      size={ROUTE_MENU_ICON_SIZE}
-                      style={{
-                        width: ROUTE_MENU_ICON_SIZE,
-                        height: ROUTE_MENU_ICON_SIZE,
-                        strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
-                      }}
-                    />
-                  </span>
-                  <span className="shell-nav-label truncate">
-                    {entry.label}
-                  </span>
-                </Link>
-              );
-            })}
+            {entries.map((entry) => (
+              <NavRow
+                key={entry.href}
+                href={entry.href}
+                label={entry.label}
+                title={entry.description}
+                active={pathname.startsWith(entry.href)}
+                icon={
+                  <IconResolver
+                    iconName={entry.iconName}
+                    size={ROUTE_MENU_ICON_SIZE}
+                    style={{
+                      width: ROUTE_MENU_ICON_SIZE,
+                      height: ROUTE_MENU_ICON_SIZE,
+                      strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+                    }}
+                  />
+                }
+              />
+            ))}
           </div>
         );
       })}
+    </>
+  );
+}
+
+/** BRAND state — one client's whole workspace. */
+function BrandMenu({
+  brandSeg,
+  pathname,
+  expanded,
+}: {
+  brandSeg: string;
+  pathname: string;
+  expanded: boolean;
+}) {
+  // access-errors: ok — navigation enrichment only; a failed read keeps every
+  // row reachable and the owning workspace surfaces its own read error.
+  const brand = useBrandBySegment(brandSeg);
+  const brandPath = `/marketing/${brandSeg}`;
+  const groups = listMarketingBrandModeGroups(brandPath);
+  const active = resolveActiveRouteMode(
+    groups.flatMap((group) => group.modes),
+    pathname,
+  );
+  const activeRef = useScrollActiveIntoView(active?.href);
+
+  return (
+    <>
+      <BackRow href={marketingRoutes.brands()} label="All clients" />
+      {groups.map((group) => (
+        <div key={group.label}>
+          {group.label === "Start" ? null : (
+            <GroupHeading label={group.label} expanded={expanded} />
+          )}
+          {group.modes.map((mode) => {
+            const isActive = active?.href === mode.href;
+            const label =
+              mode.slug === "" ? (brand.data?.name ?? "Overview") : mode.name;
+            return (
+              <NavRow
+                key={mode.href}
+                href={mode.href}
+                label={label}
+                title={mode.description}
+                active={isActive}
+                soon={"status" in mode && mode.status === "coming-soon"}
+                activeRef={
+                  isActive
+                    ? (el) => {
+                        activeRef.current = el;
+                      }
+                    : undefined
+                }
+                icon={
+                  <IconResolver
+                    iconName={mode.iconName}
+                    size={ROUTE_MENU_ICON_SIZE}
+                    style={{
+                      width: ROUTE_MENU_ICON_SIZE,
+                      height: ROUTE_MENU_ICON_SIZE,
+                      strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+                    }}
+                  />
+                }
+              />
+            );
+          })}
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** WEBSITE state — one site's inventory, plus the door into its SEO practice. */
+function WebsiteMenu({
+  brandSeg,
+  siteSeg,
+  pathname,
+  expanded,
+}: {
+  brandSeg: string;
+  siteSeg: string;
+  pathname: string;
+  expanded: boolean;
+}) {
+  // access-errors: ok — navigation enrichment only (labels); rows stay reachable.
+  const brand = useBrandBySegment(brandSeg);
+  const site = useSiteBySegment(brand.data?.id, siteSeg);
+  const basePath = `/marketing/${brandSeg}/websites/${siteSeg}`;
+  const groups = listMarketingWebsiteModeGroups(basePath);
+  const active = resolveActiveRouteMode(
+    groups.flatMap((group) => group.modes),
+    pathname,
+  );
+  const activeRef = useScrollActiveIntoView(active?.href);
+  const siteLabel = site.data?.name ?? site.data?.domain ?? siteSeg;
+
+  return (
+    <>
+      <BackRow
+        href={`/marketing/${brandSeg}/websites`}
+        label={brand.data?.name ?? "All websites"}
+      />
+      {groups.map((group) => (
+        <div key={group.label}>
+          {group.label === "Start" ? null : (
+            <GroupHeading label={group.label} expanded={expanded} />
+          )}
+          {group.modes.map((mode) => {
+            const Icon = MARKETING_WEBSITE_SECTION_ICONS[mode.slug];
+            const isActive = active?.href === mode.href;
+            return (
+              <NavRow
+                key={mode.href}
+                href={mode.href}
+                label={mode.slug === "" ? siteLabel : mode.name}
+                title={mode.description}
+                active={isActive}
+                activeRef={
+                  isActive
+                    ? (el) => {
+                        activeRef.current = el;
+                      }
+                    : undefined
+                }
+                icon={
+                  <Icon
+                    size={ROUTE_MENU_ICON_SIZE}
+                    strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+                  />
+                }
+              />
+            );
+          })}
+        </div>
+      ))}
+      <GroupHeading label="Search & SEO" expanded={expanded} />
+      <NavRow
+        href={`/marketing/${brandSeg}/seo/${siteSeg}`}
+        label="Open SEO workspace"
+        title="Keywords, rankings, technical health, links, and AI visibility for this site."
+        active={false}
+        icon={
+          <Search
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
+        }
+      />
+    </>
+  );
+}
+
+/** SEO state — the practice on one site, plus the door back to its inventory. */
+function SeoMenu({
+  brandSeg,
+  siteSeg,
+  pathname,
+  expanded,
+}: {
+  brandSeg: string;
+  siteSeg: string;
+  pathname: string;
+  expanded: boolean;
+}) {
+  // access-errors: ok — navigation enrichment only (labels); rows stay reachable.
+  const brand = useBrandBySegment(brandSeg);
+  const site = useSiteBySegment(brand.data?.id, siteSeg);
+  const basePath = `/marketing/${brandSeg}/seo/${siteSeg}`;
+  const groups = listMarketingSeoModeGroups(basePath);
+  const active = resolveActiveRouteMode(
+    groups.flatMap((group) => group.modes),
+    pathname,
+  );
+  const activeRef = useScrollActiveIntoView(active?.href);
+  const siteLabel = site.data?.name ?? site.data?.domain ?? siteSeg;
+
+  return (
+    <>
+      <BackRow href={`/marketing/${brandSeg}/seo`} label="SEO overview" />
+      <Link
+        href={basePath}
+        title={siteLabel}
+        aria-label={siteLabel}
+        className={cn(ROUTE_MENU_NAV_ITEM_CLASS, "font-medium")}
+      >
+        <span className="shell-nav-icon">
+          <Globe
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
+        </span>
+        <span className="shell-nav-label truncate">{siteLabel}</span>
+      </Link>
+      {groups.map((group) => (
+        <div key={group.label}>
+          <GroupHeading label={group.label} expanded={expanded} />
+          {group.modes.map((mode) => {
+            const Icon = MARKETING_SEO_SECTION_ICONS[mode.slug];
+            const isActive = active?.href === mode.href;
+            return (
+              <NavRow
+                key={mode.href}
+                href={mode.href}
+                label={mode.name}
+                title={mode.description}
+                active={isActive}
+                activeRef={
+                  isActive
+                    ? (el) => {
+                        activeRef.current = el;
+                      }
+                    : undefined
+                }
+                icon={
+                  <Icon
+                    size={ROUTE_MENU_ICON_SIZE}
+                    strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+                  />
+                }
+              />
+            );
+          })}
+        </div>
+      ))}
+      <GroupHeading label="The Website" expanded={expanded} />
+      <NavRow
+        href={`/marketing/${brandSeg}/websites/${siteSeg}`}
+        label="Website inventory"
+        title="Pages, structure, sitemaps, media, crawls, and settings for this site."
+        active={false}
+        icon={
+          <Globe
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
+        }
+      />
     </>
   );
 }
@@ -380,27 +471,35 @@ export default function MarketingSidebarMenu({
   expanded,
 }: MarketingSidebarMenuProps) {
   const pathname = usePathname() ?? "/marketing";
-  const searchParams = useSearchParams();
-  const site = resolveMarketingSidebarSiteContext(
-    pathname,
-    searchParams.get("site"),
-  );
-  const websiteWorkspace = isMarketingWebsiteWorkspace(pathname);
+  const context = resolveMarketingSidebarContext(pathname);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto scrollbar-thin-auto">
-      {site ? (
-        <SiteSections
-          brandId={site.brandId}
-          siteId={site.siteId}
+      {context.kind === "website" ? (
+        <WebsiteMenu
+          brandSeg={context.brandSeg}
+          siteSeg={context.siteSeg}
           pathname={pathname}
           expanded={expanded}
-          key={`${site.brandId ?? "unresolved"}:${site.siteId}`}
+          key={`w:${context.brandSeg}:${context.siteSeg}`}
         />
-      ) : websiteWorkspace ? (
-        <WebsiteWorkspaces pathname={pathname} expanded={expanded} />
+      ) : context.kind === "seo" ? (
+        <SeoMenu
+          brandSeg={context.brandSeg}
+          siteSeg={context.siteSeg}
+          pathname={pathname}
+          expanded={expanded}
+          key={`s:${context.brandSeg}:${context.siteSeg}`}
+        />
+      ) : context.kind === "brand" ? (
+        <BrandMenu
+          brandSeg={context.brandSeg}
+          pathname={pathname}
+          expanded={expanded}
+          key={`b:${context.brandSeg}`}
+        />
       ) : (
-        <MarketingPillars pathname={pathname} expanded={expanded} />
+        <AgencyMenu pathname={pathname} expanded={expanded} />
       )}
     </div>
   );

@@ -119,6 +119,8 @@ export interface KindDetailData {
   components: KindComponentDetail[];
   surfaces: KindSurfaceDetail[];
   warnings: string[];
+  /** `metadata.title_key` — the per-kind instance-title override (or null). */
+  titleKey?: string | null;
 }
 
 /** One `content_ir.kind_example` row as the browser tabs consume it. */

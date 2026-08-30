@@ -85,6 +85,36 @@
       },
       "previousEventHash": "e6b4b59ed0630c6f5f8bf8e2ca2df1668452155a32be6ec0d2d52bfa2ad549d8",
       "eventHash": "dfb5d960e077d9302cf29bbe201e5a33ebe86524517ce5bdc0dbfb8bb270d1e2"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-30T14:20:06.117Z",
+      "actor": "pattern-patrol-p7-controller",
+      "summary": "Certified P7 candidate is contained in release v0.4.1441.",
+      "evidence": [
+        "Candidate f70638875cbae083e1b9f160ee32215e4ad2bb74 is an ancestor of release commit 50cfae5c4f967822f26e16ac25d2bab3b6aa34b3 and current origin/main."
+      ],
+      "delivery": {
+        "candidateSha": "f70638875cbae083e1b9f160ee32215e4ad2bb74",
+        "preservedRef": "refs/heads/patrol-runs/P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9",
+        "integratedSha": "50cfae5c4f967822f26e16ac25d2bab3b6aa34b3",
+        "release": "v0.4.1441"
+      },
+      "previousEventHash": "dfb5d960e077d9302cf29bbe201e5a33ebe86524517ce5bdc0dbfb8bb270d1e2",
+      "eventHash": "ee08b04f35e898be193b0a6bbff16fd692bc6e55b001667fbddca30bcd8cf74b"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-30T14:20:19.119Z",
+      "actor": "pattern-patrol-p7-controller",
+      "summary": "Closed P7 eradication run after independent zero proof, exact-candidate certification, containing-release reconciliation, and maintenance promotion.",
+      "evidence": [
+        "Full scope-aware detector is zero; exact candidate f70638875cbae083e1b9f160ee32215e4ad2bb74 is certified, integrated, and contained in v0.4.1441; live schedule is ACTIVE in MAINTENANCE mode."
+      ],
+      "previousEventHash": "ee08b04f35e898be193b0a6bbff16fd692bc6e55b001667fbddca30bcd8cf74b",
+      "eventHash": "31e1809ed47a4b9251917c4e6c4aec142dfc7030df113a836fa48c1dd59d4cee"
     }
   ]
 }

@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause, Volume2, Gauge, Check } from 'lucide-react';
@@ -15,6 +14,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface RecordingPreviewProps {
     audioUrl: string;
@@ -119,7 +119,7 @@ export function RecordingPreview({
 
                 <div className="space-y-2">
                     <Label htmlFor="preview-description">Description (Optional)</Label>
-                    <Textarea
+                    <ProTextarea
                         id="preview-description"
                         value={description}
                         onChange={(e) => onDescriptionChange(e.target.value)}
