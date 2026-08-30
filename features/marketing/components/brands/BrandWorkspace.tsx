@@ -383,31 +383,13 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const pending = usePendingDiscoveredCount(brandId);
 
   if (brand.isLoading) {
-    return (
-      <>
-        <RouteHeader
-          left={
-            <ChevronLeftTapButton
-              href={marketingRoutes.brands()}
-              ariaLabel="All brands"
-            />
-          }
-        />
-        <LoadingSurface label="Loading brand…" />
-      </>
-    );
+    // The [brandId] layout's trail is the header for this whole tree — a
+    // second per-page RouteHeader here would hide it (Arman, 2026-08-30).
+    return <LoadingSurface label="Loading brand…" />;
   }
   if (brand.isError || !brand.data) {
     return (
       <>
-        <RouteHeader
-          left={
-            <ChevronLeftTapButton
-              href={marketingRoutes.brands()}
-              ariaLabel="All brands"
-            />
-          }
-        />
         <AccessGate
           token="web_brand"
           id={brandId}
@@ -602,30 +584,9 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       {/* Write half of the surface — registers the handlers the manifest's
           writeTargets declare. Renders nothing. */}
       <MarketingBrandWriteTargets brand={current} />
-      <RouteHeader
-        left={
-          <div className="flex items-center gap-2">
-            <ChevronLeftTapButton
-              href={marketingRoutes.brands()}
-              ariaLabel="All brands"
-            />
-            <h1 className="truncate text-sm font-medium text-foreground">
-              {current.name}
-            </h1>
-          </div>
-        }
-        right={
-          // THE DOOR to this brand's rung of the value ladder: what its sites
-          // use for the score baseline and level thresholds unless a site
-          // overrides them (KI-046).
-          <Button asChild size="sm" variant="ghost" className="h-7 gap-1.5">
-            <Link href={marketingRoutes.brandValueSettings(brandId)}>
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Value settings
-            </Link>
-          </Button>
-        }
-      />
+      {/* No RouteHeader here — the [brandId] layout's breadcrumb trail is the
+          header for the whole client tree (Arman, 2026-08-30). The old header's
+          "Value settings" door is the sidebar's Settings row. */}
       <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="grid w-full gap-3">
           <section className="flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4">

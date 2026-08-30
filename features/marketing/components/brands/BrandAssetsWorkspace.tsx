@@ -236,19 +236,8 @@ export function BrandAssetsWorkspace({
       getScope={getScope}
     >
       <BrandAssetsWriteTargets onOrderChange={setOrder} />
-      <RouteHeader
-        left={
-          <div className="flex min-w-0 items-center gap-2">
-            <ChevronLeftTapButton
-              href={marketingRoutes.brand(brandId)}
-              ariaLabel={`Back to ${current.name}`}
-            />
-            <h1 className="truncate text-sm font-medium text-foreground">
-              {current.name} · Assets
-            </h1>
-          </div>
-        }
-      />
+      {/* No RouteHeader — the [brandId] layout's breadcrumb trail is the
+          header for the whole client tree (Arman, 2026-08-30). */}
       <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="grid w-full gap-3">
           <header className="flex flex-wrap items-center justify-between gap-2">

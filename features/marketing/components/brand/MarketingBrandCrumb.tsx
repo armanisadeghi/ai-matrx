@@ -58,7 +58,7 @@ import {
   marketingWebsiteSectionSuffix,
 } from "@/features/marketing/lib/route-sections";
 import { marketingSeg } from "@/features/marketing/lib/keys";
-import { useBrandOptions, useBrandSites } from "@/features/marketing/data/hooks";
+import { useAllBrandOptions, useBrandSites } from "@/features/marketing/data/hooks";
 import { brandSwitchHref } from "@/features/marketing/lib/brand-switch";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -262,7 +262,9 @@ export function MarketingBrandCrumb() {
 
   // access-errors: ok — sibling-client switcher; a failed read only shrinks the
   // dropdown, and the brand itself is already resolved by the layout.
-  const brandOptions = useBrandOptions(brand.organizationId);
+  // EVERY readable brand, across orgs — an agency's clients span orgs and the
+  // switcher must never silently trim to one (Arman, 2026-08-30).
+  const brandOptions = useAllBrandOptions();
   // Only fetched inside a site branch (an empty id disables the query).
   const brandSites = useBrandSites(siteSeg ? brand.id : "");
 
@@ -334,7 +336,7 @@ export function MarketingBrandCrumb() {
                 // entity-scoped) — lib/brand-switch.ts.
                 href: active
                   ? brandPath
-                  : brandSwitchHref(row.id, pathname, searchParams.toString()),
+                  : brandSwitchHref(marketingSeg(row), pathname, searchParams.toString()),
                 active,
               };
             })

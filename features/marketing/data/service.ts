@@ -911,6 +911,30 @@ export async function moveSiteBrand(
   return assertData(response.data, response.error);
 }
 
+/**
+ * EVERY readable brand, across every organization — the client switcher's
+ * list. RLS is the scope; an agency's brands span orgs, and a switcher that
+ * silently trims to one org reads as missing clients (Arman, 2026-08-30).
+ * Complete-list law: readAllRows, never a bare select.
+ */
+export async function listAllBrandOptions(
+  signal?: AbortSignal,
+): Promise<Array<Pick<MarketingBrand, "id" | "slug" | "name">>> {
+  const db = await authenticatedWebDb(supabase);
+  return readAllRows<Pick<MarketingBrand, "id" | "slug" | "name">>(
+    ({ from, to }) =>
+      db
+        .from("brand")
+        .select("id, slug, name", { count: "exact" })
+        .is("deleted_at", null)
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .abortSignal(signal ?? new AbortController().signal),
+    { label: "web.brand options" },
+  );
+}
+
 /** Light brand options (id/name) for one organization, name-ordered. */
 export async function listBrandOptions(
   organizationId: string,

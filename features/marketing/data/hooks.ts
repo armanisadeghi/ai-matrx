@@ -81,6 +81,7 @@ import {
   listPageSitemapMemberships,
   listSiteOptions,
   listSites,
+  listAllBrandOptions,
   listBrandOptions,
   listSnapshots,
   moveSiteBrand,
@@ -1039,6 +1040,15 @@ export function useDeleteBrandAsset() {
 }
 
 /** Light brand options (id/name) for one organization — pickers only. */
+/** Every readable brand across every org — the client switcher's list. */
+export function useAllBrandOptions() {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "all-brand-options"] as const,
+    queryFn: ({ signal }) => listAllBrandOptions(signal),
+    staleTime: 60_000,
+  });
+}
+
 export function useBrandOptions(organizationId: string | null) {
   return useQuery({
     queryKey: [

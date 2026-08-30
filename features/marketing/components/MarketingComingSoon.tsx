@@ -116,14 +116,9 @@ export function MarketingComingSoon({
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            {label}
-          </h1>
-          <ComingSoonBadge />
-        </div>
-      </PageHeader>
+      {/* No PageHeader occupant — under the client tree the [brandId] layout's
+          breadcrumb trail is the header, and it already names this section
+          (Arman, 2026-08-30). The body card carries the promise + badge. */}
       <div className="h-full overflow-y-auto bg-textured">
         <div className="mx-auto w-full max-w-2xl px-4 pb-12 pt-[calc(var(--shell-header-h)+2rem)]">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
