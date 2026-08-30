@@ -61,7 +61,8 @@ export interface ExportFailure {
  * Pull the engine's own sentence and hint out of a raw Postgres error string.
  *
  * Shape, as `_sql_error` forwards it:
- *   `hr_state_conflict: 1 workweek(s) … are not final yet (…)\nHINT:  Finalise every workweek …`
+ *   `hr_state_conflict: 1 workweek is not final yet for pay period … (…)\nHINT:  Finalise every workweek …`
+ *   (the subject and verb agree since hr_l3_119; at N=2 it reads `2 workweeks are not final yet …`)
  *
  * 🚨 CONSERVATIVE ON PURPOSE. Anything that does not look like our own `code: sentence` form is
  * left alone and returned as-is rather than sliced — a parser that guesses would eventually strip
