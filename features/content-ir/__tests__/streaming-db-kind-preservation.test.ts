@@ -85,7 +85,7 @@ describe("streaming db-kind envelope preservation", () => {
     session.dispose();
   });
 
-  it("LOST RACE: end() before the schema answer preserves kind + data through the raw fallback", () => {
+  it("LOST RACE: end() before the schema answer preserves kind + data as UNVERIFIED", () => {
     const { resolver } = makeColdResolver();
     const session = new ParseSession({ identity: "t-lost", schemas: resolver });
     session.write(WINE_JSON);
@@ -93,10 +93,14 @@ describe("streaming db-kind envelope preservation", () => {
 
     const envelope = session.buildEnvelope();
     expect(envelope.root.kind).toBe("wine_tasting"); // preserved, NOT ""
-    expect(envelope.root.kindState).toBe("raw");
+    // 🚨 UNVERIFIED, never "raw" (@ai-matrx/content-ir 0.4.0). Losing the
+    // schema race means nothing CHECKED this payload — it is not a broken
+    // instance, and the route must still hand it to the kind's component.
+    // Asserting "raw" here is what let the 2026-08-28 router change divert
+    // ~221 live kinds to the generic key/value dump.
+    expect(envelope.root.kindState).toBe("unverified");
     expect(envelope.root.status).toBe("complete");
-    // Zero loss — the full data is on the envelope for the generic viewer /
-    // db component to render.
+    // Zero loss — the full data is on the envelope for the db component.
     expect(envelope.root.value).toMatchObject({
       __kind: "wine_tasting",
       wine_name: "Opus One",
