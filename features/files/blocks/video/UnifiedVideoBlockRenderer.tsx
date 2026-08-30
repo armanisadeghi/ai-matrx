@@ -6,12 +6,13 @@
  * prop names, skeleton/error patterns, and the same single-menu doctrine.
  *
  * Affordances (matching the image renderer):
- *   - `useUnifiedVideoUrl` resolves the renderable `src` (+ poster) with
- *     signed-URL refresh via the file handler.
+ *   - `useBlockMediaSource` resolves the renderable `src` (+ poster)
+ *     through `@ai-matrx/media` (`useMediaResolution` + the client's ONE
+ *     retry contract via `useMediaLoadRecovery`).
  *   - `useVideoActions` exposes the video-appropriate action callbacks
  *     (download, copyLink, openNewTab, viewOriginal).
- *   - `VideoSharePopover` wraps the Share button (same share-link path as
- *     images).
+ *   - `BlockSharePopover` wraps the Share button (the package share body —
+ *     same share-link path as images).
  *   - Hover toolbar (Expand, Download, Copy link, Share, "…"), a "…"
  *     DropdownMenu, a right-click ContextMenu, and a mobile "…" button /
  *     long-press Drawer — all driven by one action set.
@@ -66,9 +67,9 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { VideoSharePopover } from "./VideoSharePopover";
+import { BlockSharePopover } from "../BlockSharePopover";
 import { useVideoActions } from "./useVideoActions";
-import { useUnifiedVideoUrl } from "./useUnifiedVideoUrl";
+import { useBlockMediaSource } from "../useBlockMediaSource";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import type { VideoBlock } from "../types";
 import type { MediaExtraAction } from "../actions";
@@ -154,8 +155,8 @@ export const UnifiedVideoBlockRenderer: React.FC<
   extraActions,
   sourceFeature = "files",
 }) => {
-  const { src, status, posterUrl, retryNonce, reportLoadError } =
-    useUnifiedVideoUrl(block);
+  const { src, status, posterUrl, retryKey, onLoadError, failed } =
+    useBlockMediaSource(block);
   const isMobile = useIsMobile();
   const fileId = block.origin === "matrx" ? block.fileId : null;
 
@@ -186,7 +187,8 @@ export const UnifiedVideoBlockRenderer: React.FC<
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const showError = (status === "error" && !src) || block.status === "error";
+  const showError =
+    (status === "error" && !src) || failed || block.status === "error";
 
   const handleExpand = useCallback(() => setIsExpanded(true), []);
   const longPressHandlers = useLongPress(() => setDrawerOpen(true));
@@ -399,16 +401,9 @@ export const UnifiedVideoBlockRenderer: React.FC<
               </div>
             )}
 
-            {/* Refresh overlay (subtle spinner when re-minting a URL) */}
-            {status === "refreshing" && src && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/40 z-10 rounded-lg pointer-events-none">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-
             {src && (
               <video
-                key={retryNonce}
+                key={retryKey}
                 ref={inlineVideoRef}
                 src={src}
                 poster={posterUrl ?? undefined}
@@ -419,11 +414,10 @@ export const UnifiedVideoBlockRenderer: React.FC<
                 onPlay={() => setInlinePlaying(true)}
                 onPause={() => setInlinePlaying(false)}
                 onEnded={() => setInlinePlaying(false)}
-                onError={() => {
-                  // Owned files never just "expire" — refresh the session and
-                  // retry the same durable URL before giving up.
-                  void reportLoadError(src);
-                }}
+                // Owned files never just "expire" — the client's ONE retry
+                // contract refreshes the session and retries the same
+                // durable URL once before `failed` turns terminal.
+                onError={onLoadError}
               />
             )}
 
@@ -465,11 +459,11 @@ export const UnifiedVideoBlockRenderer: React.FC<
                 <Link2 className="w-3.5 h-3.5" />
               </ToolbarButton>
 
-              <VideoSharePopover block={block} currentSrc={src}>
+              <BlockSharePopover block={block} currentSrc={src}>
                 <ToolbarButton title="Share" asSpan>
                   <Share2 className="w-3.5 h-3.5" />
                 </ToolbarButton>
-              </VideoSharePopover>
+              </BlockSharePopover>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

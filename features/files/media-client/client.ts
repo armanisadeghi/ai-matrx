@@ -47,10 +47,20 @@ import {
   FileNotFoundError,
 } from "@/features/files/handler/errors";
 import { ensureFilesSession } from "@/features/files/handler/session";
-import { fileUrls } from "@/features/files/handler/utils/python-base";
+import {
+  fileUrls,
+  pythonShareUrl,
+} from "@/features/files/handler/utils/python-base";
 import type { Visibility } from "@/features/files/types";
-import { selectFileById } from "@/features/files/redux/selectors";
-import { ensureCloudFileFields } from "@/features/files/redux/thunks";
+import {
+  selectActiveShareLinksForResource,
+  selectFileById,
+} from "@/features/files/redux/selectors";
+import {
+  createShareLink,
+  ensureCloudFileFields,
+  loadShareLinks,
+} from "@/features/files/redux/thunks";
 import {
   areCloudFileFieldsLoaded,
   FILE_RENDER_FIELDS,
@@ -174,6 +184,23 @@ function refuseExpiringUrl(url: string): never {
   throw new Error(
     "Expiring/signed media URL refused — a signed URL is a handoff, never an identity. Pass the file_id.",
   );
+}
+
+/**
+ * Side-effect-free variant of `shareableUrl` for the quick COPY action:
+ * returns a durable public URL when one already exists, and null otherwise —
+ * it never mints a share link (minting is the SHARE door's job).
+ */
+export function shareableUrlNoMint(ref: MediaRefLike): string | null {
+  const norm = normalizeRef(ref);
+  if (!norm) return null;
+  if (norm.kind === "url") return shareableMediaUrl(norm.url);
+  const store = getStoreSingleton();
+  const record = store
+    ? selectFileById(store.getState(), norm.fileId)
+    : undefined;
+  if (record?.visibility !== "public") return null;
+  return shareableMediaUrl(record.cdnUrl ?? record.publicUrl);
 }
 
 export const mediaClient: MediaClient = {
@@ -332,15 +359,47 @@ export const mediaClient: MediaClient = {
   },
 
   async shareableUrl(ref: MediaRefLike): Promise<string | null> {
+    // THE public-link door (M-SHARE, ruling C19): permanent CDN URL for
+    // public files, else reuse-or-mint a no-expiry read-only share link —
+    // the exact two paths of the retired Image/Video share popovers. Asked
+    // on CLICK by the package share body (minting is a side effect the
+    // origin also deferred to the click). Fails closed (law 4).
     const norm = normalizeRef(ref);
     if (!norm) return null;
     if (norm.kind === "url") return shareableMediaUrl(norm.url);
+    const { fileId } = norm;
+    if (fileId.startsWith("vfs:")) return null;
     const store = getStoreSingleton();
-    const record = store
-      ? selectFileById(store.getState(), norm.fileId)
-      : undefined;
-    if (record?.visibility !== "public") return null;
-    return shareableMediaUrl(record.cdnUrl ?? record.publicUrl);
+    if (!store) return null;
+    const dispatch = store.dispatch as AppDispatch;
+    // Hydrate visibility/CDN fields before deciding to mint — an unhydrated
+    // public file must never get a redundant share link.
+    await dispatch(ensureCloudFileFields({ fileId, fields: FILE_RENDER_FIELDS }));
+    const record = selectFileById(store.getState(), fileId);
+    if (record?.visibility === "public") {
+      const permanent = shareableMediaUrl(record.cdnUrl ?? record.publicUrl);
+      if (permanent) return permanent;
+    }
+    // Reuse an existing no-expiry read-only link, or mint one.
+    await dispatch(
+      loadShareLinks({ resourceId: fileId, resourceType: "file" }),
+    ).unwrap();
+    const existing = selectActiveShareLinksForResource(
+      store.getState(),
+      fileId,
+    ).find((l) => l.permissionLevel === "viewer" && !l.expiresAt && !l.maxUses);
+    const token =
+      existing?.shareToken ??
+      (
+        await dispatch(
+          createShareLink({
+            resourceId: fileId,
+            resourceType: "file",
+            permissionLevel: "viewer",
+          }),
+        ).unwrap()
+      ).shareToken;
+    return pythonShareUrl(token);
   },
 
   classifyError(err: unknown): MediaUnavailableReason {

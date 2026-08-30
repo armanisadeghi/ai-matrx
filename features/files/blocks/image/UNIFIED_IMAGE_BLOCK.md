@@ -142,7 +142,7 @@ Dimensions (`width`, `height`) come from cld_files.metadata if available, otherw
 
 ## How is the render URL resolved?
 
-Single source of truth: [`features/files/blocks/image/useUnifiedImageUrl.ts`](./useUnifiedImageUrl.ts).
+Single source of truth: [`features/files/blocks/useBlockMediaSource.ts`](../useBlockMediaSource.ts) (over `@ai-matrx/media`'s `useMediaResolution`/`useMediaLoadRecovery`).
 
 1. **External** → use `externalUrl`.
 2. **Matrx + public visibility** → prefer `cdnUrl` (a true permanent CDN URL, verified with `isSignedUrl`).
@@ -266,7 +266,7 @@ lands.
 | Image-only re-export | [`./types.ts`](./types.ts) |
 | Image-only guard re-export | [`./guards.ts`](./guards.ts) |
 | `MediaGenerationMetadata` (typed `metadata.generation` shape) | [`../types.ts`](../types.ts) (`parseGenerationMetadata`) |
-| Render-time URL hook | [`useUnifiedImageUrl.ts`](./useUnifiedImageUrl.ts) |
+| Render-time URL hook | [`../useBlockMediaSource.ts`](../useBlockMediaSource.ts) |
 | Renderer component | [`UnifiedImageBlockRenderer.tsx`](./UnifiedImageBlockRenderer.tsx) |
 | Image-only legacy adapters | [`adapters/`](./adapters/) |
 | Helpers (viewer-url, expiry parser) | [`helpers/`](./helpers/) |
@@ -279,6 +279,13 @@ lands.
 
 ## Change log
 
+- **2026-08-30** — **Media wave 2.** `useUnifiedImageUrl.ts` DELETED — URL resolution +
+  load recovery now ride `../useBlockMediaSource.ts` over `@ai-matrx/media`
+  (`useMediaResolution` + `useMediaLoadRecovery`; the client's ONE retry contract).
+  `ImageSharePopover.tsx` DELETED — the share body is `@ai-matrx/media/share` via
+  `../BlockSharePopover.tsx`; the lightbox is the package `MediaLightbox`. Resolution is
+  synchronous (no more async "resolving"/"refreshing" phases); an expiring/signed URL is
+  refused by the client and renders as unavailable.
 - **2026-05-16** — Phase 1b / 1c / 1d / 1d.1 alignment (Python deployed; FE caught up). Python's universal-thumbnail rollout shipped and the legacy `cld_files.thumbnail_url` + `cld_files.thumbnail_storage_uri` columns were dropped. Frontend changes:
   - **`MatrxOriginFields.thumbnailUrl` + `thumbnailUri` REMOVED** from `features/files/blocks/types.ts`. The canonical thumbnail source is now `Asset.variants["thumbnail_url"].url` via `GET /assets/{file_id}` (or `CloudFile.thumbnailUrl` for grid listings, lifted from `FileRecord.thumbnail_url`).
   - `from-cld-files-row.ts` no longer reads the dropped columns; reads first-class `row.width` / `row.height` (Phase 1d.1) with a metadata fallback.

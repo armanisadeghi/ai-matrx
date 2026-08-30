@@ -79,7 +79,7 @@ export interface UseImageActionsArgs {
   currentSrc: string | null;
   /**
    * Resolved file id — passed in (not derived) because the matrx-block
-   * `fileId` is the canonical id, but `useUnifiedImageUrl` exposes a
+   * `fileId` is the canonical id, but `useBlockMediaSource` exposes a
    * possibly-refreshed `fileId` that the caller may want to forward.
    * Use `block.fileId` when in doubt.
    */

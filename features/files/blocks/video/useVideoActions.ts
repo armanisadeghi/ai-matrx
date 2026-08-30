@@ -19,8 +19,8 @@
  * print) are intentionally OMITTED — they're raster-specific.
  *
  * Share is NOT a callback here — it's a popover surface; the renderer wraps
- * the Share button in the canonical `ImageSharePopover` (which is media-
- * kind-agnostic for matrx files), so there's exactly one share path.
+ * the Share button in the canonical `BlockSharePopover` (the package share
+ * body, media-kind-agnostic for matrx files), so there's exactly one share path.
  */
 
 "use client";

@@ -1174,8 +1174,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
       // DB media parts (images / audio / video) routed
       // through the canonical BlockRenderer pipeline. Image
       // segments land on UnifiedImageBlockRenderer +
-      // useUnifiedImageUrl, which re-mint expired signed
-      // URLs from the persisted fileId, so old messages
+      // useBlockMediaSource, which resolve durable URLs
+      // from the persisted fileId, so old messages
       // keep working indefinitely.
       const block: RenderBlock = {
         type: segment.blockType,

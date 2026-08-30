@@ -9,9 +9,10 @@
  *   - `playbackSession` — the existing audio system (output-sink routing +
  *     exclusive-playback join). Port members are HOOKS; the port object is
  *     a module constant so it is referentially stable for the app lifetime;
- *   - `actions` — the existing download / copy / share / open flows. The
- *     SharePopover slot stays empty until the associations package ships
- *     its body (THE SHARE MANDATE, C19) — share fails closed until then.
+ *   - `actions` — the existing download / copy / share / open flows, plus
+ *     the `SharePopover` slot (THE SHARE MANDATE, C19 — wave M-SHARE): the
+ *     package share body configured with the app's notify/AccessSummary
+ *     bindings, behind a lazy edge in `share-slot.tsx`.
  */
 
 "use client";
@@ -29,7 +30,8 @@ import { useMediaElementPlaybackSession } from "@/features/audio/session/useMedi
 import type { AudioSessionSource } from "@/features/audio/session/types";
 import { fileHandler } from "@/features/files/handler/handler";
 import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
-import { mediaClient } from "./client";
+import { mediaClient, shareableUrlNoMint } from "./client";
+import { MediaSharePopoverSlot } from "./share-slot";
 import { toast } from "@/lib/toast";
 
 function HostImage({
@@ -112,9 +114,11 @@ const actions: MediaHostPorts["actions"] = {
       .as({ kind: "anchor_download", suggestedName: ctx.fileName });
   },
   async copy(ctx) {
-    // Copy a durable link — the shareable URL when one exists, otherwise
-    // the durable resolution src (never a signed URL: resolve() refuses).
-    const shareable = await mediaClient.shareableUrl(ctx.ref);
+    // Copy a durable link — the public URL when one already exists,
+    // otherwise the durable resolution src (never a signed URL: resolve()
+    // refuses). Copy never MINTS a share link — that is the share door's
+    // job (`mediaClient.shareableUrl`).
+    const shareable = shareableUrlNoMint(ctx.ref);
     const url = shareable ?? ctx.resolution?.src ?? null;
     if (!url) {
       toast.error("No link available for this file");
@@ -124,10 +128,12 @@ const actions: MediaHostPorts["actions"] = {
     else toast.error("Couldn't copy the link");
   },
   async share(ctx) {
-    // Fails closed (law 4): only a durable public URL is ever shared.
+    // Fails closed (law 4): only a durable public URL is ever shared. The
+    // ONE share door reuses-or-mints a no-expiry read-only link for owned
+    // files (wave M-SHARE) — same click semantics as the share popover.
     const shareable = await mediaClient.shareableUrl(ctx.ref);
     if (!shareable) {
-      toast.error("This file isn't public — create a share link from the file's menu");
+      toast.error("This file can't be shared publicly");
       return;
     }
     if (await copyText(shareable)) toast.success("Public link copied");
@@ -142,6 +148,9 @@ const actions: MediaHostPorts["actions"] = {
     const src = ctx.resolution?.src;
     if (src) window.open(src, "_blank", "noopener,noreferrer");
   },
+  // THE SHARE MANDATE (C19) hookup: the rich share body for the package
+  // shells (toolbar / lightbox), lazily loaded.
+  SharePopover: MediaSharePopoverSlot,
 };
 
 /** Referentially stable for the app lifetime — required by the port contract. */

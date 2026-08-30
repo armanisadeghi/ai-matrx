@@ -648,8 +648,8 @@ export const selectMessageInterleavedContent = (
           case "media": {
             // Emit a canonical `render_block` segment so the renderer can
             // dispatch through BlockRenderer (and, for images, the
-            // UnifiedImageBlockRenderer + useUnifiedImageUrl pipeline that
-            // re-mints expired signed URLs from the persisted file metadata).
+            // UnifiedImageBlockRenderer + useBlockMediaSource pipeline that
+            // resolves durable URLs from the persisted file metadata).
             //
             // Previously this branch encoded media as `![label](url)`
             // markdown text. That bypassed the canonical pipeline and

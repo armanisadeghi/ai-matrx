@@ -2,19 +2,23 @@
  * features/files/blocks/image/UnifiedImageBlockRenderer.tsx
  *
  * THE renderer for every image in the app. Reads ONLY `UnifiedImageBlock`.
- * Handles signed-URL refresh via `useUnifiedImageUrl`. Surfaces the same
+ * Resolves durable URLs via `useBlockMediaSource`. Surfaces the same
  * action set across the inline hover toolbar, right-click context menu,
  * dropdown menu, and mobile drawer.
  *
  * Architecture:
- *   - `useUnifiedImageUrl` resolves the current renderable `src`.
+ *   - `useBlockMediaSource` resolves the current renderable `src` through
+ *     `@ai-matrx/media` (`useMediaResolution` + the client's ONE retry
+ *     contract via `useMediaLoadRecovery`).
  *   - `useImageActions` exposes every action callback (download, share,
  *     download-as <format>, resize, print, etc.) so the component stays
  *     pure view code.
- *   - `ImageSharePopover` wraps the Share button — the share UI is a
- *     popover, not a one-shot callback. Backed by real share-link
- *     creation, never the old "set visibility=public + copy signed URL"
- *     lie.
+ *   - `BlockSharePopover` wraps the Share button — the package share body
+ *     (`@ai-matrx/media/share`, wave M-SHARE) with the app's ShareLinkDialog
+ *     behind "Manage all links". Backed by real share-link creation, never
+ *     the old "set visibility=public + copy signed URL" lie.
+ *   - The lightbox is the package `MediaLightbox` shell (toolbar + share
+ *     wired to the host action port).
  *
  * Variants:
  *   - "inline"  (default) — chat message position. Full hover toolbar,
@@ -40,7 +44,6 @@ import {
   Printer,
   Share2,
   Maximize,
-  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -65,10 +68,11 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ImageSharePopover, ShareQuickActionsBody } from "./ImageSharePopover";
+import { MediaLightbox } from "@ai-matrx/media/react";
+import { BlockShareBody, BlockSharePopover } from "../BlockSharePopover";
 import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useImageActions } from "./useImageActions";
-import { useUnifiedImageUrl } from "./useUnifiedImageUrl";
+import { useBlockMediaSource } from "../useBlockMediaSource";
 import { deriveViewerUrl } from "./helpers/derive-viewer-url";
 import type { ImageVariantFormat } from "./utils/render-image-variant";
 import type { UnifiedImageBlock } from "./types";
@@ -211,8 +215,16 @@ export const UnifiedImageBlockRenderer: React.FC<
   extraActions,
   sourceFeature = "files",
 }) => {
-  const { src, status, isPlaceholder, fileId, retryNonce, reportLoadError } =
-    useUnifiedImageUrl(block);
+  const {
+    src,
+    status,
+    isPlaceholder,
+    fileId,
+    mediaRef,
+    retryKey,
+    onLoadError,
+    failed,
+  } = useBlockMediaSource(block);
   const isMobile = useIsMobile();
   const isMatrx = block.origin === "matrx";
 
@@ -227,7 +239,6 @@ export const UnifiedImageBlockRenderer: React.FC<
   // automatically reads as "not yet loaded" without any state reset, and
   // the next `onLoad` writes the new URL atomically.
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
-  const [errorSrc, setErrorSrc] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Advanced "Manage all links" dialog opened from the mobile drawer's share
@@ -236,9 +247,9 @@ export const UnifiedImageBlockRenderer: React.FC<
   const [shareAdvancedOpen, setShareAdvancedOpen] = useState(false);
 
   const imageLoaded = src !== null && loadedSrc === src;
-  const imgError = src !== null && errorSrc === src;
+  // `failed` = the client's retry contract is exhausted (terminal).
   const showError =
-    (status === "error" && !src) || imgError || block.status === "error";
+    (status === "error" && !src) || failed || block.status === "error";
 
   // Pre-size the wrapper to the image's natural aspect ratio so the
   // skeleton box reserves the exact pixels the loaded image will occupy.
@@ -459,14 +470,14 @@ export const UnifiedImageBlockRenderer: React.FC<
           or a freshly-minted no-expiry share link), so mobile is no longer
           missing the "get public link" flow. */}
       <DrawerSubheader>Share</DrawerSubheader>
-      <ShareQuickActionsBody
+      <BlockShareBody
         block={block}
         currentSrc={src}
-        onAdvanced={() => {
+        onManageLinks={() => {
           setDrawerOpen(false);
           setShareAdvancedOpen(true);
         }}
-        onActionComplete={() => setDrawerOpen(false)}
+        onClose={() => setDrawerOpen(false)}
       />
       <DrawerSep />
       <DrawerRow
@@ -593,13 +604,6 @@ export const UnifiedImageBlockRenderer: React.FC<
               </div>
             )}
 
-            {/* Refresh overlay (subtle spinner when re-minting a URL) */}
-            {status === "refreshing" && imageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/40 z-10 rounded-lg">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-
             {/* Variant render overlay — light hint that a server-side
                 conversion is in flight. Non-blocking; the image stays
                 visible. */}
@@ -613,7 +617,7 @@ export const UnifiedImageBlockRenderer: React.FC<
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {src && (
               <img
-                key={retryNonce}
+                key={retryKey}
                 src={src}
                 alt={block.fileName ?? "Image"}
                 width={block.width ?? undefined}
@@ -634,15 +638,10 @@ export const UnifiedImageBlockRenderer: React.FC<
                   imageLoaded ? "opacity-100" : "opacity-0",
                 ].join(" ")}
                 onLoad={() => setLoadedSrc(src)}
-                onError={() => {
-                  // A user's own file never just "expires" — refresh the file
-                  // session and retry before surfacing a terminal error. Only
-                  // when nothing more can be done do we mark this src failed.
-                  const failed = src;
-                  void reportLoadError(failed).then((handled) => {
-                    if (!handled) setErrorSrc(failed);
-                  });
-                }}
+                // A user's own file never just "expires" — the client's ONE
+                // retry contract refreshes the file session and retries the
+                // SAME durable URL once before `failed` turns terminal.
+                onError={onLoadError}
               />
             )}
 
@@ -685,11 +684,11 @@ export const UnifiedImageBlockRenderer: React.FC<
                 <Link2 className="w-3.5 h-3.5" />
               </ToolbarButton>
 
-              <ImageSharePopover block={block} currentSrc={src}>
+              <BlockSharePopover block={block} currentSrc={src}>
                 <ToolbarButton title="Share" asSpan>
                   <Share2 className="w-3.5 h-3.5" />
                 </ToolbarButton>
-              </ImageSharePopover>
+              </BlockSharePopover>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -846,31 +845,16 @@ export const UnifiedImageBlockRenderer: React.FC<
         />
       ) : null}
 
-      {/* Lightbox */}
-      {isExpanded && src && (
-        <div
-          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
-          onClick={() => setIsExpanded(false)}
-        >
-          <div
-            className="relative max-w-[90vw] max-h-[90dvh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={src}
-              alt={block.fileName ?? "Image"}
-              className="max-w-full max-h-[85dvh] object-contain rounded-lg"
-            />
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Lightbox — the package shell (toolbar + share wired to the host
+          action port; Escape/backdrop close). */}
+      <MediaLightbox
+        open={isExpanded && src !== null}
+        onClose={() => setIsExpanded(false)}
+        mediaRef={mediaRef}
+        fileName={block.fileName ?? undefined}
+        alt={block.fileName ?? "Image"}
+        as="img"
+      />
     </>
   );
 };

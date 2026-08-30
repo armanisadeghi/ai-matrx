@@ -17,8 +17,8 @@
  * Mapping (consistent with the invariants in `../types.ts`):
  *   - `{ file_id }` ref → an `origin: "matrx"` block. `fileId` is set;
  *     `visibility` is "personal" (unknown) and `cdnUrl` is null, so
- *     `useUnifiedImageUrl` / `useUnifiedVideoUrl` resolve the durable URL
- *     via the file handler.
+ *     `useBlockMediaSource` resolves the durable URL via the injected
+ *     `MediaClient`.
  *   - `{ url }` ref → an `origin: "external"` block. `externalUrl` is set;
  *     the renderer uses it as-is.
  *   - A ref that resolves to neither → an `external` "broken" block with a

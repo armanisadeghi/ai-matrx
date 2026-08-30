@@ -723,7 +723,7 @@ export type ContentSegmentThinking = {
  * `selectMessageInterleavedContent`. Carries the same `RenderBlockPayload`
  * shape the stream pipeline uses, so the renderer can dispatch through the
  * canonical BlockRenderer (and, for images, the UnifiedImageBlockRenderer
- * + useUnifiedImageUrl pipeline that handles signed-URL refresh).
+ * + useBlockMediaSource pipeline that resolves durable URLs).
  *
  * Previously these were lossily encoded as `![label](url)` markdown text,
  * which (a) bypassed the canonical pipeline and (b) embedded whatever URL
