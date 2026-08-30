@@ -97,6 +97,26 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-30** — **Media wave 2 (M6 + M7 + M-SHARE hookup).** The unified image/video
+  block renderers resolve through `@ai-matrx/media`: `blocks/useBlockMediaSource.ts`
+  (over `useMediaResolution` + `useMediaLoadRecovery`) replaces the DELETED divergent
+  retry twins `image/useUnifiedImageUrl.ts` / `video/useUnifiedVideoUrl.ts` — the
+  client's ONE retry contract (session refresh → same-URL retry once → terminal) is now
+  the only load-recovery path. Share popovers: `blocks/BlockSharePopover.tsx` mounts the
+  package share body (`@ai-matrx/media/share` `MediaSharePopover`) with the app's
+  `ShareLinkDialog` behind `manageLinks` and `AccessSummaryPanel` in the `AccessSummary`
+  slot; `image/ImageSharePopover.tsx` + `video/VideoSharePopover.tsx` DELETED. The host
+  `MediaActionsPort.SharePopover` slot is filled (lazily, `media-client/share-slot*.tsx`)
+  so package toolbars/lightboxes open the same share body. `MediaClient.shareableUrl` now
+  implements the full public-link door: permanent CDN URL for public files, else
+  reuse-or-mint a no-expiry read-only share link (the retired popovers' exact two paths);
+  the quick COPY port action uses the new no-mint variant. The image lightbox is the
+  package `MediaLightbox` (video keeps the host lightbox — the package shell has no
+  `autoPlay` passthrough yet). FilePreview + Image/Video previewers moved onto
+  `useMediaResolution`/`useMediaLoadRecovery`; `handler/hooks/useFileAs.ts` (+ its
+  unreferenced wrappers `useFileDownloadUrl`/`useFileMediaBlock`) DELETED. Context menus,
+  drawers, hover-toolbar action sets, and agent `SourceFeature` wiring stay host-side by
+  design.
 - **2026-08-30 — File Info Copy for AI leads with durable identity.** The payload starts with
   `<file_ref>`, excludes signed URLs and raw storage paths from every block, and leaves human Copy
   unchanged.
