@@ -4,11 +4,21 @@ import {
   getCrawlReport,
   isCrawlReportKey,
 } from "@/features/marketing/lib/crawl-reports";
-import { listMarketingComingSoon } from "@/features/marketing/lib/marketing-nav";
+import { MARKETING_RESERVED_SEGMENTS } from "@/features/marketing/lib/keys";
+import { MARKETING_BRAND_SECTIONS } from "@/features/marketing/lib/brand-sections";
 import {
   getMarketingCrawlSection,
-  getMarketingSiteSection,
+  getMarketingSeoSection,
+  getMarketingWebsiteSection,
 } from "@/features/marketing/lib/route-sections";
+
+/**
+ * Title/description/favicon-badge identity for every Marketing route in the
+ * agency-model tree. Static agency-plane routes are declared; everything under
+ * `/marketing/[brandSeg]/…` derives from the SAME section registries the
+ * sidebar renders, so a screen can never carry a different name in the tab
+ * than in the menu.
+ */
 
 interface MarketingRouteIdentity {
   titlePrefix?: string;
@@ -18,44 +28,17 @@ interface MarketingRouteIdentity {
 
 const MARKETING_ROOT: MarketingRouteIdentity = {
   description:
-    "Brands and websites, content planning, keyword and search intelligence, SEO tools, and marketing operations.",
+    "Every client brand you manage, cross-client roll-ups, operations, and SEO tools.",
   letter: "Mk",
 };
 
-/**
- * Reserved (coming-soon) routes get real metadata too — they are indexable
- * URLs, not stubs. Identity is derived from the ONE nav declaration so a new
- * reserved surface can never ship with a generic title. See marketing-nav.ts.
- */
-const RESERVED_LETTERS: Readonly<Record<string, string>> = {
-  "/marketing/ads": "Ad",
-  "/marketing/analytics": "An",
-  "/marketing/audience": "Au",
-  "/marketing/automations": "At",
-  "/marketing/calendar": "Cl",
-  "/marketing/initiatives": "In",
-  "/marketing/competitors": "Cp",
-  "/marketing/content-studio": "Cs",
-  "/marketing/local": "Lo",
-  "/marketing/ranks": "Rk",
-  "/marketing/reports": "Rp",
-  "/marketing/social": "So",
+const OPENING: MarketingRouteIdentity = {
+  titlePrefix: "Opening",
+  description: "Opening the canonical marketing workspace for this address.",
+  letter: "Op",
 };
 
-const RESERVED_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> =
-  Object.fromEntries(
-    listMarketingComingSoon().map((entry) => [
-      entry.href,
-      {
-        titlePrefix: entry.label,
-        description: entry.description,
-        letter: RESERVED_LETTERS[entry.href] ?? "Mk",
-      },
-    ]),
-  );
-
 const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
-  ...RESERVED_ROUTES,
   "/marketing": MARKETING_ROOT,
   "/marketing/admin": {
     titlePrefix: "Admin",
@@ -63,109 +46,111 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     letter: "Ad",
   },
   "/marketing/brands": {
-    titlePrefix: "Brands",
-    description:
-      "Manage brand identity, properties, assets, and business facts.",
+    titlePrefix: "Clients",
+    description: "Every client brand you manage — open one for its workspace.",
     letter: "Br",
   },
-  "/marketing/local": {
-    titlePrefix: "Local & Listings",
+  "/marketing/brands/new-website": {
+    titlePrefix: "New Website",
+    description: "Add a website to a client brand.",
+    letter: "Ns",
+  },
+  "/marketing/reports": {
+    titlePrefix: "Reports",
     description:
-      "Manage location profiles, directory listings, and NAP consistency.",
-    letter: "Lo",
+      "Scheduled, branded, client-ready reports assembled from live marketing data.",
+    letter: "Rp",
   },
-  // The three Marketing FRONT DOORS (shipped 2026-08-19). They stopped being
-  // reserved routes, so their identity moved out of RESERVED_LETTERS to here.
-  "/marketing/outreach": {
-    titlePrefix: "Outreach",
+  "/marketing/reports/cost": {
+    titlePrefix: "Cost",
     description:
-      "Link and PR prospecting, sequenced contact, and earned-placement tracking.",
-    letter: "Ou",
+      "Provider spend this month and last, against the org's monthly ceilings.",
+    letter: "Co",
   },
-  "/marketing/email": {
-    titlePrefix: "Email",
+  "/marketing/reports/ranks": {
+    titlePrefix: "Rank Roll-up",
     description:
-      "The mailbox you send from, the templates you send, and the sequences that send them.",
-    letter: "Em",
+      "Every tracked keyword across every brand and site — position, movement, freshness.",
+    letter: "Rk",
   },
-  "/marketing/monitoring": {
-    titlePrefix: "Monitoring",
+  "/marketing/operations": {
+    titlePrefix: "Operations",
     description:
-      "Who wrote about you, what happened to your links, and whether the answer engines cite you.",
-    letter: "Mo",
+      "Provider connections, automation engines, approvals, and data quality.",
+    letter: "Os",
   },
-  "/marketing/capabilities": {
-    titlePrefix: "SEO Capabilities",
-    description:
-      "Browse the shared Marketing measurement catalogue and open website evidence.",
-    letter: "Cp",
-  },
-  "/marketing/ai-visibility": {
-    titlePrefix: "Opening Sites",
-    description: "Opening the canonical website AI Visibility workspaces.",
-    letter: "Ai",
-  },
-  "/marketing/connections": {
+  "/marketing/operations/connections": {
     titlePrefix: "Connections",
     description: "Connect reusable marketing data providers and accounts.",
     letter: "Cn",
   },
-  "/marketing/connections/google": {
+  "/marketing/operations/connections/google": {
     titlePrefix: "Google",
     description: "Connect GSC and Analytics data sources.",
     letter: "Gg",
   },
-  "/marketing/content-plan": {
-    titlePrefix: "Content Plan",
-    description:
-      "Plan every URL a site should have — pillars, clusters, briefs, keywords.",
-    letter: "Cp",
+  "/marketing/operations/connections/google/read-only": {
+    titlePrefix: "Read-only Sweep",
+    description: "Review Search Console data across connected properties.",
+    letter: "Ro",
   },
-  "/marketing/discovery/youtube": {
-    titlePrefix: "YouTube Discovery",
-    description:
-      "Find public videos and compare creator authority, engagement, and research value.",
-    letter: "Yt",
+  "/marketing/operations/connections/bing": {
+    titlePrefix: "Bing",
+    description: "Connect Bing Webmaster Tools.",
+    letter: "Bi",
   },
-  "/marketing/keyword-research": {
-    titlePrefix: "Keyword Research",
+  "/marketing/operations/automations": {
+    titlePrefix: "Automations",
     description:
-      "Map keyword relationships with AI research and explore live market data.",
-    letter: "Kr",
+      "Drive the coverage engines by hand and author the schedule for the brands your organization controls.",
+    letter: "At",
   },
-  "/marketing/search-console": {
-    titlePrefix: "Search Console",
+  "/marketing/operations/approvals": {
+    titlePrefix: "Approvals",
     description:
-      "The full Search Console dataset — queries, pages, countries, devices — with drill-downs, comparisons, and 16 months of history.",
-    letter: "Sc",
+      "Every pending AI proposal across your clients, in one review queue.",
+    letter: "Ap",
+  },
+  "/marketing/operations/data-quality": {
+    titlePrefix: "Data Quality",
+    description: "Controls for the keyword classifier and topic assigner.",
+    letter: "Dq",
   },
   "/marketing/tools": {
     titlePrefix: "SEO Tools",
     description: "Analyzers that run against any public URL.",
     letter: "Tl",
   },
-  "/marketing/cost": {
-    titlePrefix: "Cost",
+  "/marketing/tools/youtube": {
+    titlePrefix: "YouTube Research",
     description:
-      "Provider spend this month and last, against the org's monthly ceilings.",
-    letter: "Co",
-  },
-  "/marketing/sites": {
-    titlePrefix: "Sites",
-    description:
-      "Manage websites, connection health, and marketing operations.",
-    letter: "St",
-  },
-  "/marketing/sites/new": {
-    titlePrefix: "New Site",
-    description: "Add a website to the Marketing workspace.",
-    letter: "Ns",
+      "Find public videos and compare creator authority, engagement, and research value.",
+    letter: "Yt",
   },
 };
 
 function normalizePathname(pathname: string): string {
   const path = pathname.split(/[?#]/, 1)[0] || "/marketing";
   return path.length > 1 ? path.replace(/\/+$/, "") : path;
+}
+
+function brandSectionIdentity(
+  section: string,
+  subPath: string | undefined,
+): MarketingRouteIdentity | null {
+  const match = MARKETING_BRAND_SECTIONS.find((candidate) => {
+    const candidateSub =
+      "subPath" in candidate ? candidate.subPath : undefined;
+    return candidateSub
+      ? candidate.slug === section && candidateSub === subPath
+      : candidate.slug === section;
+  });
+  if (!match) return null;
+  return {
+    titlePrefix: match.titlePrefix,
+    description: match.description,
+    letter: match.letter,
+  };
 }
 
 /**
@@ -180,23 +165,10 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
   }
 
   const segments = normalizedPath.split("/").filter(Boolean);
+  const first = segments[1];
+  if (!first) return createMarketingMetadata(normalizedPath, MARKETING_ROOT);
 
-  // Legacy site URLs are client redirects, so they need metadata at the parent
-  // Marketing layout where client pages cannot export it themselves.
-  if (segments[1] === "sites" && segments[2]) {
-    return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Opening Site",
-      description: "Opening the canonical brand-first site workspace.",
-      letter: "Ls",
-    });
-  }
-
-  if (
-    segments[1] === "discovery" &&
-    segments[2] === "youtube" &&
-    segments[3] === "videos" &&
-    segments[4]
-  ) {
+  if (segments[1] === "tools" && segments[2] === "youtube" && segments[4]) {
     return createMarketingMetadata(normalizedPath, {
       titlePrefix: "YouTube Video",
       description:
@@ -205,97 +177,173 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
     });
   }
 
-  if (segments[1] !== "brands" || !segments[2]) {
-    return createMarketingMetadata(normalizedPath, MARKETING_ROOT);
+  // Legacy shapes still resolve to a redirect page; give them honest identity.
+  if (MARKETING_RESERVED_SEGMENTS.has(first)) {
+    return createMarketingMetadata(normalizedPath, OPENING);
   }
 
-  if (segments.length === 3) {
+  // ── The client workspace: /marketing/[brandSeg]/… ──────────────────────
+  const section = segments[2];
+  if (!section) {
     return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Brand",
-      description: "Manage a brand's identity, properties, assets, and facts.",
-      letter: "Bd",
+      titlePrefix: "Brand Overview",
+      description: "This client at a glance — properties, health, activity.",
+      letter: "Bo",
     });
   }
 
-  if (segments[3] === "discovery") {
-    return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Brand Discovery",
-      description:
-        "Review discovered brand assets, properties, and business facts.",
-      letter: "Di",
-    });
+  if (section === "websites") {
+    return createMarketingMetadata(
+      normalizedPath,
+      websiteIdentity(segments.slice(3)),
+    );
   }
 
-  if (segments[3] === "assets") {
-    return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Brand Assets",
-      description:
-        "The brand's owned asset library, research imagery, stock sources, and AI image generation.",
-      letter: "Ba",
-    });
+  if (section === "seo") {
+    return createMarketingMetadata(
+      normalizedPath,
+      seoIdentity(segments.slice(3)),
+    );
   }
 
-  if (segments[3] === "local") {
+  if (section === "identity" && segments[3]) {
+    const room: Record<string, MarketingRouteIdentity> = {
+      media: {
+        titlePrefix: "Brand Media",
+        description:
+          "The brand's owned asset library, research imagery, stock sources, and AI image generation.",
+        letter: "Ba",
+      },
+      knowledge: {
+        titlePrefix: "Business Knowledge",
+        description:
+          "The business model, customers, and facts every practice reads from.",
+        letter: "Bk",
+      },
+      offerings: {
+        titlePrefix: "Offerings",
+        description: "The products and services this brand sells, as a tree.",
+        letter: "Of",
+      },
+      guidelines: {
+        titlePrefix: "Guidelines",
+        description: "Brand and business guidelines every practice honors.",
+        letter: "Gu",
+      },
+      audience: {
+        titlePrefix: "Audience & Personas",
+        description:
+          "Segments, ICPs, and personas that every brief, campaign, and agent reads from.",
+        letter: "Au",
+      },
+    };
+    const identity = room[segments[3]];
+    if (identity) return createMarketingMetadata(normalizedPath, identity);
+  }
+
+  if (section === "locations" && segments[3]) {
     return createMarketingMetadata(normalizedPath, {
-      titlePrefix: segments[4] ? "Location Listings" : "Brand Locations",
+      titlePrefix: "Location Listings",
       description:
         "Manage canonical location profiles, directory listings, and NAP consistency.",
-      letter: segments[4] ? "Ll" : "Bl",
+      letter: "Ll",
     });
   }
 
-  const isSiteRoute = segments[3] === "sites" && Boolean(segments[4]);
-  if (!isSiteRoute) {
-    return createMarketingMetadata(normalizedPath, MARKETING_ROOT);
-  }
-
-  const siteSection = segments[5];
-  if (!siteSection) {
-    return createMarketingMetadata(
-      normalizedPath,
-      getMarketingSiteSection("") ?? MARKETING_ROOT,
-    );
-  }
-
-  if (siteSection === "crawls") {
-    return createMarketingMetadata(
-      normalizedPath,
-      getCrawlIdentity(segments.slice(6)),
-    );
-  }
-
-  if (siteSection === "pages") {
-    return createMarketingMetadata(
-      normalizedPath,
-      getPageIdentity(segments.slice(6)),
-    );
-  }
-
-  if (siteSection === "findings" && segments[6]) {
+  if (section === "content" && segments[3] === "plan" && segments[4]) {
     return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Finding Detail",
-      description: "Inspect a marketing finding and its evidence history.",
-      letter: "Fd",
+      titlePrefix: "Content Plan",
+      description:
+        "Plan every URL this site should have — pillars, clusters, briefs, keywords.",
+      letter: "Cp",
     });
   }
 
-  if (siteSection === "sitemaps" && segments[6]) {
+  if (section === "planning" && segments[3] === "initiatives" && segments[4]) {
     return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Initiative",
+      description:
+        "One cross-channel initiative — goal, budget, timeline, and assets.",
+      letter: "It",
+    });
+  }
+
+  if (section === "planning" && segments[3] === "calendar") {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Calendar",
+      description:
+        "One publishing timeline across content, social, email, and paid.",
+      letter: "Cl",
+    });
+  }
+
+  const brandIdentity = brandSectionIdentity(
+    section,
+    section === "intelligence" ? segments[3] : undefined,
+  );
+  if (brandIdentity) {
+    return createMarketingMetadata(normalizedPath, brandIdentity);
+  }
+
+  return createMarketingMetadata(normalizedPath, MARKETING_ROOT);
+}
+
+function websiteIdentity(rest: readonly string[]): MarketingRouteIdentity {
+  // rest: [siteSeg, section?, …]
+  if (!rest[0] || !rest[1]) {
+    return (
+      getMarketingWebsiteSection("") ?? {
+        titlePrefix: "Websites",
+        description: "This brand's sites — pages, structure, crawls, settings.",
+        letter: "Ws",
+      }
+    );
+  }
+  const section = rest[1];
+  if (section === "crawls") return getCrawlIdentity(rest.slice(2));
+  if (section === "pages") return getPageIdentity(rest.slice(2));
+  if (section === "sitemaps" && rest[2]) {
+    return {
       titlePrefix: "Sitemap Detail",
       description: "Inspect a sitemap and its canonical page membership.",
       letter: "Sd",
-    });
+    };
   }
+  return getMarketingWebsiteSection(section) ?? MARKETING_ROOT;
+}
 
-  return createMarketingMetadata(
-    normalizedPath,
-    getMarketingSiteSection(siteSection) ?? MARKETING_ROOT,
-  );
+function seoIdentity(rest: readonly string[]): MarketingRouteIdentity {
+  // rest: [siteSeg, section?, …]
+  if (!rest[0] || !rest[1]) {
+    return {
+      titlePrefix: "SEO",
+      description:
+        "The organic-search practice on this brand's sites — keywords, rankings, technical, links, AI visibility.",
+      letter: "Se",
+    };
+  }
+  const section = rest[1];
+  if (section === "findings" && rest[2]) {
+    return {
+      titlePrefix: "Finding Detail",
+      description: "Inspect a marketing finding and its evidence history.",
+      letter: "Fd",
+    };
+  }
+  if (section === "keywords" && rest[2] === "value") {
+    return {
+      titlePrefix: "Keyword Value",
+      description:
+        "Decide what your search traffic is worth: dimensions, rules, packs, and the scores they produce.",
+      letter: "Vl",
+    };
+  }
+  return getMarketingSeoSection(section) ?? MARKETING_ROOT;
 }
 
 function getCrawlIdentity(rest: readonly string[]): MarketingRouteIdentity {
   if (rest.length === 0)
-    return getMarketingSiteSection("crawls") ?? MARKETING_ROOT;
+    return getMarketingWebsiteSection("crawls") ?? MARKETING_ROOT;
   if (rest[0] === "new") {
     return {
       titlePrefix: "New Crawl",
@@ -319,14 +367,14 @@ function getCrawlIdentity(rest: readonly string[]): MarketingRouteIdentity {
   }
   return (
     getMarketingCrawlSection(detail) ??
-    getMarketingSiteSection("crawls") ??
+    getMarketingWebsiteSection("crawls") ??
     MARKETING_ROOT
   );
 }
 
 function getPageIdentity(rest: readonly string[]): MarketingRouteIdentity {
   if (rest.length === 0)
-    return getMarketingSiteSection("pages") ?? MARKETING_ROOT;
+    return getMarketingWebsiteSection("pages") ?? MARKETING_ROOT;
   if (rest[1] !== "snapshots") {
     return {
       titlePrefix: "Page Detail",

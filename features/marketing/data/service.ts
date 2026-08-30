@@ -91,6 +91,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { toMarketingKey } from "@/features/marketing/lib/keys";
 import { readAllRows } from "@ai-matrx/data/db";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import {
@@ -836,7 +837,20 @@ export async function createSite(
     // An explicit brand ALWAYS wins; name-match-or-create only when absent.
     ...(input.brandId ? { p_brand_id: input.brandId } : {}),
   });
-  return assertData(response.data, response.error);
+  const site = assertData(response.data, response.error);
+  // URL key (unique per brand) — the RPC predates keys, so stamp it here.
+  // A site left keyless still routes by UUID, so a failure here must surface.
+  const db = await authenticatedWebDb(supabase);
+  return insertWithSlug<MarketingSite>(
+    toMarketingKey(input.domain || input.name),
+    (slug) =>
+      db
+        .from("site")
+        .update({ slug })
+        .eq("id", site.id)
+        .select(SITE_COLUMNS)
+        .single(),
+  );
 }
 
 /**
@@ -2828,34 +2842,67 @@ export async function getSitemapCoverage(
 // Brand CRUD — full user control over everything user-editable
 // ============================================================================
 
+/** Postgres unique-violation — the slug candidate is already taken. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === "23505"
+  );
+}
+
+/**
+ * Insert with a URL key, walking `-2`, `-3`, … suffixes on collision.
+ * Availability can't be pre-checked with an RLS-filtered select (rows you
+ * can't see make every key look free), so the unique index is the check.
+ */
+async function insertWithSlug<T>(
+  baseSlug: string,
+  attempt: (slug: string) => Promise<{ data: T | null; error: unknown }>,
+): Promise<T> {
+  for (let n = 1; n <= 30; n += 1) {
+    const candidate =
+      n === 1 ? baseSlug : `${baseSlug.slice(0, 50 - `${n}`.length - 1)}-${n}`;
+    const response = await attempt(candidate);
+    if (!response.error) return assertData(response.data, response.error);
+    if (!isUniqueViolation(response.error)) {
+      return assertData(response.data, response.error);
+    }
+  }
+  throw new Error(
+    `Could not find a free URL key for "${baseSlug}" after 30 attempts`,
+  );
+}
+
 export async function createBrand(
   input: CreateBrandInput,
 ): Promise<MarketingBrand> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("brand")
-    .insert({
-      organization_id: input.organizationId,
-      name: input.name,
-      industry: input.industry,
-      description: input.description,
-      website_url: input.websiteUrl,
-      logo_url: input.logoUrl,
-      favicon_url: input.faviconUrl,
-      og_image_url: input.ogImageUrl,
-      notes: input.notes,
-      status: input.status,
-      // Omitted visibility inherits the web.brand column default
-      // (platform.entity_default_visibility('web_brand')).
-      ...(input.visibility !== undefined
-        ? { visibility: input.visibility }
-        : {}),
-      ...(input.profile !== undefined ? { profile: input.profile } : {}),
-    })
-    .select(BRAND_COLUMNS)
-    .single();
-  return assertData(response.data, response.error);
+  const db = await authenticatedWebDb(supabase);
+  return insertWithSlug<MarketingBrand>(toMarketingKey(input.name), (slug) =>
+    db
+      .from("brand")
+      .insert({
+        organization_id: input.organizationId,
+        name: input.name,
+        slug,
+        industry: input.industry,
+        description: input.description,
+        website_url: input.websiteUrl,
+        logo_url: input.logoUrl,
+        favicon_url: input.faviconUrl,
+        og_image_url: input.ogImageUrl,
+        notes: input.notes,
+        status: input.status,
+        // Omitted visibility inherits the web.brand column default
+        // (platform.entity_default_visibility('web_brand')).
+        ...(input.visibility !== undefined
+          ? { visibility: input.visibility }
+          : {}),
+        ...(input.profile !== undefined ? { profile: input.profile } : {}),
+      })
+      .select(BRAND_COLUMNS)
+      .single(),
+  );
 }
 
 export async function updateBrand(

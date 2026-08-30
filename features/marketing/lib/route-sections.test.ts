@@ -2,19 +2,21 @@ import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
-import { generateSVGFavicon, svgToDataURI } from "@/utils/favicon-utils";
 import { getMarketingRouteMetadata } from "./route-metadata";
 import {
   MARKETING_CRAWL_SECTIONS,
-  MARKETING_SITE_LEGACY_REDIRECTS,
-  MARKETING_SITE_SECTIONS,
+  MARKETING_SEO_SECTIONS,
+  MARKETING_WEBSITE_SECTIONS,
   listMarketingCrawlModes,
-  listMarketingSiteModeGroups,
-  listMarketingSiteModes,
-  marketingSiteSectionSuffix,
+  listMarketingSeoModeGroups,
+  listMarketingSeoModes,
+  listMarketingWebsiteModeGroups,
+  listMarketingWebsiteModes,
 } from "./route-sections";
+import { listMarketingBrandSegments } from "./brand-sections";
 
-const SITE_PATH = "/marketing/brands/brand-1/sites/site-1";
+const WEBSITE_PATH = "/marketing/brand-1/websites/site-1";
+const SEO_PATH = "/marketing/brand-1/seo/site-1";
 
 function childRouteDirectories(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
@@ -42,114 +44,101 @@ function faviconDataUri(pathname: string): string {
   return first ? String(first.url) : "";
 }
 
-describe("marketing route section registries", () => {
-  it("registers every site-level route that exists on disk", () => {
+describe("marketing route section registries (agency-model tree)", () => {
+  it("registers every website-inventory route that exists on disk", () => {
     const routeDirectory = resolve(
       process.cwd(),
-      "app/(core)/marketing/brands/[brandId]/sites/[siteId]",
+      "app/(core)/marketing/[brandId]/websites/[siteId]",
     );
-    const registered = MARKETING_SITE_SECTIONS.filter((section) => section.slug)
-      .map((section) => section.slug)
-      .sort();
-
-    const liveDirectories = childRouteDirectories(routeDirectory).filter(
-      (slug) =>
-        !(MARKETING_SITE_LEGACY_REDIRECTS as readonly string[]).includes(slug),
-    );
-    expect(registered).toEqual(liveDirectories);
-  });
-
-  it("registers every crawl-detail route that exists on disk", () => {
-    const routeDirectory = resolve(
-      process.cwd(),
-      "app/(core)/marketing/brands/[brandId]/sites/[siteId]/crawls/[crawlId]",
-    );
-    const registered = MARKETING_CRAWL_SECTIONS.filter(
+    const registered = MARKETING_WEBSITE_SECTIONS.filter(
       (section) => section.slug,
     )
       .map((section) => section.slug)
       .sort();
-
     expect(registered).toEqual(childRouteDirectories(routeDirectory));
   });
 
-  it("gives every site mode a unique route, label, and metadata badge", () => {
-    const modes = listMarketingSiteModes(SITE_PATH);
-    expect(new Set(modes.map((mode) => mode.href)).size).toBe(modes.length);
-    expect(new Set(modes.map((mode) => mode.name)).size).toBe(modes.length);
-    expect(new Set(modes.map((mode) => mode.letter)).size).toBe(modes.length);
-  });
-
-  it.each(MARKETING_SITE_SECTIONS)(
-    "gives the $name route its own UI and browser identity",
-    (section) => {
-      const pathname = section.slug
-        ? `${SITE_PATH}/${section.slug}`
-        : SITE_PATH;
-      expect(getMarketingRouteMetadata(pathname).title).toBe(
-        `${section.titlePrefix} | Marketing`,
-      );
-      expect(faviconDataUri(pathname)).toBe(
-        svgToDataURI(
-          generateSVGFavicon({ color: "#15803d", letter: section.letter }),
-        ),
-      );
-    },
-  );
-
-  it("puts every section in a group, and no group past five", () => {
-    const groups = listMarketingSiteModeGroups(SITE_PATH);
-    const grouped = groups.flatMap((group) => group.modes);
-    // Nothing is dropped and nothing is counted twice by grouping.
-    expect(grouped).toHaveLength(MARKETING_SITE_SECTIONS.length);
-    expect(new Set(grouped.map((mode) => mode.slug)).size).toBe(
-      MARKETING_SITE_SECTIONS.length,
+  it("registers every seo-practice route that exists on disk", () => {
+    const routeDirectory = resolve(
+      process.cwd(),
+      "app/(core)/marketing/[brandId]/seo/[siteId]",
     );
-    // The whole reason for grouping: a set this size renders as icon+label.
-    for (const group of groups) {
-      expect(group.modes.length).toBeLessThanOrEqual(5);
-    }
-    expect(groups.map((group) => group.label)).toEqual([
-      "Command",
-      "Content",
-      "Collection",
-      "Health & Fixes",
-      "Search",
-      "Links & Reputation",
-      "Configuration",
-    ]);
+    const registered = MARKETING_SEO_SECTIONS.map((section) => section.slug)
+      .sort();
+    expect(registered).toEqual(childRouteDirectories(routeDirectory));
   });
 
-  it("pins every redirect-only site route outside visible navigation", () => {
-    expect(MARKETING_SITE_LEGACY_REDIRECTS).toEqual([
-      "access",
-      "capabilities",
-      "discovery",
-      "integrations",
-      "intake",
-    ]);
-    const visible = new Set<string>(
-      MARKETING_SITE_SECTIONS.map((item) => item.slug),
+  it("registers every brand-workspace segment that exists on disk", () => {
+    const routeDirectory = resolve(process.cwd(), "app/(core)/marketing/[brandId]");
+    const onDisk = readdirSync(routeDirectory, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    expect(listMarketingBrandSegments()).toEqual(onDisk);
+  });
+
+  it("registers every crawl route that exists on disk", () => {
+    const routeDirectory = resolve(
+      process.cwd(),
+      "app/(core)/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]",
     );
-    for (const legacy of MARKETING_SITE_LEGACY_REDIRECTS) {
-      expect(visible.has(legacy)).toBe(false);
-    }
+    const registered = MARKETING_CRAWL_SECTIONS.filter((section) => section.slug)
+      .map((section) => section.slug)
+      .sort();
+    expect(registered).toEqual(childRouteDirectories(routeDirectory));
   });
 
-  it("keeps nested detail routes connected to their visible parent mode", () => {
-    expect(
-      resolveActiveRouteMode(
-        listMarketingSiteModes(SITE_PATH),
-        `${SITE_PATH}/pages/page-1/snapshots`,
-      )?.name,
-    ).toBe("Pages");
+  it("groups every section exactly once, order preserved", () => {
+    const websiteGrouped = listMarketingWebsiteModeGroups(WEBSITE_PATH).flatMap(
+      (group) => group.modes.map((mode) => mode.slug),
+    );
+    expect(new Set(websiteGrouped).size).toBe(websiteGrouped.length);
+    expect(websiteGrouped.length).toBe(MARKETING_WEBSITE_SECTIONS.length);
 
-    const crawlPath = `${SITE_PATH}/crawls/crawl-1`;
+    const seoGrouped = listMarketingSeoModeGroups(SEO_PATH).flatMap((group) =>
+      group.modes.map((mode) => mode.slug),
+    );
+    expect(new Set(seoGrouped).size).toBe(seoGrouped.length);
+    expect(seoGrouped.length).toBe(MARKETING_SEO_SECTIONS.length);
+  });
+
+  it("resolves nested routes to their parent section", () => {
+    const websiteModes = listMarketingWebsiteModes(WEBSITE_PATH);
     expect(
-      resolveActiveRouteMode(
-        listMarketingCrawlModes(crawlPath),
-        `${crawlPath}/reports/headings`,
-      )?.name,
-    ).toBe("Reports");
+      resolveActiveRouteMode(websiteModes, `${WEBSITE_PATH}/pages/abc/snapshots`)
+        ?.slug,
+    ).toBe("pages");
+    expect(resolveActiveRouteMode(websiteModes, WEBSITE_PATH)?.slug).toBe("");
+
+    const seoModes = listMarketingSeoModes(SEO_PATH);
+    expect(
+      resolveActiveRouteMode(seoModes, `${SEO_PATH}/keywords/value/rules`)?.slug,
+    ).toBe("keywords");
+    expect(
+      resolveActiveRouteMode(seoModes, `${SEO_PATH}/findings/f-1`)?.slug,
+    ).toBe("findings");
+  });
+
+  it("crawl modes build hrefs from the crawl path", () => {
+    const crawlPath = `${WEBSITE_PATH}/crawls/crawl-1`;
+    const modes = listMarketingCrawlModes(crawlPath);
+    expect(modes[0]?.href).toBe(crawlPath);
+    expect(modes.find((mode) => mode.slug === "urls")?.href).toBe(
+      `${crawlPath}/urls`,
+    );
+  });
+
+  it("gives every section a distinct favicon badge within its family", () => {
+    const websiteIcons = MARKETING_WEBSITE_SECTIONS.map((section) =>
+      faviconDataUri(
+        section.slug ? `${WEBSITE_PATH}/${section.slug}` : WEBSITE_PATH,
+      ),
+    );
+    expect(new Set(websiteIcons).size).toBe(websiteIcons.length);
+
+    const seoIcons = MARKETING_SEO_SECTIONS.map((section) =>
+      faviconDataUri(`${SEO_PATH}/${section.slug}`),
+    );
+    expect(new Set(seoIcons).size).toBe(seoIcons.length);
   });
 });

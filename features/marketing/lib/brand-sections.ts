@@ -237,7 +237,7 @@ export function listMarketingBrandModes(
   brandPath: string,
 ): MarketingBrandMode[] {
   return MARKETING_BRAND_SECTIONS.map((section) => {
-    const path = section.subPath
+    const path = "subPath" in section && section.subPath
       ? `${section.slug}/${section.subPath}`
       : section.slug;
     return {
@@ -261,6 +261,24 @@ export function listMarketingBrandModeGroups(
     modes: modes.filter((mode) => mode.group === label),
   })).filter((group) => group.modes.length > 0);
 }
+
+/**
+ * Route-backed promises that live BELOW a brand section rather than being a
+ * section themselves (each is a real reserved route under `/marketing/[brand]`
+ * rendering `<MarketingComingSoon>`). Declared here so the coming-soon drift
+ * test can prove every marketing registry row is rendered somewhere.
+ */
+export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
+  comingSoonId: string;
+  subRoute: string;
+}[] = [
+  { comingSoonId: "marketing.audience", subRoute: "identity/audience" },
+  { comingSoonId: "marketing.calendar", subRoute: "planning/calendar" },
+  { comingSoonId: "marketing.content-studio", subRoute: "content/studio" },
+  // The ad CENTER (campaigns, creative, budgets across providers) is still a
+  // promise; the live Google Ads workspace is its first room at `ads`.
+  { comingSoonId: "marketing.ads", subRoute: "ads" },
+];
 
 /** The unique filesystem segments under `/marketing/[brandId]` (drift test). */
 export function listMarketingBrandSegments(): string[] {
