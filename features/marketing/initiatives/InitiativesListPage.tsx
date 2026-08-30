@@ -28,7 +28,7 @@ export function InitiativesListPage({
 } = {}) {
   const [creating, setCreating] = useState(false);
   const orgId = useAppSelector(selectActiveOrganizationId);
-  const scopedConfig = useMemo(
+  const scopedConfig = useMemo<typeof initiativeListConfig>(
     () =>
       brandName
         ? {
