@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P13",
   "runId": "20260830T083100Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T08:49:28.489Z",
-  "summary": "Certified scope candidate queued for fast integration",
+  "state": "closed",
+  "updatedAt": "2026-08-30T08:50:00.521Z",
+  "summary": "Closed certified scope repair run after Git integration; fleet release queued by release owner",
   "source": "20260830T083100Z.json",
-  "eventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd"
+  "eventHash": "19b31e7e035f2f3b86bab66095357edf6f663dacbe08e0291ba4adc07d128392"
 }
