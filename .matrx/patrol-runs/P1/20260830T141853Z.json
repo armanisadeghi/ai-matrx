@@ -80,6 +80,43 @@
       ],
       "previousEventHash": "d934d99a373d94fcb21fdd86b3010ee39e5d31db8ab75fb7b0749201843d5140",
       "eventHash": "0f48fc8ab67751cd5e761013eca2681d247d01c598c6bbdb6a979cc69d783e3c"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T14:35:53.233Z",
+      "actor": "p1-certifier",
+      "summary": "CERTIFIED corrected 13-file P1 candidate; no concrete batch-caused defect remains.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "6849bb0faca2f93d64a04f6c30a0c365df3e95ac",
+        "certifierTaskId": "p1-certifier",
+        "checks": [
+          "Prior MillerColumns chevron hit-area regression corrected and reverified.",
+          "Exact 13-file diff passes diff-check and contains no unrelated context-lab paragraph drift.",
+          "Dead-end detector clears all intended HIGH targets; the excluded legacy ResourcesSection gap remains open.",
+          "pnpm type-check PASS; focused lint and EntityRef tests 6/6 PASS."
+        ]
+      },
+      "previousEventHash": "0f48fc8ab67751cd5e761013eca2681d247d01c598c6bbdb6a979cc69d783e3c",
+      "eventHash": "978d481028a55b1a309bab200e5043d870d80dfa227dfcfa80c19579cf9d9239"
+    },
+    {
+      "sequence": 8,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:36:19.720Z",
+      "actor": "codex-root",
+      "summary": "Certified P1 candidate queued for direct main integration.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P1/20260830T141853Z"
+      ],
+      "delivery": {
+        "candidateSha": "6849bb0faca2f93d64a04f6c30a0c365df3e95ac",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260830T141853Z"
+      },
+      "previousEventHash": "978d481028a55b1a309bab200e5043d870d80dfa227dfcfa80c19579cf9d9239",
+      "eventHash": "926029bea7b799e41397c4291cbed6359b6bfa9f63afa68d3edc04d9968bd32f"
     }
   ]
 }

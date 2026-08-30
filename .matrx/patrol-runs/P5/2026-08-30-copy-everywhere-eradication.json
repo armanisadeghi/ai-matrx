@@ -91,6 +91,43 @@
       ],
       "previousEventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce",
       "eventHash": "d0d0c5577ee01428cf9863f9bfe8cce1de869b6ce7c2660198b61f2ecd2508d4"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T14:36:30.790Z",
+      "actor": "p5-replacement-certifier",
+      "summary": "REJECTED certification request: the recorded replacement candidate used an incorrect expanded SHA and did not resolve to a Git object.",
+      "evidence": [
+        "Remote preserved ref resolves to the real immutable candidate 029667a044490df629fc088506558e5d1ae4b77a."
+      ],
+      "previousEventHash": "d0d0c5577ee01428cf9863f9bfe8cce1de869b6ce7c2660198b61f2ecd2508d4",
+      "eventHash": "372aac1037d0be78e2d36113a6b265509a5d184ee93a3f38eb47872ad45b2f0a"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T14:36:32.679Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Correcting exact candidate identity without changing product bytes.",
+      "evidence": [
+        "git rev-parse and the preserved remote ref both resolve to 029667a044490df629fc088506558e5d1ae4b77a."
+      ],
+      "previousEventHash": "372aac1037d0be78e2d36113a6b265509a5d184ee93a3f38eb47872ad45b2f0a",
+      "eventHash": "6a83e9c80b8832c7e9126db2dbbf5430966c1aec6a8757b03f6fa1baef55d212"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T14:36:33.239Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Correct exact replacement candidate 029667a044490df629fc088506558e5d1ae4b77a is ready for adversarial certification; product bytes are unchanged.",
+      "evidence": [
+        "Candidate identity verified by git rev-parse and origin/patrol/p5-copy-everywhere-2026-08-30.",
+        "All previously recorded replacement gates remain applicable because product bytes did not change."
+      ],
+      "previousEventHash": "6a83e9c80b8832c7e9126db2dbbf5430966c1aec6a8757b03f6fa1baef55d212",
+      "eventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5"
     }
   ]
 }
