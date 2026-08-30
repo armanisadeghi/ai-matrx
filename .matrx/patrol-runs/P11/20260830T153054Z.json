@@ -69,6 +69,22 @@
       },
       "previousEventHash": "106f7c91c8d8d119a6abeb9ca9df38924a9f7f67d26aa953167eab85f888598a",
       "eventHash": "e1db7b886e07b5e1b8b761a816d60cf89de00332c0841fb18ddb5a00ea3a55d7"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-30T15:36:57.958Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified first eradication wave queued for immediate main integration",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P11/20260830T153054Z"
+      ],
+      "delivery": {
+        "candidateSha": "fb564b058e28fb4bbcb260a3ae26e21deac43d97",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153054Z"
+      },
+      "previousEventHash": "e1db7b886e07b5e1b8b761a816d60cf89de00332c0841fb18ddb5a00ea3a55d7",
+      "eventHash": "ae02542e0241c3479e013cddba4c90f525a08de333974db9bb151726779bf7de"
     }
   ]
 }
