@@ -10,6 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] P11 | see `.matrx/patrol-reports/core-route-header-integrity.md` | eradication resumed after detector false-cleans: 14 verified route files fixed across two independently certified waves; remaining PageHeader render paths and the detector's body-clearance blind spot continue in the next batches | fixed-certified-delivered-wave-continues | 2026-08-30
 - [ ] P12 | `matrx-user/keyword-quick-answers` / `keywordQuickAnswersWindow` | source and DB mirror complete in candidate `ded49823bc`; isolated Browser proof, verified readiness, certification, and release remain infrastructure-blocked | 2026-08-30
 - [ ] P12 | `matrx-user/keyword-research-window` / `keywordResearchWindow` | distinct overlay identity, full live scope, menus, anchors, and four safe writes complete in candidate `ded49823bc`; isolated Browser proof, verified readiness, certification, and release remain infrastructure-blocked | 2026-08-30
 - [ ] P12 | `matrx-user/page-research` / `pageResearchWindow` | full page/draft/run contract, Pro inputs, anchors, error evidence, and two safe draft writes complete in candidate `ded49823bc`; isolated Browser proof, verified readiness, certification, and release remain infrastructure-blocked | 2026-08-30

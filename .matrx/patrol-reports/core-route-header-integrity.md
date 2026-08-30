@@ -140,3 +140,35 @@ feature-owned `PageHeader` clearance hack so this exact false-clean regression
 cannot recur. The process improvement is to validate in-app Browser capability
 when a visual-certification task is dispatched and to monitor persistent preview
 cache growth before it reaches machine-scale size.
+
+## 2026-08-30 eradication waves
+
+The user reported widespread top-header overlap, and the current strict detector
+proved falsely clean because it checks header composition but not whether the
+rendered body root reserves `--shell-header-h`. A render-path inventory found 179
+core routes with `PageHeader`/`RouteHeader`; shared-shell owners were eliminated
+before treating a route as a finding.
+
+- Wave 1 fixed four route files: all loading/error/success states for class,
+  project, and organization invitation acceptance, plus Welcome. Exact candidate
+  `fb564b058e28fb4bbcb260a3ae26e21deac43d97` was independently CERTIFIED and
+  integrated through `b4c55f5c5c`.
+- Wave 2 fixed ten core-route families in a final 15-file ownership batch:
+  Agent Apps create, Agent Apps, Agent Run, Agent Shortcuts, Agent Surface Batch,
+  Marketing Automations, Marketing Capabilities, Podcast Studio, Organization
+  Configuration, and Organization Shortcut Edit. Shared Agent panels remain
+  shell-neutral; core hosts own the canonical offset; admin hosts preserve their
+  prior non-shell visual spacing.
+- The adversarial certifier rejected two intermediate wave-2 candidates for
+  concrete double-offset regressions. Final exact candidate
+  `c245945c9fb3f65f6df937536d192d22781915e3` is CERTIFIED, preserved as an
+  ancestor of main integration `87d68803eb`, and unreleased after `v0.4.1499`.
+- A concurrent WIP integrator swept the initial wave-2 bytes into
+  `de83ae2cdd` before certification. The permanent record preserves that escape;
+  the bad shared-component ownership was subsequently repaired and certified.
+
+All completed batches passed repository type-check, strict page-header,
+strict scroll-chain, and diff checks. No approval or exception is required.
+The eradication remains open: remaining render paths need classification, and
+the detector needs a body-owner/render-path rule so a missing offset cannot
+again report clean.
