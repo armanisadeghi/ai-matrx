@@ -1,18 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   parseAgentContextPolicies,
   parseAgentSettings,
 } from "../parse-settings-context";
 
-vi.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  captureError: vi.fn(),
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  captureError: jest.fn(),
 }));
 
 const context = { agentId: "agent-123", relation: "agent.definition" };
 
 beforeEach(() => {
-  vi.mocked(captureError).mockClear();
+  jest.mocked(captureError).mockClear();
 });
 
 describe("parseAgentSettings", () => {
@@ -44,7 +43,7 @@ describe("parseAgentSettings", () => {
     ["a non-finite number", { temperature: Number.NaN }],
   ])("rejects %s loudly", (_label, raw) => {
     expect(parseAgentSettings(raw, context)).toEqual({});
-    expect(captureError).toHaveBeenCalledOnce();
+    expect(captureError).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -150,7 +149,7 @@ describe("parseAgentContextPolicies", () => {
     ],
   ])("excludes a policy with %s and reports it loudly", (_label, entry) => {
     expect(parseAgentContextPolicies([entry], context)).toEqual([]);
-    expect(captureError).toHaveBeenCalledOnce();
+    expect(captureError).toHaveBeenCalledTimes(1);
   });
 
   it("keeps valid siblings when one persisted policy is malformed", () => {
@@ -167,13 +166,13 @@ describe("parseAgentContextPolicies", () => {
       { key: "selection", type: "text" },
       { key: "record", type: "db_ref", max_inline_chars: 0 },
     ]);
-    expect(captureError).toHaveBeenCalledOnce();
+    expect(captureError).toHaveBeenCalledTimes(1);
   });
 
   it("rejects a non-array policy field loudly", () => {
     expect(parseAgentContextPolicies({ key: "selection" }, context)).toEqual(
       [],
     );
-    expect(captureError).toHaveBeenCalledOnce();
+    expect(captureError).toHaveBeenCalledTimes(1);
   });
 });
