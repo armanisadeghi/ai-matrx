@@ -225,7 +225,11 @@ export function IntakeCaptureScreenV2({
   // ── Panels & overlays ────────────────────────────────────────────────────
   const [notesOpen, setNotesOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [editSrc, setEditSrc] = useState<string | null>(null);
+  // The photo being edited: src for the editor + the artifact it REPLACES.
+  const [editTarget, setEditTarget] = useState<{
+    src: string;
+    localId: string;
+  } | null>(null);
   const [previewArtifact, setPreviewArtifact] =
     useState<PendingIntakeArtifact | null>(null);
   const [controlsHidden, setControlsHidden] = useState(false);
@@ -606,16 +610,30 @@ export function IntakeCaptureScreenV2({
             session.removeArtifact(pagerItem.key);
           }}
           onEdit={(pagerItem) => {
-            if (pagerItem.previewUrl) setEditSrc(pagerItem.previewUrl);
+            if (pagerItem.previewUrl)
+              setEditTarget({
+                src: pagerItem.previewUrl,
+                localId: pagerItem.key,
+              });
           }}
         />
       )}
 
       <ImageEditSheet
-        open={editSrc !== null}
-        src={editSrc}
-        onClose={() => setEditSrc(null)}
-        onSave={(blob) => session.addPhoto(blob)}
+        open={editTarget !== null}
+        src={editTarget?.src ?? null}
+        onClose={() => setEditTarget(null)}
+        onSave={(blob) => {
+          // Saving REPLACES the original (edit means edit — coming back to
+          // the uncropped photo is a defect): the edited frame joins the
+          // stream, the source artifact is removed, and the viewer closes
+          // onto the camera whose filmstrip now shows the edited image.
+          const target = editTarget;
+          session.addPhoto(blob);
+          if (target) session.removeArtifact(target.localId);
+          setEditTarget(null);
+          setPreviewArtifact(null);
+        }}
       />
 
       {previewArtifact && previewArtifact.kind === "audio" && (

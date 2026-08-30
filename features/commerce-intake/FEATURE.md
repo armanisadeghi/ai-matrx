@@ -222,6 +222,8 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-29 — **v2 real-phone round 2 (Arman's pager/edit feedback).** Edit now REPLACES: saving from `ImageEditSheet` adds the edited frame, removes the source artifact (`session.removeArtifact`), and closes the viewer — returning to the uncropped original was a defect. Shared `MediaPager`: swipe thresholds tuned for real flicks (40px / 200 velocity, was 60/400) and a hidden NEIGHBOR-PRELOAD layer keeps ±2 photos (±1 videos) mounted so page turns stop paying mount + resolve + full-JPEG decode (the perceived "refetch" lag). My files type-clean (repo gate red on unrelated in-flight HR work).
+
 - 2026-08-29 — **Guest-boot read guard.** The assets hub now waits for Redux auth hydration,
   a real user id, the browser access token, and the selected organization before issuing any
   `commerce` PostgREST reads. This closes the cold-boot race where persisted org context could
