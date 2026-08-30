@@ -46,7 +46,7 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@/features/files/handler/types";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -208,12 +208,10 @@ export function TranscriptViewer() {
   // Playback speed options
   const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2, 3];
 
-  // Get signed URL for audio. The handler auto-refreshes before expiry.
-  const audioSource: FileSource | null = activeTranscript?.audio_file_path
-    ? { kind: "file_id", fileId: activeTranscript.audio_file_path }
-    : null;
-  const audioUrl = useFileSrc(audioSource);
-  const isLoadingUrl = !audioUrl && !!audioSource;
+  // Durable audio URL, resolved through the injected MediaClient.
+  const audioFileId = activeTranscript?.audio_file_path ?? null;
+  const audioUrl = useMediaResolution(audioFileId).resolution?.src ?? null;
+  const isLoadingUrl = !audioUrl && !!audioFileId;
   const urlError: string | null = null;
 
   useEffect(() => {
