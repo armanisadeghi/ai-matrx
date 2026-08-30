@@ -18,6 +18,7 @@ type SubscriptionCallback = (
 ) => void;
 
 const subscriptionCallbacks: SubscriptionCallback[] = [];
+const changeCallbacks: Array<(payload: unknown) => void> = [];
 
 const mockChannel = {
   on: jest.fn(),
@@ -30,7 +31,11 @@ describe("notes realtime disconnect logging", () => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     subscriptionCallbacks.length = 0;
-    mockChannel.on.mockReturnValue(mockChannel);
+    changeCallbacks.length = 0;
+    mockChannel.on.mockImplementation((_event, _filter, callback) => {
+      changeCallbacks.push(callback as (payload: unknown) => void);
+      return mockChannel;
+    });
     mockChannel.subscribe.mockImplementation((callback: SubscriptionCallback) => {
       subscriptionCallbacks.push(callback);
       return mockChannel;
@@ -119,6 +124,39 @@ describe("notes realtime disconnect logging", () => {
     );
     expect(dispatched).not.toContainEqual(
       expect.objectContaining({ type: "notes/fetchSharedNotesList/pending" }),
+    );
+  });
+
+  it("drops a queued realtime payload after auth identity disappears without issuing editor RPCs", () => {
+    const state = {
+      userAuth: { id: "user-1" as string | null },
+      notes: { notes: {}, _savingNoteIds: [], noteEditors: {} },
+    } as unknown as RootState;
+    const storeApi = {
+      getState: () => state,
+      dispatch: jest.fn((action: unknown) => action),
+    } as unknown as MiddlewareAPI;
+    const handle = notesRealtimeMiddleware(storeApi)(
+      jest.fn((action: unknown) => action),
+    );
+
+    handle(fetchNotesList.fulfilled(undefined, "request-1", undefined));
+    expect(changeCallbacks).toHaveLength(1);
+
+    state.userAuth.id = null;
+    changeCallbacks[0]({
+      eventType: "UPDATE",
+      new: {
+        id: "note-1",
+        updated_by: "other-user",
+        updated_at: "2026-08-30T19:12:39.529Z",
+      },
+      old: {},
+    });
+
+    expect(supabase.removeChannel).toHaveBeenCalledWith(mockChannel);
+    expect(storeApi.dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "notes/setNoteEditor" }),
     );
   });
 });

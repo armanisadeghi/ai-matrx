@@ -248,6 +248,17 @@ export const notesRealtimeMiddleware: Middleware<
     new: Record<string, unknown>;
     old: Record<string, unknown>;
   }) {
+    const currentUserId = (storeApi.getState() as RootState).userAuth?.id;
+    if (!currentUserId || currentUserId !== subscribedUserId) {
+      // Postgres-change callbacks already queued by Supabase can arrive after
+      // logout or an account switch, before resetNotesState tears the channel
+      // down. Drop the old identity's payload at the producer boundary: it must
+      // not mutate the new store or issue authenticated follow-up RPCs (notably
+      // the editor identity lookup) under an absent/different session.
+      unsubscribe();
+      return;
+    }
+
     const eventType = payload.eventType;
     const newRecord = payload.new as Record<string, unknown> | undefined;
     const oldRecord = payload.old as Record<string, unknown> | undefined;

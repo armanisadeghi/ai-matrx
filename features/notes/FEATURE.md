@@ -53,9 +53,10 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 ## Key flows
 
-**Auth boundary:** Realtime catch-up reads run only while the subscribing user
-still matches `userAuth.id`; a stale `SUBSCRIBED` callback after logout or an
-account switch tears down its channel without dispatching authenticated thunks.
+**Auth boundary:** Realtime catch-up reads and already-queued change payloads run
+only while the subscribing user still matches `userAuth.id`; a stale callback
+after logout or an account switch tears down its channel before dispatching
+authenticated thunks, mutating the store, or resolving editor identity.
 
 ### Flow 1 — Create / edit a note
 
@@ -142,6 +143,7 @@ account switch tears down its channel without dispatching authenticated thunks.
 
 ## Change log
 
+- `2026-08-30` — **Queued realtime payloads cannot cross an auth transition.** `handlePayload` now verifies that `userAuth.id` still matches the channel's subscribing user before any store mutation or follow-up RPC; a payload queued before logout/account switch tears down the stale channel instead of calling editor identity lookup as `anon`. The existing stale-`SUBSCRIBED` guard remains the catch-up boundary; the payload guard closes the later callback race.
 - `2026-08-29` — **Draft recovery hydrates through the external-store contract.** `NoteDraftRecoveryBanner` waits for the complete server note, while both recovery surfaces subscribe to the browser draft store with a server-only sentinel snapshot. Server markup and the first client render now match when an unsaved draft exists, eliminating the recovery-only React hydration error while captures and discards still update immediately.
 - `2026-08-27` — **Recovered drafts are inspectable, duplication targets the live instance, active notes stay recent, and large Mermaid previews stop doing redundant work.** The recovery banner opens the canonical ephemeral `DiffViewerWindow` (`Saved version` vs `Recovered version`) before Restore / Copy / Discard. Live duplicate actions pass their Notes instance into `copyNote`, which opens and focuses the result through `addInstanceTab` / `setInstanceActiveTab`; the legacy global-tab fallback remains only for zero-mounter `useNotesRedux`. Default Recent pins the active owned note and admits it through an otherwise-excluding context filter (explicit search remains authoritative). Mermaid renders valid settled source directly, caches/coalesces identical work, drops queued renders superseded by newer source from the same mounted diagram, and lazy-loads optional ELK only when selected; default Dagre previews never download or initialize it.
 - `2026-08-26` — **Note tab right-click menu folded into the universal v3 menu (last live bespoke context menu in notes).** `NoteTabItem` no longer hand-rolls a fixed-position div menu (`ctxMenu` state + outside-click listener + positioned render — all deleted); each tab wraps in `NonEditableContextMenu` (asChild — no extra DOM box, tab-strip layout unchanged) with the editor's surface identity (`sourceFeature "notes"`, `surfaceName "matrx-user/notes"`), full manifest scope for THAT tab's note built at open time via `useNotesSurfaceScope` (null textarea ref — a tab has no selection), `contentSource {type:"note", noteId}` (Copy-as / Export / Download as Markdown / Convert) and `entity {type:"note", resourceType:"note", isOwner: !_sharedWithMe}` (Attach To / Share). Every former bespoke item survives verbatim as ONE "Tab" `extraSections` group (anchor after-compare): Save, Copy reference, Duplicate note, Move to folder…, About this note, Knowledge base / Add to knowledge base, Export as Markdown, Close tab, Close other tabs, Close all tabs, Delete note — bound to the SAME handlers, and the same array still feeds the tab's "…" dropdown so the two can never drift. Left/middle-click, drag-reorder, and inline rename untouched; menu-open now keeps the tab-interaction timestamp warm via `onMenuOpenChange`. Legacy `NoteTabs.tsx`/`NotesLayout.tsx` (zero mounters, see 2026-08-14 entry) deliberately untouched.
@@ -213,9 +215,5 @@ account switch tears down its channel without dispatching authenticated thunks.
 - `2026-05-15` — Notes now emits the `matrx-user/notes` surface scope when launching an agent shortcut from the context menu. Adds `hooks/useNotesSurfaceScope.ts` (the scope builder) and `utils/markdown-headings.ts` (heading-aware section slicing). The surface manifest at `features/surfaces/manifests/notes-editor.manifest.ts` declares 19 surface-specific values covering active-note metadata, selection/scope mirror, workspace context, and editor pane state.
 - `2026-04-25` — Removed `@/features/notes` barrel imports; consumers use `components/NotesLayout`, `service/notesApi`, `actions/CategoryNotesModal`, `types` (no new barrel file).
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.
-
----
-
-- `2026-08-28` — Realtime catch-up now rejects stale `SUBSCRIBED` callbacks after logout/account switch, preventing guest `fetchNotesList` rejections.
 
 > **Keep-docs-live:** changes to the DB schema, realtime pattern, or the save-from-anywhere programmatic API must update this doc. Keep `README.md` focused on user-facing guidance; architecture notes go here.
