@@ -1,6 +1,6 @@
 # Capture Camera — FEATURE.md
 
-**Status:** SHIPPED as **`@ai-matrx/capture` 0.1.0 on npm** — the package (`aidream/apps/shared/capture`) is the SINGLE source of truth for the chrome; the staged copies here were deleted on the swap (no-legacy). This directory now holds ONLY the app glue: `host/` + this doc. Live at `/commerce/intake/v2` (+ `/v2/instant`); real-phone acceptance pass pending. Chrome changes go in the aidream package (bump + tag `npm/capture/vX.Y.Z` + `pnpm sync:matrx-packages` here), never in this repo. Package classes reach Tailwind via the `@source` line for `@ai-matrx/capture/dist` in `app/globals.css`.
+**Status:** SHIPPED as **`@ai-matrx/capture` 0.1.0 on npm** — the package (`aidream/apps/shared/capture`) is the SINGLE source of truth for the chrome; the staged copies here were deleted on the swap (no-legacy). This directory now holds ONLY the app glue: `host/` + this doc. Live at `/commerce/intake/v2` (+ `/v2/instant`), `/commerce/intake/v3` (+ `/v3/instant`), and `/tools/product-capture` (+ `/instant` — the product-capture `CaptureScreen`, swapped 2026-08-30); real-phone acceptance pass pending. Chrome changes go in the aidream package (bump + tag `npm/capture/vX.Y.Z` + `pnpm sync:matrx-packages` here), never in this repo. Package classes reach Tailwind via the `@source` line for `@ai-matrx/capture/dist` in `app/globals.css`.
 
 The opinionated iPhone-style camera chrome: full-bleed feed under semi-transparent near-black bars, two-tap options grid, honest zoom pills, shutter, VIDEO·PHOTO·UPLOAD mode row, iOS-style sheets, instant in-browser crop/rotate editing.
 
@@ -34,6 +34,8 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 - Edit for persisted-only slides (fileId → blob fetch) — today Edit shows only when local pixels (`previewUrl`) exist.
 
 ## Change Log
+
+- 2026-08-30 — **C9 host adoption: product-capture swapped.** `features/product-capture/components/CaptureScreen.tsx` rebuilt on `CameraCapture` + `useCameraCaptureHost` (second production consumer of the host adapter after commerce intake; its cloud port opens the product Items sheet as the library). Remaining hand-built chrome: commerce-intake v1 only — gated on Arman's v2-vs-v3 approval (`features/commerce-intake/FEATURE.md`); `features/media-capture/components/CaptureModeBar.tsx` dies with that swap.
 
 - 2026-08-29 — **Published + swapped.** `@ai-matrx/capture` 0.1.0 published via the tag workflow (Arman had pre-reserved the name at 0.0.0); matrx-frontend consumes it as `latest`; staged `components/`/`hooks/`/`types.ts` DELETED; `@source` line added to globals.css.
 - 2026-08-29 — Created: chrome + laws + edit sheet + host adapter + cloud library; commerce v2 rebuilt on it at `/commerce/intake/v2`; package mirrored to `aidream/apps/shared/capture` (typecheck/test/check:package green, unpublished).

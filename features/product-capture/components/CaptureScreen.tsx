@@ -1,12 +1,17 @@
 "use client";
 
 /**
- * CaptureScreen — the full-screen rapid-capture surface of product capture.
+ * CaptureScreen — the full-screen rapid-capture surface of product capture,
+ * on the `@ai-matrx/capture` iPhone-style chrome (C9 host adoption).
  *
- * Built on the platform camera runtime exactly like the PDF scanner's
- * CaptureView (`acquireCameraLease` environment/maximum-available →
- * `<CameraPreview framing="full-frame">` → `capturePhotoFromVideo` canvas
- * path), plus this surface's own contract:
+ * Same engine, package chrome: everything behavioral is owned by
+ * `useProductCaptureSession` (lazy item creation, uploads, notes, voice
+ * transcription) and the canonical media-capture runtime reached through
+ * `features/capture-camera/host/useCameraCaptureHost` (lease, combined
+ * camera+mic prompt, video-mode mic warm hold, flip, recording clock).
+ * Product-specific affordances — QR auto-switch, SKU entry, notes, voice,
+ * Next, the Items sheet, the instant Process lane — attach through the
+ * chrome's typed SLOTS, never a fork:
  *
  * - **Mode 1 (rapid):** shutter, shutter, shutter → "Next item" → repeat.
  *   Items are created lazily on the first artifact, so Next can never mint
@@ -14,26 +19,23 @@
  * - **Mode 2 (QR auto-switch):** the ScanLine toggle runs `useQrAutoScan`
  *   over the live preview; a scanned code closes the current item and opens
  *   a new one carrying the code (or names the untouched current item).
- * - Photo ↔ video toggle at any time (video records the SAME pinned lease
- *   via `startVideoRecording`, mic on).
- * - **Upload:** photos/videos already on the device (shot earlier, sent over,
- *   taken on another camera) join the current item through the same
- *   `session.addUploads` path — same folder, same link rows, same filmstrip,
- *   many files at once.
- * - SKU quick entry, collapsible autosaving notes, one-tap voice notes with
- *   background transcription — all rendered here, all owned by
- *   `useProductCaptureSession`.
+ * - **Upload:** the mode row's first-class UPLOAD entry opens the device
+ *   gallery; files join the current item through `session.addUploads` — same
+ *   folder, same link rows, same filmstrip.
+ * - Filmstrip → swipe viewer → crop/rotate edit-with-replace are all
+ *   package-owned (`media`); replace = the edited frame joins the item and
+ *   the source artifact is removed.
  *
- * When getUserMedia is unavailable the OS-camera fallback input and the upload
- * lane keep media capture working; SKU/notes/voice stay fully functional.
+ * When getUserMedia is unavailable the blocked sheet offers the OS camera
+ * and the upload lane; SKU/notes/voice stay fully functional.
  */
 
 import React, {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -43,46 +45,28 @@ import {
   Eye,
   EyeOff,
   FileAudio,
-  ImagePlus,
-  LayoutGrid,
   Loader2,
+  NotebookPen,
   PackagePlus,
   Play,
   ScanLine,
-  SwitchCamera,
-  Trash2,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import {
-  getMediaDevicesSnapshot,
-  listDevices,
-  queryCameraPermission,
-  subscribeMediaDevices,
-} from "@/features/media-devices/deviceManager";
-import { useAudioDevices } from "@/features/audio/useAudioDevices";
-import {
-  acquireMicStream,
-  releaseMicStream,
-} from "@/features/audio/micStream";
-import {
-  acquireCameraLease,
-  type CameraLease,
-} from "@/features/media-capture/runtime/camera-stream-manager";
 import { CameraPreview } from "@/features/media-capture/components/CameraPreview";
-import { CaptureModeBar } from "@/features/media-capture/components/CaptureModeBar";
-import { capturePhotoFromVideo } from "@/features/media-capture/hooks/usePhotoCapture";
-import {
-  startVideoRecording,
-  type CaptureRecordingHandle,
-} from "@/features/media-capture/recording/video-recorder";
-import { extensionForMime } from "@/features/media-capture/core/mime-selection";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
-
+import { fetchFileBlobUrl } from "@/features/files/hooks/useFileBlob";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+
+import { CameraCapture } from "@ai-matrx/capture/react";
+import type { CaptureMediaItem } from "@ai-matrx/capture/react";
+import type {
+  CaptureCameraMode,
+  CaptureOptionTile,
+} from "@ai-matrx/capture";
+import { useCameraCaptureHost } from "@/features/capture-camera/host/useCameraCaptureHost";
 
 import type { PendingArtifact } from "../types";
 import { useProductCaptureSession } from "../hooks/useProductCaptureSession";
@@ -95,9 +79,7 @@ import { InstantProcessSheet } from "./InstantProcessSheet";
 import { NotesPanel } from "./NotesPanel";
 import { VoiceNoteButton } from "./VoiceNoteButton";
 import { ItemsSheet } from "./ItemsSheet";
-import { MediaPager } from "./MediaPager";
 
-const PHOTO_JPEG_QUALITY = 0.92;
 const QR_MODE_STORAGE_KEY = "product-capture:qr-auto";
 
 export interface CaptureScreenProps {
@@ -141,9 +123,6 @@ export function CaptureScreen({
   );
 
   // ── Instant lane (mode="instant") ────────────────────────────────────────
-  // The hook takes the current item so it can restore that item's earlier run
-  // (transcript + saved record) whenever the surface lands on it again — a
-  // processed item is never a blank Process button.
   const instant = useInstantAnalysis({
     item: session.currentItem,
     enabled: instantMode,
@@ -180,234 +159,9 @@ export function CaptureScreen({
     session.nextItem();
   }, [instant, session]);
 
-  // ── Camera lease (scanner contract) ──────────────────────────────────────
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [notSupported, setNotSupported] = useState(false);
-  const [permissionDenied, setPermissionDenied] = useState(false);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [flash, setFlash] = useState(false);
-
-  const leaseRef = useRef<CameraLease | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  // ── Upload inputs (fallback + gallery picker) ───────────────────────────
   const fallbackInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
-
-  const devices = useSyncExternalStore(
-    subscribeMediaDevices,
-    getMediaDevicesSnapshot,
-    getMediaDevicesSnapshot,
-  );
-  const numberOfCameras = devices.cameras.length;
-
-  useEffect(() => {
-    let cancelled = false;
-    let myLease: CameraLease | null = null;
-    let unsubscribe: (() => void) | null = null;
-
-    void (async () => {
-      // Known-denied (Chromium Permissions API / prior Safari inference):
-      // show the inline explainer instead of calling getUserMedia again —
-      // the browser owns the block; only its site settings can lift it.
-      const known = await queryCameraPermission();
-      if (cancelled) return;
-      if (known === "denied") {
-        setPermissionDenied(true);
-        return;
-      }
-      try {
-        // ONE combined camera+mic browser prompt when the mic isn't granted
-        // yet — this surface records video and voice notes, so the mic is
-        // part of the job; a separate mic prompt mid-action is the classic
-        // double-prompt annoyance (every session on iOS Safari).
-        const lease = await acquireCameraLease(
-          {
-            profile: "maximum-available",
-            ...(deviceId
-              ? { deviceId }
-              : { facingMode: "environment" as const }),
-          },
-          { combineMicPrompt: true },
-        );
-        if (cancelled) {
-          lease.release();
-          return;
-        }
-        myLease = lease;
-        leaseRef.current = lease;
-        setStream(lease.stream);
-        setPermissionDenied(false);
-        setNotSupported(false);
-        unsubscribe = lease.on("reconfigured", (next) => setStream(next));
-        void listDevices();
-      } catch (err: unknown) {
-        if (cancelled) return;
-        const name =
-          err && typeof err === "object" && "name" in err
-            ? String((err as { name: unknown }).name)
-            : "";
-        if (name === "NotAllowedError" || name === "SecurityError") {
-          setPermissionDenied(true);
-        } else {
-          setNotSupported(true);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-      if (myLease) {
-        myLease.release();
-        if (leaseRef.current === myLease) leaseRef.current = null;
-      }
-      setStream(null);
-    };
-  }, [deviceId]);
-
-  const cameraBlocked = notSupported || permissionDenied;
-
-  const { setCamera } = useAudioDevices();
-  const switchCamera = useCallback(() => {
-    const cams = getMediaDevicesSnapshot().cameras;
-    if (cams.length < 2) return;
-    const currentIdx = deviceId
-      ? cams.findIndex((c) => c.deviceId === deviceId)
-      : cams.findIndex(
-          (c) =>
-            c.deviceId ===
-            leaseRef.current?.stream.getVideoTracks()[0]?.getSettings()
-              .deviceId,
-        );
-    const next = cams[(Math.max(currentIdx, 0) + 1) % cams.length];
-    if (next) {
-      setDeviceId(next.deviceId);
-      // Persist id + label (labels survive iOS deviceId regeneration) so the
-      // SAME camera comes back on the next open — the preferred-camera
-      // resolver applies it as `{ideal}` with no renegotiation or prompt.
-      setCamera(next.deviceId, next.label);
-    }
-  }, [deviceId, setCamera]);
-
-  // ── Capture modes ────────────────────────────────────────────────────────
-  const [mediaMode, setMediaMode] = useState<"photo" | "video">("photo");
-  const [recording, setRecording] = useState(false);
-  const [recordElapsed, setRecordElapsed] = useState(0);
-  const recordingRef = useRef<CaptureRecordingHandle | null>(null);
-  const [voiceActive, setVoiceActive] = useState(false);
-
-  // Warm-hold the shared mic while in VIDEO mode so tapping record starts
-  // instantly with no mic prompt mid-action (iOS Safari re-prompts once a
-  // fully torn-down grant is re-acquired). Released on leaving video mode /
-  // unmount; the singleton's short keepalive clears the mic light. Skipped
-  // when the mic is known-denied — re-asking would hammer, not help.
-  useEffect(() => {
-    if (mediaMode !== "video" || cameraBlocked) return;
-    if (getMediaDevicesSnapshot().permissionState === "denied") return;
-    let cancelled = false;
-    let held = false;
-    acquireMicStream()
-      .then(() => {
-        if (cancelled) {
-          releaseMicStream();
-          return;
-        }
-        held = true;
-      })
-      .catch(() => {
-        // Denied/unavailable — the record path surfaces its own error.
-      });
-    return () => {
-      cancelled = true;
-      if (held) releaseMicStream();
-    };
-  }, [mediaMode, cameraBlocked]);
-
-  useEffect(() => {
-    if (!recording) return;
-    const timer = setInterval(() => {
-      const h = recordingRef.current;
-      if (h) setRecordElapsed(Math.floor(h.getElapsedMs() / 1000));
-    }, 250);
-    return () => clearInterval(timer);
-  }, [recording]);
-
-  const takePhoto = useCallback(() => {
-    const video = videoRef.current;
-    const lease = leaseRef.current;
-    if (!video || !lease || video.videoWidth === 0) return;
-    void capturePhotoFromVideo({
-      video,
-      lease,
-      framing: "full-frame",
-      quality: PHOTO_JPEG_QUALITY,
-      fileNamePrefix: "product",
-      allowNativeTakePhoto: false,
-    })
-      .then((result) => {
-        session.addPhoto(result.blob);
-        setFlash(true);
-        window.setTimeout(() => setFlash(false), 120);
-      })
-      .catch((err: unknown) => {
-        console.error("[product-capture] shutter capture failed", err);
-      });
-  }, [session]);
-
-  const startVideo = useCallback(async () => {
-    const lease = leaseRef.current;
-    if (!lease) return;
-    try {
-      const handle = await startVideoRecording({
-        lease,
-        withMic: true,
-        sourceFeature: "files",
-        label: "Product video",
-      });
-      recordingRef.current = handle;
-      setRecordElapsed(0);
-      setRecording(true);
-      void handle.done
-        .then((result) => {
-          if (result) {
-            const ext = extensionForMime(result.mime);
-            session.addVideo(result.blob, `video-${Date.now()}.${ext}`);
-          }
-        })
-        .catch((err: unknown) => {
-          console.error("[product-capture] video recording failed", err);
-          toast.error("The video recording failed.");
-        })
-        .finally(() => {
-          recordingRef.current = null;
-          setRecording(false);
-        });
-    } catch (err) {
-      console.error("[product-capture] video start failed", err);
-      toast.error("Could not start the video recording.");
-    }
-  }, [session]);
-
-  const stopVideo = useCallback(() => {
-    void recordingRef.current?.stop();
-  }, []);
-
-  // Leaving the screen mid-recording: stop gracefully so the journal path
-  // still delivers the file.
-  useEffect(() => {
-    return () => {
-      void recordingRef.current?.stop();
-    };
-  }, []);
-
-  const onShutter = useCallback(() => {
-    if (mediaMode === "photo") {
-      takePhoto();
-    } else if (recording) {
-      stopVideo();
-    } else {
-      void startVideo();
-    }
-  }, [mediaMode, recording, takePhoto, startVideo, stopVideo]);
 
   const handleFallbackChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -419,9 +173,6 @@ export function CaptureScreen({
     [session],
   );
 
-  // Upload lane: photos/videos the worker already has on the device (shot
-  // earlier, sent to them, or from another camera) join the item exactly like
-  // a live capture — same folder, same link rows, same filmstrip.
   const handleUploadChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
@@ -436,7 +187,39 @@ export function CaptureScreen({
     [session],
   );
 
-  // ── QR auto-switch (Mode 2) ──────────────────────────────────────────────
+  // ── Camera host (the package engine over the canonical runtime) ─────────
+  const [mediaMode, setMediaMode] = useState<CaptureCameraMode>("photo");
+  const host = useCameraCaptureHost({
+    fileNamePrefix: "product",
+    recordingLabel: "Product video",
+    onPhoto: useCallback(
+      (blob: Blob) => {
+        session.addPhoto(blob);
+      },
+      [session],
+    ),
+    onVideo: useCallback(
+      (blob: Blob, fileName: string) => {
+        session.addVideo(blob, fileName);
+      },
+      [session],
+    ),
+    onUpload: useCallback(() => uploadInputRef.current?.click(), []),
+    mode: mediaMode,
+  });
+
+  // ── Voice notes ──────────────────────────────────────────────────────────
+  const [voiceActive, setVoiceActive] = useState(false);
+
+  // ── Panels & overlays (declared before the QR gate that reads them) ─────
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [itemsOpen, setItemsOpen] = useState(false);
+  // The package review loop (viewer/editor) reports open state so the QR
+  // scanner pauses while an overlay covers the feed.
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [controlsHidden, setControlsHidden] = useState(false);
+
+  // ── QR auto-switch (Mode 2, persisted) ──────────────────────────────────
   const [qrMode, setQrMode] = useState(() => {
     try {
       return window.localStorage.getItem(QR_MODE_STORAGE_KEY) === "1";
@@ -471,9 +254,18 @@ export function CaptureScreen({
     [session],
   );
 
+  // Scanning pauses while ANY overlay covers the feed: the camera keeps
+  // streaming under them, and a code sitting in frame would silently switch
+  // items mid-review.
   useQrAutoScan({
-    videoRef,
-    enabled: qrMode && !cameraBlocked && !recording,
+    videoRef: host.videoRef,
+    enabled:
+      qrMode &&
+      !host.cameraBlocked &&
+      !host.recording &&
+      !reviewOpen &&
+      !itemsOpen &&
+      !processOpen,
     currentCode: session.currentItem?.code ?? null,
     onCode: onQrCode,
   });
@@ -484,20 +276,6 @@ export function CaptureScreen({
     };
   }, []);
 
-  // ── SKU quick entry ──────────────────────────────────────────────────────
-  const currentItemId = session.currentItem?.id ?? null;
-  const currentItemCode = session.currentItem?.code ?? null;
-
-  // ── Panels ───────────────────────────────────────────────────────────────
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [itemsOpen, setItemsOpen] = useState(false);
-  const [previewArtifact, setPreviewArtifact] =
-    useState<PendingArtifact | null>(null);
-
-  // Hide every overlay control (except the toggle itself) so the full frame
-  // can be checked unobstructed. Recording/QR feedback chips stay — honesty
-  // beats a clean frame while something is actively happening.
-  const [controlsHidden, setControlsHidden] = useState(false);
   const toggleControls = useCallback(() => {
     setControlsHidden((h) => {
       if (!h) setNotesOpen(false);
@@ -506,153 +284,116 @@ export function CaptureScreen({
   }, []);
 
   const { currentItem, artifacts } = session;
+  const currentItemId = currentItem?.id ?? null;
+  const currentItemCode = currentItem?.code ?? null;
   const photoCount = artifacts.filter((a) => a.kind === "photo").length;
-  // The current item's photo/video strip, in capture order, for the pager.
-  const pagerMedia = artifacts
-    .filter((a) => a.kind !== "audio")
-    .map((a) => ({
-      key: a.localId,
-      kind: a.kind === "video" ? ("video" as const) : ("photo" as const),
-      fileId: a.fileId,
-      previewUrl: a.previewUrl,
-    }));
   const itemLabel = currentItem
     ? (currentItem.code ?? `Item ${session.currentItemSeq}`)
     : "New item";
 
+  // The package media session: filmstrip, swipe viewer, edit-with-replace
+  // all run INSIDE @ai-matrx/capture. Fresh captures carry their object URL;
+  // persisted-only artifacts (a resumed item) resolve through the canonical
+  // blob cache — the package memoizes the resolutions.
+  const mediaItems = useMemo<CaptureMediaItem[]>(
+    () =>
+      artifacts.map((a) => {
+        const fileId = a.fileId;
+        return {
+          key: a.localId,
+          kind: a.kind,
+          src: a.previewUrl ?? null,
+          resolve:
+            !a.previewUrl && fileId
+              ? () => fetchFileBlobUrl(fileId)
+              : undefined,
+          status:
+            a.status === "uploading"
+              ? ("uploading" as const)
+              : a.status === "error"
+                ? ("error" as const)
+                : ("ready" as const),
+        };
+      }),
+    [artifacts],
+  );
+
+  const lastVisualArtifact = [...artifacts]
+    .reverse()
+    .find((a) => a.kind !== "audio");
+
   const shutterDisabled =
-    (cameraBlocked && mediaMode === "video") ||
-    (cameraBlocked && mediaMode === "photo") ||
-    voiceActive ||
-    session.organizationId === null;
+    host.cameraBlocked || voiceActive || session.organizationId === null;
+
+  const goToItems = useCallback(
+    () => router.push("/tools/product-capture/all"),
+    [router],
+  );
+
+  // Product option tiles injected into the two-tap grid (the QR toggle lives
+  // here too — plus its one-tap top-bar button).
+  const productTiles: CaptureOptionTile[] = [
+    {
+      id: "qr-mode",
+      label: "QR",
+      icon: <ScanLine className="h-6 w-6" />,
+      active: qrMode,
+      onPress: toggleQrMode,
+    },
+    {
+      id: "notes",
+      label: "Notes",
+      icon: <NotebookPen className="h-6 w-6" />,
+      active: session.notes.trim() !== "",
+      onPress: () => setNotesOpen((o) => !o),
+    },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
-      {/* ── Full-bleed stage: the preview fills the whole screen (viewport
-           crop); the SHUTTER still captures the full sensor frame — the
-           listing pipeline gets everything the sensor saw. ── */}
-      <div className="absolute inset-0">
-        <CameraPreview
-          stream={stream}
-          framing="viewport-crop"
-          videoRef={videoRef}
-        />
-      </div>
-      {flash && <div className="absolute inset-0 z-20 bg-white/70" />}
-
-      {/* Top bar */}
-      {!controlsHidden && (
-        <div className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent p-3 pt-safe">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white"
-            // Always land on the manage list — the capture overlay covers the
-            // whole shell, so `router.back()` here could dump the user on
-            // whatever page they happened to arrive from (or nowhere useful
-            // on a direct open). The list is the feature's normal page.
-            onClick={() => router.push("/tools/product-capture/all")}
-            aria-label="Close capture and open the item list"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0 flex-1 text-center">
-            <p className="truncate text-sm font-semibold text-white">
-              {itemLabel}
-            </p>
-            <p className="text-[11px] text-white/70">
-              {photoCount === 0
-                ? "No photos yet"
-                : `${photoCount} photo${photoCount === 1 ? "" : "s"}`}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white",
-              qrMode && "bg-primary text-primary-foreground hover:bg-primary",
-            )}
-            onClick={toggleQrMode}
-            aria-label={
-              qrMode ? "Turn off QR auto-switch" : "Turn on QR auto-switch"
-            }
-            aria-pressed={qrMode}
-          >
-            <ScanLine className="h-5 w-5" />
-          </Button>
-          {numberOfCameras > 1 && !cameraBlocked && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white"
-              onClick={switchCamera}
-              aria-label="Switch camera"
-            >
-              <SwitchCamera className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Hide/show controls — always present, same spot in both states so
-          the thumb never has to hunt for it. */}
-      <button
-        type="button"
-        onClick={toggleControls}
-        aria-label={controlsHidden ? "Show controls" : "Hide controls"}
-        aria-pressed={controlsHidden}
-        className={cn(
-          "absolute right-3 z-40 flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors",
-          controlsHidden
-            ? "top-14 mt-safe bg-black/50 hover:bg-black/70"
-            : "top-14 mt-safe bg-white/10 hover:bg-white/20",
-        )}
-      >
-        {controlsHidden ? (
-          <Eye className="h-5 w-5" />
-        ) : (
-          <EyeOff className="h-5 w-5" />
-        )}
-      </button>
-
-      {/* QR auto-switch feedback */}
-      {qrMode && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-30 mt-safe flex justify-center">
-          {qrFlash ? (
-            <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-lg">
-              <Check className="h-4 w-4" />
-              {qrFlash}
-            </span>
+      <CameraCapture
+        engine={host.engine}
+        mode={mediaMode}
+        onModeChange={setMediaMode}
+        // Always land on the item list — the overlay covers the whole shell,
+        // so router.back() could strand the user.
+        onClose={goToItems}
+        preview={
+          <CameraPreview
+            stream={host.stream}
+            framing="viewport-crop"
+            videoRef={host.videoRef}
+          />
+        }
+        cloud={{
+          recentsThumb: lastVisualArtifact ? (
+            <ArtifactThumb artifact={lastVisualArtifact} />
           ) : (
-            !controlsHidden && (
-              <span className="rounded-full bg-black/50 px-3 py-1 text-[11px] text-white/80">
-                QR auto-switch on — scan a code to start its item
-              </span>
-            )
-          )}
-        </div>
-      )}
-
-      {recording && (
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-x-0 z-30 flex justify-center",
-            controlsHidden ? "bottom-6 mb-safe" : "top-28 mt-safe",
-          )}
-        >
-          <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-            {Math.floor(recordElapsed / 60)}:
-            {String(recordElapsed % 60).padStart(2, "0")}
-          </span>
-        </div>
-      )}
-
-      {cameraBlocked && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
-          {permissionDenied ? (
-            <p className="text-sm text-white/90">
+            <span className="flex h-full w-full items-center justify-center">
+              <CameraIcon className="h-5 w-5 text-white/60" />
+            </span>
+          ),
+          // The Items sheet is this surface's library: every captured item's
+          // cloud media, resumable as the current item.
+          onOpenLibrary: () => setItemsOpen(true),
+        }}
+        // Filmstrip → viewer → edit-with-replace, all package-owned. Replace
+        // = the edited frame joins the item and the source artifact is
+        // removed (in-flight uploads honor the removal server-side too).
+        media={{
+          items: mediaItems,
+          onDelete: session.removeArtifact,
+          onReplacePhoto: (key, blob) => {
+            session.addPhoto(blob);
+            session.removeArtifact(key);
+          },
+        }}
+        onReviewOpenChange={setReviewOpen}
+        controlsHidden={controlsHidden}
+        shutterDisabled={shutterDisabled}
+        blockedSheet={{
+          body: host.permissionDenied ? (
+            <p>
               Camera access is blocked for this site, so asking again
               won&apos;t help — re-enable it in the browser: tap the icon by
               the address bar (on iPhone the &ldquo;AA&rdquo;/page menu →
@@ -661,29 +402,179 @@ export function CaptureScreen({
               and voice notes keep working.
             </p>
           ) : (
-            <p className="text-sm text-white/90">
+            <p>
               The in-page camera isn&apos;t available here. Use your device
               camera instead, or upload photos and videos you already have —
               either way they are added the moment you pick them. Notes, SKU
               and voice notes keep working.
             </p>
-          )}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
-              <CameraIcon className="mr-1.5 h-4 w-4" />
-              Open system camera
-            </Button>
+          ),
+          actions: [
+            {
+              label: "Open system camera",
+              onPress: () => fallbackInputRef.current?.click(),
+              kind: "primary",
+            },
+            {
+              label: "Upload from device",
+              onPress: () => uploadInputRef.current?.click(),
+              kind: "secondary",
+            },
+          ],
+        }}
+        slots={{
+          topBarCenter: (
+            <p className="truncate text-center text-[13px] font-semibold text-white">
+              {itemLabel}
+              <span className="font-normal text-white/60">
+                {" · "}
+                {photoCount === 0
+                  ? "no photos"
+                  : `${photoCount} photo${photoCount === 1 ? "" : "s"}`}
+              </span>
+            </p>
+          ),
+          topBarTrailing: (
+            <button
+              type="button"
+              onClick={toggleQrMode}
+              aria-label={
+                qrMode ? "Turn off QR auto-switch" : "Turn on QR auto-switch"
+              }
+              aria-pressed={qrMode}
+              className={cn(
+                "flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-full transition-colors",
+                qrMode ? "text-[#FFCC00]" : "text-white hover:bg-white/10",
+              )}
+            >
+              <ScanLine className="h-[22px] w-[22px]" />
+            </button>
+          ),
+          statusChips: qrMode ? (
+            qrFlash ? (
+              <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-lg">
+                <Check className="h-4 w-4" />
+                {qrFlash}
+              </span>
+            ) : !controlsHidden ? (
+              <span className="rounded-full bg-black/50 px-3 py-1 text-[11px] text-white/80">
+                QR auto-switch on — scan a code to start its item
+              </span>
+            ) : null
+          ) : null,
+          optionTiles: productTiles,
+          aboveModeSelector: (
+            <>
+              <div className="flex items-center gap-1.5 py-1">
+                <SkuQuickEntry
+                  // Remount when the item (or an externally assigned code,
+                  // e.g. a QR scan) changes so the draft starts from truth.
+                  key={`${currentItemId ?? "none"}:${currentItemCode ?? ""}`}
+                  initialCode={currentItemCode ?? ""}
+                  onCommit={session.setCode}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-9 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
+                    session.notes.trim() !== "" ? "bg-white/20" : "bg-white/10",
+                  )}
+                  onClick={() => setNotesOpen((o) => !o)}
+                  aria-label="Item notes"
+                >
+                  Notes
+                  {session.transcribingCount > 0 && (
+                    <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />
+                  )}
+                </Button>
+                <VoiceNoteButton
+                  onRecordingComplete={session.addAudioNote}
+                  onActiveChange={setVoiceActive}
+                  disabled={host.recording || session.organizationId === null}
+                />
+                {instantMode && (
+                  <Button
+                    className="h-9 shrink-0 rounded-full px-3"
+                    onClick={onProcess}
+                    disabled={
+                      currentItem === null ||
+                      host.recording ||
+                      // A saved analysis is always viewable; only a NEW run
+                      // waits for this item's uploads to land.
+                      (session.uploadingCount > 0 && !instant.storedResult)
+                    }
+                    aria-label="Process this item with AI"
+                  >
+                    {instant.isRunning || instant.restoring ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <BrainCircuit className="h-4 w-4" />
+                    )}
+                    <span className="ml-1">
+                      {instant.isRunning
+                        ? "Analyzing…"
+                        : instant.storedResult
+                          ? "View"
+                          : "Process"}
+                    </span>
+                  </Button>
+                )}
+              </div>
+              {(session.uploadingCount > 0 || session.errorCount > 0) && (
+                <p className="pb-0.5 text-center text-[10px] leading-tight text-white/60">
+                  {session.uploadingCount > 0 &&
+                    `Saving ${session.uploadingCount} file${session.uploadingCount === 1 ? "" : "s"}… `}
+                  {session.errorCount > 0 && (
+                    <span className="text-red-400">
+                      {session.errorCount} upload
+                      {session.errorCount === 1 ? "" : "s"} failed — tap the
+                      red thumbnail.
+                    </span>
+                  )}
+                </p>
+              )}
+            </>
+          ),
+          modeRowTrailing: (
             <Button
               size="sm"
-              variant="secondary"
-              onClick={() => uploadInputRef.current?.click()}
+              className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
+              onClick={session.nextItem}
+              disabled={currentItem === null || host.recording}
             >
-              <ImagePlus className="mr-1.5 h-4 w-4" />
-              Upload from device
+              <PackagePlus className="mr-1 h-3.5 w-3.5" />
+              Next
             </Button>
-          </div>
-        </div>
-      )}
+          ),
+          overlays: (
+            <>
+              {host.flash && (
+                <div className="absolute inset-0 z-30 bg-white/70" />
+              )}
+              {/* Hide/show controls — always present, same spot. */}
+              <button
+                type="button"
+                onClick={toggleControls}
+                aria-label={controlsHidden ? "Show controls" : "Hide controls"}
+                aria-pressed={controlsHidden}
+                className={cn(
+                  "absolute right-2 top-[52px] z-40 mt-safe flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors",
+                  controlsHidden
+                    ? "bg-black/50 hover:bg-black/70"
+                    : "bg-white/10 hover:bg-white/20",
+                )}
+              >
+                {controlsHidden ? (
+                  <Eye className="h-5 w-5" />
+                ) : (
+                  <EyeOff className="h-5 w-5" />
+                )}
+              </button>
+            </>
+          ),
+        }}
+      />
 
       <input
         ref={fallbackInputRef}
@@ -705,176 +596,6 @@ export function CaptureScreen({
         onChange={handleUploadChange}
         className="hidden"
       />
-
-      {/* ── Bottom controls — overlaid on the frame over a gradient scrim ── */}
-      <div
-        className={cn(
-          "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-safe pt-8",
-          controlsHidden && "hidden",
-        )}
-      >
-        {artifacts.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto py-2">
-            {artifacts.slice(-12).map((artifact) => (
-              <button
-                key={artifact.localId}
-                type="button"
-                onClick={() => setPreviewArtifact(artifact)}
-                aria-label="View capture"
-                className="relative h-12 w-9 shrink-0 overflow-hidden rounded bg-white/10"
-              >
-                <ArtifactThumb artifact={artifact} />
-                {artifact.status === "uploading" && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
-                  </span>
-                )}
-                {artifact.status === "error" && (
-                  <span className="absolute inset-0 rounded ring-2 ring-inset ring-red-500" />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* SKU quick entry + notes + voice */}
-        <div className="flex items-center gap-2 py-2">
-          <SkuQuickEntry
-            // Remount when the item (or an externally assigned code, e.g. a
-            // QR scan) changes so the draft always starts from the truth.
-            key={`${currentItemId ?? "none"}:${currentItemCode ?? ""}`}
-            initialCode={currentItemCode ?? ""}
-            onCommit={session.setCode}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-10 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
-              session.notes.trim() !== "" ? "bg-white/20" : "bg-white/10",
-            )}
-            onClick={() => setNotesOpen((o) => !o)}
-            aria-label="Item notes"
-          >
-            Notes
-            {session.transcribingCount > 0 && (
-              <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />
-            )}
-          </Button>
-          <VoiceNoteButton
-            onRecordingComplete={session.addAudioNote}
-            onActiveChange={setVoiceActive}
-            disabled={recording || session.organizationId === null}
-          />
-        </div>
-
-        {/* Capture source control: one stable, equal-width row with the
-            springy sliding thumb. Upload is an immediate action; Photo and
-            Video remain the persistent modes. */}
-        <div className="flex justify-center px-2 pb-1">
-          <CaptureModeBar
-            mediaMode={mediaMode}
-            onModeChange={setMediaMode}
-            onUpload={() => uploadInputRef.current?.click()}
-            modeDisabled={recording}
-            uploadDisabled={session.organizationId === null}
-          />
-        </div>
-
-        {/* Instant lane: the Process affordance (mode="instant" only) */}
-        {instantMode && (
-          <div className="px-2 pb-1">
-            <Button
-              className="h-11 w-full rounded-full"
-              onClick={onProcess}
-              disabled={
-                currentItem === null ||
-                recording ||
-                // A saved analysis is always viewable; only a NEW run waits
-                // for this item's uploads to land.
-                (session.uploadingCount > 0 && !instant.storedResult)
-              }
-            >
-              {instant.isRunning || instant.restoring ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <BrainCircuit className="mr-1.5 h-4 w-4" />
-              )}
-              {instant.isRunning
-                ? "Analyzing…"
-                : instant.storedResult
-                  ? "View analysis"
-                  : session.uploadingCount > 0
-                    ? "Waiting for uploads…"
-                    : "Process item"}
-            </Button>
-          </div>
-        )}
-
-        {/* Items · shutter · next */}
-        <div className="flex items-center justify-between py-2">
-          <div className="flex w-20 justify-start">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 rounded-full text-white hover:bg-white/10 hover:text-white"
-              onClick={() => setItemsOpen(true)}
-              aria-label="Captured items"
-            >
-              <LayoutGrid className="h-5 w-5" />
-            </Button>
-          </div>
-          <button
-            type="button"
-            onClick={onShutter}
-            disabled={shutterDisabled}
-            aria-label={
-              mediaMode === "photo"
-                ? "Take photo"
-                : recording
-                  ? "Stop recording"
-                  : "Start recording"
-            }
-            className={cn(
-              "flex h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-white/80 transition-transform active:scale-90",
-              shutterDisabled && "opacity-30",
-            )}
-          >
-            {mediaMode === "photo" ? (
-              <span className="block h-14 w-14 rounded-full bg-white" />
-            ) : recording ? (
-              <span className="block h-7 w-7 rounded-sm bg-red-500" />
-            ) : (
-              <span className="block h-14 w-14 rounded-full bg-red-500" />
-            )}
-          </button>
-          <div className="flex w-20 justify-end">
-            <Button
-              size="sm"
-              className="h-11 whitespace-nowrap rounded-full px-4"
-              onClick={session.nextItem}
-              disabled={currentItem === null || recording}
-            >
-              <PackagePlus className="mr-1.5 h-4 w-4" />
-              Next
-            </Button>
-          </div>
-        </div>
-
-        {(session.uploadingCount > 0 || session.errorCount > 0) && (
-          <p className="pb-2 text-center text-[11px] text-white/60">
-            {session.uploadingCount > 0 &&
-              `Saving ${session.uploadingCount} file${session.uploadingCount === 1 ? "" : "s"} in the background… `}
-            {session.errorCount > 0 && (
-              <span className="text-red-400">
-                {session.errorCount} upload
-                {session.errorCount === 1 ? "" : "s"} failed — tap the red
-                thumbnail.
-              </span>
-            )}
-          </p>
-        )}
-      </div>
 
       {instantMode && (
         <InstantProcessSheet
@@ -898,7 +619,6 @@ export function CaptureScreen({
         />
       )}
 
-      {/* ── Artifact preview overlay ── */}
       <NotesPanel
         open={notesOpen && !controlsHidden}
         notes={session.notes}
@@ -907,50 +627,6 @@ export function CaptureScreen({
         onChange={session.setNotes}
         onClose={() => setNotesOpen(false)}
       />
-
-      {/* Photo/video artifacts open the swipeable pager (swipe ← → between
-          shots, ↓ to close); an audio artifact keeps its simple overlay. */}
-      {previewArtifact && previewArtifact.kind !== "audio" && (
-        <MediaPager
-          media={pagerMedia}
-          initialIndex={Math.max(
-            pagerMedia.findIndex((m) => m.key === previewArtifact.localId),
-            0,
-          )}
-          onClose={() => setPreviewArtifact(null)}
-          onDelete={(pagerItem) => {
-            session.removeArtifact(pagerItem.key);
-          }}
-        />
-      )}
-      {previewArtifact && previewArtifact.kind === "audio" && (
-        <div className="absolute inset-0 z-40 flex flex-col bg-black">
-          <div className="relative min-h-0 flex-1">
-            <ArtifactPreview artifact={previewArtifact} />
-          </div>
-          <div className="flex shrink-0 items-center justify-center gap-3 bg-black px-4 py-3 pb-safe">
-            <Button
-              variant="destructive"
-              className="h-11 px-5"
-              onClick={() => {
-                session.removeArtifact(previewArtifact.localId);
-                setPreviewArtifact(null);
-              }}
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" />
-              Delete
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-11 px-5"
-              onClick={() => setPreviewArtifact(null)}
-            >
-              <X className="mr-1.5 h-4 w-4" />
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
 
       <ItemsSheet
         open={itemsOpen}
@@ -995,7 +671,7 @@ function SkuQuickEntry({
       autoCapitalize="characters"
       autoCorrect="off"
       spellCheck={false}
-      className="h-10 min-w-0 flex-1 rounded-full border border-white/15 bg-white/5 px-4 text-base text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+      className="h-9 min-w-0 flex-1 rounded-full border border-white/15 bg-white/5 px-3.5 text-base text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
     />
   );
 }
@@ -1013,7 +689,8 @@ function ArtifactThumb({ artifact }: { artifact: PendingArtifact }) {
       return (
         <span className="relative block h-full w-full">
           <video
-            src={artifact.previewUrl}
+            // #t forces iOS to paint the first frame (else: black tile).
+            src={`${artifact.previewUrl}#t=0.01`}
             muted
             playsInline
             className="h-full w-full object-cover"
@@ -1038,46 +715,4 @@ function ArtifactThumb({ artifact }: { artifact: PendingArtifact }) {
       <CameraIcon className="h-4 w-4 text-white/60" />
     </span>
   );
-}
-
-function ArtifactPreview({ artifact }: { artifact: PendingArtifact }) {
-  if (artifact.kind === "audio") {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-white/80">
-          <FileAudio className="h-10 w-10" />
-          <p className="text-sm">
-            Voice note — its transcript lands in the item notes.
-          </p>
-        </div>
-      </div>
-    );
-  }
-  if (artifact.previewUrl) {
-    if (artifact.kind === "video") {
-      return (
-        <video
-          src={artifact.previewUrl}
-          controls
-          playsInline
-          className="absolute inset-0 h-full w-full object-contain"
-        />
-      );
-    }
-    return (
-      <img
-        src={artifact.previewUrl}
-        alt="Captured photo"
-        className="absolute inset-0 h-full w-full object-contain"
-      />
-    );
-  }
-  if (artifact.fileId) {
-    return (
-      <div className="absolute inset-0">
-        <CaptureThumb fileId={artifact.fileId} alt="Captured file" />
-      </div>
-    );
-  }
-  return null;
 }
