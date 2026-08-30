@@ -119,11 +119,13 @@ Pass `isCapturing` to the message options menu as a prop. The menu item should b
 
 ## Key Utilities
 
-All in `@ai-matrx/print` (`/core`, `/pdf`, `/react`); markdown→PDF deps are wired by the host seam `lib/print/markdown-pdf.ts`:
+All in `@ai-matrx/print` (`/core`, `/pdf`, `/markdown`, `/react`). Since 0.3.0 the markdown converter and the print stylesheet ship IN the package — there is no host seam, and re-adding one is the defect this repo already made three times:
 
 - `buildPrintDocument(bodyHtml, title?, extraStyles?)` → complete `<!DOCTYPE html>` string
 - `openPrintWindow(htmlDoc, filename?)` → popup window; falls back to `.html` download if popup blocked. **The window is a fresh unauthenticated document — inline every image as a data URI, never fetch.**
 - `printHtmlContent(bodyHtml, title?, extraStyles?)` → shorthand combo
+- `markdownToPdfBlob(markdown)` (`/pdf`) → styled multi-page PDF Blob, no arguments beyond the markdown
+- `markdownToHtml` / `getMarkdownStylesheet` / `printMarkdown` (`/markdown`) → the shipped converter, the two default stylesheets ("document" and "article"), and the one-call print window. Brand it with `tokens`; never fork the sheet.
 - `captureBlockElement(el, filename, orientation?)` → delegates to `captureToPDF` with scale:2
 - Fixed-geometry sheets (`@page { size: …; margin: 0 }`, inch-exact cells, screen-only "100% scale, no margins" banner, FIT_TEXT auto-shrink): patterns in the package's `flashcards.ts` (Avery 5388) and, generalized to a template registry, `labels.ts`
 
