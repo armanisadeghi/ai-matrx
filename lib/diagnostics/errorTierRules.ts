@@ -372,6 +372,23 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "association-non-conveying-access-denial",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "The association authorization boundary intentionally refuses a non-conveying edge unless the caller can edit one endpoint and view the other. The associations service maps this exact 42501 to forbidden_org and its UI surfaces the refusal; keep the local diagnostic without filing a repair incident.",
+    addedAt: "2026-08-30",
+    match: {
+      source: "supabase-postgrest",
+      relation: "assoc_add",
+      operation: "rpc",
+      code: "42501",
+      status: 403,
+      messageIncludes:
+        "non-conveying edges require editor access to one endpoint and viewer access to the other",
+    },
+  },
+  {
     id: "tool-error-normal-operation",
     tier: "yellow",
     reason:

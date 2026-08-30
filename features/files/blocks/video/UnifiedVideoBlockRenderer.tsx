@@ -155,7 +155,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
   extraActions,
   sourceFeature = "files",
 }) => {
-  const { src, status, posterUrl, retryKey, onLoadError, failed } =
+  const { src, status, posterUrl, retryKey, onLoadError, failed, mediaRef } =
     useBlockMediaSource(block);
   const isMobile = useIsMobile();
   const fileId = block.origin === "matrx" ? block.fileId : null;
@@ -172,15 +172,6 @@ export const UnifiedVideoBlockRenderer: React.FC<
     isPlaying: inlinePlaying,
     source: "file-media",
     label: "Video",
-    trackKey: fileId ?? src ?? undefined,
-  });
-  const lightboxVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [lightboxPlaying, setLightboxPlaying] = useState(false);
-  useMediaElementPlaybackSession({
-    elementRef: lightboxVideoRef,
-    isPlaying: lightboxPlaying,
-    source: "file-media",
-    label: "Video (fullscreen)",
     trackKey: fileId ?? src ?? undefined,
   });
 
@@ -545,37 +536,22 @@ export const UnifiedVideoBlockRenderer: React.FC<
         </DrawerContent>
       </Drawer>
 
-      {/* Lightbox */}
-      {isExpanded && src && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setIsExpanded(false)}
-        >
-          <div
-            className="relative max-w-[92vw] max-h-[90dvh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <video
-              ref={lightboxVideoRef}
-              src={src}
-              poster={posterUrl ?? undefined}
-              controls
-              autoPlay
-              playsInline
-              className="max-w-full max-h-[85dvh] rounded-lg bg-black"
-              onPlay={() => setLightboxPlaying(true)}
-              onPause={() => setLightboxPlaying(false)}
-              onEnded={() => setLightboxPlaying(false)}
-            />
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Lightbox — the package shell (0.2.1 video passthrough: autoplay +
+          inline playback + the fullscreen playback-session label ride the
+          existing port). Poster is deliberately omitted: autoPlay starts
+          playback immediately and the block's poster URL is not a branded
+          DurableSrc (law 3 — no raw-string lane into the package). */}
+      <MediaLightbox
+        open={isExpanded && src !== null}
+        onClose={() => setIsExpanded(false)}
+        mediaRef={mediaRef}
+        fileName={block.origin === "matrx" ? (block.fileName ?? undefined) : undefined}
+        alt="Video"
+        as="video"
+        autoPlay
+        playsInline
+        playbackLabel="Video (fullscreen)"
+      />
     </>
   );
 };

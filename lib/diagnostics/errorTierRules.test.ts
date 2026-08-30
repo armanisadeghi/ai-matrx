@@ -573,4 +573,47 @@ describe("classifyTier", () => {
       expect(c.tier).toBe("red");
     },
   );
+
+  it("keeps a handled non-conveying association access refusal local", () => {
+    const c = classifyTier(
+      captured({
+        source: "supabase-postgrest",
+        route: "/organizations/titanium/scopes/scope-1",
+        relation: "assoc_add",
+        operation: "rpc",
+        code: "42501",
+        status: 403,
+        message:
+          "assoc_add: non-conveying edges require editor access to one endpoint and viewer access to the other",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("association-non-conveying-access-denial");
+    expect(c.persist).toBe(false);
+  });
+
+  it.each([
+    [
+      "assoc_remove",
+      "non-conveying edges require editor access to one endpoint and viewer access to the other",
+    ],
+    ["assoc_add", "permission denied for function assoc_add"],
+  ])(
+    "keeps unrelated association 42501 failures red (%s)",
+    (relation, message) => {
+      const c = classifyTier(
+        captured({
+          source: "supabase-postgrest",
+          relation,
+          operation: "rpc",
+          code: "42501",
+          status: 403,
+          message,
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+    },
+  );
 });
