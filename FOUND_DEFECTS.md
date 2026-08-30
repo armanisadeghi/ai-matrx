@@ -15,23 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D293 — duplicating or promoting a shortcut silently drops its value mappings and write policies
-
-`agx_duplicate_shortcut` / `agx_promote_shortcut_to_global` (and their `_m` mirrors on
-`mandate.vw_shortcut`) build their INSERT from an explicit column list that omits
-`value_mappings` — verified live on all four functions, 2026-08-30. So "Duplicate" and
-"Promote to global" produce a shortcut whose surface consumption map is empty, and since
-census #20 moved the write policies onto `mandate.treatment.config.write_policies` (exposed as
-`mandate.vw_shortcut.write_policies`), the new column is missing from those INSERTs too. The
-copy runs against different inputs than the original and nothing says so.
-
-Pre-existing on BOTH sides, so 6.6 parity is intact — this is not a cutover regression, and the
-`_m` mirrors were generated from originals that already had the hole.
-
-Fix: add `value_mappings` (and `write_policies` on the `_m` pair) to the four INSERT column
-lists + VALUES. Found while closing census #20; unrelated to the editor work, so filed rather
-than fixed.
-
 ### D292 — the mandate routes bounce signed-out users to `/agents` and lose the destination
 
 `app/(core)/mandates/page.tsx:23` and `app/(core)/mandates/[mandateKey]/page.tsx:20` do
@@ -2457,6 +2440,10 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D293** — `agx_duplicate_shortcut` / `agx_promote_shortcut_to_global` and both `_m` mirrors omitted `value_mappings` from their INSERT column lists (verified live on all four), so a duplicate or promotion was born with an empty consumption map — and post-wave-B, a missing `write_policies` too. **FIXED 2026-08-30 by migration `d293_duplicate_promote_carry_consumption_map`**: all four now carry `value_mappings`; the `_m` pair also carries `write_policies` (first-class on the view). **Proving it surfaced D294** (below), so the behavioral proof ran after both fixes: in a rolled-back transaction as the real admin claims, legacy duplicate's map is byte-identical to its source, mirror duplicate's returned id resolves to a real view row whose `value_mappings` AND `write_policies` match the source. Grants re-verified intact after the replaces; ddl_guard_log unacked backlog 0. 2026-08-30.
+
+- **D294** (found proving D293) — `mandate.vw_shortcut`'s INSTEAD OF INSERT trigger ignores the caller-supplied `id` and mints its own definition id, but `agx_create_shortcut_m`, `agx_duplicate_shortcut_m`, and `agx_promote_shortcut_to_global_m` returned the uuid THEY generated — a dangling id pointing at no row. `create_m`'s project/task `platform.associations` rows also carried the dangling id, so a scoped shortcut created through the mirror would have had its scoping edges orphaned. Invisible to the 6.6 parity proofs (the editor re-reads by list; the batch add-flow stops at pre-storage validation). PostgREST clients were never affected — their `INSERT..RETURNING` flows through the trigger's `NEW`. **FIXED 2026-08-30 by migration `d294_agx_m_returning_real_id`**: the three functions capture the real id with `RETURNING id INTO` and the association inserts moved after it; guards and column lists unchanged. Behaviorally proven with D293 above. 2026-08-30.
 
 - **D291** (filed 2026-08-30 as "D289", renumbered — that id was already used by the resolved shortcuts-panel jest defect below) — the six SECURITY DEFINER `agx_*_m` mandate RPC mirrors (the Phase 6.6 flip's serving path, named in `lib/supabase/shortcutStorage.ts` `MANDATE_RPCS`) had EXECUTE stripped by the `definer_client_grant_revoked` guard because no `platform.client_callable_door` row existed; with `SHORTCUT_STORAGE_CUTOVER=true` every client call would have died with permission denied. **FIXED 2026-08-30** by migration `d289_agx_m_mirror_doors_and_grants`: seven door rows declared (the six + the INVOKER menu builder, reasons mirroring each original's posture) and EXECUTE re-granted to `authenticated` — the guard revoked the migration's own grants because they ran before the door inserts, so they were re-applied after; lesson: door row FIRST, grant second. **Proven through PostgREST with a real Supabase-signed admin JWT (generate_link+verify), not a service-role session**: `agx_get_user_shortcuts_m`/`agx_get_shortcuts_for_context_m`/`agx_list_non_global_shortcuts_for_admin_m`/`agx_build_shortcut_menu_m` → 200 with data; `agx_duplicate_shortcut_m` on a nonexistent id → P0001 "Shortcut not found" (execution entered the function body — the wall is gone). anon posture matches the originals (menu builder anon-callable like its original; the rest denied). The flip is no longer blocked by this. 2026-08-30.
 
