@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T142407Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:24:09.094Z",
-  "summary": "Implementing disjoint site action, list service, and presentation seams before integrating SitesPortfolio.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:35:14.486Z",
+  "summary": "Exact integrated candidate 01e441fdf958ca20cafd5497cc8e007e41d77f70 is under independent adversarial certification.",
   "source": "20260830T142407Z.json",
-  "eventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8"
+  "eventHash": "47c5d6a605cac6befa4d46cbcbec3a46e8d806946b5c6b9d4f4c7c3465049f88"
 }
