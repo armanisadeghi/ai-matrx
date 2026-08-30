@@ -23,8 +23,8 @@ import {
 } from "@/features/agents/mandates/test-run";
 import {
   versionSnapshotRowToAgentDefinition,
-  type AgentVersionSnapshot,
 } from "@/features/agents/redux/agent-definition/converters";
+import { parseAgentVersionSnapshot } from "@/features/agents/redux/agent-definition/parse-output-snapshot";
 import type {
   AgentDefinition,
   VariableDefinition,
@@ -301,7 +301,7 @@ export async function fetchVersionSnapshotDefinition(
   if (!raw) return null;
   return versionSnapshotRowToAgentDefinition(
     agentId,
-    raw as unknown as AgentVersionSnapshot,
+    parseAgentVersionSnapshot(raw),
   );
 }
 

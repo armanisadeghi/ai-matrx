@@ -22,7 +22,14 @@
  * later learns the pattern from (P24).
  */
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -45,16 +52,31 @@ import { formatCount } from "@/features/marketing/search-console/types";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { getBatchQuestion, type BatchKeyword } from "./batch";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  ProTextarea,
+  type ProTextareaElement,
+} from "@/components/official/ProTextarea";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import {
+  KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
+  createKeywordQuickAnswersScope,
+  keywordQuickAnswersManifest,
+} from "@/features/surfaces/manifests/keyword-quick-answers.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
-export function QuickAnswers({
-  siteId,
-  siteLabel,
-  dimensionSlug,
-  onDimensionChange,
-  onAnswered,
-  className,
-}: {
+export interface QuickAnswersSurfaceHandle {
+  /** Full live window scope, assembled only when a launcher asks for it. */
+  getScope: () => SurfaceScopePayload;
+  /** Draft-only write twin; never submits an answer. */
+  setReasonDraft: (value: unknown) => void;
+  /** UI-only write twin; never submits an answer. */
+  setActiveDimensionSlug: (value: unknown) => void;
+}
+
+interface QuickAnswersProps {
   siteId: string;
   siteLabel?: string | null;
   /** Null lets the server choose the question worth asking next. */
@@ -63,11 +85,26 @@ export function QuickAnswers({
   /** Fires after every landed write so a host can refresh what it shows. */
   onAnswered?: () => void;
   className?: string;
-}) {
+  /** Window-owned bridge for the nested SurfaceRuntimeProvider. */
+  surfaceHandleRef?: Ref<QuickAnswersSurfaceHandle>;
+}
+
+const V = surfaceValueLabels(keywordQuickAnswersManifest);
+
+export function QuickAnswers({
+  siteId,
+  siteLabel,
+  dimensionSlug,
+  onDimensionChange,
+  onAnswered,
+  className,
+  surfaceHandleRef,
+}: QuickAnswersProps) {
   const [seen, setSeen] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [answered, setAnswered] = useState(0);
   const [done, setDone] = useState<Record<string, string>>({});
+  const reasonRef = useRef<ProTextareaElement | null>(null);
 
   const catalog = useQuery({
     queryKey: ["marketing", "seo", "dimension-catalog", siteId],
@@ -139,6 +176,108 @@ export function QuickAnswers({
   const keywords = batch.data?.keywords ?? [];
   const outstanding = keywords.filter((k) => !done[k.keywordId]);
   const allDone = keywords.length > 0 && outstanding.length === 0;
+
+  const getScope = () => {
+    const isLoading = catalog.isFetching || batch.isFetching;
+    const isSaving = stamp.isPending;
+    return createKeywordQuickAnswersScope({
+      site_summary: { id: siteId, label: siteLabel ?? null },
+      site_id: siteId,
+      site_label: siteLabel ?? undefined,
+      dimension_catalog: dimensions,
+      active_dimension: activeDimension ?? undefined,
+      active_dimension_id: activeDimension?.dimension_id,
+      active_dimension_slug: activeSlug ?? undefined,
+      active_dimension_label:
+        activeDimension?.label ?? batch.data?.dimensionLabel ?? undefined,
+      active_dimension_scope: activeDimension?.scope,
+      active_dimension_choices: values,
+      current_question: batch.data,
+      question_reason: batch.data?.why ?? undefined,
+      remaining_unanswered: batch.data?.remaining,
+      current_keywords: keywords,
+      outstanding_keywords: outstanding,
+      answered_results: done,
+      reason_draft: reason,
+      answered_this_session: answered,
+      seen_keyword_ids: seen,
+      all_done: allDone,
+      is_loading: isLoading,
+      is_saving: isSaving,
+      session_progress: {
+        answered,
+        seen: seen.length,
+        visible: keywords.length,
+        outstanding: outstanding.length,
+        all_done: allDone,
+        loading: isLoading,
+        saving: isSaving,
+      },
+      content: reason,
+      context: {
+        site: { id: siteId, label: siteLabel ?? null },
+        active_question: {
+          slug: activeSlug,
+          label: activeDimension?.label ?? batch.data?.dimensionLabel ?? null,
+          why: batch.data?.why ?? null,
+          choices: values,
+        },
+        current_keywords: keywords,
+        outstanding_keyword_ids: outstanding.map((row) => row.keywordId),
+        answered_results: done,
+      },
+    });
+  };
+
+  const getEditableApplicationScope = () => {
+    const element = reasonRef.current;
+    const start = element?.selectionStart ?? 0;
+    const end = element?.selectionEnd ?? start;
+    const selectedText = element
+      ? element.value.slice(Math.min(start, end), Math.max(start, end))
+      : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: element
+        ? { type: "editable", element, start, end }
+        : null,
+      contextData: getScope(),
+    });
+  };
+
+  const getReadOnlyApplicationScope = () =>
+    buildApplicationScopeFromMenuContext({
+      selectedText:
+        typeof window === "undefined" ? "" : (window.getSelection()?.toString() ?? ""),
+      selectionRange: null,
+      contextData: getScope(),
+    });
+
+  const setReasonDraft = (value: unknown) => {
+    if (typeof value !== "string") {
+      throw new Error("reason_draft expects a string.");
+    }
+    setReason(value);
+  };
+
+  const setActiveDimensionSlug = (value: unknown) => {
+    if (typeof value !== "string" || !value.trim()) {
+      throw new Error("active_dimension_slug expects a non-empty string.");
+    }
+    const next = dimensions.find((dimension) => dimension.slug === value.trim());
+    if (!next) {
+      throw new Error(
+        `active_dimension_slug must name one of the ${dimensions.length} loaded questions.`,
+      );
+    }
+    onDimensionChange(next.slug);
+  };
+
+  useImperativeHandle(surfaceHandleRef, () => ({
+    getScope,
+    setReasonDraft,
+    setActiveDimensionSlug,
+  }));
 
   const nextBatch = () => {
     setSeen((prior) => [...prior, ...keywords.map((k) => k.keywordId)]);

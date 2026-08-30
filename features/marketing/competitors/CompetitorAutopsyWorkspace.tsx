@@ -42,6 +42,7 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCompetitorsScope } from "@/features/surfaces/manifests/marketing-competitors.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { toast } from "@/lib/toast";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { supabase } from "@/utils/supabase/client";
@@ -86,7 +87,6 @@ import {
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { webLocation } from "@/features/marketing/lib/copy-payloads";
 
 import {
   competitorOpportunityCopyRow,
@@ -813,6 +813,14 @@ export default function CompetitorAutopsyWorkspace({
       active: site.id === resolvedSiteId,
     };
   });
+  const copyContext = {
+    site: selectedSite ? siteBrandLabel(selectedSite) : "Choose a brand",
+    site_id: resolvedSiteId,
+    total_competitors: data?.competitors.length ?? 0,
+    tracked_competitors: tracked,
+    open_actions: openActions,
+    coverage_percent: latestArtifact?.already_have_percentage ?? null,
+  };
 
   return (
     <SurfaceRuntimeProvider
@@ -1297,33 +1305,28 @@ export default function CompetitorAutopsyWorkspace({
                 listDescription:
                   "The current filtered and sorted competitor opportunity worklist.",
                 humanRow: competitorOpportunityHuman,
-                agentRow: competitorOpportunityCopyRow,
+                agentRow: (row) =>
+                  competitorOpportunityCopyRow(row, copyContext),
                 rowAttributes: (row) => ({
                   id: row.id,
-                  site_id: resolvedSiteId ?? "",
+                  site_id: copyContext.site_id,
                   status: row.status,
                   priority: row.priority,
-                  tracked_competitors: tracked,
-                  open_actions: openActions,
+                  total_competitors: copyContext.total_competitors,
+                  tracked_competitors: copyContext.tracked_competitors,
+                  open_actions: copyContext.open_actions,
+                  coverage_percent: copyContext.coverage_percent,
                 }),
                 listAttributes: (visible, all) => ({
-                  site_id: resolvedSiteId ?? "",
+                  site_id: copyContext.site_id,
                   visible_opportunities: visible.length,
                   total_opportunities: all.length,
-                  tracked_competitors: tracked,
-                  open_actions: openActions,
+                  total_competitors: copyContext.total_competitors,
+                  tracked_competitors: copyContext.tracked_competitors,
+                  open_actions: copyContext.open_actions,
+                  coverage_percent: copyContext.coverage_percent,
                 }),
-                listContext: () => ({
-                  site: selectedSite
-                    ? siteBrandLabel(selectedSite)
-                    : "Choose a brand",
-                  site_id: resolvedSiteId ?? "",
-                  total_competitors: data?.competitors.length ?? 0,
-                  tracked_competitors: tracked,
-                  open_actions: openActions,
-                  coverage_percent:
-                    latestArtifact?.already_have_percentage ?? null,
-                }),
+                listContext: () => copyContext,
               }}
               // MSR-19/20: row click opens the canonical WindowPanel, never
               // the side drawer. `detail: { enabled: false }` removes the

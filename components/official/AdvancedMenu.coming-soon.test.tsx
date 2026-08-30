@@ -4,6 +4,17 @@ import { FileText } from "lucide-react";
 
 import AdvancedMenu from "./AdvancedMenu";
 
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+globalThis.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "b0934bd3-4f5c-40c1-b2ee-8fde587a8eb6",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:26:46.522Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:26:46.522Z",
+      "actor": "codex-p6",
+      "summary": "P6 ERADICATION batch 2: 15-file admin/canvas semantic glyph repair candidate reconstructed after shared integration race.",
+      "evidence": [
+        "Pre-edit type-check PASS; raw detector 1,146 lines in 434 files; canonical shared checkout dirty paths captured and excluded."
+      ],
+      "previousEventHash": null,
+      "eventHash": "9520c41b2326df66b70c36c3331fc0411d27ccc9cdb84c3460ec8a61185de89d"
+    }
+  ]
+}

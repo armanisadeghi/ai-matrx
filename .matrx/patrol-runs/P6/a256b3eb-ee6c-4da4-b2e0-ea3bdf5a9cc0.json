@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:26:47.470Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:26:47.470Z",
+      "actor": "codex-p6",
+      "summary": "P6 ERADICATION batch 3: 15-file feature-surface semantic glyph repair candidate reconstructed after shared integration race.",
+      "evidence": [
+        "Pre-edit type-check PASS; raw detector 1,146 lines in 434 files; canonical shared checkout dirty paths captured and excluded."
+      ],
+      "previousEventHash": null,
+      "eventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e"
+    }
+  ]
+}

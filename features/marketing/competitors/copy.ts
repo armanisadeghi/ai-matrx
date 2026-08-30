@@ -2,6 +2,15 @@ import { humanLines } from "@/features/marketing/lib/copy-payloads";
 
 import type { CompetitorOpportunityRow } from "./data";
 
+export interface CompetitorAutopsyCopyContext {
+  site: string;
+  site_id: string | null;
+  total_competitors: number;
+  tracked_competitors: number;
+  open_actions: number;
+  coverage_percent: number | null;
+}
+
 function evidenceLines(row: CompetitorOpportunityRow): string[] {
   if (!Array.isArray(row.evidence)) return [];
   return row.evidence.map(String);
@@ -15,31 +24,35 @@ function evidenceLines(row: CompetitorOpportunityRow): string[] {
  */
 export function competitorOpportunityCopyRow(
   row: CompetitorOpportunityRow,
+  pageContext: CompetitorAutopsyCopyContext,
 ) {
   return {
-    id: row.id,
-    title: row.title,
-    status: row.status,
-    priority: row.priority,
-    opportunity_type: row.opportunity_type,
-    competitor: {
-      id: row.competitor_id,
-      domain: row.competitor_domain,
-      url: row.competitor_url,
+    page_context: pageContext,
+    opportunity: {
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      priority: row.priority,
+      opportunity_type: row.opportunity_type,
+      competitor: {
+        id: row.competitor_id,
+        domain: row.competitor_domain,
+        url: row.competitor_url,
+      },
+      target_page: {
+        id: row.target_page_id,
+        url: row.target_page_url,
+      },
+      primary_keyword: row.primary_keyword,
+      impact: row.impact,
+      effort: row.effort,
+      confidence: row.confidence,
+      recommended_action: row.recommended_action,
+      verdict: row.verdict,
+      why_competitor_wins: row.why_competitor_wins,
+      current_advantage: row.current_advantage,
+      evidence: evidenceLines(row),
     },
-    target_page: {
-      id: row.target_page_id,
-      url: row.target_page_url,
-    },
-    primary_keyword: row.primary_keyword,
-    impact: row.impact,
-    effort: row.effort,
-    confidence: row.confidence,
-    recommended_action: row.recommended_action,
-    verdict: row.verdict,
-    why_competitor_wins: row.why_competitor_wins,
-    current_advantage: row.current_advantage,
-    evidence: evidenceLines(row),
   };
 }
 

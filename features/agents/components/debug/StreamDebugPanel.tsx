@@ -9,6 +9,7 @@ import {
   selectConversationRequestIds,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -360,7 +361,15 @@ function StatusBar({
       )}
       {request.conversationId && (
         <span className="text-[10px] text-muted-foreground font-mono ml-auto flex items-center gap-0.5">
-          conv: {request.conversationId.slice(0, 8)}...
+          conv:
+          <EntityRef
+            token="conversation"
+            id={request.conversationId}
+            name={request.conversationId}
+            showIcon={false}
+          >
+            {request.conversationId.slice(0, 8)}...
+          </EntityRef>
           <CopyBtn text={request.conversationId} id="conv-id" />
         </span>
       )}
@@ -1390,9 +1399,14 @@ function StateSnapshotTab({
           <span className="text-muted-foreground font-medium w-24 shrink-0">
             conversationId:
           </span>
-          <code className="font-mono text-foreground/80">
-            {request.conversationId}
-          </code>
+          <EntityRef
+            token="conversation"
+            id={request.conversationId}
+            name={request.conversationId}
+            showIcon={false}
+            wrap
+            className="min-w-0 font-mono text-foreground/80"
+          />
           <CopyBtn text={request.conversationId} id="conv-id-state" />
         </div>
         <div className="flex items-center gap-1 text-[9px]">

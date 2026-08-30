@@ -26,29 +26,41 @@ const opportunity = {
   evidence: ["Rival ranks #2", "Our site has no matching page"],
 } as CompetitorOpportunityRow;
 
+const pageContext = {
+  site: "Example Brand",
+  site_id: "site-1",
+  total_competitors: 8,
+  tracked_competitors: 3,
+  open_actions: 4,
+  coverage_percent: 62,
+};
+
 describe("competitor opportunity copy", () => {
   it("projects the table row and record-window evidence without raw metadata", () => {
-    expect(competitorOpportunityCopyRow(opportunity)).toEqual({
-      id: "opp-1",
-      title: "Publish a comparison page",
-      status: "open",
-      priority: 91,
-      opportunity_type: "content_gap",
-      competitor: {
-        id: "competitor-1",
-        domain: "rival.example",
-        url: "https://rival.example",
+    expect(competitorOpportunityCopyRow(opportunity, pageContext)).toEqual({
+      page_context: pageContext,
+      opportunity: {
+        id: "opp-1",
+        title: "Publish a comparison page",
+        status: "open",
+        priority: 91,
+        opportunity_type: "content_gap",
+        competitor: {
+          id: "competitor-1",
+          domain: "rival.example",
+          url: "https://rival.example",
+        },
+        target_page: { id: null, url: null },
+        primary_keyword: "enterprise automation",
+        impact: "high",
+        effort: "medium",
+        confidence: 0.87,
+        recommended_action: "Publish a direct comparison.",
+        verdict: "The rival owns this decision-stage query.",
+        why_competitor_wins: "Its page answers the comparison explicitly.",
+        current_advantage: "Our product has stronger workflow depth.",
+        evidence: ["Rival ranks #2", "Our site has no matching page"],
       },
-      target_page: { id: null, url: null },
-      primary_keyword: "enterprise automation",
-      impact: "high",
-      effort: "medium",
-      confidence: 0.87,
-      recommended_action: "Publish a direct comparison.",
-      verdict: "The rival owns this decision-stage query.",
-      why_competitor_wins: "Its page answers the comparison explicitly.",
-      current_advantage: "Our product has stronger workflow depth.",
-      evidence: ["Rival ranks #2", "Our site has no matching page"],
     });
   });
 

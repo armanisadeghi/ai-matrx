@@ -37,18 +37,32 @@
  * the adopted `requestId` — never a bespoke renderer, never a bare spinner.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Loader2, Plus, X } from "lucide-react";
 
+import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useResearchApi } from "@/features/research/hooks/useResearchApi";
 import { useResearchStream } from "@/features/research/hooks/useResearchStream";
 import { addKeywords, createTopic } from "@/features/research/service";
+import {
+  PAGE_RESEARCH_SURFACE_NAME,
+  createPageResearchScope,
+  pageResearchManifest,
+  type PageResearchAttachmentStatus,
+  type PageResearchDraftSummary,
+  type PageResearchOrganizationSource,
+  type PageResearchPageContext,
+  type PageResearchRunSummary,
+} from "@/features/surfaces/manifests/page-research.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -57,6 +71,8 @@ import { extractErrorMessage } from "@/utils/errors";
 
 /** Arman's ceiling: one keyword, optionally a second. Never a third. */
 export const PAGE_RESEARCH_MAX_KEYWORDS = 2;
+
+const V = surfaceValueLabels(pageResearchManifest);
 
 export interface PageResearchWindowProps {
   isOpen: boolean;
@@ -90,6 +106,10 @@ type Phase =
   | { status: "assembling"; topicId: string }
   | { status: "done"; topicId: string };
 
+type ActiveEditor =
+  | { kind: "topic_name" }
+  | { kind: "keyword"; index: number };
+
 function PageResearchWindowInner({
   onClose,
   nodeId,
@@ -108,6 +128,11 @@ function PageResearchWindowInner({
     (primaryKeyword ?? "").trim() ? [(primaryKeyword ?? "").trim()] : [""],
   );
   const [phase, setPhase] = useState<Phase>({ status: "form" });
+  const [attachment, setAttachment] = useState<{
+    status: PageResearchAttachmentStatus;
+    error: string | null;
+  }>({ status: "not_started", error: null });
+  const activeEditorRef = useRef<ActiveEditor>({ kind: "topic_name" });
 
   const api = useResearchApi();
   const stream = useResearchStream();
@@ -139,6 +164,7 @@ function PageResearchWindowInner({
       toast.error("No organization for this page — cannot start research.");
       return;
     }
+    setAttachment({ status: "not_started", error: null });
     setPhase({ status: "starting" });
     let topicId: string | null = null;
     try {
@@ -154,11 +180,16 @@ function PageResearchWindowInner({
       // ATTACH FIRST, run second. The topic row and its edge are the durable
       // result of this window; the run is the paid work on top. A run that
       // dies still leaves the page pointing at real research.
+      setAttachment({ status: "attaching", error: null });
       const attached = await links.attach("research_topic", topic.id, name.trim());
       if (!attached.ok) {
+        const attachmentError = attached.error ?? "The association write did not return an error message.";
+        setAttachment({ status: "failed", error: attachmentError });
         toast.error(
-          `Research started, but attaching it to this page failed: ${attached.error}`,
+          `Research started, but attaching it to this page failed: ${attachmentError}`,
         );
+      } else {
+        setAttachment({ status: "attached", error: null });
       }
 
       setPhase({ status: "running", topicId: topic.id });
@@ -236,12 +267,15 @@ function PageResearchWindowInner({
           <Label htmlFor="page-research-name" className="text-xs">
             Topic name
           </Label>
-          <Input
+          <ProInput
             id="page-research-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             disabled={phase.status !== "form"}
             placeholder="Page research"
+            enableVoice={false}
+            enableCleanup={false}
+            showCopyButton={false}
           />
         </div>
 
@@ -256,13 +290,16 @@ function PageResearchWindowInner({
           </Label>
           {keywords.map((keyword, index) => (
             <div key={index} className="flex items-center gap-1.5">
-              <Input
+              <ProInput
                 value={keyword}
                 onChange={(event) => setKeywordAt(index, event.target.value)}
                 disabled={phase.status !== "form"}
                 placeholder={
                   index === 0 ? "What this page targets" : "One more angle"
                 }
+                enableVoice={false}
+                enableCleanup={false}
+                showCopyButton={false}
               />
               {index > 0 && phase.status === "form" ? (
                 <Button
