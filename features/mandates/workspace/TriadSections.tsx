@@ -323,15 +323,18 @@ export function TriadGoalSection({
   const runRefine = async () => {
     setRefining(true);
     try {
-      const text = await refine.runMandate({
+      const text = await refine.run<string>({
+        mandateKey: GOAL_WRITER_MANDATE_KEY,
+        surfaceKey: `mandate:${GOAL_WRITER_MANDATE_KEY}`,
+        sourceFeature: "agent-builder",
+        expect: "text",
+        initiation: "user",
         variables: {
           mandate_key: data.mandate.mandate_key,
           mandate_label: data.mandate.label,
           current_goal: goal ?? "",
           description: data.mandate.description ?? "",
         },
-        sourceApp: "matrx-frontend",
-        sourceFeature: "agent-builder",
       });
       setDraft(text.trim() || (goal ?? ""));
       setEditing(true);

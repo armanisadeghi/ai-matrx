@@ -15,7 +15,10 @@ import { useMemo, useState } from "react";
 import { CheckCheck, Loader2, Route, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useMandateRunner } from "@/features/mandates/useMandateRunner";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useMandate } from "@/features/mandates/useMandate";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import {
   buildMapperVariables,

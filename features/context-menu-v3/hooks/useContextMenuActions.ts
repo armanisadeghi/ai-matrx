@@ -441,25 +441,6 @@ export function useContextMenuActions(
   const openStateViewer = useOpenStateViewerOverlay();
   const openSurfaceInspector = useOpenSurfaceContextInspector();
 
-  /**
-   * THE AMBIENT READS (Phase 1, 2026-08-25). The menu launches agent runs but
-   * never asked what was already true around the user: which organization is
-   * active and which scopes/context they have selected. Collected here — the
-   * engine is the one place with Redux — and
-   * landed on a single `ambient` scope key by `resolveApplicationScope`, so an
-   * agent launched from a right-click stops asking what the app already knows.
-   * ONE key, weakest layer, never overrides a surface (see the baseline
-   * manifest's `AMBIENT_VALUES`).
-   *
-   * NOT here: "is a run currently streaming". Every streaming selector in the
-   * execution system is conversation-scoped (`selectIsStreaming(conversationId)`)
-   * and the menu has no conversation. A global one is worth adding, but it is a
-   * new memoized selector over `activeRequests` that runs on every menu open —
-   * a deliberate change, not a thing to invent in passing.
-   */
-  const activeOrganizationId = useAppSelector(selectOrganizationId);
-  const activeScopeIds = useAppSelector(selectActiveScopeIds);
-
   const hasCompareBase = useAppSelector(selectHasCompareBase);
   const currentUserId = useAppSelector(selectUserId);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
@@ -478,21 +459,6 @@ export function useContextMenuActions(
     void refreshBoundAgents();
   }, []);
 
-  // Assemble the scope the menu acts on. Stable for this open (the shell
-  // captured selection before mount), so computing it in render is cheap.
-  const scope = resolveApplicationScope({
-    getApplicationScope,
-    contextData,
-    selectedText,
-    selectionRange,
-    fallbackContent,
-    surfaceName,
-    ambient: {
-      active_organization_id: activeOrganizationId ?? null,
-      active_scope_ids: activeScopeIds ?? [],
-      surface_name: surfaceName ?? null,
-    },
-  });
   const actionText = resolveActionText(scope);
 
   // Rich-document action context — reuses the canonical copy / export / convert
