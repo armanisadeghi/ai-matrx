@@ -11,6 +11,7 @@
 
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useEffect, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   Play,
@@ -87,8 +88,21 @@ import {
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
-import { IllustrateSetWindow } from "./IllustrateSetWindow";
-import { BulkEnrichWindow } from "./BulkEnrichWindow";
+// BUNDLE-LEAK GUARD (F9): these two float as draggable WindowPanels, and a
+// STATIC import of either would drag features/window-panels/WindowPanel.tsx —
+// and its 100+ registry lazy chunks — into the flashcards route bundle
+// (lazy-bundle-guard fires "[WINDOW-PANELS BUNDLE LEAK]" on route boot).
+// They open one-at-a-time on explicit user action, so each gets its own
+// ssr:false edge (the AgentPeekButton pattern; code-splitting rule 3 allows
+// per-item splits for user-triggered windows).
+const IllustrateSetWindow = dynamic(
+  () => import("./IllustrateSetWindow").then((m) => m.IllustrateSetWindow),
+  { ssr: false },
+);
+const BulkEnrichWindow = dynamic(
+  () => import("./BulkEnrichWindow").then((m) => m.BulkEnrichWindow),
+  { ssr: false },
+);
 import {
   useBulkEnrichRun,
   bulkEnrichActionLabel,
