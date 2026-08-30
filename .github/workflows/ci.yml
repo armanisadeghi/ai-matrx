@@ -51,6 +51,12 @@ jobs:
         run: pnpm check:matrx-packages
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
+      - name: ONE SOURCE OF TRUTH for a kind's fields — derived from its schema
+        # `emitted_json_schema` IS the contract; `kind_definition.data` is a
+        # copy that had already drifted on 13 of the 62 live kinds carrying
+        # both, and was ABSENT on 440 of 502 — which is how ~221 kinds with
+        # real components spent 2026-08-29 rendering as key/value dumps.
+        run: pnpm check:kind-schema-source
       - name: THE ONE-TYPE LAW — no hand-written twin of a registered kind
         # A kind's shape is written down ONCE, in the generated artifact
         # (`pnpm shape:types`). A hand-written interface beside a bridge or a

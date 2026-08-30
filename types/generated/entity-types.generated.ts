@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 654 active entity tokens. A token here is FK-valid for
+// 655 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -681,6 +681,7 @@ export type EntityTypeToken =
   | "workflow"
   | "workflow_card"
   | "workflow_checkpoint"
+  | "workflow_comparison"
   | "workflow_definition_version"
   | "workflow_idempotency"
   | "workflow_job"
@@ -1747,6 +1748,7 @@ export type ScopeableEntityToken =
   | "workflow"
   | "workflow_card"
   | "workflow_checkpoint"
+  | "workflow_comparison"
   | "workflow_definition_version"
   | "workflow_idempotency"
   | "workflow_job"
@@ -2501,6 +2503,7 @@ export const ENTITY_TYPE_METADATA = {
   "workflow": { token: "workflow", schema: "workflow", table: "definition", label: "Workflow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "utility", referenceCategory: null },
   "workflow_card": { token: "workflow_card", schema: "workflow", table: "card", label: "Workflow Card", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_checkpoint": { token: "workflow_checkpoint", schema: "workflow", table: "checkpoint", label: "Workflow Checkpoint", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "workflow_comparison": { token: "workflow_comparison", schema: "workflow", table: "comparison", label: "Workflow Comparison", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_definition_version": { token: "workflow_definition_version", schema: "workflow", table: "definition_version", label: "Workflow Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "workflow_idempotency": { token: "workflow_idempotency", schema: "workflow", table: "idempotency", label: "Workflow Idempotency", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_job": { token: "workflow_job", schema: "workflow", table: "job", label: "Workflow Job", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -3159,6 +3162,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "workflow",
   "workflow_card",
   "workflow_checkpoint",
+  "workflow_comparison",
   "workflow_definition_version",
   "workflow_idempotency",
   "workflow_job",
