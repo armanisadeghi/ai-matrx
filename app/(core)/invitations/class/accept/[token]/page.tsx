@@ -131,7 +131,7 @@ export default function AcceptClassInvitationPage() {
     return (
       <>
         {header}
-        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </>
@@ -142,7 +142,7 @@ export default function AcceptClassInvitationPage() {
     return (
       <>
         {header}
-        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
           <Card className="w-full max-w-md p-6 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
               <AlertCircle className="h-6 w-6 text-destructive" />
@@ -169,7 +169,7 @@ export default function AcceptClassInvitationPage() {
   return (
     <>
       {header}
-      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
         <Card className="w-full max-w-md p-6 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <GraduationCap className="h-6 w-6 text-primary" />

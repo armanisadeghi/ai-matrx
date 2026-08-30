@@ -158,7 +158,7 @@ export default function AcceptProjectInvitationPage() {
     return (
       <>
         {header}
-        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-indigo-500 mx-auto mb-4" />
             <p className="text-lg text-muted-foreground">Loading invitation...</p>
@@ -172,7 +172,7 @@ export default function AcceptProjectInvitationPage() {
     return (
       <>
         {header}
-        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
           <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
@@ -196,7 +196,7 @@ export default function AcceptProjectInvitationPage() {
   return (
     <>
       {header}
-      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
       <Card className="max-w-2xl w-full p-8">
         <div className="text-center space-y-6">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 mb-4">

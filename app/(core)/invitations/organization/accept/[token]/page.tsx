@@ -218,7 +218,7 @@ export default function AcceptInvitationPage() {
     return (
       <>
         {header}
-        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
@@ -235,7 +235,7 @@ export default function AcceptInvitationPage() {
     return (
       <>
         {header}
-        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
           <Card className="max-w-md w-full p-6">
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
@@ -265,7 +265,7 @@ export default function AcceptInvitationPage() {
   return (
     <>
       {header}
-      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4 pt-[calc(var(--shell-header-h)+1rem)]">
       <Card className="max-w-lg w-full p-6">
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P11",
+  "runId": "20260830T153054Z",
+  "baseSha": "8afe166a9adc5abb8813a8adcb1a1bc8d053f1ce",
+  "createdAt": "2026-08-30T15:31:05.600Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T15:31:05.600Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Opened P11 eradication campaign after user reported widespread core-route top-header clearance failures",
+      "evidence": [
+        "Canonical baseline type-check PASS",
+        "Existing strict page-header detector falsely reports zero violations because it does not follow rendered body clearance ownership",
+        "Strict scroll-chain PASS across 8004 files, 1084 route pages, and 277 layouts",
+        "Initial render-path audit identified 32 header-owning routes requiring direct verification; first four invitation/welcome roots are verified missing canonical top clearance"
+      ],
+      "previousEventHash": null,
+      "eventHash": "1e02b535f310a32ab0402ee2487453bffe8b1907936b36fd3e524bc2d2ab4834"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T15:31:06.274Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Repairing first high-confidence clearance wave and building durable render-path detection",
+      "evidence": [
+        "Wave 1 owns three invitation acceptance pages and WelcomeClient; all are disjoint from current dirty marketing work"
+      ],
+      "previousEventHash": "1e02b535f310a32ab0402ee2487453bffe8b1907936b36fd3e524bc2d2ab4834",
+      "eventHash": "cfe432fe4a77877c7d824ad087be3946a9dcd78e32d06b1dc1efbb5f29f01b4d"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T15:33:40.451Z",
+      "actor": "codex-root",
+      "summary": "First four-route clearance batch passed strict header, scroll-chain, diff, and repository type-check gates; preparing exact candidate for independent adversarial certification",
+      "evidence": [
+        "Four verified route roots now reserve the canonical shell header height in every rendered state",
+        "Repository type-check passed after concurrent unrelated Marketing edits stabilized"
+      ],
+      "previousEventHash": "cfe432fe4a77877c7d824ad087be3946a9dcd78e32d06b1dc1efbb5f29f01b4d",
+      "eventHash": "106f7c91c8d8d119a6abeb9ca9df38924a9f7f67d26aa953167eab85f888598a"
+    }
+  ]
+}
