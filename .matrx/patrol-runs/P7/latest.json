@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P7",
   "runId": "01a00ab2-19eb-73c3-bb37-c2b6cacde9f9",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-29T14:33:05.562Z",
-  "summary": "Certified P7 candidate is preserved and queued for fast integration to origin/main.",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:20:19.119Z",
+  "summary": "Closed P7 eradication run after independent zero proof, exact-candidate certification, containing-release reconciliation, and maintenance promotion.",
   "source": "01a00ab2-19eb-73c3-bb37-c2b6cacde9f9.json",
-  "eventHash": "dfb5d960e077d9302cf29bbe201e5a33ebe86524517ce5bdc0dbfb8bb270d1e2"
+  "eventHash": "31e1809ed47a4b9251917c4e6c4aec142dfc7030df113a836fa48c1dd59d4cee"
 }
