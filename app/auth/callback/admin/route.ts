@@ -6,15 +6,13 @@
 // If they are not an admin, the session is revoked and they are redirected
 // with a clear error.
 
-import { createServerClient } from "@supabase/ssr";
-import { authCookieOptions } from "@/utils/supabase/authCookie";
+import { supabaseNext } from "@/utils/supabase/authCookie";
 import { NextResponse, type NextRequest } from "next/server";
 import { exchangeCodeForTokens, fetchUserInfo } from "@/lib/auth/aimatrx-oauth";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { safeForwardedHost } from "@/utils/auth/safe-redirect";
 import { trustedAppRedirect } from "@/utils/auth/trusted-app-redirect";
-import { requireEnv } from "@/utils/supabase/env";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -137,30 +135,15 @@ export async function GET(request: NextRequest) {
     response.cookies.delete("aimatrx_admin_code_verifier");
     response.cookies.delete("aimatrx_admin_app_redirect");
 
-    const supabase = createServerClient(
-      requireEnv(
-        "NEXT_PUBLIC_SUPABASE_URL",
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-      ),
-      requireEnv(
-        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-      ),
-      {
-        // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
-        cookieOptions: authCookieOptions(request.headers.get("host")),
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options);
-            });
-          },
-        },
+    // The route-handler door: identity, the shared cross-subdomain auth cookie
+    // and the cookie adapter all live in @ai-matrx/data/next.
+    const supabase = supabaseNext.routeClient({
+      requestCookies: request.cookies,
+      setCookie: ({ name, value, options }) => {
+        response.cookies.set(name, value, options);
       },
-    );
+      host: request.headers.get("host"),
+    });
 
     const { data: sessionData, error: verifyError } =
       await supabase.auth.verifyOtp({

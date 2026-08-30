@@ -1,25 +1,12 @@
-// utils/supabase/debugClient.ts
+// utils/supabase/debugClient.ts — the dev-only logging proxy.
 //
-// API keys: this file uses ONLY the new sb_publishable_* key.
-// The legacy JWT-based NEXT_PUBLIC_SUPABASE_ANON_KEY is DEPRECATED and BANNED in
-// this repo — do not reintroduce it (ESLint will block it).
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
+// Construction and the shared cross-subdomain auth cookie live in
+// @ai-matrx/data/next (bound in utils/supabase/authCookie.ts); the only thing
+// this file owns is the logging Proxy.
 
-import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "@/types/database.types";
-import { requireEnv } from "@/utils/supabase/env";
-import { browserAuthCookieOptions } from "@/utils/supabase/authCookie";
+import { supabaseNext } from "@/utils/supabase/authCookie";
 
-export const createClient = () =>
-  createBrowserClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
-    requireEnv(
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ),
-    // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
-    { cookieOptions: browserAuthCookieOptions() },
-  );
+export const createClient = () => supabaseNext.browserClient();
 
 function logParams(label: string, params: unknown) {
   console.log(`-- ${label} Parameters:`);
@@ -35,15 +22,7 @@ function logResults(label: string, data: unknown, error?: unknown) {
 }
 
 export const createDebugClient = () => {
-  const client = createBrowserClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
-    requireEnv(
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ),
-    // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
-    { cookieOptions: browserAuthCookieOptions() },
-  );
+  const client = supabaseNext.browserClient();
 
   // MATRX-EXCEPTION: dev-only logging proxy wraps every method of the
   // Supabase client dynamically (`.from`, `.rpc`, `.schema`, ...); the

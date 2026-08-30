@@ -1,29 +1,46 @@
-// utils/supabase/authCookie.ts — the HOST WIRING for @ai-matrx/data's
-// auth-cookie primitive. All cookie logic lives in the package
-// (`createAuthCookie`); this module only binds it to OUR apex domain and
-// keeps the repo's established export names. Every Supabase client in this
-// repo (browser, server, middleware, and the admin OAuth callback) MUST pass
-// these options — a client using the default cookie name cannot see the
-// session the others wrote. Full WHY (the 2026-07 deployment split, the
-// rename, the Domain rules) lives in the package module's header.
+// utils/supabase/authCookie.ts — the ONE binding of @ai-matrx/data/next to
+// THIS app's identity. Everything below is a value: our apex domain, our
+// cookie names, our error-capture wrapper. Every hard part — cookie option
+// construction, the domain-wide span, the SSR/browser split, the browser
+// singleton, the legacy-key rename migration, the whole middleware session
+// dance — lives in the package (`@ai-matrx/data/next`), where every other
+// Matrx app inherits it. Full WHY lives in the package module headers.
+//
+// API keys: this app uses ONLY the new sb_publishable_* key. The legacy
+// JWT-based NEXT_PUBLIC_SUPABASE_ANON_KEY is DEPRECATED and BANNED in this
+// repo — do not reintroduce it (ESLint will block it).
+// Docs: https://supabase.com/docs/guides/getting-started/api-keys
 
-import { createAuthCookie } from "@ai-matrx/data/db";
+import { createNextSupabase } from "@ai-matrx/data/next";
 import type { CookieOptionsWithName } from "@supabase/ssr";
+import type { Database } from "@/types/database.types";
+import { wrapClientForCapture } from "@/lib/diagnostics/supabaseErrorCapture";
 
 /**
  * The West and East Supabase projects are different auth authorities. A
  * pre-cutover tab can keep running the West bundle for days, so sharing one
  * storage key lets that tab overwrite the East session at the next refresh.
- * Bump this name whenever the Supabase auth authority is replaced.
+ * Bump the cookie name whenever the Supabase auth authority is replaced, and
+ * move the previous name to `legacyCookieName`.
  */
 export const LEGACY_AUTH_COOKIE_NAME = "sb-matrx-auth";
 
-const authCookie = createAuthCookie({
+export const supabaseNext = createNextSupabase<Database>({
+  // STATIC member accesses — Next only inlines NEXT_PUBLIC_* into client
+  // bundles for those; a dynamic lookup is undefined in every browser bundle.
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   apexDomain: "aimatrx.com",
   cookieName: "sb-matrx-auth-v2",
+  legacyCookieName: LEGACY_AUTH_COOKIE_NAME,
+  // Every .from()/.rpc()/.schema() error is recorded into the diagnostics
+  // store (lib/diagnostics/errorCaptureStore.ts) and surfaced in the admin
+  // Error Inspector. The wrapper is a no-op on the server and never alters
+  // query behavior — see supabaseErrorCapture.ts.
+  wrapBrowserClient: wrapClientForCapture,
 });
 
-export const AUTH_COOKIE_NAME = authCookie.cookieName;
+export const AUTH_COOKIE_NAME = supabaseNext.cookieName;
 
 /**
  * Cookie options for the host serving the current request.
@@ -32,55 +49,14 @@ export const AUTH_COOKIE_NAME = authCookie.cookieName;
 export function authCookieOptions(
   host: string | null | undefined,
 ): CookieOptionsWithName {
-  return authCookie.optionsForHost(host);
+  return supabaseNext.optionsForHost(host);
 }
 
 /** Browser variant — resolves the host from `window` (SSR-safe). */
 export function browserAuthCookieOptions(): CookieOptionsWithName {
-  return authCookie.browserOptions();
-}
-
-export interface AuthCookieValue {
-  name: string;
-  value: string;
-}
-
-function renamedCookie(
-  cookie: AuthCookieValue,
-  from: string,
-  to: string,
-): AuthCookieValue | null {
-  if (cookie.name === from) return { ...cookie, name: to };
-  const prefix = `${from}.`;
-  if (!cookie.name.startsWith(prefix)) return null;
-  const chunk = cookie.name.slice(prefix.length);
-  if (!/^(0|[1-9][0-9]*)$/.test(chunk)) return null;
-  return { ...cookie, name: `${to}.${chunk}` };
+  return supabaseNext.browserOptions();
 }
 
 export function isCurrentAuthCookie(name: string): boolean {
-  return (
-    name === AUTH_COOKIE_NAME ||
-    new RegExp(
-      `^${AUTH_COOKIE_NAME.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(0|[1-9][0-9]*)$`,
-    ).test(name)
-  );
-}
-
-/**
- * Seed the new storage key only when it is absent. Proxy validates the seeded
- * token against East before it ever persists these cookies to the response.
- */
-export function legacyAuthCookieMigration(
-  cookies: readonly AuthCookieValue[],
-): AuthCookieValue[] {
-  if (cookies.some(({ name }) => isCurrentAuthCookie(name))) return [];
-  return cookies.flatMap((cookie) => {
-    const renamed = renamedCookie(
-      cookie,
-      LEGACY_AUTH_COOKIE_NAME,
-      AUTH_COOKIE_NAME,
-    );
-    return renamed ? [renamed] : [];
-  });
+  return supabaseNext.authCookie.isCurrentCookie(name);
 }

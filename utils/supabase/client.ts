@@ -1,36 +1,16 @@
 // utils/supabase/client.ts
-// Browser client for Supabase - use in Client Components
-// https://supabase.com/docs/guides/auth/server-side/nextjs
+// Browser client for Supabase - use in Client Components.
 //
-// API keys: this file uses ONLY the new sb_publishable_* key.
-// The legacy JWT-based NEXT_PUBLIC_SUPABASE_ANON_KEY is DEPRECATED and BANNED in
-// this repo — do not reintroduce it (ESLint will block it).
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
+// Construction, the shared cross-subdomain auth cookie, the error-capture
+// wrapper, and the singleton all live in @ai-matrx/data/next, bound to this
+// app's identity in utils/supabase/authCookie.ts. This file is the repo's
+// established import name for that door and nothing more.
 
-import { createBrowserClient } from "@supabase/ssr";
-import type { Database } from "@/types/database.types";
-import { wrapClientForCapture } from "@/lib/diagnostics/supabaseErrorCapture";
-import { requireEnv } from "@/utils/supabase/env";
-import { browserAuthCookieOptions } from "@/utils/supabase/authCookie";
+import { supabaseNext } from "@/utils/supabase/authCookie";
 
 export function createClient() {
-  // Wrapped for global error capture: every .from()/.rpc()/.schema() error is
-  // recorded into the diagnostics store (lib/diagnostics/errorCaptureStore.ts)
-  // and surfaced in the admin Error Inspector. The wrapper is a no-op on the
-  // server and never alters query behavior — see supabaseErrorCapture.ts.
-  return wrapClientForCapture(
-    createBrowserClient<Database>(
-      requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
-      requireEnv(
-        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-      ),
-      // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
-      { cookieOptions: browserAuthCookieOptions() },
-    ),
-  );
+  return supabaseNext.browserClient();
 }
 
 // Convenience singleton for files that import { supabase } from '@/utils/supabase/client'
-// createBrowserClient already deduplicates internally, so this is safe.
 export const supabase = createClient();

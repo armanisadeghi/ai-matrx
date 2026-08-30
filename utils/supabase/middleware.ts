@@ -1,38 +1,21 @@
-// utils/supabase/middleware.ts
-// Official Supabase SSR pattern for Next.js 16 proxy
-// https://supabase.com/docs/guides/auth/server-side/nextjs
+// utils/supabase/middleware.ts — THIS APP'S auth-routing policy for the proxy.
 //
-// API keys: this file uses ONLY the new sb_publishable_* key.
-// The legacy JWT-based NEXT_PUBLIC_SUPABASE_ANON_KEY is DEPRECATED and BANNED in
-// this repo — do not reintroduce it (ESLint will block it).
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
+// The Supabase session pass (client construction, the shared cross-subdomain
+// auth cookie, the legacy storage-key migration, the "nothing may run between
+// createServerClient and getUser()" rule, migrated-session persistence,
+// superseded-key clearing, no-store headers, and cookie carry-over onto
+// redirects) all lives in @ai-matrx/data/next via `supabaseNext`. What remains
+// here is what only THIS app can answer: where an authenticated user should
+// land, which routes require a session, and where a destination is captured.
 
-import {
-  clearAuthCookiesAtScopes,
-  createServerClient,
-  DEFAULT_COOKIE_OPTIONS,
-  type SetAllCookies,
-} from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { requireEnv } from "@/utils/supabase/env";
-import {
-  LEGACY_AUTH_COOKIE_NAME,
-  authCookieOptions,
-  isCurrentAuthCookie,
-  legacyAuthCookieMigration,
-} from "@/utils/supabase/authCookie";
+import { supabaseNext } from "@/utils/supabase/authCookie";
 import {
   captureAuthDestination,
   loginHref,
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
 import { routeRequiresAuthentication } from "@/utils/auth/protected-routes";
-
-const AUTH_COOKIE_RESPONSE_HEADERS = {
-  "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
-  Expires: "0",
-  Pragma: "no-cache",
-} as const;
 
 export async function updateSession(
   request: NextRequest,
@@ -67,116 +50,16 @@ export async function updateSession(
     return NextResponse.redirect(url);
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
+  // The ENTIRE Supabase session pass, in one call. Every hazard it owns has
+  // logged users out at random at least once; none of them belongs in an app.
+  const session = await supabaseNext.middlewareSession({
+    host: request.headers.get("host"),
+    requestCookies: request.cookies,
+    createResponse: () => NextResponse.next({ request }),
+    createRedirect: (url) => NextResponse.redirect(url),
   });
-
-  const hostCookieOptions = authCookieOptions(request.headers.get("host"));
-  const legacyMigration = legacyAuthCookieMigration(request.cookies.getAll());
-  legacyMigration.forEach(({ name, value }) =>
-    request.cookies.set(name, value),
-  );
-
-  const applyCookies: SetAllCookies = (cookiesToSet, headers) => {
-    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-    const nextResponse = NextResponse.next({ request });
-    supabaseResponse.cookies
-      .getAll()
-      .forEach((cookie) => nextResponse.cookies.set(cookie));
-    cookiesToSet.forEach(({ name, value, options }) =>
-      nextResponse.cookies.set(name, value, options),
-    );
-    const responseHeaders =
-      cookiesToSet.length > 0
-        ? { ...AUTH_COOKIE_RESPONSE_HEADERS, ...headers }
-        : headers;
-    Object.entries(responseHeaders).forEach(([name, value]) =>
-      nextResponse.headers.set(name, value),
-    );
-    supabaseResponse = nextResponse;
-  };
-
-  const redirectWithSessionCookies = (url: URL) => {
-    const redirect = NextResponse.redirect(url);
-    supabaseResponse.cookies
-      .getAll()
-      .forEach((cookie) => redirect.cookies.set(cookie));
-    ["cache-control", "expires", "pragma"].forEach((name) => {
-      const value = supabaseResponse.headers.get(name);
-      if (value) redirect.headers.set(name, value);
-    });
-    return redirect;
-  };
-
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
-  const supabase = createServerClient(
-    requireEnv(
-      "NEXT_PUBLIC_SUPABASE_URL",
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-    ),
-    requireEnv(
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ),
-    {
-      // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
-      cookieOptions: hostCookieOptions,
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet, headers) {
-          applyCookies(cookiesToSet, headers);
-        },
-      },
-    },
-  );
-
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  // IMPORTANT: getUser() validates the JWT against the Supabase auth server and
-  // will automatically refresh the access token using the refresh token cookie when
-  // the access token is expired. This prevents the "forced refresh" that users see
-  // when returning after hours/days away — getClaims() only does local JWT validation
-  // and returns null for expired tokens, causing an incorrect redirect to /login.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // A valid East session that arrived under the pre-cutover storage key is
-  // persisted once under the new authority-specific key. A West-only token
-  // fails getUser(), is never persisted, and is cleared below.
-  if (user && legacyMigration.length > 0) {
-    const { name: _name, ...cookieOptions } = hostCookieOptions;
-    applyCookies(
-      request.cookies
-        .getAll()
-        .filter(
-          ({ name, value }) => isCurrentAuthCookie(name) && value.length > 0,
-        )
-        .map(({ name, value }) => ({
-          name,
-          value,
-          options: { ...DEFAULT_COOKIE_OPTIONS, ...cookieOptions },
-        })),
-      {},
-    );
-  }
-
-  // Delete the superseded storage key at the scope where this host issued it.
-  // Old West tabs may keep writing it, but no East client reads it after this
-  // cut.
-  await clearAuthCookiesAtScopes({
-    getAll: () => request.cookies.getAll(),
-    setAll: (cookiesToSet, headers) => applyCookies(cookiesToSet, headers),
-    storageKey: LEGACY_AUTH_COOKIE_NAME,
-    scopes: hostCookieOptions.domain
-      ? [{ domain: hostCookieOptions.domain }]
-      : [{}],
-  });
+  const user = session.user;
+  const redirectWithSessionCookies = (url: URL) => session.redirect(url);
 
   // An authenticated user sitting on an auth page or a generic landing page
   // while still carrying a destination gets forwarded straight there. This is
@@ -239,27 +122,19 @@ export async function updateSession(
     );
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
-  // creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // IMPORTANT: return `session.response` — it is the response carrying every
+  // session cookie the pass wrote. Building a fresh NextResponse here drops
+  // refreshed tokens and terminates the user's session on the next request.
+  // Any redirect must go through `session.redirect(url)` for the same reason.
 
   // Forward the pathname so server layouts can read it via headers()
-  supabaseResponse.headers.set("x-pathname", request.nextUrl.pathname);
+  session.response.headers.set("x-pathname", request.nextUrl.pathname);
   // ...and the query string with it. `app/(admin)/layout.tsx` has been READING
   // `x-search-params` to build its login redirect since it was written, but
   // nothing ever SET it — so every admin bounce silently dropped the query
   // half of the destination (`/administration/users?tab=invites` came back as
   // `/administration/users`).
-  supabaseResponse.headers.set("x-search-params", request.nextUrl.search);
+  session.response.headers.set("x-search-params", request.nextUrl.search);
 
-  return supabaseResponse;
+  return session.response;
 }
