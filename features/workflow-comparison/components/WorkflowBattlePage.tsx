@@ -143,7 +143,12 @@ function BattleSetup({ onStarted }: { onStarted: (row: ComparisonRow) => void })
   const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
   const [starting, setStarting] = useState(false);
 
-  const readyDrafts = drafts.filter((d) => d.definitionId !== null);
+  // Stable identity — this feeds the shared-surface memo and, through it,
+  // the kind-registry hook's effect; a fresh array every render loops React.
+  const readyDrafts = useMemo(
+    () => drafts.filter((d) => d.definitionId !== null),
+    [drafts],
+  );
 
   // Fetch each configured arm's SERVED input surface (the same contract the
   // real run form uses), keyed by definition+version so a version change
@@ -295,15 +300,10 @@ function BattleSetup({ onStarted }: { onStarted: (row: ComparisonRow) => void })
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-      <div className="flex items-center gap-2">
-        <Swords className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h1 className="text-base font-semibold leading-tight">Workflow Battle</h1>
-          <p className="text-xs text-muted-foreground">
-            Run workflows head-to-head on one locked input set. Judge the results, not the marketing.
-          </p>
-        </div>
-      </div>
+      <p className="text-xs text-muted-foreground">
+        Run workflows head-to-head on one locked input set. Judge the results,
+        not the marketing.
+      </p>
 
       <Input
         value={title}
