@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T141852Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T14:39:36.956Z",
-  "summary": "Certified provider-sync candidate already present on origin/main; release lane intentionally not invoked",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:39:44.754Z",
+  "summary": "Provider-sync repair unit delivered to main and closed; eradication backlog remains open in subsequent run",
   "source": "20260830T141852Z.json",
-  "eventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5"
+  "eventHash": "2b4b0f75e365752236213f09d3f87f398209450c64f420352f8c480efdcf225d"
 }

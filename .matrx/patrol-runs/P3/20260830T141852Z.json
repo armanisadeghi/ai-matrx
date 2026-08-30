@@ -100,6 +100,18 @@
       },
       "previousEventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58",
       "eventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-30T14:39:44.754Z",
+      "actor": "root",
+      "summary": "Provider-sync repair unit delivered to main and closed; eradication backlog remains open in subsequent run",
+      "evidence": [
+        "no redundant release created"
+      ],
+      "previousEventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5",
+      "eventHash": "2b4b0f75e365752236213f09d3f87f398209450c64f420352f8c480efdcf225d"
     }
   ]
 }
