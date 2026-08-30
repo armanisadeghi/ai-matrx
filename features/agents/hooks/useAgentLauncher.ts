@@ -461,7 +461,14 @@ export function useAgentLauncher(
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId, ready, isManaged, surfaceKey, freshSessionKey]);
+  }, [
+    agentId,
+    ready,
+    isManaged,
+    surfaceKey,
+    freshSessionKey,
+    managedMandateKey,
+  ]);
 
   if (isManaged) {
     return {

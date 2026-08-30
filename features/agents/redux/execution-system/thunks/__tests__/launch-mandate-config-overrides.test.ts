@@ -1,21 +1,22 @@
 /**
- * Pins the mandate-binding → request wiring on the launchAgentExecution path.
+ * Pins THE MANDATE DOOR on the launchAgentExecution path.
  *
- * The bug class this prevents (mandates FEATURE.md, closed 2026-08-09):
- * a consumer resolves an mandate and launches via `launchAgentExecution`,
- * the binding's AGENT applies but its `config_overrides` (model,
- * thinking_level, temperature …) are silently dropped — a user's
- * settings-only override at /agents/mandates does nothing on that path.
+ * The bug class this prevents: matrx-frontend resolving mandates a SECOND time
+ * in the browser and running the agent it picked, while aidream's own mandate
+ * door (`POST /ai/mandates/{key}`) — the resolver every other client already
+ * uses — sits unused. Two resolvers means client chat silently ignores
+ * server-side rebinds and provisions.
  *
  * What this enforces, end to end through the REAL thunks and reducers:
- *   - `launchAgentExecution({ mandateKey })` resolves the mandate (mocked at the
- *     service boundary only) and seeds the binding's config_overrides into
- *     the instance-model-overrides slice.
- *   - Precedence: the binding wins per key over the caller's
- *     `config.llmOverrides` (same rule as useMandateRunner).
- *   - `assembleRequest` then carries them on the wire as `config_overrides`
- *     — the actual request body the Python backend receives.
- *   - mandateKey is mutually exclusive with agentId/shortcutId (loud, not merged).
+ *   - `launchAgentExecution({ mandateKey })` stamps the key on the conversation,
+ *     so `executeInstance` POSTs the door instead of `/ai/agents/{id}`.
+ *   - The binding's `config_overrides` are NOT echoed back on the wire: the
+ *     server treats request config as the EXPLICIT layer that WINS over the
+ *     binding, so re-sending a client-resolved binding would beat the very
+ *     binding it came from. The caller's OWN llmOverrides still ride.
+ *   - A caller may pass `agentId` alongside `mandateKey` — it is display
+ *     identity (SSR-resolved) and never changes the run target.
+ *   - The run-time variable precondition (disease D4) still refuses locally.
  */
 
 // Stub `uuid` — its v13 ESM build trips Jest's CommonJS loader.
@@ -181,37 +182,35 @@ async function launch(
     .unwrap();
 }
 
-describe("launchAgentExecution mandateKey — the binding's config_overrides reach the request", () => {
-  test("settings-only binding seeds instance-model-overrides and the assembled request carries the model", async () => {
+describe("launchAgentExecution mandateKey — THE DOOR is the run target", () => {
+  test("the mandate key is stamped on the conversation, so turn 1 POSTs /ai/mandates/{key}", async () => {
     const store = makeStore();
     const { conversationId } = await launch(store);
 
-    expect(resolveMandate).toHaveBeenCalledWith("plan_client.shape_planner");
-
-    // The mandate's resolved agent became the instance's agent.
     const state = store.getState() as unknown as RootState;
+    // THE POINT: `executeInstance` reads this field to choose the door.
+    expect(
+      state.conversations.byConversationId[conversationId]?.mandateKey,
+    ).toBe("plan_client.shape_planner");
+    // The resolved agent is display identity for the instance snapshot.
     expect(
       state.conversations.byConversationId[conversationId]?.agentId,
     ).toBe(AGENT_ID);
-
-    // The binding's overrides landed in the instance-model-overrides slice.
-    const overrideState =
-      state.instanceModelOverrides.byConversationId[conversationId];
-    expect(overrideState?.overrides).toMatchObject({
-      model: "user-override-model",
-      thinking_level: "low",
-    });
-
-    // …and reach the wire: the assembled request body carries them as
-    // config_overrides. This is the exact payload the Python backend gets.
-    const request = assembleRequest(state, conversationId);
-    expect(request?.config_overrides).toMatchObject({
-      model: "user-override-model",
-      thinking_level: "low",
-    });
   });
 
-  test("precedence: the binding wins per key over the caller's config.llmOverrides", async () => {
+  test("the binding's config_overrides are NOT re-sent — the server applies them", async () => {
+    const store = makeStore();
+    const { conversationId } = await launch(store);
+
+    const state = store.getState() as unknown as RootState;
+    const request = assembleRequest(state, conversationId);
+    // Echoing the client-resolved binding back would land as the EXPLICIT
+    // layer and beat the binding itself inside `resolve_mandated_agent_start`.
+    expect(request?.config_overrides?.model).toBeUndefined();
+    expect(request?.config_overrides?.thinking_level).toBeUndefined();
+  });
+
+  test("the caller's OWN llmOverrides still ride — those really are explicit", async () => {
     const store = makeStore();
     const { conversationId } = await launch(store, {
       config: {
@@ -223,18 +222,32 @@ describe("launchAgentExecution mandateKey — the binding's config_overrides rea
     const state = store.getState() as unknown as RootState;
     const request = assembleRequest(state, conversationId);
     expect(request?.config_overrides).toMatchObject({
-      model: "user-override-model", // binding beats caller
-      temperature: 0.2, // caller key the binding didn't set survives
-      thinking_level: "low",
+      model: "caller-model",
+      temperature: 0.2,
     });
   });
 
-  test("mandateKey is mutually exclusive with agentId — loud, never a silent merge", async () => {
+  test("agentId alongside mandateKey is DISPLAY identity — no client resolution at all", async () => {
+    const store = makeStore();
+    (resolveMandate as jest.Mock).mockClear();
+    // Stands in for `/chat/new`'s SSR-resolved default agent.
+    const { conversationId } = await launch(store, { agentId: AGENT_ID });
+
+    // The surface already knew what to paint, so nothing was resolved here.
+    expect(resolveMandate).not.toHaveBeenCalled();
+    const state = store.getState() as unknown as RootState;
+    const record = state.conversations.byConversationId[conversationId];
+    expect(record?.agentId).toBe(AGENT_ID);
+    // …and the RUN still goes through the door.
+    expect(record?.mandateKey).toBe("plan_client.shape_planner");
+  });
+
+  test("mandateKey is still mutually exclusive with shortcutId — loud, never a silent merge", async () => {
     const store = makeStore();
     // `.unwrap()` rethrows RTK's SerializedError (a plain object, not an
     // Error instance) — match on message, not toThrow.
     await expect(
-      launch(store, { agentId: "some-other-agent" }),
+      launch(store, { shortcutId: "some-shortcut" }),
     ).rejects.toMatchObject({
       message: expect.stringMatching(/mutually exclusive/),
     });
