@@ -124,7 +124,7 @@ export default function NotificationItem({
                                     e.stopPropagation();
                                     onMarkAsRead(notification.id);
                                 }}
-                                className="opacity-100 transition-opacity text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                                className="opacity-100 transition-opacity text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                             >
                                 Mark as read
                             </button>

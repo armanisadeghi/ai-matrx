@@ -16,7 +16,7 @@ import { redirect } from "next/navigation";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ContentPlanListHeader } from "@/features/marketing/content-plan/components/ContentPlanListHeader";
-import { PlanSitesList } from "@/features/marketing/content-plan/components/PlanSitesList";
+import { BrandScopedPlanSitesList } from "@/features/marketing/content-plan/components/BrandScopedPlanSitesList";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
@@ -39,7 +39,7 @@ export default async function BrandContentPlanPage({
         <ContentPlanListHeader />
       </PageHeader>
       <div className="matrx-touch-targets h-full overflow-hidden pt-[var(--shell-header-h)]">
-        <PlanSitesList />
+        <BrandScopedPlanSitesList />
       </div>
     </>
   );

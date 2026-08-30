@@ -498,7 +498,7 @@ export function PublicImageSearch({
                     {index + 1}
                   </div>
                   <button
-                    className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                    className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                     onClick={(e) => handleRemoveImage(url, e)}
                     aria-label={`Remove image ${index + 1}`}
                   >

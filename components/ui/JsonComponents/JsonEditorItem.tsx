@@ -108,7 +108,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                     "p-0.5 rounded-sm transition-colors",
                     color,
                     hoverColor,
-                    "opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100",
+                    "opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100",
                     readOnly && "hidden"
                 )}
             >

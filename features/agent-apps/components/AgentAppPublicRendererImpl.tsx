@@ -34,6 +34,7 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { useWarmAgent } from "@/features/agents/hooks/useWarmAgent";
+import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
 import { SHELL_REGISTRY } from "./shells";
 import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
 import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
@@ -286,9 +287,16 @@ function CustomComponentRenderer({
   // hydration / first paint) so it never competes with the page's render
   // path. If the user submits before the warm completes, the real call
   // simply finds the cache populated; no race.
+  // THE ONE agent decision for this renderer — pinned today, mandate-resolved
+  // once APP_MANDATE_CUTOVER flips. Every site below reads `runAgentId`, so
+  // the launch, the warm and the surface scope can never disagree about which
+  // agent this run belongs to.
+  const holder = useAppHolder(app);
+  const runAgentId = holder.agentId;
+  const runAgentVersionId = holder.agentVersionId;
   const pinnedVersionId =
-    !app.use_latest && app.agent_version_id ? app.agent_version_id : null;
-  useWarmAgent(pinnedVersionId ?? app.agent_id, {
+    !holder.useLatest && runAgentVersionId ? runAgentVersionId : null;
+  useWarmAgent(pinnedVersionId ?? runAgentId ?? "", {
     isVersion: !!pinnedVersionId,
   });
 

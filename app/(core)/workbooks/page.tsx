@@ -559,7 +559,7 @@ export default function WorkbooksLandingPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="opacity-100 transition-opacity h-7 w-7 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/entity-ref:opacity-100 focus-visible:opacity-100"
+                          className="opacity-100 transition-opacity h-7 w-7 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover/entity-ref:opacity-100 focus-visible:opacity-100"
                           onClick={() => handleDelete(wb)}
                           title="Delete workbook"
                         >

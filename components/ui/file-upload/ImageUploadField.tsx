@@ -112,7 +112,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
               <button
-                className="p-2 rounded-full bg-white text-gray-700 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                className="p-2 rounded-full bg-white text-gray-700 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                 onClick={handleClearImage}
                 aria-label="Clear image"
               >
