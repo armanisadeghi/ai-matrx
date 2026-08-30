@@ -86,11 +86,16 @@ describe("task lifecycle responsive contract", () => {
 
   it("keeps live-state copy actions in the mobile task editor", () => {
     const mobileDetails = source("mobile/MobileTaskDetails.tsx");
+    const mobileView = source("mobile/MobileTasksView.tsx");
 
     expect(mobileDetails).toContain("TaskEditorCopyButtonsForDraft");
     expect(mobileDetails).toContain('location="Tasks — mobile task editor"');
     expect(mobileDetails).toContain("description,");
     expect(mobileDetails).toContain("isDirty,");
+    expect(mobileView).toContain("useEnsureTaskLoaded(taskId)");
+    expect(mobileView).toContain("task && isFullData");
+    expect(mobileView).toContain('what="task details"');
+    expect(mobileView).toContain("<Skeleton");
   });
 
   it("keeps every task editor header on the live draft copy control", () => {
