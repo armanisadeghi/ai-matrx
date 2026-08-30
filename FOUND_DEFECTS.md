@@ -15,6 +15,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D290 — two tables ship `organization_id NOT NULL` with no backstop trigger
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-08-30, rule
+`org_not_null_no_backstop`. Of the 89 objects in the unacked backlog, 85 have since gained a
+backstop trigger and 2 no longer exist. These two have neither, verified live against
+`pg_trigger` on 2026-08-30:
+
+- `platform.knob_override_audit` — shipped 2026-08-29 with the scoped-configuration ruling
+  (the per-change override history). New table, new gap.
+- `workflow.trigger_event`
+
+Same remainder class as D232's original eleven. The column is NOT NULL, so a write that omits
+it fails loudly rather than landing org-less — but the backstop is what makes the org derivable
+instead of the caller's problem, and every sibling table has one.
+
+**Fix:** add the standard `organization_id` backstop trigger to both, matching the pattern the
+other 85 use.
+
+---
+
 ### D289 — the mandate shortcut flip would ship 6 dead RPCs: EXECUTE revoked, no `client_callable_door`
 
 Found by the docs-steward `ddl_guard_log` sweep 2026-08-30 (the guard's `error` severity — a

@@ -10,7 +10,12 @@ import {
   type PatrolRunEventInput,
   type PatrolRunState,
 } from "./run-record";
-import { loadPatrolRun, patrolRunPath, savePatrolRun, withPatrolRunLease } from "./storage";
+import {
+  loadPatrolRun,
+  patrolRunPath,
+  savePatrolRun,
+  withPatrolRunLease,
+} from "./storage";
 import { publishPatrolRunAuthority } from "./git-authority";
 
 interface Args {
@@ -25,7 +30,9 @@ function parseArgs(argv: string[]): Args {
     const flag = rest[index];
     const value = rest[index + 1];
     if (!flag?.startsWith("--") || value === undefined) {
-      throw new Error(`expected --name value pairs; got ${rest.slice(index).join(" ")}`);
+      throw new Error(
+        `expected --name value pairs; got ${rest.slice(index).join(" ")}`,
+      );
     }
     const key = flag.slice(2);
     values.set(key, [...(values.get(key) ?? []), value]);
@@ -120,7 +127,9 @@ function main(): void {
 
   if (args.command === "verify") {
     const record = loadPatrolRun(path);
-    console.log(`${path}: valid (${record.events.length} events, ${record.events.at(-1)?.state})`);
+    console.log(
+      `${path}: valid (${record.events.length} events, ${record.events.at(-1)?.state})`,
+    );
     return;
   }
   if (args.command === "publish") {
@@ -221,14 +230,22 @@ function main(): void {
     const integratedSha = one(args, "integrated-sha");
     const release = one(args, "release");
     const actor = one(args, "actor");
-    execFileSync("git", ["merge-base", "--is-ancestor", candidateSha, integratedSha], {
-      cwd: repoRoot,
-      stdio: "ignore",
-    });
-    execFileSync("git", ["merge-base", "--is-ancestor", integratedSha, "origin/main"], {
-      cwd: repoRoot,
-      stdio: "ignore",
-    });
+    execFileSync(
+      "git",
+      ["merge-base", "--is-ancestor", candidateSha, integratedSha],
+      {
+        cwd: repoRoot,
+        stdio: "ignore",
+      },
+    );
+    execFileSync(
+      "git",
+      ["merge-base", "--is-ancestor", integratedSha, "origin/main"],
+      {
+        cwd: repoRoot,
+        stdio: "ignore",
+      },
+    );
     const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
       const record = loadPatrolRun(path);
       const next = appendPatrolRunEvent(record, {
@@ -308,11 +325,7 @@ function main(): void {
             | "exact_candidate_certified"
             | "exact_candidate_rejected"
             | undefined,
-          replacementCandidateSha: one(
-            args,
-            "replacement-candidate",
-            false,
-          ),
+          replacementCandidateSha: one(args, "replacement-candidate", false),
         },
       });
       publishPatrolRunAuthority({
