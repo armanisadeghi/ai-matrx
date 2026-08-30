@@ -34,12 +34,11 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Building2,
   ClipboardCheck,
-  Compass,
   RefreshCw,
   ShieldOff,
   UserCog,
@@ -49,6 +48,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+import { HR_ORG_PARAM } from "../constants";
+import { HrAccessDenied } from "./HrAccessDenied";
 import {
   hrHref,
   hrMeHref,
@@ -333,14 +334,33 @@ export function HrError({
  *
  * The route is separately ABSENT from the nav (`resolveHrNav`), so a person only
  * lands here by typing a URL or following a stale link.
+ *
+ * 🚨 THIS NO LONGER DRAWS ITS OWN SCREEN. Owner ruling, 2026-08-30: a person who
+ * lands somewhere they have no authority for gets the PLATFORM'S one refusal
+ * surface — same look, same doors, same request-access affordance — everywhere
+ * in the product. HR keeps the half only HR can know: the sentence. The frame is
+ * `features/access-gate`, reached through the single wrapper `HrAccessDenied`;
+ * this component is now the HR-context adapter in front of it (persona home
+ * door, and the one requestable class) and nothing else.
+ *
+ * `employerRef` is the ONLY way a request-access button appears on an HR
+ * refusal. Read the header of `HrAccessDenied.tsx` before adding a second one.
  */
 export function HrNoAccess({
   personaHomeHref,
   sentence,
+  employerRef,
   className,
 }: {
   personaHomeHref?: string;
   sentence?: string;
+  /**
+   * The employer a link named that this person has no standing in (uuid or
+   * slug). Present ⇒ the refusal is requestable against that ORGANIZATION.
+   * Leave unset — the default, absolute, is the safe answer for every HR record
+   * refusal, and the §5 subject-exclusion veto depends on it.
+   */
+  employerRef?: string | null;
   className?: string;
 }) {
   const { persona, orgRef } = useHrContext();
@@ -349,16 +369,13 @@ export function HrNoAccess({
   const fallbackLabel = persona === "employee" ? "Go to My Info" : "Go to HR home";
 
   return (
-    <div className={cn("w-full min-w-0 p-4 sm:p-6", className)}>
-      <div className="mx-auto flex max-w-xl flex-col items-start gap-3 rounded-lg border border-border bg-card p-4 sm:p-6">
-        <Compass className="h-5 w-5 shrink-0 text-muted-foreground" />
-        <p className="text-sm text-foreground">
-          {sentence?.trim() || "This part of HR isn't yours here."}
-        </p>
-        <Button asChild size="sm" className="min-h-11 sm:min-h-9">
-          <Link href={fallbackHref}>{fallbackLabel}</Link>
-        </Button>
-      </div>
+    <div className={cn("w-full min-w-0", className)}>
+      <HrAccessDenied
+        sentence={sentence?.trim() || "This part of HR isn't yours here."}
+        fallbackHref={fallbackHref}
+        fallbackLabel={fallbackLabel}
+        employerRef={employerRef}
+      />
     </div>
   );
 }
@@ -378,6 +395,8 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading } = useHrContext();
   // The picker is itself the pre-employer-context state.
   const pathname = usePathname() ?? hrHref(null);
+  const askedEmployerRef =
+    useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
 
   if (isLoading) return <HrLoading variant="cards" rows={3} className={className} />;
 
@@ -386,6 +405,28 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
   );
 
   if (choosable.length === 0) {
+    /*
+      🚨 A LINK NAMED AN EMPLOYER AND THIS PERSON HAS NO STANDING IN IT.
+      This is the SMS-deep-link landing (owner, 2026-08-30), and there is
+      nothing to pick — offering a chooser with no choices is the dead end the
+      canonical refusal exists to kill. So it becomes the platform's denial
+      about that ORGANIZATION, with the request-access click that reaches its
+      owners and admins. With no `?org=` there is nothing to name and nothing to
+      ask for, so the plain page stands.
+    */
+    if (askedEmployerRef) {
+      return (
+        <div className={cn("w-full min-w-0", className)}>
+          <HrAccessDenied
+            sentence="You don't work here as far as HR is concerned, so there's nothing in this employer's HR for you to open."
+            fallbackHref={hrHref(null)}
+            fallbackLabel="Back to HR"
+            employerRef={askedEmployerRef}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={cn("w-full min-w-0 p-4 sm:p-6", className)}>
         <div className="mx-auto flex max-w-xl flex-col items-start gap-3 rounded-lg border border-border bg-card p-4 sm:p-6">
@@ -671,6 +712,10 @@ export function HrPageState({
 }) {
   const context = useHrContext();
   const disclosureClaimed = useHrDisclosureClaimed();
+  // What the link ASKED for, not what resolved — the whole point of the
+  // no-standing case is that nothing resolved.
+  const askedEmployerRef =
+    useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
 
   if (context.isLoading) return <HrLoading variant={variant} rows={rows} />;
 
@@ -678,8 +723,22 @@ export function HrPageState({
     // A refusal at the CONTEXT level means this person has no HR standing at all
     // — that is the no-access state, not an error state.
     if (context.error.kind === "denied") {
+      /*
+        🚨 THE SMS-DEEP-LINK CASE (owner, 2026-08-30 — he hit it on his phone).
+        A refusal at the CONTEXT level means this person has no HR standing in
+        this employer AT ALL — not that a record is hidden from them. That is
+        the one HR refusal where asking is a real option, so it names the
+        employer the link asked for and carries the canonical Request-access
+        click through to that organization's owners and admins.
+
+        Every OTHER HR refusal below stays absolute. See `HrAccessDenied.tsx`.
+      */
       return (
-        <HrNoAccess personaHomeHref={personaHomeHref} sentence={noAccessSentence} />
+        <HrNoAccess
+          personaHomeHref={personaHomeHref}
+          sentence={noAccessSentence}
+          employerRef={askedEmployerRef}
+        />
       );
     }
     return (

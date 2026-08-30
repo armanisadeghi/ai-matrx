@@ -27,8 +27,8 @@ import {
   useDeleteCrawlSession,
 } from "@/features/marketing/data/hooks";
 import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
-import { extractErrorMessage } from "@/utils/errors";
-import { humanizeCrawlError } from "./live-crawl-event-presenter";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
+
 import type { CrawlSession } from "@/features/marketing/types";
 import {
   humanLines,
@@ -227,7 +227,7 @@ export function CrawlsTable() {
       // SQL, a developer hint). A person gets the sentence; the untouched text
       // stays on the title for whoever needs it.
       cell: (row) => {
-        const readable = humanizeCrawlError(row.error);
+        const readable = humanizeBackendError(row.error);
         if (!readable) return <span className="text-xs">—</span>;
         return (
           <span

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T143951Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T15:03:10.034Z",
-  "summary": "Breakpoint-gated replacement awaits exact independent certification",
+  "state": "closed",
+  "updatedAt": "2026-08-30T15:16:36.512Z",
+  "summary": "Hover repair unit 1 closed; P3 remains in ERADICATION with routed actionable backlog",
   "source": "20260830T143951Z.json",
-  "eventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86"
+  "eventHash": "88270b7dbff11a45c129e82cac85f115b3e56f331a711a221cc9fb123b22df7a"
 }

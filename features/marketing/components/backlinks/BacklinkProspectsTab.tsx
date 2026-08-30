@@ -56,7 +56,6 @@ import {
 } from "@/features/marketing/data/page-links";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
-import { humanizeBackendError } from "@/utils/errors";
   AUTHORITY_EXPLAINER,
   LINK_GAP_REVIEW_STATUSES,
   linkGapReviewLabel,
@@ -78,6 +77,7 @@ import {
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
+import { humanizeBackendError } from "@/utils/errors";
 
 function scoreCell(row: LinkGapDomainRow) {
   return (

@@ -164,6 +164,62 @@
       ],
       "previousEventHash": "5d505d792602a956f3f530164edd86e3380a5568b10a968882ecb1f63a333292",
       "eventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86"
+    },
+    {
+      "sequence": 12,
+      "state": "certified",
+      "at": "2026-08-30T15:16:22.867Z",
+      "actor": "p3-hover-certifier-retry3",
+      "summary": "Breakpoint-gated hover repair independently certified across exact four-quadrant IAB proof",
+      "evidence": [
+        "mobile dark proof from /root/p3_hover_certifier_retry2 plus mobile light and desktop light/dark proof from /root/p3_hover_certifier_retry3",
+        "release-before-certification escape remains visible in prior immutable events"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "certifierTaskId": "/root/p3_hover_certifier_retry3",
+        "checks": [
+          "all 15 owned blobs matched exact candidate before and after browser proof",
+          "375x812 light and dark: actions visible at opacity 1, 44x44, no overflow or overlap; Quick Look activated",
+          "1440x900 light and dark: desktop actions hidden at rest and revealed by hover and keyboard focus; dense geometry preserved",
+          "type-check, path diff, syntax, and detector Jest 15/15 passed"
+        ]
+      },
+      "previousEventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86",
+      "eventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77"
+    },
+    {
+      "sequence": 13,
+      "state": "delivered",
+      "at": "2026-08-30T15:16:29.539Z",
+      "actor": "root",
+      "summary": "Reconcile exact certified candidate to its existing v0.4.1495 delivery without another release",
+      "evidence": [
+        "escaped delivery was recorded before certification and is not erased",
+        "candidate remains ancestor of origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T143951Z",
+        "integratedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "release": "v0.4.1495"
+      },
+      "previousEventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77",
+      "eventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef"
+    },
+    {
+      "sequence": 14,
+      "state": "closed",
+      "at": "2026-08-30T15:16:36.512Z",
+      "actor": "root",
+      "summary": "Hover repair unit 1 closed; P3 remains in ERADICATION with routed actionable backlog",
+      "evidence": [
+        "17 verified controls fixed and certified; detector reports 169 actionable and 4 review remaining",
+        "no approval or exception requested"
+      ],
+      "previousEventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef",
+      "eventHash": "88270b7dbff11a45c129e82cac85f115b3e56f331a711a221cc9fb123b22df7a"
     }
   ]
 }
