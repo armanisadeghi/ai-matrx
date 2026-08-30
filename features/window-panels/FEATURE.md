@@ -761,7 +761,7 @@ features/window-panels/popout/
 ├── popoutWindowMap.ts             — module-level Window registry + useSyncExternalStore hook
 ├── popoutPendingStorage.ts        — sessionStorage flag for reload-recovery toast
 ├── PopoutContext.tsx              — context exposing popout doc/window/container
-├── PopoutShell.tsx                — provider wrapper mounted inside the portal
+├── PopoutShell.tsx                — provider wrapper mounted inside the portal (also bridges @ai-matrx/design-system's PortalContainerProvider to the popout body)
 ├── PopoutPortal.tsx               — createPortal wrapper component
 ├── usePopoutContainer.ts          — Radix container override hook
 ├── usePopoutWindow.ts             — lifecycle hook (open/close/cleanup)
@@ -842,6 +842,7 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 
 ## Change log
 
+- **2026-08-30** — **PopoutShell bridges the design-system portal seam.** The C9 swap moved Popover onto `@ai-matrx/design-system`, whose primitives resolve nested portal targets through the package's injected `PortalContainerProvider` instead of the host's `useNestedPortalContainer`. `PopoutShell` now wraps its children in that provider fed with the popout `<body>`, and `components/ui/dialog.tsx` provides `dialog content ?? popout body` beneath its own container context — together preserving the original dialog > popout > document.body portal priority, so package popovers opened inside a popped-out window render in the right window. Host wrappers (tooltip/dropdown/select) still use `useNestedPortalContainer` directly.
 - **2026-08-30** — **Chat windows are independent and rich titles no longer erase their drag zone.** `agentRunWindow` now threads a fresh overlay instance through its Window Manager id, overlay close identity, URL registration, per-window execution surface key, and conversation-history scope; new windows cascade across the standard positions, and each `+` starts a fresh conversation with that window's selected agent. `WindowHeader` now stops drag only for the interactive descendant under the pointer, leaving rich-title padding and adjacent space draggable.
 - **2026-08-30** — **Minimized cards show a representative screenshot by default, and double-click restores.** `WindowTray/defaultTraySnapshotCapture.ts` is now the fallback `captureTraySnapshot` for every window without a semantic `renderTrayPreview` (precedence: prop → registry → default), so minimize captures a downscaled WebP of the real body inside the existing one-shot 800ms offscreen budget; `html-to-image` loads only on first capture, and oversized/collapsed bodies skip straight to the styled default preview body, which also replaced the bare italic-title snapshot fallback in `TrayChipPreview`. Double-clicking anywhere on the minimized card (header included) restores the window.
 
