@@ -59,10 +59,10 @@ await dispatch(
 ### Render a file as `<img>` / `<video>`
 
 ```ts
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
-// Returns a bare `string | null` — NOT an object.
-const src = useFileSrc({ kind: 'file_id', fileId });
+// Prefer <InlineMediaRef ref={{ file_id }} /> from @ai-matrx/media/react.
+const src = useMediaResolution(fileId).resolution?.src ?? null;
 return <img src={src ?? undefined} />;
 ```
 

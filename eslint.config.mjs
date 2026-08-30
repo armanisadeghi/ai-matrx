@@ -86,7 +86,7 @@ const deletedFileHooksRestriction = {
     {
       name: "@/features/files",
       message:
-        "The features/files barrel (index.ts) was deleted. Import directly from the owning module — e.g. @/features/files/handler/handler, @/features/files/components/inline/InlineMediaRef, @/features/files/types. See features/files/FEATURE.md.",
+        "The features/files barrel (index.ts) was deleted. Import directly from the owning module — e.g. @/features/files/handler/handler, @ai-matrx/media/react (InlineMediaRef), @/features/files/types. See features/files/FEATURE.md.",
     },
     {
       // Exact-match twin of the features/files/upload internal-module
@@ -99,7 +99,7 @@ const deletedFileHooksRestriction = {
     {
       name: "@/features/files/hooks/useSignedUrl",
       message:
-        'useSignedUrl was deleted. Use useFileSrc({kind:"file_id",fileId}) from @/features/files/handler/hooks/useFileSrc.',
+        'useSignedUrl was deleted. Render via InlineMediaRef, or resolve with useMediaResolution from @ai-matrx/media/core.',
     },
     {
       name: "@/features/files/hooks/useGuardedFileUpload",
@@ -109,7 +109,7 @@ const deletedFileHooksRestriction = {
     {
       name: "@/features/agents/hooks/useAiImageUrl",
       message:
-        'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and use useFileSrc({kind:"file_id",fileId}) from @/features/files/handler/hooks/useFileSrc.',
+        'useAiImageUrl was deleted. Extract the cld_files UUID from the URL and resolve with useMediaResolution from @ai-matrx/media/core (or render via InlineMediaRef).',
     },
     {
       name: "@/components/ui/file-upload/useFileUploadWithStorage",
@@ -167,7 +167,7 @@ const matrxLintPlugin = {
         },
         schema: [],
         messages: {
-          raw: "Raw <{{tag}}> with a hardcoded AI-Matrx storage URL. Our media must render through <InlineMediaRef> (@/features/files) so it re-mints / serves a durable URL — a raw tag can't self-heal and a signed S3 link rots. See CLAUDE.md 'Media durability' / FOUND_DEFECTS D1.",
+          raw: "Raw <{{tag}}> with a hardcoded AI-Matrx storage URL. Our media must render through <InlineMediaRef> (@ai-matrx/media/react) so it serves a durable URL — a raw tag can't self-heal and a signed S3 link rots. See CLAUDE.md 'Media durability' / FOUND_DEFECTS D1.",
         },
       },
       create(context) {
@@ -1647,7 +1647,7 @@ export default [
     // an expiring signed S3 URL. A raw <img>/<video> can't re-mint and
     // silently rots when the signature expires — and an anonymous public
     // page (/podcast/[slug]) can't re-mint at all. Render through
-    // <InlineMediaRef> from @/features/files, which serves the durable
+    // <InlineMediaRef> from @ai-matrx/media/react, which serves the durable
     // CDN/public URL and re-mints from a file_id for authed owners.
     // The ONE justified raw element is PodcastAudioPlayer's headless
     // <audio> (a custom imperative transport InlineMediaRef doesn't model);
@@ -1668,7 +1668,7 @@ export default [
         {
           selector: "JSXOpeningElement[name.name='img']",
           message:
-            'Raw <img> is banned in features/podcasts — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md "Media durability" / FOUND_DEFECTS.md D1.',
+            'Raw <img> is banned in features/podcasts — render via <InlineMediaRef> from @ai-matrx/media/react so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md "Media durability" / FOUND_DEFECTS.md D1.',
         },
         {
           selector: "JSXOpeningElement[name.name='video']",
@@ -1997,18 +1997,6 @@ export default [
           ],
         },
       ],
-    },
-  },
-  {
-    // InlineMediaRef predates React 19's special `ref` prop handling and
-    // intentionally receives MEDIA IDENTITY on that prop. The compiler's
-    // refs rule treats the content value as a React ref even though this
-    // module never reads `.current`. CaptureThumb isolates the same false
-    // positive for callers. Keep the exception at the canonical boundary;
-    // never add call-site disables.
-    files: ["features/files/components/inline/InlineMediaRef.tsx"],
-    rules: {
-      "react-hooks/refs": "off",
     },
   },
   {

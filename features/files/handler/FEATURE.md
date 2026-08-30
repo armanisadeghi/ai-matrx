@@ -10,22 +10,24 @@ pipeline. This is the single source of resistance for file flows.
 ```ts
 import { fileHandler }        from "@/features/files/handler/handler";
 import { useFile }            from "@/features/files/handler/hooks/useFile";
-import { useFileSrc }         from "@/features/files/handler/hooks/useFileSrc";
-import { useFileBlob }        from "@/features/files/handler/hooks/useFileBlob";
 import { useFileMediaBlock }  from "@/features/files/handler/hooks/useFileMediaBlock";
 import { useFileDownloadUrl } from "@/features/files/handler/hooks/useFileDownloadUrl";
 import { useFileUpload }      from "@/features/files/handler/hooks/useFileUpload";
 // types: @/features/files/handler/types   errors: @/features/files/handler/errors
+// RENDER surface (src resolution, load recovery, blob state, thumbnails,
+// upload trays, InlineMediaRef/MediaThumbnail/FileIcon/dropzone) lives in
+// @ai-matrx/media (/core hooks + /react components), backed by THIS handler
+// through the MediaClient adapter in ../media-client/ (C20 swap, 2026-08-29).
 ```
 
-`useFileSrc` returns a bare `string | null`, not an object. The handler is a library, not a page —
-it owns no slice (files live in `cloudFiles`, in-flight uploads in `cloudFiles.uploads`).
+The handler is a library, not a page — it owns no slice (files live in `cloudFiles`,
+in-flight uploads in `cloudFiles.uploads`).
 
 ## Where things are
 
 `handler.ts` (entry) · `types.ts` (15 `FileSource` variants, `NormalizedFile`, 11 `FileTarget`
 variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) · `session.ts` (the
-file-session cookie) · `hooks/useDurableSrc.ts` (session-refresh retry for raw URL strings) ·
+file-session cookie) ·
 `utils/python-base.ts` (`fileUrls()` — THE durable URL builder) · `../upload/cloudUpload.ts` +
 `../upload/tusUpload.ts` + `../upload/__tests__/transport-policy.test.ts` ·
 `../vault/vaultAttachmentTransport.ts`.
@@ -45,8 +47,9 @@ Auth lanes for the durable byte routes:
   7-day TTL) and accepts it ONLY on GET byte routes. Fired at auth bootstrap
   (`components/layout/AuthSessionWatcher.tsx`) and established on BOTH backend bases (main +
   standalone files host) since cookies are per-host. In-memory dedupe/freshness only.
-- **Error recovery = session refresh, not URL re-mint.** `useDurableSrc` (and
-  `useUnifiedImageUrl`/`useUnifiedVideoUrl`'s `reportLoadError`) call
+- **Error recovery = session refresh, not URL re-mint.** `MediaClient.recoverLoadError`
+  (media-client adapter; consumed by `useMediaLoadRecovery` from `@ai-matrx/media/core`) and
+  `useUnifiedImageUrl`/`useUnifiedVideoUrl`'s `reportLoadError` call
   `ensureFilesSession({ force: true })` once on a media load failure and re-request the SAME URL
   (key bump). A second failure is terminal.
 - A bare `fetch(durableUrl)` outside the python-client does NOT send the cross-origin cookie —
@@ -88,8 +91,9 @@ Auth lanes for the durable byte routes:
     **Do not claim live TUS verification until a real browser upload (preflight, resume,
     lost-final-response, token refresh) passes against the deployed server** — today it is unit-tested
     only.
-11. **`useDurableSrc` is for a raw URL string only.** With a `file_id`/`MediaRef`, use
-    `useFileSrc` / `<InlineMediaRef>`, which resolve the durable URL up front.
+11. **`useMediaLoadRecovery` (raw URL retry) is for a raw URL string only.** With a
+    `file_id`/`MediaRef`, use `useMediaResolution` / `<InlineMediaRef>` from
+    `@ai-matrx/media`, which resolve the durable URL up front.
 12. **A canvas must not use the bare `/files/{id}/download` URL as `<img src>`** — an element cannot
     attach the bearer token, and a display/CDN URL is not a promise of CORS-readable pixels. Route
     `crossOrigin` consumers through `useFileBlob` and render a same-origin `blob:` URL.
@@ -129,6 +133,13 @@ Then confirm the service is up: `curl https://files.matrxserver.com/files-servic
 `/demos/cloud-files-debug`, which shows the active URL + JWT and fires raw fetches.
 
 ## Change log
+
+- **2026-08-29** — **C20 media swap.** `hooks/{useFileSrc,useDurableSrc,useFileBlob}.ts`
+  DELETED; the render surface is `@ai-matrx/media` (`useMediaResolution`,
+  `useMediaLoadRecovery`, `useMediaBlob`, `useThumbnailSource`, `useMediaUpload` + the
+  components), backed by this handler via the `MediaClient` adapter in
+  `features/files/media-client/`. `useFileAs` remains for the wave-2 units
+  (`FilePreview`, `useUnifiedImageUrl`/`useUnifiedVideoUrl`) and retires with them.
 
 - **2026-08-27** — Typed unavailable-file reads stopped generating duplicate durable incidents;
   callers still receive the refusal, while unexpected resolver and file-service failures stay loud.

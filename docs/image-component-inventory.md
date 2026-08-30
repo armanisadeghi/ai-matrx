@@ -1,6 +1,9 @@
 # Image Component Inventory
 
-> Audit: 2026-05-13. Covers rendering, uploading, and modifying.
+> Audit: 2026-05-13. **Historical snapshot — paths are as of the audit date.** Since the
+> 2026-08-29 C20 media swap, InlineMediaRef / MediaThumbnail / FileIcon / FileUploadDropzone
+> live in `@ai-matrx/media` and `useFileSrc`/`useDurableSrc` are replaced by
+> `useMediaResolution`/`useMediaLoadRecovery` (`@ai-matrx/media/core`). Covers rendering, uploading, and modifying.
 > Purpose: identify every file that touches images so we know exactly which ones need to change.
 
 ---
