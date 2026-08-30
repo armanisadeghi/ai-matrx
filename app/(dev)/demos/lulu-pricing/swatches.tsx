@@ -35,7 +35,7 @@ function SwatchFrame({
   return (
     <div
       className={cn(
-        "flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-muted/60 to-muted transition-colors",
+        "flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-muted to-muted-foreground/15 transition-colors",
         className,
       )}
     >
@@ -368,8 +368,10 @@ function PaperSwatch({ value }: { value: string }) {
   const heavy = /\b(80|100)#/.test(v);
   const id = `paper-${cream ? "cream" : "white"}-${coated ? "c" : "u"}`;
 
-  const sheet = cream ? "#f5ecd9" : "#fbfbfb";
-  const sheetEdge = cream ? "#e6d7b8" : "#e4e4e7";
+  const sheet = cream ? "#f7efdd" : "#ffffff";
+  // The edge does the work in light mode: a near-white sheet on a light stage
+  // has no silhouette without it.
+  const sheetEdge = cream ? "#d8c49a" : "#c3c3cb";
 
   return (
     <SwatchFrame>
@@ -404,7 +406,7 @@ function PaperSwatch({ value }: { value: string }) {
         d="M30 20 H88 V60 Q88 66 82 66 H30 Z"
         fill={`url(#${id}-face)`}
         stroke={sheetEdge}
-        strokeWidth="0.8"
+        strokeWidth="1.2"
       />
       <path d="M88 60 Q88 66 82 66 L88 60 Z" fill={sheetEdge} />
       <path
