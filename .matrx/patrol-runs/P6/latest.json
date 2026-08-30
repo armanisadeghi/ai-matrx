@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P6",
-  "runId": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:48:07.141Z",
-  "summary": "CERTIFIED exact two-file detector-gap candidate.",
-  "source": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f.json",
-  "eventHash": "6503d4c69bc100d96700733c7e3d8aacdb810a0682d8ca40317088dabf3cff1e"
+  "runId": "b0934bd3-4f5c-40c1-b2ee-8fde587a8eb6",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:50:57.008Z",
+  "summary": "Certified candidate preserved and queued after integration to origin/main.",
+  "source": "b0934bd3-4f5c-40c1-b2ee-8fde587a8eb6.json",
+  "eventHash": "98edee7554ab61711e80032844e514a81ab7159568e264254aef6b93dd8b8619"
 }

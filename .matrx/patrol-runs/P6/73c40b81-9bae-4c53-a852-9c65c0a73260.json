@@ -134,6 +134,39 @@
       },
       "previousEventHash": "bfac792ecc4ef3b10f0c92fc3753213762f4cd0b88b3a885ebb05bbf2cdbc300",
       "eventHash": "b88ea325c45d983b5aadf60b37718e29bfa4268088ae0449b2c64a0861a36078"
+    },
+    {
+      "sequence": 11,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:50:45.121Z",
+      "actor": "codex-p6-controller",
+      "summary": "Certified candidate preserved and queued after integration to origin/main.",
+      "evidence": [],
+      "delivery": {
+        "candidateSha": "d3abcf9afad3fc356465db3daa1d3e8df920660f",
+        "preservedRef": "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260",
+        "integratedSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5"
+      },
+      "previousEventHash": "b88ea325c45d983b5aadf60b37718e29bfa4268088ae0449b2c64a0861a36078",
+      "eventHash": "87661fbcb37dd043eb1aa2e83339fd43603a935d3072412504368c2fd6dd8b4b"
+    },
+    {
+      "sequence": 12,
+      "state": "delivered",
+      "at": "2026-08-30T14:50:51.051Z",
+      "actor": "codex-p6-controller",
+      "summary": "DELIVERED to origin/main as a certified ancestor; versioned release remains pending in the serialized release lane.",
+      "evidence": [
+        "Candidate is an ancestor of origin/main at 05ad7aa37eb95e8f0f539068ff732ec87a3957d5."
+      ],
+      "delivery": {
+        "candidateSha": "d3abcf9afad3fc356465db3daa1d3e8df920660f",
+        "preservedRef": "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260",
+        "integratedSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5",
+        "release": "pending-serialized-release"
+      },
+      "previousEventHash": "87661fbcb37dd043eb1aa2e83339fd43603a935d3072412504368c2fd6dd8b4b",
+      "eventHash": "8a2faabe9ad0f307d70d03769fdbdb0bde000cc00f45d11ff2c78d5270ec973b"
     }
   ]
 }
