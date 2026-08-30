@@ -20,6 +20,12 @@ import type { RootState } from "@/lib/redux/store";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveServer } from "@/lib/redux/preferences/adminPreferencesSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  OrganizationContextError,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 import { hydrateContextState } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
 
 export class SelectedBackendUnavailableError extends Error {}
@@ -69,6 +75,23 @@ export const fetchContextState = createAsyncThunk<
       return rejectWithValue("no_session");
     }
 
+    // Mandatory, fail-closed, same kernel as call-api.ts's resolveScope and
+    // python-client.ts's resolveRequestOrganizationId — this thunk carries a
+    // real Bearer token (an authenticated request) but had NO organization
+    // concept anywhere in the file, so it always reached the server unscoped.
+    // aidream commit 8e5ee0b93's AuthMiddleware admission gate now 400s that
+    // before routing; refuse here instead, before any networking, with no
+    // fallback organization ever chosen.
+    let organizationId: string;
+    try {
+      organizationId = requireOrganizationContext(selectOrganizationId(state));
+    } catch (error) {
+      if (error instanceof OrganizationContextError) {
+        return rejectWithValue(error.code);
+      }
+      throw error;
+    }
+
     const env = selectEffectiveServer(state);
     // 🚨 Do not restore `?? production`; this resolver owns endpoint identity.
     let baseUrl: string;
@@ -78,10 +101,13 @@ export const fetchContextState = createAsyncThunk<
     const url = `${baseUrl}${ENDPOINTS.cx.contextState(conversationId)}`;
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
+      headers: applyOrganizationContextHeader(
+        {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        organizationId,
+      ),
       signal,
     });
 
