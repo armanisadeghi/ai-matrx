@@ -183,15 +183,26 @@ neither prompt blocks nor run inputs: a canonical
   removed only after the association inventory proves that edge is readable.
   Stored file bytes never enter `user_input` merely because the conversation
   has not materialized yet.
-- Local paste and drag/drop uploads are stamped with the conversation's
-  canonical execution organization before bytes move. The file and its future
-  `file → conversation` edge therefore share one tenant even if the active
-  sidebar organization changes; a cross-organization edge remains a rejected
-  request, never an implicit move or copy.
-- A tenant-mismatched stored attachment is a clean, user-correctable 409. The
-  stream boundary preserves `attachment_organization_mismatch`, shows the
-  server's reselect guidance, and never records that successful guard as a
+- **Every** upload — paste, drag/drop, and the inline picker — is stamped with
+  the resolved workspace before bytes move, at the ONE choke point
+  (`bindUploadOrganization` in `features/files/upload/cloudUpload.ts`), never
+  per-component. The inline picker sending nothing at all is what filed a
+  screenshot in a personal workspace nobody chose on 2026-08-30.
+- **A file in another of your OWN organizations attaches normally.** The server
+  gate is `iam.has_access_for`, not an organization comparison; multi-org
+  membership exists so one person can keep several workspaces, and refusing her
+  own file across them was the bug, not the guard. Only a file you genuinely
+  cannot read is refused — a clean `attachment_access_denied` (403) that the
+  stream boundary surfaces with the server's own words and never records as a
   system failure.
+- **"No organization selected" is a question, not a dead end.** Any blocked
+  action — an API call, an upload, an AI run — raises the app-wide organization
+  gate (`lib/organization/organization-gate.ts` +
+  `features/organizations/gate/OrganizationGateDialog.tsx`): one dialog, the
+  choice becomes the active workspace, and the original action finishes in it.
+  Cancelling returns the person exactly where they were, with nothing sent,
+  nothing written, and no error surface. The gate never picks a workspace on
+  anyone's behalf; where it cannot ask, the fail-closed refusal is unchanged.
 - A conversation 404 emits the canonical `record-unavailable` diagnostic once.
   The stream boundary surfaces that same error but never duplicates it as an
   `agent-stream-client-error`.
@@ -415,7 +426,8 @@ model overrides.
 ## Change Log
 
 - `2026-08-30` — **Conversation 404s no longer double-capture.** `recordUnavailable` remains the canonical loud diagnostic; the shared stream catch surfaces it without emitting a duplicate `agent-stream-client-error` row.
-- `2026-08-30` — **Expected attachment tenant conflicts no longer become red stream failures.** The shared stream boundary preserves the nested or top-level `attachment_organization_mismatch` code, surfaces the server's reselect guidance without the false "Conversation already exists" prefix, and excludes the successful tenant guard from system-error capture.
+- `2026-08-30` — **Expected attachment tenant conflicts no longer become red stream failures.** The shared stream boundary preserves the nested or top-level error code, surfaces the server's own guidance without the false "Conversation already exists" prefix, and excludes the successful guard from system-error capture.
+- `2026-08-30` — **Organization stopped being a dead end, and a 409 stopped lying.** One submit produced two failures: an attachment refused for living in the sender's personal workspace, reported as `Conversation already exists: An attached file belongs to a different organization…` — two unrelated errors welded into one sentence, neither true. Fixes: only a genuine id collision may say "Conversation already exists" (every other 409 keeps the server's words, and 403 is handled as an expected refusal); the app-wide organization gate turns "select an organization first" into an inline question that resumes the blocked action; `resolveOrganizationForBlockedAction` commits that first choice WITHOUT clearing the conversation being composed in (`setOrganization` cascades and would have stranded the very send it unblocked); and every upload path resolves its workspace at one choke point.
 - `2026-08-30` — **Agent-definition JSON reads validate their runtime contracts at ingress.**
   Messages, variable definitions, settings, context policies, and output schemas now use shared
   runtime parsers instead of double assertions. All three `agx_get_version_snapshot` consumers
