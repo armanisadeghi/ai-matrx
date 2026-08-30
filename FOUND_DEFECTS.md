@@ -15,6 +15,22 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D292 — the mandate routes bounce signed-out users to `/agents` and lose the destination
+
+`app/(core)/mandates/page.tsx:23` and `app/(core)/mandates/[mandateKey]/page.tsx:20` do
+`if (!isAuthenticated) redirect("/agents")`. Two problems, both pre-existing (found during the
+2026-08-30 mandate detach, curl-proven: anonymous `GET /mandates` → 307 `/agents`):
+
+1. It violates the destination law — a user bounced for auth must keep where they were going
+   (`utils/auth/FEATURE.md`); `/administration/mandates` does this correctly (307 to
+   `/login?redirectTo=…`). These two send you to an unrelated page with no way back.
+2. `/agents` is now the wrong page anyway: a mandate is fulfilled by an Agent, an Orchestra,
+   OR a Workflow, so mandates are no longer a child of agents.
+
+Fix: use the one auth-bounce primitive in `utils/auth/` with `redirectTo` set to the requested
+mandate URL. Left untouched by the detach sweep on purpose — it is an auth-path change, not a
+path move.
+
 ### D290 — two tables ship `organization_id NOT NULL` with no backstop trigger
 
 Found by the docs-steward `ddl_guard_log` sweep 2026-08-30, rule
