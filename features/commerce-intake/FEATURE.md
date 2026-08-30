@@ -226,6 +226,8 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-30 — **Real-phone round: flip, video swipe, hold semantics.** (1) Camera flip in v1/v2/v3 is now a FACING toggle (`environment ↔ user`; deviceId cleared so the persisted preferred camera can't pin the side; preview mirrors while front-facing) — the deviceId cycle walked the iPhone's several BACK lenses and rarely reached the front ("flip doesn't work"). Host adapter exposes `facing`. (2) `@ai-matrx/capture` 0.4.0: viewer video slides are a control-less tap-to-play player (paused glyph + progress bar) so the stage owns all gestures and videos swipe exactly like photos; v1's `MediaPager` keeps native controls pending replacement. (3) HoldShutter: the 1.2s auto-latch is gone — recording follows the finger; slide UP ~64px to the lock target to latch deliberately, then tap stops. Flip needs a real phone to verify (this machine has one camera).
+
 - 2026-08-30 — Upload failures retain the canonical file-transport incident
   (including request identity) without emitting a duplicate route-level
   `console-error`; the failed capture chip and off-screen failure toast remain.
