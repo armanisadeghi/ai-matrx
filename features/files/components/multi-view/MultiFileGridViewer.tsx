@@ -22,9 +22,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
 import { pickGridLayout } from "./grid-layout";
 import type { CloudFile } from "@/features/files/types";
 
@@ -292,8 +294,15 @@ function FocusView({
         </>
       ) : null}
 
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 max-w-[80vw] truncate rounded-full bg-card/80 backdrop-blur border border-border px-3 py-1 text-xs text-foreground">
-        {file.fileName}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 max-w-[80vw] rounded-full bg-card/80 backdrop-blur border border-border px-3 py-1 text-xs text-foreground">
+        <EntityRef
+          token="file"
+          id={file.id}
+          name={file.fileName}
+          showIcon={false}
+          onOpen={() => openFilePreview(file.id)}
+          className="max-w-full"
+        />
       </div>
     </div>
   );

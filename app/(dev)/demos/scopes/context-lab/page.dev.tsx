@@ -383,9 +383,15 @@ function AssignToItemPanel({
                   {type!.label_plural}
                 </span>
                 <CornerDownRight className="h-3 w-3 text-muted-foreground" />
-                <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">
-                  {org?.name}
-                </span>
+                {org && (
+                  <EntityRef
+                    token="organization"
+                    id={org.id}
+                    name={org.name}
+                    showIcon={false}
+                    className="rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -1182,9 +1188,13 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
               </span>
             ) : (
               <>
-                <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
-                  {org.name}
-                </span>
+                <EntityRef
+                  token="organization"
+                  id={org.id}
+                  name={org.name}
+                  showIcon={false}
+                  className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs font-medium"
+                />
                 {chips.map((ch) => {
                   const c = resolveColor(ch.type);
                   return (
