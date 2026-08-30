@@ -55,6 +55,9 @@ const TIER_LABEL: Record<ExpertCandidateTier, string> = {
   weak: "Weak",
 };
 
+const CHECKBOX_TAP_AREA =
+  "relative max-lg:before:absolute max-lg:before:left-1/2 max-lg:before:top-1/2 max-lg:before:h-11 max-lg:before:w-11 max-lg:before:-translate-x-1/2 max-lg:before:-translate-y-1/2 max-lg:before:content-['']";
+
 function statusLabel(raw: string | null): string | null {
   if (!raw) return null;
   return (EXPERT_STATUSES as readonly string[]).includes(raw)
@@ -81,7 +84,7 @@ function CandidateRow({
         disabled={disabled || Boolean(already)}
         onCheckedChange={() => onToggle(candidate.key)}
         aria-label={`Select ${candidate.display_name}`}
-        className="mt-0.5"
+        className={cn("mt-0.5", CHECKBOX_TAP_AREA)}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -236,7 +239,7 @@ export default function TopicExperts() {
   );
 
   return (
-    <div className="h-full overflow-y-auto px-3 pb-8 pt-3">
+    <div className="matrx-touch-targets h-full overflow-y-auto px-3 pb-8 pt-3">
       <div className="mx-auto max-w-4xl space-y-4">
         {/* ── Roster ─────────────────────────────────────────────────────── */}
         <section className="rounded-md border border-border bg-card">
@@ -343,6 +346,7 @@ export default function TopicExperts() {
                     id="include-weak"
                     checked={includeWeak}
                     onCheckedChange={(next) => setIncludeWeak(next === true)}
+                    className={CHECKBOX_TAP_AREA}
                   />
                   <label
                     htmlFor="include-weak"

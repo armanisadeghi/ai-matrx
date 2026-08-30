@@ -101,11 +101,16 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
   calls may return 403 after access is revoked or a stale shared link is opened. The experts
   surface shows the refusal once without feeding either the API failure or its toast into
   `system_error`; unexpected statuses remain captured at the transport boundary.
+- **The Experts surface owns responsive interaction density.** Its root uses
+  `matrx-touch-targets`, and its Radix checkboxes retain the 14px visual while an invisible 44px
+  `CHECKBOX_TAP_AREA` owns the tablet/mobile hit target.
 
 `pnpm type-check` is the only type gate; the build ignores type errors.
 
 ## Change log
 
+- 2026-08-30 — The Experts surface now applies the shared 44px responsive touch floor to its
+  actions and invisible 44px hit areas to its visually compact checkboxes.
 - 2026-08-30 — Classified expected 403s from expert extraction/promotion at the canonical raw
   transport boundary and removed the duplicate captured error toast; forcing tests preserve
   capture for unexpected 5xx failures.

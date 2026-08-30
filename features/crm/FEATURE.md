@@ -695,7 +695,10 @@ not an expert) and `ExpertStatusCard` on the record page.
   Provenance per page is a `party -> research_source` edge carrying the
   `party_observation` payload. Readers: `fetchTopicExperts` (topic → its
   experts) and `fetchPartyExpertTopics` (person → their topics, so the record
-  page can open each one).
+  page can open each one). `fetchTopicExperts` opts its exact edge-backed ids
+  into `fetchPartiesByIds({ includeDiscovered: true })`; the default hydrator
+  remains contact-only, while the topic roster must show the `discovered`
+  records this producer intentionally creates.
 - **Promotion is suggestion-gated.** The extraction endpoint writes nothing;
   the promote endpoint accepts only keys its CURRENT extraction produces and
   refuses anything below the promotable floor unless the caller explicitly
@@ -817,6 +820,9 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-30 — **Research expert rosters hydrate discovered parties.** The topic edge reader now
+  opts exact expert ids into discovered-record hydration; general party selectors stay
+  contact-only, while newly promoted and previously linked experts appear in the roster.
 - 2026-08-28 — **Verified workforce phone identity now converges on the contact graph.**
   `crm.upsert_party_phone_contact` is the one idempotent writer used by HR phone-field triggers
   and the service-role-only Twilio Verify callback. HR values arrive unverified; provider proof
