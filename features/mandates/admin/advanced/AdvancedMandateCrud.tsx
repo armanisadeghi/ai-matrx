@@ -132,9 +132,12 @@ export function AdvancedMandateCrud() {
     cell: (row) => {
       const text = renderValue(row[column.name]);
       if (!text) return <span className="text-muted-foreground">null</span>;
+      // Clipped for the grid only — the full value is on the title attribute
+      // and in the row inspector, so nothing is hidden, only folded.
+      const clipped = text.length > 160 ? `${text.slice(0, 160)}…` : text;
       return (
-        <span className="block max-w-[28rem] truncate font-mono text-xs" title={text}>
-          {text}
+        <span className="block max-w-[28rem] font-mono text-xs" title={text}>
+          {clipped}
         </span>
       );
     },

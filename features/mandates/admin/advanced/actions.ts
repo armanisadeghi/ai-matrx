@@ -73,8 +73,20 @@ function qualify(relationKeyInput: string) {
   return { relation, qualified: `${schema}.${table}` };
 }
 
+/**
+ * `execute_admin_query` is declared `(query text, OUT result jsonb)`, so
+ * PostgREST hands back `{ result: [...] }` — NOT the array. Unwrapping is not
+ * optional: an un-unwrapped payload is not an array, so it reads as "zero
+ * rows" and the screen lies about an empty table. Caught in the first browser
+ * load of this console, which reported "mandate.definition exposes no columns"
+ * over a table with 689 rows.
+ */
 function rowsOf(payload: unknown): Record<string, unknown>[] {
-  return Array.isArray(payload) ? (payload as Record<string, unknown>[]) : [];
+  const unwrapped =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as { result?: unknown }).result
+      : payload;
+  return Array.isArray(unwrapped) ? (unwrapped as Record<string, unknown>[]) : [];
 }
 
 async function runSql<T = unknown>(sql: string): Promise<AdvancedResult<T>> {
