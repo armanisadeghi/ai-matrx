@@ -14,7 +14,7 @@ describe("P3 hover-only interaction detector", () => {
       classification: "actionable",
       file: "features/save.tsx",
       line: 1,
-      rank: 120,
+      rank: 140,
       tag: "button",
     });
     expect(finding.reason).toContain("invisible until hover");
@@ -32,6 +32,17 @@ describe("P3 hover-only interaction detector", () => {
       tag: "div",
     });
     expect(finding.reason).toContain("wrapper containing interactive <Button>");
+  });
+
+  it("recognizes namespaced primitive close controls as actionable", () => {
+    const [finding] = analyzeP3HoverSource(
+      `<ToastPrimitives.Close className="opacity-0 group-hover:opacity-100" />`,
+    );
+    expect(finding).toMatchObject({
+      classification: "actionable",
+      rank: 125,
+      tag: "ToastPrimitives.Close",
+    });
   });
 
   it.each([

@@ -6,14 +6,15 @@
 - Run record: `P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9`
 - Base: `a88478e861364e6bd95bae53982b28f61cadb4fd`
 - Certified candidate: `f70638875cbae083e1b9f160ee32215e4ad2bb74`
-- Integration: candidate is an ancestor of `origin/main` at `9475f626461a99b028ec9f64144ade8fd30c181d`
-- Release: queued for the serialized release lane; no patrol-owned release was created
+- Integration: candidate is an ancestor of `origin/main`
+- Release: delivered in first containing release `v0.4.1441` (`50cfae5c4f967822f26e16ac25d2bab3b6aa34b3`)
+- Final state: **CLOSED**; P7 is **MAINTENANCE / ACTIVE**
 
 ## Orchestration reconciliation
 
 - The scheduled task had stopped at the usage limit before it created a controller-era permanent record, refreshed this report or memory, or emitted a useful inbox item. The abort is recorded as an orchestration failure, not a clean run.
-- Recreated the exact isolated automation worktree from current `origin/main`, installed its dependencies offline with the frozen lockfile, and created the missing append-only hash-chained run record.
-- Restored `pattern-patrol-p7-no-browser-dialogs` to the manifest-owned **ACTIVE** schedule: Thursdays and Sundays at 6:10 AM local time.
+- The 2026-08-29 recovery created the missing append-only hash-chained run record and preserved the exact certified candidate. The 2026-08-30 controller reconciliation followed the current canonical shared-checkout contract; no worktree was used.
+- Promoted P7 from ERADICATION to **MAINTENANCE** after independent full proof reached zero, and restored `pattern-patrol-p7-no-browser-dialogs` to the manifest-owned **ACTIVE** schedule: Thursdays and Sundays at 6:10 AM local time.
 
 ## Scope scanned
 
@@ -39,9 +40,9 @@
 - Scope-aware P7 ESLint diagnostics: **4 → 0**. Each native call produced both `no-alert` and `no-restricted-properties`, so four diagnostics represent two calls.
 - Independent candidate-wide P7 scan: **0 findings**.
 - `git diff --check`: **PASS**.
-- Permanent run record verification: **PASS** with five valid hash-chained lifecycle events through `delivery_queued`.
+- Permanent run record verification: **PASS** with seven valid hash-chained lifecycle events through `closed`.
 - Unchanged baseline-only issue: `TaxonomyAdminClient.tsx` already reports `react-hooks/set-state-in-effect`; the P7 batch did not create or worsen it.
-- Manifest contract drift decreased when P7 returned to ACTIVE. The three remaining Fleet Health prompt/project/worktree drifts are unrelated baseline machinery owned outside this patrol.
+- Manifest, generated registry, live local automation, permanent record, report, memory, sighting, and inbox projections agree: **MAINTENANCE / ACTIVE / CLOSED / v0.4.1441**.
 
 ## Adversarial certification
 
@@ -54,8 +55,8 @@
 - Executable P7 findings: **0 calls / 0 files**.
 - Approved exceptions: **0**.
 - Open P7 ledger sightings: **0**.
-- Candidate and certification authority refs are pushed. The certified candidate is integrated on `origin/main`; the permanent record remains truthfully `delivery_queued` until the normal serialized release lane records the containing version.
+- Candidate and certification authority refs are pushed. The certified candidate is integrated on `origin/main`, contained in `v0.4.1441`, and the permanent record is closed.
 
 ## Recursive learning
 
-- A cheap P7 run still needs a permanent record before scanning: pre-prompt usage exhaustion otherwise leaves a stale clean report and blank inbox that can masquerade as success. The smallest next improvement is controller-side run initialization before worker token consumption.
+- Maintenance promotion is safe only when the independent zero proof, exact-candidate certification, delivery tag, generated live configuration, and every projection are reconciled together. The smallest next improvement is a contract check that flags a zero-certified closed patrol still declared ERADICATION or PAUSED.

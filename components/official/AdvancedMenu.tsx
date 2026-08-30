@@ -174,7 +174,7 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
                   </span>
                   {item.disabled && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-gray-600 dark:text-gray-400 font-medium">
-                      SOON
+                      UNAVAILABLE
                     </span>
                   )}
                 </div>

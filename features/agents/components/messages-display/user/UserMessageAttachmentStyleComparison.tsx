@@ -164,7 +164,7 @@ export function UserMessageAttachmentStyleComparison({
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Hover for previews. Remove via corner ✕. Image/audio with{" "}
+            Hover for previews. Use the corner Remove control. Image/audio with{" "}
             <code className="text-[10px]">file_id</code> use FileResourceChip.
           </p>
         </ComparisonColumn>

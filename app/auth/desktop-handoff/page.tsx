@@ -36,11 +36,11 @@ export default function DesktopHandoffPage() {
           window.location.href.slice(0, 120) +
           (window.location.href.length > 120 ? "…" : ""),
         access_token: accessToken
-          ? `✓ present (${accessToken.length} chars, starts: ${accessToken.slice(0, 20)}…)`
-          : "✗ MISSING",
+          ? `present (${accessToken.length} chars, starts: ${accessToken.slice(0, 20)}…)`
+          : "MISSING",
         refresh_token: refreshToken
-          ? `✓ present (${refreshToken.length} chars, value: ${refreshToken})`
-          : "✗ MISSING",
+          ? `present (${refreshToken.length} chars, value: ${refreshToken})`
+          : "MISSING",
         redirect: redirect || "(empty — will use /)",
       };
       setParams(paramSnapshot);
@@ -215,7 +215,7 @@ export default function DesktopHandoffPage() {
           color: "#60a5fa",
         }}
       >
-        🔐 Desktop Auth Handoff — Debug Console
+        Desktop Auth Handoff — Debug Console
       </div>
 
       {/* URL Params table */}
@@ -257,7 +257,7 @@ export default function DesktopHandoffPage() {
             </span>
             <span
               style={{
-                color: v.startsWith("✗") ? "#f87171" : "#86efac",
+                color: v === "MISSING" ? "#f87171" : "#86efac",
                 wordBreak: "break-all",
               }}
             >
@@ -305,7 +305,7 @@ export default function DesktopHandoffPage() {
             <span
               style={{ color: entry.ok ? "#4ade80" : "#f87171", flexShrink: 0 }}
             >
-              {entry.ok ? "✓" : "✗"}
+              {entry.ok ? "OK" : "FAIL"}
             </span>
             <span
               style={{
@@ -334,7 +334,7 @@ export default function DesktopHandoffPage() {
             fontSize: "13px",
           }}
         >
-          ✓ Auth complete — navigating in 1.5s…
+          Auth complete — navigating in 1.5s…
         </div>
       )}
       {hasError && !done && (
@@ -349,7 +349,7 @@ export default function DesktopHandoffPage() {
             fontSize: "13px",
           }}
         >
-          ✗ Auth failed — page will NOT navigate. Screenshot this entire page
+          Auth failed — page will NOT navigate. Screenshot this entire page
           and share it.
         </div>
       )}

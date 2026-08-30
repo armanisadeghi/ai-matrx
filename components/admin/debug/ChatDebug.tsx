@@ -325,10 +325,11 @@ export default function ChatDebug() {
                     }
                   >
                     {call.status === "success"
-                      ? "✓"
+                      ? <CheckCircle aria-hidden="true" className="h-3.5 w-3.5" />
                       : call.status === "error"
-                        ? "✗"
-                        : "…"}
+                        ? <XCircle aria-hidden="true" className="h-3.5 w-3.5" />
+                        : <Clock aria-hidden="true" className="h-3.5 w-3.5" />}
+                    <span className="sr-only">{call.status}</span>
                   </span>
                   <span className="text-slate-400 w-12 shrink-0">
                     {call.method}

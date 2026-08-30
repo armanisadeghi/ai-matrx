@@ -380,7 +380,7 @@ function buildCrashReport(opts: {
 
   // ── Severity banner ──────────────────────────────────────────────────────
   if (type === "crash" && isMarkdownOnly) {
-    lines.push("## ⚠ Severity: BUG — must fix");
+    lines.push("## Severity: BUG — must fix");
     lines.push(
       `This tab (\`${tabId}\`) is **markdown-only** — it works purely from text content`,
     );
@@ -389,7 +389,7 @@ function buildCrashReport(opts: {
     );
     lines.push("It should never show an error under any circumstances.");
   } else if (type === "crash" && !isMarkdownOnly) {
-    lines.push("## ⚠ Severity: BUG — likely fix needed");
+    lines.push("## Severity: BUG — likely fix needed");
     lines.push(
       `This tab (\`${tabId}\`) is **data-dependent**. It crashed (threw a React error)`,
     );
@@ -400,7 +400,7 @@ function buildCrashReport(opts: {
       "even with bad/missing data, the tab should degrade gracefully, not throw.",
     );
   } else if (isExpectedNoData) {
-    lines.push("## ℹ Severity: Expected behaviour — no code bug");
+    lines.push("## Severity: Expected behaviour — no code bug");
     lines.push(
       `This tab (\`${tabId}\`) is **data-dependent** and no \`analysisData\` prop was passed.`,
     );
@@ -425,7 +425,7 @@ function buildCrashReport(opts: {
       `at route \`${context.route}\` and check whether it passes the \`analysisData\` prop.`,
     );
   } else {
-    lines.push("## ⚠ Severity: Data missing — investigation needed");
+    lines.push("## Severity: Data missing — investigation needed");
     lines.push(
       `This tab (\`${tabId}\`) is **data-dependent** and \`analysisData\` was provided`,
     );
@@ -697,7 +697,7 @@ function TabErrorFallback({
                 </p>
                 <p className="text-xs text-primary/70 leading-tight">
                   {MARKDOWN_ONLY_TABS.has(tabId as TabId)
-                    ? "⚠ This is a markdown-only tab — crashes here are always real bugs"
+                    ? "This is a markdown-only tab — crashes here are always real bugs"
                     : "This is a data-dependent tab — may show no-data when analysisData is absent"}
                 </p>
               </div>
@@ -803,7 +803,7 @@ function TabErrorFallback({
                     label={`analysisData.${key} (what this tab reads)`}
                     hint={
                       value === undefined
-                        ? "⚠ Key is missing from analysisData"
+                        ? "Key is missing from analysisData"
                         : undefined
                     }
                   >
@@ -1709,7 +1709,7 @@ function UnavailableDataNotice({
                 return (
                   <AdminSection
                     label={`analysisData.${key} (what this tab reads)`}
-                    hint={value === undefined ? "⚠ Key is missing" : undefined}
+                    hint={value === undefined ? "Key is missing" : undefined}
                   >
                     {value === undefined ? (
                       <p className="text-xs text-destructive font-mono">

@@ -70,6 +70,7 @@ const VISIBLE_OPACITY = /(?:^|:)opacity-(?:100|\[1\])$/;
 interface InteractionEvidence {
   direct: boolean;
   description: string;
+  score: number;
 }
 
 function jsxTagName(name: ts.JsxTagNameExpression): string {
@@ -132,24 +133,34 @@ function openingAttributes(opening: ts.JsxOpeningLikeElement): ts.JsxAttribute[]
 
 function interactiveOpening(
   opening: ts.JsxOpeningLikeElement,
-): string | undefined {
+): Omit<InteractionEvidence, "direct"> | undefined {
   const tag = jsxTagName(opening.tagName);
   const bareTag = tag.split(".").at(-1) ?? tag;
-  if (INTERACTIVE_INTRINSICS.has(tag)) return `<${tag}>`;
+  for (const attribute of openingAttributes(opening)) {
+    const name = attribute.name.getText();
+    if (EVENT_ATTRIBUTES.has(name)) return { description: name, score: 140 };
+    if (name === "role") {
+      const value = staticAttributeValue(attribute);
+      if (value && INTERACTIVE_ROLE.has(value)) {
+        return { description: `role=${value}`, score: 135 };
+      }
+    }
+  }
+  if (INTERACTIVE_INTRINSICS.has(tag)) {
+    return { description: `<${tag}>`, score: 130 };
+  }
   if (
     /(?:Button|Link|Trigger|MenuItem|Checkbox|Switch|Select|Combobox|Radio|Slider|Tab)$/.test(
       bareTag,
     )
   ) {
-    return `<${tag}>`;
+    return { description: `<${tag}>`, score: 125 };
   }
-  for (const attribute of openingAttributes(opening)) {
-    const name = attribute.name.getText();
-    if (EVENT_ATTRIBUTES.has(name)) return name;
-    if (name === "role") {
-      const value = staticAttributeValue(attribute);
-      if (value && INTERACTIVE_ROLE.has(value)) return `role=${value}`;
-    }
+  if (
+    tag.includes(".") &&
+    /(?:Action|Anchor|Close|Item|Trigger)$/.test(bareTag)
+  ) {
+    return { description: `<${tag}>`, score: 125 };
   }
   return undefined;
 }
@@ -159,9 +170,9 @@ function interactionEvidence(
 ): InteractionEvidence | undefined {
   const opening = ts.isJsxElement(node) ? node.openingElement : node;
   const direct = interactiveOpening(opening);
-  if (direct) return { direct: true, description: direct };
+  if (direct) return { direct: true, ...direct };
   if (!ts.isJsxElement(node)) return undefined;
-  let descendant: string | undefined;
+  let descendant: Omit<InteractionEvidence, "direct"> | undefined;
   const visit = (candidate: ts.Node): void => {
     if (descendant) return;
     if (
@@ -178,7 +189,11 @@ function interactionEvidence(
   };
   for (const child of node.children) visit(child);
   return descendant
-    ? { direct: false, description: descendant }
+    ? {
+        direct: false,
+        description: descendant.description,
+        score: Math.max(105, descendant.score - 15),
+      }
     : undefined;
 }
 
@@ -280,6 +295,14 @@ function findingSort(a: P3HoverFinding, b: P3HoverFinding): number {
   );
 }
 
+function pathRankAdjustment(file: string): number {
+  if (/(?:^|\/)app\/(?:[^/]+\/)*\(dev\)(?:\/|$)/.test(file)) return -20;
+  if (/(?:^|\/)(?:official-candidate|demos)(?:\/|$)/.test(file)) return -15;
+  if (file.startsWith("components/")) return 5;
+  if (file.startsWith("app/(admin)/")) return 3;
+  return 0;
+}
+
 export function analyzeP3HoverSource(
   sourceText: string,
   file = "fixture.tsx",
@@ -317,7 +340,7 @@ export function analyzeP3HoverSource(
         reason = safe;
       } else if (interaction) {
         classification = "actionable";
-        rank = interaction.direct ? 120 : 110;
+        rank = interaction.score + pathRankAdjustment(file);
         reason = interaction.direct
           ? `interactive ${interaction.description} is invisible until hover`
           : `wrapper containing interactive ${interaction.description} is invisible until hover`;
