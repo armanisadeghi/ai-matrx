@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-30T14:45:51.787Z",
-  "summary": "Replacement candidate d3a4cd79b6 is integrated; recording escaped delivery before recertification.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:46:01.188Z",
+  "summary": "Frozen replacement candidate d3a4cd79b6 for independent adversarial recertification.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "71dee340a49f12f3cfec698a97e3a0362e9c3469f71e13e3506c4bc05aade7d0"
+  "eventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503"
 }

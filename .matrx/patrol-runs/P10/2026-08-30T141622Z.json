@@ -230,6 +230,39 @@
       },
       "previousEventHash": "a483be97c2903414d880ad35ba112d500976252b10fa845b0fe0e172d386dd6b",
       "eventHash": "71dee340a49f12f3cfec698a97e3a0362e9c3469f71e13e3506c4bc05aade7d0"
+    },
+    {
+      "sequence": 16,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:45:53.380Z",
+      "actor": "/root",
+      "summary": "Recorded replacement candidate d3a4cd79b6 with corrected candidate-tree authority preservation.",
+      "evidence": [
+        "focused-tests:61-pass",
+        "full-type-check:PASS",
+        "P10-record:hash-valid-marker-free"
+      ],
+      "escape": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "integratedSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "release": "integration-only; release not requested",
+        "reason": "The corrected product and candidate-tree authority machinery entered origin/main before exact recertification; prior rejected authority history remains immutable while the authority tree now derives from this replacement candidate."
+      },
+      "previousEventHash": "71dee340a49f12f3cfec698a97e3a0362e9c3469f71e13e3506c4bc05aade7d0",
+      "eventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae"
+    },
+    {
+      "sequence": 17,
+      "state": "certifying",
+      "at": "2026-08-30T14:46:01.188Z",
+      "actor": "/root",
+      "summary": "Frozen replacement candidate d3a4cd79b6 for independent adversarial recertification.",
+      "evidence": [
+        "prior product and authority defects repaired",
+        "authority branch exact candidate tree plus P10 projections"
+      ],
+      "previousEventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae",
+      "eventHash": "38294ac8d845843122fa46dd28bc0a7bc23213ff8a1e7ae8a587120c944dc503"
     }
   ]
 }
