@@ -4,7 +4,7 @@ import { useState, useEffect, useId } from "react";
 import { Loader2, Pencil, AlertTriangle, Info } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";

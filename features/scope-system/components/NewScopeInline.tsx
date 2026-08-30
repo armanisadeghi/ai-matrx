@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Plus, X, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
