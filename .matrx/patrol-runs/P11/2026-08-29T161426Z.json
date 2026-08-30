@@ -265,6 +265,20 @@
       },
       "previousEventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb",
       "eventHash": "60a489c6aa36279a68db02c179f9f6359bca864163749271d02ffb70574ca015"
+    },
+    {
+      "sequence": 17,
+      "state": "closed",
+      "at": "2026-08-30T14:40:41.181Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Closed P11 run with six findings fixed, exact candidate certified, and historical delivery reconciled",
+      "evidence": [
+        "Independent certifier verdict CERTIFIED for candidate 4b06080808465764e280fbfef3cd895abb093c24",
+        "18-state isolated in-app Browser matrix passed with zero candidate-caused defects and zero fresh-tab console errors",
+        "Six verified header-clearance findings are fixed; zero approvals and zero exceptions remain"
+      ],
+      "previousEventHash": "60a489c6aa36279a68db02c179f9f6359bca864163749271d02ffb70574ca015",
+      "eventHash": "0cbf5626bd9e49720e85f9bfc33b7b3febaad98a270a5b9838871e453187d875"
     }
   ]
 }

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T14:40:32.214Z",
-  "summary": "Reconciled certified corrected candidate with its existing main integration and first containing release",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:40:41.181Z",
+  "summary": "Closed P11 run with six findings fixed, exact candidate certified, and historical delivery reconciled",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "60a489c6aa36279a68db02c179f9f6359bca864163749271d02ffb70574ca015"
+  "eventHash": "0cbf5626bd9e49720e85f9bfc33b7b3febaad98a270a5b9838871e453187d875"
 }
