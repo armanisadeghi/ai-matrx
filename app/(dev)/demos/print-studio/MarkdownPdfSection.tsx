@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Markdown → PDF through the host seam.
- * Entry: `@ai-matrx/print/pdf` via `@/lib/print/markdown-pdf` (the app supplies
- * the markdown→HTML converter and the stylesheet; no print logic lives here).
+ * Markdown → PDF, straight from the package.
+ * Entry: `@ai-matrx/print/pdf` — the converter and the stylesheet ship IN the
+ * package (0.3.0); the app supplies nothing but the markdown.
  */
 
 import { useState } from "react";
@@ -21,7 +21,7 @@ export function MarkdownPdfSection() {
         if (busy || !markdown.trim()) return;
         setBusy(true);
         try {
-            const { markdownToPdfBlob } = await import("@/lib/print/markdown-pdf");
+            const { markdownToPdfBlob } = await import("@ai-matrx/print/pdf");
             const blob = await markdownToPdfBlob(markdown);
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement("a");
@@ -42,7 +42,7 @@ export function MarkdownPdfSection() {
     return (
         <SectionShell
             title="Markdown → PDF"
-            entry="@ai-matrx/print/pdf via @/lib/print/markdown-pdf"
+            entry="@ai-matrx/print/pdf"
             blurb="html2canvas + jsPDF, lazy-loaded on use. The package brings the renderer; the app brings the converter and CSS."
             actions={
                 <Button size="sm" onClick={handleDownload} disabled={busy || !markdown.trim()}>
