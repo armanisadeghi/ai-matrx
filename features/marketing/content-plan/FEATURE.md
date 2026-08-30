@@ -877,6 +877,13 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-30 — **The shared research-topic picker now accepts new topics in
+  place.** `ResearchTopicSelect` uses the platform `CreatablePicker`, writes
+  typed names through Research's one `createTopic` service with the viewed
+  site's explicit organization (never the shell's active organization), and
+  selects the returned topic immediately. Its create toast and manage footer
+  both lead back to the canonical Research workspace; the existing no-topic
+  and unresolved linked-topic states remain available.
 - 2026-08-29 — **The measurement window stays behind its user-action bundle
   boundary.** `NodeMeasureCard` no longer statically imports `WindowPanel` into
   the Content Plan route. One dynamic `NodeMeasureWindow` front door now owns

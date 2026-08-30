@@ -156,6 +156,7 @@ export function BuildWithAiDialog({
   open,
   onOpenChange,
   siteName,
+  organizationId,
   reportReady,
   reportPending = false,
   selectedTopicId,
@@ -169,6 +170,8 @@ export function BuildWithAiDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteName: string;
+  /** The viewed site's organization — topic creation must not use shell state. */
+  organizationId: string;
   /** A reviewed research topic has a completed report ready for this build. */
   reportReady: boolean;
   /**
@@ -223,6 +226,7 @@ export function BuildWithAiDialog({
                 <ResearchTopicSelect
                   value={selectedTopicId}
                   onChange={onSelectTopic}
+                  organizationId={organizationId}
                   ariaLabel="Research topic grounding this build"
                 />
                 <span className="text-[11px] text-muted-foreground">

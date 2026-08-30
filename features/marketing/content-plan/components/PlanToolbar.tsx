@@ -86,6 +86,7 @@ function StatusActionButton({
 
 export function PlanToolbar({
   siteId,
+  organizationId,
   nodeCount,
   run,
   onStart,
@@ -110,6 +111,8 @@ export function PlanToolbar({
 }: {
   /** The plan being viewed — the agent-payload preview is site-scoped. */
   siteId: string | null;
+  /** The viewed site's organization — topic creation must not use shell state. */
+  organizationId: string | null;
   nodeCount: number;
   run: PlanAiRunState;
   onStart: (options: { maxNodes: number; guidance?: string }) => void;
@@ -348,6 +351,7 @@ export function PlanToolbar({
                 <ResearchTopicSelect
                   value={researchTopicId}
                   onChange={onResearchTopicChange}
+                  organizationId={organizationId}
                   triggerClassName="h-8 w-full text-sm"
                   ariaLabel="Research topic grounding the generator"
                 />

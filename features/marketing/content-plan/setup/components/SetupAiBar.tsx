@@ -33,6 +33,7 @@ export interface SetupAiRunSummary {
 export function SetupAiBar({
   selectedTopicId,
   onSelectTopic,
+  organizationId,
   researchPlanHref,
   document,
   documentLoading,
@@ -47,6 +48,8 @@ export function SetupAiBar({
 }: {
   selectedTopicId: string | null;
   onSelectTopic: (topicId: string | null) => void;
+  /** The viewed site's organization — topic creation must not use shell state. */
+  organizationId: string | null;
   /** Canonical Research intake: propose → review keywords/settings → approve. */
   researchPlanHref: string;
   /** The newest rs_document for the selected topic (null = none yet). */
@@ -87,6 +90,7 @@ export function SetupAiBar({
         <ResearchTopicSelect
           value={selectedTopicId}
           onChange={onSelectTopic}
+          organizationId={organizationId}
           refreshKey={selectedTopicId}
           ariaLabel="Research topic grounding the AI steps"
         />

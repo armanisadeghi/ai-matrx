@@ -801,6 +801,7 @@ export function ContentPlanWorkbench({
         {siteId && (view === "tree" || view === "table" || view === "map") ? (
           <PlanToolbar
             siteId={siteId}
+            organizationId={site?.organization_id ?? null}
             nodeCount={nodeRows.length}
             run={generate.run}
             onStart={(options) =>
