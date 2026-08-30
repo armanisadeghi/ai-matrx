@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:25:17.716Z",
-  "summary": "Candidate 18a0f0ce19 entered independent adversarial certification for the exact 15-file compact/control batch.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:36:48.911Z",
+  "summary": "Corrected certified candidate is integrated on origin/main and queued for the serialized release lane; no redundant release created.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "71a32cb5a682c3cbb3c3a3fd65397f6a206963dfd0da825f12e5887344b7b6a3"
+  "eventHash": "30f5885d581873a3fe44c5719720a07413c9ea9b8e680e95ac3f8a5806bb90be"
 }
