@@ -300,7 +300,7 @@ The catalogue's `instanceMode` is the source of truth:
 
 The opener encapsulates the mode choice; callers don't think about it.
 
-**Multi-instance means every downstream identity is instanced.** A mapped controller block alone is insufficient: thread the same `instanceId` through the component, `WindowPanel.id`, `overlayInstanceId`, close handler, URL/persistence identity, and any feature-owned surface/focus key. A static identity at any one of those layers couples otherwise separate overlays.
+**Multi-instance means every downstream identity is instanced.** A mapped controller block alone is insufficient: thread the same `instanceId` through the component, `WindowPanel.id`, `overlayInstanceId`, close handler, URL/persistence identity, and any feature-owned surface/focus/history key. A static identity at any one of those layers couples otherwise separate overlays.
 
 ---
 

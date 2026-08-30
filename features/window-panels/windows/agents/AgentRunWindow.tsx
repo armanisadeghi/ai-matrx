@@ -126,7 +126,7 @@ function AgentRunWindowSidebar({
   return (
     <ConversationHistorySidebar
       variant="consumer"
-      scopeId={`agent-run-window:${canonicalAgentId}`}
+      scopeId={`${surfaceKey ?? "agent-run-window"}:history:${canonicalAgentId}`}
       agentIds={[canonicalAgentId]}
       surfaceId="agent-runner"
       activeConversationId={activeConversationId}
