@@ -17,7 +17,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 **Components**
 
 - `features/connectors/ConnectorStrip.tsx` — `<ConnectorStrip />`. Client, presentational, props-driven.
-- `features/connectors/ConnectorMark.tsx` — the ONE provider-artwork renderer. First-party connectors use local SVG marks; dynamic MCP connectors use their canonical catalogue `iconUrl`, with the catalogue brand color as the failure fallback.
+- `features/connectors/ConnectorMark.tsx` — the ONE provider-artwork renderer. First-party connectors use local SVG marks; dynamic MCP connectors walk a provider-specific artwork chain (website favicon → known brand glyph → catalogue art → cached 128px favicon), with the catalogue brand color as the final failure fallback.
 - `features/connectors/DirectoryConnectorCards.tsx` — the directory presence for the first-party Google connectors, mounted on `/user-settings/integrations` (features/settings `IntegrationsSettingsPage`) between the GitHub card and the MCP catalog grid. Status from the Google connection inventory via `google-status.ts`; Docs/Sheets and Gmail connect through the floating Google connect window, Search Console doors to `/marketing/connections/google` (its OAuth lives there — never a wrong-scope popup).
 - `features/connectors/google-status.ts` — the ONE Google scope→connector mapping (`GOOGLE_CONNECTOR_SCOPES`, `googleConnectedIds`, `googleConnectionFor`). Both containers resolve through it; a scope mapping anywhere else is a fork.
 - `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. Mounted under the real chat composer by `AgentConversationColumn`.
@@ -50,7 +50,7 @@ No tables of its own. Google connectors use `features/marketing/google/service.t
 
 **Key types** (`types.ts`)
 
-- `ConnectorDefinition` — `id`, `name`, `blurb`, local `logo?` or catalogue `iconUrl?` + `brandColor?`, `surfaces`, `manageHref?`, `comingSoonId?`.
+- `ConnectorDefinition` — `id`, `name`, `blurb`, local `logo?` or `iconUrl?` + `fallbackIconUrls?` + `brandColor?`, `surfaces`, `manageHref?`, `comingSoonId?`.
 - `ConnectorSurface` — `"strip" | "directory"`. **Explicit, never inferred.**
 - `ConnectorStatus` — `"connected" | "not_connected" | "unavailable"`.
 - `ConnectorStatusSource` — `connectedIds?` (a set) or `resolveStatus?` (a resolver; wins).
@@ -102,10 +102,10 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - **The full window is live-only.** An entry's presence in Settings does not prove it is usable. Never admit local-only or coming-soon placeholders.
 - **`surfaces` is the seeded first-party gate.** Dynamic live MCP providers join through `buildLiveConnectorDefinitions`; niche first-party definitions such as Google Search Console remain directory-only.
 - **The `id` is generic; the `name` carries today's truth.** `google-workspace` covers any file the user picks or we create — Docs and Sheets are today's support, not the ceiling. Never bake a feature list into an id or a file name.
-- **Provider artwork is canonical.** Dynamic MCP entries render the catalogue's real `iconUrl`; first-party entries render their local SVG. Keep artwork full-color and use the check/chip treatment for connection state—never replace a provider with a generic monochrome icon.
+- **Provider artwork is canonical.** Dynamic MCP entries walk the real provider-artwork chain; first-party entries render their local SVG. Keep artwork full-color and use the check/chip treatment for connection state—never replace a provider with a generic monochrome icon or initial while provider identity is available.
 - **One line, 16px, always.** It sits under a chat input; it may never wrap or compete. Overflow scrolls horizontally (`overflow-x-auto scrollbar-hide`) — this is why nothing breaks at 375px.
 - **Touch targets:** the visual chips stay 16px tall; a `before:` pseudo-element expands the hit area to 40px on mobile only (`sm:before:hidden`) without adding a pixel of layout height.
-- **Artwork failure stays branded.** `ConnectorMark` falls back to the catalogue brand color and provider initial without shifting layout. No emoji or generic provider icon.
+- **Artwork failure stays branded.** Only after every provider-artwork candidate fails may `ConnectorMark` fall back to the catalogue brand color and provider initial, without shifting layout. No emoji or generic provider icon.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
 
 ---
@@ -136,6 +136,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-08-30` — Completed dynamic-provider artwork fallback: each entry now tries its website favicon, known brand glyph, catalogue art, and cached 128px favicon before any branded initial, eliminating anonymous letter tiles whenever provider identity is available.
 - `2026-08-30` — Restored the canonical full-color provider artwork in the rotating chat strip and Integrations window; dynamic MCP entries now retain catalogue `iconUrl`/brand color instead of collapsing to one generic monochrome plug.
 - `2026-08-29` — Chat now shows three fairly rotated live integrations plus `More`. The shuffled bag prevents provider favoritism and consecutive repeats when possible; `More` opens a searchable WindowPanel containing every web-usable live integration while excluding local-only and coming-soon Settings entries.
 - `2026-08-29` — Aligned the normal-chat connector row to the composer's inner content line and shortened the Workspace chip label to `Google`; the capability detail remains in its description and tooltip.

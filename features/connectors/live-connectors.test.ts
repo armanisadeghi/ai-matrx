@@ -89,20 +89,43 @@ describe("live chat connector catalogue", () => {
     expect(ids.filter((id) => id === "notion")).toHaveLength(1);
   });
 
-  it("preserves each dynamic provider's real catalogue artwork and brand color", () => {
+  it("preserves each dynamic provider's real artwork candidates and brand color", () => {
     const definitions = buildLiveConnectorDefinitions([
       entry({
-        slug: "slack",
-        name: "Slack",
-        iconUrl: "https://cdn.example.com/slack.svg",
+        slug: "custom",
+        name: "Custom",
+        iconUrl: "https://cdn.example.com/custom.svg",
         color: "#4A154B",
       }),
     ]);
 
-    expect(definitions.find(({ id }) => id === "slack")).toMatchObject({
-      iconUrl: "https://cdn.example.com/slack.svg",
+    expect(definitions.find(({ id }) => id === "custom")).toMatchObject({
+      iconUrl: "https://cdn.example.com/custom.svg",
+      fallbackIconUrls: [],
       brandColor: "#4A154B",
     });
-    expect(definitions.find(({ id }) => id === "slack")?.logo).toBeUndefined();
+    expect(definitions.find(({ id }) => id === "custom")?.logo).toBeUndefined();
+  });
+
+  it("tries the provider favicon, brand glyph, catalogue art, and cached favicon in order", () => {
+    const definitions = buildLiveConnectorDefinitions([
+      entry({
+        slug: "datadog",
+        name: "Datadog",
+        websiteUrl: "https://www.datadoghq.com/",
+        iconUrl: "https://cdn.example.com/datadog.svg",
+        color: "#632CA6",
+      }),
+    ]);
+
+    expect(definitions.find(({ id }) => id === "datadog")).toMatchObject({
+      iconUrl: "https://www.datadoghq.com/favicon.ico",
+      fallbackIconUrls: [
+        "https://cdn.simpleicons.org/datadog",
+        "https://cdn.example.com/datadog.svg",
+        "https://www.google.com/s2/favicons?domain=datadoghq.com&sz=128",
+      ],
+      brandColor: "#632CA6",
+    });
   });
 });

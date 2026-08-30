@@ -19,10 +19,15 @@ export function ConnectorMark({
   className,
   colored = true,
 }: ConnectorMarkProps) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const iconUrl = connector.iconUrl?.trim() || null;
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
+  const iconUrl = [connector.iconUrl, ...(connector.fallbackIconUrls ?? [])]
+    .map((url) => url?.trim())
+    .find(
+      (url): url is string =>
+        typeof url === "string" && url.length > 0 && !failedUrls.includes(url),
+    );
 
-  if (iconUrl && failedUrl !== iconUrl) {
+  if (iconUrl) {
     return (
       <img
         src={iconUrl}
@@ -35,7 +40,11 @@ export function ConnectorMark({
           !colored && "grayscale opacity-70",
           className,
         )}
-        onError={() => setFailedUrl(iconUrl)}
+        onError={() =>
+          setFailedUrls((current) =>
+            current.includes(iconUrl) ? current : [...current, iconUrl],
+          )
+        }
       />
     );
   }

@@ -53,6 +53,8 @@ export interface ConnectorDefinition {
   logo?: ConnectorLogo;
   /** Canonical MCP catalogue artwork for dynamically discovered providers. */
   iconUrl?: string | null;
+  /** Ordered backup artwork candidates for dynamically discovered providers. */
+  fallbackIconUrls?: string[];
   /** Canonical provider color, used only if its artwork fails to load. */
   brandColor?: string | null;
   /** Surfaces this connector may appear on. Explicit, never inferred. */
