@@ -3,11 +3,11 @@
 - **Run date:** 2026-08-29 (America/Los_Angeles)
 - **Run id:** `2026-08-29T161426Z`
 - **Base:** `20551a187a25e2f58d83d6d35c610cc0f0618770`
-- **Current state:** infrastructure blocked
+- **Current state:** closed
 - **Findings:** 6
 - **Fixed in source:** 6
 - **Approvals needed:** 0
-- **Degradation:** required isolated in-app Browser runtime is unavailable
+- **Degradation:** none remaining
 
 ## Resume and configuration reconciliation
 
@@ -71,21 +71,21 @@ same isolated path; no work continued in the shared checkout. Scheduled release
 `v0.4.1448` contains this escaped first candidate. The append-only run record
 preserves the infrastructure loss, escaped delivery, and rejection.
 
-### Corrected candidate — infrastructure blocked
+### Corrected candidate — certified and delivered
 
 - Candidate: `4b06080808465764e280fbfef3cd895abb093c24`
 - Integration merge: `a6e0cc9b340cb7e8ccb742235d78625c0aeb8e56`
 - First containing release: `v0.4.1449`
 - Authority projection: `refs/heads/patrol-runs/P11/2026-08-29T161426Z`
-  at `5530b8fd472543d2485c9b024f28c83c76569610`
+  at `49237b0c9d51df3fdbaa47b53c8accb6b729ab5e`
 - Second certifier: `/root/p11_certifier_4b060808`
-- Verdict: **INFRASTRUCTURE BLOCKED** — no candidate-caused defect found
+- Verdict: **CERTIFIED** — no candidate-caused defect found
 
 The corrected candidate fixes the scanner callsite and detector scope. It is
 already an ancestor of `origin/main` through the integration merge above and
 has shipped in `v0.4.1449` and every newer release. This preserves the
-historical release-before-certification escape; delivery is not rewritten as
-valid because the exact candidate still lacks the required visual verdict.
+historical release-before-certification escape while reconciling the corrected
+candidate's exact certification, integration, and first containing release.
 
 ## Baseline-to-candidate verification
 
@@ -104,19 +104,26 @@ valid because the exact candidate still lacks the required visual verdict.
   fleet-health prompt drift.
 - Run record hash verification: PASS.
 - Canonical authority publication: PASS at
-  `5530b8fd472543d2485c9b024f28c83c76569610`; the 12-event record is hash-valid
+  `49237b0c9d51df3fdbaa47b53c8accb6b729ab5e`; the 17-event record is hash-valid
   and preserves the earlier escaped-delivery and rejection history.
 
-## Missing proof and retry contract
+## Visual certification
 
-Required browser proof remains desktop 1280×800, intermediate 700–900px,
-mobile 375×812, and both light/dark themes on representative Marketing,
-Workflow Bake-off, and Scanner surfaces. The canonical preview lease is ready,
-but both the executor and independent certifier lack the required
-`mcp__node_repl__js` runtime, so `agent.browsers.get("iab")` cannot be called.
-The retry must run this exact candidate from a Codex task exposing that in-app
-Browser runtime. Chrome, Computer Use, standalone Playwright, and other browser
-fallbacks remain forbidden.
+The isolated in-app Browser captured and the independent certifier inspected
+all 18 required states: Marketing, Workflow Bake-off, and Scanner at 1280×800,
+800×800, and 375×812 in both light and dark. Every state had one shell-owned
+header, exact full-height body geometry, correct top clearance, no
+header/content or avatar/action collision, no page-level horizontal overflow,
+and closed theme menus. Scanner's Camera, Photos, Files, and Save controls
+remained visible and reachable. Fresh per-route tabs reported zero console
+errors.
+
+`/marketing/pr` now intentionally redirects to `/marketing/brands` because of
+a post-candidate route change; Bake-off and Scanner retain their original
+product paths. The canonical preview briefly became unresponsive at 72.3 GB RSS
+after its persistent cache reached 107 GB. A managed preview restart cleared
+that cache and recovered all routes; this was infrastructure evidence, not a
+candidate regression, and no valid work was reverted.
 
 ## Decisions and exceptions
 
@@ -131,5 +138,5 @@ portal consumer, not route-file location or component naming. The smallest next
 improvement is a focused detector fixture containing one route-owned and one
 feature-owned `PageHeader` clearance hack so this exact false-clean regression
 cannot recur. The process improvement is to validate in-app Browser capability
-when a visual-certification task is dispatched, before waiting on a healthy
-preview that the task cannot control.
+when a visual-certification task is dispatched and to monitor persistent preview
+cache growth before it reaches machine-scale size.
