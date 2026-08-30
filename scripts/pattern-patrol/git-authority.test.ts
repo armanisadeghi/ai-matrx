@@ -58,9 +58,13 @@ describe("Pattern Patrol remote run authority", () => {
       authorityRef,
       actor: "controller",
     });
-    expect(git(repo, ["merge-base", "--is-ancestor", candidateSha, authoritySha])).toBe("");
     expect(
-      JSON.parse(git(repo, ["show", `${authoritySha}:.matrx/patrol-runs/P9/run-9.json`])),
+      git(repo, ["merge-base", "--is-ancestor", candidateSha, authoritySha]),
+    ).toBe("");
+    expect(
+      JSON.parse(
+        git(repo, ["show", `${authoritySha}:.matrx/patrol-runs/P9/run-9.json`]),
+      ),
     ).toEqual(first);
     expect(() =>
       publishPatrolRunAuthority({
@@ -124,10 +128,20 @@ describe("Pattern Patrol remote run authority", () => {
     });
 
     expect(
-      git(repo, ["merge-base", "--is-ancestor", firstAuthority, correctedAuthority]),
+      git(repo, [
+        "merge-base",
+        "--is-ancestor",
+        firstAuthority,
+        correctedAuthority,
+      ]),
     ).toBe("");
     expect(
-      git(repo, ["merge-base", "--is-ancestor", correctedCandidate, correctedAuthority]),
+      git(repo, [
+        "merge-base",
+        "--is-ancestor",
+        correctedCandidate,
+        correctedAuthority,
+      ]),
     ).toBe("");
     expect(
       JSON.parse(
