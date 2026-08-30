@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   ExternalLink,
   GraduationCap,
@@ -44,7 +44,8 @@ import type {
 const TIER_STYLE: Record<ExpertCandidateTier, string> = {
   strong:
     "border-emerald-500/20 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  probable: "border-amber-500/20 bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  probable:
+    "border-amber-500/20 bg-amber-500/15 text-amber-600 dark:text-amber-400",
   weak: "border-border bg-muted text-muted-foreground",
 };
 
@@ -187,7 +188,7 @@ export default function TopicExperts() {
         ),
       );
     } catch (e) {
-      toast.error(extractErrorMessage(e));
+      toastErrorAlreadyCaptured(extractErrorMessage(e));
     } finally {
       setScanning(false);
     }
@@ -215,7 +216,7 @@ export default function TopicExperts() {
       setSelected(new Set());
       await Promise.all([loadRoster(), scan()]);
     } catch (e) {
-      toast.error(extractErrorMessage(e));
+      toastErrorAlreadyCaptured(extractErrorMessage(e));
     } finally {
       setPromoting(false);
     }

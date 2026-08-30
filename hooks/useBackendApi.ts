@@ -29,6 +29,11 @@ import { applyAiApiVersion } from "@/lib/api/ai-api-version";
 import { requestRaw } from "@/lib/python-client";
 import type { ApiService } from "@/lib/api/service-routing";
 
+interface BackendRequestPolicy {
+  /** Expected HTTP outcomes that must not enter the repair queue. */
+  expectedErrorStatuses?: readonly number[];
+}
+
 export function useBackendApi(service: ApiService = "aidream") {
   const { getHeaders, waitForAuth } = useApiAuth();
   const backendUrl = useAppSelector((state) =>
@@ -61,7 +66,12 @@ export function useBackendApi(service: ApiService = "aidream") {
   );
 
   const post = useCallback(
-    async (endpoint: string, body: unknown, signal?: AbortSignal) => {
+    async (
+      endpoint: string,
+      body: unknown,
+      signal?: AbortSignal,
+      policy?: BackendRequestPolicy,
+    ) => {
       if (!backendUrl) {
         throw new Error(`No ${service} API URL is configured.`);
       }
@@ -73,14 +83,18 @@ export function useBackendApi(service: ApiService = "aidream") {
           body: JSON.stringify(body),
           signal,
         },
-        { baseUrlOverride: backendUrl, signal },
+        { baseUrlOverride: backendUrl, signal, ...policy },
       );
     },
     [backendUrl, resolvePath, service],
   );
 
   const get = useCallback(
-    async (endpoint: string, signal?: AbortSignal) => {
+    async (
+      endpoint: string,
+      signal?: AbortSignal,
+      policy?: BackendRequestPolicy,
+    ) => {
       if (!backendUrl) {
         throw new Error(`No ${service} API URL is configured.`);
       }
@@ -90,7 +104,7 @@ export function useBackendApi(service: ApiService = "aidream") {
           method: "GET",
           signal,
         },
-        { baseUrlOverride: backendUrl, signal },
+        { baseUrlOverride: backendUrl, signal, ...policy },
       );
     },
     [backendUrl, resolvePath, service],
