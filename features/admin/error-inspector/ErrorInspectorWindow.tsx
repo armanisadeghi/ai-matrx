@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Ban, Bug, ChevronRight, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";

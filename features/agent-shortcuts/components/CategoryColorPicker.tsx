@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { colord } from "colord";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Popover,

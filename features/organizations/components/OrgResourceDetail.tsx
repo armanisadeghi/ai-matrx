@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";

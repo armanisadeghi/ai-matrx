@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Loader2, Search, Check, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";

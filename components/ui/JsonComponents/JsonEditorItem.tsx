@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Edit, Save, X, Plus, Trash } from 'lucide-react';
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import type { JsonEditorItemProps } from "./types";
 import { jsonUtils } from './newUitls';
 import type { JsonValue, JsonObject } from '@/types/json';

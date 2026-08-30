@@ -6,7 +6,7 @@ import { Loader2, Maximize2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useDebounce } from "../hooks/useDebounce";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

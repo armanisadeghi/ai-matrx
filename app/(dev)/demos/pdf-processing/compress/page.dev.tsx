@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Play, AlertTriangle } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useAppSelector } from "@/lib/redux/hooks";

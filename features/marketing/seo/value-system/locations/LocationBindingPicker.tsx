@@ -25,7 +25,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Building2, ExternalLink, Plus, Search } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useBusinessLocations } from "@/features/marketing/data/hooks";

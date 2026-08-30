@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Tablet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { HrRpcError } from "@/features/hr/time/api/rpc";
 import { claimKioskPairing } from "@/features/hr/time/api/service";

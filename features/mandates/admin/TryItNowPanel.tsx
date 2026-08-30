@@ -38,7 +38,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FlaskConical, Loader2, Play, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";

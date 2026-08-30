@@ -13,7 +13,7 @@
  * text-style inputs routed through VariableInputComponent.
  */
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 

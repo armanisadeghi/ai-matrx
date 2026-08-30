@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { AlertCircle, Edit3, Maximize2, Minimize2, Type } from 'lucide-react';
 import { useComponentRef, useRefManager } from '@/lib/refs';
 import { ProTextarea } from "@/components/official/ProTextarea";

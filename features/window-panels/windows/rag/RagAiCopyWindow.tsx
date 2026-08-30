@@ -6,7 +6,7 @@ import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import {
   allRagAiCopyOptions,

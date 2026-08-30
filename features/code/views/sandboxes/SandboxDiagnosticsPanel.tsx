@@ -36,7 +36,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import {
   CheckCircle2,

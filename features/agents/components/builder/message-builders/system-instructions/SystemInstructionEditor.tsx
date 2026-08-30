@@ -3,7 +3,7 @@
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw, Plus, X } from "lucide-react";

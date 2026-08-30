@@ -27,7 +27,7 @@ import {
 import TextArrayInput from "@/components/official/TextArrayInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";

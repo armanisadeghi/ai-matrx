@@ -13,7 +13,7 @@ import {
   Scissors,
 } from "lucide-react";
 import { Button } from "@/components/ui/ButtonMine";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
 import {
   Dialog,

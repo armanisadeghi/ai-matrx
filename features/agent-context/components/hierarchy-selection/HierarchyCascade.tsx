@@ -28,7 +28,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {

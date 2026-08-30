@@ -15,7 +15,7 @@
 import React from "react";
 import { Loader2, Search, Check, ArrowLeft, Share2, Plus } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

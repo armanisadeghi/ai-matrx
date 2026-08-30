@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, ChevronLeft, ChevronRight, AlertCircle, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {

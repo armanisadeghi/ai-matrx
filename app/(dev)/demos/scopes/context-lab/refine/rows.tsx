@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { Check, Loader2, Plus, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 
 /** 14px square check glyph — fixed footprint in both states. */
 export function CheckGlyph({ on }: { on: boolean }) {

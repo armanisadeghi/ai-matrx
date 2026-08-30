@@ -118,7 +118,7 @@ import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidC
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { entityTokenForAgentScope } from "@/features/agent-shortcuts/constants";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

@@ -11,7 +11,7 @@ import {
 import type { ScopeType, Scope } from "../../redux/scope/types";
 import { toSlug } from "@/features/scopes/utils/slugify";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

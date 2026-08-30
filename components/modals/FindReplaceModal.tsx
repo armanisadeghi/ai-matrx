@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import IconButton from '@/components/official/IconButton';
 import { TooltipProvider } from '@/components/ui/tooltip';
 

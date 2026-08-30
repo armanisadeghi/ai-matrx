@@ -22,7 +22,7 @@ import {
   validateDiagram,
   type DiagramData,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

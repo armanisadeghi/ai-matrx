@@ -22,7 +22,7 @@ import {
   type HtmlPagesViewMode,
 } from "@/features/html-pages/utils/list-url-state";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {

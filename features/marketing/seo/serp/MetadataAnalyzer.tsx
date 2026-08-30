@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Monitor, Search, Smartphone } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { BasicInput } from "@/components/ui/input";
+import { BasicInput } from "@ai-matrx/design-system";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

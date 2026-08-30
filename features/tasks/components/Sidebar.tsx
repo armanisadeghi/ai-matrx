@@ -41,7 +41,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import EditableProjectName from "./EditableProjectName";
 import TaskScopeFilter from "./TaskScopeFilter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 
 const Circle = ({ size }: { size: number }) => (

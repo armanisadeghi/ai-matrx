@@ -15,7 +15,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { IconResolver,
   getCuratedIconIdsForPicker,
 } from "@ai-matrx/icons";

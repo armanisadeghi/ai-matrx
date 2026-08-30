@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, Loader2, FileText } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { listAccessibleDocuments } from "@/features/data-tables/document-service";
 import {
   isServiceFailure,

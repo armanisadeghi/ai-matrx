@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle2, Circle, Loader2, Sparkles } from "lucide-r
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";

@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BasicInput } from "@/components/ui/input";
+import { BasicInput } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { extractErrorMessage } from "@/utils/errors";
 import type { SandboxCreateRequest, SandboxInstance } from "@/types/sandbox";

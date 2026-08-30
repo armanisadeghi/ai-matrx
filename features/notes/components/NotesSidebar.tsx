@@ -22,7 +22,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

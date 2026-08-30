@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { useCartesia } from "@/hooks/tts/useCartesia";
 import { availableVoices } from "@/lib/cartesia/voices";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";

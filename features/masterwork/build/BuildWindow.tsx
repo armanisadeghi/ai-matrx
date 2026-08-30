@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, Hammer, PenLine, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";

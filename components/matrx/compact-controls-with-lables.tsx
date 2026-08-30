@@ -4,7 +4,7 @@ import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MatrxSwitch } from "@/components/ui/matrx/matrix-switch";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";

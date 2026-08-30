@@ -3,7 +3,7 @@
 // Shared interactive surface for the retained demo and organization route.
 
 import { useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

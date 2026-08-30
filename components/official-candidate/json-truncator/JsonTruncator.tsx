@@ -20,7 +20,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { BasicInput } from "@/components/ui/input";
+import { BasicInput } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { NumberStepper } from "@/components/official-candidate/NumberStepper";

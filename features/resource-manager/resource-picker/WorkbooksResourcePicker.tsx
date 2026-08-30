@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, Loader2, Notebook } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { listAccessibleWorkbooks } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";

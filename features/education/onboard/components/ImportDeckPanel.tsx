@@ -13,7 +13,7 @@ import { Upload, ClipboardPaste, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import {
   importDeckFile,

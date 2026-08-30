@@ -10,7 +10,7 @@ import {
   TAB_INDEX_ID,
   TabNavigationContext,
 } from "./stateViewerTabs";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ChevronLeft, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";

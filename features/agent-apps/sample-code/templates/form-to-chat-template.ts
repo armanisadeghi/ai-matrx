@@ -19,7 +19,7 @@ const formToChatTemplate = `import React, { useState, useMemo, useRef, useEffect
 import { Stars, Loader2, AlertCircle, Send, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import MarkdownStream from '@/components/MarkdownStream';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';

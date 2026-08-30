@@ -64,7 +64,7 @@ import { consumeStream } from "@/lib/api/stream-parser";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { DataTableMoreProvider } from "@/components/mardown-display/blocks/table-kinds/data-table-more";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
 

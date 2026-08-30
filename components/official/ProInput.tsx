@@ -3,7 +3,7 @@
  *
  * The Tier 2 default for any input that holds user text (titles, names, search
  * queries, chat prompts, tags, short replies). Tier 1 is the bare shadcn
- * `BasicInput` from `@/components/ui/input`, used only for raw cases (admin
+ * `BasicInput` from `@ai-matrx/design-system`, used only for raw cases (admin
  * diff inputs, debug consoles, etc.).
  *
  * ## Built-in features

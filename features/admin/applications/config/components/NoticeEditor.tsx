@@ -6,7 +6,7 @@
 // installed client shows once ({level, title, body, url?} | null). The
 // enabled switch maps to notice: null when off.
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

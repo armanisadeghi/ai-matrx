@@ -19,7 +19,7 @@
 import React, { useMemo, useState } from "react";
 import { Filter, Scissors, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ScraperKindNested } from "./ScraperKindNested";
 import { Pill } from "./scraper-kind-shared";
 import { compactNumber, items, num, readScraperKindValue, text } from "./scraper-kind-data";

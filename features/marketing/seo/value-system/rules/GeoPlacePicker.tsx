@@ -24,7 +24,7 @@ import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Building2, Flag, Loader2, MapPin, Navigation, Search, X } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { geoPlaceSearchQueryKey, searchGeoPlaces } from "./data";

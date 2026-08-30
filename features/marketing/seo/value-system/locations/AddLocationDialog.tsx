@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 import { useCreateBusinessLocation } from "@/features/marketing/data/hooks";
 import type { BusinessLocation } from "@/features/marketing/types";

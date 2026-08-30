@@ -21,7 +21,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
 import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSiteSummary } from '../../types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import {
     Select,
     SelectContent,

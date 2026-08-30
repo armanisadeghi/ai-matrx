@@ -159,7 +159,7 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
   },
   {
     path: "@/components/ui/input",
-    loader: () => import("@/components/ui/input"),
+    loader: () => import("@ai-matrx/design-system"),
     scopeStrategy: "named",
     exports: ["Input"],
     core: true,

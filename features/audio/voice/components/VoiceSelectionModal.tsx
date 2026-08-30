@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Play, Square, Loader2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { Badge } from '@/components/ui/badge';
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Card, CardTitle } from "@/components/ui/card";

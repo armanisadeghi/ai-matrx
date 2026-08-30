@@ -10,7 +10,7 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import {
   Dialog,

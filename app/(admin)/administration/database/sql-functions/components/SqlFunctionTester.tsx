@@ -5,7 +5,7 @@ import { SqlFunction } from "@/types/sql-functions";
 import { ParsedArgument } from "../utils/parseArguments";
 import { executeSqlFunctionCall } from "@/actions/admin/sql-functions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,

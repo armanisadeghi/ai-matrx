@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   Globe,
   AlertTriangle,

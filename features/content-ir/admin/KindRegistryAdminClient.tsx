@@ -29,7 +29,7 @@ import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";

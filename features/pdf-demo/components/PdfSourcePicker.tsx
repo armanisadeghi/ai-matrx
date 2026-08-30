@@ -23,7 +23,7 @@ import { useState } from "react";
 import { Upload, Link as LinkIcon, FolderOpen, FileText, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";

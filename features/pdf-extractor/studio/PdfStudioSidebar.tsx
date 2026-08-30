@@ -34,7 +34,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";

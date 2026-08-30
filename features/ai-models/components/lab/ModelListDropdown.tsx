@@ -70,7 +70,7 @@ import {
   DrawerContent,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { MakerBrandGlyph } from "@/components/icons/MakerBrandGlyph";
 import { ServiceBrandGlyph } from "@/components/icons/ServiceBrandGlyph";
 import {

@@ -12,7 +12,7 @@
 import { useMemo } from "react";
 import { Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";

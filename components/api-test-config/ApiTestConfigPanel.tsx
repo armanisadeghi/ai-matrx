@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { BasicInput } from '@/components/ui/input';
+import { BasicInput } from '@ai-matrx/design-system';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader2, Key, Check, X, Monitor, Globe, Pencil } from 'lucide-react';

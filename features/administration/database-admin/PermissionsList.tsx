@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Key, RefreshCw, Search, Plus, Settings } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";

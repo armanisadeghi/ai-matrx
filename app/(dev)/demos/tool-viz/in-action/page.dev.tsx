@@ -52,7 +52,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import MarkdownStream from "@/components/MarkdownStream";
 import ThinkingTrace from "@/components/mardown-display/blocks/thinking-reasoning/ThinkingTrace";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";

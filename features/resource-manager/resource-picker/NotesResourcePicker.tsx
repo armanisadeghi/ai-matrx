@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ChevronRight, Search, Loader2, ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { useNotes } from "@/features/notes/hooks/useNotes";
 import {
   getFolderIconAndColor,

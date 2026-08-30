@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";

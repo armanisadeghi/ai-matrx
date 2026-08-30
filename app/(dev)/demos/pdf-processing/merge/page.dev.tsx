@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Play, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { PdfBinaryResult } from "@/features/pdf-demo/components/PdfBinaryResult";
 import {
   EMPTY_PDF_SOURCE,

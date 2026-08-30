@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import {cn} from "@/styles/themes/utils";
-import {Input} from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {Label} from "@/components/ui/label";
 import { FormField } from "@/types/AnimatedFormTypes";
 

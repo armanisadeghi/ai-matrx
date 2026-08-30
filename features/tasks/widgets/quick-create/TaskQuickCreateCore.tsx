@@ -26,7 +26,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/ButtonMine";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {

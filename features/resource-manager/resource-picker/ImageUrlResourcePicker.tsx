@@ -11,7 +11,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";

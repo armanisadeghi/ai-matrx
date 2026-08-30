@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
 import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

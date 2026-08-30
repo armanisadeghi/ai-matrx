@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { BackendApiError } from "@/lib/api/errors";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";

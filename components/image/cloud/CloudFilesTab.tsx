@@ -27,7 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";

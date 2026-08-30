@@ -15,7 +15,7 @@ import {
   UploadTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

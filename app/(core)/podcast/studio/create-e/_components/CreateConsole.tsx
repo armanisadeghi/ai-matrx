@@ -50,7 +50,7 @@ import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import {
   SOURCE_OPTIONS,

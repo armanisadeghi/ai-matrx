@@ -6,7 +6,7 @@ import { ComponentDisplayWrapper } from '../component-usage';
 import FloatingSheet from '@/components/official/FloatingSheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { toast } from '@/lib/toast';
 import { Check } from 'lucide-react';
 

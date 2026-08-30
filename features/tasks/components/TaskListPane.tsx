@@ -42,7 +42,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";

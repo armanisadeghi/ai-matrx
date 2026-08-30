@@ -19,7 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BrainCircuit, Database, Loader2, Search } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import {

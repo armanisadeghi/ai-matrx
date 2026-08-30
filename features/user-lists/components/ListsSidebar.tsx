@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Search, Plus, ListFilter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import type { UserList } from "../types";
 import { ListCard } from "./ListCard";

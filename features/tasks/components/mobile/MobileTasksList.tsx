@@ -32,7 +32,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import MobileFilterMenu from "./MobileFilterMenu";
 import MobileProjectSelector from "./MobileProjectSelector";

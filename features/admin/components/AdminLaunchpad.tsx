@@ -5,7 +5,7 @@ import Link from "next/link";
 import { IconExternalLink, IconRefresh, IconSearch } from "@tabler/icons-react";
 import { IconResolver } from "@ai-matrx/icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   adminDomainHref,
   adminNavigationRegistry,

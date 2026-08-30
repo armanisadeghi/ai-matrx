@@ -9,7 +9,7 @@ import {
 } from "@/features/message-templates/types/message-templates-db";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {

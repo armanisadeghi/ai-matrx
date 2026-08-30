@@ -35,7 +35,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { consumeStream } from "@/lib/api/stream-parser";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

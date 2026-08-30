@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface YouTubeResourcePickerProps {

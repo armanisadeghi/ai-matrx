@@ -10,7 +10,7 @@ import { TriangleAlert } from "lucide-react";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import type { EntityTypeDisabledMap } from "@/components/entity-types/EntityTypeCombobox";
 import { SharePolicyColumnEditor } from "./SharePolicyColumnEditor";

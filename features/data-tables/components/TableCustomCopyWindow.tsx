@@ -13,7 +13,7 @@ import type {
 } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   dataTableCopyValueText,

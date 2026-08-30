@@ -6,7 +6,7 @@ import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import PageContent from "@/features/scraper/parts/core/PageContent";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {

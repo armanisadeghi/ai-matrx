@@ -31,7 +31,7 @@ import { Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";

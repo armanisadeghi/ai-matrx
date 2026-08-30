@@ -5,7 +5,7 @@ import { CopyShortLinkButton } from "@ai-matrx/kit/short-link-react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 
 // The five-minute proof for the short-link package (kit ./short-link-react):
 // everything below the input — the mint call (org-gated shorten_app_url door),

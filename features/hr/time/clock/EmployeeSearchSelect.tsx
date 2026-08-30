@@ -34,7 +34,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import type { HrWorkerClass } from "@/features/hr/constants";
 import { fetchHrDirectory } from "@/features/hr/service";
 import { isHrGranted } from "@/features/hr/types";

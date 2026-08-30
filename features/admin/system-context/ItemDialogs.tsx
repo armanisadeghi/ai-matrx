@@ -12,7 +12,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {

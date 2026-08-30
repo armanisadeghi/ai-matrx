@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { AlertTriangle, Eye, Link2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Field } from "@/components/official/Field";
 import {
   Select,

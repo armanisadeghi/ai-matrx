@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Link2, Copy, Check, Trash2, Loader2, Plus, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { ResourceType } from "@/utils/permissions/types";

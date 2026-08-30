@@ -9,7 +9,7 @@ import React, { useState } from "react";
 import { Info, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { setMemberControls } from "../service";
 import type { OrgAdminMember } from "../types";

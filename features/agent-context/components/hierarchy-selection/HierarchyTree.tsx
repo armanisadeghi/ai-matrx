@@ -13,7 +13,7 @@ import {
   Folder,
 } from "lucide-react";
 import * as icons from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/utils/cn";

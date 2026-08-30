@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Lock, RotateCcw, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { toast } from "@/lib/toast";
 import { fetchFeatureKnobs, setFeatureKnob } from "../service";

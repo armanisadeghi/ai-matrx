@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { BasicInput } from "@/components/ui/input";
+import { BasicInput } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

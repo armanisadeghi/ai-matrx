@@ -49,7 +49,7 @@ import {
 } from "@/features/marketing/components/backlinks/format";
 import { Button } from "@/components/ui/button";
 import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

@@ -6,7 +6,7 @@
  * would lose the currency). Value in/out is that object (or null when empty).
  */
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

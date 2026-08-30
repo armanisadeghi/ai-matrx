@@ -8,7 +8,7 @@
 // tab. Never re-declare these fields beside a consumer. Every textarea is
 // ProTextarea (mic + transcription — module invariant 5).
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

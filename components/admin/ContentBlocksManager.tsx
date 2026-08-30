@@ -6,7 +6,7 @@ import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/featu
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,

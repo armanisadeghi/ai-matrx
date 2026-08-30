@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { fetchMandateAssignments } from "@/features/mandates/service";

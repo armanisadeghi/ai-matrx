@@ -16,7 +16,7 @@
 import { useState } from "react";
 import { Send, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";

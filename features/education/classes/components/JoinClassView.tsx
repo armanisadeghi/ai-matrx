@@ -14,7 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { GraduationCap, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { getClassByCode, joinClassByCode } from "../service";
 import type { ClassCodePreview } from "../types";

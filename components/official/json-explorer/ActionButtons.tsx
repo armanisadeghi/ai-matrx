@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/ButtonMine";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { CopyIcon, RefreshCw, BookmarkIcon, Brackets } from "lucide-react";
 import { IoBookmarks } from "react-icons/io5";
 import { ActionButtonsProps } from "./types";

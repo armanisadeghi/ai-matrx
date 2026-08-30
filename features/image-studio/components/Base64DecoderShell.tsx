@@ -32,7 +32,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BasicInput } from "@/components/ui/input";
+import { BasicInput } from "@ai-matrx/design-system";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";

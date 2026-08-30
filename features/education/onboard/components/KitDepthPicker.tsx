@@ -17,7 +17,7 @@
 // results across the WHOLE document rather than the first section of it.
 
 import { Gauge } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import type { CoverageDepth } from "@/features/education/convert/coverage";
 

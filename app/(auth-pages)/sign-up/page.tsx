@@ -8,7 +8,7 @@ import {
 } from "@/actions/auth.actions";
 import { AuthMessageType } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import {

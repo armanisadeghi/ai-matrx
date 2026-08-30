@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { motion } from 'motion/react'
 import { Copy, RefreshCw, Check, AlertCircle, CircleDot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Input } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label'
 import {
     Select,

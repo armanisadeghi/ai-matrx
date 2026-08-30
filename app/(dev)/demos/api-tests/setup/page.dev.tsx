@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BasicInput } from '@/components/ui/input';
+import { BasicInput } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Key, Check, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { getStoredAdminToken, setStoredAdminToken, clearStoredAdminToken, hasStoredAdminToken } from '@/utils/api-test-auth';

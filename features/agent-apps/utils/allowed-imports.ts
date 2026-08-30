@@ -190,7 +190,7 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
   },
   {
     path: "@/components/ui/input",
-    loader: () => require("@/components/ui/input"),
+    loader: () => require("@ai-matrx/design-system"),
     scopeStrategy: "named",
     exports: ["Input"],
   },

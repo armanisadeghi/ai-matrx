@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Separator } from "@/components/ui/separator";
 import {
   Card,
@@ -215,7 +215,7 @@ function ComparisonExample() {
 import { ImageManagerIcon } from '@/components/image/shared/ImageManagerIcon';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 
 function CustomizationExample() {
   const [mode, setMode] = useState<"single" | "multiple">("single");

@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Camera, User, Shield } from 'lucide-react';
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -234,7 +234,7 @@ function ShapesExample() {
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { User, Camera, Shield } from 'lucide-react';
 
 function RealWorldExample() {

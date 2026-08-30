@@ -8,7 +8,7 @@ import {
   shortUrlLabel,
 } from "@/features/window-panels/utils/embed-site-url";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
 

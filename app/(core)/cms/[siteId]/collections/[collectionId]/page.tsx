@@ -48,7 +48,7 @@ import type { ColumnFilter } from "@/features/data-tables/column-filters";
 import type { ColumnFacets } from "@/features/data-tables/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {

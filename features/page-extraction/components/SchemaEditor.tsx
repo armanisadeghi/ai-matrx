@@ -20,7 +20,7 @@
 
 import { ArrowDown, ArrowUp, Download, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   buildTemplateSchema,
   buildTextSchema,

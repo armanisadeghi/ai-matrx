@@ -50,7 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { EXTRACTOR_CHUNKER_SURFACE_NAME } from "@/features/page-extraction/constants";
 import type { SurfaceValue } from "@/features/surfaces/types";

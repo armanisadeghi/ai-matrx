@@ -15,7 +15,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 export type Option = {

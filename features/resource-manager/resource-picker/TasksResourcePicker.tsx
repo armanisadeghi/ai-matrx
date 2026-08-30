@@ -13,7 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProjectsWithTasks } from "@/features/tasks/hooks/useTaskManager";
 import type { ProjectWithTasks, DatabaseTask } from "@/features/tasks/types";

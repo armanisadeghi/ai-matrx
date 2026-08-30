@@ -19,7 +19,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, MessagesSquare, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

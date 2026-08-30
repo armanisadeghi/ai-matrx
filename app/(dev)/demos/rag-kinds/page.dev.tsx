@@ -46,7 +46,7 @@ import { useBackendApi } from "@/hooks/useBackendApi";
 import { consumeStream } from "@/lib/api/stream-parser";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

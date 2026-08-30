@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
 import { assertGoogleAdsCampaignActive } from "@/features/marketing/google/ads-campaign";

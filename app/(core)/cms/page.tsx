@@ -19,7 +19,7 @@ import {
   SITE_CSV_COLUMNS,
 } from "@/features/cms/copy";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,

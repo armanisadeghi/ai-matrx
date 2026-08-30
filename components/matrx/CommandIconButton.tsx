@@ -12,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@ai-matrx/design-system';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 
 export type CommandOption = {
   value: string;

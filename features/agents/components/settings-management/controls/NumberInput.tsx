@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
 
 export interface NumberInputProps {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { BrainCircuit, ListChecks } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";

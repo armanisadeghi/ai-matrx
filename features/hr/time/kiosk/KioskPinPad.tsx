@@ -39,7 +39,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 
 import { KioskNumericKeypad, KioskPinDots } from "./KioskNumericKeypad";
 import type { PunchKind } from "@/features/hr/time/api/types";

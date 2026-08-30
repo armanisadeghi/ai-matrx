@@ -1,130 +1,20 @@
 "use client";
 
+/**
+ * HOST RESIDUE ONLY. The plain Input family (Input, EnterInput, BasicInput,
+ * InputWithPrefix) lives in @ai-matrx/design-system — import it from there.
+ *
+ * The three inputs below were deliberately NOT absorbed by the package
+ * (C8 split-out law): they carry a `motion/react` dependency and clipboard
+ * behavior that plain-Input consumers must not pay for. They compose the
+ * package's Input and stay host-owned until sanctioned separately.
+ */
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
-import { MatrxVariant } from "./types";
+import { Input, type InputProps } from "@ai-matrx/design-system";
 import { Check, Copy, Trash2 } from "lucide-react";
-
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  variant?: MatrxVariant;
-}
-
-const getVariantStyles = (variant: MatrxVariant = "default") => {
-  const baseStyles = `flex h-10 w-full border border-border bg-background text-black dark:text-white shadow-input rounded-md px-3 py-2 text-sm file:border-0 file:bg-transparent 
-    file:text-sm file:font-medium placeholder:text-neutral-400 dark:placeholder-text-neutral-600 
-    focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600
-    disabled:cursor-not-allowed disabled:opacity-50
-    dark:shadow-[0px_0px_1px_1px_var(--neutral-700)]
-    transition duration-400
-    [&:-webkit-autofill]:bg-background [&:-webkit-autofill]:shadow-[0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[caret-color:currentColor]
-    dark:[&:-webkit-autofill]:shadow-[0_0_0_1000px_hsl(var(--background))_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]
-    [&:-webkit-autofill:hover]:shadow-[0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill:focus]:shadow-[0_0_0_1000px_hsl(var(--background))_inset]`;
-
-  switch (variant) {
-    case "destructive":
-      return `${baseStyles} bg-destructive text-destructive-foreground`;
-    case "outline":
-      return `${baseStyles} border-2`;
-    case "secondary":
-      return `${baseStyles} bg-secondary text-secondary-foreground`;
-    case "ghost":
-      return `${baseStyles} bg-transparent shadow-none`;
-    case "link":
-      return `${baseStyles} bg-transparent underline-offset-4 hover:underline`;
-    case "primary":
-      return `${baseStyles} bg-primary text-primary-foreground`;
-    default:
-      return baseStyles;
-  }
-};
-
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, variant = "default", ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(getVariantStyles(variant), className)}
-        ref={ref}
-        {...props}
-      />
-    );
-  },
-);
-Input.displayName = "Input";
-
-interface EnterInputProps extends InputProps {
-  onEnter?: () => void;
-}
-
-export const EnterInput = React.forwardRef<HTMLInputElement, EnterInputProps>(
-  ({ onEnter, ...props }, ref) => {
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && onEnter) {
-        e.preventDefault();
-        onEnter();
-      }
-    };
-
-    return (
-      <Input
-        {...props}
-        ref={ref}
-        onKeyDown={(e) => {
-          handleKeyDown(e);
-          if (props.onKeyDown) {
-            props.onKeyDown(e);
-          }
-        }}
-      />
-    );
-  },
-);
-
-EnterInput.displayName = "EnterInput";
-
-const BasicInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, variant = "default", ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-          className,
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
-  },
-);
-BasicInput.displayName = "BasicInput";
-
-interface InputWithPrefixProps extends Omit<InputProps, "prefix"> {
-  prefix?: React.ReactNode;
-  wrapperClassName?: string;
-}
-
-const InputWithPrefix = React.forwardRef<
-  HTMLInputElement,
-  InputWithPrefixProps
->(({ prefix, className, wrapperClassName, ...props }, ref) => {
-  return (
-    <div className={cn("relative", wrapperClassName)}>
-      {prefix && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-          {prefix}
-        </div>
-      )}
-      <Input
-        ref={ref}
-        className={cn(prefix && "pl-10", className)}
-        {...props}
-      />
-    </div>
-  );
-});
-InputWithPrefix.displayName = "InputWithPrefix";
 
 const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, variant = "default", ...props }, ref) => {
@@ -269,11 +159,4 @@ const DeleteInput = React.forwardRef<HTMLInputElement, DeleteInputProps>(
 
 DeleteInput.displayName = "DeleteInput";
 
-export {
-  Input,
-  BasicInput,
-  InputWithPrefix,
-  CopyInput,
-  FancyInput,
-  DeleteInput,
-};
+export { CopyInput, FancyInput, DeleteInput };

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Check, ExternalLink, Search } from "lucide-react";
 import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { ConnectorMark } from "./ConnectorMark";
 import { useLiveConnectors } from "./useLiveConnectors";
 

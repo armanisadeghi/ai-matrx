@@ -40,7 +40,7 @@ import {
   Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { saveDerivative as saveDerivativeCanonical } from "@/features/pdf/services/saveDerivative";

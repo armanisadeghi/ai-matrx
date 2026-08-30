@@ -17,7 +17,7 @@
  */
 
 import { Youtube as YoutubeIcon } from "@/components/icons/brand-icons";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;

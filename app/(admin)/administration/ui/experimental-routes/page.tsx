@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { experimentalRoutes, searchExperimentalRoutes } from '../experimental-routes-config';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Search, ExternalLink, Beaker, ChevronRight } from 'lucide-react';

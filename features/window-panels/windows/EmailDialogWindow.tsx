@@ -10,7 +10,7 @@
 
 import React, { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, Mail } from "lucide-react";

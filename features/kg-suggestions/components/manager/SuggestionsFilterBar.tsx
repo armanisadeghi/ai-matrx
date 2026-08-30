@@ -9,7 +9,7 @@
 "use client";
 
 import { Search, Star, Sparkles, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

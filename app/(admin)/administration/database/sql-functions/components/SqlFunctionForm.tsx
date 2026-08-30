@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { SqlFunction } from "@/types/sql-functions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

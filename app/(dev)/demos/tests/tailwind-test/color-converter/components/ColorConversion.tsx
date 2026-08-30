@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Colord } from 'colord';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { getColorFormats } from '@/utils/color-utils/color-change-util';
 import { FullJsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 

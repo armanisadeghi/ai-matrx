@@ -12,7 +12,7 @@
  * Shared by both row modals so an email column cannot offer a real email input
  * in one and a plain box in the other.
  */
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 
 import { ChoiceInput } from "./ChoiceInput";
 

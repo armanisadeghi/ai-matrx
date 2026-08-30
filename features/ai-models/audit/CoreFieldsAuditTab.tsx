@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Save, Loader2, CheckCircle2, SaveAll } from "lucide-react";
 import { aiModelService } from "../service";
 import type { AiModel } from "../types";

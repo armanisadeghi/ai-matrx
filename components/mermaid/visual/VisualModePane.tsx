@@ -15,7 +15,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeftRight, Check, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";

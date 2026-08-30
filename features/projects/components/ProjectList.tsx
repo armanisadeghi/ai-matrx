@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Puzzle, Plus, Search, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@ai-matrx/design-system';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useOrgProjects, usePersonalProjects } from '../hooks';

@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { fetchHrDirectory } from "@/features/hr/service";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrDirectoryRow } from "@/features/hr/types";

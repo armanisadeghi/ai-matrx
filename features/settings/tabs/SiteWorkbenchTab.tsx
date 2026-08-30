@@ -8,7 +8,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   normalizeUserUrl,
   shortUrlLabel,

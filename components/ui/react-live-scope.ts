@@ -83,7 +83,7 @@ export {
   DropdownMenuRadioGroup,
 } from "./dropdown-menu";
 export { Form } from "./form";
-export { Input } from "./input";
+export { Input } from "@ai-matrx/design-system";
 export { Label } from "./label";
 export {
   Menubar,

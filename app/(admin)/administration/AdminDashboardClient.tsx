@@ -8,7 +8,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainDirectory";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {

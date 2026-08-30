@@ -4,7 +4,7 @@ import React, {useState, useEffect} from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {Badge} from "@/components/ui/badge";
 import {API_CONFIG} from './constants';
 import {Endpoint, EndpointResponse, type EndpointBody} from "@/app/(dev)/demos/tests/matrx-local/types";

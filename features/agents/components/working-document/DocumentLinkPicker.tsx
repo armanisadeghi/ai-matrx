@@ -11,7 +11,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { FileText, Loader2, NotebookPen, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

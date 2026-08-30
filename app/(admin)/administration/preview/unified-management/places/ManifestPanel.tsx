@@ -17,7 +17,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, CircleSlash, Link2, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { Panel, RuleNote } from "./preview-chrome";
 import {

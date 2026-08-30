@@ -13,7 +13,7 @@ import {
 } from "@/features/cms/utils/contentVolume";
 import { Button } from "@/components/ui/button";
 import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ItemMenu } from "@/components/official/item/ItemMenu";

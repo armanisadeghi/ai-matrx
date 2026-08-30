@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { Layers, Loader2, ShieldCheck, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import { MaskDialog } from "@/features/file-analysis/redact/MaskDialog";

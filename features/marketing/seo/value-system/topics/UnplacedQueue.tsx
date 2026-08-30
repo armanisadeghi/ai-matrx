@@ -25,7 +25,7 @@
 import { useEffect, useState } from "react";
 import { BrainCircuit, Loader2, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";

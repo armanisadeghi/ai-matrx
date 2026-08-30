@@ -47,7 +47,7 @@ import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPi
 import { getAssetForFile } from "@/features/files/api/assets";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import {
   useInitialCropController,
   InitialCropViewport,

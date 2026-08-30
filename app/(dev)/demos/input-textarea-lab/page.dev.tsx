@@ -1,13 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import {
-  Input,
-  BasicInput,
-  EnterInput,
-  CopyInput,
-  InputWithPrefix,
-} from "@/components/ui/input";
+import { Input, BasicInput, EnterInput, InputWithPrefix } from "@ai-matrx/design-system";
+import { CopyInput } from "@/components/ui/input";
 import {
   Textarea,
   BasicTextarea,
@@ -58,7 +53,7 @@ export default function InputTextareaLabPage() {
     <div className="h-full w-full overflow-y-auto bg-textured">
       <div className="grid h-full min-h-0 w-full grid-cols-1 gap-3 p-3 lg:grid-cols-2">
         <div className="grid min-h-0 auto-rows-min grid-cols-1 gap-3 content-start">
-          <LabCell name="Input" path="@/components/ui/input · Input">
+          <LabCell name="Input" path="@ai-matrx/design-system · Input">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -66,7 +61,7 @@ export default function InputTextareaLabPage() {
             />
           </LabCell>
 
-          <LabCell name="BasicInput" path="@/components/ui/input · BasicInput">
+          <LabCell name="BasicInput" path="@ai-matrx/design-system · BasicInput">
             <BasicInput
               value={basicInput}
               onChange={(e) => setBasicInput(e.target.value)}
@@ -74,7 +69,7 @@ export default function InputTextareaLabPage() {
             />
           </LabCell>
 
-          <LabCell name="EnterInput" path="@/components/ui/input · EnterInput">
+          <LabCell name="EnterInput" path="@ai-matrx/design-system · EnterInput">
             <EnterInput
               value={enterInput}
               onChange={(e) => setEnterInput(e.target.value)}
@@ -92,7 +87,7 @@ export default function InputTextareaLabPage() {
 
           <LabCell
             name="InputWithPrefix"
-            path="@/components/ui/input · InputWithPrefix"
+            path="@ai-matrx/design-system · InputWithPrefix"
           >
             <InputWithPrefix
               prefix={<Search className="size-4" />}

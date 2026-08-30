@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { History, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import {
