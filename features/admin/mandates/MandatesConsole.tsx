@@ -24,6 +24,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import {
@@ -32,6 +33,7 @@ import {
   ExternalLink,
   History,
   Loader2,
+  Plus,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
@@ -267,11 +269,6 @@ export function MandatesConsole() {
   // admin pinning a personal/shared agent here would break every user the
   // mandate serves. Never hand-query agent.definition for a picker.
   const builtinAgents = useAppSelector(selectBuiltinAgents);
-  const builtinAgentsById = useMemo<ReadonlyMap<string, string>>(
-    () =>
-      new Map(builtinAgents.map((agent) => [agent.id, agent.name ?? agent.id])),
-    [builtinAgents],
-  );
   // Lineage for every agent the slice holds — derived, no extra queries. This
   // is how the console can answer "does a system copy of this already exist?"
   // instead of just complaining that the pin is personal.
@@ -724,8 +721,13 @@ export function MandatesConsole() {
       setSelectedId(match.id);
     },
     [AGENT_MANDATES_WRITE_TARGETS.exemplarDraft]: () => {
+      // LOUD, and honest about WHY. The test bench used to mount inside this
+      // console's drawer; since 2026-08-29 the drawer is gone and the bench
+      // lives on the mandate's own page (Admin controls → Test bench), which
+      // mounts no surface runtime. So this target cannot be served from here
+      // at all — it is not "not yet open".
       throw new Error(
-        "No mandate workbench is open, so there is no test-case composer to stage into. Open a mandate first with `select_mandate` — and do it in an EARLIER turn: handlers are resolved before any of them are applied, so a draft sent alongside the very first select_mandate still lands here.",
+        "This console no longer hosts the test-case composer. The bench moved to the mandate's own page — /administration/agents/mandates/<mandate_key>, under Admin controls — and that page is not an agent surface, so an exemplar cannot be staged from here. Tell the admin to open the mandate and compose it there.",
       );
     },
   });
@@ -749,6 +751,9 @@ export function MandatesConsole() {
         accessorKey: "mandateName",
         header: "Mandate",
         width: 190,
+        // A REAL link (D112) — keyboard-reachable, cmd-clickable into a new
+        // tab, and the same destination the whole-row click uses.
+        href: (r) => adminMandateHref(r.mandateKey),
         cell: (r) => (
           <div className="flex flex-col items-start gap-0.5">
             <span
@@ -1017,21 +1022,13 @@ export function MandatesConsole() {
     ];
   }, [toggleEnabled, lineageIndex, reload, catalogue, offersByProvision]);
 
-  // The coverage board's rows open the workbench — the SAME selection the
-  // table click, the right-click menu and `?mandate=` all drive.
+  // The coverage board's named rows open the mandate PAGE — the same
+  // destination as a row click, the right-click menu and `?mandate=`. The
+  // board can name a mandate the table has filtered out, and the page resolves
+  // the key itself, so there is no row lookup to fail here.
   const openMandateByKey = useCallback(
-    (mandateKey: string) => {
-      const match = allRows.find((row) => row.mandateKey === mandateKey);
-      if (!match) {
-        toast.error(
-          `${mandateKey} is not in the loaded console rows — it may be a placeholder, or disabled.`,
-        );
-        return;
-      }
-      setCoverageFilter(null);
-      setSelectedId(match.id);
-    },
-    [allRows],
+    (mandateKey: string) => openMandatePage(mandateKey),
+    [openMandatePage],
   );
 
   return (
@@ -1097,9 +1094,13 @@ export function MandatesConsole() {
                 key={row.id}
                 size="sm"
                 variant="outline"
-                className="h-6 font-mono text-[11px]"
-                onClick={() => setSelectedId(row.id)}
+                disabled={navPending}
+                className="h-6 gap-1 font-mono text-[11px]"
+                onClick={() => openMandatePage(row.mandateKey)}
               >
+                {pendingKey === row.mandateKey ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : null}
                 Review {row.mandateKey}
               </Button>
             ))}
@@ -1141,18 +1142,28 @@ export function MandatesConsole() {
               search: true,
               searchPlaceholder: "Search mandates, agents…",
               actions: (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={reload}
-                  disabled={fetching}
-                >
-                  {fetching ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                </Button>
+                <>
+                  {/* Declaring a job is admin work, so the New button lives
+                      here — the user route has none. */}
+                  <Button asChild size="sm">
+                    <Link href="/administration/agents/mandates/new">
+                      <Plus className="w-4 h-4" />
+                      New Mandate
+                    </Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={reload}
+                    disabled={fetching}
+                  >
+                    {fetching ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                  </Button>
+                </>
               ),
             }}
             copy={{
@@ -1171,10 +1182,11 @@ export function MandatesConsole() {
                 enabled: r.isEnabled,
               }),
             }}
-            window={{
-              title: (r) => `Mandate — ${r.mandateKey}`,
-              defaultTab: "edit",
-            }}
+            // ONE MANDATE UI: a row opens the mandate's PAGE. No side-panel
+            // drawer, no table-owned window — this console is the LIST, and
+            // the page is the mandate. (`MandateDetailPanel` still exists and
+            // still renders the admin controls; it lives on that page now.)
+            onRowOpen={(r) => openMandatePage(r.mandateKey)}
           />
           </NonEditableContextMenu>
         </div>

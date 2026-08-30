@@ -2,12 +2,15 @@
 
 // features/agents/mandates/authoring/NewMandatePage.tsx
 //
-// /agents/mandates/new — the full purpose-built creation page. The triad IS
-// the page's spine: INPUT → GOAL → OUTPUT (Arman: "INPUT -> Charge (Goal) ->
-// Output"). Inputs are DESCRIPTIVE ("descriptions of inputs… I can't give you
-// snake case"); the GOAL is the heart and gets the space; OUTPUT is a kind
-// pick plus a free-text constraints line. The server validates the key with
-// the same validator the code path uses; its message renders verbatim.
+// /administration/agents/mandates/new — the full purpose-built creation page.
+// ADMIN-SIDE since 2026-08-29 (Arman): creating a mandate declares a job for
+// the whole platform, so it lives with the rest of mandate management, and the
+// server's POST /mandates is `require_super_admin` (aidream 304fe1848). The
+// triad IS the page's spine: INPUT → GOAL → OUTPUT (Arman: "INPUT -> Charge
+// (Goal) -> Output"). Inputs are DESCRIPTIVE ("descriptions of inputs… I can't
+// give you snake case"); the GOAL is the heart and gets the space; OUTPUT is a
+// kind pick plus a free-text constraints line. The server validates the key
+// with the same validator the code path uses; its message renders verbatim.
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -20,6 +23,7 @@ import { Section } from "../workspace/Section";
 import { TriadFlowMark } from "../workspace/TriadSections";
 import { DraftInputsEditor } from "./DraftInputsEditor";
 import { OutputKindPicker } from "./OutputKindPicker";
+import { adminMandateHref } from "../browse/url-compat";
 import { createMandate, type DraftInput } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -57,7 +61,7 @@ export function NewMandatePage() {
       });
       toast.success(`${created.mandateKey} created.`);
       startTransition(() => {
-        router.push(`/agents/mandates/${encodeURIComponent(created.mandateKey)}`);
+        router.push(adminMandateHref(created.mandateKey));
       });
     } catch (error: unknown) {
       setServerError(error instanceof Error ? error.message : String(error));
@@ -67,7 +71,7 @@ export function NewMandatePage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto pt-[calc(var(--shell-header-h)+0.5rem)]">
+    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
       <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-2 sm:px-6">
         {/* Identity — a name people read, a key code calls. */}
         <header className="space-y-2">
