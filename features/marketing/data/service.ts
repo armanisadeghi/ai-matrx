@@ -91,7 +91,11 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
-import { toMarketingKey } from "@/features/marketing/lib/keys";
+import {
+  marketingKeyProblem,
+  nextPreviousSlugs,
+  toMarketingKey,
+} from "@/features/marketing/lib/keys";
 import { readAllRows } from "@ai-matrx/data/db";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import {
@@ -261,7 +265,7 @@ export function assertMutated(
 
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, previous_slugs, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
 
 /**
  * VIEW LAW: listSites / listSiteOptions are DELIBERATE org-browse surfaces,
@@ -2474,7 +2478,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, profile";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, profile";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -2971,6 +2975,123 @@ export async function updateBrand(
     conflictMessage:
       "This brand changed in another session. Reload and try again.",
   });
+}
+
+/**
+ * URL-KEY RENAMES — a rename NEVER breaks the old address.
+ *
+ * Arman's ratified rule (2026-08-30): renaming a brand/site key keeps the old
+ * key alive as an alias, so every existing link, bookmark and shared URL still
+ * lands on the record. The old key joins `previous_slugs` (the resolvers in
+ * lib/keys-server.ts / data/keys-hooks.ts retry there on a slug miss and the
+ * canonicalizing layer then forwards to the new address).
+ *
+ * Availability is NOT pre-checked with a select: an RLS-filtered read makes
+ * every key held by a row you cannot see look free (same reasoning as
+ * `insertWithSlug` above). The unique index is the authority — we attempt the
+ * write and translate 23505 into copy the user can act on.
+ */
+function renamedKeyError(error: unknown, nextSlug: string): Error {
+  if (isUniqueViolation(error)) {
+    return new Error(
+      `The address "${nextSlug}" is already in use. Pick a different one.`,
+    );
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+export async function renameBrandSlug(
+  brandId: string,
+  nextSlug: string,
+): Promise<MarketingBrand> {
+  const next = nextSlug.trim().toLowerCase();
+  const problem = marketingKeyProblem(next);
+  if (problem) throw new Error(problem);
+
+  const current = await getBrand(brandId);
+  if (current.slug === next) return current;
+
+  const previous = nextPreviousSlugs(
+    current.previous_slugs,
+    current.slug,
+    next,
+  );
+  const db = await authenticatedWebDb(supabase);
+  try {
+    return await guardedUpdateOrThrow<MarketingBrand>({
+      expectedVersion: current.version,
+      applyUpdate: ({ expectedVersion, nextVersion }) =>
+        db
+          .from("brand")
+          .update({ slug: next, previous_slugs: previous, version: nextVersion })
+          .eq("id", brandId)
+          .eq("version", expectedVersion)
+          .is("deleted_at", null)
+          .select(BRAND_COLUMNS)
+          .maybeSingle(),
+      fetchCurrent: () =>
+        db
+          .from("brand")
+          .select(BRAND_COLUMNS)
+          .eq("id", brandId)
+          .is("deleted_at", null)
+          .maybeSingle(),
+      conflictMessage:
+        "This brand changed in another session. Reload and try again.",
+    });
+  } catch (error) {
+    throw renamedKeyError(error, next);
+  }
+}
+
+export async function renameSiteSlug(
+  siteId: string,
+  brandId: string,
+  nextSlug: string,
+): Promise<MarketingSite> {
+  const next = nextSlug.trim().toLowerCase();
+  const problem = marketingKeyProblem(next);
+  if (problem) throw new Error(problem);
+
+  const current = await getSite(siteId);
+  if (current.brand_id !== brandId) {
+    throw new Error(
+      "This site no longer belongs to that brand. Reload and try again.",
+    );
+  }
+  if (current.slug === next) return current;
+
+  const previous = nextPreviousSlugs(
+    current.previous_slugs,
+    current.slug,
+    next,
+  );
+  const db = await authenticatedWebDb(supabase);
+  try {
+    return await guardedUpdateOrThrow<MarketingSite>({
+      expectedVersion: current.version,
+      applyUpdate: ({ expectedVersion, nextVersion }) =>
+        db
+          .from("site")
+          .update({ slug: next, previous_slugs: previous, version: nextVersion })
+          .eq("id", siteId)
+          .eq("version", expectedVersion)
+          .is("deleted_at", null)
+          .select(SITE_COLUMNS)
+          .maybeSingle(),
+      fetchCurrent: () =>
+        db
+          .from("site")
+          .select(SITE_COLUMNS)
+          .eq("id", siteId)
+          .is("deleted_at", null)
+          .maybeSingle(),
+      conflictMessage:
+        "This site changed in another session. Reload and try again.",
+    });
+  } catch (error) {
+    throw renamedKeyError(error, next);
+  }
 }
 
 /**

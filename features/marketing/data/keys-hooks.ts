@@ -37,18 +37,37 @@ async function fetchBrandBySegment(
   segment: string,
   signal?: AbortSignal,
 ): Promise<BrandSegmentRow | null> {
-  let query = (await authenticatedWebDb(supabase))
-    .from("brand")
-    .select("id, slug, name, organization_id")
-    .is("deleted_at", null);
-  if (isUuid(segment)) query = query.eq("id", segment);
-  else if (isPossibleMarketingKey(segment)) query = query.eq("slug", segment);
-  else return null;
-  const response = await query
-    .abortSignal(signal ?? new AbortController().signal)
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const base = () =>
+    db
+      .from("brand")
+      .select("id, slug, name, organization_id")
+      .is("deleted_at", null);
+  const isKey = !isUuid(segment) && isPossibleMarketingKey(segment);
+  if (!isUuid(segment) && !isKey) return null;
+
+  const response = await (isUuid(segment)
+    ? base().eq("id", segment)
+    : base().eq("slug", segment)
+  )
+    .abortSignal(abortSignal)
     .maybeSingle();
   if (response.error) throw response.error;
-  return response.data ?? null;
+  if (response.data) return response.data;
+  if (!isKey) return null;
+
+  // ALIAS LANE — a renamed brand keeps its old keys (web.brand.previous_slugs),
+  // so an old address still resolves to the row; canonicalizing layers replace
+  // the URL with marketingSeg(row).
+  const alias = await base()
+    .contains("previous_slugs", [segment])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (alias.error) throw alias.error;
+  return alias.data ?? null;
 }
 
 async function fetchSiteBySegment(
@@ -56,19 +75,36 @@ async function fetchSiteBySegment(
   segment: string,
   signal?: AbortSignal,
 ): Promise<SiteSegmentRow | null> {
-  let query = (await authenticatedWebDb(supabase))
-    .from("site")
-    .select("id, slug, name, domain, brand_id")
-    .eq("brand_id", brandId)
-    .is("deleted_at", null);
-  if (isUuid(segment)) query = query.eq("id", segment);
-  else if (isPossibleMarketingKey(segment)) query = query.eq("slug", segment);
-  else return null;
-  const response = await query
-    .abortSignal(signal ?? new AbortController().signal)
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const base = () =>
+    db
+      .from("site")
+      .select("id, slug, name, domain, brand_id")
+      .eq("brand_id", brandId)
+      .is("deleted_at", null);
+  const isKey = !isUuid(segment) && isPossibleMarketingKey(segment);
+  if (!isUuid(segment) && !isKey) return null;
+
+  const response = await (isUuid(segment)
+    ? base().eq("id", segment)
+    : base().eq("slug", segment)
+  )
+    .abortSignal(abortSignal)
     .maybeSingle();
   if (response.error) throw response.error;
-  return response.data ?? null;
+  if (response.data) return response.data;
+  if (!isKey) return null;
+
+  // ALIAS LANE — scoped to the brand; site keys are unique per brand.
+  const alias = await base()
+    .contains("previous_slugs", [segment])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (alias.error) throw alias.error;
+  return alias.data ?? null;
 }
 
 /** Resolve a `/marketing/[brandId]` segment (slug or UUID) to the brand row. */

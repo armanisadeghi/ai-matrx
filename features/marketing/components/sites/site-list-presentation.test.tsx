@@ -42,6 +42,7 @@ const row: SiteListRow = {
   scored_pages: 300,
   settings: {},
   slug: "example-site",
+  previous_slugs: [],
   status: "active",
   updated_at: "2026-08-29T00:00:00Z",
   updated_by: "user-1",

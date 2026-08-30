@@ -49,52 +49,84 @@ export interface ResolvedSite {
   brand_id: string | null;
 }
 
+const BRAND_SEGMENT_COLUMNS = "id, slug, name, organization_id";
+const SITE_SEGMENT_COLUMNS = "id, slug, name, domain, brand_id";
+
 export const resolveBrandParam = cache(
   async (slugOrId: string): Promise<ResolvedBrand | null> => {
     const supabase = await createClient();
-    let query = supabase
-      .schema("web")
-      .from("brand")
-      .select("id, slug, name, organization_id")
-      .is("deleted_at", null);
-    if (isUuid(slugOrId)) {
-      query = query.eq("id", slugOrId);
-    } else if (isPossibleMarketingKey(slugOrId)) {
-      query = query.eq("slug", slugOrId);
-    } else {
-      return null;
-    }
-    const { data, error } = await query.maybeSingle();
+    const base = () =>
+      supabase
+        .schema("web")
+        .from("brand")
+        .select(BRAND_SEGMENT_COLUMNS)
+        .is("deleted_at", null);
+    const isKey = !isUuid(slugOrId) && isPossibleMarketingKey(slugOrId);
+    if (!isUuid(slugOrId) && !isKey) return null;
+
+    const { data, error } = await (isUuid(slugOrId)
+      ? base().eq("id", slugOrId)
+      : base().eq("slug", slugOrId)
+    ).maybeSingle();
     if (error) {
       if (isPermissionDenied(error)) return null;
       throw error;
     }
-    return data ?? null;
+    if (data) return data;
+    if (!isKey) return null;
+
+    // ALIAS LANE: a renamed brand keeps its old keys in `previous_slugs`, so a
+    // bookmark to the old address still resolves. The caller canonicalizes
+    // (requireBrandParam 308s to marketingSeg(row)), which is what turns the
+    // alias hit into a forward to the current address.
+    const alias = await base()
+      .contains("previous_slugs", [slugOrId])
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (alias.error) {
+      if (isPermissionDenied(alias.error)) return null;
+      throw alias.error;
+    }
+    return alias.data ?? null;
   },
 );
 
 export const resolveSiteParam = cache(
   async (brandId: string, slugOrId: string): Promise<ResolvedSite | null> => {
     const supabase = await createClient();
-    let query = supabase
-      .schema("web")
-      .from("site")
-      .select("id, slug, name, domain, brand_id")
-      .eq("brand_id", brandId)
-      .is("deleted_at", null);
-    if (isUuid(slugOrId)) {
-      query = query.eq("id", slugOrId);
-    } else if (isPossibleMarketingKey(slugOrId)) {
-      query = query.eq("slug", slugOrId);
-    } else {
-      return null;
-    }
-    const { data, error } = await query.maybeSingle();
+    const base = () =>
+      supabase
+        .schema("web")
+        .from("site")
+        .select(SITE_SEGMENT_COLUMNS)
+        .eq("brand_id", brandId)
+        .is("deleted_at", null);
+    const isKey = !isUuid(slugOrId) && isPossibleMarketingKey(slugOrId);
+    if (!isUuid(slugOrId) && !isKey) return null;
+
+    const { data, error } = await (isUuid(slugOrId)
+      ? base().eq("id", slugOrId)
+      : base().eq("slug", slugOrId)
+    ).maybeSingle();
     if (error) {
       if (isPermissionDenied(error)) return null;
       throw error;
     }
-    return data ?? null;
+    if (data) return data;
+    if (!isKey) return null;
+
+    // ALIAS LANE — scoped to the brand, because site keys are unique per brand.
+    const alias = await base()
+      .contains("previous_slugs", [slugOrId])
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (alias.error) {
+      if (isPermissionDenied(alias.error)) return null;
+      throw alias.error;
+    }
+    return alias.data ?? null;
   },
 );
 

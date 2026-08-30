@@ -33,6 +33,7 @@ const site: SiteListRow = {
   root_url: "https://example.com",
   settings: {},
   slug: "example",
+  previous_slugs: [],
   status: "active",
   updated_at: "2026-08-29T00:00:00.000Z",
   updated_by: "user-1",

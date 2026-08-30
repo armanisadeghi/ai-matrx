@@ -40,6 +40,9 @@ import {
   type InvalidCrawlPattern,
 } from "@/features/marketing/crawler/crawl-defaults";
 import { extractErrorMessage } from "@/utils/errors";
+import { MarketingAddressCard } from "@/features/marketing/components/settings/MarketingAddressCard";
+import { renameSiteSlug } from "@/features/marketing/data/service";
+import { marketingSeg } from "@/features/marketing/lib/keys";
 import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
 import { CollectionStatusPanel } from "@/features/marketing/components/settings/CollectionStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
@@ -58,7 +61,7 @@ import { Textarea } from "@/components/ui/textarea";
 // crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 
 export function SiteSettingsWorkspace() {
-  const { site, sitePath, crawlActivity } = useMarketingSite();
+  const { site, sitePath, brandId, crawlActivity } = useMarketingSite();
   const router = useRouter();
   const deleteMutation = useDeleteSite();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -84,7 +87,7 @@ export function SiteSettingsWorkspace() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   // Same React Query entry the panel below renders — the surface exposes the
   // rows to agents without a second request.
-  const collectionStatus = useCollectionStatus(site, sitePath);
+  const collectionStatus = useCollectionStatus(site, brandId);
   // Agents edit this page through the SAME setters the user's typing uses.
   const writeHandlers = buildCrawlPolicyWriteHandlers({
     setCrawl,
@@ -268,6 +271,21 @@ export function SiteSettingsWorkspace() {
             </div>
           </section>
 
+          <MarketingAddressCard
+            title="Website address"
+            description="This website's address inside the brand. Renaming it never breaks an existing link."
+            addressPrefix={`${sitePath.slice(0, sitePath.lastIndexOf("/"))}/`}
+            currentKey={marketingSeg(site)}
+            previousKeys={site.previous_slugs ?? []}
+            rename={(nextKey) =>
+              renameSiteSlug(site.id, brandId, nextKey)
+            }
+            onRenamed={() => {
+              void queryClient.invalidateQueries({ queryKey: ["marketing"] });
+            }}
+            segmentSearchFrom={3}
+          />
+
           {/* 🚨 ONE RECORD, TWO RENDERS — the same `web.site.settings->'crm_fold'`
             control also renders beside the referring-domain and reputation-case
             lists, where its consequence is visible. Never two settings. */}
@@ -423,7 +441,7 @@ export function SiteSettingsWorkspace() {
             into one half-column is what pushed the old panel into stacking
             badges and sentences on top of each other. */}
           <div className="xl:col-span-2">
-            <CollectionStatusPanel site={site} sitePath={sitePath} />
+            <CollectionStatusPanel site={site} brandId={brandId} />
           </div>
 
           <SiteAnalyticsCard site={site} />
