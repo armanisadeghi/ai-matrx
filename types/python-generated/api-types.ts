@@ -7131,6 +7131,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/egnyte/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_egnyte_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goto/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_goto_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mailjet/public/status": {
         parameters: {
             query?: never;
@@ -44664,6 +44698,38 @@ export interface components {
             /** Rationale */
             rationale: string;
         };
+        /**
+         * EgnyteServiceStatus
+         * @description Safe aggregate status projection for Egnyte's fixed status page.
+         */
+        EgnyteServiceStatus: {
+            /**
+             * Kind
+             * @default egnyte_public_platform_status
+             * @constant
+             */
+            __kind?: "egnyte_public_platform_status";
+            /**
+             * Provider
+             * @default egnyte
+             * @constant
+             */
+            provider?: "egnyte";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.egnyte.com/
+             * @constant
+             */
+            status_page?: "https://status.egnyte.com/";
+        };
         /** EligibilityBlock */
         EligibilityBlock: {
             /** Code */
@@ -49283,6 +49349,43 @@ export interface components {
              * @constant
              */
             instance_page?: "https://gitea.com";
+        };
+        /**
+         * GoToStatusResult
+         * @description Safe projection of GoTo's high-level service status.
+         */
+        GoToStatusResult: {
+            /**
+             * Kind
+             * @default goto_official_service_status
+             * @constant
+             */
+            __kind?: "goto_official_service_status";
+            /**
+             * Provider
+             * @default goto
+             * @constant
+             */
+            provider?: "goto";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.goto.com
+             * @constant
+             */
+            status_url?: "https://status.goto.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** GoogleAdsCampaignMetric */
         GoogleAdsCampaignMetric: {
@@ -97519,6 +97622,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetResponseServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_egnyte_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EgnyteServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_goto_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoToStatusResult"];
                 };
             };
         };

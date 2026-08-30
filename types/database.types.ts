@@ -75232,6 +75232,7 @@ export type Database = {
           not_before: string | null
           organization_id: string
           payload: Json | null
+          priority: number
           raw_key: string | null
           seq: number
           state: string
@@ -75255,6 +75256,7 @@ export type Database = {
           not_before?: string | null
           organization_id: string
           payload?: Json | null
+          priority?: number
           raw_key?: string | null
           seq?: number
           state?: string
@@ -75278,6 +75280,7 @@ export type Database = {
           not_before?: string | null
           organization_id?: string
           payload?: Json | null
+          priority?: number
           raw_key?: string | null
           seq?: number
           state?: string
