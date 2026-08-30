@@ -214,6 +214,23 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-29** — The System jobs tab gained a second section, **Database
+  jobs (pg_cron)** — the ~12 jobs running SQL inside Postgres itself (log
+  pruning, webhook tick, partition upkeep; register:
+  `common-docs/operations/db-scheduled-jobs.md`). Same control surface via the
+  new admin-gated `GET/PATCH /scheduling/admin/db-jobs` endpoints
+  (`listDbJobs`/`patchDbJob` in `schedulerClient.ts`, hand-written wire types
+  in `schedulerApi.types.ts` until the next generated-contract sync): job,
+  schedule (with cronstrue hint), Active/Inactive, last run from
+  `cron.job_run_details`, command; row actions Enable/Disable (confirm in BOTH
+  directions — disabling stops real database maintenance) and Edit (schedule
+  string only; pg_cron accepts 5-field cron or "30 seconds", validated
+  server-side by `cron.alter_job`). Deliberately NO Run now: pg_cron has no
+  run-once primitive and several jobs are destructive purges. Manifest gained
+  `db_job_count` / `db_job_active_count` / `db_jobs_load_error`. Per Arman's
+  2026-08-29 extension of the schedules ruling ("As for the database level
+  jobs, I definitely agree that we need to have that").
+
 - **2026-08-28** — New **System jobs** tab in the Scheduling admin console
   (`/administration/automation/scheduling/system-jobs`), per Arman's ruling
   that recurring server jobs must be controllable from the admin UI. It lists

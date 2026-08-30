@@ -3,6 +3,13 @@
 // 2026-08-28 ruling: view, edit interval/config, enable/disable — the ask to
 // him is a URL where he flips the switch, and this page is that URL.
 //
+// 2026-08-29 (Arman: "we definitely agree that we need to have that"): the
+// DATABASE's own scheduled jobs — pg_cron, SQL running inside Postgres — join
+// this page as a second section with the same control surface (view, edit
+// schedule, enable/disable). No run-now there on purpose: pg_cron has no
+// run-once primitive and several jobs are destructive purges. The human
+// register for what each DB job feeds: common-docs/operations/db-scheduled-jobs.md.
+//
 // Data path: the aidream `/scheduling/admin/system-tasks` admin endpoints
 // (schedulerClient — same base URL + Supabase-JWT Bearer auth as every other
 // aidream call in this console; the server side admin-gates the routes).
@@ -52,11 +59,15 @@ import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
+  listDbJobs,
   listSystemTasks,
+  patchDbJob,
   patchSystemTask,
   runSystemTaskNow,
 } from "@/features/scheduling/service/schedulerClient";
 import type {
+  DbJobPatchRequest,
+  DbJobResponse,
   SystemTaskPatchRequest,
   SystemTaskResponse,
 } from "@/features/scheduling/service/schedulerApi.types";
@@ -119,6 +130,14 @@ export default function SystemJobsPage() {
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<SystemTaskResponse | null>(null);
 
+  // ── Database jobs (pg_cron) — the second section ──────────────────────────
+  const [dbRows, setDbRows] = useState<DbJobResponse[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  const [dbFetching, setDbFetching] = useState(false);
+  const [dbLoadError, setDbLoadError] = useState<string | null>(null);
+  const [dbBusy, setDbBusy] = useState<Set<number>>(new Set());
+  const [editingDbJob, setEditingDbJob] = useState<DbJobResponse | null>(null);
+
   useAdminSchedulingScopeSlice("system_jobs", () =>
     definedOnly({
       system_job_count: loading ? undefined : rows.length,
@@ -126,6 +145,11 @@ export default function SystemJobsPage() {
         ? undefined
         : rows.filter((r) => r.enabled).length,
       system_jobs_load_error: loadError ?? undefined,
+      db_job_count: dbLoading ? undefined : dbRows.length,
+      db_job_active_count: dbLoading
+        ? undefined
+        : dbRows.filter((r) => r.active).length,
+      db_jobs_load_error: dbLoadError ?? undefined,
     }),
   );
 
@@ -145,9 +169,24 @@ export default function SystemJobsPage() {
     }
   }, []);
 
+  const loadDb = useCallback(async () => {
+    setDbFetching(true);
+    try {
+      const res = await listDbJobs();
+      setDbRows(Array.isArray(res?.jobs) ? res.jobs : []);
+      setDbLoadError(null);
+    } catch (err) {
+      setDbLoadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDbLoading(false);
+      setDbFetching(false);
+    }
+  }, []);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadDb();
+  }, [load, loadDb]);
 
   const markBusy = (id: string, on: boolean) =>
     setBusy((prev) => {
@@ -418,10 +457,194 @@ export default function SystemJobsPage() {
     );
   };
 
+  // ── Database jobs (pg_cron) handlers + columns ────────────────────────────
+
+  const markDbBusy = (jobid: number, on: boolean) =>
+    setDbBusy((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(jobid);
+      else next.delete(jobid);
+      return next;
+    });
+
+  const applyDbPatched = (updated: DbJobResponse) =>
+    setDbRows((prev) =>
+      prev.map((r) =>
+        r.jobid === updated.jobid
+          ? // The PATCH wire does not echo last_run — keep the one we have.
+            { ...updated, last_run: r.last_run }
+          : r,
+      ),
+    );
+
+  const toggleDbActive = async (j: DbJobResponse) => {
+    if (dbBusy.has(j.jobid)) return;
+    const name = j.jobname ?? `job ${j.jobid}`;
+    // Both directions state their consequence: these are the database's own
+    // maintenance jobs — pruning, refreshes, partition provisioning.
+    const ok = await confirm({
+      title: j.active ? `Disable "${name}"?` : `Enable "${name}"?`,
+      description: j.active
+        ? `This stops real database maintenance. "${name}" (${j.schedule}) will no longer run, and whatever it maintains — pruning, refreshes, partitions — stops with it until re-enabled.`
+        : `This starts real recurring database work: "${name}" will run ${j.schedule} inside Postgres until disabled.`,
+      confirmLabel: j.active ? "Disable" : "Enable",
+    });
+    if (!ok) return;
+    markDbBusy(j.jobid, true);
+    try {
+      const updated = await patchDbJob(j.jobid, { active: !j.active });
+      applyDbPatched(updated);
+      toast.success(`${name} ${updated.active ? "enabled" : "disabled"}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markDbBusy(j.jobid, false);
+    }
+  };
+
+  const saveDbEdit = async (jobid: number, body: DbJobPatchRequest) => {
+    markDbBusy(jobid, true);
+    try {
+      const updated = await patchDbJob(jobid, body);
+      applyDbPatched(updated);
+      setEditingDbJob(null);
+      toast.success(`${updated.jobname ?? `job ${jobid}`} updated`);
+    } catch (err) {
+      // cron.alter_job's own validation error reaches the admin verbatim.
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      markDbBusy(jobid, false);
+    }
+  };
+
+  const dbColumns: MatrxColumnDef<DbJobResponse>[] = [
+    {
+      id: "jobname",
+      accessorFn: (r) => r.jobname ?? String(r.jobid),
+      header: "Job",
+      width: 240,
+      cell: (r) => (
+        <span className="font-medium truncate" title={r.jobname ?? undefined}>
+          {r.jobname ?? `job ${r.jobid}`}
+        </span>
+      ),
+    },
+    {
+      id: "schedule",
+      accessorKey: "schedule",
+      header: "Schedule",
+      width: 200,
+      cell: (r) => {
+        const hint = cronHint(r.schedule);
+        return (
+          <div className="min-w-0">
+            <span className="font-mono text-xs">{r.schedule}</span>
+            {hint && (
+              <div
+                className="text-[11px] text-muted-foreground line-clamp-1"
+                title={hint}
+              >
+                {hint}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "state",
+      header: "State",
+      accessorFn: (r) => (r.active ? "Active" : "Inactive"),
+      filter: "select",
+      width: 110,
+      cell: (r) => (
+        <Badge variant={r.active ? "secondary" : "outline"} className="text-[10px]">
+          {r.active ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      id: "last_run",
+      header: "Last run",
+      accessorFn: (r) => r.last_run?.status ?? "",
+      width: 170,
+      cell: (r) => {
+        const run = r.last_run;
+        if (!run?.status) {
+          return <span className="text-xs text-muted-foreground">Never</span>;
+        }
+        const failed = run.status === "failed";
+        const when = run.end_time ?? run.start_time;
+        return (
+          <span
+            className="flex items-center gap-1.5"
+            title={run.return_message ?? undefined}
+          >
+            <Badge
+              variant={failed ? "destructive" : "secondary"}
+              className="text-[10px]"
+            >
+              {run.status}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {when ? humanizeRelative(when) : ""}
+            </span>
+            {failed && (
+              <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      id: "command",
+      accessorKey: "command",
+      header: "Command",
+      width: 280,
+      cell: (r) => (
+        <span className="font-mono text-xs truncate block" title={r.command}>
+          {r.command}
+        </span>
+      ),
+    },
+  ];
+
+  const renderDbRowActions = (j: DbJobResponse) => {
+    const isBusy = dbBusy.has(j.jobid);
+    return (
+      <span className="flex items-center gap-1">
+        <Button
+          size="sm"
+          variant={j.active ? "outline" : "default"}
+          className="h-7 px-2 text-xs"
+          disabled={isBusy}
+          onClick={() => void toggleDbActive(j)}
+        >
+          {isBusy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Power className="h-3 w-3" />
+          )}
+          {j.active ? "Disable" : "Enable"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          disabled={isBusy}
+          onClick={() => setEditingDbJob(j)}
+        >
+          <Pencil className="h-3 w-3" />
+          Edit
+        </Button>
+      </span>
+    );
+  };
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
       <div
-        className="min-h-0 flex-1"
+        className="min-h-0 flex-1 basis-3/5"
         data-surface-value="system_job_count"
       >
         <MatrxDataTable
@@ -479,12 +702,87 @@ export default function SystemJobsPage() {
         />
       </div>
 
+      <div
+        className="min-h-0 flex-1 basis-2/5"
+        data-surface-value="db_job_count"
+      >
+        <div className="mb-1.5">
+          <h2 className="text-sm font-medium">Database jobs (pg_cron)</h2>
+          <p className="text-xs text-muted-foreground">
+            SQL scheduled inside Postgres itself — pruning, refreshes,
+            partition upkeep. Same controls; no Run now (several are
+            destructive purges, and pg_cron has no run-once).
+          </p>
+        </div>
+        <MatrxDataTable
+          urlState={{ id: "scheduling-db-jobs" }}
+          data={dbRows}
+          columns={dbColumns}
+          getRowId={(r) => String(r.jobid)}
+          isLoading={dbLoading}
+          isFetching={dbFetching}
+          pageSize={25}
+          rowActions={(r) => renderDbRowActions(r)}
+          emptyState={{
+            title: dbLoadError
+              ? "Database jobs could not be loaded"
+              : "No database jobs",
+            description:
+              dbLoadError ??
+              "The database has no pg_cron jobs registered.",
+          }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search job, command…",
+            actions: (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void loadDb()}
+                disabled={dbFetching}
+              >
+                {dbFetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            ),
+          }}
+          copy={{
+            label: "Database job",
+            listLabel: "Database jobs (this view)",
+            location: "/administration/automation/scheduling/system-jobs",
+            rowKind: "db-job",
+            listKind: "db-jobs",
+            humanRow: (r) =>
+              [
+                `Job: ${r.jobname ?? r.jobid}`,
+                `Schedule: ${r.schedule}`,
+                `State: ${r.active ? "active" : "inactive"}`,
+                `Last run: ${r.last_run?.status ?? "never"}`,
+                `Command: ${r.command}`,
+              ].join("\n"),
+            rowAttributes: (r) => ({ jobid: r.jobid, active: r.active }),
+          }}
+        />
+      </div>
+
       {editing && (
         <SystemJobEditDialog
           task={editing}
           saving={busy.has(editing.id)}
           onClose={() => setEditing(null)}
           onSave={(body) => void saveEdit(editing.id, body)}
+        />
+      )}
+
+      {editingDbJob && (
+        <DbJobEditDialog
+          job={editingDbJob}
+          saving={dbBusy.has(editingDbJob.jobid)}
+          onClose={() => setEditingDbJob(null)}
+          onSave={(body) => void saveDbEdit(editingDbJob.jobid, body)}
         />
       )}
     </div>
@@ -680,6 +978,99 @@ function SystemJobEditDialog({
               Sent as <span className="font-mono">variables_args</span> only if
               you edit this field. The current server-side args are not echoed
               on this wire, so this replaces rather than merges.
+            </p>
+          </div>
+
+          {formError && (
+            <p className="text-xs text-destructive" role="alert">
+              {formError}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── DB job edit dialog ───────────────────────────────────────────────────────
+//
+// pg_cron takes either a 5-field cron expression (UTC) or an interval string
+// like "30 seconds". cron.alter_job validates server-side and its refusal
+// reaches the admin verbatim, so the client only pre-validates the obvious.
+
+function DbJobEditDialog({
+  job,
+  saving,
+  onClose,
+  onSave,
+}: {
+  job: DbJobResponse;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (body: DbJobPatchRequest) => void;
+}) {
+  const [schedule, setSchedule] = useState(job.schedule);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const hint = cronHint(schedule);
+  const looksLikeInterval = /^\s*\d+\s+seconds?\s*$/i.test(schedule);
+
+  const submit = () => {
+    setFormError(null);
+    const next = schedule.trim();
+    if (!next) {
+      setFormError("Schedule is required.");
+      return;
+    }
+    if (next === job.schedule) {
+      onClose();
+      return;
+    }
+    onSave({ schedule: next });
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit {job.jobname ?? `job ${job.jobid}`}</DialogTitle>
+          <DialogDescription>
+            Change when this database job runs. Active/inactive lives on the
+            row.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="db-job-schedule">Schedule</Label>
+            <Input
+              id="db-job-schedule"
+              className="font-mono"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+              placeholder="0 3 * * *  or  30 seconds"
+            />
+            <p className="text-xs text-muted-foreground">
+              {hint ??
+                (looksLikeInterval
+                  ? `Every ${schedule.trim().toLowerCase()}`
+                  : "5-field cron (minute hour day-of-month month day-of-week, UTC) or an interval like “30 seconds”.")}
+            </p>
+          </div>
+
+          <div className="rounded-md bg-muted/50 p-2">
+            <p className="font-mono text-[11px] break-all text-muted-foreground">
+              {job.command}
             </p>
           </div>
 

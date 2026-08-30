@@ -295,6 +295,40 @@ export interface SystemTaskListResponse {
 export type SystemTaskPatchRequest =
   ApiComponents["schemas"]["SystemTaskPatchRequest"];
 
+// ── DB jobs (admin, pg_cron) ───────────────────────────────────────────────
+//
+// Wire types for `/scheduling/admin/db-jobs` — the database's own scheduled
+// jobs (`cron.job`, SQL running inside Postgres), on the same console per
+// Arman's 2026-08-29 extension of the schedules ruling. Hand-written mirrors
+// of aidream's DbJob* Pydantic models (aidream/api/routers/scheduling.py):
+// the generated api-types contract gains them on the next live sync, at
+// which point these become aliases.
+
+export interface DbJobLastRun {
+  status: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  return_message: string | null;
+}
+
+export interface DbJobResponse {
+  jobid: number;
+  jobname: string | null;
+  schedule: string;
+  command: string;
+  active: boolean;
+  last_run: DbJobLastRun | null;
+}
+
+export interface DbJobListResponse {
+  jobs: DbJobResponse[];
+}
+
+export interface DbJobPatchRequest {
+  schedule?: string;
+  active?: boolean;
+}
+
 // ── List query params ──────────────────────────────────────────────────────
 
 export interface ListTasksQuery {
