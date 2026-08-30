@@ -52048,6 +52048,20 @@ export type Database = {
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
         ]
       }
       definition: {
@@ -52290,14 +52304,112 @@ export type Database = {
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "treatment_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "treatment_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      context_menu_view: {
+        Row: {
+          categories_flat: Json | null
+          placement_type: string | null
+        }
+        Relationships: []
+      }
+      shortcut_key_map: {
+        Row: {
+          legacy_id: string | null
+          mandate_id: string | null
+          mandate_key: string | null
+        }
+        Insert: {
+          legacy_id?: never
+          mandate_id?: string | null
+          mandate_key?: string | null
+        }
+        Update: {
+          legacy_id?: never
+          mandate_id?: string | null
+          mandate_key?: string | null
+        }
+        Relationships: []
+      }
+      vw_shortcut: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          allow_chat: boolean | null
+          auto_run: boolean | null
+          bypass_gate_seconds: number | null
+          category_id: string | null
+          context_mappings: Json | null
+          context_overrides: Json | null
+          created_at: string | null
+          created_by: string | null
+          default_user_input: string | null
+          default_variables: Json | null
+          deleted_at: string | null
+          description: string | null
+          display_mode: string | null
+          enabled_features: Json | null
+          hide_reasoning: boolean | null
+          hide_tool_results: boolean | null
+          icon_name: string | null
+          id: string | null
+          is_active: boolean | null
+          json_extraction: Json | null
+          keyboard_shortcut: string | null
+          label: string | null
+          llm_overrides: Json | null
+          mandate_id: string | null
+          mandate_key: string | null
+          metadata: Json | null
+          organization_id: string | null
+          pre_execution_message: string | null
+          response_density: string | null
+          scope_mappings: Json | null
+          show_definition_message_content: boolean | null
+          show_definition_messages: boolean | null
+          show_pre_execution_gate: boolean | null
+          show_variable_panel: boolean | null
+          sort_order: number | null
+          surface_name: string | null
+          updated_at: string | null
+          updated_by: string | null
+          use_latest: boolean | null
+          value_mappings: Json | null
+          variables_panel_style: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      generate_shortcut_mandate_key: {
+        Args: { p_label: string; p_surface: string }
+        Returns: string
+      }
+      sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
+      shortcut_slug: { Args: { p_text: string }; Returns: string }
+      shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
+      validate_treatment_config: {
+        Args: { p_config: Json; p_tier: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
@@ -63067,12 +63179,32 @@ export type Database = {
           placement_type: string
         }[]
       }
+      agx_build_shortcut_menu_m: {
+        Args: { p_placement_types: string[] }
+        Returns: {
+          menu_data: Json
+          placement_type: string
+        }[]
+      }
       agx_contract_hash: { Args: { p_contract: Json }; Returns: string }
       agx_create_agent_from_template: {
         Args: { p_template_id: string }
         Returns: string
       }
       agx_create_shortcut: {
+        Args: {
+          p_agent_id: string
+          p_category_id: string
+          p_label: string
+          p_organization_id?: string
+          p_project_id?: string
+          p_task_id?: string
+          p_use_latest?: boolean
+          p_user_id?: string
+        }
+        Returns: string
+      }
+      agx_create_shortcut_m: {
         Args: {
           p_agent_id: string
           p_category_id: string
@@ -63094,6 +63226,10 @@ export type Database = {
         Returns: string
       }
       agx_duplicate_shortcut: {
+        Args: { p_shortcut_id: string }
+        Returns: string
+      }
+      agx_duplicate_shortcut_m: {
         Args: { p_shortcut_id: string }
         Returns: string
       }
@@ -63265,6 +63401,51 @@ export type Database = {
           variables_panel_style: string
         }[]
       }
+      agx_get_shortcuts_for_context_m: {
+        Args: { p_project_id?: string; p_task_id?: string }
+        Returns: {
+          agent_context_policies: Json
+          agent_id: string
+          agent_name: string
+          agent_variable_definitions: Json
+          agent_version_id: string
+          allow_chat: boolean
+          auto_run: boolean
+          bypass_gate_seconds: number
+          category_id: string
+          context_mappings: Json
+          context_overrides: Json
+          current_version: number
+          default_user_input: string
+          default_variables: Json
+          description: string
+          display_mode: string
+          enabled_features: Json
+          hide_reasoning: boolean
+          hide_tool_results: boolean
+          icon_name: string
+          is_behind: boolean
+          is_version: boolean
+          keyboard_shortcut: string
+          label: string
+          llm_overrides: Json
+          pre_execution_message: string
+          resolved_id: string
+          scope_mappings: Json
+          shortcut_id: string
+          shortcut_org_id: string
+          shortcut_project_id: string
+          shortcut_task_id: string
+          shortcut_user_id: string
+          show_definition_message_content: boolean
+          show_definition_messages: boolean
+          show_pre_execution_gate: boolean
+          show_variable_panel: boolean
+          sort_order: number
+          use_latest: boolean
+          variables_panel_style: string
+        }[]
+      }
       agx_get_shortcuts_initial: {
         Args: never
         Returns: {
@@ -63309,6 +63490,51 @@ export type Database = {
         }[]
       }
       agx_get_user_shortcuts: {
+        Args: never
+        Returns: {
+          agent_id: string
+          agent_name: string
+          agent_version_id: string
+          allow_chat: boolean
+          auto_run: boolean
+          bypass_gate_seconds: number
+          category_id: string
+          category_label: string
+          context_mappings: Json
+          context_overrides: Json
+          created_at: string
+          default_user_input: string
+          default_variables: Json
+          description: string
+          display_mode: string
+          enabled_features: Json
+          hide_reasoning: boolean
+          hide_tool_results: boolean
+          icon_name: string
+          id: string
+          is_active: boolean
+          keyboard_shortcut: string
+          label: string
+          llm_overrides: Json
+          organization_id: string
+          pre_execution_message: string
+          project_id: string
+          scope_mappings: Json
+          scope_name: string
+          scope_type: string
+          show_definition_message_content: boolean
+          show_definition_messages: boolean
+          show_pre_execution_gate: boolean
+          show_variable_panel: boolean
+          sort_order: number
+          task_id: string
+          updated_at: string
+          use_latest: boolean
+          user_id: string
+          variables_panel_style: string
+        }[]
+      }
+      agx_get_user_shortcuts_m: {
         Args: never
         Returns: {
           agent_id: string
@@ -63462,6 +63688,50 @@ export type Database = {
           variables_panel_style: string
         }[]
       }
+      agx_list_non_global_shortcuts_for_admin_m: {
+        Args: never
+        Returns: {
+          agent_id: string
+          agent_version_id: string
+          allow_chat: boolean
+          auto_run: boolean
+          bypass_gate_seconds: number
+          category_id: string
+          context_mappings: Json
+          context_overrides: Json
+          created_at: string
+          default_user_input: string
+          default_variables: Json
+          description: string
+          display_mode: string
+          enabled_features: Json
+          hide_reasoning: boolean
+          hide_tool_results: boolean
+          icon_name: string
+          id: string
+          is_active: boolean
+          keyboard_shortcut: string
+          label: string
+          llm_overrides: Json
+          organization_id: string
+          owner_display: string
+          owner_email: string
+          pre_execution_message: string
+          project_id: string
+          scope_mappings: Json
+          scope_type: string
+          show_definition_message_content: boolean
+          show_definition_messages: boolean
+          show_pre_execution_gate: boolean
+          show_variable_panel: boolean
+          sort_order: number
+          task_id: string
+          updated_at: string
+          use_latest: boolean
+          user_id: string
+          variables_panel_style: string
+        }[]
+      }
       agx_list_scope_counts: {
         Args: {
           p_archived?: string
@@ -63517,6 +63787,14 @@ export type Database = {
         }[]
       }
       agx_promote_shortcut_to_global: {
+        Args: {
+          p_label?: string
+          p_shortcut_id: string
+          p_target_category_id: string
+        }
+        Returns: string
+      }
+      agx_promote_shortcut_to_global_m: {
         Args: {
           p_label?: string
           p_shortcut_id: string
