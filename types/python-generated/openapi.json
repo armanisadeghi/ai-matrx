@@ -16619,6 +16619,183 @@
         }
       }
     },
+    "/lulu/price": {
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Price",
+        "description": "Live quote for a basket of printables shipped to one address.",
+        "operationId": "price_lulu_price_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrintCostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostCalculationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/shipping-options": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Shipping Options",
+        "description": "Shipping levels (with cost and delivery estimates) for one destination.",
+        "operationId": "shipping_options_lulu_shipping_options_get",
+        "parameters": [
+          {
+            "name": "country_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "title": "Country Code"
+            }
+          },
+          {
+            "name": "pod_package_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 64,
+              "title": "Pod Package Id"
+            }
+          },
+          {
+            "name": "page_count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Page Count"
+            }
+          },
+          {
+            "name": "quantity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Quantity"
+            }
+          },
+          {
+            "name": "state_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 3
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State Code"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "USD",
+                "GBP",
+                "EUR",
+                "AUD",
+                "CAD"
+              ],
+              "type": "string",
+              "default": "USD",
+              "title": "Currency"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShippingOptionsResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/catalog": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Catalog",
+        "description": "Every valid Lulu product combination, from Lulu's own spec sheet.",
+        "operationId": "catalog_lulu_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintCatalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/lemmy/public/instance": {
       "get": {
         "tags": [
@@ -17039,6 +17216,216 @@
         }
       }
     },
+    "/agorapulse/public/status": {
+      "get": {
+        "tags": [
+          "Agorapulse Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_agorapulse_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgorapulseServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mention/public/status": {
+      "get": {
+        "tags": [
+          "Mention Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mention_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentionServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/typeform/public/status": {
+      "get": {
+        "tags": [
+          "Typeform Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_typeform_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TypeformServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mailerlite/public/status": {
+      "get": {
+        "tags": [
+          "MailerLite Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mailerlite_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailerLiteServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kit/public/status": {
+      "get": {
+        "tags": [
+          "Kit Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kit_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/superhuman/public/status": {
+      "get": {
+        "tags": [
+          "Superhuman Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_superhuman_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuperhumanStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/airfocus/public/status": {
+      "get": {
+        "tags": [
+          "airfocus Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_airfocus_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirfocusStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reclaim/public/status": {
+      "get": {
+        "tags": [
+          "Reclaim Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_reclaim_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReclaimStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mural/public/status": {
+      "get": {
+        "tags": [
+          "Mural Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mural_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MuralStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productboard/public/status": {
+      "get": {
+        "tags": [
+          "Productboard Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_productboard_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductboardStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/milanote/public/status": {
       "get": {
         "tags": [
@@ -17346,6 +17733,222 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RCSBPDBPublicEntry"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hepdata/public/record": {
+      "get": {
+        "tags": [
+          "HEPData Integrations"
+        ],
+        "summary": "Public Record",
+        "operationId": "public_record_hepdata_public_record_get",
+        "parameters": [
+          {
+            "name": "inspire_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Inspire Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HEPDataPublicRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dryad/public/dataset": {
+      "get": {
+        "tags": [
+          "Dryad Integrations"
+        ],
+        "summary": "Public Dataset",
+        "operationId": "public_dataset_dryad_public_dataset_get",
+        "parameters": [
+          {
+            "name": "doi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^10\\.(?:5061|7959)/dryad\\.[a-z0-9]{5,30}$",
+              "title": "Doi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DryadPublicDataset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/open-food-facts/public/product": {
+      "get": {
+        "tags": [
+          "Open Food Facts Integrations"
+        ],
+        "summary": "Public Product",
+        "operationId": "public_product_open_food_facts_public_product_get",
+        "parameters": [
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{8,14}$",
+              "title": "Barcode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenFoodFactsPublicProduct"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data-gov-uk/public/dataset": {
+      "get": {
+        "tags": [
+          "data.gov.uk Integrations"
+        ],
+        "summary": "Public Dataset",
+        "operationId": "public_dataset_data_gov_uk_public_dataset_get",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataGovUKPublicDataset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mgnify/public/study": {
+      "get": {
+        "tags": [
+          "MGnify Integrations"
+        ],
+        "summary": "Public Study",
+        "operationId": "public_study_mgnify_public_study_get",
+        "parameters": [
+          {
+            "name": "accession",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^MGYS\\d{8}$",
+              "title": "Accession"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MGnifyPublicStudy"
                 }
               }
             }
@@ -73744,6 +74347,47 @@
         ],
         "title": "AgentVersionInfo"
       },
+      "AgorapulseServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "agorapulse_public_service_status",
+            "title": "Kind",
+            "default": "agorapulse_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "agorapulse",
+            "title": "Provider",
+            "default": "agorapulse"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.agorapulse.com/",
+            "title": "Status Page",
+            "default": "https://status.agorapulse.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AgorapulseServiceStatus",
+        "description": "Safe aggregate status projection for Agorapulse's fixed status page."
+      },
       "AgreementRollup": {
         "properties": {
           "rows": {
@@ -74417,6 +75061,56 @@
         ],
         "title": "AidreamCollectionCreateRequest",
         "description": "Same body as the standalone app, but organization_id may be omitted —\naidream resolves the caller's personal org (never NULL)."
+      },
+      "AirfocusStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "airfocus_official_service_status",
+            "title": "Kind",
+            "default": "airfocus_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "airfocus",
+            "title": "Provider",
+            "default": "airfocus"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.airfocus.com",
+            "title": "Status Url",
+            "default": "https://status.airfocus.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AirfocusStatusResult",
+        "description": "Safe projection of airfocus's high-level service status."
       },
       "AnalysisPreferencesBody": {
         "properties": {
@@ -87925,6 +88619,338 @@
         ],
         "title": "CatalogEntryResponse"
       },
+      "CatalogOption": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "label"
+        ],
+        "title": "CatalogOption",
+        "description": "One SKU component: the code that goes in a ``pod_package_id``, and its name."
+      },
+      "CatalogPrice": {
+        "properties": {
+          "base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base"
+          },
+          "per_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CatalogPrice",
+        "description": "Lulu's published list price for one currency. Decimal strings, always."
+      },
+      "CatalogProduct": {
+        "properties": {
+          "pod_package_id": {
+            "type": "string",
+            "title": "Pod Package Id"
+          },
+          "legacy_pod_package_id": {
+            "type": "string",
+            "title": "Legacy Pod Package Id"
+          },
+          "book_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Type"
+          },
+          "trim_sku": {
+            "type": "string",
+            "title": "Trim Sku"
+          },
+          "min_page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Page Count"
+          },
+          "max_page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Page Count"
+          },
+          "list_prices": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CatalogPrice"
+            },
+            "type": "object",
+            "title": "List Prices"
+          },
+          "trim_width_in": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trim Width In"
+          },
+          "trim_height_in": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trim Height In"
+          },
+          "trim_width_mm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trim Width Mm"
+          },
+          "trim_height_mm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trim Height Mm"
+          },
+          "bleed_width_in": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bleed Width In"
+          },
+          "bleed_height_in": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bleed Height In"
+          },
+          "bleed_width_mm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bleed Width Mm"
+          },
+          "bleed_height_mm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bleed Height Mm"
+          },
+          "interior_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interior Color"
+          },
+          "print_quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Print Quality"
+          },
+          "binding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Binding"
+          },
+          "paper_weight": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paper Weight"
+          },
+          "paper_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paper Type"
+          },
+          "interior_ppi": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interior Ppi"
+          },
+          "lamination": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lamination"
+          },
+          "linen_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linen Color"
+          },
+          "foil_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foil Color"
+          },
+          "print_inside_cover": {
+            "type": "boolean",
+            "title": "Print Inside Cover",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pod_package_id",
+          "legacy_pod_package_id",
+          "trim_sku"
+        ],
+        "title": "CatalogProduct",
+        "description": "One orderable combination, with its page limits and published geometry.\n\n``list_prices`` is the spec sheet's own list pricing — good enough to render\nan instant client-side estimate while typing. The authoritative number is\nalways ``POST /lulu/price``, which is what applies bulk tiers, tax, shipping\nand fees."
+      },
+      "CatalogRowCounts": {
+        "properties": {
+          "products": {
+            "type": "integer",
+            "title": "Products"
+          },
+          "trims": {
+            "type": "integer",
+            "title": "Trims"
+          },
+          "unknown_trim_skus": {
+            "type": "integer",
+            "title": "Unknown Trim Skus",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "products",
+          "trims"
+        ],
+        "title": "CatalogRowCounts",
+        "description": "What the last refresh actually ingested."
+      },
       "CatalogSuggestion": {
         "properties": {
           "kind": {
@@ -88030,6 +89056,93 @@
         ],
         "title": "CatalogTree",
         "description": "Faceted catalog view: distinct categories + tag counts + the agents."
+      },
+      "CatalogTrim": {
+        "properties": {
+          "trim_sku": {
+            "type": "string",
+            "title": "Trim Sku"
+          },
+          "book_type": {
+            "type": "string",
+            "title": "Book Type"
+          },
+          "size_class": {
+            "type": "string",
+            "title": "Size Class"
+          },
+          "inches_label": {
+            "type": "string",
+            "title": "Inches Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trim_sku",
+          "book_type",
+          "size_class",
+          "inches_label"
+        ],
+        "title": "CatalogTrim",
+        "description": "A trim size: the SKU segment plus how Lulu names and classes it."
+      },
+      "CatalogVocabularies": {
+        "properties": {
+          "interior_colors": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Interior Colors"
+          },
+          "print_qualities": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Print Qualities"
+          },
+          "bindings": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Bindings"
+          },
+          "papers": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Papers"
+          },
+          "cover_finishes": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Cover Finishes"
+          },
+          "linen_colors": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Linen Colors"
+          },
+          "foil_colors": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogOption"
+            },
+            "type": "array",
+            "title": "Foil Colors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CatalogVocabularies",
+        "description": "The option lists a calculator renders, keyed by SKU component."
       },
       "CategoryCreate": {
         "properties": {
@@ -101051,6 +102164,114 @@
         ],
         "title": "CostBreakdownItem"
       },
+      "CostCalculationResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_print_cost_calculation",
+            "title": "Kind",
+            "default": "lulu_print_cost_calculation"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "line_item_costs": {
+            "items": {
+              "$ref": "#/components/schemas/PrintLineItemCost"
+            },
+            "type": "array",
+            "title": "Line Item Costs"
+          },
+          "shipping_cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintCostGroup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fulfillment_cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintCostGroup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fees": {
+            "items": {
+              "$ref": "#/components/schemas/PrintCostFee"
+            },
+            "type": "array",
+            "title": "Fees"
+          },
+          "total_cost_excl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Excl Tax"
+          },
+          "total_cost_incl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Incl Tax"
+          },
+          "total_discount_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Discount Amount"
+          },
+          "total_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tax"
+          }
+        },
+        "type": "object",
+        "title": "CostCalculationResult",
+        "description": "The quote we hand back to a calculator surface."
+      },
       "CourseraPublicCourse": {
         "properties": {
           "__kind": {
@@ -103970,6 +105191,84 @@
           "operations"
         ],
         "title": "DataForSeoOperationsResponse"
+      },
+      "DataGovUKPublicDataset": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "data_gov_uk_public_dataset",
+            "title": "Kind",
+            "default": "data_gov_uk_public_dataset"
+          },
+          "provider": {
+            "type": "string",
+            "const": "data_gov_uk",
+            "title": "Provider",
+            "default": "data_gov_uk"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "dataset_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "title": "Dataset Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "title": "Name"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Publisher"
+          },
+          "metadata_modified": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Metadata Modified"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Tags"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "name",
+          "canonical_url",
+          "title",
+          "publisher",
+          "metadata_modified",
+          "tags"
+        ],
+        "title": "DataGovUKPublicDataset",
+        "description": "Safe factual identity projection of one active public dataset."
       },
       "DataInputPart": {
         "properties": {
@@ -111532,6 +112831,106 @@
           "report"
         ],
         "title": "DryRunResponse"
+      },
+      "DryadPublicDataset": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dryad_public_dataset",
+            "title": "Kind",
+            "default": "dryad_public_dataset"
+          },
+          "provider": {
+            "type": "string",
+            "const": "dryad",
+            "title": "Provider",
+            "default": "dryad"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "doi": {
+            "type": "string",
+            "pattern": "^10\\.(?:5061|7959)/dryad\\.[a-z0-9]{5,30}$",
+            "title": "Doi"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Canonical Url"
+          },
+          "landing_page": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Landing Page"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Keywords"
+          },
+          "field_of_science": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Field Of Science"
+          },
+          "publication_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Publication Date"
+          },
+          "version_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Version Number"
+          },
+          "visibility": {
+            "type": "string",
+            "const": "public",
+            "title": "Visibility",
+            "default": "public"
+          },
+          "license_url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "License Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "doi",
+          "canonical_url",
+          "landing_page",
+          "title",
+          "keywords",
+          "field_of_science",
+          "publication_date",
+          "version_number",
+          "license_url"
+        ],
+        "title": "DryadPublicDataset",
+        "description": "Safe factual projection of one published public Dryad dataset."
       },
       "DumpResource": {
         "properties": {
@@ -124864,6 +126263,109 @@
         "type": "object",
         "title": "GscSearchPerformanceSyncBody"
       },
+      "HEPDataPublicRecord": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hepdata_public_record",
+            "title": "Kind",
+            "default": "hepdata_public_record"
+          },
+          "provider": {
+            "type": "string",
+            "const": "hepdata",
+            "title": "Provider",
+            "default": "hepdata"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "inspire_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Inspire Id"
+          },
+          "hepdata_record_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Hepdata Record Id"
+          },
+          "record_version": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Record Version"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "collaborations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Collaborations"
+          },
+          "journal_doi": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Journal Doi"
+          },
+          "hepdata_doi": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Hepdata Doi"
+          },
+          "publication_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Publication Date"
+          },
+          "subject_areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Subject Areas"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "inspire_id",
+          "hepdata_record_id",
+          "record_version",
+          "canonical_url",
+          "title",
+          "collaborations",
+          "journal_doi",
+          "hepdata_doi",
+          "publication_date",
+          "subject_areas"
+        ],
+        "title": "HEPDataPublicRecord",
+        "description": "Safe factual projection of one finished public HEPData record."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -133029,6 +134531,47 @@
         "title": "KindSurfaceDescriptor",
         "description": "One kind_surface row — the detection list (fence_lang / xml_tag /\njson_root_key / tool_name token → this kind)."
       },
+      "KitServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kit_public_service_status",
+            "title": "Kind",
+            "default": "kit_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "kit",
+            "title": "Provider",
+            "default": "kit"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.kit.com/",
+            "title": "Status Page",
+            "default": "https://status.kit.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "KitServiceStatus",
+        "description": "Safe aggregate status projection for Kit's fixed status page."
+      },
       "KitsuPublicAnime": {
         "properties": {
           "__kind": {
@@ -138494,6 +140037,126 @@
         "title": "LucidStatusResult",
         "description": "Safe projection of Lucid Software's high-level service status."
       },
+      "MGnifyPublicStudy": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mgnify_public_study",
+            "title": "Kind",
+            "default": "mgnify_public_study"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mgnify",
+            "title": "Provider",
+            "default": "mgnify"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "accession": {
+            "type": "string",
+            "pattern": "^MGYS\\d{8}$",
+            "title": "Accession"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "ena_accessions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Ena Accessions"
+          },
+          "primary_ena_accession": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Primary Ena Accession"
+          },
+          "biome_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Biome Name"
+          },
+          "biome_lineage": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Biome Lineage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "accession",
+          "canonical_url",
+          "title",
+          "ena_accessions",
+          "primary_ena_accession",
+          "biome_name",
+          "biome_lineage"
+        ],
+        "title": "MGnifyPublicStudy",
+        "description": "Safe factual projection of one public MGnify study."
+      },
+      "MailerLiteServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mailerlite_public_service_status",
+            "title": "Kind",
+            "default": "mailerlite_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mailerlite",
+            "title": "Provider",
+            "default": "mailerlite"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mailerlite.com/",
+            "title": "Status Page",
+            "default": "https://status.mailerlite.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MailerLiteServiceStatus",
+        "description": "Safe aggregate status projection for MailerLite's fixed status page."
+      },
       "MandateBindingDeleteRequest": {
         "properties": {
           "principal_type": {
@@ -142132,6 +143795,47 @@
         ],
         "title": "MemoryCostSummary"
       },
+      "MentionServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mention_public_service_status",
+            "title": "Kind",
+            "default": "mention_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mention",
+            "title": "Provider",
+            "default": "mention"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mention.com/",
+            "title": "Status Page",
+            "default": "https://status.mention.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MentionServiceStatus",
+        "description": "Safe aggregate status projection for Mention's fixed status page."
+      },
       "MentionView": {
         "properties": {
           "id": {
@@ -144041,6 +145745,56 @@
         },
         "type": "object",
         "title": "MoveArgs"
+      },
+      "MuralStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mural_official_service_status",
+            "title": "Kind",
+            "default": "mural_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mural",
+            "title": "Provider",
+            "default": "mural"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.mural.co",
+            "title": "Status Url",
+            "default": "https://status.mural.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MuralStatusResult",
+        "description": "Safe projection of Mural's high-level service status."
       },
       "MusicBrainzPublicArtist": {
         "properties": {
@@ -147794,6 +149548,75 @@
         ],
         "title": "OpenEdxDemoCourseResult",
         "description": "Bounded public metadata for the official sandbox demo course."
+      },
+      "OpenFoodFactsPublicProduct": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "open_food_facts_public_product",
+            "title": "Kind",
+            "default": "open_food_facts_public_product"
+          },
+          "provider": {
+            "type": "string",
+            "const": "open_food_facts",
+            "title": "Provider",
+            "default": "open_food_facts"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "barcode": {
+            "type": "string",
+            "pattern": "^\\d{8,14}$",
+            "title": "Barcode"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Canonical Url"
+          },
+          "product_name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Product Name"
+          },
+          "brands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Brands"
+          },
+          "category_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Category Tags"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "barcode",
+          "canonical_url",
+          "product_name",
+          "brands",
+          "category_tags"
+        ],
+        "title": "OpenFoodFactsPublicProduct",
+        "description": "Safe factual identity projection of one public food product."
       },
       "OpenLibraryPublicWork": {
         "properties": {
@@ -158746,6 +160569,547 @@
         "title": "PrincipalIn",
         "description": "The owning scope a call operates on. ``user`` == the authenticated\nactor, always."
       },
+      "PrintCatalog": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_print_catalog",
+            "title": "Kind",
+            "default": "lulu_print_catalog"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "title": "Retrieved At"
+          },
+          "refresh_script": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Script"
+          },
+          "sheet_last_update": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sheet Last Update"
+          },
+          "row_counts": {
+            "$ref": "#/components/schemas/CatalogRowCounts"
+          },
+          "trims": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogTrim"
+            },
+            "type": "array",
+            "title": "Trims"
+          },
+          "vocabularies": {
+            "$ref": "#/components/schemas/CatalogVocabularies"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogProduct"
+            },
+            "type": "array",
+            "title": "Products"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "retrieved_at",
+          "row_counts"
+        ],
+        "title": "PrintCatalog",
+        "description": "The whole constraint graph, stamped with where and when it came from."
+      },
+      "PrintCostDiscount": {
+        "properties": {
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "description"
+        ],
+        "title": "PrintCostDiscount",
+        "description": "A bulk-tier (or other) discount Lulu applied to a line."
+      },
+      "PrintCostFee": {
+        "properties": {
+          "fee_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Type"
+          },
+          "sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "tax_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate"
+          },
+          "total_cost_excl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Excl Tax"
+          },
+          "total_cost_incl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Incl Tax"
+          },
+          "total_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tax"
+          }
+        },
+        "type": "object",
+        "title": "PrintCostFee",
+        "description": "A named fee line (``HANDLING_FEE``, ``FULFILLMENT_FEE``, …)."
+      },
+      "PrintCostGroup": {
+        "properties": {
+          "total_cost_excl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Excl Tax"
+          },
+          "total_cost_incl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Incl Tax"
+          },
+          "total_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tax"
+          },
+          "tax_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate"
+          }
+        },
+        "type": "object",
+        "title": "PrintCostGroup",
+        "description": "A cost bucket: shipping & handling, or the fulfillment fee."
+      },
+      "PrintCostRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "line_items": {
+            "items": {
+              "$ref": "#/components/schemas/PrintLineItem"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Line Items"
+          },
+          "shipping_address": {
+            "$ref": "#/components/schemas/PrintShippingAddress"
+          },
+          "shipping_option": {
+            "type": "string",
+            "enum": [
+              "MAIL",
+              "PRIORITY_MAIL",
+              "GROUND_HD",
+              "GROUND_BUS",
+              "GROUND",
+              "EXPEDITED",
+              "EXPRESS"
+            ],
+            "title": "Shipping Option"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "line_items",
+          "shipping_address",
+          "shipping_option"
+        ],
+        "title": "PrintCostRequest",
+        "description": "Body of ``POST /lulu/price`` — a live quote, nothing is ordered."
+      },
+      "PrintLineItem": {
+        "properties": {
+          "pod_package_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Pod Package Id"
+          },
+          "page_count": {
+            "type": "integer",
+            "maximum": 5000,
+            "minimum": 1,
+            "title": "Page Count"
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pod_package_id",
+          "page_count",
+          "quantity"
+        ],
+        "title": "PrintLineItem",
+        "description": "One printable in a quote: which SKU, how many pages, how many copies."
+      },
+      "PrintLineItemCost": {
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "cost_excl_discounts": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Excl Discounts"
+          },
+          "unit_tier_cost": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Tier Cost"
+          },
+          "tax_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate"
+          },
+          "discounts": {
+            "items": {
+              "$ref": "#/components/schemas/PrintCostDiscount"
+            },
+            "type": "array",
+            "title": "Discounts"
+          },
+          "total_cost_excl_discounts": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Excl Discounts"
+          },
+          "total_cost_excl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Excl Tax"
+          },
+          "total_cost_incl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Incl Tax"
+          },
+          "total_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tax"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantity"
+        ],
+        "title": "PrintLineItemCost",
+        "description": "Lulu's per-line cost breakdown. All money is a decimal string."
+      },
+      "PrintShippingAddress": {
+        "properties": {
+          "street1": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Street1"
+          },
+          "street2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street2"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "City"
+          },
+          "country_code": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Code"
+          },
+          "postcode": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Postcode"
+          },
+          "phone_number": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Phone Number"
+          },
+          "state_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "is_business": {
+            "type": "boolean",
+            "title": "Is Business",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "street1",
+          "city",
+          "country_code",
+          "postcode",
+          "phone_number"
+        ],
+        "title": "PrintShippingAddress",
+        "description": "Lulu requires a real address to compute tax and shipping."
+      },
       "PriorRelationship": {
         "properties": {
           "party_id": {
@@ -159388,6 +161752,56 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ProducerYieldTotals"
+      },
+      "ProductboardStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "productboard_official_service_status",
+            "title": "Kind",
+            "default": "productboard_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "productboard",
+            "title": "Provider",
+            "default": "productboard"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.productboard.com",
+            "title": "Status Url",
+            "default": "https://status.productboard.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ProductboardStatusResult",
+        "description": "Safe projection of Productboard's high-level service status."
       },
       "ProfileView": {
         "properties": {
@@ -164741,6 +167155,56 @@
           "executions"
         ],
         "title": "RecentExecutionsResponse"
+      },
+      "ReclaimStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "reclaim_ai_official_service_status",
+            "title": "Kind",
+            "default": "reclaim_ai_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "reclaim_ai",
+            "title": "Provider",
+            "default": "reclaim_ai"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.reclaim.ai",
+            "title": "Status Url",
+            "default": "https://status.reclaim.ai"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ReclaimStatusResult",
+        "description": "Safe projection of Reclaim.ai's high-level service status."
       },
       "RecomputeRequest": {
         "properties": {
@@ -179966,6 +182430,200 @@
         ],
         "title": "ShellSiteIssue"
       },
+      "ShippingOption": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "cost_excl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Excl Tax"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "traceable": {
+            "type": "boolean",
+            "title": "Traceable",
+            "default": false
+          },
+          "postbox_ok": {
+            "type": "boolean",
+            "title": "Postbox Ok",
+            "default": false
+          },
+          "home_only": {
+            "type": "boolean",
+            "title": "Home Only",
+            "default": false
+          },
+          "business_only": {
+            "type": "boolean",
+            "title": "Business Only",
+            "default": false
+          },
+          "transit_time": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transit Time"
+          },
+          "total_days_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Days Min"
+          },
+          "total_days_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Days Max"
+          },
+          "min_dispatch_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Dispatch Date"
+          },
+          "max_dispatch_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Dispatch Date"
+          },
+          "min_delivery_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Delivery Date"
+          },
+          "max_delivery_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Delivery Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "level"
+        ],
+        "title": "ShippingOption",
+        "description": "One shipping level Lulu will actually ship this order with."
+      },
+      "ShippingOptionsResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_shipping_options",
+            "title": "Kind",
+            "default": "lulu_shipping_options"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "country_code": {
+            "type": "string",
+            "title": "Country Code"
+          },
+          "state_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Code"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "USD",
+              "GBP",
+              "EUR",
+              "AUD",
+              "CAD"
+            ],
+            "title": "Currency",
+            "default": "USD"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/ShippingOption"
+            },
+            "type": "array",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "country_code"
+        ],
+        "title": "ShippingOptionsResult",
+        "description": "The shipping dropdown's contents for one destination."
+      },
       "ShortcutStatusResult": {
         "properties": {
           "__kind": {
@@ -186438,6 +189096,56 @@
         ],
         "title": "SupabaseAuthWebhookUser",
         "description": "Subset of the Supabase ``UserRecord`` payload we actually consume."
+      },
+      "SuperhumanStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "superhuman_mail_official_service_status",
+            "title": "Kind",
+            "default": "superhuman_mail_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "superhuman_mail",
+            "title": "Provider",
+            "default": "superhuman_mail"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.superhuman.com",
+            "title": "Status Url",
+            "default": "https://status.superhuman.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SuperhumanStatusResult",
+        "description": "Safe projection of Superhuman Mail's high-level service status."
       },
       "SuppressionRuleInfo": {
         "properties": {
@@ -194962,6 +197670,47 @@
           "text"
         ],
         "title": "TypeTextCommand"
+      },
+      "TypeformServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "typeform_public_service_status",
+            "title": "Kind",
+            "default": "typeform_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "typeform",
+            "title": "Provider",
+            "default": "typeform"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.typeform.com/",
+            "title": "Status Page",
+            "default": "https://status.typeform.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TypeformServiceStatus",
+        "description": "Safe aggregate status projection for Typeform's fixed status page."
       },
       "UnarchiveWorkflowResponse": {
         "properties": {

@@ -6489,6 +6489,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lulu/price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Price
+         * @description Live quote for a basket of printables shipped to one address.
+         */
+        post: operations["price_lulu_price_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/shipping-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shipping Options
+         * @description Shipping levels (with cost and delivery estimates) for one destination.
+         */
+        get: operations["shipping_options_lulu_shipping_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalog
+         * @description Every valid Lulu product combination, from Lulu's own spec sheet.
+         */
+        get: operations["catalog_lulu_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lemmy/public/instance": {
         parameters: {
             query?: never;
@@ -6829,6 +6889,176 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agorapulse/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_agorapulse_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mention/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mention_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/typeform/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_typeform_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mailerlite/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mailerlite_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kit/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kit_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/superhuman/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_superhuman_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/airfocus/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_airfocus_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reclaim/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_reclaim_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mural/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mural_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/productboard/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_productboard_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/milanote/public/status": {
         parameters: {
             query?: never;
@@ -6974,6 +7204,91 @@ export interface paths {
         };
         /** Public Entry */
         get: operations["public_entry_rcsb_pdb_public_entry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hepdata/public/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Record */
+        get: operations["public_record_hepdata_public_record_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dryad/public/dataset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Dataset */
+        get: operations["public_dataset_dryad_public_dataset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/open-food-facts/public/product": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Product */
+        get: operations["public_product_open_food_facts_public_product_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/data-gov-uk/public/dataset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Dataset */
+        get: operations["public_dataset_data_gov_uk_public_dataset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mgnify/public/study": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Study */
+        get: operations["public_study_mgnify_public_study_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -28498,6 +28813,38 @@ export interface components {
             changed_at?: string | null;
         };
         /**
+         * AgorapulseServiceStatus
+         * @description Safe aggregate status projection for Agorapulse's fixed status page.
+         */
+        AgorapulseServiceStatus: {
+            /**
+             * Kind
+             * @default agorapulse_public_service_status
+             * @constant
+             */
+            __kind?: "agorapulse_public_service_status";
+            /**
+             * Provider
+             * @default agorapulse
+             * @constant
+             */
+            provider?: "agorapulse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.agorapulse.com/
+             * @constant
+             */
+            status_page?: "https://status.agorapulse.com/";
+        };
+        /**
          * AgreementRollup
          * @description Per-judge / per-class agreement — the queryable accuracy record.
          */
@@ -28769,6 +29116,43 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /**
+         * AirfocusStatusResult
+         * @description Safe projection of airfocus's high-level service status.
+         */
+        AirfocusStatusResult: {
+            /**
+             * Kind
+             * @default airfocus_official_service_status
+             * @constant
+             */
+            __kind?: "airfocus_official_service_status";
+            /**
+             * Provider
+             * @default airfocus
+             * @constant
+             */
+            provider?: "airfocus";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.airfocus.com
+             * @constant
+             */
+            status_url?: "https://status.airfocus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
@@ -34600,6 +34984,107 @@ export interface components {
             updated_at: string;
         };
         /**
+         * CatalogOption
+         * @description One SKU component: the code that goes in a ``pod_package_id``, and its name.
+         */
+        CatalogOption: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * CatalogPrice
+         * @description Lulu's published list price for one currency. Decimal strings, always.
+         */
+        CatalogPrice: {
+            /** Base */
+            base?: string | null;
+            /** Per Page */
+            per_page?: string | null;
+        };
+        /**
+         * CatalogProduct
+         * @description One orderable combination, with its page limits and published geometry.
+         *
+         *     ``list_prices`` is the spec sheet's own list pricing — good enough to render
+         *     an instant client-side estimate while typing. The authoritative number is
+         *     always ``POST /lulu/price``, which is what applies bulk tiers, tax, shipping
+         *     and fees.
+         */
+        CatalogProduct: {
+            /** Pod Package Id */
+            pod_package_id: string;
+            /** Legacy Pod Package Id */
+            legacy_pod_package_id: string;
+            /** Book Type */
+            book_type?: string | null;
+            /** Trim Sku */
+            trim_sku: string;
+            /** Min Page Count */
+            min_page_count?: number | null;
+            /** Max Page Count */
+            max_page_count?: number | null;
+            /** List Prices */
+            list_prices?: {
+                [key: string]: components["schemas"]["CatalogPrice"];
+            };
+            /** Trim Width In */
+            trim_width_in?: string | null;
+            /** Trim Height In */
+            trim_height_in?: string | null;
+            /** Trim Width Mm */
+            trim_width_mm?: string | null;
+            /** Trim Height Mm */
+            trim_height_mm?: string | null;
+            /** Bleed Width In */
+            bleed_width_in?: string | null;
+            /** Bleed Height In */
+            bleed_height_in?: string | null;
+            /** Bleed Width Mm */
+            bleed_width_mm?: string | null;
+            /** Bleed Height Mm */
+            bleed_height_mm?: string | null;
+            /** Interior Color */
+            interior_color?: string | null;
+            /** Print Quality */
+            print_quality?: string | null;
+            /** Binding */
+            binding?: string | null;
+            /** Paper Weight */
+            paper_weight?: number | null;
+            /** Paper Type */
+            paper_type?: string | null;
+            /** Interior Ppi */
+            interior_ppi?: number | null;
+            /** Lamination */
+            lamination?: string | null;
+            /** Linen Color */
+            linen_color?: string | null;
+            /** Foil Color */
+            foil_color?: string | null;
+            /**
+             * Print Inside Cover
+             * @default false
+             */
+            print_inside_cover?: boolean;
+        };
+        /**
+         * CatalogRowCounts
+         * @description What the last refresh actually ingested.
+         */
+        CatalogRowCounts: {
+            /** Products */
+            products: number;
+            /** Trims */
+            trims: number;
+            /**
+             * Unknown Trim Skus
+             * @default 0
+             */
+            unknown_trim_skus?: number;
+        };
+        /**
          * CatalogSuggestion
          * @description A best-guess catalog entry. Either the payload validates against its
          *     kind schema, or `notes` explains exactly what is missing.
@@ -34639,6 +35124,40 @@ export interface components {
             };
             /** Agents */
             agents?: components["schemas"]["AgentSummary"][];
+        };
+        /**
+         * CatalogTrim
+         * @description A trim size: the SKU segment plus how Lulu names and classes it.
+         */
+        CatalogTrim: {
+            /** Trim Sku */
+            trim_sku: string;
+            /** Book Type */
+            book_type: string;
+            /** Size Class */
+            size_class: string;
+            /** Inches Label */
+            inches_label: string;
+        };
+        /**
+         * CatalogVocabularies
+         * @description The option lists a calculator renders, keyed by SKU component.
+         */
+        CatalogVocabularies: {
+            /** Interior Colors */
+            interior_colors?: components["schemas"]["CatalogOption"][];
+            /** Print Qualities */
+            print_qualities?: components["schemas"]["CatalogOption"][];
+            /** Bindings */
+            bindings?: components["schemas"]["CatalogOption"][];
+            /** Papers */
+            papers?: components["schemas"]["CatalogOption"][];
+            /** Cover Finishes */
+            cover_finishes?: components["schemas"]["CatalogOption"][];
+            /** Linen Colors */
+            linen_colors?: components["schemas"]["CatalogOption"][];
+            /** Foil Colors */
+            foil_colors?: components["schemas"]["CatalogOption"][];
         };
         /**
          * CategoryCreate
@@ -39308,6 +39827,40 @@ export interface components {
             estimated_cost_usd?: number;
         };
         /**
+         * CostCalculationResult
+         * @description The quote we hand back to a calculator surface.
+         */
+        CostCalculationResult: {
+            /**
+             * Kind
+             * @default lulu_print_cost_calculation
+             * @constant
+             */
+            __kind?: "lulu_print_cost_calculation";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Currency */
+            currency?: string | null;
+            /** Line Item Costs */
+            line_item_costs?: components["schemas"]["PrintLineItemCost"][];
+            shipping_cost?: components["schemas"]["PrintCostGroup"] | null;
+            fulfillment_cost?: components["schemas"]["PrintCostGroup"] | null;
+            /** Fees */
+            fees?: components["schemas"]["PrintCostFee"][];
+            /** Total Cost Excl Tax */
+            total_cost_excl_tax?: string | null;
+            /** Total Cost Incl Tax */
+            total_cost_incl_tax?: string | null;
+            /** Total Discount Amount */
+            total_discount_amount?: string | null;
+            /** Total Tax */
+            total_tax?: string | null;
+        };
+        /**
          * CourseraPublicCourse
          * @description Safe bounded projection of one public Coursera course.
          */
@@ -40518,6 +41071,44 @@ export interface components {
         DataForSeoOperationsResponse: {
             /** Operations */
             operations: components["schemas"]["DataForSeoOperationOut"][];
+        };
+        /**
+         * DataGovUKPublicDataset
+         * @description Safe factual identity projection of one active public dataset.
+         */
+        DataGovUKPublicDataset: {
+            /**
+             * Kind
+             * @default data_gov_uk_public_dataset
+             * @constant
+             */
+            __kind?: "data_gov_uk_public_dataset";
+            /**
+             * Provider
+             * @default data_gov_uk
+             * @constant
+             */
+            provider?: "data_gov_uk";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Dataset Id */
+            dataset_id: string;
+            /** Name */
+            name: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Publisher */
+            publisher: string;
+            /** Metadata Modified */
+            metadata_modified: string;
+            /** Tags */
+            tags: string[];
         };
         /** DataInputPart */
         DataInputPart: {
@@ -43389,6 +43980,66 @@ export interface components {
             samples_used?: {
                 [key: string]: "declared_sample" | "last_test_output" | "last_live_output";
             };
+        };
+        /**
+         * DryadPublicDataset
+         * @description Safe factual projection of one published public Dryad dataset.
+         */
+        DryadPublicDataset: {
+            /**
+             * Kind
+             * @default dryad_public_dataset
+             * @constant
+             */
+            __kind?: "dryad_public_dataset";
+            /**
+             * Provider
+             * @default dryad
+             * @constant
+             */
+            provider?: "dryad";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Doi */
+            doi: string;
+            /**
+             * Canonical Url
+             * Format: uri
+             */
+            canonical_url: string;
+            /**
+             * Landing Page
+             * Format: uri
+             */
+            landing_page: string;
+            /** Title */
+            title: string;
+            /** Keywords */
+            keywords: string[];
+            /** Field Of Science */
+            field_of_science: string;
+            /**
+             * Publication Date
+             * Format: date
+             */
+            publication_date: string;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Visibility
+             * @default public
+             * @constant
+             */
+            visibility?: "public";
+            /**
+             * License Url
+             * Format: uri
+             */
+            license_url: string;
         };
         /**
          * DumpResource
@@ -48703,6 +49354,50 @@ export interface components {
              */
             mode?: "incremental" | "backfill";
         };
+        /**
+         * HEPDataPublicRecord
+         * @description Safe factual projection of one finished public HEPData record.
+         */
+        HEPDataPublicRecord: {
+            /**
+             * Kind
+             * @default hepdata_public_record
+             * @constant
+             */
+            __kind?: "hepdata_public_record";
+            /**
+             * Provider
+             * @default hepdata
+             * @constant
+             */
+            provider?: "hepdata";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Inspire Id */
+            inspire_id: number;
+            /** Hepdata Record Id */
+            hepdata_record_id: number;
+            /** Record Version */
+            record_version: number;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Collaborations */
+            collaborations: string[];
+            /** Journal Doi */
+            journal_doi: string;
+            /** Hepdata Doi */
+            hepdata_doi: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Subject Areas */
+            subject_areas: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -52231,6 +52926,38 @@ export interface components {
             is_active: boolean;
         };
         /**
+         * KitServiceStatus
+         * @description Safe aggregate status projection for Kit's fixed status page.
+         */
+        KitServiceStatus: {
+            /**
+             * Kind
+             * @default kit_public_service_status
+             * @constant
+             */
+            __kind?: "kit_public_service_status";
+            /**
+             * Provider
+             * @default kit
+             * @constant
+             */
+            provider?: "kit";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.kit.com/
+             * @constant
+             */
+            status_page?: "https://status.kit.com/";
+        };
+        /**
          * KitsuPublicAnime
          * @description Safe factual projection of one public Kitsu anime resource.
          */
@@ -53997,6 +54724,76 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * MGnifyPublicStudy
+         * @description Safe factual projection of one public MGnify study.
+         */
+        MGnifyPublicStudy: {
+            /**
+             * Kind
+             * @default mgnify_public_study
+             * @constant
+             */
+            __kind?: "mgnify_public_study";
+            /**
+             * Provider
+             * @default mgnify
+             * @constant
+             */
+            provider?: "mgnify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Accession */
+            accession: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Ena Accessions */
+            ena_accessions: string[];
+            /** Primary Ena Accession */
+            primary_ena_accession: string;
+            /** Biome Name */
+            biome_name: string;
+            /** Biome Lineage */
+            biome_lineage: string;
+        };
+        /**
+         * MailerLiteServiceStatus
+         * @description Safe aggregate status projection for MailerLite's fixed status page.
+         */
+        MailerLiteServiceStatus: {
+            /**
+             * Kind
+             * @default mailerlite_public_service_status
+             * @constant
+             */
+            __kind?: "mailerlite_public_service_status";
+            /**
+             * Provider
+             * @default mailerlite
+             * @constant
+             */
+            provider?: "mailerlite";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.mailerlite.com/
+             * @constant
+             */
+            status_page?: "https://status.mailerlite.com/";
+        };
         /** MandateBindingDeleteRequest */
         MandateBindingDeleteRequest: {
             /**
@@ -55547,6 +56344,38 @@ export interface components {
                 [key: string]: components["schemas"]["MemoryCostByEventType"];
             };
         };
+        /**
+         * MentionServiceStatus
+         * @description Safe aggregate status projection for Mention's fixed status page.
+         */
+        MentionServiceStatus: {
+            /**
+             * Kind
+             * @default mention_public_service_status
+             * @constant
+             */
+            __kind?: "mention_public_service_status";
+            /**
+             * Provider
+             * @default mention
+             * @constant
+             */
+            provider?: "mention";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.mention.com/
+             * @constant
+             */
+            status_page?: "https://status.mention.com/";
+        };
         /** MentionView */
         MentionView: {
             /** Id */
@@ -56362,6 +57191,43 @@ export interface components {
             new_parent_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /**
+         * MuralStatusResult
+         * @description Safe projection of Mural's high-level service status.
+         */
+        MuralStatusResult: {
+            /**
+             * Kind
+             * @default mural_official_service_status
+             * @constant
+             */
+            __kind?: "mural_official_service_status";
+            /**
+             * Provider
+             * @default mural
+             * @constant
+             */
+            provider?: "mural";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.mural.co
+             * @constant
+             */
+            status_url?: "https://status.mural.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * MusicBrainzPublicArtist
@@ -58075,6 +58941,43 @@ export interface components {
             invitation_only: boolean;
             /** Short Description */
             short_description: string;
+        };
+        /**
+         * OpenFoodFactsPublicProduct
+         * @description Safe factual identity projection of one public food product.
+         */
+        OpenFoodFactsPublicProduct: {
+            /**
+             * Kind
+             * @default open_food_facts_public_product
+             * @constant
+             */
+            __kind?: "open_food_facts_public_product";
+            /**
+             * Provider
+             * @default open_food_facts
+             * @constant
+             */
+            provider?: "open_food_facts";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Barcode */
+            barcode: string;
+            /**
+             * Canonical Url
+             * Format: uri
+             */
+            canonical_url: string;
+            /** Product Name */
+            product_name: string;
+            /** Brands */
+            brands: string[];
+            /** Category Tags */
+            category_tags: string[];
         };
         /**
          * OpenLibraryPublicWork
@@ -62805,6 +63708,178 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * PrintCatalog
+         * @description The whole constraint graph, stamped with where and when it came from.
+         */
+        PrintCatalog: {
+            /**
+             * Kind
+             * @default lulu_print_catalog
+             * @constant
+             */
+            __kind?: "lulu_print_catalog";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Source */
+            source: string;
+            /** Retrieved At */
+            retrieved_at: string;
+            /** Refresh Script */
+            refresh_script?: string | null;
+            /** Sheet Last Update */
+            sheet_last_update?: string | null;
+            row_counts: components["schemas"]["CatalogRowCounts"];
+            /** Trims */
+            trims?: components["schemas"]["CatalogTrim"][];
+            vocabularies?: components["schemas"]["CatalogVocabularies"];
+            /** Products */
+            products?: components["schemas"]["CatalogProduct"][];
+        };
+        /**
+         * PrintCostDiscount
+         * @description A bulk-tier (or other) discount Lulu applied to a line.
+         */
+        PrintCostDiscount: {
+            /** Amount */
+            amount: string;
+            /** Description */
+            description: string;
+        };
+        /**
+         * PrintCostFee
+         * @description A named fee line (``HANDLING_FEE``, ``FULFILLMENT_FEE``, …).
+         */
+        PrintCostFee: {
+            /** Fee Type */
+            fee_type?: string | null;
+            /** Sku */
+            sku?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Tax Rate */
+            tax_rate?: string | null;
+            /** Total Cost Excl Tax */
+            total_cost_excl_tax?: string | null;
+            /** Total Cost Incl Tax */
+            total_cost_incl_tax?: string | null;
+            /** Total Tax */
+            total_tax?: string | null;
+        };
+        /**
+         * PrintCostGroup
+         * @description A cost bucket: shipping & handling, or the fulfillment fee.
+         */
+        PrintCostGroup: {
+            /** Total Cost Excl Tax */
+            total_cost_excl_tax?: string | null;
+            /** Total Cost Incl Tax */
+            total_cost_incl_tax?: string | null;
+            /** Total Tax */
+            total_tax?: string | null;
+            /** Tax Rate */
+            tax_rate?: string | null;
+        };
+        /**
+         * PrintCostRequest
+         * @description Body of ``POST /lulu/price`` — a live quote, nothing is ordered.
+         */
+        PrintCostRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Line Items */
+            line_items: components["schemas"]["PrintLineItem"][];
+            shipping_address: components["schemas"]["PrintShippingAddress"];
+            /**
+             * Shipping Option
+             * @enum {string}
+             */
+            shipping_option: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
+        };
+        /**
+         * PrintLineItem
+         * @description One printable in a quote: which SKU, how many pages, how many copies.
+         */
+        PrintLineItem: {
+            /** Pod Package Id */
+            pod_package_id: string;
+            /** Page Count */
+            page_count: number;
+            /** Quantity */
+            quantity: number;
+        };
+        /**
+         * PrintLineItemCost
+         * @description Lulu's per-line cost breakdown. All money is a decimal string.
+         */
+        PrintLineItemCost: {
+            /** Quantity */
+            quantity: number;
+            /** Cost Excl Discounts */
+            cost_excl_discounts?: string | null;
+            /** Unit Tier Cost */
+            unit_tier_cost?: string | null;
+            /** Tax Rate */
+            tax_rate?: string | null;
+            /** Discounts */
+            discounts?: components["schemas"]["PrintCostDiscount"][];
+            /** Total Cost Excl Discounts */
+            total_cost_excl_discounts?: string | null;
+            /** Total Cost Excl Tax */
+            total_cost_excl_tax?: string | null;
+            /** Total Cost Incl Tax */
+            total_cost_incl_tax?: string | null;
+            /** Total Tax */
+            total_tax?: string | null;
+        };
+        /**
+         * PrintShippingAddress
+         * @description Lulu requires a real address to compute tax and shipping.
+         */
+        PrintShippingAddress: {
+            /** Street1 */
+            street1: string;
+            /** Street2 */
+            street2?: string | null;
+            /** City */
+            city: string;
+            /** Country Code */
+            country_code: string;
+            /** Postcode */
+            postcode: string;
+            /** Phone Number */
+            phone_number: string;
+            /** State Code */
+            state_code?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Organization */
+            organization?: string | null;
+            /** Email */
+            email?: string | null;
+            /**
+             * Is Business
+             * @default false
+             */
+            is_business?: boolean;
+        };
+        /**
          * PriorRelationship
          * @description What we already know about this domain, in the user's own CRM.
          *
@@ -63084,6 +64159,43 @@ export interface components {
             yield_rate?: number | null;
             /** Cost Per Accepted Usd */
             cost_per_accepted_usd?: number | null;
+        };
+        /**
+         * ProductboardStatusResult
+         * @description Safe projection of Productboard's high-level service status.
+         */
+        ProductboardStatusResult: {
+            /**
+             * Kind
+             * @default productboard_official_service_status
+             * @constant
+             */
+            __kind?: "productboard_official_service_status";
+            /**
+             * Provider
+             * @default productboard
+             * @constant
+             */
+            provider?: "productboard";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.productboard.com
+             * @constant
+             */
+            status_url?: "https://status.productboard.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * ProfileView
@@ -65350,6 +66462,43 @@ export interface components {
             count: number;
             /** Executions */
             executions: components["schemas"]["ExecutionTreeNode"][];
+        };
+        /**
+         * ReclaimStatusResult
+         * @description Safe projection of Reclaim.ai's high-level service status.
+         */
+        ReclaimStatusResult: {
+            /**
+             * Kind
+             * @default reclaim_ai_official_service_status
+             * @constant
+             */
+            __kind?: "reclaim_ai_official_service_status";
+            /**
+             * Provider
+             * @default reclaim_ai
+             * @constant
+             */
+            provider?: "reclaim_ai";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.reclaim.ai
+             * @constant
+             */
+            status_url?: "https://status.reclaim.ai";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * RecomputeRequest
@@ -71454,6 +72603,84 @@ export interface components {
             pages_affected: number;
         };
         /**
+         * ShippingOption
+         * @description One shipping level Lulu will actually ship this order with.
+         */
+        ShippingOption: {
+            /** Id */
+            id: number;
+            /** Level */
+            level: string;
+            /** Cost Excl Tax */
+            cost_excl_tax?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /**
+             * Traceable
+             * @default false
+             */
+            traceable?: boolean;
+            /**
+             * Postbox Ok
+             * @default false
+             */
+            postbox_ok?: boolean;
+            /**
+             * Home Only
+             * @default false
+             */
+            home_only?: boolean;
+            /**
+             * Business Only
+             * @default false
+             */
+            business_only?: boolean;
+            /** Transit Time */
+            transit_time?: number | null;
+            /** Total Days Min */
+            total_days_min?: number | null;
+            /** Total Days Max */
+            total_days_max?: number | null;
+            /** Min Dispatch Date */
+            min_dispatch_date?: string | null;
+            /** Max Dispatch Date */
+            max_dispatch_date?: string | null;
+            /** Min Delivery Date */
+            min_delivery_date?: string | null;
+            /** Max Delivery Date */
+            max_delivery_date?: string | null;
+        };
+        /**
+         * ShippingOptionsResult
+         * @description The shipping dropdown's contents for one destination.
+         */
+        ShippingOptionsResult: {
+            /**
+             * Kind
+             * @default lulu_shipping_options
+             * @constant
+             */
+            __kind?: "lulu_shipping_options";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Country Code */
+            country_code: string;
+            /** State Code */
+            state_code?: string | null;
+            /**
+             * Currency
+             * @default USD
+             * @enum {string}
+             */
+            currency?: "USD" | "GBP" | "EUR" | "AUD" | "CAD";
+            /** Options */
+            options?: components["schemas"]["ShippingOption"][];
+        };
+        /**
          * ShortcutStatusResult
          * @description Safe projection of Shortcut's high-level service status.
          */
@@ -74214,6 +75441,43 @@ export interface components {
             role?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * SuperhumanStatusResult
+         * @description Safe projection of Superhuman Mail's high-level service status.
+         */
+        SuperhumanStatusResult: {
+            /**
+             * Kind
+             * @default superhuman_mail_official_service_status
+             * @constant
+             */
+            __kind?: "superhuman_mail_official_service_status";
+            /**
+             * Provider
+             * @default superhuman_mail
+             * @constant
+             */
+            provider?: "superhuman_mail";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.superhuman.com
+             * @constant
+             */
+            status_url?: "https://status.superhuman.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** SuppressionRuleInfo */
         SuppressionRuleInfo: {
@@ -77598,6 +78862,38 @@ export interface components {
              * @default 10000
              */
             timeout_ms?: number;
+        };
+        /**
+         * TypeformServiceStatus
+         * @description Safe aggregate status projection for Typeform's fixed status page.
+         */
+        TypeformServiceStatus: {
+            /**
+             * Kind
+             * @default typeform_public_service_status
+             * @constant
+             */
+            __kind?: "typeform_public_service_status";
+            /**
+             * Provider
+             * @default typeform
+             * @constant
+             */
+            provider?: "typeform";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.typeform.com/
+             * @constant
+             */
+            status_page?: "https://status.typeform.com/";
         };
         /** UnarchiveWorkflowResponse */
         UnarchiveWorkflowResponse: {
@@ -94399,6 +95695,95 @@ export interface operations {
             };
         };
     };
+    price_lulu_price_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrintCostRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostCalculationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shipping_options_lulu_shipping_options_get: {
+        parameters: {
+            query: {
+                country_code: string;
+                pod_package_id: string;
+                page_count: number;
+                quantity?: number;
+                state_code?: string | null;
+                currency?: "USD" | "GBP" | "EUR" | "AUD" | "CAD";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShippingOptionsResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    catalog_lulu_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintCatalog"];
+                };
+            };
+        };
+    };
     public_instance_lemmy_public_instance_get: {
         parameters: {
             query?: never;
@@ -94799,6 +96184,206 @@ export interface operations {
             };
         };
     };
+    public_status_agorapulse_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgorapulseServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_mention_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentionServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_typeform_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeformServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_mailerlite_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailerLiteServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_kit_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KitServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_superhuman_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperhumanStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_airfocus_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirfocusStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_reclaim_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReclaimStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_mural_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MuralStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_productboard_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductboardStatusResult"];
+                };
+            };
+        };
+    };
     public_status_milanote_public_status_get: {
         parameters: {
             query?: never;
@@ -95032,6 +96617,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RCSBPDBPublicEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_record_hepdata_public_record_get: {
+        parameters: {
+            query: {
+                inspire_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HEPDataPublicRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_dataset_dryad_public_dataset_get: {
+        parameters: {
+            query: {
+                doi: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DryadPublicDataset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_product_open_food_facts_public_product_get: {
+        parameters: {
+            query: {
+                barcode: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenFoodFactsPublicProduct"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_dataset_data_gov_uk_public_dataset_get: {
+        parameters: {
+            query: {
+                dataset_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataGovUKPublicDataset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_study_mgnify_public_study_get: {
+        parameters: {
+            query: {
+                accession: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MGnifyPublicStudy"];
                 };
             };
             /** @description Validation Error */
