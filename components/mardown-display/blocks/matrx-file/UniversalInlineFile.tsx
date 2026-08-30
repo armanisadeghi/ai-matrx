@@ -26,9 +26,10 @@ import React, { useMemo } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFile } from "@/features/files/handler/hooks/useFile";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { useMediaResolution } from "@ai-matrx/media/core";
+import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
+import { InlineMediaRef } from "@ai-matrx/media/react";
+import { FileIcon } from "@ai-matrx/media/react";
 import { PreviewerSwitch } from "@/features/files/components/core/FilePreview/PreviewerSwitch";
 import {
   getFilePreviewProfile,
@@ -55,7 +56,9 @@ export function UniversalInlineFile({
   label,
 }: UniversalInlineFileProps) {
   const { file, status } = useFile(match.source);
-  const mediaUrl = useFileSrc(match.source);
+  const mediaUrl =
+    useMediaResolution(fileSourceToMediaRef(match.source)).resolution?.src ??
+    null;
 
   const fileId = match.fileId ?? (file?.fileId ? file.fileId : null);
 

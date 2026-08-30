@@ -21,7 +21,7 @@
 //    rather than being stored and forgotten.
 
 import { useState } from "react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef, urlToMediaRef } from "@/features/files/redux/converters";
 import { cn } from "@/lib/utils";
 

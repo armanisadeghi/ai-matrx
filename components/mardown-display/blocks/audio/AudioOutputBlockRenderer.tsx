@@ -17,7 +17,8 @@
 
 import React, { useEffect } from "react";
 import AudioOutputBlock from "./AudioOutputBlock";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
+import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { buildMediaSource, pickStr } from "../buildMediaSource";
 import { classifyMediaUrl } from "@/lib/media/durability";
 
@@ -33,7 +34,8 @@ const AudioOutputBlockRenderer: React.FC<AudioOutputBlockRendererProps> = ({
 }) => {
   const mime = pickStr(data.mimeType) ?? pickStr(data.mime_type);
   const source = buildMediaSource(data, mime);
-  const resolvedUrl = useFileSrc(source);
+  const resolvedUrl =
+    useMediaResolution(fileSourceToMediaRef(source)).resolution?.src ?? null;
 
   // Log the raw inbound shape + what we resolved, once per resolved URL. This is
   // a plain `console.log` (NOT `console.error`) on purpose: a still-expiring S3
