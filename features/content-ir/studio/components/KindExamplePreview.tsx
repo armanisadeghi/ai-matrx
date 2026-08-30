@@ -99,8 +99,6 @@ export default function KindExamplePreview({
   }
 
   const current = rows[Math.min(index, rows.length - 1)];
-  const routable = kindIsRoutable(kind);
-  const definition = kindRegistry.getDefinition(kind);
 
   return (
     <div className="mx-auto max-w-4xl space-y-3">
