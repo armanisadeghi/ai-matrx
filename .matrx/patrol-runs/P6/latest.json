@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:47:58.774Z",
-  "summary": "CERTIFIED exact accessible 15-file feature-surface candidate.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:51:09.160Z",
+  "summary": "Certified candidate preserved and queued after integration to origin/main.",
   "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
-  "eventHash": "1af5adde4e5d1e8cab532a85bb23b11904095aa1c46387c2b0973545b4e2731f"
+  "eventHash": "092b55442ed1a6e9debdb052004f48f8059ac53ca4af28c2e46e49e29e6ebf04"
 }
