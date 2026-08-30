@@ -1,5 +1,6 @@
 import {
   connectionResource,
+  isGoogleConnectionReachableByUser,
   isStaleGoogleConnectionSelection,
   type GoogleConnectionPurpose,
 } from "@/features/marketing/google/service";
@@ -29,6 +30,47 @@ const baseResource = {
 };
 
 describe("Google OAuth connection resources", () => {
+  it("excludes admin-visible Google connections the caller cannot reach", () => {
+    const connection = {
+      id: "connection-1",
+      owner_type: "user" as const,
+      owner_user_id: "other-user",
+      organization_id: null,
+      provider: "google" as const,
+      provider_subject: "subject-1",
+      account_email: "other@example.com",
+      account_name: null,
+      scopes: [GOOGLE_SCOPE.tasksReadonly],
+      status: "connected" as const,
+      last_verified_at: null,
+      last_error: null,
+      created_at: "2026-08-30T00:00:00Z",
+      updated_at: "2026-08-30T00:00:00Z",
+      metadata: {},
+      credential_present: true,
+      credential_stable: true,
+      health: "connected" as const,
+    };
+
+    expect(
+      isGoogleConnectionReachableByUser(connection, "reviewer", ["org-1"]),
+    ).toBe(false);
+    expect(
+      isGoogleConnectionReachableByUser(
+        { ...connection, owner_user_id: "reviewer" },
+        "reviewer",
+        [],
+      ),
+    ).toBe(true);
+    expect(
+      isGoogleConnectionReachableByUser(
+        { ...connection, organization_id: "org-1" },
+        "reviewer",
+        ["org-1"],
+      ),
+    ).toBe(true);
+  });
+
   it.each([403, 404])(
     "treats HTTP %s after inventory selection as stale access control flow",
     (status) => {

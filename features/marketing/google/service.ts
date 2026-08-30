@@ -37,6 +37,25 @@ export function isStaleGoogleConnectionSelection(error: unknown): boolean {
   );
 }
 
+/**
+ * Admin RLS can expose connections owned by other users and organizations.
+ * Preview surfaces must mirror aidream's user-keyed reachability boundary
+ * before selecting a credential, rather than treating every RLS-visible row
+ * as callable by the current user.
+ */
+export function isGoogleConnectionReachableByUser(
+  connection: GoogleConnectionSummary,
+  userId: string | null,
+  organizationIds: readonly string[],
+): boolean {
+  if (!userId) return false;
+  if (connection.owner_user_id === userId) return true;
+  return Boolean(
+    connection.organization_id &&
+      organizationIds.includes(connection.organization_id),
+  );
+}
+
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
 // vault item id and a key name). Reading them is what lets the UI tell the
 // truth about a connection's health without a server round-trip.

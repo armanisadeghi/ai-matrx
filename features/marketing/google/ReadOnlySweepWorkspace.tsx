@@ -27,6 +27,7 @@ import {
   useYouTubeAnalyticsPreview,
 } from "@/features/marketing/google/hooks";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
+import { isGoogleConnectionReachableByUser } from "@/features/marketing/google/service";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import {
   GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
@@ -35,7 +36,11 @@ import {
 } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsSuperAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/lib/utils";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -109,6 +114,8 @@ export function ReadOnlySweepWorkspace({
 
 function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   const google = useGoogleAPI();
+  const userId = useAppSelector(selectUserId);
+  const organizationIds = useAppSelector(selectOrganizationIds);
   const inventory = useGoogleConnectionInventory();
   const connect = useConnectGoogle();
   const calendar = useGoogleCalendarAgenda();
@@ -125,7 +132,9 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   const [taskImportOpen, setTaskImportOpen] = useState(false);
 
   const connections = (inventory.data?.connections ?? []).filter(
-    (connection) => connection.health === "connected",
+    (connection) =>
+      connection.health === "connected" &&
+      isGoogleConnectionReachableByUser(connection, userId, organizationIds),
   );
   const resources = inventory.data?.resources ?? [];
 
