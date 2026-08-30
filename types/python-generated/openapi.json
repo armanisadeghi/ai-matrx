@@ -16796,6 +16796,402 @@
         }
       }
     },
+    "/lulu/cover-dimensions": {
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Cover Dimensions",
+        "description": "The full-cover canvas (spine included) for a book at a given page count.",
+        "operationId": "cover_dimensions_lulu_cover_dimensions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverDimensionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverDimensionsResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/print-jobs": {
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Create Job",
+        "description": "Place a real print order. **This spends money and ships physical books.**\n\nEvery `source_url` must be a publicly fetchable HTTPS URL — Lulu downloads\nthe interior and cover itself. Stateless in Phase 2: the returned `id` is\nthe only handle to the order.",
+        "operationId": "create_job_lulu_print_jobs_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrintJobCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "List Jobs",
+        "description": "One page of the platform account's print jobs, Lulu's paging passed through.",
+        "operationId": "list_jobs_lulu_print_jobs_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "job_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Status"
+            }
+          },
+          {
+            "name": "order_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "exclude_line_items",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Exclude Line Items"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintJobPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/print-jobs/{print_job_id}": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Read Job",
+        "description": "One print job in full — status, costs, tracking, shipping estimates.",
+        "operationId": "read_job_lulu_print_jobs__print_job_id__get",
+        "parameters": [
+          {
+            "name": "print_job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Print Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Cancel Job",
+        "description": "Cancel a print job — only valid before it enters production.\n\nUpstream this is `PUT /print-jobs/{id}/status/` with `{\"name\": \"CANCELED\"}`;\nLulu has no delete operation. Once the `production_delay` window has closed\nLulu refuses, and its reason is surfaced verbatim as a 422.",
+        "operationId": "cancel_job_lulu_print_jobs__print_job_id__delete",
+        "parameters": [
+          {
+            "name": "print_job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Print Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintJobStatusResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/webhooks/subscription": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Subscriptions",
+        "description": "Every webhook our Lulu account holds — how a deactivated one is spotted.",
+        "operationId": "subscriptions_lulu_webhooks_subscription_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscriptionList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Subscribe",
+        "description": "Register this deployment's receiver with Lulu — the one wiring call.",
+        "operationId": "subscribe_lulu_webhooks_subscription_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscription"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/webhooks/incoming": {
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Incoming Webhook",
+        "description": "Receive one Lulu webhook submission. Authenticated by signature only.\n\nThe raw body is read BEFORE any parsing because the HMAC covers those exact\nbytes — re-serializing parsed JSON changes the digest.",
+        "operationId": "incoming_webhook_lulu_webhooks_incoming_post",
+        "parameters": [
+          {
+            "name": "Lulu-HMAC-SHA256",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lulu-Hmac-Sha256"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/lemmy/public/instance": {
       "get": {
         "tags": [
@@ -17356,6 +17752,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GetResponseServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mailjet/public/status": {
+      "get": {
+        "tags": [
+          "Mailjet Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mailjet_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailjetServiceStatus"
                 }
               }
             }
@@ -102713,6 +103130,123 @@
         ],
         "title": "CourtsResponse"
       },
+      "CoverDimensionsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "pod_package_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "title": "Pod Package Id"
+          },
+          "interior_page_count": {
+            "type": "integer",
+            "maximum": 5000,
+            "minimum": 1,
+            "title": "Interior Page Count"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pt",
+                  "mm",
+                  "inch"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pod_package_id",
+          "interior_page_count"
+        ],
+        "title": "CoverDimensionsRequest",
+        "description": "Body of ``POST /lulu/cover-dimensions`` — the spine-width calculator.\n\nConfirmed against ``Cover-Dimensions_create`` in Lulu's OpenAPI spec: the\nupstream body is exactly ``{pod_package_id, interior_page_count, unit?}``."
+      },
+      "CoverDimensionsResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_cover_dimensions",
+            "title": "Kind",
+            "default": "lulu_cover_dimensions"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "width": {
+            "type": "string",
+            "title": "Width"
+          },
+          "height": {
+            "type": "string",
+            "title": "Height"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "pt",
+              "mm",
+              "inch"
+            ],
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "width",
+          "height",
+          "unit"
+        ],
+        "title": "CoverDimensionsResult",
+        "description": "Lulu's full-cover canvas for that book: one wrap, spine included.\n\n``width`` is the WHOLE wrap — back cover + spine + front cover + bleed — so\nthe spine width is not returned separately; it is what the width grows by\nas ``interior_page_count`` grows. Both values are decimal strings."
+      },
       "CoverageFeed": {
         "properties": {
           "site_id": {
@@ -140591,6 +141125,47 @@
         "title": "MailerLiteServiceStatus",
         "description": "Safe aggregate status projection for MailerLite's fixed status page."
       },
+      "MailjetServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mailjet_public_service_status",
+            "title": "Kind",
+            "default": "mailjet_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mailjet",
+            "title": "Provider",
+            "default": "mailjet"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mailjet.com/",
+            "title": "Status Page",
+            "default": "https://status.mailjet.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MailjetServiceStatus",
+        "description": "Safe aggregate status projection for Mailjet's fixed status page."
+      },
       "MandateBindingDeleteRequest": {
         "properties": {
           "principal_type": {
@@ -161305,6 +161880,867 @@
         "title": "PrintCostRequest",
         "description": "Body of ``POST /lulu/price`` — a live quote, nothing is ordered."
       },
+      "PrintJob": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_print_job",
+            "title": "Kind",
+            "default": "lulu_print_job"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "shipping_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping Level"
+          },
+          "production_delay": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Production Delay"
+          },
+          "production_due_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Production Due Time"
+          },
+          "tax_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Country"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintJobStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "line_items": {
+            "items": {
+              "$ref": "#/components/schemas/PrintJobLineItemResult"
+            },
+            "type": "array",
+            "title": "Line Items"
+          },
+          "costs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintJobCosts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estimated_shipping_dates": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintJobShippingDates"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date_created": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Created"
+          },
+          "date_modified": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Modified"
+          }
+        },
+        "type": "object",
+        "title": "PrintJob",
+        "description": "A Print-Job as Lulu returns it — from create, read, or a list page."
+      },
+      "PrintJobCosts": {
+        "properties": {
+          "line_item_costs": {
+            "items": {
+              "$ref": "#/components/schemas/PrintLineItemCost"
+            },
+            "type": "array",
+            "title": "Line Item Costs"
+          },
+          "shipping_cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintCostGroup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_cost_excl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Excl Tax"
+          },
+          "total_cost_incl_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Incl Tax"
+          },
+          "total_tax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tax"
+          }
+        },
+        "type": "object",
+        "title": "PrintJobCosts",
+        "description": "What Lulu will charge OUR account for this job. Decimal strings."
+      },
+      "PrintJobCreateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "line_items": {
+            "items": {
+              "$ref": "#/components/schemas/PrintJobLineItem"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Line Items"
+          },
+          "shipping_address": {
+            "$ref": "#/components/schemas/PrintJobShippingAddress"
+          },
+          "shipping_level": {
+            "type": "string",
+            "enum": [
+              "MAIL",
+              "PRIORITY_MAIL",
+              "GROUND_HD",
+              "GROUND_BUS",
+              "GROUND",
+              "EXPEDITED",
+              "EXPRESS"
+            ],
+            "title": "Shipping Level"
+          },
+          "contact_email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Contact Email"
+          },
+          "production_delay": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2880,
+                "minimum": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Production Delay"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "line_items",
+          "shipping_address",
+          "shipping_level",
+          "contact_email"
+        ],
+        "title": "PrintJobCreateRequest",
+        "description": "Body of ``POST /lulu/print-jobs`` — this ORDERS BOOKS AND SPENDS MONEY."
+      },
+      "PrintJobLineItem": {
+        "properties": {
+          "pod_package_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "title": "Pod Package Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Quantity"
+          },
+          "printable_normalization": {
+            "$ref": "#/components/schemas/PrintableNormalization"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pod_package_id",
+          "quantity",
+          "printable_normalization"
+        ],
+        "title": "PrintJobLineItem",
+        "description": "One book in an order: which SKU, how many, and the two source PDFs."
+      },
+      "PrintJobLineItemResult": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "pod_package_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pod Package Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "printable_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printable Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintJobLineItemStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tracking_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracking Id"
+          },
+          "tracking_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tracking Urls"
+          }
+        },
+        "type": "object",
+        "title": "PrintJobLineItemResult",
+        "description": "One line of the job as Lulu now holds it — including tracking."
+      },
+      "PrintJobLineItemStatus": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "messages": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "title": "PrintJobLineItemStatus",
+        "description": "A line item's own processing status (file normalization lives here)."
+      },
+      "PrintJobPage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_print_job_page",
+            "title": "Kind",
+            "default": "lulu_print_job_page"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PrintJob"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "title": "PrintJobPage",
+        "description": "One page of ``GET /lulu/print-jobs`` — Lulu's own pagination, passed through."
+      },
+      "PrintJobShippingAddress": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "street1": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Street1"
+          },
+          "street2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street2"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "City"
+          },
+          "country_code": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Code"
+          },
+          "postcode": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Postcode"
+          },
+          "phone_number": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Phone Number"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "state_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Code"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          },
+          "is_business": {
+            "type": "boolean",
+            "title": "Is Business",
+            "default": false
+          },
+          "recipient_tax_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Tax Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "street1",
+          "city",
+          "country_code",
+          "postcode",
+          "phone_number",
+          "email"
+        ],
+        "title": "PrintJobShippingAddress",
+        "description": "Where the books go. Stricter than the quote address: Lulu requires\n``name`` and ``email`` on a real order, and only asks for them on a quote."
+      },
+      "PrintJobShippingDates": {
+        "properties": {
+          "dispatch_min": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Min"
+          },
+          "dispatch_max": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Max"
+          },
+          "arrival_min": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrival Min"
+          },
+          "arrival_max": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrival Max"
+          }
+        },
+        "type": "object",
+        "title": "PrintJobShippingDates",
+        "description": "Lulu's estimated dispatch and arrival window, ISO 8601 strings."
+      },
+      "PrintJobStatus": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CREATED",
+                  "REJECTED",
+                  "UNPAID",
+                  "PAYMENT_IN_PROGRESS",
+                  "PRODUCTION_READY",
+                  "PRODUCTION_DELAYED",
+                  "IN_PRODUCTION",
+                  "ERROR",
+                  "SHIPPED",
+                  "CANCELED"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Name"
+          },
+          "changed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "PrintJobStatus",
+        "description": "A Print-Job's status object: the name, when it changed, and why."
+      },
+      "PrintJobStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_print_job_status",
+            "title": "Kind",
+            "default": "lulu_print_job_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "print_job_id": {
+            "type": "integer",
+            "title": "Print Job Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CREATED",
+                  "REJECTED",
+                  "UNPAID",
+                  "PAYMENT_IN_PROGRESS",
+                  "PRODUCTION_READY",
+                  "PRODUCTION_DELAYED",
+                  "IN_PRODUCTION",
+                  "ERROR",
+                  "SHIPPED",
+                  "CANCELED"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Name"
+          },
+          "changed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "print_job_id",
+          "name"
+        ],
+        "title": "PrintJobStatusResult",
+        "description": "What a cancel (or a status read) hands back."
+      },
       "PrintLineItem": {
         "properties": {
           "pod_package_id": {
@@ -161543,6 +162979,54 @@
         ],
         "title": "PrintShippingAddress",
         "description": "Lulu requires a real address to compute tax and shipping."
+      },
+      "PrintableNormalization": {
+        "properties": {
+          "interior": {
+            "$ref": "#/components/schemas/PrintableSource"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/PrintableSource"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "interior",
+          "cover"
+        ],
+        "title": "PrintableNormalization",
+        "description": "The interior + cover pair Lulu normalizes into a printable."
+      },
+      "PrintableSource": {
+        "properties": {
+          "source_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 8,
+            "title": "Source Url"
+          },
+          "source_md5_sum": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32,
+                "minLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Md5 Sum"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_url"
+        ],
+        "title": "PrintableSource",
+        "description": "One PDF Lulu must fetch — never uploaded, always pulled by Lulu.\n\n🚨 ``source_url`` MUST be a **publicly fetchable HTTPS URL** (or a signed-read\none that needs no header): Lulu's own workers download it. Our durable file\nURLs are what belongs here — never a localhost URL, never a link that needs\na platform session cookie, never a presigned URL shorter-lived than the job."
       },
       "PriorRelationship": {
         "properties": {
@@ -206841,6 +208325,207 @@
           "type"
         ],
         "title": "WebSearchPart"
+      },
+      "WebhookReceipt": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_webhook_receipt",
+            "title": "Kind",
+            "default": "lulu_webhook_receipt"
+          },
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic"
+          },
+          "print_job_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Print Job Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "accepted"
+        ],
+        "title": "WebhookReceipt",
+        "description": "Our answer to Lulu after a verified submission.\n\nPhase 2 is stateless: the receipt says we verified and recorded the event,\nnot that anything was persisted against an order row (Phase 3)."
+      },
+      "WebhookSubscription": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_webhook_subscription",
+            "title": "Kind",
+            "default": "lulu_webhook_subscription"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url"
+        ],
+        "title": "WebhookSubscription",
+        "description": "One webhook registration as Lulu holds it.\n\n``is_active`` flips itself to false after 5 consecutive failed deliveries —\nthat is a real operational signal, not decoration."
+      },
+      "WebhookSubscriptionList": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lulu_webhook_subscription_list",
+            "title": "Kind",
+            "default": "lulu_webhook_subscription_list"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lulu",
+            "title": "Provider",
+            "default": "lulu"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookSubscription"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "title": "WebhookSubscriptionList",
+        "description": "Every webhook our Lulu account currently has registered."
+      },
+      "WebhookSubscriptionRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 8,
+            "title": "Url"
+          },
+          "topics": {
+            "items": {
+              "type": "string",
+              "const": "PRINT_JOB_STATUS_CHANGED"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Topics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "WebhookSubscriptionRequest",
+        "description": "Body of ``POST /lulu/webhooks/subscription`` — admin-only, one call."
       },
       "WebpageInputPart": {
         "properties": {

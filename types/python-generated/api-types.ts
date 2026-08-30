@@ -6549,6 +6549,129 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lulu/cover-dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cover Dimensions
+         * @description The full-cover canvas (spine included) for a book at a given page count.
+         */
+        post: operations["cover_dimensions_lulu_cover_dimensions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/print-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Jobs
+         * @description One page of the platform account's print jobs, Lulu's paging passed through.
+         */
+        get: operations["list_jobs_lulu_print_jobs_get"];
+        put?: never;
+        /**
+         * Create Job
+         * @description Place a real print order. **This spends money and ships physical books.**
+         *
+         *     Every `source_url` must be a publicly fetchable HTTPS URL — Lulu downloads
+         *     the interior and cover itself. Stateless in Phase 2: the returned `id` is
+         *     the only handle to the order.
+         */
+        post: operations["create_job_lulu_print_jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/print-jobs/{print_job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Job
+         * @description One print job in full — status, costs, tracking, shipping estimates.
+         */
+        get: operations["read_job_lulu_print_jobs__print_job_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Job
+         * @description Cancel a print job — only valid before it enters production.
+         *
+         *     Upstream this is `PUT /print-jobs/{id}/status/` with `{"name": "CANCELED"}`;
+         *     Lulu has no delete operation. Once the `production_delay` window has closed
+         *     Lulu refuses, and its reason is surfaced verbatim as a 422.
+         */
+        delete: operations["cancel_job_lulu_print_jobs__print_job_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/webhooks/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Subscriptions
+         * @description Every webhook our Lulu account holds — how a deactivated one is spotted.
+         */
+        get: operations["subscriptions_lulu_webhooks_subscription_get"];
+        put?: never;
+        /**
+         * Subscribe
+         * @description Register this deployment's receiver with Lulu — the one wiring call.
+         */
+        post: operations["subscribe_lulu_webhooks_subscription_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/webhooks/incoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Incoming Webhook
+         * @description Receive one Lulu webhook submission. Authenticated by signature only.
+         *
+         *     The raw body is read BEFORE any parsing because the HMAC covers those exact
+         *     bytes — re-serializing parsed JSON changes the digest.
+         */
+        post: operations["incoming_webhook_lulu_webhooks_incoming_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lemmy/public/instance": {
         parameters: {
             query?: never;
@@ -7000,6 +7123,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_getresponse_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mailjet/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mailjet_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -40101,6 +40241,67 @@ export interface components {
             /** Count */
             count: number;
         };
+        /**
+         * CoverDimensionsRequest
+         * @description Body of ``POST /lulu/cover-dimensions`` — the spine-width calculator.
+         *
+         *     Confirmed against ``Cover-Dimensions_create`` in Lulu's OpenAPI spec: the
+         *     upstream body is exactly ``{pod_package_id, interior_page_count, unit?}``.
+         */
+        CoverDimensionsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Pod Package Id */
+            pod_package_id: string;
+            /** Interior Page Count */
+            interior_page_count: number;
+            /** Unit */
+            unit?: ("pt" | "mm" | "inch") | null;
+        };
+        /**
+         * CoverDimensionsResult
+         * @description Lulu's full-cover canvas for that book: one wrap, spine included.
+         *
+         *     ``width`` is the WHOLE wrap — back cover + spine + front cover + bleed — so
+         *     the spine width is not returned separately; it is what the width grows by
+         *     as ``interior_page_count`` grows. Both values are decimal strings.
+         */
+        CoverDimensionsResult: {
+            /**
+             * Kind
+             * @default lulu_cover_dimensions
+             * @constant
+             */
+            __kind?: "lulu_cover_dimensions";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Width */
+            width: string;
+            /** Height */
+            height: string;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "pt" | "mm" | "inch";
+        };
         /** CoverageFeed */
         CoverageFeed: {
             /** Site Id */
@@ -55048,6 +55249,38 @@ export interface components {
              */
             status_page?: "https://status.mailerlite.com/";
         };
+        /**
+         * MailjetServiceStatus
+         * @description Safe aggregate status projection for Mailjet's fixed status page.
+         */
+        MailjetServiceStatus: {
+            /**
+             * Kind
+             * @default mailjet_public_service_status
+             * @constant
+             */
+            __kind?: "mailjet_public_service_status";
+            /**
+             * Provider
+             * @default mailjet
+             * @constant
+             */
+            provider?: "mailjet";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.mailjet.com/
+             * @constant
+             */
+            status_page?: "https://status.mailjet.com/";
+        };
         /** MandateBindingDeleteRequest */
         MandateBindingDeleteRequest: {
             /**
@@ -64067,6 +64300,266 @@ export interface components {
             shipping_option: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
         };
         /**
+         * PrintJob
+         * @description A Print-Job as Lulu returns it — from create, read, or a list page.
+         */
+        PrintJob: {
+            /**
+             * Kind
+             * @default lulu_print_job
+             * @constant
+             */
+            __kind?: "lulu_print_job";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Id */
+            id?: number | null;
+            /** Order Id */
+            order_id?: string | null;
+            /** External Id */
+            external_id?: string | null;
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Shipping Level */
+            shipping_level?: string | null;
+            /** Production Delay */
+            production_delay?: number | null;
+            /** Production Due Time */
+            production_due_time?: string | null;
+            /** Tax Country */
+            tax_country?: string | null;
+            status?: components["schemas"]["PrintJobStatus"] | null;
+            /** Line Items */
+            line_items?: components["schemas"]["PrintJobLineItemResult"][];
+            costs?: components["schemas"]["PrintJobCosts"] | null;
+            estimated_shipping_dates?: components["schemas"]["PrintJobShippingDates"] | null;
+            /** Date Created */
+            date_created?: string | null;
+            /** Date Modified */
+            date_modified?: string | null;
+        };
+        /**
+         * PrintJobCosts
+         * @description What Lulu will charge OUR account for this job. Decimal strings.
+         */
+        PrintJobCosts: {
+            /** Line Item Costs */
+            line_item_costs?: components["schemas"]["PrintLineItemCost"][];
+            shipping_cost?: components["schemas"]["PrintCostGroup"] | null;
+            /** Total Cost Excl Tax */
+            total_cost_excl_tax?: string | null;
+            /** Total Cost Incl Tax */
+            total_cost_incl_tax?: string | null;
+            /** Total Tax */
+            total_tax?: string | null;
+        };
+        /**
+         * PrintJobCreateRequest
+         * @description Body of ``POST /lulu/print-jobs`` — this ORDERS BOOKS AND SPENDS MONEY.
+         */
+        PrintJobCreateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Line Items */
+            line_items: components["schemas"]["PrintJobLineItem"][];
+            shipping_address: components["schemas"]["PrintJobShippingAddress"];
+            /**
+             * Shipping Level
+             * @enum {string}
+             */
+            shipping_level: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
+            /** Contact Email */
+            contact_email: string;
+            /** Production Delay */
+            production_delay?: number | null;
+            /** External Id */
+            external_id?: string | null;
+        };
+        /**
+         * PrintJobLineItem
+         * @description One book in an order: which SKU, how many, and the two source PDFs.
+         */
+        PrintJobLineItem: {
+            /** Pod Package Id */
+            pod_package_id: string;
+            /** Quantity */
+            quantity: number;
+            printable_normalization: components["schemas"]["PrintableNormalization"];
+            /** Title */
+            title?: string | null;
+            /** External Id */
+            external_id?: string | null;
+        };
+        /**
+         * PrintJobLineItemResult
+         * @description One line of the job as Lulu now holds it — including tracking.
+         */
+        PrintJobLineItemResult: {
+            /** Id */
+            id?: number | null;
+            /** Title */
+            title?: string | null;
+            /** External Id */
+            external_id?: string | null;
+            /** Pod Package Id */
+            pod_package_id?: string | null;
+            /** Quantity */
+            quantity?: number | null;
+            /** Page Count */
+            page_count?: number | null;
+            /** Printable Id */
+            printable_id?: string | null;
+            status?: components["schemas"]["PrintJobLineItemStatus"] | null;
+            /** Tracking Id */
+            tracking_id?: string | null;
+            /** Tracking Urls */
+            tracking_urls?: string[];
+        };
+        /**
+         * PrintJobLineItemStatus
+         * @description A line item's own processing status (file normalization lives here).
+         */
+        PrintJobLineItemStatus: {
+            /** Name */
+            name?: string | null;
+            /** Messages */
+            messages?: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * PrintJobPage
+         * @description One page of ``GET /lulu/print-jobs`` — Lulu's own pagination, passed through.
+         */
+        PrintJobPage: {
+            /**
+             * Kind
+             * @default lulu_print_job_page
+             * @constant
+             */
+            __kind?: "lulu_print_job_page";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Next */
+            next?: string | null;
+            /** Previous */
+            previous?: string | null;
+            /** Results */
+            results?: components["schemas"]["PrintJob"][];
+        };
+        /**
+         * PrintJobShippingAddress
+         * @description Where the books go. Stricter than the quote address: Lulu requires
+         *     ``name`` and ``email`` on a real order, and only asks for them on a quote.
+         */
+        PrintJobShippingAddress: {
+            /** Name */
+            name: string;
+            /** Street1 */
+            street1: string;
+            /** Street2 */
+            street2?: string | null;
+            /** City */
+            city: string;
+            /** Country Code */
+            country_code: string;
+            /** Postcode */
+            postcode: string;
+            /** Phone Number */
+            phone_number: string;
+            /** Email */
+            email: string;
+            /** State Code */
+            state_code?: string | null;
+            /** Organization */
+            organization?: string | null;
+            /**
+             * Is Business
+             * @default false
+             */
+            is_business?: boolean;
+            /** Recipient Tax Id */
+            recipient_tax_id?: string | null;
+        };
+        /**
+         * PrintJobShippingDates
+         * @description Lulu's estimated dispatch and arrival window, ISO 8601 strings.
+         */
+        PrintJobShippingDates: {
+            /** Dispatch Min */
+            dispatch_min?: string | null;
+            /** Dispatch Max */
+            dispatch_max?: string | null;
+            /** Arrival Min */
+            arrival_min?: string | null;
+            /** Arrival Max */
+            arrival_max?: string | null;
+        };
+        /**
+         * PrintJobStatus
+         * @description A Print-Job's status object: the name, when it changed, and why.
+         */
+        PrintJobStatus: {
+            /** Name */
+            name: ("CREATED" | "REJECTED" | "UNPAID" | "PAYMENT_IN_PROGRESS" | "PRODUCTION_READY" | "PRODUCTION_DELAYED" | "IN_PRODUCTION" | "ERROR" | "SHIPPED" | "CANCELED") | string;
+            /** Changed */
+            changed?: string | null;
+            /** Message */
+            message?: string | null;
+        };
+        /**
+         * PrintJobStatusResult
+         * @description What a cancel (or a status read) hands back.
+         */
+        PrintJobStatusResult: {
+            /**
+             * Kind
+             * @default lulu_print_job_status
+             * @constant
+             */
+            __kind?: "lulu_print_job_status";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Print Job Id */
+            print_job_id: number;
+            /** Name */
+            name: ("CREATED" | "REJECTED" | "UNPAID" | "PAYMENT_IN_PROGRESS" | "PRODUCTION_READY" | "PRODUCTION_DELAYED" | "IN_PRODUCTION" | "ERROR" | "SHIPPED" | "CANCELED") | string;
+            /** Changed */
+            changed?: string | null;
+            /** Message */
+            message?: string | null;
+        };
+        /**
          * PrintLineItem
          * @description One printable in a quote: which SKU, how many pages, how many copies.
          */
@@ -64132,6 +64625,29 @@ export interface components {
              * @default false
              */
             is_business?: boolean;
+        };
+        /**
+         * PrintableNormalization
+         * @description The interior + cover pair Lulu normalizes into a printable.
+         */
+        PrintableNormalization: {
+            interior: components["schemas"]["PrintableSource"];
+            cover: components["schemas"]["PrintableSource"];
+        };
+        /**
+         * PrintableSource
+         * @description One PDF Lulu must fetch — never uploaded, always pulled by Lulu.
+         *
+         *     🚨 ``source_url`` MUST be a **publicly fetchable HTTPS URL** (or a signed-read
+         *     one that needs no header): Lulu's own workers download it. Our durable file
+         *     URLs are what belongs here — never a localhost URL, never a link that needs
+         *     a platform session cookie, never a presigned URL shorter-lived than the job.
+         */
+        PrintableSource: {
+            /** Source Url */
+            source_url: string;
+            /** Source Md5 Sum */
+            source_md5_sum?: string | null;
         };
         /**
          * PriorRelationship
@@ -82533,6 +83049,113 @@ export interface components {
              */
             status?: string;
         };
+        /**
+         * WebhookReceipt
+         * @description Our answer to Lulu after a verified submission.
+         *
+         *     Phase 2 is stateless: the receipt says we verified and recorded the event,
+         *     not that anything was persisted against an order row (Phase 3).
+         */
+        WebhookReceipt: {
+            /**
+             * Kind
+             * @default lulu_webhook_receipt
+             * @constant
+             */
+            __kind?: "lulu_webhook_receipt";
+            /** Accepted */
+            accepted: boolean;
+            /** Topic */
+            topic?: string | null;
+            /** Print Job Id */
+            print_job_id?: number | null;
+            /** Status */
+            status?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * WebhookSubscription
+         * @description One webhook registration as Lulu holds it.
+         *
+         *     ``is_active`` flips itself to false after 5 consecutive failed deliveries —
+         *     that is a real operational signal, not decoration.
+         */
+        WebhookSubscription: {
+            /**
+             * Kind
+             * @default lulu_webhook_subscription
+             * @constant
+             */
+            __kind?: "lulu_webhook_subscription";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /** Id */
+            id: string;
+            /** Url */
+            url: string;
+            /** Topics */
+            topics?: string[];
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active?: boolean;
+        };
+        /**
+         * WebhookSubscriptionList
+         * @description Every webhook our Lulu account currently has registered.
+         */
+        WebhookSubscriptionList: {
+            /**
+             * Kind
+             * @default lulu_webhook_subscription_list
+             * @constant
+             */
+            __kind?: "lulu_webhook_subscription_list";
+            /**
+             * Provider
+             * @default lulu
+             * @constant
+             */
+            provider?: "lulu";
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Results */
+            results?: components["schemas"]["WebhookSubscription"][];
+        };
+        /**
+         * WebhookSubscriptionRequest
+         * @description Body of ``POST /lulu/webhooks/subscription`` — admin-only, one call.
+         */
+        WebhookSubscriptionRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Url */
+            url: string;
+            /** Topics */
+            topics?: "PRINT_JOB_STATUS_CHANGED"[];
+        };
         /** WebpageInputPart */
         WebpageInputPart: {
             /** Metadata */
@@ -96112,6 +96735,254 @@ export interface operations {
             };
         };
     };
+    cover_dimensions_lulu_cover_dimensions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverDimensionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverDimensionsResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_jobs_lulu_print_jobs_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                job_status?: string | null;
+                order_id?: string | null;
+                search?: string | null;
+                exclude_line_items?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintJobPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_job_lulu_print_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrintJobCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_job_lulu_print_jobs__print_job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                print_job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_lulu_print_jobs__print_job_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                print_job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintJobStatusResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    subscriptions_lulu_webhooks_subscription_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscriptionList"];
+                };
+            };
+        };
+    };
+    subscribe_lulu_webhooks_subscription_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscription"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    incoming_webhook_lulu_webhooks_incoming_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Lulu-HMAC-SHA256"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookReceipt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_instance_lemmy_public_instance_get: {
         parameters: {
             query?: never;
@@ -96648,6 +97519,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetResponseServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_mailjet_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailjetServiceStatus"];
                 };
             };
         };
