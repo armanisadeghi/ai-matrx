@@ -151,6 +151,22 @@
       },
       "previousEventHash": "945b5c7ad1497b8f04527927afdae0411ca0c7244f212551df6224e459114639",
       "eventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81"
+    },
+    {
+      "sequence": 11,
+      "state": "delivery_queued",
+      "at": "2026-08-30T15:46:09.285Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified corrected wave-2 candidate queued after escape repair",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P11/20260830T153806Z"
+      ],
+      "delivery": {
+        "candidateSha": "c245945c9fb3f65f6df937536d192d22781915e3",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153806Z"
+      },
+      "previousEventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81",
+      "eventHash": "badbf3d892b88daa72c7e46473e7447caee99a50deb8499439d7ab1fd2cc5454"
     }
   ]
 }

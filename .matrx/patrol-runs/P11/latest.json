@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "20260830T153806Z",
-  "state": "certified",
-  "updatedAt": "2026-08-30T15:45:31.842Z",
-  "summary": "CERTIFIED final wave-2 replacement candidate after explicit host-ownership repair",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T15:46:09.285Z",
+  "summary": "Certified corrected wave-2 candidate queued after escape repair",
   "source": "20260830T153806Z.json",
-  "eventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81"
+  "eventHash": "badbf3d892b88daa72c7e46473e7447caee99a50deb8499439d7ab1fd2cc5454"
 }
