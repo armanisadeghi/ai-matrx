@@ -75,13 +75,24 @@ function toTableFilters(filters: EntityFilters): ColumnFiltersState {
   return out;
 }
 
-/** The table's `columnFilters` → our bag. Empty entries drop out entirely. */
+/**
+ * The table's `columnFilters` → our bag. Empty entries drop out entirely.
+ *
+ * The text value is kept EXACTLY AS TYPED. This table is controlled: whatever
+ * comes back out of here is re-rendered into the header's filter box on the
+ * next keystroke, so normalising here rewrites what the user is still typing.
+ * Trimming made a space impossible to enter — "New" + space came straight back
+ * as "New", and the next letter landed as "NewY". Whitespace-only still means
+ * "no filter" — that is a test on the value, not a rewrite of it. A trailing
+ * space then reaches the RPC verbatim, which is correct: `ILIKE '%New %'` is
+ * exactly what "New " was asked to mean.
+ */
 function fromTableFilters(state: ColumnFiltersState): EntityFilters {
   const out: EntityFilters = {};
   for (const [id, f] of Object.entries(state)) {
     if (!f) continue;
     if (f.kind === "text") {
-      if (f.value?.trim()) out[id] = { kind: "text", value: f.value.trim() };
+      if (f.value?.trim()) out[id] = { kind: "text", value: f.value };
     } else if (f.kind === "select") {
       const values = f.values?.length ? f.values : f.value ? [f.value] : [];
       if (values.length > 0) out[id] = { kind: "select", values };
