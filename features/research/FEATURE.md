@@ -100,7 +100,9 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 - **Topic authorization denials are domain outcomes, not repair incidents.** Research compute
   calls may return 403 after access is revoked or a stale shared link is opened. The experts
   surface shows the refusal once without feeding either the API failure or its toast into
-  `system_error`; unexpected statuses remain captured at the transport boundary.
+  `system_error`; unexpected statuses remain captured at the transport boundary. The topic
+  layout resolves its topic read before launching overview/catalog reads so a guest or expired
+  session reaches the canonical `AccessGate` instead of an opaque Server Components failure.
 - **The Experts surface owns responsive interaction density.** Its root uses
   `matrx-touch-targets`, and its Radix checkboxes retain the 14px visual while an invisible 44px
   `CHECKBOX_TAP_AREA` owns the tablet/mobile hit target.
@@ -109,6 +111,8 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-08-30 — Sequenced the topic layout's access read ahead of secondary server reads, preserving
+  the canonical access gate for guest, expired-session, deleted, and denied topic outcomes.
 - 2026-08-30 — The Experts surface now applies the shared 44px responsive touch floor to its
   actions and invisible 44px hit areas to its visually compact checkboxes.
 - 2026-08-30 — Classified expected 403s from expert extraction/promotion at the canonical raw
