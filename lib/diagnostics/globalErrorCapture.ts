@@ -148,6 +148,28 @@ export function isExpectedNextNavigationRecovery(
 }
 
 /**
+ * Browsers deliberately erase every useful field for exceptions raised by a
+ * cross-origin script that does not opt into CORS. Keep the local Inspector
+ * breadcrumb, but never turn that evidence-free browser sentinel into a
+ * durable implementation-repair row.
+ */
+export function isOpaqueCrossOriginScriptError(event: {
+  message: string;
+  error: unknown;
+  filename: string;
+  lineno: number;
+  colno: number;
+}): boolean {
+  return (
+    event.message === "Script error." &&
+    event.error == null &&
+    event.filename === "" &&
+    event.lineno === 0 &&
+    event.colno === 0
+  );
+}
+
+/**
  * Install the global error listeners. Idempotent and browser-only — safe to
  * call from any client effect; subsequent calls are no-ops.
  */
@@ -189,6 +211,7 @@ export function installGlobalErrorCapture(): void {
         name: err instanceof Error ? err.name : undefined,
         stack: err instanceof Error ? err.stack : undefined,
         raw,
+        durable: !isOpaqueCrossOriginScriptError(event),
       });
     } catch {
       /* capture must never break the page */
