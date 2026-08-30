@@ -14,7 +14,7 @@ batch to 15 files or fewer.
 Run the registry detector over `.tsx` files:
 
 ```bash
-rg -n -P '[\x{1F000}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]' --glob '*.tsx'
+rg -n -P '[\x{1F000}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{2205}]' --glob '*.tsx'
 ```
 
 Inspect every match in rendering context. Classify it as:
@@ -23,7 +23,8 @@ Inspect every match in rendering context. Classify it as:
   sample data rendered by the app, product-authored text copied/exported for
   the user, or an icon value that reaches the UI.
 - **False positive:** non-rendered comment/documentation, console-only
-  diagnostic text, or a parser constant accepting glyphs as input.
+  diagnostic text, a parser constant accepting glyphs as input, or an internal
+  sentinel value that never reaches rendered or exported content.
 - **Unresolved:** reachability or rendering cannot be proven. Report it; never
   silently clear it.
 

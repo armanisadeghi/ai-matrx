@@ -140,6 +140,7 @@ function openingAttributes(
 
 function interactiveOpening(
   opening: ts.JsxOpeningLikeElement,
+  iconNames: Set<string>,
 ): Omit<InteractionEvidence, "direct"> | undefined {
   const tag = jsxTagName(opening.tagName);
   const bareTag = tag.split(".").at(-1) ?? tag;
@@ -156,6 +157,10 @@ function interactiveOpening(
   if (INTERACTIVE_INTRINSICS.has(tag)) {
     return { description: `<${tag}>`, score: 130 };
   }
+  // Imported icon identities are authoritative. A lucide icon such as
+  // ExternalLink is decoration unless its callsite adds interaction semantics;
+  // its name ending in "Link" must not promote it into the control queue.
+  if (iconNames.has(tag.split(".")[0])) return undefined;
   if (
     /(?:Button|Link|Trigger|MenuItem|Checkbox|Switch|Select|Combobox|Radio|Slider|Tab)$/.test(
       bareTag,
@@ -174,9 +179,10 @@ function interactiveOpening(
 
 function interactionEvidence(
   node: ts.JsxElement | ts.JsxSelfClosingElement,
+  iconNames: Set<string>,
 ): InteractionEvidence | undefined {
   const opening = ts.isJsxElement(node) ? node.openingElement : node;
-  const direct = interactiveOpening(opening);
+  const direct = interactiveOpening(opening, iconNames);
   if (direct) return { direct: true, ...direct };
   if (!ts.isJsxElement(node)) return undefined;
   let descendant: Omit<InteractionEvidence, "direct"> | undefined;
@@ -186,7 +192,7 @@ function interactionEvidence(
       ts.isJsxOpeningElement(candidate) ||
       ts.isJsxSelfClosingElement(candidate)
     ) {
-      const evidence = interactiveOpening(candidate);
+      const evidence = interactiveOpening(candidate, iconNames);
       if (evidence) {
         descendant = evidence;
         return;
@@ -358,7 +364,7 @@ export function analyzeP3HoverSource(
         opening.getStart(),
       );
       const tag = jsxTagName(opening.tagName);
-      const interaction = interactionEvidence(node);
+      const interaction = interactionEvidence(node, iconNames);
       const safe = safeReason(tokens, hidden, interaction);
       let classification: P3HoverClassification;
       let rank: number;

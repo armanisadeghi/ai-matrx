@@ -74,6 +74,21 @@
       ],
       "previousEventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a",
       "eventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:44:43.951Z",
+      "actor": "root",
+      "summary": "Reapplied exact 15-file hover repair slice is ready for adversarial certification",
+      "evidence": [
+        "candidate:38173c5d5011a6e594c3e9aa0eecf4c86a735527",
+        "path-scoped repair base:aa02307e8d8e5c6cff71056d6ee4079682e7bd26",
+        "shared controller absorbed the 15 repair blobs while holding index.lock; two unrelated co-committed paths excluded from owned slice",
+        "current canonical blobs match candidate on all 15 owned paths"
+      ],
+      "previousEventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf",
+      "eventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069"
     }
   ]
 }

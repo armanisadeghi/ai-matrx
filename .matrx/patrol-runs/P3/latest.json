@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T143951Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:41:32.897Z",
-  "summary": "Resume same bounded hover repair on current canonical main",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:44:43.951Z",
+  "summary": "Reapplied exact 15-file hover repair slice is ready for adversarial certification",
   "source": "20260830T143951Z.json",
-  "eventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf"
+  "eventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069"
 }
