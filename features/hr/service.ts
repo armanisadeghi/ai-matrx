@@ -1055,6 +1055,22 @@ export function recordHrSeparation(args: {
   rehireEligible: boolean | null;
   rehireEligibleNote?: string | null;
   noticeGivenOn?: string | null;
+  /**
+   * §4.5 node C3 — THE DOCUMENTED BASIS FOR A FOR-CAUSE SEPARATION.
+   *
+   * 🚨 THE COLUMN HAD NO WRITER. `hr.separation.corrective_action_id` has existed since core
+   * tranche 2 (file 09 owed the FK), `hr_separation_record` has always read
+   * `p_payload ->> 'corrective_action_id'`, and all nine live separations carry NULL — because
+   * no surface has ever sent it. §4.5's flowchart is explicit that the Cause path links the
+   * corrective action, so this is not an invention: it is the one edge of that diagram nobody
+   * had wired.
+   *
+   * 🚨 IT IS A NO-EDGE LINK (§4.8 I2). Pointing a separation at a corrective action must never
+   * convey reach to that action — somebody who can see the separation does not thereby become
+   * able to read the confidential record behind it. Nothing here widens anything; the id is
+   * stored, and every read of the target still goes through its own audited door.
+   */
+  correctiveActionId?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_separation_record",
@@ -1069,6 +1085,7 @@ export function recordHrSeparation(args: {
         rehire_eligible: args.rehireEligible,
         rehire_eligible_note: args.rehireEligibleNote ?? null,
         notice_given_on: args.noticeGivenOn ?? null,
+        corrective_action_id: args.correctiveActionId ?? null,
       },
     },
     {
