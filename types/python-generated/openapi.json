@@ -16997,6 +16997,69 @@
         }
       }
     },
+    "/buffer/public/status": {
+      "get": {
+        "tags": [
+          "Buffer Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_buffer_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BufferServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/later/public/status": {
+      "get": {
+        "tags": [
+          "Later Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_later_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaterServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/milanote/public/status": {
+      "get": {
+        "tags": [
+          "Milanote Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_milanote_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilanoteStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/dailymotion/public/demo-video": {
       "get": {
         "tags": [
@@ -17197,6 +17260,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WoRMSPublicTaxon"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nws/public/station": {
+      "get": {
+        "tags": [
+          "National Weather Service Integrations"
+        ],
+        "summary": "Public Station",
+        "operationId": "public_station_nws_public_station_get",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{4}$",
+              "title": "Station Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NWSPublicStation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rcsb-pdb/public/entry": {
+      "get": {
+        "tags": [
+          "RCSB Protein Data Bank Integrations"
+        ],
+        "summary": "Public Entry",
+        "operationId": "public_entry_rcsb_pdb_public_entry_get",
+        "parameters": [
+          {
+            "name": "pdb_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{4}$",
+              "title": "Pdb Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RCSBPDBPublicEntry"
                 }
               }
             }
@@ -84580,6 +84729,47 @@
         ],
         "title": "BudgetRejectionRow"
       },
+      "BufferServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "buffer_public_service_status",
+            "title": "Kind",
+            "default": "buffer_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "buffer",
+            "title": "Provider",
+            "default": "buffer"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.buffer.com/",
+            "title": "Status Page",
+            "default": "https://status.buffer.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BufferServiceStatus",
+        "description": "Safe aggregate status projection for Buffer's fixed status page."
+      },
       "BuildMasterworkRequest": {
         "properties": {
           "organization_id": {
@@ -134400,6 +134590,47 @@
         ],
         "title": "LandscapeBriefRulingBody"
       },
+      "LaterServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "later_public_service_status",
+            "title": "Kind",
+            "default": "later_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "later",
+            "title": "Provider",
+            "default": "later"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.later.com/",
+            "title": "Status Page",
+            "default": "https://status.later.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LaterServiceStatus",
+        "description": "Safe aggregate status projection for Later's fixed status page."
+      },
       "LatestDeriveRun": {
         "properties": {
           "status": {
@@ -142786,6 +143017,56 @@
         ],
         "title": "MicrosoftLifecycleResponse"
       },
+      "MilanoteStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "milanote_official_service_status",
+            "title": "Kind",
+            "default": "milanote_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "milanote",
+            "title": "Provider",
+            "default": "milanote"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.milanote.com",
+            "title": "Status Url",
+            "default": "https://status.milanote.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MilanoteStatusResult",
+        "description": "Safe projection of Milanote's high-level service status."
+      },
       "MintControlRequest": {
         "properties": {
           "mode": {
@@ -144043,6 +144324,68 @@
         ],
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
+      },
+      "NWSPublicStation": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nws_public_station",
+            "title": "Kind",
+            "default": "nws_public_station"
+          },
+          "provider": {
+            "type": "string",
+            "const": "national_weather_service",
+            "title": "Provider",
+            "default": "national_weather_service"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "station_id": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{4}$",
+            "title": "Station Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "title": "Timezone"
+          },
+          "elevation_meters": {
+            "type": "number",
+            "maximum": 10000,
+            "minimum": -500,
+            "title": "Elevation Meters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "station_id",
+          "canonical_url",
+          "name",
+          "timezone",
+          "elevation_meters"
+        ],
+        "title": "NWSPublicStation",
+        "description": "Safe factual projection of one public NWS station identity."
       },
       "NagerHolidaysCalendar": {
         "properties": {
@@ -162849,6 +163192,94 @@
         ],
         "title": "QuipStatusResult",
         "description": "Safe projection of Quip's high-level production-cloud status."
+      },
+      "RCSBPDBPublicEntry": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rcsb_pdb_public_entry",
+            "title": "Kind",
+            "default": "rcsb_pdb_public_entry"
+          },
+          "provider": {
+            "type": "string",
+            "const": "rcsb_pdb",
+            "title": "Provider",
+            "default": "rcsb_pdb"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "pdb_id": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{4}$",
+            "title": "Pdb Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "classification": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Classification"
+          },
+          "experimental_method": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Experimental Method"
+          },
+          "resolution_angstroms": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100,
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Angstroms"
+          },
+          "initial_release_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Initial Release Date"
+          },
+          "polymer_entity_count": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Polymer Entity Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pdb_id",
+          "canonical_url",
+          "title",
+          "classification",
+          "experimental_method",
+          "initial_release_date",
+          "polymer_entity_count"
+        ],
+        "title": "RCSBPDBPublicEntry",
+        "description": "Safe factual projection of one released RCSB PDB entry."
       },
       "RaceRequest": {
         "properties": {

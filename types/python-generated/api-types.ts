@@ -6795,6 +6795,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/buffer/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_buffer_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/later/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_later_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/milanote/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_milanote_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dailymotion/public/demo-video": {
         parameters: {
             query?: never;
@@ -6889,6 +6940,40 @@ export interface paths {
         };
         /** Public Taxon */
         get: operations["public_taxon_worms_public_taxon_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nws/public/station": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Station */
+        get: operations["public_station_nws_public_station_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rcsb-pdb/public/entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Entry */
+        get: operations["public_entry_rcsb_pdb_public_entry_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -33125,6 +33210,38 @@ export interface components {
             projected_usd?: string | null;
         };
         /**
+         * BufferServiceStatus
+         * @description Safe aggregate status projection for Buffer's fixed status page.
+         */
+        BufferServiceStatus: {
+            /**
+             * Kind
+             * @default buffer_public_service_status
+             * @constant
+             */
+            __kind?: "buffer_public_service_status";
+            /**
+             * Provider
+             * @default buffer
+             * @constant
+             */
+            provider?: "buffer";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.buffer.com/
+             * @constant
+             */
+            status_page?: "https://status.buffer.com/";
+        };
+        /**
          * BuildMasterworkRequest
          * @description Build one Rulebook into a working Masterwork (agents + workflow).
          *
@@ -52486,6 +52603,38 @@ export interface components {
             /** Brief Markdown */
             brief_markdown?: string | null;
         };
+        /**
+         * LaterServiceStatus
+         * @description Safe aggregate status projection for Later's fixed status page.
+         */
+        LaterServiceStatus: {
+            /**
+             * Kind
+             * @default later_public_service_status
+             * @constant
+             */
+            __kind?: "later_public_service_status";
+            /**
+             * Provider
+             * @default later
+             * @constant
+             */
+            provider?: "later";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.later.com/
+             * @constant
+             */
+            status_page?: "https://status.later.com/";
+        };
         /** LatestDeriveRun */
         LatestDeriveRun: {
             /** Status */
@@ -55680,6 +55829,43 @@ export interface components {
             entitlements: components["schemas"]["MicrosoftEntitlementResponse"][];
         };
         /**
+         * MilanoteStatusResult
+         * @description Safe projection of Milanote's high-level service status.
+         */
+        MilanoteStatusResult: {
+            /**
+             * Kind
+             * @default milanote_official_service_status
+             * @constant
+             */
+            __kind?: "milanote_official_service_status";
+            /**
+             * Provider
+             * @default milanote
+             * @constant
+             */
+            provider?: "milanote";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.milanote.com
+             * @constant
+             */
+            status_url?: "https://status.milanote.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * MintControlRequest
          * @description Body of POST /handoffs/{handoff_id}/stream-ticket.
          */
@@ -56280,6 +56466,40 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * NWSPublicStation
+         * @description Safe factual projection of one public NWS station identity.
+         */
+        NWSPublicStation: {
+            /**
+             * Kind
+             * @default nws_public_station
+             * @constant
+             */
+            __kind?: "nws_public_station";
+            /**
+             * Provider
+             * @default national_weather_service
+             * @constant
+             */
+            provider?: "national_weather_service";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Station Id */
+            station_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Name */
+            name: string;
+            /** Timezone */
+            timezone: string;
+            /** Elevation Meters */
+            elevation_meters: number;
         };
         /**
          * NagerHolidaysCalendar
@@ -64477,6 +64697,46 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * RCSBPDBPublicEntry
+         * @description Safe factual projection of one released RCSB PDB entry.
+         */
+        RCSBPDBPublicEntry: {
+            /**
+             * Kind
+             * @default rcsb_pdb_public_entry
+             * @constant
+             */
+            __kind?: "rcsb_pdb_public_entry";
+            /**
+             * Provider
+             * @default rcsb_pdb
+             * @constant
+             */
+            provider?: "rcsb_pdb";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Pdb Id */
+            pdb_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Classification */
+            classification: string;
+            /** Experimental Method */
+            experimental_method: string;
+            /** Resolution Angstroms */
+            resolution_angstroms?: number | null;
+            /** Initial Release Date */
+            initial_release_date: string;
+            /** Polymer Entity Count */
+            polymer_entity_count: number;
         };
         /**
          * RaceRequest
@@ -94499,6 +94759,66 @@ export interface operations {
             };
         };
     };
+    public_status_buffer_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BufferServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_later_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LaterServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_milanote_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilanoteStatusResult"];
+                };
+            };
+        };
+    };
     public_demo_video_dailymotion_public_demo_video_get: {
         parameters: {
             query?: never;
@@ -94650,6 +94970,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WoRMSPublicTaxon"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_station_nws_public_station_get: {
+        parameters: {
+            query: {
+                station_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NWSPublicStation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_entry_rcsb_pdb_public_entry_get: {
+        parameters: {
+            query: {
+                pdb_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RCSBPDBPublicEntry"];
                 };
             };
             /** @description Validation Error */
