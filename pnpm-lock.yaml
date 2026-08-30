@@ -22,7 +22,7 @@ importers:
         version: 0.5.1(@ai-matrx/design-system@0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       '@ai-matrx/capture':
         specifier: latest
-        version: 0.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/content-ir':
         specifier: latest
         version: 0.9.0
@@ -823,8 +823,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/capture@0.4.2':
-    resolution: {integrity: sha512-1df9L0a0HfEkfUNFBn/IPqcYd6ZaFzISwiajrt4Yu1somU/RdtVnZhARn1CYnc65+KlOHA7GrgPOK3e6ShboJw==}
+  '@ai-matrx/capture@0.4.3':
+    resolution: {integrity: sha512-E0jqRObnJB+Emh3S3ZPhfdx1gHQcCy9BGio69g0cJhTSiwZYKOm33A1XUxdvepskb8VpOuYVqM8RDaOH5wsTDw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13104,7 +13104,7 @@ snapshots:
       '@ai-matrx/design-system': 0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
 
-  '@ai-matrx/capture@0.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/capture@0.4.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       react: 19.2.7
       tailwind-merge: 3.6.0
