@@ -23,9 +23,7 @@
       "at": "2026-08-30T08:31:01.041Z",
       "actor": "brand_site_picker",
       "summary": "Repairing ScopeContextTargetPicker through canonical owner doors",
-      "evidence": [
-        "No inline record writer authorized"
-      ],
+      "evidence": ["No inline record writer authorized"],
       "previousEventHash": "840a3efa77633e3140627f9c57f2722020ef175d5ae6ffa1ec44d05cb8da1a77",
       "eventHash": "b694160b09e68d289542d454abcf10bb675fb214f14c427bf4cb7583eac6a345"
     },
@@ -60,9 +58,7 @@
       "at": "2026-08-30T08:42:03.291Z",
       "actor": "brand_site_picker",
       "summary": "Repairing mobile touch-target floor on scope owner-door cascade",
-      "evidence": [
-        "Preserve canonical routes and no-writer architecture"
-      ],
+      "evidence": ["Preserve canonical routes and no-writer architecture"],
       "previousEventHash": "69afa62e48621bd8e298a8a32a22c327a5818d48a4dd921f1d9a36db601407ee",
       "eventHash": "7294fc3ae553342c9fd5d0a97fca0bcb1bd7db2ab4b36e6a67a133934b5cd2aa"
     },
@@ -110,9 +106,7 @@
       "at": "2026-08-30T08:49:28.489Z",
       "actor": "root",
       "summary": "Certified scope candidate queued for fast integration",
-      "evidence": [
-        "authority-ref:refs/heads/patrol-runs/P13/20260830T083100Z"
-      ],
+      "evidence": ["authority-ref:refs/heads/patrol-runs/P13/20260830T083100Z"],
       "delivery": {
         "candidateSha": "562eaed419b332de4a1cf31136642fcf1e9248ae",
         "preservedRef": "refs/heads/patrol-runs/P13/20260830T083100Z"
@@ -137,6 +131,18 @@
       },
       "previousEventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd",
       "eventHash": "8c2ff1b6dabbdb250c1674f99757f8d923363712ae67f2b1ac78d114df8fb4ff"
+    },
+    {
+      "sequence": 10,
+      "state": "closed",
+      "at": "2026-08-30T08:50:00.521Z",
+      "actor": "root",
+      "summary": "Closed certified scope repair run after Git integration; fleet release queued by release owner",
+      "evidence": [
+        "No further repair unit started under release-owner stop boundary"
+      ],
+      "previousEventHash": "8c2ff1b6dabbdb250c1674f99757f8d923363712ae67f2b1ac78d114df8fb4ff",
+      "eventHash": "19b31e7e035f2f3b86bab66095357edf6f663dacbe08e0291ba4adc07d128392"
     }
   ]
 }

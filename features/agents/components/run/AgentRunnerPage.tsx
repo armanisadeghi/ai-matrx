@@ -55,6 +55,7 @@ import { setUserVariableValues } from "@/features/agents/redux/execution-system/
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { useAgentRunSurfaceScope } from "@/features/agents/hooks/useAgentRunSurfaceScope";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { createAgentRunVariableValuesHandler } from "./agent-run-variable-write";
 
 const RUN_INITIAL_MESSAGE_LIMIT = 12;
 
@@ -482,45 +483,25 @@ export function AgentRunnerPage({
       },
     };
 
-    // Offered ONLY when this agent declares variables — which is exactly when
-    // the variable inputs are rendered for the user to edit. An agent with no
-    // variables is offered no target at all, rather than one that always throws.
-    const declaredNow = selectInstanceVariableDefinitions(activeConversationId)(
-      store.getState(),
-    );
-    if (declaredNow.length > 0) {
-      handlers.variable_values = (value: unknown) => {
-        if (typeof value !== "object" || value === null || Array.isArray(value))
-          throw new Error(
-            'variable_values expects an object of { "<variable name>": <value> }.',
-          );
-        const patch = value as Record<string, unknown>;
-        const keys = Object.keys(patch);
-        if (!keys.length)
-          throw new Error(
-            "variable_values expects at least one variable to set; an empty object would change nothing.",
-          );
-        // Re-read at APPLY time: the run's instance (and so its declared
-        // variables) can change between the target being offered and the
-        // write landing.
-        const declared = selectInstanceVariableDefinitions(
-          activeConversationId,
-        )(store.getState()).map((d) => d.name);
-        const unknownNames = keys.filter((k) => !declared.includes(k));
-        if (unknownNames.length)
-          throw new Error(
-            `variable_values refused — ${unknownNames.map((n) => `"${n}"`).join(", ")} ${unknownNames.length === 1 ? "is not a variable" : "are not variables"} this agent declares. Declared variables: ${declared.map((n) => `"${n}"`).join(", ")}. Nothing was applied.`,
-          );
-        // The SAME action every variable-input variant dispatches. It MERGES,
-        // so variables the caller omitted keep their values — as documented.
+    // The manifest declaration is permanent, so its handler is permanent too.
+    // Conversation replacement/loading may briefly remove the instance-owned
+    // definition snapshot after a target was offered. Removing the handler in
+    // that interval turns valid domain state into a platform wiring failure.
+    handlers.variable_values = createAgentRunVariableValuesHandler({
+      readDefinitions: () =>
+        selectInstanceVariableDefinitions(activeConversationId)(
+          store.getState(),
+        ),
+      // The SAME action every variable-input variant dispatches. It MERGES,
+      // so variables the caller omitted keep their values — as documented.
+      applyValues: (values) =>
         dispatch(
           setUserVariableValues({
             conversationId: activeConversationId,
-            values: patch,
+            values,
           }),
-        );
-      };
-    }
+        ),
+    });
 
     return handlers;
   };
