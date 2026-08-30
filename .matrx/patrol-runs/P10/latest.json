@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T14:48:39.891Z",
-  "summary": "Certified candidate is already integrated on origin/main; recorded delivery without invoking the release lane.",
+  "state": "reconciled",
+  "updatedAt": "2026-08-30T14:48:50.322Z",
+  "summary": "Reconciled escaped delivery after later exact-candidate certification and delivery proof.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3"
+  "eventHash": "912aa986dbd2d45f169f6525c99636ea3fdc48297e6e5d73cb3db87193daae70"
 }

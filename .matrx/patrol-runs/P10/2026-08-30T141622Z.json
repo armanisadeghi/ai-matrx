@@ -307,6 +307,42 @@
       },
       "previousEventHash": "1d4b97325c1ec714bba8b59c38e40746506ce6d8744faa074b7380f8ba2c6352",
       "eventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3"
+    },
+    {
+      "sequence": 20,
+      "state": "closed",
+      "at": "2026-08-30T14:48:48.931Z",
+      "actor": "/root",
+      "summary": "Closed the certified schema-backed tranche after delivery bookkeeping.",
+      "evidence": [
+        "ready schema-backed agent-definition queue exhausted",
+        "repository-wide P10 ratchet remains open"
+      ],
+      "previousEventHash": "1e240122d1e2d924eb85c917848076189cc4a8d2a66a5118e21ac3032dd3c4d3",
+      "eventHash": "d88a3b97efb1c705003cdf17b3a3148cb586dccbaa992b2588c3ddf329c9414a"
+    },
+    {
+      "sequence": 21,
+      "state": "reconciled",
+      "at": "2026-08-30T14:48:50.322Z",
+      "actor": "/root",
+      "summary": "Reconciled escaped delivery after later exact-candidate certification and delivery proof.",
+      "evidence": [
+        "CERTIFIED:/root/p10_certifier",
+        "focused-tests:61-pass",
+        "full-type-check:PASS"
+      ],
+      "reconciliation": {
+        "candidateSha": "d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "escapedEventHash": "abfa5c206cc9cbf155d56e3e9b969699ab9e36f3b25b5f251a88d696948a8bae",
+        "checks": [
+          "candidate d3a4cd79b6 is an ancestor of origin/main",
+          "authority tree matches candidate outside P10 record projections",
+          "P10 record and latest pointer are hash-valid and marker-free"
+        ]
+      },
+      "previousEventHash": "d88a3b97efb1c705003cdf17b3a3148cb586dccbaa992b2588c3ddf329c9414a",
+      "eventHash": "912aa986dbd2d45f169f6525c99636ea3fdc48297e6e5d73cb3db87193daae70"
     }
   ]
 }
