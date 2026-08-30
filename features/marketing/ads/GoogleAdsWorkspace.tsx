@@ -58,6 +58,29 @@ function currency(
   }).format(valueMicros / 1_000_000);
 }
 
+/**
+ * Google Ads returns its status as a raw API enum (ENABLED / PAUSED /
+ * REMOVED). Printing it put SHOUTING API casing on every campaign row; the
+ * codebase already maps enums to labels this way elsewhere
+ * (LISTING_STATUS_LABELS, PUBLISHER_TIER_LABELS).
+ */
+const CAMPAIGN_STATUS_LABELS: Record<string, string> = {
+  ENABLED: "Running",
+  PAUSED: "Paused",
+  REMOVED: "Removed",
+  UNKNOWN: "Unknown",
+  UNSPECIFIED: "Unknown",
+};
+
+function campaignStatusLabel(status: string | null): string {
+  if (!status) return "Status unavailable";
+  const key = status.trim().toUpperCase();
+  return (
+    CAMPAIGN_STATUS_LABELS[key] ??
+    key.charAt(0) + key.slice(1).toLowerCase().replaceAll("_", " ")
+  );
+}
+
 export function GoogleAdsWorkspace() {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const google = useGoogleAPI();
@@ -400,7 +423,7 @@ export function GoogleAdsWorkspace() {
                         {campaign.campaign_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {campaign.status || "Status unavailable"}
+                        {campaignStatusLabel(campaign.status)}
                       </p>
                     </div>
                     <p className="text-sm">

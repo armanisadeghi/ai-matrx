@@ -11,7 +11,10 @@ import { HrActionDialog } from "@/features/hr/tasks/components/HrActionDialog";
 import { HrCorrectiveAckPanel } from "@/features/hr/tasks/components/HrCorrectiveAckPanel";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
-import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
+import {
+    HrRefusalNotice,
+    HrRefusalReference,
+} from "@/features/hr/tasks/components/HrRefusalNotice";
 import {
     cancelInstance,
     decideStep,
@@ -22,6 +25,7 @@ import {
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { hrTasksHref } from "@/features/hr/routes";
+import { HrAccessDenied } from "@/features/hr/shared/HrAccessDenied";
 import { HrEmployerSubstitutionNotice } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { relativeDue } from "@/features/hr/tasks/urgency";
@@ -338,7 +342,39 @@ export function HrDecisionPanel({
             )}
 
             <div className="flex-1 min-h-0 space-y-6 overflow-y-auto p-4">
-                {refusal ? <HrRefusalNotice refusal={refusal} action="Opening this request" /> : null}
+                {/*
+                    🚨 A REFUSAL TO OPEN IS A READ GATE, AND READ GATES ARE THE
+                    PLATFORM'S SCREEN (owner ruling, 2026-08-30). With no detail
+                    beside it, this notice WAS the page — a bespoke HR panel
+                    where every other blocked surface in the product shows one
+                    canonical refusal. It now renders through that frame, still
+                    carrying the engine's own sentence and its Refusal reference.
+
+                    ABSOLUTE, with no request affordance: a workflow instance can
+                    be an incident or a corrective action, so "Request access"
+                    here would confirm to an accused person that a case about
+                    them exists — the §5 subject-exclusion veto. There is no
+                    `employerRef`, so `HrAccessDenied` stays absolute by default.
+
+                    A refusal that arrives ALONGSIDE a rendered detail is a
+                    partial one (a withheld section, a refused action) — that
+                    stays the inline notice, which is the right instrument for a
+                    fact inside a page the person can otherwise read.
+                */}
+                {refusal && !detail ? (
+                    <HrAccessDenied
+                        sentence={
+                            refusal.detail?.trim() ||
+                            "This request isn't yours to open here."
+                        }
+                        fallbackHref={hrTasksHref(orgRef)}
+                        fallbackLabel="All HR tasks"
+                        footer={<HrRefusalReference refusal={refusal} />}
+                    />
+                ) : null}
+                {refusal && detail ? (
+                    <HrRefusalNotice refusal={refusal} action="Opening this request" />
+                ) : null}
                 {loading && !detail ? (
                     <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />
                 ) : null}

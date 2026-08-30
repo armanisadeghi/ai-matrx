@@ -67,6 +67,7 @@ import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import {
   createSeoChange,
   getMetricEvidence,
@@ -962,7 +963,16 @@ function ImplementationItem({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   return (
     <div className="rounded-lg border bg-card p-3">
@@ -1106,7 +1116,16 @@ function EvidenceCard({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
 
   if (!bundle.change.deployed_at)
@@ -1269,7 +1288,16 @@ function ManualEvidenceCard({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -1608,7 +1636,16 @@ function ChangeEditForm({
       onChanged();
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   return (
     <div className="mx-auto grid max-w-xl gap-5 overflow-auto p-6">
@@ -1792,7 +1829,16 @@ export function SeoChangeTrackingWorkspace() {
       toast.success("SEO experiment documented");
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
+      toast.error(
+        // `String(error)` on a Supabase PostgrestError (a plain object, not an
+        // Error) renders the literal "[object Object]" — the exact anti-pattern
+        // extractErrorMessage exists to prevent. Humanized for the person;
+        // the log keeps the detail.
+        humanizeBackendError(
+          extractErrorMessage(error),
+          "That did not save. Try again in a moment.",
+        ) ?? "That did not save. Try again in a moment.",
+      ),
   });
   const rows = changes.data ?? [];
   // The parent site layout rejects a route whose site has no matching brand;
