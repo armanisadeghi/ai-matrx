@@ -51,6 +51,7 @@ function formatWhen(value: string | null | undefined): string {
 
 export function RestrictedNotesPanel({
   notes,
+  organizationId,
   targetToken,
   targetId,
   canWrite,
@@ -58,6 +59,7 @@ export function RestrictedNotesPanel({
 }: {
   /** `undefined` = the key was absent = this viewer has no note lane. */
   notes: HrRestrictedNote[] | undefined;
+  organizationId: string;
   targetToken: string;
   targetId: string;
   canWrite: boolean;
@@ -76,6 +78,7 @@ export function RestrictedNotesPanel({
     if (!body.trim() || saving) return;
     setSaving(true);
     const result = await addHrRestrictedNote({
+      organizationId,
       targetToken,
       targetId,
       noteKind: kind,
@@ -191,7 +194,7 @@ export function RestrictedNotesPanel({
       ) : (
         <ul className="space-y-3">
           {notes.map((note) => {
-            const owned = note.is_owner !== false && Boolean(note.body);
+            const owned = Boolean(note.body);
             // A non-owner gets the redacted line IF the server sent one, and
             // nothing at all otherwise — not a "restricted" placeholder row.
             if (!owned && !note.redacted_summary) return null;

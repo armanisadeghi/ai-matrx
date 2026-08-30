@@ -1187,12 +1187,72 @@ export function scanHrDuplicates(args: {
   );
 }
 
-export function createHrIncident(
-  payload: Record<string, unknown>,
-): Promise<HrResult<HrWriteAck>> {
+/**
+ * File one incident or complaint (§4.9b).
+ *
+ * 🚨 MAPPED FIELD BY FIELD, BECAUSE THE BAG LIED — the same defect
+ * `createHrVerificationRequest` documents above, on the form where it costs the
+ * most. This took `Record<string, unknown>` and forwarded whatever the dialog
+ * built, and the dialog built two keys the door does not read:
+ *
+ *   · `establishment` — a typed-in NAME. The door reads `establishment_id`, a
+ *     uuid. Every establishment anyone has ever entered went into a void.
+ *   · `osha_fields` — a NESTED object. The door reads eleven FLAT columns
+ *     (`injury_body_part`, `treatment_beyond_first_aid`, …). So the whole OSHA
+ *     300/301 capture set — the one the form's own header calls "captured NOW
+ *     or never, impossible to reconstruct after the fact" — was dropped on the
+ *     floor of every injury and illness report ever filed.
+ *
+ * An untyped payload at an RPC seam is a cast wearing a different hat: it
+ * compiles, and it proves nothing about the names on the other side. Every key
+ * below was read out of `public.hr_incident_create`'s body on 2026-08-30.
+ *
+ * 🚨 `osha_recordable` IS DELIBERATELY ABSENT and must stay absent. Recordability
+ * is a human decision made later with a rules assist (§4.9b L3); no intake form
+ * and no heuristic may set it. `subject_excluded` is sent, but the door decides:
+ * it is PLATFORM-LOCKED true for harassment, discrimination and ethics, and the
+ * form must not pretend otherwise (see `subjectExclusionLocked`).
+ */
+export function createHrIncident(args: {
+  organizationId: string;
+  incidentKind: string;
+  summary: string;
+  reportedAnonymously: boolean;
+  subjectEmploymentId?: string | null;
+  subjectExcluded?: boolean | null;
+  occurredAt?: string | null;
+  establishmentId?: string | null;
+  osha?: {
+    injury_body_part?: string | null;
+    injury_nature?: string | null;
+    injury_object_substance?: string | null;
+    injury_event_description?: string | null;
+    treatment_beyond_first_aid?: boolean | null;
+    treatment_facility?: string | null;
+    physician_name?: string | null;
+    hospitalized_overnight?: boolean | null;
+    emergency_room?: boolean | null;
+    work_restrictions?: string | null;
+    return_to_work_on?: string | null;
+    workers_comp_claim_ref?: string | null;
+    provider_ref?: string | null;
+  } | null;
+}): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_incident_create",
-    { p_payload: payload },
+    {
+      p_payload: {
+        organization_id: args.organizationId,
+        incident_kind: args.incidentKind,
+        summary: args.summary,
+        reported_anonymously: args.reportedAnonymously,
+        subject_employment_id: args.subjectEmploymentId ?? null,
+        subject_excluded: args.subjectExcluded ?? null,
+        occurred_at: args.occurredAt ?? null,
+        establishment_id: args.establishmentId ?? null,
+        ...(args.osha ?? {}),
+      },
+    },
     {
       envelope: true,
       whatFailed: "This incident report",
@@ -1542,6 +1602,32 @@ export function fetchHrIncidentStatus(
     "hr_incident_status",
     { p_incident_id: incidentId },
     { envelope: true, whatFailed: "The status of your report" },
+  );
+}
+
+/**
+ * Every report the caller filed, with the SAME projection `hr_incident_status`
+ * returns for one of them (hr_l1_75).
+ *
+ * 🚨 THIS EXISTS BECAUSE THE REPORTER'S PAGE WAS REACHABLE ONLY BY GUESSING A
+ * URL. `hr_incident_status` takes an incident id and an ordinary employee has no
+ * door anywhere that would ever hand them one: the list door scopes them out,
+ * and route 15 is ABSENT for employees by §2.2. Somebody who reported harassment
+ * had a real need — "did my report vanish?" — that the product could not meet.
+ *
+ * It carries state, its label, the declared next step and the dates. NO summary,
+ * NO parties, NO notes, ever — the same guarantee, for the same structural
+ * reason: a door that was never given a field cannot leak it. An ANONYMOUS
+ * report has no reporter linkage by construction (§4.9b A2) and so can never
+ * appear here, which is the anonymity working rather than a gap.
+ */
+export function fetchHrMyIncidentReports(
+  organizationId: string | null,
+): Promise<HrResult<Record<string, unknown>>> {
+  return callHrRaw(
+    "hr_my_incident_reports",
+    { p_organization_id: organizationId },
+    { envelope: true, whatFailed: "Your reports" },
   );
 }
 

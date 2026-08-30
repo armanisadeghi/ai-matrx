@@ -110,6 +110,33 @@ export function defaultSubjectExcluded(kind: HrIncidentKind): boolean {
   );
 }
 
+/**
+ * 🚨 FOR THESE THREE KINDS THE EXCLUSION IS NOT A DEFAULT — IT IS THE PLATFORM'S,
+ * AND NOBODY CAN TURN IT OFF.
+ *
+ * `public.hr_incident_create` computes it before it writes anything:
+ *
+ *     v_locked := v_kind in ('harassment','discrimination','ethics');
+ *     v_excluded := case when v_locked then true … end;
+ *
+ * — the payload's `subject_excluded` is not even consulted on that branch, and
+ * the knob `hr.relations.complaint_subject_excluded_default` is scoped to "other
+ * kinds only" for the same reason (§7). So a SWITCH rendered next to a
+ * harassment report is a control that cannot do the thing it offers: it moved,
+ * it looked answered, and the server ignored it. A control that lies about an
+ * access decision on a harassment complaint is worse than no control, because
+ * the person filing it is deciding whether they are safe.
+ *
+ * `defaultSubjectExcluded` still governs `complaint` — where the org's knob
+ * really can loosen it — and safety/near-miss/injury, where the reporter really
+ * can tighten it.
+ */
+export function subjectExclusionLocked(kind: HrIncidentKind): boolean {
+  return (
+    kind === "harassment" || kind === "discrimination" || kind === "ethics"
+  );
+}
+
 /** Injuries and illnesses capture the OSHA 300/301 set AT INTAKE — it cannot be captured later. */
 export function needsOshaCapture(kind: HrIncidentKind): boolean {
   return kind === "injury" || kind === "illness";
@@ -292,6 +319,15 @@ export const HR_CORRECTIVE_ACTION_OUTCOME_LABELS: Record<
 // exactly the way `hr_employee_profile.personal` does, so `key in row` is a
 // real access answer and a null is a real "nobody filled this in".
 
+// 🚨 EVERY FIELD BELOW WAS RE-READ OFF `hr.incident` AND `hr._project_row` ON
+// 2026-08-30, AND SEVEN OF THEM DID NOT EXIST. `redacted_summary`,
+// `assignee_employment_id`, `assignee_name`, `reporter_name`,
+// `establishment_name`, `osha_fields`, `legal_hold_id` and `legal_hold_origin`
+// were all declared here and none of them has ever been on the wire — an
+// optional key that names nothing is indistinguishable from a key the viewer's
+// tier stripped, which is exactly how "the legal-hold banner never renders"
+// survived a build. The door emits the flat table row plus `subject_name`, and
+// that is what this type says now.
 export type HrIncidentRow = {
   id: string;
   organization_id?: string | null;
@@ -300,25 +336,40 @@ export type HrIncidentRow = {
   occurred_at: string | null;
   reported_at: string | null;
   summary?: string | null;
-  redacted_summary?: string | null;
   subject_employment_id?: string | null;
+  /** Added by `hr._project_row` from the subject employment, per viewer. */
   subject_name?: string | null;
-  /** ABSENT for an anonymous report. The page never renders an empty "Reported by". */
+  /** NULL for an anonymous report. The page never renders an empty "Reported by". */
   reporter_employment_id?: string | null;
-  reporter_name?: string | null;
   reported_anonymously?: boolean | null;
-  assignee_employment_id?: string | null;
-  assignee_name?: string | null;
+  assigned_to_employment_id?: string | null;
   establishment_id?: string | null;
-  establishment_name?: string | null;
+  follow_up_on?: string | null;
   osha_recordable?: boolean | null;
   osha_privacy_case?: boolean | null;
-  osha_fields?: Record<string, unknown> | null;
+  /** The OSHA 300/301 set is FLAT on the row — never a nested `osha_fields` bag. */
+  injury_body_part?: string | null;
+  injury_nature?: string | null;
+  injury_object_substance?: string | null;
+  injury_event_description?: string | null;
+  treatment_beyond_first_aid?: boolean | null;
+  treatment_facility?: string | null;
+  physician_name?: string | null;
+  hospitalized_overnight?: boolean | null;
+  emergency_room?: boolean | null;
+  work_restrictions?: string | null;
+  return_to_work_on?: string | null;
+  workers_comp_claim_ref?: string | null;
+  provider_ref?: string | null;
   resolution_summary?: string | null;
   resolved_at?: string | null;
-  legal_hold_id?: string | null;
-  legal_hold_origin?: string | null;
+  /** `{{RETAIN}}`. There is no `legal_hold_id` and there never was. */
+  legal_hold_count?: number | null;
+  retention_trigger_at?: string | null;
   subject_excluded?: boolean | null;
+  /** Set by `hr_incident_void` (hr_l1_76). A void is NEVER hidden. */
+  voided_at?: string | null;
+  void_reason?: string | null;
 };
 
 export type HrCorrectiveActionRow = {
@@ -328,7 +379,8 @@ export type HrCorrectiveActionRow = {
   state: string;
   issued_on: string | null;
   incident_on: string | null;
-  subject_employment_id?: string | null;
+  /** `hr.corrective_action` names its subject `employment_id`, not `subject_…`. */
+  employment_id?: string | null;
   subject_name?: string | null;
   /** null → `esign` is ABSENT from the acknowledgment choices. */
   subject_login_user_id?: string | null;
@@ -350,8 +402,7 @@ export type HrCorrectiveActionRow = {
   esign_request_id?: string | null;
   outcome?: string | null;
   attendance_exception_id?: string | null;
-  legal_hold_id?: string | null;
-  legal_hold_origin?: string | null;
+  legal_hold_count?: number | null;
 };
 
 /** One row of the unified route-15 list. */
@@ -375,29 +426,45 @@ export type HrRelationsCase = {
   correctiveAction?: HrCorrectiveActionRow;
 };
 
+/**
+ * MAPPED in `fetchHrIncidentParties`, not cast. The wire column is `party_role`
+ * and the person's name arrives as `subject_name`; `note` is gone because
+ * `hr.incident_party` has no note column — a narrative about a party belongs in
+ * `hr.restricted_note`, behind its own lane.
+ */
 export type HrIncidentParty = {
   id: string;
   role: HrIncidentPartyRole | string;
   employment_id?: string | null;
   display_name?: string | null;
   external_name?: string | null;
-  note?: string | null;
+  interviewed_at?: string | null;
   added_at?: string | null;
 };
 
 export type HrRestrictedNote = {
   id: string;
   note_kind: HrRestrictedNoteKind | string;
-  /** Present ONLY through the note's own owner lane. */
+  title?: string | null;
+  /** Present ONLY through the note's own per-kind reader lane. */
   body?: string | null;
   /** What a non-owner may be given instead — often nothing at all. */
   redacted_summary?: string | null;
+  /**
+   * Usually NULL. `hr.restricted_note` names its person `author_employment_id`,
+   * and `hr._project_row` only resolves a display name off
+   * `subject_employment_id` / `employment_id` — so the door does not currently
+   * name the author. Rendered as absent rather than as a uuid.
+   */
   author_name?: string | null;
   created_at?: string | null;
-  is_owner?: boolean | null;
 };
 
-/** What `hr_restricted_get` returns for one case, either kind. */
+/**
+ * The COMPOSED case, assembled by `useHrRelationsCase` out of three separately
+ * audited reads (§2.2 route 16). It is NOT what any one door returns — that
+ * mistake is what made the case page render a heading and nothing else.
+ */
 export type HrCaseDetail = {
   case_kind?: HrCaseKind | string;
   incident?: HrIncidentRow;

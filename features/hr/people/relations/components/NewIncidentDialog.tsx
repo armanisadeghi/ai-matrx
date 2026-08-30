@@ -17,16 +17,21 @@
 // made on the case page after the facts are in (§4.9b L3). Nothing on this form
 // may set `osha_recordable`, and no heuristic may set it for anybody.
 //
-// 🚨 SUBJECT EXCLUSION DEFAULTS BY KIND. Complaint / ethics / harassment /
-// discrimination default the subject OUT of their own record; safety and near
-// miss do not. The control is offered because the reporter knows things the
-// kind does not — but the real enforcement is `hr.incident_excluded()` on the
-// server, evaluated per row after every allow lane.
+// 🚨 SUBJECT EXCLUSION IS A CHOICE FOR SOME KINDS AND A PLATFORM LOCK FOR
+// OTHERS, AND THIS FORM USED TO DRAW A SWITCH FOR BOTH. Harassment,
+// discrimination and ethics are locked TRUE inside `hr_incident_create` — it
+// does not read the payload key at all on that branch — so the switch a person
+// filing a harassment complaint was offered did nothing whatsoever. It is now a
+// LOCK with the reason next to it: a control that cannot change the outcome is
+// not rendered as a control. Complaint (org-knobbed) and safety / near miss /
+// injury / illness / other keep a real switch, because there the reporter knows
+// things the kind does not. The enforcement is always
+// `hr.incident_excluded()` on the server, evaluated before every allow lane.
 
 "use client";
 
 import { useState } from "react";
-import { ShieldAlert } from "lucide-react";
+import { Lock, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +62,7 @@ import {
   HR_INCIDENT_KIND_LABELS,
   defaultSubjectExcluded,
   needsOshaCapture,
+  subjectExclusionLocked,
   type HrIncidentKind,
 } from "../types";
 import { EmploymentPicker } from "./EmploymentPicker";
@@ -85,10 +91,13 @@ const OSHA_FLAGS = [
   { key: "emergency_room", label: "Treated in an emergency room" },
 ] as const;
 
-const OSHA_COUNTS = [
-  { key: "days_away", label: "Days away from work" },
-  { key: "days_restricted", label: "Days on restricted duty" },
-] as const;
+function oshaText(value: string | boolean | undefined): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function oshaFlag(value: string | boolean | undefined): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
 
 export function NewIncidentDialog({
   subjectEmploymentId,
@@ -107,7 +116,6 @@ export function NewIncidentDialog({
   );
   const [occurredAt, setOccurredAt] = useState("");
   const [summary, setSummary] = useState("");
-  const [establishment, setEstablishment] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [excluded, setExcluded] = useState(defaultSubjectExcluded("complaint"));
   const [osha, setOsha] = useState<Record<string, string | boolean>>({});
@@ -116,32 +124,52 @@ export function NewIncidentDialog({
   const showOsha = needsOshaCapture(kind);
   const canSave = summary.trim().length > 0 && !saving;
 
+  const exclusionLocked = subjectExclusionLocked(kind);
+
   function chooseKind(next: HrIncidentKind) {
     setKind(next);
     // The default follows the kind; an explicit change by the reporter is
-    // theirs to keep, but changing the kind re-asks the question honestly.
-    setExcluded(defaultSubjectExcluded(next));
+    // theirs to keep, but changing the kind re-asks the question honestly. For
+    // a locked kind there is no question: it is true and it stays true.
+    setExcluded(subjectExclusionLocked(next) || defaultSubjectExcluded(next));
   }
 
   async function save() {
     if (!canSave || !active) return;
     setSaving(true);
     const result = await createHrIncident({
-      organization_id: active.organization_id,
-      incident_kind: kind,
+      organizationId: active.organization_id,
+      incidentKind: kind,
       // An anonymous report creates NO employment linkage, so no future join
       // can re-identify the reporter (§4.9b A2). The server owns the reporter
       // column; the client simply never sends one.
-      reported_anonymously: anonymous,
-      subject_employment_id: subject,
-      subject_excluded: excluded,
-      occurred_at: occurredAt || null,
+      reportedAnonymously: anonymous,
+      subjectEmploymentId: subject,
+      subjectExcluded: excluded,
+      occurredAt: occurredAt || null,
       summary: summary.trim(),
-      establishment: establishment.trim() || null,
       // Captured now because it cannot be captured later. `osha_recordable` is
       // deliberately NOT in this payload — that is a human decision made on the
       // case page with a rules assist.
-      osha_fields: showOsha ? osha : null,
+      osha: showOsha
+        ? {
+            injury_body_part: oshaText(osha.body_part),
+            injury_nature: oshaText(osha.nature_of_injury),
+            injury_object_substance: oshaText(osha.object_substance),
+            injury_event_description: oshaText(osha.event_description),
+            treatment_beyond_first_aid: oshaFlag(
+              osha.treatment_beyond_first_aid,
+            ),
+            treatment_facility: oshaText(osha.facility),
+            physician_name: oshaText(osha.physician),
+            hospitalized_overnight: oshaFlag(osha.hospitalized),
+            emergency_room: oshaFlag(osha.emergency_room),
+            work_restrictions: oshaText(osha.work_restrictions),
+            return_to_work_on: oshaText(osha.return_to_work),
+            workers_comp_claim_ref: oshaText(osha.workers_comp_claim_ref),
+            provider_ref: oshaText(osha.provider_ref),
+          }
+        : null,
     });
     setSaving(false);
 
@@ -207,16 +235,6 @@ export function NewIncidentDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="in-establishment">Establishment</Label>
-            <Input
-              id="in-establishment"
-              value={establishment}
-              onChange={(e) => setEstablishment(e.target.value)}
-              className="min-h-11 sm:min-h-9"
-            />
-          </div>
-
-          <div className="space-y-1.5">
             <Label htmlFor="in-subject">Who this is about</Label>
             <EmploymentPicker
               id="in-subject"
@@ -239,19 +257,41 @@ export function NewIncidentDialog({
             <Switch checked={anonymous} onCheckedChange={setAnonymous} />
           </label>
 
-          <label className="flex min-h-11 items-start justify-between gap-3 rounded-md border border-border px-3 py-2">
-            <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                Keep this out of the subject&apos;s reach
+          {exclusionLocked ? (
+            // A STATEMENT, NOT A SWITCH. It says what is true and why it is not
+            // this person's decision — which is the reassuring fact here, and
+            // the only place on this deliberately clinical form where reassuring
+            // the reporter is the correct thing to do.
+            <div className="flex min-h-11 items-start gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {HR_INCIDENT_KIND_LABELS[kind]} reports are always kept out of
+                  the subject&apos;s reach.
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  The person this is about will not be able to see this record,
+                  and nobody here can change that — not an HR owner, not an
+                  administrator, and not an emergency override.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <label className="flex min-h-11 items-start justify-between gap-3 rounded-md border border-border px-3 py-2">
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  Keep this out of the subject&apos;s reach
+                </span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {excluded
+                    ? "The person this is about will not be able to see this record, and no override restores it."
+                    : "The person this is about will be able to see this record — which is usually right for a safety report, because they are the one who can explain what happened."}
+                </span>
               </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                The person this is about will not be able to see this record,
-                and no override restores it.
-              </span>
-            </span>
-            <Switch checked={excluded} onCheckedChange={setExcluded} />
-          </label>
+              <Switch checked={excluded} onCheckedChange={setExcluded} />
+            </label>
+          )}
 
           {showOsha ? (
             <section className="space-y-3 rounded-md border border-border p-3">
@@ -278,24 +318,6 @@ export function NewIncidentDialog({
                   />
                 </div>
               ))}
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {OSHA_COUNTS.map((field) => (
-                  <div key={field.key} className="space-y-1.5">
-                    <Label htmlFor={`osha-${field.key}`}>{field.label}</Label>
-                    <Input
-                      id={`osha-${field.key}`}
-                      type="number"
-                      min={0}
-                      value={String(osha[field.key] ?? "")}
-                      onChange={(e) =>
-                        setOsha((o) => ({ ...o, [field.key]: e.target.value }))
-                      }
-                      className="min-h-11 sm:min-h-9"
-                    />
-                  </div>
-                ))}
-              </div>
 
               {OSHA_FLAGS.map((flag) => (
                 <label

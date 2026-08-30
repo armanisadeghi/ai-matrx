@@ -55,17 +55,12 @@ export function IncidentStatePanel({
   const [resolutionSummary, setResolutionSummary] = useState(
     incident.resolution_summary ?? "",
   );
-  const [resolvedAt, setResolvedAt] = useState(
-    incident.resolved_at?.slice(0, 10) ?? "",
-  );
-  const [referralNote, setReferralNote] = useState("");
   const [saving, setSaving] = useState(false);
 
   const next = HR_INCIDENT_NEXT_STATES[current];
 
   const blocked =
-    (target === "resolved" && resolutionSummary.trim().length === 0) ||
-    (target === "closed" && resolvedAt.length === 0);
+    target === "resolved" && resolutionSummary.trim().length === 0;
 
   async function advance() {
     if (!target || blocked || saving) return;
@@ -75,8 +70,6 @@ export function IncidentStatePanel({
       toState: HR_INCIDENT_STATE_TOKEN[target],
       resolutionSummary:
         target === "resolved" ? resolutionSummary.trim() : null,
-      resolvedAt: target === "closed" ? resolvedAt : null,
-      referralNote: target === "referred" ? referralNote.trim() || null : null,
     });
     setSaving(false);
 
@@ -132,37 +125,6 @@ export function IncidentStatePanel({
                 value={resolutionSummary}
                 onChange={(e) => setResolutionSummary(e.target.value)}
                 rows={4}
-              />
-            </div>
-          ) : null}
-
-          {target === "closed" ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="state-resolved-at">
-                Date it was resolved (required)
-              </Label>
-              <Input
-                id="state-resolved-at"
-                type="date"
-                value={resolvedAt}
-                onChange={(e) => setResolvedAt(e.target.value)}
-                className="min-h-11 sm:min-h-9"
-              />
-              <p className="text-xs text-muted-foreground">
-                Closing starts this record&apos;s retention clock from this date.
-                A legal hold blocks every disposition regardless.
-              </p>
-            </div>
-          ) : null}
-
-          {target === "referred" ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="state-referral">Where it was referred</Label>
-              <Input
-                id="state-referral"
-                value={referralNote}
-                onChange={(e) => setReferralNote(e.target.value)}
-                className="min-h-11 sm:min-h-9"
               />
             </div>
           ) : null}

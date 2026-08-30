@@ -21,6 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import NodeDialog, { type NodeDialogState } from "./NodeDialog";
 import TaxonomyMap from "./TaxonomyMap";
 import TaxonomyTree from "./TaxonomyTree";
@@ -36,8 +37,10 @@ export default function TaxonomyAdminClient() {
   const [rows, setRows] = useState<TaxonomyRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<"tree" | "map">("tree");
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TaxonomyStatus | "all">("all");
+  const [query, setQuery] = useUrlState("q", stringUrlCodec());
+  const [statusFilter, setStatusFilter] = useState<TaxonomyStatus | "all">(
+    "all",
+  );
   const [dialog, setDialog] = useState<NodeDialogState | null>(null);
 
   const load = useCallback(async () => {
@@ -52,7 +55,8 @@ export default function TaxonomyAdminClient() {
   }, []);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   const tree = useMemo(() => {
@@ -95,9 +99,15 @@ export default function TaxonomyAdminClient() {
     });
     if (!approved) return;
     const supabase = createClient();
-    const { error } = await supabase.rpc("admin_taxonomy_delete", { p_id: node.id });
+    const { error } = await supabase.rpc("admin_taxonomy_delete", {
+      p_id: node.id,
+    });
     if (error) {
-      toast({ title: "Delete refused", description: error.message, variant: "destructive" });
+      toast({
+        title: "Delete refused",
+        description: error.message,
+        variant: "destructive",
+      });
       return;
     }
     toast({ title: `Deleted ${node.slug}` });
@@ -108,7 +118,9 @@ export default function TaxonomyAdminClient() {
     <div className="mx-auto max-w-6xl space-y-4 p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Feature Registry</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            Feature Registry
+          </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             The platform taxonomy — Domain, Feature, Sub-feature — live from{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs">
@@ -118,18 +130,25 @@ export default function TaxonomyAdminClient() {
               <>
                 {" · "}
                 {counts.domains} domains · {counts.features} features ·{" "}
-                {counts.subfeatures} sub-features · {counts.canonical} canonical ·{" "}
-                {counts.proposed} proposed
+                {counts.subfeatures} sub-features · {counts.canonical} canonical
+                · {counts.proposed} proposed
               </>
             )}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" title="Refresh" onClick={() => void load()}>
+          <Button
+            variant="outline"
+            size="icon"
+            title="Refresh"
+            onClick={() => void load()}
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
-            onClick={() => setDialog({ mode: "create", level: "domain", parentId: null })}
+            onClick={() =>
+              setDialog({ mode: "create", level: "domain", parentId: null })
+            }
           >
             <Plus className="mr-1.5 h-4 w-4" /> New domain
           </Button>
@@ -186,7 +205,11 @@ export default function TaxonomyAdminClient() {
       )}
       {rows &&
         (view === "tree" ? (
-          <TaxonomyTree nodes={tree} onOpenDialog={setDialog} onDelete={handleDelete} />
+          <TaxonomyTree
+            nodes={tree}
+            onOpenDialog={setDialog}
+            onDelete={handleDelete}
+          />
         ) : (
           <TaxonomyMap nodes={tree} onOpenDialog={setDialog} />
         ))}

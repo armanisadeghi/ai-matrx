@@ -46799,6 +46799,10 @@ export type Database = {
       }
     }
     Functions: {
+      _actor_display_name: {
+        Args: { p_actor_user: string; p_organization_id: string; p_uid: string }
+        Returns: string
+      }
       _add_business_days: {
         Args: {
           p_day_zero_counts?: boolean
@@ -47266,6 +47270,10 @@ export type Database = {
         Args: { p_change: Json; p_tz: string }
         Returns: string
       }
+      _punch_change_words_short: {
+        Args: { p_change: Json; p_tz: string }
+        Returns: string
+      }
       _punch_elapsed: {
         Args: { p_employment_id: string; p_now?: string }
         Returns: Json
@@ -47298,7 +47306,7 @@ export type Database = {
           p_replacement_punch_id: string
           p_voided_punch_id: string
         }
-        Returns: number
+        Returns: Json
       }
       _punch_open_chain: {
         Args: { p_employment_id: string }
@@ -48098,6 +48106,11 @@ export type Database = {
         Args: { p_incident: string; p_user: string }
         Returns: boolean
       }
+      incident_next_step_sentence: {
+        Args: { p_follow_up_on: string; p_state: string }
+        Returns: string
+      }
+      incident_state_label: { Args: { p_state: string }; Returns: string }
       jurisdiction_chain: { Args: { p_key: string }; Returns: Json }
       jurisdiction_evaluate: {
         Args: {
@@ -48441,7 +48454,7 @@ export type Database = {
       }
       my_time_off: { Args: { p_employment_id?: string }; Returns: Json }
       my_timesheet_context: {
-        Args: { p_employment_id?: string }
+        Args: { p_employment_id?: string; p_punch_id?: string }
         Returns: Json
       }
       name_rule_violations: {
@@ -59626,6 +59639,11 @@ export type Database = {
           object_name: string
         }[]
       }
+      admin_db_cron_job_update: {
+        Args: { p_active?: boolean; p_jobid: number; p_schedule?: string }
+        Returns: Json
+      }
+      admin_db_cron_jobs: { Args: never; Returns: Json }
       admin_relation_catalog: {
         Args: never
         Returns: {
@@ -66901,6 +66919,10 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_corrective_action_acknowledge: {
+        Args: { p_id: string; p_payload: Json }
+        Returns: Json
+      }
       hr_corrective_action_issue: { Args: { p_payload: Json }; Returns: Json }
       hr_corrective_action_outcome: {
         Args: { p_id: string; p_outcome: string; p_payload?: Json }
@@ -66920,6 +66942,10 @@ export type Database = {
       hr_duplicate_scan: {
         Args: { p_organization_id: string; p_probe: Json }
         Returns: Json
+      }
+      hr_earning_code_id: {
+        Args: { p_code: string; p_organization_id: string }
+        Returns: string
       }
       hr_emergency_contact_remove: { Args: { p_id: string }; Returns: Json }
       hr_emergency_contact_upsert: { Args: { p_payload: Json }; Returns: Json }
@@ -67280,9 +67306,13 @@ export type Database = {
         Returns: Json
       }
       hr_my_context: { Args: { p_organization_id?: string }; Returns: Json }
+      hr_my_incident_reports: {
+        Args: { p_organization_id?: string }
+        Returns: Json
+      }
       hr_my_time_off: { Args: { p_employment_id?: string }; Returns: Json }
       hr_my_timesheet_context: {
-        Args: { p_employment_id?: string }
+        Args: { p_employment_id?: string; p_punch_id?: string }
         Returns: Json
       }
       hr_my_verification_consents: { Args: never; Returns: Json }
@@ -75129,6 +75159,7 @@ export type Database = {
           queue: string
           surfaces: string[]
           tags: string[]
+          taxonomy_node_id: string | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -75152,6 +75183,7 @@ export type Database = {
           queue?: string
           surfaces?: string[]
           tags?: string[]
+          taxonomy_node_id?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -75175,6 +75207,7 @@ export type Database = {
           queue?: string
           surfaces?: string[]
           tags?: string[]
+          taxonomy_node_id?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null

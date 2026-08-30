@@ -61,7 +61,7 @@ export function CaseSurface({
   hintedKind: HrCaseKind | null;
 }) {
   const router = useRouter();
-  const { orgRef } = useHrContext();
+  const { orgRef, active } = useHrContext();
   const { can } = useHrPersona();
   const [wasReachable, setWasReachable] = useState(false);
 
@@ -94,10 +94,8 @@ export function CaseSurface({
 
   const incident = detail?.incident;
   const action = detail?.corrective_action;
-  const underLegalHold = Boolean(
-    incident?.legal_hold_id ?? action?.legal_hold_id,
-  );
-  const holdOrigin = incident?.legal_hold_origin ?? action?.legal_hold_origin;
+  const underLegalHold =
+    (incident?.legal_hold_count ?? action?.legal_hold_count ?? 0) > 0;
 
   const canInvestigate =
     can("incident.investigate") ||
@@ -160,16 +158,6 @@ export function CaseSurface({
               </div>
             ) : null}
 
-            {/* An anonymous report has NO reporter and renders NO slot. */}
-            {incident && !incident.reported_anonymously && incident.reporter_name ? (
-              <div>
-                <dt className="text-xs text-muted-foreground">Reported by</dt>
-                <dd className="font-medium text-foreground">
-                  {incident.reporter_name}
-                </dd>
-              </div>
-            ) : null}
-
             {incident?.occurred_at ? (
               <div>
                 <dt className="text-xs text-muted-foreground">Occurred</dt>
@@ -179,14 +167,6 @@ export function CaseSurface({
               </div>
             ) : null}
 
-            {incident?.establishment_name ? (
-              <div>
-                <dt className="text-xs text-muted-foreground">Establishment</dt>
-                <dd className="text-foreground">
-                  {incident.establishment_name}
-                </dd>
-              </div>
-            ) : null}
           </dl>
 
           {incident?.reported_anonymously ? (
@@ -206,21 +186,19 @@ export function CaseSurface({
                 This case is under a legal hold.
               </p>
               <p className="text-xs text-muted-foreground">
-                {holdOrigin
-                  ? `Placed by ${holdOrigin}. Nothing on this record can be disposed of while the hold stands.`
-                  : "Nothing on this record can be disposed of while the hold stands."}
+                Nothing on this record can be disposed of while the hold stands.
               </p>
             </div>
           </div>
         ) : null}
 
-        {incident?.summary || incident?.redacted_summary || action?.summary ? (
+        {incident?.summary || action?.summary ? (
           <section className="rounded-lg border border-border bg-card p-4">
             <h2 className="text-sm font-semibold text-foreground">
               {caseKind === "incident" ? "What happened" : "Summary"}
             </h2>
             <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
-              {incident?.summary ?? incident?.redacted_summary ?? action?.summary}
+              {incident?.summary ?? action?.summary}
             </p>
           </section>
         ) : null}
@@ -257,6 +235,7 @@ export function CaseSurface({
 
         <RestrictedNotesPanel
           notes={detail?.restricted_notes}
+          organizationId={active?.organization_id ?? ""}
           targetToken={caseKind === "incident" ? "hr_incident" : "hr_corrective_action"}
           targetId={caseId}
           canWrite={canInvestigate}

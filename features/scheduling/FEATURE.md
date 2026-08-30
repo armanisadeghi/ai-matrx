@@ -214,18 +214,30 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-29** — System jobs no longer exist by display name alone. Every
+  server `kind=tool` task carries a required FK to one canonical
+  `platform.taxonomy_node`; every pg_cron job is anchored from that same
+  registry through `taxonomy_node.anchors.db_cron_jobs`. Both tables now show
+  the full Domain / Feature / Sub-feature path, every segment opens the exact
+  Feature Registry node, search/copy/context include the identity, and both
+  edit dialogs can intentionally reclassify the job. The taxonomy admin search
+  now persists `?q=` so those identity doors land on the named node. The API
+  and DB boundaries scream on a missing identity, and generic creation of a
+  tool schedule is rejected without `taxonomy_node_id`.
+
 - **2026-08-29** — The System jobs tab gained a second section, **Database
   jobs (pg_cron)** — the ~12 jobs running SQL inside Postgres itself (log
   pruning, webhook tick, partition upkeep; register:
   `common-docs/operations/db-scheduled-jobs.md`). Same control surface via the
   new admin-gated `GET/PATCH /scheduling/admin/db-jobs` endpoints
-  (`listDbJobs`/`patchDbJob` in `schedulerClient.ts`, hand-written wire types
-  in `schedulerApi.types.ts` until the next generated-contract sync): job,
+  (`listDbJobs`/`patchDbJob` in `schedulerClient.ts`, generated wire types in
+  `schedulerApi.types.ts`): job,
   schedule (with cronstrue hint), Active/Inactive, last run from
   `cron.job_run_details`, command; row actions Enable/Disable (confirm in BOTH
   directions — disabling stops real database maintenance) and Edit (schedule
   string only; pg_cron accepts 5-field cron or "30 seconds", validated
-  server-side by `cron.alter_job`). Deliberately NO Run now: pg_cron has no
+  server-side by `cron.alter_job`) plus Feature Registry classification.
+  Deliberately NO Run now: pg_cron has no
   run-once primitive and several jobs are destructive purges. Manifest gained
   `db_job_count` / `db_job_active_count` / `db_jobs_load_error`. Per Arman's
   2026-08-29 extension of the schedules ruling ("As for the database level

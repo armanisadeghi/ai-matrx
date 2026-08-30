@@ -16,6 +16,8 @@ import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
 
 import {
+  fetchHrCaseRestrictedNotes,
+  fetchHrIncidentParties,
   fetchHrRelationsCase,
   fetchHrRelationsCases,
   type HrRelationsFilter,
@@ -97,6 +99,39 @@ export type HrRelationsCaseState = {
 };
 
 /**
+ * Which allow lane the SERVER used, turned into the word the surface reasons
+ * with. `basis` is `hr._door_verdict`'s own answer — `self`, `role`,
+ * `authority` (an `investigator` party row), or `break_glass` — so this is a
+ * translation, never an inference about who the viewer is.
+ *
+ * 🚨 THIS IS AN AFFORDANCE, NOT A GATE. Every write on this page is refused by
+ * its own door on the server's reading of the caller. Getting this wrong shows
+ * or hides a button; it can never grant anything.
+ */
+function viewerRoleFromBasis(
+  basis: string | null,
+  isSelfAccess: boolean,
+  caseKind: HrCaseKind,
+  row: Record<string, unknown>,
+  viewerEmploymentId: string | null,
+): HrCaseDetail["viewer_role"] {
+  if (basis === "authority") return "investigator";
+  if (basis === "self" || isSelfAccess) {
+    // On a corrective action the self lane covers BOTH the subject and the
+    // issuer (`created_by`), and the panel has to tell them apart: the subject
+    // may not record their own acknowledgment as if they were the issuer. The
+    // row's own subject column is the discriminator.
+    if (caseKind === "corrective_action") {
+      return viewerEmploymentId && row.employment_id === viewerEmploymentId
+        ? "subject"
+        : "issuer";
+    }
+    return "subject";
+  }
+  return "hr";
+}
+
+/**
  * One case, either kind.
  *
  * When `hintedKind` is null (a link that dropped `?kind=`) this probes the
@@ -109,6 +144,27 @@ export type HrRelationsCaseState = {
  * just accused themselves loses reach on their very NEXT request. When
  * `refresh()` comes back denied on a case that was open a second ago, the
  * surface redirects with a NEUTRAL message — it never explains why.
+ *
+ * 🚨 THE CASE PAGE RENDERED A HEADING AND NOTHING ELSE, FOR A YEAR OF BUILD.
+ * This hook did `setDetail(result.data.row)` — and `row` is `hr._project_row`'s
+ * output: the FLAT `hr.incident` (or `hr.corrective_action`) record plus a
+ * `subject_name`. `CaseSurface` reads `detail?.incident`, `detail?.parties`,
+ * `detail?.restricted_notes` and `detail?.viewer_role`, and not one of those
+ * keys has ever existed on that payload. So every panel below the header —
+ * state, parties, OSHA, notes, the corrective-action block — was gated on
+ * `undefined` and silently did not render, on every case, for every viewer.
+ *
+ * 🚨 AND THE FIX IS **NOT** A FATTER DOOR. §2.2 route 16 names three reads and
+ * keeps them apart on purpose: `hr_restricted_get` for the record;
+ * `hr.incident_party` "(component, conveyed by the parent's reach)"; and
+ * `hr.restricted_note` "only through its own owner lane". Folding parties and
+ * notes into the case payload would convey a note by the parent's reach, which
+ * is the exact thing SPEC-DATA-MODEL forbids in as many words — "making it a
+ * component of `hr.incident` would hand it to everyone who can read the
+ * incident". So this hook composes three audited reads and each one is
+ * separately refusable. A component the viewer may not have simply comes back
+ * empty, and an absent key stays absent: `RestrictedNotesPanel` renders NOTHING
+ * for `undefined`, which is its own documented law.
  */
 export function useHrRelationsCase(args: {
   caseId: string;
@@ -116,6 +172,9 @@ export function useHrRelationsCase(args: {
   justification: string;
 }): HrRelationsCaseState {
   const { caseId, hintedKind, justification } = args;
+  const { active } = useHrContext();
+  const organizationId = active?.organization_id ?? null;
+  const viewerEmploymentId = active?.employment_id ?? null;
 
   const [detail, setDetail] = useState<HrCaseDetail | null>(null);
   const [caseKind, setCaseKind] = useState<HrCaseKind | null>(hintedKind);
@@ -143,16 +202,49 @@ export function useHrRelationsCase(args: {
           justification,
         });
         if (cancelled) return;
-        if (result.ok) {
-          setDetail(result.data.row);
-          setCaseKind(
-            (result.data.row.case_kind as HrCaseKind | undefined) ?? kind,
-          );
-          setError(null);
-          setIsLoading(false);
-          return;
+        if (!result.ok) {
+          lastFailure = result;
+          continue;
         }
-        lastFailure = result;
+
+        const audited = result.data;
+        const row = audited.row as unknown as Record<string, unknown>;
+
+        // The two component reads. They ride the parent's reach and are asked
+        // for only once the parent has actually answered — a parties call on a
+        // case the viewer was just refused would write a second, meaningless
+        // denial into their audit trail.
+        const [parties, notes] = await Promise.all([
+          kind === "incident"
+            ? fetchHrIncidentParties(organizationId, caseId)
+            : Promise.resolve(null),
+          fetchHrCaseRestrictedNotes(organizationId, kind, caseId),
+        ]);
+        if (cancelled) return;
+
+        setDetail({
+          case_kind: kind,
+          incident: kind === "incident" ? (row as never) : undefined,
+          corrective_action:
+            kind === "corrective_action" ? (row as never) : undefined,
+          // A refused or failed component leaves the key ABSENT, never `[]`.
+          // "Nobody recorded yet" and "not yours to see" are different sentences
+          // here too, and the panels are written to say neither when they were
+          // told nothing.
+          parties: parties?.ok ? parties.data : undefined,
+          restricted_notes: notes.ok ? notes.data : undefined,
+          viewer_role: viewerRoleFromBasis(
+            audited.basis,
+            audited.isSelfAccess,
+            kind,
+            row,
+            viewerEmploymentId,
+          ),
+        });
+        setCaseKind(kind);
+        setError(null);
+        setIsLoading(false);
+        return;
       }
 
       setDetail(null);
@@ -163,7 +255,14 @@ export function useHrRelationsCase(args: {
     return () => {
       cancelled = true;
     };
-  }, [caseId, hintedKind, justification, reloadToken]);
+  }, [
+    caseId,
+    hintedKind,
+    justification,
+    reloadToken,
+    organizationId,
+    viewerEmploymentId,
+  ]);
 
   return {
     detail,

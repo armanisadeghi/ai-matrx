@@ -15,6 +15,7 @@
 import {
   fetchHrRelationsList,
   fetchHrRestricted,
+  fetchHrRestrictedList,
 } from "@/features/hr/service";
 import type { HrResult } from "@/features/hr/types";
 
@@ -23,19 +24,22 @@ import {
   HR_CORRECTIVE_ACTION_STATE_LABELS,
   HR_INCIDENT_KIND_LABELS,
   HR_INCIDENT_STATE_LABELS,
-  type HrCaseDetail,
   type HrCaseKind,
   type HrCorrectiveActionLevel,
   type HrCorrectiveActionRow,
   type HrCorrectiveActionState,
   type HrIncidentKind,
+  type HrIncidentParty,
   type HrIncidentRow,
   type HrIncidentState,
   type HrRelationsCase,
+  type HrRestrictedNote,
 } from "./types";
 
 export const HR_CORRECTIVE_ACTION_TOKEN = "hr_corrective_action";
 export const HR_INCIDENT_TOKEN = "hr_incident";
+export const HR_INCIDENT_PARTY_TOKEN = "hr_incident_party";
+export const HR_RESTRICTED_NOTE_TOKEN = "hr_restricted_note";
 
 /**
  * Why the whole union comes back in one answer.
@@ -98,12 +102,18 @@ export function incidentToCase(row: HrIncidentRow): HrRelationsCase {
     stateLabel: labelIncidentState(String(row.state)),
     subjectName: row.subject_name ?? null,
     subjectEmploymentId: row.subject_employment_id ?? null,
-    assigneeName: row.assignee_name ?? null,
+    assigneeName: null,
     oshaRecordable: row.osha_recordable ?? null,
-    underLegalHold: Boolean(row.legal_hold_id),
+    // 🚨 THE COLUMN IS `legal_hold_count`, AND `legal_hold_id` HAS NEVER EXISTED
+    // ON EITHER TABLE. Read live from information_schema on 2026-08-30: both
+    // carry the `{{RETAIN}}` block's `legal_hold_count integer`. So this cell,
+    // and the case page's whole legal-hold banner, were gated on `undefined` and
+    // a case under hold rendered as a case under no hold — on the one record
+    // class where the hold is the reason the delete action is absent.
+    underLegalHold: (row.legal_hold_count ?? 0) > 0,
     // `summary` may be absent for a viewer who only gets the redacted line.
     // Absent → null → the cell renders nothing. Never a placeholder.
-    summary: row.summary ?? row.redacted_summary ?? null,
+    summary: row.summary ?? null,
     incident: row,
   };
 }
@@ -119,10 +129,13 @@ export function correctiveActionToCase(
     state: String(row.state),
     stateLabel: labelActionState(String(row.state)),
     subjectName: row.subject_name ?? null,
-    subjectEmploymentId: row.subject_employment_id ?? null,
+    // `hr.corrective_action` names its subject `employment_id`; only
+    // `hr.incident` calls it `subject_employment_id`, and reading the incident's
+    // name here produced a null on every row.
+    subjectEmploymentId: row.employment_id ?? null,
     assigneeName: row.issuer_name ?? null,
     oshaRecordable: null,
-    underLegalHold: Boolean(row.legal_hold_id),
+    underLegalHold: (row.legal_hold_count ?? 0) > 0,
     summary: row.summary ?? null,
     correctiveAction: row,
   };
@@ -284,8 +297,15 @@ export function fetchHrRelationsCase(args: {
   caseKind: HrCaseKind;
   caseId: string;
   justification: string;
-}): ReturnType<typeof fetchHrRestricted<HrCaseDetail>> {
-  return fetchHrRestricted<HrCaseDetail>({
+}): ReturnType<typeof fetchHrRestricted<HrIncidentRow | HrCorrectiveActionRow>> {
+  // 🚨 THE TYPE ARGUMENT USED TO BE `HrCaseDetail`, WHICH IS THE COMPOSED SHAPE
+  // THIS FUNCTION HAS NEVER RETURNED. `hr_restricted_get` answers
+  // `{ granted, row, basis, is_self_access, audit_id }` and `row` is
+  // `hr._project_row`'s output — the FLAT table row plus `subject_name`. A
+  // generic that names the wrong shape is how the case page came to read four
+  // keys that were never on the wire; the composition happens in the hook, out
+  // of three separate audited reads, and it is typed there.
+  return fetchHrRestricted<HrIncidentRow | HrCorrectiveActionRow>({
     token:
       args.caseKind === "incident"
         ? HR_INCIDENT_TOKEN
@@ -294,4 +314,96 @@ export function fetchHrRelationsCase(args: {
     purpose: "relations_case_open",
     justification: args.justification,
   });
+}
+
+/**
+ * One case's party rows — §2.2 route 16's "component, conveyed by the parent's
+ * reach".
+ *
+ * `hr_incident_party` is its own registered RESTRICTED token with its own door
+ * spec, and `hr._door_verdict` runs §5's veto over it exactly as it does over
+ * the parent: an accused person is refused their own party row, and an
+ * investigator with no `incident.read` still reaches it through the party lane.
+ * So this is not a widening — it is the same gate, asked about the component.
+ *
+ * A refusal comes straight back. The panel renders NOTHING for an absent list
+ * and "Nobody recorded yet" only for a list it was actually given.
+ */
+export async function fetchHrIncidentParties(
+  organizationId: string | null,
+  incidentId: string,
+): Promise<HrResult<HrIncidentParty[]>> {
+  const result = await fetchHrRestrictedList<Record<string, unknown>>({
+    token: HR_INCIDENT_PARTY_TOKEN,
+    filter: {
+      ...(organizationId ? { organization_id: organizationId } : {}),
+      incident_id: incidentId,
+    },
+    limit: 200,
+    purpose: "relations_case_open",
+  });
+  if (!result.ok) return result;
+
+  return {
+    ok: true,
+    // Mapped off the wire, never cast. The column is `party_role`, the person's
+    // name arrives as `subject_name` (hr._project_row adds it from
+    // `employment_id`), and there is no `note` column on this table at all — the
+    // panel used to render `party.note` and `party.role`, neither of which the
+    // door has ever emitted.
+    data: result.data.rows.map((row) => ({
+      id: String(row.id),
+      role: String(row.party_role ?? ""),
+      employment_id: (row.employment_id as string | null) ?? null,
+      display_name: (row.subject_name as string | null) ?? null,
+      external_name: (row.external_name as string | null) ?? null,
+      interviewed_at: (row.interviewed_at as string | null) ?? null,
+      added_at: (row.created_at as string | null) ?? null,
+    })),
+  };
+}
+
+/**
+ * The case's restricted notes, through their OWN lane.
+ *
+ * 🚨 A NOTE IS NEVER A COMPONENT OF THE CASE. `hr.restricted_note` resolves its
+ * reader PER NOTE KIND inside `hr._door_verdict` (`hr._note_kind_caps`), plus
+ * the author's own owner lane — an `executive_only` note and an `investigation`
+ * note on the same case have different readers, and no org admin reaches either
+ * through the org. Asking for them here, as their own audited list, is what
+ * keeps that true: the door drops every row this viewer may not have, and what
+ * comes back is exactly their lane.
+ */
+export async function fetchHrCaseRestrictedNotes(
+  organizationId: string | null,
+  caseKind: HrCaseKind,
+  caseId: string,
+): Promise<HrResult<HrRestrictedNote[]>> {
+  const result = await fetchHrRestrictedList<Record<string, unknown>>({
+    token: HR_RESTRICTED_NOTE_TOKEN,
+    filter: {
+      ...(organizationId ? { organization_id: organizationId } : {}),
+      subject_token:
+        caseKind === "incident"
+          ? HR_INCIDENT_TOKEN
+          : HR_CORRECTIVE_ACTION_TOKEN,
+      subject_id: caseId,
+    },
+    limit: 200,
+    purpose: "relations_case_open",
+  });
+  if (!result.ok) return result;
+
+  return {
+    ok: true,
+    data: result.data.rows.map((row) => ({
+      id: String(row.id),
+      note_kind: String(row.note_kind ?? ""),
+      title: (row.title as string | null) ?? null,
+      body: (row.body as string | null) ?? null,
+      redacted_summary: (row.redacted_summary as string | null) ?? null,
+      author_name: (row.subject_name as string | null) ?? null,
+      created_at: (row.created_at as string | null) ?? null,
+    })),
+  };
 }

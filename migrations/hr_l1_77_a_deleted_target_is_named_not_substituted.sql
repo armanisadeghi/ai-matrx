@@ -1,4 +1,4 @@
--- hr_l1_75 — A DELETED TARGET IS NAMED, NEVER SUBSTITUTED.
+-- hr_l1_77 — A DELETED TARGET IS NAMED, NEVER SUBSTITUTED.
 --
 -- RECORD of a live change applied on 2026-08-29 to db.matrxserver.com.
 --
@@ -45,6 +45,10 @@
 -- server's `detail` and `remedy` verbatim (ProposePayChange's OutcomeLine puts both on screen
 -- under a neutral icon, and isRefusalEnvelope routes {granted:false} inline), so the new sentence
 -- reaches the person who typed the request without a new branch anywhere.
+--
+-- 🚨 NUMBERED 77, NOT 75: the ledger's slot guard refused hr_l1_75 mid-apply — that number is
+-- already held by hr_l1_75_an_employee_can_report_and_the_reporter_is_told.sql, and 76 by
+-- hr_l1_76_the_reason_category_had_no_reader.sql. The guard did exactly its job.
 --
 -- IDEMPOTENT: CREATE OR REPLACE plus a post-condition assertion. Re-running changes nothing.
 -- ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -130,7 +134,7 @@ begin
     return jsonb_build_object('granted', false, 'reason', 'cross_org',
                               'detail', 'the target belongs to a different organization');
   end if;
-  -- 🚨 hr_l1_75: A DELETED TARGET IS NAMED, NEVER SUBSTITUTED. This refusal is placed AFTER the
+  -- 🚨 hr_l1_77: A DELETED TARGET IS NAMED, NEVER SUBSTITUTED. This refusal is placed AFTER the
   -- cross-org check on purpose — another organization's archived row must read as cross_org, not
   -- as "no longer exists", which would confirm it once existed.
   --
@@ -356,7 +360,7 @@ begin
        and p.prosrc like '%target_deleted%'
        and p.prosrc like '%platform.entity_types%')
   then
-    raise exception 'hr_l1_75 did not take: hr.wf_request has no target_deleted refusal';
+    raise exception 'hr_l1_77 did not take: hr.wf_request has no target_deleted refusal';
   end if;
 end
 $post$;

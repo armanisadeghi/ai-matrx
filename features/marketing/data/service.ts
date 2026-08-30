@@ -2858,7 +2858,7 @@ function isUniqueViolation(error: unknown): boolean {
  */
 async function insertWithSlug<T>(
   baseSlug: string,
-  attempt: (slug: string) => Promise<{ data: T | null; error: unknown }>,
+  attempt: (slug: string) => PromiseLike<{ data: T | null; error: unknown }>,
 ): Promise<T> {
   for (let n = 1; n <= 30; n += 1) {
     const candidate =

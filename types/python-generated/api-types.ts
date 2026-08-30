@@ -6217,6 +6217,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/codeberg/public/repository": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Repository */
+        get: operations["public_repository_codeberg_public_repository_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openverse/public/image-attribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Image Attribution */
+        get: operations["public_image_attribution_openverse_public_image_attribution_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tvmaze/public/show": {
         parameters: {
             query?: never;
@@ -6353,6 +6387,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ror/public/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Organization */
+        get: operations["public_organization_ror_public_organization_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/artifact-hub/public/helm-package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Helm Package */
+        get: operations["public_helm_package_artifact_hub_public_helm_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library-of-congress/public/item": {
         parameters: {
             query?: never;
@@ -6379,6 +6447,40 @@ export interface paths {
         };
         /** Public Asset */
         get: operations["public_asset_nasa_images_public_asset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/smk/public/artwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Artwork */
+        get: operations["public_artwork_smk_public_artwork_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cleveland-museum/public/artwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Artwork */
+        get: operations["public_artwork_cleveland_museum_public_artwork_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13020,6 +13122,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23788,6 +23914,45 @@ export interface paths {
         patch: operations["admin_patch_system_task_scheduling_admin_system_tasks__task_id__patch"];
         trace?: never;
     };
+    "/scheduling/admin/db-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Db Jobs */
+        get: operations["admin_list_db_jobs_scheduling_admin_db_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduling/admin/db-jobs/{jobid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Admin Patch Db Job
+         * @description Change schedule and/or the active flag. The schedule string is validated
+         *     by cron.alter_job itself (pg_cron accepts 5-field cron AND '30 seconds'
+         *     style intervals); an invalid one comes back as a 422 with the DB's words.
+         */
+        patch: operations["admin_patch_db_job_scheduling_admin_db_jobs__jobid__patch"];
+        trace?: never;
+    };
     "/scheduling/admin/force-disable/{task_id}": {
         parameters: {
             query?: never;
@@ -27887,6 +28052,58 @@ export interface components {
             gallery_title?: string | null;
             /** Is Public Domain */
             is_public_domain: boolean;
+        };
+        /**
+         * ArtifactHubPublicHelmPackage
+         * @description Safe bounded projection of one public Helm package.
+         */
+        ArtifactHubPublicHelmPackage: {
+            /**
+             * Kind
+             * @default artifact_hub_public_helm_package
+             * @constant
+             */
+            __kind?: "artifact_hub_public_helm_package";
+            /**
+             * Provider
+             * @default artifact_hub
+             * @constant
+             */
+            provider?: "artifact_hub";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Package Id */
+            package_id: string;
+            /** Repository */
+            repository: string;
+            /** Package */
+            package: string;
+            /** Version */
+            version: string;
+            /** App Version */
+            app_version?: string | null;
+            /** Description */
+            description: string;
+            /** License */
+            license?: string | null;
+            /** Official */
+            official: boolean;
+            /** Cncf */
+            cncf: boolean;
+            /** Deprecated */
+            deprecated: boolean;
+            /** Signed */
+            signed: boolean;
+            /** Verified Publisher */
+            verified_publisher: boolean;
+            /** Keywords */
+            keywords: string[];
+            /** Provider Page */
+            provider_page: string;
         };
         /** Asset */
         Asset: {
@@ -34150,6 +34367,42 @@ export interface components {
          * @enum {string}
          */
         Clearance: "public" | "internal" | "restricted" | "privileged";
+        /**
+         * ClevelandPublicArtwork
+         * @description Safe bounded projection of one public CMA artwork record.
+         */
+        ClevelandPublicArtwork: {
+            /**
+             * Kind
+             * @default cleveland_museum_public_artwork
+             * @constant
+             */
+            __kind?: "cleveland_museum_public_artwork";
+            /**
+             * Provider
+             * @default cleveland_museum_of_art
+             * @constant
+             */
+            provider?: "cleveland_museum_of_art";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Artwork Id */
+            artwork_id: number;
+            /** Accession Number */
+            accession_number: string;
+            /** Title */
+            title: string;
+            /** Artwork Type */
+            artwork_type: string;
+            /** Creation Date */
+            creation_date: string;
+            /** Record Page */
+            record_page: string;
+        };
         /** ClickCommand */
         ClickCommand: {
             /**
@@ -35360,6 +35613,76 @@ export interface components {
              * @default false
              */
             required?: boolean;
+        };
+        /**
+         * CodebergPublicRepository
+         * @description Safe projection of one public Codeberg repository.
+         */
+        CodebergPublicRepository: {
+            /**
+             * Kind
+             * @default codeberg_public_repository
+             * @constant
+             */
+            __kind?: "codeberg_public_repository";
+            /**
+             * Provider
+             * @default codeberg
+             * @constant
+             */
+            provider?: "codeberg";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source Policy
+             * @default public-repository-metadata
+             * @constant
+             */
+            source_policy?: "public-repository-metadata";
+            /** Repository Id */
+            repository_id: number;
+            /** Owner Login */
+            owner_login: string;
+            /** Repository Name */
+            repository_name: string;
+            /** Full Name */
+            full_name: string;
+            /** Repository Url */
+            repository_url: string;
+            /** Is Empty */
+            is_empty: boolean;
+            /** Is Archived */
+            is_archived: boolean;
+            /** Is Fork */
+            is_fork: boolean;
+            /** Is Mirror */
+            is_mirror: boolean;
+            /** Language */
+            language?: string | null;
+            /** Stars Count */
+            stars_count: number;
+            /** Forks Count */
+            forks_count: number;
+            /** Watchers Count */
+            watchers_count: number;
+            /** Open Issues Count */
+            open_issues_count: number;
+            /** Default Branch */
+            default_branch: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
@@ -38816,6 +39139,51 @@ export interface components {
             /** Field Name */
             field_name: string;
         };
+        /** DbJobItem */
+        DbJobItem: {
+            /** Jobid */
+            jobid: number;
+            /** Jobname */
+            jobname?: string | null;
+            /** Schedule */
+            schedule: string;
+            /** Command */
+            command: string;
+            /** Active */
+            active: boolean;
+            /** Taxonomy Node Id */
+            taxonomy_node_id: string;
+            /** Taxonomy Path */
+            taxonomy_path: components["schemas"]["SystemTaskTaxonomyNode"][];
+            last_run?: components["schemas"]["DbJobLastRun"] | null;
+        };
+        /** DbJobLastRun */
+        DbJobLastRun: {
+            /** Status */
+            status?: string | null;
+            /** Start Time */
+            start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
+            /** Return Message */
+            return_message?: string | null;
+        };
+        /** DbJobPatchRequest */
+        DbJobPatchRequest: {
+            /** Schedule */
+            schedule?: string | null;
+            /** Active */
+            active?: boolean | null;
+            /** Taxonomy Node Id */
+            taxonomy_node_id?: string | null;
+        };
+        /** DbJobsResponse */
+        DbJobsResponse: {
+            /** Jobs */
+            jobs: components["schemas"]["DbJobItem"][];
+            /** Taxonomy Nodes */
+            taxonomy_nodes: components["schemas"]["SystemTaskTaxonomyNode"][];
+        };
         /**
          * DbQueryRef
          * @description Fetch multiple rows from a system table with optional filters.
@@ -39766,6 +40134,33 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -54340,6 +54735,58 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * OpenversePublicImageAttribution
+         * @description Safe attribution projection for one openly indexed image.
+         */
+        OpenversePublicImageAttribution: {
+            /**
+             * Kind
+             * @default openverse_public_image_attribution
+             * @constant
+             */
+            __kind?: "openverse_public_image_attribution";
+            /**
+             * Provider
+             * @default openverse
+             * @constant
+             */
+            provider?: "openverse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source Notice
+             * @default verify-license-before-use
+             * @constant
+             */
+            source_notice?: "verify-license-before-use";
+            /** Image Id */
+            image_id: string;
+            /** Title */
+            title?: string | null;
+            /** Creator */
+            creator?: string | null;
+            /** Source */
+            source: string;
+            /** License */
+            license: string;
+            /** License Version */
+            license_version: string;
+            /** License Url */
+            license_url: string;
+            /** Source Landing Url */
+            source_landing_url: string;
+            /** Attribution */
+            attribution: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+        };
+        /**
          * OperationEvent
          * @description One durable spine event on the wire — seq is the reconnect cursor.
          */
@@ -63494,6 +63941,55 @@ export interface components {
             /** Total Bytes */
             total_bytes?: number | null;
         };
+        /**
+         * RorPublicOrganization
+         * @description Safe bounded projection of one ROR organization record.
+         */
+        RorPublicOrganization: {
+            /**
+             * Kind
+             * @default ror_public_organization
+             * @constant
+             */
+            __kind?: "ror_public_organization";
+            /**
+             * Provider
+             * @default ror
+             * @constant
+             */
+            provider?: "ror";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Ror Id */
+            ror_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "inactive" | "withdrawn";
+            /** Organization Types */
+            organization_types: string[];
+            /** Country Codes */
+            country_codes: string[];
+            /** Established Year */
+            established_year?: number | null;
+            /** Domains */
+            domains: string[];
+            /** Created Date */
+            created_date: string;
+            /** Last Modified Date */
+            last_modified_date: string;
+            /** Schema Version */
+            schema_version: string;
+            /** Organization Page */
+            organization_page: string;
+        };
         /** RotatePageBody */
         RotatePageBody: {
             /**
@@ -67475,6 +67971,42 @@ export interface components {
              */
             layout?: "title" | "title_content" | "section" | "blank";
         };
+        /**
+         * SmkPublicArtwork
+         * @description Safe bounded projection of one provider-marked public-domain artwork.
+         */
+        SmkPublicArtwork: {
+            /**
+             * Kind
+             * @default smk_public_domain_artwork
+             * @constant
+             */
+            __kind?: "smk_public_domain_artwork";
+            /**
+             * Provider
+             * @default smk
+             * @constant
+             */
+            provider?: "smk";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Record Id */
+            record_id: string;
+            /** Object Number */
+            object_number: string;
+            /** Title */
+            title: string;
+            /** Object Type */
+            object_type: string;
+            /** Production Period */
+            production_period: string;
+            /** Record Page */
+            record_page: string;
+        };
         /** SmsActionAuthorizationRequest */
         SmsActionAuthorizationRequest: {
             /**
@@ -69807,6 +70339,10 @@ export interface components {
             handler_gate_pending: boolean;
             /** Handler Registered */
             handler_registered: boolean;
+            /** Taxonomy Node Id */
+            taxonomy_node_id: string;
+            /** Taxonomy Path */
+            taxonomy_path: components["schemas"]["SystemTaskTaxonomyNode"][];
             /** Variables Args */
             variables_args?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -69831,11 +70367,26 @@ export interface components {
         SystemTaskPatchRequest: {
             /** Enabled */
             enabled?: boolean | null;
+            /** Taxonomy Node Id */
+            taxonomy_node_id?: string | null;
             trigger?: components["schemas"]["SystemTaskTriggerPatch"] | null;
             /** Variables Args */
             variables_args?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /** SystemTaskTaxonomyNode */
+        SystemTaskTaxonomyNode: {
+            /** Id */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Level */
+            level: string;
+            /** Parent Id */
+            parent_id?: string | null;
         };
         /** SystemTaskTriggerInfo */
         SystemTaskTriggerInfo: {
@@ -69865,6 +70416,8 @@ export interface components {
         SystemTasksResponse: {
             /** Tasks */
             tasks: components["schemas"]["SystemTaskItem"][];
+            /** Taxonomy Nodes */
+            taxonomy_nodes: components["schemas"]["SystemTaskTaxonomyNode"][];
         };
         /**
          * TVmazePublicShow
@@ -70197,6 +70750,11 @@ export interface components {
             expires_at?: string | null;
             /** Tags */
             tags?: string[];
+            /**
+             * Taxonomy Node Id
+             * @description Canonical platform.taxonomy_node identity. Required for kind='tool' so system work is attached to a Domain, Feature, or Sub-feature.
+             */
+            taxonomy_node_id?: string | null;
             agent_task?: components["schemas"]["AgentTaskCreate"] | null;
             trigger?: components["schemas"]["TriggerCreate"] | null;
             /**
@@ -70313,6 +70871,8 @@ export interface components {
             expires_at?: string | null;
             /** Tags */
             tags: string[];
+            /** Taxonomy Node Id */
+            taxonomy_node_id?: string | null;
             /** Next Due At */
             next_due_at?: string | null;
             /** Last Run At */
@@ -88365,6 +88925,69 @@ export interface operations {
             };
         };
     };
+    public_repository_codeberg_public_repository_get: {
+        parameters: {
+            query: {
+                owner: string;
+                repository: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodebergPublicRepository"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_image_attribution_openverse_public_image_attribution_get: {
+        parameters: {
+            query: {
+                image_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenversePublicImageAttribution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_show_tvmaze_public_show_get: {
         parameters: {
             query: {
@@ -88613,6 +89236,69 @@ export interface operations {
             };
         };
     };
+    public_organization_ror_public_organization_get: {
+        parameters: {
+            query: {
+                ror_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RorPublicOrganization"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_helm_package_artifact_hub_public_helm_package_get: {
+        parameters: {
+            query: {
+                repository: string;
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactHubPublicHelmPackage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_item_library_of_congress_public_item_get: {
         parameters: {
             query: {
@@ -88662,6 +89348,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NasaImagesPublicAsset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_artwork_smk_public_artwork_get: {
+        parameters: {
+            query: {
+                object_number: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmkPublicArtwork"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_artwork_cleveland_museum_public_artwork_get: {
+        parameters: {
+            query: {
+                accession_number: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClevelandPublicArtwork"];
                 };
             };
             /** @description Validation Error */
@@ -99542,6 +100290,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -118399,6 +119182,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemTaskItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_db_jobs_scheduling_admin_db_jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DbJobsResponse"];
+                };
+            };
+        };
+    };
+    admin_patch_db_job_scheduling_admin_db_jobs__jobid__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobid: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DbJobPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DbJobItem"];
                 };
             };
             /** @description Validation Error */

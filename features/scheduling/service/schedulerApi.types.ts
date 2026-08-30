@@ -283,14 +283,15 @@ export interface SystemTaskTrigger {
   next_due_at: string | null;
 }
 
-export type SystemTaskLastRun =
-  ApiComponents["schemas"]["SystemTaskLastRun"];
+export type SystemTaskLastRun = ApiComponents["schemas"]["SystemTaskLastRun"];
 
 export type SystemTaskResponse = ApiComponents["schemas"]["SystemTaskItem"];
 
-export interface SystemTaskListResponse {
-  tasks: SystemTaskResponse[];
-}
+export type SystemTaskTaxonomyNode =
+  ApiComponents["schemas"]["SystemTaskTaxonomyNode"];
+
+export type SystemTaskListResponse =
+  ApiComponents["schemas"]["SystemTasksResponse"];
 
 export type SystemTaskPatchRequest =
   ApiComponents["schemas"]["SystemTaskPatchRequest"];
@@ -304,30 +305,13 @@ export type SystemTaskPatchRequest =
 // the generated api-types contract gains them on the next live sync, at
 // which point these become aliases.
 
-export interface DbJobLastRun {
-  status: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  return_message: string | null;
-}
+export type DbJobLastRun = ApiComponents["schemas"]["DbJobLastRun"];
 
-export interface DbJobResponse {
-  jobid: number;
-  jobname: string | null;
-  schedule: string;
-  command: string;
-  active: boolean;
-  last_run: DbJobLastRun | null;
-}
+export type DbJobResponse = ApiComponents["schemas"]["DbJobItem"];
 
-export interface DbJobListResponse {
-  jobs: DbJobResponse[];
-}
+export type DbJobListResponse = ApiComponents["schemas"]["DbJobsResponse"];
 
-export interface DbJobPatchRequest {
-  schedule?: string;
-  active?: boolean;
-}
+export type DbJobPatchRequest = ApiComponents["schemas"]["DbJobPatchRequest"];
 
 // ── List query params ──────────────────────────────────────────────────────
 

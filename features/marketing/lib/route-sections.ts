@@ -280,6 +280,23 @@ export const MARKETING_SEO_SECTIONS = [
   },
 ] as const satisfies readonly MarketingSeoRouteSection[];
 
+/**
+ * Compatibility registry for brand-first site shells while their callers move
+ * onto the website/SEO split. It is derived from the canonical registries, so
+ * it cannot drift into a third source of route truth.
+ */
+export const MARKETING_SITE_SECTIONS = [
+  ...MARKETING_WEBSITE_SECTIONS,
+  ...MARKETING_SEO_SECTIONS,
+] as const;
+
+export const MARKETING_SITE_LEGACY_REDIRECTS = [
+  "access",
+  "discovery",
+  "integrations",
+  "intake",
+] as const;
+
 /** Every visible mode under one durable crawl session. */
 export const MARKETING_CRAWL_SECTIONS = [
   {
@@ -357,6 +374,17 @@ export function listMarketingSeoModes(seoPath: string): MarketingSeoMode[] {
   }));
 }
 
+export type MarketingSiteMode = (typeof MARKETING_SITE_SECTIONS)[number] & {
+  href: string;
+};
+
+export function listMarketingSiteModes(sitePath: string): MarketingSiteMode[] {
+  return MARKETING_SITE_SECTIONS.map((section) => ({
+    ...section,
+    href: hrefForSection(sitePath, section.slug),
+  }));
+}
+
 export interface MarketingModeGroup<TMode> {
   label: string;
   modes: TMode[];
@@ -382,6 +410,15 @@ export function listMarketingSeoModeGroups(
   })).filter((group) => group.modes.length > 0);
 }
 
+export function listMarketingSiteModeGroups(
+  sitePath: string,
+): MarketingModeGroup<MarketingSiteMode>[] {
+  return [
+    ...listMarketingWebsiteModeGroups(sitePath),
+    ...listMarketingSeoModeGroups(sitePath),
+  ];
+}
+
 export function listMarketingCrawlModes(
   crawlPath: string,
 ): MarketingCrawlMode[] {
@@ -403,6 +440,12 @@ export function getMarketingSeoSection(
   return MARKETING_SEO_SECTIONS.find((section) => section.slug === slug);
 }
 
+export function getMarketingSiteSection(
+  slug: string,
+): MarketingRouteSection | undefined {
+  return MARKETING_SITE_SECTIONS.find((section) => section.slug === slug);
+}
+
 export function getMarketingCrawlSection(
   slug: string,
 ): MarketingRouteSection | undefined {
@@ -416,6 +459,17 @@ export function marketingWebsiteSectionSuffix(
 ): string {
   const active = resolveActiveRouteMode(
     listMarketingWebsiteModes(websitePath),
+    pathname,
+  );
+  return active?.slug ? `/${active.slug}` : "";
+}
+
+export function marketingSiteSectionSuffix(
+  pathname: string,
+  sitePath: string,
+): string {
+  const active = resolveActiveRouteMode(
+    listMarketingSiteModes(sitePath),
     pathname,
   );
   return active?.slug ? `/${active.slug}` : "";

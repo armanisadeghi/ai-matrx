@@ -23,6 +23,7 @@
 "use client";
 
 import { EmployeeProfile } from "@/features/hr/people/profile/EmployeeProfile";
+import { MyIncidentReports } from "./MyIncidentReports";
 import { MyVerificationConsents } from "@/features/hr/me/MyVerificationConsents";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
@@ -52,6 +53,16 @@ export function MyInfoSurface({ tab = "personal" }: { tab?: string }) {
         law), so it needs neither gate and must not be placed behind either.
       */}
       <MyVerificationConsents />
+      {/*
+        THE EMPLOYEE'S END OF EMPLOYEE RELATIONS (§4.9b). Route 15 is ABSENT for
+        employees and managers, and the product's only "Report an incident"
+        control sat on that route's toolbar — so the intake lane that
+        `hr_incident_create` implements by name had no door anywhere in the UI.
+        It is here because this is the surface for the person's own HR business
+        and the records below are their own. It gates itself on having an
+        employment in this employer, which is the reporter lane's own condition.
+      */}
+      <MyIncidentReports />
       <HrPageState
         loading={isLoading}
         operation="Your record"

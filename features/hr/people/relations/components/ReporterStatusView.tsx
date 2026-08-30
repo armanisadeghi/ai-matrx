@@ -23,11 +23,31 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { fetchHrIncidentStatus } from "@/features/hr/service";
 
+/**
+ * 🚨 THREE OF THESE FOUR NAMES WERE WRONG, AND TWO SECTIONS COULD NEVER RENDER.
+ * The door emits `state`, `updated_at` and `next_step_on`; this component read
+ * `state_label`, `last_updated_at` and `next_step`. So "Last updated" and "What
+ * happens next" were dead on every report, and the badge printed the raw enum
+ * `intake` at the one person who most needs a plain-English answer.
+ *
+ * It is fixed from BOTH sides, each where the truth belongs.
+ *   · `updated_at` — the client was simply wrong about the name; renaming a live
+ *     door column to match a typo is not a fix.
+ *   · `state_label` and `next_step` — added to the DOOR (hr_l1_75), riding
+ *     alongside the raw values, never instead of them. The label belongs there
+ *     because §2.2 r16 promises the reporter "the declared next step" and there
+ *     is no next-step column on `hr.incident` to declare it: the sentence is
+ *     DERIVED from the state and `follow_up_on` and nothing else, and deriving
+ *     it inside the door is what guarantees that. A sentence assembled out here
+ *     could grow a new leak every time somebody adds a field to the payload.
+ */
 type IncidentStatus = {
   state?: string | null;
   state_label?: string | null;
-  last_updated_at?: string | null;
+  updated_at?: string | null;
   next_step?: string | null;
+  next_step_on?: string | null;
+  reported_at?: string | null;
 };
 
 function formatWhen(value: string | null | undefined): string {
@@ -87,9 +107,15 @@ export function ReporterStatusView({
           ) : null}
         </div>
 
-        {status.last_updated_at ? (
+        {status.reported_at ? (
           <p className="text-sm text-muted-foreground">
-            Last updated {formatWhen(status.last_updated_at)}.
+            You filed this on {formatWhen(status.reported_at)}.
+          </p>
+        ) : null}
+
+        {status.updated_at ? (
+          <p className="text-sm text-muted-foreground">
+            Last updated {formatWhen(status.updated_at)}.
           </p>
         ) : null}
 
