@@ -138,7 +138,7 @@ function baseline(
   return {
     siteId: "site-1",
     siteLabel: "example.com",
-    sitePath: "/marketing/brands/brand-1/sites/site-1",
+    brandId: "brand-1",
     brandNames: ["Example"],
     summary: snapshot({ id: "summary-1", dataset: "summary" }),
     detailSnapshot,

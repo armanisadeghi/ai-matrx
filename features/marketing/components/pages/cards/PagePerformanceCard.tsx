@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { marketingSiteSettingsHref } from "@/features/marketing/lib/routes";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   useLatestPagespeedFailure,
   usePagePerformance,
@@ -288,7 +288,7 @@ function SyncProgress({
 
 export function PagePerformanceCard({ page }: { page: MarketingPage }) {
   const dispatch = useAppDispatch();
-  const { sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const performance = usePagePerformance(page.site_id, page.id);
   const latestRunFailure = useLatestPagespeedFailure(page.site_id, page.id);
   const [syncingStrategy, setSyncingStrategy] =
@@ -601,7 +601,7 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
                     "Choose the site's Search Console property to load page search performance."}
                 </p>
                 <Link
-                  href={marketingSiteSettingsHref(sitePath, "integrations")}
+                  href={marketingRoutes.siteSettings(brandId, site.id, "integrations")}
                   className="mt-2 inline-flex text-xs font-medium text-primary "
                 >
                   Open site integration settings
