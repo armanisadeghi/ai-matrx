@@ -530,11 +530,11 @@ function SourceChip({ label, cell }: { label: string; cell: DiffCell }) {
     muted:
       "border-border bg-muted/40 text-muted-foreground",
   }[variant];
-  const symbol = {
-    match: "✓",
-    "type-drift": "⚠",
-    "content-drift": "≠",
-    missing: "∅",
+  const statusText = {
+    match: "match",
+    "type-drift": "type",
+    "content-drift": "bytes",
+    missing: "missing",
   }[cell.status];
   return (
     <span
@@ -544,7 +544,7 @@ function SourceChip({ label, cell }: { label: string; cell: DiffCell }) {
       )}
       title={`${label}: ${cell.status}${cell.firstDiffAt >= 0 ? ` @byte ${cell.firstDiffAt}` : ""}`}
     >
-      <span className="font-mono">{symbol}</span>
+      <span className="font-mono">{statusText}</span>
       <span>{label}</span>
     </span>
   );

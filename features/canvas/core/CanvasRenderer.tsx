@@ -510,7 +510,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
       return (
         <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600 p-4">
           <div className="text-center">
-            <p className="text-sm mb-2">❌ Unsupported content type: {type}</p>
+            <p className="text-sm mb-2">Unsupported content type: {type}</p>
             <p className="text-xs">
               Add a renderer for this type in CanvasRenderer.tsx
             </p>

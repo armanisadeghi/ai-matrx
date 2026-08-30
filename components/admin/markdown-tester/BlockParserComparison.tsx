@@ -146,13 +146,13 @@ function statusBadge(cell: DiffCell): {
 } {
   switch (cell.status) {
     case "match":
-      return { variant: "outline", label: "✓ match" };
+      return { variant: "outline", label: "match" };
     case "type-drift":
-      return { variant: "destructive", label: "⚠ type" };
+      return { variant: "destructive", label: "type drift" };
     case "content-drift":
-      return { variant: "destructive", label: "⚠ bytes" };
+      return { variant: "destructive", label: "byte drift" };
     case "missing":
-      return { variant: "destructive", label: "∅ missing" };
+      return { variant: "destructive", label: "missing" };
   }
 }
 

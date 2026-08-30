@@ -651,7 +651,7 @@ export function getStateViewerTabs(
   if (hasOrphans) {
     contentTabs.push({
       id: "__orphan_slices__",
-      label: "⚠ Orphaned Slices",
+      label: "Orphaned Slices",
       content: (
         <OrphanSlicesViewer
           state={completeState}
