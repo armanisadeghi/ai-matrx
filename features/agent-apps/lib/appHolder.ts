@@ -162,8 +162,10 @@ export function useAppHolder(
   app: AppHolderSource | null | undefined,
   options: UseAppHolderOptions = {},
 ): AppHolder {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const guest = options.guest ?? !isAuthenticated;
   const wantsClientResolve =
-    APP_MANDATE_CUTOVER && !options.guest && Boolean(app?.mandate_key);
+    APP_MANDATE_CUTOVER && !guest && Boolean(app?.mandate_key);
   const mandateState = useMandate(
     wantsClientResolve ? (app?.mandate_key as string) : "",
   );
@@ -183,7 +185,7 @@ export function useAppHolder(
       };
     }
     if (!APP_MANDATE_CUTOVER) return pinnedHolder(app);
-    if (options.guest) return guestHolder(app);
+    if (guest) return guestHolder(app);
     if (!app.mandate_key) {
       return {
         ...pinnedHolder(app),
@@ -234,5 +236,5 @@ export function useAppHolder(
       loading: false,
       error: null,
     };
-  }, [app, options.guest, mandateState]);
+  }, [app, guest, mandateState]);
 }

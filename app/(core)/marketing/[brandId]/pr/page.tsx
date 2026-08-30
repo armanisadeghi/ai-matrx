@@ -19,7 +19,7 @@ import { Suspense } from "react";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import PressRoomWorkspace from "@/features/marketing/pr/PressRoomWorkspace";
+import { BrandScopedPressRoom } from "@/features/marketing/pr/BrandScopedPressRoom";
 
 export const metadata: Metadata = {
   title: "Press Room",
@@ -42,7 +42,7 @@ export default function BrandPressRoomPage() {
       </PageHeader>
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <Suspense fallback={<LoadingSurface label="Loading the press room…" />}>
-          <PressRoomWorkspace />
+          <BrandScopedPressRoom />
         </Suspense>
       </div>
     </>

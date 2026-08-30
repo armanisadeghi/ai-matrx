@@ -376,4 +376,349 @@ describe("buildCategoryGroups — placement fidelity", () => {
     expect(byId.has("foreign")).toBe(false);
     expect(byId.has("legacy")).toBe(true);
   });
+
+  // ── THE DERIVED GATE (Phase 6.7 — THE-MODEL law 3) ───────────────────────
+
+  it("REQUIREMENTS: an item whose consumed key has no read path here is ABSENT (never a red row)", () => {
+    const groups = build({
+      surfaceName: "matrx-user/notes",
+      availableKeys: ["selection", "content", "context"],
+      categories: [makeCategory({ id: "c", label: "C" })],
+      shortcuts: [
+        makeShortcut({
+          id: "qualifies",
+          label: "Summarize",
+          categoryId: "c",
+          valueMappings: {
+            body: { mapType: "surface_value", target: "content" },
+          },
+        }),
+        makeShortcut({
+          id: "missing-key",
+          label: "Transcript to Instructions",
+          categoryId: "c",
+          valueMappings: {
+            transcript: {
+              mapType: "surface_value",
+              target: "raw_transcript_text",
+            },
+          },
+        }),
+      ],
+    });
+    const ids = find(groups, "c")!.items.map((i) => i.id);
+    expect(ids).toContain("qualifies");
+    expect(ids).not.toContain("missing-key");
+  });
+
+  it("REQUIREMENTS: the SAME item appears on a surface that has the key", () => {
+    const groups = build({
+      surfaceName: "matrx-user/transcripts-cleanup",
+      availableKeys: ["selection", "content", "context", "raw_transcript_text"],
+      categories: [makeCategory({ id: "c", label: "C" })],
+      shortcuts: [
+        makeShortcut({
+          id: "missing-key",
+          label: "Transcript to Instructions",
+          categoryId: "c",
+          valueMappings: {
+            transcript: {
+              mapType: "surface_value",
+              target: "raw_transcript_text",
+            },
+          },
+        }),
+      ],
+    });
+    expect(find(groups, "c")!.items.map((i) => i.id)).toEqual(["missing-key"]);
+  });
+
+  it("REQUIREMENTS: it is the KEY existing, not the value — a declared-but-empty key still offers", () => {
+    const groups = build({
+      surfaceName: "matrx-user/crm",
+      availableKeys: ["selection", "content", "context", "search_query"],
+      categories: [makeCategory({ id: "c", label: "C" })],
+      shortcuts: [
+        makeShortcut({
+          id: "s",
+          label: "Refine search",
+          categoryId: "c",
+          valueMappings: {
+            q: { mapType: "surface_value", target: "search_query" },
+          },
+        }),
+      ],
+    });
+    expect(find(groups, "c")!.items.map((i) => i.id)).toEqual(["s"]);
+  });
+
+  it("REQUIREMENTS: direct_value / prompt_user / empty targets / reserved keys are NOT requirements", () => {
+    const groups = build({
+      surfaceName: "matrx-user/notes",
+      availableKeys: ["selection", "content", "context"],
+      categories: [makeCategory({ id: "c", label: "C" })],
+      shortcuts: [
+        makeShortcut({
+          id: "s",
+          label: "Mixed",
+          categoryId: "c",
+          valueMappings: {
+            recipient: { mapType: "direct_value", target: "Somebody" },
+            tone: { mapType: "prompt_user", target: "tone", prompt: "Tone?" },
+            half_authored: { mapType: "surface_value", target: "" },
+            __write_policies: { anything: "ignored" },
+          },
+        }),
+      ],
+    });
+    expect(find(groups, "c")!.items.map((i) => i.id)).toEqual(["s"]);
+  });
+
+  it("REQUIREMENTS: legacy scope_mappings KEYS are requirements (inverse direction)", () => {
+    const categories = [makeCategory({ id: "c", label: "C" })];
+    const shortcuts = [
+      makeShortcut({
+        id: "s",
+        label: "Doc extractor",
+        categoryId: "c",
+        scopeMappings: { document_name: "doc", selection: "page_content" },
+      }),
+    ];
+    expect(
+      find(
+        build({ surfaceName: "matrx-user/notes", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual([]);
+    expect(
+      find(
+        build({
+          surfaceName: "matrx-user/documents",
+          availableKeys: ["selection", "content", "context", "document_name"],
+          categories,
+          shortcuts,
+        }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["s"]);
+  });
+
+  // ── THE AUTHORED HIERARCHY (global → domain → surface, inherited down) ────
+
+  it("HIERARCHY: global reaches everywhere; a page-pinned item reaches only its page", () => {
+    const categories = [makeCategory({ id: "c", label: "C" })];
+    const shortcuts = [
+      makeShortcut({ id: "global", label: "Global", categoryId: "c" }),
+      makeShortcut({
+        id: "pinned",
+        label: "Pinned",
+        categoryId: "c",
+        surfaceName: "matrx-user/notes",
+      }),
+    ];
+    expect(
+      find(
+        build({ surfaceName: "matrx-user/notes", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id).sort(),
+    ).toEqual(["global", "pinned"]);
+    expect(
+      find(
+        build({ surfaceName: "matrx-user/tasks", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["global"]);
+  });
+
+  it("HIERARCHY: a DOMAIN-scoped item inherits down to every surface in that domain", () => {
+    const categories = [makeCategory({ id: "c", label: "C" })];
+    const shortcuts = [
+      makeShortcut({
+        id: "domain-star",
+        label: "Domain (star form)",
+        categoryId: "c",
+        surfaceName: "matrx-user/*",
+      }),
+      makeShortcut({
+        id: "domain-bare",
+        label: "Domain (bare form)",
+        categoryId: "c",
+        surfaceName: "matrx-admin",
+      }),
+    ];
+    expect(
+      find(
+        build({ surfaceName: "matrx-user/notes", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["domain-star"]);
+    expect(
+      find(
+        build({ surfaceName: "matrx-user/tasks", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["domain-star"]);
+    expect(
+      find(
+        build({ surfaceName: "matrx-admin/database", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["domain-bare"]);
+  });
+
+  it("HIERARCHY: on an UNNAMED surface only global items reach", () => {
+    const groups = build({
+      surfaceName: null,
+      categories: [makeCategory({ id: "c", label: "C" })],
+      shortcuts: [
+        makeShortcut({ id: "global", label: "G", categoryId: "c" }),
+        makeShortcut({
+          id: "domain",
+          label: "D",
+          categoryId: "c",
+          surfaceName: "matrx-user/*",
+        }),
+        makeShortcut({
+          id: "pinned",
+          label: "P",
+          categoryId: "c",
+          surfaceName: "matrx-user/notes",
+        }),
+      ],
+    });
+    expect(find(groups, "c")!.items.map((i) => i.id)).toEqual(["global"]);
+  });
+
+  // ── THE EXCLUSION VALVE (#43) ────────────────────────────────────────────
+
+  it("VALVE: a surface may exclude an item its scope offered", () => {
+    const categories = [makeCategory({ id: "c", label: "C" })];
+    const shortcuts = [
+      makeShortcut({ id: "keep", label: "Keep", categoryId: "c" }),
+      makeShortcut({ id: "refused", label: "Refused", categoryId: "c" }),
+    ];
+    expect(
+      find(
+        build({ surfaceName: "matrx-user/notes", categories, shortcuts }),
+        "c",
+      )!.items.map((i) => i.id).sort(),
+    ).toEqual(["keep", "refused"]);
+    expect(
+      find(
+        build({
+          surfaceName: "matrx-user/notes",
+          categories,
+          shortcuts,
+          excludedItemIds: ["refused"],
+        }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["keep"]);
+  });
+
+  it("VALVE: content blocks pass the gate but still honour the valve", () => {
+    const categories = [
+      makeCategory({ id: "c", label: "C", placementType: "content-block" }),
+    ];
+    const contentBlocks = [
+      makeBlock({ id: "b1", label: "Sig", blockId: "sig", categoryId: "c" }),
+      makeBlock({ id: "b2", label: "Nope", blockId: "nope", categoryId: "c" }),
+    ];
+    expect(
+      find(
+        build({
+          surfaceName: "matrx-user/notes",
+          categories,
+          contentBlocks,
+          excludedItemIds: ["b2"],
+        }),
+        "c",
+      )!.items.map((i) => i.id),
+    ).toEqual(["b1"]);
+  });
+
+  // ── THE ONE POPULATION CHECK ─────────────────────────────────────────────
+
+  it("POPULATION: selection-consuming items hide with no selection; nothing else does", () => {
+    const categories = [makeCategory({ id: "c", label: "C" })];
+    const shortcuts = [
+      makeShortcut({
+        id: "needs-selection",
+        label: "Translate",
+        categoryId: "c",
+        valueMappings: {
+          text: { mapType: "surface_value", target: "selection" },
+        },
+      }),
+      makeShortcut({
+        id: "needs-content",
+        label: "Summarize document",
+        categoryId: "c",
+        valueMappings: {
+          body: { mapType: "surface_value", target: "content" },
+        },
+      }),
+      makeShortcut({
+        id: "needs-nothing",
+        label: "Open thing",
+        categoryId: "c",
+      }),
+    ];
+    expect(
+      find(
+        build({
+          surfaceName: "matrx-user/notes",
+          categories,
+          shortcuts,
+          hasSelection: false,
+        }),
+        "c",
+      )!.items.map((i) => i.id).sort(),
+    ).toEqual(["needs-content", "needs-nothing"]);
+    expect(
+      find(
+        build({
+          surfaceName: "matrx-user/notes",
+          categories,
+          shortcuts,
+          hasSelection: true,
+        }),
+        "c",
+      )!.items.map((i) => i.id).sort(),
+    ).toEqual(["needs-content", "needs-nothing", "needs-selection"]);
+  });
+
+  // ── CATEGORIES GROUP, THEY NEVER GATE ────────────────────────────────────
+
+  it("CATEGORIES: a category's enabledFeatures no longer gates anything", () => {
+    const groups = build({
+      surfaceName: "matrx-user/notes",
+      categories: [
+        makeCategory({
+          id: "c",
+          label: "Once-filtered",
+          enabledFeatures: ["a-slug-nobody-passes"],
+        }),
+      ],
+      shortcuts: [makeShortcut({ id: "s", label: "S", categoryId: "c" })],
+    });
+    expect(find(groups, "c")).not.toBeNull();
+    expect(find(groups, "c")!.items.map((i) => i.id)).toEqual(["s"]);
+  });
+
+  it("CATEGORIES: an item's own enabledFeatures no longer gates anything", () => {
+    const groups = build({
+      surfaceName: "matrx-user/notes",
+      categories: [makeCategory({ id: "c", label: "C" })],
+      shortcuts: [
+        makeShortcut({
+          id: "s",
+          label: "S",
+          categoryId: "c",
+          enabledFeatures: ["code-editor"],
+        }),
+      ],
+    });
+    expect(find(groups, "c")!.items.map((i) => i.id)).toEqual(["s"]);
+  });
 });

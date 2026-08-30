@@ -95,10 +95,29 @@ import {
   type AgentAppSurfaceBinding,
   type AgentAppSurfaceLiveValues,
 } from "@/features/agent-apps/surface/agent-app-surface";
+import {
+  useAppHolder,
+  type AppHolderSource,
+} from "@/features/agent-apps/lib/appHolder";
 
 export interface UseAgentAppArgs {
-  /** Agent the app is bound to. */
-  agentId: string;
+  /**
+   * The app row, when the caller has one. THE PREFERRED INPUT: it carries the
+   * app's JOB (`mandate_id`), so the hook can route through
+   * `useAppHolder` — the one place this repo decides which agent an app runs.
+   * With APP_MANDATE_CUTOVER OFF that router returns `app.agent_id` verbatim,
+   * so passing the row changes nothing until the flip.
+   *
+   * Mutually informative with `agentId` below, never contradictory: when
+   * `app` is present it WINS, and `agentId` is ignored.
+   */
+  app?: AppHolderSource | null;
+  /**
+   * Agent the app is bound to. Kept for the callers that genuinely have only
+   * an agent — the code-preview and live-builder paths, which render an agent
+   * that has no app row yet.
+   */
+  agentId?: string;
   /** Pinned version, when not using latest. */
   agentVersionId?: string | null;
   /** When true, the app follows the live agent rather than a pinned version. */
@@ -169,9 +188,18 @@ export interface UseAgentAppArgs {
 export interface UseAgentAppReturn {
   // ── Identity ───────────────────────────────────────────────────────────
   appId: string;
+  /** The agent that will actually run. Empty string = nothing resolved yet. */
   agentId: string;
   agentVersionId: string | null;
   useLatest: boolean;
+  /**
+   * The JOB behind this app, and which layer decided its Holder — for the
+   * mandate door and the provenance pill. All null on the pinned path
+   * (APP_MANDATE_CUTOVER OFF), which is how a surface knows not to draw them.
+   */
+  mandateId: string | null;
+  mandateKey: string | null;
+  holderProvenance: "system" | "org" | "user" | null;
   surfaceKey: string;
   conversationId: string | null;
 
@@ -236,9 +264,6 @@ const EMPTY_RECORD: Record<string, never> = Object.freeze({});
 
 export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const {
-    agentId,
-    agentVersionId = null,
-    useLatest = false,
     appId,
     autoRun = false,
     allowChat = true,
@@ -262,6 +287,38 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const surfaceKey = args.surfaceKey ?? `agent-app:${appId}`;
 
   const dispatch = useAppDispatch();
+
+  // ── WHICH AGENT ───────────────────────────────────────────────────────
+  // The ONE decision point. With APP_MANDATE_CUTOVER OFF this is the app
+  // row's own `agent_id` — the hook behaves exactly as it did before the
+  // router existed. With it ON the app's JOB decides, so a rebind moves
+  // every run of this app with no deploy.
+  //
+  // `holder.agentId` is null while an ON-path mandate is still resolving and
+  // stays null if it REFUSES. Both collapse to the empty string here, which
+  // is already the hook's "no agent yet" state: the payload fetch below
+  // skips, `isReady` stays false, and the launcher creates no instance. It
+  // never falls back to the pinned id — a silent fallback would make the
+  // switch untestable and hide the exact breakage it exists to surface.
+  const bareAgent = args.agentId;
+  const bareVersion = args.agentVersionId ?? null;
+  const bareUseLatest = args.useLatest ?? false;
+  const holderSource = useMemo<AppHolderSource | null>(
+    () =>
+      args.app ??
+      (bareAgent
+        ? {
+            agent_id: bareAgent,
+            agent_version_id: bareVersion,
+            use_latest: bareUseLatest,
+          }
+        : null),
+    [args.app, bareAgent, bareVersion, bareUseLatest],
+  );
+  const holder = useAppHolder(holderSource);
+  const agentId = holder.agentId ?? "";
+  const agentVersionId = holder.agentVersionId;
+  const useLatest = holder.useLatest;
 
   // ── Agent payload readiness gate ──────────────────────────────────────
   // The launcher's createInstance reads variableDefinitions + contextPolicies
@@ -442,10 +499,14 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
     streamPhase === "pre_token" ||
     streamPhase === "interstitial";
 
+  // A Holder that will not resolve outranks a run error: there is no run.
+  // Surfacing it here is what lets every shell refuse loudly through the
+  // error path it already renders, instead of sitting on a dead submit button.
   const error =
-    request && (request as unknown as { errorMessage?: string }).errorMessage
+    holder.error ??
+    (request && (request as unknown as { errorMessage?: string }).errorMessage
       ? ((request as unknown as { errorMessage?: string }).errorMessage ?? null)
-      : null;
+      : null);
 
   // ── Surface runtime ───────────────────────────────────────────────────
   // Registered from the hook rather than a wrapping provider because every
