@@ -1,23 +1,26 @@
 "use client";
 
 /**
- * DbKindComponentErrorBoundary — guards a compiled DB kind component.
+ * DbKindComponentErrorBoundary — THE MATRIX BINDING of the shared boundary.
  *
- * A user-authored component that throws during render must never crash the
- * surface (chat, notes, admin preview). The boundary catches, renders the
- * fallback (the kind's generic structured viewer — the R6 disposition, never
- * a blank hole), and SCREAMS: a recovery firing means a real bug got past
- * authoring. Modeled on tool-viz's ToolRendererErrorBoundary.
+ * The boundary itself — catch → fallback (never a blank hole) → scream, with
+ * the `resetSignal` un-latch when a NEW component version arrives — lives in
+ * `@ai-matrx/content-ir-react` (`db-component/DbKindComponentErrorBoundary`),
+ * absorbed from this module per C22. Read the semantics there.
  *
- * `resetSignal` (the component's `updated_at`) un-latches the boundary when a
- * NEW component version arrives: an author who fixes a throwing component must
- * see the fix on the next re-render, not stay stuck on the fallback until a
- * full unmount. Without this the error state is sticky for the whole session —
- * the "broke, then magically fixed itself minutes later" class. React error
- * boundaries never self-clear, so a version change is the only safe signal
- * (`hasError` alone can't tell a fixed version from the same broken one).
+ * What stays here is our scream wiring, bound through the `onCaught` seam:
+ *  - the structured render-error capture (`captureReactRenderError`) — this IS
+ *    the scream; it is deliberately not mirrored through console.error, which
+ *    the production console adapter would persist AGAIN as a generic
+ *    `console-error` symptom (binding `onCaught` replaces the package's
+ *    console default, which is exactly what we want);
+ *  - the durable incident (`reportKindComponentIncident`) — the capture serves
+ *    an admin watching THIS browser; the incident reaches whoever can fix the
+ *    component, which matters when the person who hit the bug is an ordinary
+ *    user (kindComponentIncident.ts).
  */
 import React from "react";
+import { DbKindComponentErrorBoundary as SharedDbKindComponentErrorBoundary } from "@ai-matrx/content-ir-react";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 import { reportKindComponentIncident } from "./kindComponentIncident";
 
@@ -29,62 +32,33 @@ interface Props {
   children: React.ReactNode;
 }
 
-interface State {
-  hasError: boolean;
-  /**
-   * The `resetSignal` seen on the LAST render — tracked every render (not just
-   * on error) so that at throw time it already holds the version that threw.
-   * `getDerivedStateFromError` cannot read props, so this is how the boundary
-   * knows which version to un-latch away from.
-   */
-  signalAtLastRender: string | null;
-}
-
-export class DbKindComponentErrorBoundary extends React.Component<
-  Props,
-  State
-> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, signalAtLastRender: props.resetSignal };
-  }
-
-  static getDerivedStateFromError(): Partial<State> {
-    return { hasError: true };
-  }
-
-  static getDerivedStateFromProps(props: Props, state: State): State | null {
-    if (props.resetSignal === state.signalAtLastRender) return null;
-    // The version changed. If we were latched on the old version, un-latch so
-    // the new (hopefully fixed) component gets a fresh render attempt; either
-    // way, record the new signal as the one now rendering.
-    return { hasError: false, signalAtLastRender: props.resetSignal };
-  }
-
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // This structured capture is the scream. Do not mirror it through
-    // console.error: the production console adapter would persist the same
-    // failure again as a generic `console-error` symptom.
-    captureReactRenderError(error, {
-      boundary: "DbKindComponentErrorBoundary",
-      componentStack: errorInfo.componentStack ?? null,
-      relation: `kind:${this.props.kind}`,
-    });
-    // The capture above serves an admin watching THIS browser. The incident
-    // below reaches whoever can fix the component — the only path that works
-    // when the person who hit the bug is an ordinary user
-    // (kindComponentIncident.ts).
-    reportKindComponentIncident({
-      kind: this.props.kind,
-      errorType: "render_throw",
-      message: error instanceof Error ? error.message : String(error),
-      componentUpdatedAt: this.props.resetSignal,
-      stack: errorInfo.componentStack ?? null,
-    });
-  }
-
-  override render(): React.ReactNode {
-    if (this.state.hasError) return this.props.fallback;
-    return this.props.children;
-  }
+export function DbKindComponentErrorBoundary({
+  kind,
+  resetSignal,
+  fallback,
+  children,
+}: Props): React.ReactElement {
+  return (
+    <SharedDbKindComponentErrorBoundary
+      kind={kind}
+      resetSignal={resetSignal}
+      fallback={fallback}
+      onCaught={(error, info) => {
+        captureReactRenderError(error, {
+          boundary: "DbKindComponentErrorBoundary",
+          componentStack: info.componentStack,
+          relation: `kind:${kind}`,
+        });
+        reportKindComponentIncident({
+          kind,
+          errorType: "render_throw",
+          message: error instanceof Error ? error.message : String(error),
+          componentUpdatedAt: resetSignal,
+          stack: info.componentStack,
+        });
+      }}
+    >
+      {children}
+    </SharedDbKindComponentErrorBoundary>
+  );
 }

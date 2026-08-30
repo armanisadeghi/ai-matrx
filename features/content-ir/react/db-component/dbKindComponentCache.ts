@@ -1,316 +1,108 @@
 /**
- * dbKindComponentCache — session-scoped compile cache for DB-sourced kind
- * components (`content_ir.kind_component`, `source='db'`), modeled on the
- * proven tool-viz `toolRendererCache`.
+ * dbKindComponentCache — THE MATRIX WIRING of the shared DB-component compile
+ * cache.
  *
- * The compiler is the SHARED in-page allowlist compiler
- * (`compileSlotComponent` over `buildComponentScope`) — the same machinery
- * Agent Apps and the DB tool renderer run. No third compiler exists; this
- * module only adds the kind-component prop contract and the per-row cache.
+ * The cache itself — per-row-version keys, the scream-once latch,
+ * loud-never-fatal `props_transform` recovery, config narrowing, key-family
+ * invalidation — lives in `@ai-matrx/content-ir-react`
+ * (`db-component/db-kind-component-cache.ts`), absorbed from this module per
+ * C22 (this file used to carry all 316 lines of it). Read the semantics
+ * there; behavior does not belong here.
  *
- * Contract (the db-row component contract, documented in SHAPE_SYSTEM.md):
- *  - `component_source` compiles to a React component receiving
- *    `{ data, kind, config }` where `data` is the kind instance value.
- *  - `props_transform` (optional) compiles to a `(data) => data` function
- *    applied to the value BEFORE it reaches the component — the same
- *    semantics as tool_ui's transform code. A throwing transform screams and
- *    the untransformed value is used (never a blank hole).
- *  - `config.allowed_imports` (string[]) narrows the scope; absent, the row
- *    gets the FULL registered allowlist (`getDefaultImportsForKindComponents`).
+ * What stays here is genuinely OURS — injection only:
+ *  - the SHARED in-page allowlist compiler (`compileSlotComponent` over
+ *    `buildComponentScope`) — the same machinery Agent Apps and the DB tool
+ *    renderer run; no third compiler exists;
+ *  - the full registered allowlist (`getDefaultImportsForKindComponents`);
+ *  - the Error Inspector sink (`captureError`);
+ *  - the durable incident producer (`reportKindComponentIncident` — files on
+ *    the kind's own queue so the component's author learns);
+ *  - the invalidation trigger: the package's `invalidateAll` registered under
+ *    our `INVALIDATION_KEYS.kindComponents`, fired by name when an agent's
+ *    `kindcomp_*` write completes (the D115 inversion — see
+ *    `registry/component-registry.ts` for the resolver half).
  *
- * Cache key: (kind, platform, role, row.updated_at) — one compile per
- * winning row VERSION. `refreshKindComponents()` (component-registry) is the
- * staleness path: a re-warm delivering an edited row re-keys and recompiles
- * naturally. `invalidateDbKindComponent` force-drops a key family. Server
- * edits never push to open clients — the contract is refresh-on-view.
+ * The historical export names are kept so ~all call sites and every doc
+ * pointer still read the same.
  */
 
-import type React from "react";
+import {
+  createDbKindComponentCache,
+  isDbKindComponentBodyPending,
+  type CompiledDbKindComponent,
+  type DbKindCompileResult,
+  type DbKindComponentRenderProps,
+  type KindComponentUiOptions,
+  type ResolveKindValue,
+  type ComponentResolution,
+} from "@ai-matrx/content-ir-react";
 
 import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  INVALIDATION_KEYS,
+  registerInvalidationCallback,
+} from "@/lib/invalidation/invalidation-registry";
 import { reportKindComponentIncident } from "./kindComponentIncident";
-import { isJsonObject, type JsonObject } from "@/types/json";
-import type { ComponentResolution } from "../../registry/component-registry";
-import type { RunKindAction } from "../actions/useKindActionRunner";
 
-/**
- * Settings the MOUNTING UI dictates to a kind component — the standard,
- * growing arg list every component honors (Arman, 2026-07-23). `selectionMode`
- * is the first: it tells a component whether the surface wants the user to pick
- * one value, many, or none (pure display). A component reads what it
- * understands and ignores the rest; absent = its own default (usually display).
- */
-export interface KindComponentUiOptions {
-  selectionMode?: "single" | "multiple" | "none";
-  [key: string]: unknown;
-}
+export {
+  isDbKindComponentBodyPending,
+  type CompiledDbKindComponent,
+  type DbKindCompileResult,
+  type DbKindComponentRenderProps,
+  type KindComponentUiOptions,
+  type ResolveKindValue,
+};
 
-/**
- * The return channel: how a kind component hands a chosen value back to the
- * surface that mounted it (a Kind Request). The mirror of `runAction`
- * (surface → agent); this is component → surface. Undefined in normal render
- * (chat/notes) — the component simply doesn't offer selection there.
- */
-export type ResolveKindValue = (value: unknown) => void;
+const cache = createDbKindComponentCache({
+  compile: compileSlotComponent,
+  defaultAllowedImports: getDefaultImportsForKindComponents,
+  reportError: captureError,
+  reportIncident: reportKindComponentIncident,
+  platform: "web",
+  // An agent's kindcomp_* write fires this by NAME (zero import edge from the
+  // stream chunk); the resolver refresh registered in component-registry.ts
+  // re-keys edited rows via updated_at, and this drop covers force-invalidated
+  // families plus re-arming the scream latch.
+  registerInvalidation: (invalidateAll) =>
+    registerInvalidationCallback(INVALIDATION_KEYS.kindComponents, () =>
+      invalidateAll(),
+    ),
+});
 
-/** Props every compiled DB kind component receives. */
-export interface DbKindComponentRenderProps {
-  /** The kind instance value — post-`props_transform` when one exists. */
-  data: unknown;
-  /** The kind slug the value belongs to. */
-  kind: string;
-  /** The resolver row's `config` object, verbatim. */
-  config: JsonObject;
-  /**
-   * The action seam: `runAction(key, input)` triggers a registered platform
-   * capability (e.g. "trigger_agent"). Always resolves to a `{ ok }` envelope,
-   * never throws — safe to call from imperfect component code. This is the ONLY
-   * side-effect channel a sandboxed component gets; it reaches no data directly.
-   */
-  runAction: RunKindAction;
-  /**
-   * Present only when the component is mounted inside a Kind Request. Call it
-   * with the user's chosen value to hand that value back to the requesting
-   * surface (which resolves its promise). Undefined in normal render.
-   */
-  onResolve?: ResolveKindValue;
-  /** Settings the mounting surface dictates (e.g. `{ selectionMode: "single" }`). */
-  uiOptions?: KindComponentUiOptions;
-}
-
-export interface CompiledDbKindComponent {
-  Component: React.ComponentType<DbKindComponentRenderProps>;
-  /** Compiled `props_transform`, or null when the row declares none. */
-  transform: ((data: unknown) => unknown) | null;
-}
-
-export type DbKindCompileResult =
-  | { ok: true; compiled: CompiledDbKindComponent }
-  | { ok: false; error: string };
-
-/**
- * A routed lazy warm row owns a real body, but the per-kind cold fetch has not
- * landed it yet. This is loading, not a compile failure.
- */
-export function isDbKindComponentBodyPending(
-  resolution: ComponentResolution,
-): boolean {
-  return resolution.hasComponentSource && resolution.componentSource === null;
-}
-
-const cache = new Map<string, DbKindCompileResult>();
-const screamedKeys = new Set<string>();
-
-function cacheKey(
-  kind: string,
-  platform: string,
-  role: string,
-  updatedAt: string | null,
-): string {
-  // `updatedAt` (the winning row's freshness) is part of the key: a refresh
-  // that delivers an edited row (bumped updated_at) recompiles automatically
-  // instead of serving the stale compile for the rest of the session.
-  return `${kind}${platform}${role}${updatedAt ?? ""}`;
-}
-
-/**
- * Loud recovery: one console scream per key + structured capture + a durable
- * incident on the kind's own queue.
- *
- * The capture serves the ADMIN looking at this browser. The incident serves the
- * person (or agent) who can actually fix the component — without it, a broken
- * component seen only by ordinary users is invisible to its author forever
- * (kindComponentIncident.ts).
- */
-function screamCompileFailure(
-  key: string,
-  kind: string,
-  error: string,
-  resolution?: ComponentResolution,
-  platform = "web",
-  role = "output",
-): void {
-  const message = `[content-ir] DB kind component for "${kind}" failed to compile — rendering the generic structured viewer instead: ${error}`;
-  if (!screamedKeys.has(key)) {
-    screamedKeys.add(key);
-    console.error(message);
-  }
-  captureError({ source: "content-ir", message, raw: { kind, error } });
-  reportKindComponentIncident({
-    kind,
-    errorType: "compile_error",
-    message,
-    platform,
-    role,
-    componentKey: resolution?.componentKey ?? null,
-    componentUpdatedAt: resolution?.updatedAt ?? null,
-  });
-}
-
-/**
- * THE CONFIG BOUNDARY. `ComponentResolution.config` is typed
- * `Record<string, unknown>` by `@ai-matrx/content-ir-react` — the shared
- * resolver is deliberately agnostic about what a host's JSONB interior looks
- * like. This repo's `JsonObject` is the honest JSON type, so the crossing is a
- * runtime NARROWING (`isJsonObject`), never an assertion.
- *
- * A row whose `config` is not an object is a malformed `kind_component` row:
- * we scream and render with the empty config rather than crash the component.
- */
-export function kindComponentConfig(config: unknown, kind: string): JsonObject {
-  if (isJsonObject(config)) return config;
-  if (config === null || config === undefined) return {};
-  const message = `[content-ir] kind_component.config for "${kind}" is not a JSON object (${typeof config}) — rendering with an empty config.`;
-  console.error(message);
-  captureError({ source: "content-ir", message, raw: { kind } });
-  return {};
-}
-
-function resolveAllowedImports(config: JsonObject): string[] {
-  const declared = config.allowed_imports;
-  if (
-    Array.isArray(declared) &&
-    declared.every((entry) => typeof entry === "string")
-  ) {
-    return declared;
-  }
-  return getDefaultImportsForKindComponents();
-}
-
-/**
- * Compile (once per resolver key per session) a db-source resolution's
- * `component_source` + optional `props_transform`. Synchronous — the caller
- * (a lazily-loaded Impl) already paid the Babel chunk.
- */
+/** Compile (once per resolver key per row version) — package policy, our ports. */
 export function getOrCompileDbKindComponent(
   kind: string,
   resolution: ComponentResolution,
   platform = "web",
   role = "output",
 ): DbKindCompileResult {
-  const key = cacheKey(kind, platform, role, resolution.updatedAt);
-  const cached = cache.get(key);
-  if (cached) return cached;
-
-  const source = resolution.componentSource;
-  if (!source || !source.trim()) {
-    const result: DbKindCompileResult = {
-      ok: false,
-      error: "db-source resolution has no component_source",
-    };
-    screamCompileFailure(key, kind, result.error, resolution, platform, role);
-    cache.set(key, result);
-    return result;
-  }
-
-  const allowedImports = resolveAllowedImports(
-    kindComponentConfig(resolution.config, kind),
-  );
-
-  const { Component, error } = compileSlotComponent({
-    code: source,
-    allowedImports,
-  });
-  if (!Component || error) {
-    const result: DbKindCompileResult = {
-      ok: false,
-      error: error ?? "compile produced no component",
-    };
-    screamCompileFailure(key, kind, result.error, resolution, platform, role);
-    cache.set(key, result);
-    return result;
-  }
-
-  // The optional props transform is its own tiny compile — a `(data) => data`
-  // function (mirroring tool_ui's header_subtitle_code pattern). A broken
-  // transform is LOUD but never fatal: the component still renders, fed the
-  // untransformed value.
-  let transform: ((data: unknown) => unknown) | null = null;
-  if (resolution.propsTransform && resolution.propsTransform.trim()) {
-    const { Component: transformFn, error: transformError } =
-      compileSlotComponent({
-        code: resolution.propsTransform,
-        allowedImports: [],
-      });
-    if (typeof transformFn === "function" && !transformError) {
-      transform = transformFn as unknown as (data: unknown) => unknown;
-    } else {
-      const message = `[content-ir] props_transform for kind "${kind}" failed to compile — value passes through untransformed: ${transformError ?? "no function produced"}`;
-      console.error(message);
-      captureError({
-        source: "content-ir",
-        message,
-        raw: { kind, error: transformError },
-      });
-      reportKindComponentIncident({
-        kind,
-        errorType: "transform_error",
-        message,
-        platform,
-        role,
-        componentKey: resolution.componentKey,
-        componentUpdatedAt: resolution.updatedAt,
-      });
-    }
-  }
-
-  const result: DbKindCompileResult = {
-    ok: true,
-    compiled: {
-      // The shared compiler types components as ComponentType<Record<string,
-      // unknown>>; the callsite always passes DbKindComponentRenderProps —
-      // the single deliberate narrowing where the generic compiler meets the
-      // kind contract (same pattern as compileToolRenderer).
-      Component: Component as unknown as React.ComponentType<DbKindComponentRenderProps>,
-      transform,
-    },
-  };
-  cache.set(key, result);
-  return result;
+  return cache.getOrCompile(kind, resolution, platform, role);
 }
 
-/**
- * Apply the row's transform to the kind value. Loud on throw, never fatal —
- * the untransformed value comes back so content is never hidden.
- */
+/** Apply the row's transform — loud on throw, never fatal (package policy). */
 export function applyPropsTransform(
   kind: string,
   compiled: CompiledDbKindComponent,
   value: unknown,
 ): unknown {
-  if (!compiled.transform) return value;
-  try {
-    return compiled.transform(value);
-  } catch (error) {
-    const message = `[content-ir] props_transform for kind "${kind}" threw — using the untransformed value: ${
-      error instanceof Error ? error.message : String(error)
-    }`;
-    console.error(message);
-    captureError({ source: "content-ir", message, raw: { kind } });
-    reportKindComponentIncident({
-      kind,
-      errorType: "transform_error",
-      message,
-      stack: error instanceof Error ? (error.stack ?? null) : null,
-      data: value,
-    });
-    return value;
-  }
+  return cache.applyPropsTransform(kind, compiled, value);
 }
 
-/** Drop a key from the cache (authoring surfaces call after editing a row). */
+/** THE CONFIG BOUNDARY — runtime narrowing, never an assertion (package policy). */
+export function kindComponentConfig(
+  config: unknown,
+  kind: string,
+): Record<string, unknown> {
+  return cache.config(config, kind);
+}
+
+/** Drop a key family (authoring surfaces call after editing a row). */
 export function invalidateDbKindComponent(
   kind: string,
   platform = "web",
   role = "output",
 ): void {
-  const prefix = `${kind}${platform}${role}`;
-  for (const key of [...cache.keys()]) {
-    if (key.startsWith(prefix)) cache.delete(key);
-  }
-  for (const key of [...screamedKeys]) {
-    if (key.startsWith(prefix)) screamedKeys.delete(key);
-  }
+  cache.invalidate(kind, platform, role);
 }

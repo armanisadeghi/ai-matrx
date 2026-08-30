@@ -28,7 +28,7 @@ importers:
         version: 0.9.0
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.7.1(react@19.2.7)
+        version: 0.8.0(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
         version: 0.4.1
@@ -835,8 +835,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.7.1':
-    resolution: {integrity: sha512-ohYUhUyMjBSnZkAq5j8UZLyG5WrpbYqGRR5GbrQTSfDZ6fchYd9yLBokwHWL4dbEOx2jnYLw17+J4kMAeJ9b4A==}
+  '@ai-matrx/content-ir-react@0.8.0':
+    resolution: {integrity: sha512-svnMpK685zi6iAbFFwQQHQJ/N4cmy+kqzd+LRfZjZBkn5voxSdqUeSQLwHFogkfyHSkNVl8NtoiC2Ydc7Jp/tQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13118,7 +13118,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
-  '@ai-matrx/content-ir-react@0.7.1(react@19.2.7)':
+  '@ai-matrx/content-ir-react@0.8.0(react@19.2.7)':
     dependencies:
       '@ai-matrx/content-ir': 0.9.0
       react: 19.2.7
