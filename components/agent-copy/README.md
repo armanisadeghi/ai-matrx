@@ -7,7 +7,7 @@ no page reimplements them.
 
 **Pieces:**
 
-- `CopyButtons` — **the canonical compact two-icon pair.** Pass `human`, `agent`, and `export`;
+- `CopyButtons` — **the shared compact two-icon pair.** Pass `human`, `agent`, and `export`;
   hide any segment with `hide={["copy"|"ai"|"export"]}` (cards omit Download
   by not passing `export`, or `hide={["export"]}` when sharing a builder).
   human Copy is the first icon; every other action appears behind the
@@ -22,7 +22,7 @@ no page reimplements them.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
   structured data; it is the first AI-menu item, never another button.
-- `CopyForAiIcon` — the canonical text-free AI-copy mark: overlapping copy
+- `CopyForAiIcon` — the shared text-free AI-copy mark: overlapping copy
   sheets containing a connected intelligence node. Keep this semantic shape
   across surfaces; do not substitute a bot, face, star, or sparkle.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
@@ -136,7 +136,7 @@ survives.
 - **The AI menu owns every structured format and destination.** JSON comes
   first when structured data exists, faithful AI next, then
   shaped AI variants, Groomer/custom workspaces, and export destinations.
-- **`CopyForAiIcon` is canonical.** `Sparkles`, `Sparkle`, bot, face, star, and
+- **`CopyForAiIcon` is the shared mark.** `Sparkles`, `Sparkle`, bot, face, star, and
   any other substitute are banned for AI copy.
 - **Consolidate; never remove capability.** Move an existing JSON copy or
   Groomer action into the correct dropdown instead of deleting it.
@@ -167,7 +167,7 @@ _"what would someone actually hand an AI here?"_:
   the control.
 - A surface may give that faithful payload a precise name and position with
   `agentVariant` (`label`, `hint`, `position`) while continuing to source its
-  data from the one canonical `agent` builder. The Error Inspector uses this
+  data from the one shared `agent` builder. The Error Inspector uses this
   for **Error(s)** followed by the derived **Error(s) with prompt** variant.
 - **`MatrxDataTable`**: `copy.aiVariants` / `copy.aiCustom` (receive
   `(visible, all)` rows) do the same for the toolbar view copy.
@@ -191,7 +191,7 @@ _"what would someone actually hand an AI here?"_:
   (`fieldCopy={false}` to opt out); pass `recordKind`/`recordLabel`/`location`
   for correct payloads.
 - **`JsonInspector`** — pass `agentCopy` (an `AgentPayloadInput` or builder) to
-  render the canonical compact pair whose AI menu contains Copy JSON and agent
+  render the shared compact pair whose AI menu contains Copy JSON and agent
   variants.
 
 ## Whole-page copy — the Groomer inside the AI menu

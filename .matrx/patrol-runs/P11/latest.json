@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "20260830T153806Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T15:38:47.464Z",
-  "summary": "Ten-file wave passed repository type-check and strict shell gates; preparing exact independent candidate",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-30T15:40:26.334Z",
+  "summary": "Recorded integration-before-certification escape; exact clean candidate reconstructed and sent for independent certification",
   "source": "20260830T153806Z.json",
-  "eventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1"
+  "eventHash": "7e6b1b8d3751c8fef30a2f35770cc728b611ffeee461668a99fdea52392bbea4"
 }

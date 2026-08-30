@@ -42,6 +42,42 @@
       ],
       "previousEventHash": "762db898f64dfcf6323edeee35c54b7f567b3f79c2a6e8bf3a4ea6a70015fdfb",
       "eventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T15:40:25.722Z",
+      "actor": "codex-root",
+      "summary": "Delivery ordering was violated by concurrent integration before exact-candidate certification",
+      "evidence": [
+        "Product bytes are preserved on origin/main in contaminated commit de83ae2cdd; no valid work reverted"
+      ],
+      "blocker": {
+        "prerequisite": "Independent certification of reconstructed exact candidate 1414cbcb79 followed by explicit reconciliation",
+        "preservedRef": "refs/heads/patrol-candidates/P11/20260830T153806Z-wave2",
+        "preservedSha": "1414cbcb79cd4de5d0320052ab56afabf613cf17"
+      },
+      "previousEventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1",
+      "eventHash": "b527852c49b3583b6703ca71a5d6c6bf2c131802bcadc37b6c5b5210da035d90"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T15:40:26.334Z",
+      "actor": "codex-root",
+      "summary": "Recorded integration-before-certification escape; exact clean candidate reconstructed and sent for independent certification",
+      "evidence": [
+        "Contaminated de83ae2cdd includes the exact ten product file deltas plus unrelated P2, HR, Marketing router, and auth work",
+        "Clean candidate 1414cbcb79 contains exactly the ten P11 product files against base e1439c28d4"
+      ],
+      "escape": {
+        "candidateSha": "1414cbcb79cd4de5d0320052ab56afabf613cf17",
+        "integratedSha": "de83ae2cdd3ae6cf5ef6fc3e70ac08b3160303af",
+        "release": "not-released",
+        "reason": "Concurrent integration process swept the ten owned product paths into a contaminated WIP commit before exact-candidate certification"
+      },
+      "previousEventHash": "b527852c49b3583b6703ca71a5d6c6bf2c131802bcadc37b6c5b5210da035d90",
+      "eventHash": "7e6b1b8d3751c8fef30a2f35770cc728b611ffeee461668a99fdea52392bbea4"
     }
   ]
 }

@@ -10,7 +10,9 @@
 // No body wrapper and no padding here: every page under this tree owns its own
 // header offset (some mount a RouteHeader, some ride the breadcrumb below).
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+
+import { createClient } from "@/utils/supabase/server";
 
 import { CanonicalBrandSegment } from "@/features/marketing/components/brand/CanonicalSegment";
 import { MarketingBrandCrumb } from "@/features/marketing/components/brand/MarketingBrandCrumb";
@@ -26,6 +28,17 @@ export default async function MarketingBrandLayout({
   params: Promise<{ brandId: string }>;
 }) {
   const { brandId } = await params;
+  // Signed out, this whole tree is unreadable (anon has no SELECT on
+  // web.brand) — send the visitor to login carrying their destination instead
+  // of rendering a not-found over a link that is perfectly real (THE auth
+  // doctrine: a bounced user never loses where they were going).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect(`/login?redirectTo=${encodeURIComponent(`/marketing/${brandId}`)}`);
+  }
   const brand = await resolveBrandParam(brandId);
   if (!brand) notFound();
 

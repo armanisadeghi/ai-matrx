@@ -3,11 +3,26 @@ import "server-only";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+
 import {
   isPossibleMarketingKey,
   isUuid,
   marketingSeg,
 } from "@/features/marketing/lib/keys";
+
+/**
+ * An anonymous (or otherwise ungranted) session cannot SELECT web.brand /
+ * web.site at all — PostgREST answers 42501 before RLS is even consulted.
+ * That is "cannot resolve", not an exception: the caller decides between the
+ * login redirect (the brand layout) and notFound (the require* helpers).
+ */
+function isPermissionDenied(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === "42501"
+  );
+}
 
 /**
  * Server-side dual-mode resolvers for the `/marketing/[brandId]` tree.
@@ -50,7 +65,10 @@ export const resolveBrandParam = cache(
       return null;
     }
     const { data, error } = await query.maybeSingle();
-    if (error) throw error;
+    if (error) {
+      if (isPermissionDenied(error)) return null;
+      throw error;
+    }
     return data ?? null;
   },
 );
@@ -72,7 +90,10 @@ export const resolveSiteParam = cache(
       return null;
     }
     const { data, error } = await query.maybeSingle();
-    if (error) throw error;
+    if (error) {
+      if (isPermissionDenied(error)) return null;
+      throw error;
+    }
     return data ?? null;
   },
 );
