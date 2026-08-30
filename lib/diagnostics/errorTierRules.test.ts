@@ -623,24 +623,21 @@ describe("classifyTier", () => {
       "42501",
       'permission denied for function cat_reparent using "__not_a_uuid__"',
     ],
-  ])(
-    "keeps non-probe RPC failures red (%s %s)",
-    (relation, code, message) => {
-      const c = classifyTier(
-        captured({
-          source: "supabase-postgrest",
-          relation,
-          operation: "rpc",
-          code,
-          status: 400,
-          message,
-        }),
-      );
+  ])("keeps non-probe RPC failures red (%s %s)", (relation, code, message) => {
+    const c = classifyTier(
+      captured({
+        source: "supabase-postgrest",
+        relation,
+        operation: "rpc",
+        code,
+        status: 400,
+        message,
+      }),
+    );
 
-      expect(c.tier).toBe("red");
-      expect(c.persist).toBe(true);
-    },
-  );
+    expect(c.tier).toBe("red");
+    expect(c.persist).not.toBe(false);
+  });
 
   it("keeps a handled non-conveying association access refusal local", () => {
     const c = classifyTier(

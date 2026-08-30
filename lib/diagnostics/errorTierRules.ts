@@ -400,7 +400,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       operation: "rpc",
       code: "22P02",
       status: 400,
-      messageIncludes: '__not_a_uuid__',
+      messageIncludes: "__not_a_uuid__",
     },
   },
   {

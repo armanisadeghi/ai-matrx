@@ -171,7 +171,7 @@ Local rules that still bind every consumer in this repo:
   registered type (the war-room 7-type ceiling bug).
 - **Stamp `label` on every attach** (some backing schemas, e.g. `rag.*`, can't
   be re-read client-side); display chain is `edge.label → fetched title →
-  "Untitled <type>"` — UUIDs never render.
+"Untitled <type>"` — UUIDs never render.
 - **Both card body and picker render through the non-blocking window shell at
   every breakpoint** (windowShell port → draggable WindowPanel on desktop,
   non-modal card on mobile). A blocking Drawer/Sheet/Dialog is forbidden for
@@ -225,14 +225,14 @@ The canonical **faceted category** primitive, owned by this module. **One table*
 
 ### Where the primitive lives now (W5 swap, 2026-08-29)
 
-| Layer         | What |
-| ------------- | ---- |
-| **Service**   | `@ai-matrx/associations/core` `createCategoriesService` — the sole `cat_*` chokepoint, re-exposed as `service/categoriesService.ts` (thin host wiring). No other file may call those RPCs. |
-| **Hook**      | `hooks/useCategories.ts` — a re-export of `@ai-matrx/associations/react` `useCategories({ dimension })`, same signature. Components never touch the store or service directly. |
-| **Cache**     | The package store's category facets (echo-insert on create preserved). The Redux `categoriesByDimension` fragments were DELETED in the W5 swap. |
-| **Hierarchy** | `utils/categoryHierarchy.ts` — the one two-level ordering/path resolver (host-local; the packaged pickers ship their own). Flat input returns in the exact original order; malformed/orphaned rows stay visible. |
+| Layer         | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Service**   | `@ai-matrx/associations/core` `createCategoriesService` — the sole `cat_*` chokepoint, re-exposed as `service/categoriesService.ts` (thin host wiring). No other file may call those RPCs.                                                                                                                                                                                                                                                                                                                                     |
+| **Hook**      | `hooks/useCategories.ts` — a re-export of `@ai-matrx/associations/react` `useCategories({ dimension })`, same signature. Components never touch the store or service directly.                                                                                                                                                                                                                                                                                                                                                 |
+| **Cache**     | The package store's category facets (echo-insert on create preserved). The Redux `categoriesByDimension` fragments were DELETED in the W5 swap.                                                                                                                                                                                                                                                                                                                                                                                |
+| **Hierarchy** | `utils/categoryHierarchy.ts` — the one two-level ordering/path resolver (host-local; the packaged pickers ship their own). Flat input returns in the exact original order; malformed/orphaned rows stay visible.                                                                                                                                                                                                                                                                                                               |
 | **Pickers**   | `CategorySelect` (one value) + `CategoryTagPicker` (many) ship in `@ai-matrx/associations/react`. Both render roots + indented children and show `Parent / Child` when selected. 🚨 **BOTH TAKE NEW INPUT** — type a name that does not exist and they offer `Create "…"` (org-scoped via the identity port's `ensureOrgId`). `CategorySelect` is THE category control for the whole app: pass `dimension` and it works. Never fork a per-feature copy, and never turn `allowCreate` off without a reason a user would accept. |
-| **Types**     | `PlatformCategory` / `CategoriesEntry` / `CategoryDimension` re-exported from the package via `types.ts`. |
+| **Types**     | `PlatformCategory` / `CategoriesEntry` / `CategoryDimension` re-exported from the package via `types.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ### Category is the noun; association is the verb
 
