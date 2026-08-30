@@ -1,23 +1,31 @@
 /**
- * Runtime reconnect transport — the status fetch + the SSE follower.
+ * Runtime reconnect transport — thin identity wiring over
+ * `@ai-matrx/agents/matrx` (the 0.6.0 C22 retrofit).
  *
- * Raw fetch (not `callApi`) for the same reason `runAiStream` is raw fetch:
- * these calls are conversation-scoped, so they must ride the SAME backend
- * channel resolution as the conversation's own stream
- * (`resolveBackendForConversation` — global / sandbox override / local engine /
- * EC2-dedicated), which the global `callApi` deliberately does not do.
+ * These calls are conversation-scoped, so they ride the SAME backend channel
+ * resolution as the conversation's own stream (`resolveBackendForConversation`
+ * — global / sandbox override / local engine / EC2-dedicated), injected here
+ * as a static target. Everything that used to be hand-rolled in this module —
+ * the fetch, SSE framing (all three separators; the CRLF incident of
+ * 2026-07-09 is covered by construction in `stream/sse`), the stall timer,
+ * the retry budget, and the `Last-Event-ID` cursor — is package policy now:
+ * `getRuntimeOperationsByLink` + `followRuntimeOperationToEnd`, whose
+ * defaults ARE this module's former production values (45s stall, 60 × 2s
+ * reconnect budget reset by any parsed frame). What each event MEANS stays in
+ * the thunk (`reconnect-server-operation.thunk.ts`).
  *
- * The SSE consumer is fetch-based, NOT `EventSource` — EventSource cannot set
- * the Authorization header, which would force the JWT into a query param.
- * Frame parsing is `@ai-matrx/agents/stream/sse` — the extracted kernel that
- * handles all three SSE separators by construction (sse-starlette emits CRLF;
- * matching only "\n\n" parses ZERO frames from the real server — the exact
- * bug that silently killed workflow studio's push transport, 2026-07-09).
- * Host policy stays here: the fetch, the stall timer, the retry budget, and
- * what each event MEANS.
+ * Parity notes: reconnect attempts stay quiet (no captureApiError sink — a
+ * follower may retry for minutes across a deploy drain by design), and no
+ * org header (org rides the conversation body only, like `runAiStream`).
  */
 
-import { readMatrxSseStream } from "@ai-matrx/agents/stream/sse";
+import {
+  createMatrxTransport,
+  followRuntimeOperationToEnd,
+  getRuntimeOperationsByLink,
+  MatrxApiError,
+  type MatrxTransport,
+} from "@ai-matrx/agents/matrx";
 import type { ResolvedBackend } from "../redux/execution-system/thunks/resolve-base-url";
 import type {
   RuntimeExecutionStatus,
@@ -26,22 +34,19 @@ import type {
 } from "./types";
 
 /**
- * The server pings every ~15s, so a wire that is open but silent past this is
- * dead (buffering proxy, idle-killed connection) — abort and retry rather than
- * hanging the reconnect forever on a connection that will never speak.
+ * The package transport for one resolved backend channel. Quiet by design
+ * (no diagnostics sinks — see the module doc); the package strips the
+ * resolver's Content-Type and owns timeouts and wire headers.
  */
-const STALL_TIMEOUT_MS = 45_000;
-// A single-server deployment deliberately drains for 60s, then starts a new
-// container. Keep following for three minutes so the runtime ledger can bridge
-// that handoff instead of abandoning recovery after six seconds.
-const RECONNECT_LIMIT = 60;
-const RECONNECT_DELAY_MS = 2_000;
-
-function streamHeaders(backend: ResolvedBackend): Record<string, string> {
-  const headers: Record<string, string> = { ...backend.headers };
-  // GET has no body — Content-Type is the chat POST channel's concern.
-  delete headers["Content-Type"];
-  return headers;
+function transportFor(backend: ResolvedBackend): MatrxTransport {
+  return createMatrxTransport({
+    resolveTarget: () => ({
+      baseUrl: backend.baseUrl,
+      policyHeaders: backend.headers,
+      channel: backend.channel,
+    }),
+    source: "runtime-reconnect",
+  });
 }
 
 /**
@@ -55,19 +60,21 @@ export async function fetchOperationsByLink(
   conversationId: string,
   signal?: AbortSignal,
 ): Promise<RuntimeOperationsByLinkResponse | null> {
-  const url = `${backend.baseUrl}/runtime/operations/by-link/conversation/${conversationId}?limit=5`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: streamHeaders(backend),
-    ...(signal ? { signal } : {}),
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error(
-      `runtime operations-by-link failed: ${res.status} ${res.statusText}`,
+  try {
+    return await getRuntimeOperationsByLink(
+      transportFor(backend),
+      "conversation",
+      conversationId,
+      { limit: 5, ...(signal ? { signal } : {}) },
     );
+  } catch (error) {
+    if (error instanceof MatrxApiError) {
+      throw new Error(
+        `runtime operations-by-link failed: ${error.status} ${error.message}`,
+      );
+    }
+    throw error;
   }
-  return (await res.json()) as RuntimeOperationsByLinkResponse;
 }
 
 export interface FollowOperationResult {
@@ -90,91 +97,24 @@ export interface FollowOperationOptions {
 
 /**
  * `GET /runtime/executions/{id}/events/stream` — SSE replay-then-follow with
- * bounded reconnects. Resolves `{ended: true, status}` on the server's `end`
- * frame (the operation settled); `{ended: false}` when the caller aborted or
- * every reconnect attempt failed. A WAITING_INPUT park keeps the stream open
- * by design — a resume re-attaches to the same execution and its events
- * continue arriving here on the same cursor.
+ * bounded reconnects, via the package's `followRuntimeOperationToEnd`
+ * (production defaults). Resolves `{ended: true, status}` on the server's
+ * `end` frame (the operation settled); `{ended: false}` when the caller
+ * aborted or every reconnect attempt failed. A WAITING_INPUT park keeps the
+ * stream open by design — a resume re-attaches to the same execution and its
+ * events continue arriving here on the same cursor.
  */
 export async function followOperationStream(
   opts: FollowOperationOptions,
 ): Promise<FollowOperationResult> {
-  let cursor = opts.lastEventSeq;
-  let failures = 0;
-
-  while (!opts.signal.aborted && failures < RECONNECT_LIMIT) {
-    const attempt = new AbortController();
-    const onOuterAbort = () => attempt.abort();
-    opts.signal.addEventListener("abort", onOuterAbort, { once: true });
-
-    let stallTimer: ReturnType<typeof setTimeout> | null = null;
-    const armStall = () => {
-      if (stallTimer !== null) clearTimeout(stallTimer);
-      stallTimer = setTimeout(() => attempt.abort(), STALL_TIMEOUT_MS);
-    };
-
-    try {
-      const headers = streamHeaders(opts.backend);
-      headers["Accept"] = "text/event-stream";
-      if (cursor > 0) headers["Last-Event-ID"] = String(cursor);
-
-      const res = await fetch(
-        `${opts.backend.baseUrl}/runtime/executions/${opts.executionId}/events/stream`,
-        { method: "GET", headers, signal: attempt.signal },
-      );
-      if (!res.ok || !res.body) {
-        throw new Error(`runtime event stream failed: ${res.status}`);
-      }
-
-      armStall();
-      for await (const frame of readMatrxSseStream(res.body)) {
-        // Any parsed frame — comment heartbeats included — proves the
-        // wire is alive: reset both the stall timer and the retry budget.
-        armStall();
-        failures = 0;
-
-        if (frame.data === null) continue;
-
-        if (frame.event === "end") {
-          let status: RuntimeExecutionStatus | null = null;
-          try {
-            const parsed = JSON.parse(frame.data) as { status?: string };
-            if (typeof parsed.status === "string") {
-              status = parsed.status as RuntimeExecutionStatus;
-            }
-          } catch {
-            // malformed end payload — still terminal
-          }
-          return { ended: true, status };
-        }
-        if (frame.event === "execution_event") {
-          const seq = frame.seq;
-          if (seq !== null && seq > cursor) cursor = seq;
-          try {
-            opts.onEvent(
-              JSON.parse(frame.data) as RuntimeOperationEvent,
-              seq,
-            );
-          } catch {
-            // malformed frame — the durable ledger heals gaps on reconnect
-          }
-        }
-      }
-      // Server closed without an `end` frame (e.g. process restart). Retry —
-      // Last-Event-ID replays anything missed from the durable ledger.
-      failures += 1;
-    } catch {
-      if (opts.signal.aborted) break;
-      failures += 1;
-    } finally {
-      if (stallTimer !== null) clearTimeout(stallTimer);
-      opts.signal.removeEventListener("abort", onOuterAbort);
-    }
-
-    if (!opts.signal.aborted && failures < RECONNECT_LIMIT) {
-      await new Promise((r) => setTimeout(r, RECONNECT_DELAY_MS));
-    }
-  }
-
-  return { ended: false, status: null };
+  const result = await followRuntimeOperationToEnd(
+    transportFor(opts.backend),
+    opts.executionId,
+    {
+      lastEventSeq: opts.lastEventSeq,
+      signal: opts.signal,
+      onEvent: (event, seq) => opts.onEvent(event, seq),
+    },
+  );
+  return { ended: result.ended, status: result.status };
 }

@@ -89,7 +89,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
 import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
+import { fetchWithMatrxProtocolFallback } from "@ai-matrx/agents/matrx";
 import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 import {
   applyOrganizationContextHeader,
@@ -931,41 +931,21 @@ export async function fetchWithV2Fallback(
   init: RequestInit,
   opts: Parameters<typeof resilientFetch>[2],
 ): Promise<{ response: Response }> {
-  const logDowngrade = (reason: string, status?: number) => {
-    console.warn(
-      `[callApi] ai_v2_downgrade → retrying on v1. v2=${url} reason=${reason}`,
-    );
-    captureError({
-      source: "api-http",
-      code: "ai_v2_downgrade",
-      message: `v2 endpoint failed (${reason}); request served by v1 fallback`,
-      details: url,
-      status,
-    });
-  };
-  if (!isV2Path(url)) return resilientFetch(url, init, opts);
-  let result: { response: Response };
-  try {
-    result = await resilientFetch(url, init, opts);
-  } catch (err) {
-    // resilientFetch never throws a DOMException "AbortError" — it normalizes a
-    // caller-signal abort to NetError code "aborted" (AbortedError). Checking
-    // err.name === "AbortError" here never matched, so every USER CANCEL of a
-    // pending v2 call was logged as an ai_v2_downgrade + retried on v1 —
-    // poisoning the exact telemetry the rollout reads to judge v2 health.
-    const isAbort =
-      (isNetError(err) && err.code === "aborted") ||
-      (err instanceof Error && err.name === "AbortError");
-    if (isAbort) throw err;
-    logDowngrade(String(err));
-    return resilientFetch(toV1FallbackUrl(url), init, opts);
-  }
-  const status = result.response.status;
-  if (status === 404 || status === 405 || status >= 500) {
-    logDowngrade(`HTTP ${status}`, status);
-    return resilientFetch(toV1FallbackUrl(url), init, opts);
-  }
-  return result;
+  // The downgrade machinery itself (trigger conditions, abort exclusion, the
+  // v1 URL transform) lives in the package since the 0.6.0 C22 retrofit —
+  // this wrapper only wires the app's telemetry record.
+  return fetchWithMatrxProtocolFallback(url, init, {
+    ...opts,
+    onDowngrade: (downgrade) => {
+      captureError({
+        source: "api-http",
+        code: "ai_v2_downgrade",
+        message: `v2 endpoint failed (${downgrade.reason}); request served by v1 fallback`,
+        details: downgrade.url,
+        status: downgrade.status,
+      });
+    },
+  });
 }
 
 async function executeJsonRequest<T>(

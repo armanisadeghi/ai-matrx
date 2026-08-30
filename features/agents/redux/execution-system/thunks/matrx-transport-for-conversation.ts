@@ -52,12 +52,11 @@ export function createMatrxTransportForConversation(
         );
       }
       // The resolver bundles Content-Type for the thunks' own fetch; the
-      // package owns wire headers, so only credentials are policy here.
-      const { "Content-Type": _wireOwned, ...credentialHeaders } =
-        backend.headers;
+      // package owns wire headers and strips a policy Content-Type itself
+      // (0.6.0), so the resolved headers pass through as-is.
       return {
         baseUrl: backend.baseUrl,
-        policyHeaders: credentialHeaders,
+        policyHeaders: backend.headers,
         channel: backend.channel,
       };
     },
