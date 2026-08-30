@@ -13,11 +13,12 @@
 // as the first.
 
 import {
+  fetchHrConfidential,
   fetchHrRelationsList,
   fetchHrRestricted,
   fetchHrRestrictedList,
 } from "@/features/hr/service";
-import type { HrResult } from "@/features/hr/types";
+import type { HrAuditedRow, HrResult } from "@/features/hr/types";
 
 import {
   HR_CORRECTIVE_ACTION_LEVEL_LABELS,
@@ -34,6 +35,7 @@ import {
   type HrIncidentState,
   type HrRelationsCase,
   type HrRestrictedNote,
+  correctiveActionState,
 } from "./types";
 
 export const HR_CORRECTIVE_ACTION_TOKEN = "hr_corrective_action";
@@ -82,14 +84,14 @@ function labelActionLevel(level: string): string {
   );
 }
 
-function labelActionState(state: string): string {
-  return (
-    HR_CORRECTIVE_ACTION_STATE_LABELS[state as HrCorrectiveActionState] ??
-    HR_CORRECTIVE_ACTION_STATE_LABELS[
-      state.replace(/_/g, "-") as HrCorrectiveActionState
-    ] ??
-    state
-  );
+// 🚨 NO `?? state` FALLBACK HERE ANY MORE. Every value this can be given now
+// comes from `correctiveActionState`, which returns the union and nothing else —
+// so a miss is impossible rather than silently rendered raw. The old fallback is
+// exactly what let the literal string `undefined` reach a badge (see
+// `correctiveActionState`'s header): a lookup miss that prints the raw value
+// looks deliberate, and nobody reading the screen could tell.
+function labelActionState(state: HrCorrectiveActionState): string {
+  return HR_CORRECTIVE_ACTION_STATE_LABELS[state];
 }
 
 export function incidentToCase(row: HrIncidentRow): HrRelationsCase {
@@ -123,19 +125,28 @@ export function incidentToCase(row: HrIncidentRow): HrRelationsCase {
 export function correctiveActionToCase(
   row: HrCorrectiveActionRow,
 ): HrRelationsCase {
+  // DERIVED, because there is no `state` column to read. See
+  // `correctiveActionState` — `String(row.state)` used to hand the literal
+  // `"undefined"` to both of these lines.
+  const state = correctiveActionState(row);
   return {
     id: row.id,
     caseKind: "corrective_action",
     occurredOn: row.issued_on ?? row.incident_on ?? null,
     kindLabel: labelActionLevel(String(row.level)),
-    state: String(row.state),
-    stateLabel: labelActionState(String(row.state)),
+    state,
+    stateLabel: labelActionState(state),
     subjectName: row.subject_name ?? null,
     // `hr.corrective_action` names its subject `employment_id`; only
     // `hr.incident` calls it `subject_employment_id`, and reading the incident's
     // name here produced a null on every row.
     subjectEmploymentId: row.employment_id ?? null,
-    assigneeName: row.issuer_name ?? null,
+    // 🚨 THERE IS NO `issuer_name` ON THE WIRE AND THERE NEVER WAS.
+    // `hr._project_row` resolves a display name for the SUBJECT only
+    // (`subject_employment_id` / `employment_id`); the issuer arrives as
+    // `issued_by_employment_id`, a uuid. Absent stays absent — a uuid in a
+    // column headed "Issued by" is worse than an empty cell.
+    assigneeName: null,
     oshaRecordable: null,
     underLegalHold: (row.legal_hold_count ?? 0) > 0,
     summary: row.summary ?? null,
@@ -293,29 +304,66 @@ export async function fetchHrRelationsCases(
 }
 
 /**
- * Route 16. One case, either kind.
+ * Route 16. One case, EACH KIND THROUGH ITS OWN TIER'S DOOR.
  *
- * `justification` is REQUIRED on the restricted door and it is shown to the
- * subject in their own access log — so the caller passes what they are actually
- * doing. A constant string here would be an audit finding.
+ * 🚨 THIS IS THE SAME DISEASE THE ROUTE-15 LIST HAD, AND THE CASE READ KEPT IT
+ * FOR A WHOLE BUILD. Both kinds used to go through `hr_restricted_get`. The two
+ * case kinds are NOT on the same registry tier — `hr._door_spec` returns
+ * **confidential** for `hr_corrective_action` and **restricted** for
+ * `hr_incident` — and the shared door RAISES rather than refusing, by design,
+ * because asking the wrong family is a caller mistake and not an access verdict.
+ * Verified live 2026-08-29 in a rolled-back transaction as the issuer:
+ *
+ *     hr_restricted_get('hr_corrective_action', …)
+ *       → 22023  "hr audited door: hr_corrective_action is the confidential
+ *                 tier; use the hr_confidential_get door"
+ *     hr_confidential_get('hr_corrective_action', …)
+ *       → granted: true, basis: 'self', 36 keys
+ *
+ * The error names the fix in as many words. What the defect produced: the
+ * corrective-action case page could not load AT ALL, for ANY viewer, on
+ * production and on main — the 400 was swallowed into the "a refusal is DATA"
+ * transport and the surface rendered a no-access state over a record the caller
+ * was fully entitled to. Every control below the header — the acknowledgment,
+ * the wet signature and its witness, the refusal, the outcome — was unreachable
+ * by anybody, while the doors beneath them were correct the entire time.
+ *
+ * 🚨 THE TIER IS THE REGISTRY'S ANSWER, NOT OURS. §13 D-4 is still open
+ * (SPEC-ACCESS makes `hr.corrective_action` confidential so the subject can read
+ * what they are asked to sign; SPEC-DATA-MODEL §10.1 says restricted). When that
+ * ruling lands the registry moves and `scripts/hr/hrb026_rpc_conformance.ts`
+ * turns THIS call site red on the next push — which is the point of teaching the
+ * guard the pairing.
+ *
+ * 🚨 THE TWO DOORS DO NOT TAKE THE SAME ARGUMENTS, and that is a real difference
+ * rather than an oversight. `justification` is REQUIRED on the restricted door
+ * and is shown to the subject in their own access log; `hr_confidential_get`
+ * declares no `p_justification` at all (`p_token, p_id, p_purpose` — read off
+ * `pg_proc` 2026-08-29) and sending one would be PGRST202, not a wider audit
+ * row. So the confidential lane records `purpose`, and the caller's
+ * justification is carried only where a door exists to carry it.
+ *
+ * 🚨 THE RETURN TYPE IS THE ROW, NOT `HrCaseDetail`. Both doors answer
+ * `{ granted, row, basis, is_self_access, audit_id }` and `row` is
+ * `hr._project_row`'s output — the FLAT table row plus `subject_name`. A generic
+ * that names the composed shape is how the case page came to read four keys that
+ * were never on the wire; the composition happens in the hook, out of three
+ * separate audited reads, and it is typed there.
  */
 export function fetchHrRelationsCase(args: {
   caseKind: HrCaseKind;
   caseId: string;
   justification: string;
-}): ReturnType<typeof fetchHrRestricted<HrIncidentRow | HrCorrectiveActionRow>> {
-  // 🚨 THE TYPE ARGUMENT USED TO BE `HrCaseDetail`, WHICH IS THE COMPOSED SHAPE
-  // THIS FUNCTION HAS NEVER RETURNED. `hr_restricted_get` answers
-  // `{ granted, row, basis, is_self_access, audit_id }` and `row` is
-  // `hr._project_row`'s output — the FLAT table row plus `subject_name`. A
-  // generic that names the wrong shape is how the case page came to read four
-  // keys that were never on the wire; the composition happens in the hook, out
-  // of three separate audited reads, and it is typed there.
+}): Promise<HrResult<HrAuditedRow<HrIncidentRow | HrCorrectiveActionRow>>> {
+  if (args.caseKind === "corrective_action") {
+    return fetchHrConfidential<HrIncidentRow | HrCorrectiveActionRow>({
+      token: HR_CORRECTIVE_ACTION_TOKEN,
+      id: args.caseId,
+      purpose: "relations_case_open",
+    });
+  }
   return fetchHrRestricted<HrIncidentRow | HrCorrectiveActionRow>({
-    token:
-      args.caseKind === "incident"
-        ? HR_INCIDENT_TOKEN
-        : HR_CORRECTIVE_ACTION_TOKEN,
+    token: HR_INCIDENT_TOKEN,
     id: args.caseId,
     purpose: "relations_case_open",
     justification: args.justification,

@@ -189,6 +189,7 @@ export const HR_RESTRICTED_NOTE_KIND_LABELS: Record<HrRestrictedNoteKind, string
 export const HR_CORRECTIVE_ACTION_STATES = [
   "issued",
   "acknowledged",
+  "declined",
   "follow-up-due",
   "outcome-recorded",
 ] as const;
@@ -200,9 +201,65 @@ export const HR_CORRECTIVE_ACTION_STATE_LABELS: Record<
 > = {
   issued: "Issued",
   acknowledged: "Acknowledged",
+  // §4.8 F4. A refusal is a valid OUTCOME of the acknowledgment step, not a
+  // stuck flow — and it is NOT "Acknowledged". Calling it that on a chip would
+  // put a false statement about a person on the one record that may be read in
+  // a deposition. Same words as the acknowledgment choice that produced it.
+  declined: "Declined to sign",
   "follow-up-due": "Follow-up due",
   "outcome-recorded": "Outcome recorded",
 };
+
+/**
+ * 🚨 `hr.corrective_action` HAS NO `state` COLUMN, AND IT NEVER HAS.
+ *
+ * Read off `information_schema.columns` and off a live `hr_confidential_get`
+ * payload on 2026-08-29 — the door emits 36 keys and `state` is not one of them.
+ * `hr.incident` has a `state` column; the corrective action carries a
+ * LIFECYCLE spread across `employee_acknowledged_at`,
+ * `employee_acknowledgement_kind`, `follow_up_on` and `outcome`.
+ *
+ * So `String(row.state)` produced the literal string `"undefined"`, which then
+ * missed every key in the label map and fell through the `?? state` fallback to
+ * render **`undefined`** as the state chip on EVERY corrective action, in the
+ * queue and on the case page. The fallback is what hid it: a lookup miss that
+ * shows the raw value looks deliberate, so nothing about the render said the
+ * field was absent rather than unmapped.
+ *
+ * The derivation lives HERE, once, because the previous arrangement had two
+ * call sites independently spelling a column that does not exist.
+ */
+export function correctiveActionState(row: {
+  outcome?: string | null;
+  follow_up_on?: string | null;
+  employee_acknowledged_at?: string | null;
+  employee_acknowledgement_kind?: string | null;
+}): HrCorrectiveActionState {
+  // Terminal: §4.8 node I. An outcome is recorded and the ladder step is closed.
+  if (row.outcome) return "outcome-recorded";
+  // A refusal leaves `employee_acknowledged_at` NULL on purpose — nobody
+  // acknowledged anything — and stamps the kind. Checked BEFORE the
+  // acknowledged branch for exactly that reason.
+  if (row.employee_acknowledgement_kind === "refused") return "declined";
+  if (row.employee_acknowledged_at) {
+    // Acknowledged, but a follow-up date has come due and no outcome is on file.
+    if (row.follow_up_on && row.follow_up_on <= todayIsoDay()) {
+      return "follow-up-due";
+    }
+    return "acknowledged";
+  }
+  return "issued";
+}
+
+/** Local calendar day as `YYYY-MM-DD`, to compare against a DATE column. */
+function todayIsoDay(): string {
+  const now = new Date();
+  return [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+}
 
 /**
  * THE LADDER, in order. `coaching` is rung ZERO and it is the whole point of
@@ -372,38 +429,75 @@ export type HrIncidentRow = {
   void_reason?: string | null;
 };
 
+// 🚨 RE-READ OFF A LIVE `hr_confidential_get` PAYLOAD ON 2026-08-29 (36 keys,
+// as the issuer, in a rolled-back transaction) AND OFF
+// `information_schema.columns`. SIX DECLARED FIELDS DID NOT EXIST:
+//
+//   `state`                  → there is no state column; see `correctiveActionState`
+//   `acknowledgment_kind`    → the column is `employee_acknowledgement_kind`
+//                              (British spelling, and prefixed)
+//   `issuer_name`            → `hr._project_row` names only the SUBJECT; the
+//                              issuer is `issued_by_employment_id`, a uuid
+//   `issuer_employment_id`   → the column is `issued_by_employment_id`
+//   `prior_action_level`     → only `prior_action_id` is on the row
+//   `subject_login_user_id`  → lives on `hr.employee`, never projected here
+//   `reason_category`        → no such column
+//
+// The first two rendered wrong words to a user. The rest rendered as absent,
+// which the panel's "absent stays absent" law makes safe but silently dead: the
+// "Issued by" line and the ladder-chain sentence could never appear, and `esign`
+// was absent from the acknowledgment choices for EVERY subject, including ones
+// who do hold a login. Those are recorded as findings rather than papered over
+// with a guess — the door has to project them before a surface can show them.
 export type HrCorrectiveActionRow = {
   id: string;
   organization_id?: string | null;
   level: HrCorrectiveActionLevel | string;
-  state: string;
   issued_on: string | null;
   incident_on: string | null;
   /** `hr.corrective_action` names its subject `employment_id`, not `subject_…`. */
   employment_id?: string | null;
   subject_name?: string | null;
-  /** null → `esign` is ABSENT from the acknowledgment choices. */
-  subject_login_user_id?: string | null;
-  issuer_employment_id?: string | null;
-  issuer_name?: string | null;
+  /** The ISSUER, as a uuid. The door projects no display name for them. */
+  issued_by_employment_id?: string | null;
   policy_cited?: string | null;
   policy_document_file_id?: string | null;
   summary?: string | null;
   expected_improvement?: string | null;
   consequence_if_unmet?: string | null;
   follow_up_on?: string | null;
-  reason_category?: string | null;
+  /** §4.8 node H → I — what actually happened at the follow-up. */
+  follow_up_outcome?: string | null;
   prior_action_id?: string | null;
-  prior_action_level?: HrCorrectiveActionLevel | string | null;
-  acknowledgment_kind?: HrAcknowledgmentKind | string | null;
+  /** `esign` · `wet_signature` · `verbal_witnessed` · `refused`. */
+  employee_acknowledgement_kind?: HrAcknowledgmentKind | string | null;
+  /** NULL on a refusal, by design — nobody acknowledged anything. */
   employee_acknowledged_at?: string | null;
   /** THE EMPLOYEE'S OWN WORDS. The issuer can never edit this. */
   employee_statement?: string | null;
   esign_request_id?: string | null;
   outcome?: string | null;
+  outcome_on?: string | null;
   attendance_exception_id?: string | null;
   legal_hold_count?: number | null;
+  /**
+   * Where the acknowledgment's FACTS land, write-once, from
+   * `hr.corrective_ack_wf_apply`: `metadata.acknowledgement.{witness_name,
+   * refusal_note, signed_file_id, recorded_off_platform, …}`. There is no
+   * column for a witness — this is the only place one is kept.
+   */
+  metadata?: Record<string, unknown> | null;
 };
+
+/** The acknowledgment facts the apply function wrote, or `null` if none. */
+export function acknowledgementFacts(
+  row: Pick<HrCorrectiveActionRow, "metadata">,
+): Record<string, unknown> | null {
+  const bag = row.metadata?.acknowledgement;
+  return bag && typeof bag === "object"
+    ? (bag as Record<string, unknown>)
+    : null;
+}
 
 /** One row of the unified route-15 list. */
 export type HrRelationsCase = {
