@@ -25,7 +25,6 @@ import type {
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
 import { isHeadlessDisplayMode } from "@/features/agents/utils/run-ui-utils";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import {
   resolveMandate,
   assertMandateVariables,
@@ -191,28 +190,40 @@ export const launchAgentExecution = createAsyncThunk<
     initiation,
   } = options;
 
-  // ── Mandate-first identity — resolve BOTH halves of the binding ──────────────
-  // A mandate binding can swap the agent AND/OR override settings (model,
-  // thinking_level, temperature …). Resolving inside the one launch funnel is
-  // what makes a settings-only binding effective on this path: the resolved
-  // config_overrides merge over the caller's `config.llmOverrides` (the
-  // binding wins per key — same precedence as useMandateRunner) and are seeded
-  // into the instance-model-overrides slice below, so every turn's request
-  // carries them as `config_overrides`. Resolution is LOUD: an unresolvable
-  // mandate throws here and nothing launches — never a hardcoded fallback.
+  // ── Mandate-driven launch — THE SERVER RESOLVES, this thunk does not ────────
+  //
+  // A `mandateKey` launch runs through THE MANDATE DOOR: turn 1 POSTs
+  // `/ai/mandates/{key}` (see execute-instance) and aidream resolves principal
+  // → system default → org binding → user binding, applies the binding's
+  // `config_overrides`, provision consumption and variable mapping, then runs
+  // the identical downstream pipeline. That is the ONE resolver.
+  //
+  // What is left here is DISPLAY IDENTITY only. A surface that already knows
+  // which agent to paint (SSR-resolved, e.g. `/chat/new`) passes `agentId`
+  // ALONGSIDE `mandateKey` and this thunk resolves NOTHING. A surface that
+  // does not (imperative `launchMandate`) still needs an agent row to snapshot
+  // for the instance — name, avatar, variable definitions — so it reads one
+  // through `resolveMandate`, which is a display read on this path, never the
+  // run decision.
+  //
+  // 🚨 The resolved `config_overrides` are DELIBERATELY NOT applied. The server
+  // treats request `config_overrides` as the EXPLICIT layer that WINS over the
+  // binding, so echoing a client-resolved binding back would re-fork resolution
+  // and pin whatever the browser happened to read. The caller's own
+  // `config.llmOverrides` still ride, because those really are explicit.
   let agentId = providedAgentId;
-  let mandateLlmOverrides: Partial<FeLlmParams> | null = null;
   let resolvedMandate: ResolvedMandate | null = null;
   if (mandateKey) {
-    if (providedAgentId || shortcutId) {
+    if (shortcutId) {
       throw new Error(
-        `launchAgentExecution: mandateKey ("${mandateKey}") is mutually exclusive with agentId/shortcutId`,
+        `launchAgentExecution: mandateKey ("${mandateKey}") is mutually exclusive with shortcutId`,
       );
     }
-    const resolved = await resolveMandate(mandateKey);
-    resolvedMandate = resolved;
-    agentId = resolved.agentId;
-    mandateLlmOverrides = resolved.configOverrides;
+    if (!agentId) {
+      const resolved = await resolveMandate(mandateKey);
+      resolvedMandate = resolved;
+      agentId = resolved.agentId;
+    }
   }
 
   // ── Read all config/runtime values from the nested bundles ────────────────
@@ -634,6 +645,9 @@ export const launchAgentExecution = createAsyncThunk<
     conversationId = await dispatch(
       createManualInstance({
         agentId,
+        // Stamps THE MANDATE DOOR onto the conversation: turn 1 goes to
+        // `/ai/mandates/{key}` and the server picks the Holder.
+        ...(mandateKey ? { mandateKey } : {}),
         ...(providedConversationId
           ? { conversationId: providedConversationId }
           : {}),
@@ -805,9 +819,11 @@ export const launchAgentExecution = createAsyncThunk<
       );
     }
 
-    // The caller's llmOverrides are the feature's defaults; the mandate binding's
-    // config_overrides (the USER's choice) win per key.
-    const llmOverrides = { ...config?.llmOverrides, ...mandateLlmOverrides };
+    // ONLY the caller's own explicit overrides. A mandate binding's
+    // `config_overrides` are applied SERVER-SIDE inside the mandate door —
+    // seeding them here would send them back as the explicit layer and beat
+    // the very binding they came from.
+    const llmOverrides = { ...config?.llmOverrides };
     if (Object.keys(llmOverrides).length > 0) {
       const { setOverrides } =
         await import("../instance-model-overrides/instance-model-overrides.slice");

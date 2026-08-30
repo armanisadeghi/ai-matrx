@@ -44,6 +44,11 @@ export interface CreateInstanceFullPayload {
   sourceFeature?: SourceFeature;
   shortcutId?: string;
   initialAgentVersionId?: string | null;
+  /**
+   * THE MANDATE DOOR — when set, turn 1 POSTs `/ai/mandates/{mandateKey}` and
+   * the SERVER resolves which agent runs. `agentId` is display identity only.
+   */
+  mandateKey?: string | null;
   isEphemeral?: boolean;
 
   /**

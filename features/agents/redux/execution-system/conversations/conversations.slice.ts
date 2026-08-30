@@ -86,6 +86,8 @@ interface CreateInstanceArgs {
   surfaceKey?: string;
   initialAgentId?: string | null;
   initialAgentVersionId?: string | null;
+  /** Mandate key this conversation launches through — see ConversationRecord. */
+  mandateKey?: string | null;
   parentConversationId?: string | null;
   forkedFromId?: string | null;
   forkedAtPosition?: number | null;
@@ -121,6 +123,7 @@ function applyCreateInstance(
     surfaceKey,
     initialAgentId,
     initialAgentVersionId,
+    mandateKey,
     parentConversationId,
     forkedFromId,
     forkedAtPosition,
@@ -160,6 +163,7 @@ function applyCreateInstance(
       ? { initialAgentId }
       : { initialAgentId: agentId }),
     ...(initialAgentVersionId !== undefined ? { initialAgentVersionId } : {}),
+    ...(mandateKey !== undefined ? { mandateKey } : {}),
     ...(parentConversationId !== undefined ? { parentConversationId } : {}),
     ...(forkedFromId !== undefined ? { forkedFromId } : {}),
     ...(forkedAtPosition !== undefined ? { forkedAtPosition } : {}),
@@ -378,6 +382,7 @@ const conversationsSlice = createSlice({
         sourceFeature: p.sourceFeature,
         shortcutId: p.shortcutId,
         initialAgentVersionId: p.initialAgentVersionId,
+        mandateKey: p.mandateKey,
         isEphemeral: p.isEphemeral,
         organizationId: p.organizationId,
         contextAnchor: p.contextAnchor,

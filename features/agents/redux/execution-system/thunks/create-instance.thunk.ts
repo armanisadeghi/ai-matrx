@@ -137,6 +137,13 @@ interface CreateManualInstanceArgs {
    * that let the user freeze a version per column.
    */
   initialAgentVersionId?: string | null;
+  /**
+   * THE MANDATE DOOR. When set, `executeInstance` POSTs turn 1 to
+   * `/ai/mandates/{mandateKey}` and the SERVER resolves the Holder for this
+   * principal. `agentId` here is display identity only (the name/avatar the
+   * surface paints before the stream starts) — never the run target.
+   */
+  mandateKey?: string | null;
   agentType?: AgentType;
   /**
    * When set, the new conversation is focused on this surface IN THE SAME COMMIT
@@ -187,6 +194,7 @@ export const createManualInstance = createAsyncThunk<
     agentId,
     conversationId: providedConversationId,
     initialAgentVersionId = null,
+    mandateKey = null,
     agentType,
     surfaceKey,
     autoClearConversation = false,
@@ -237,6 +245,7 @@ export const createManualInstance = createAsyncThunk<
       sourceFeature,
       ...(surfaceKey ? { surfaceKey } : {}),
       ...(initialAgentVersionId ? { initialAgentVersionId } : {}),
+      ...(mandateKey ? { mandateKey } : {}),
       ...(isEphemeral !== undefined ? { isEphemeral } : {}),
       ...(organizationId !== undefined ? { organizationId } : {}),
       ...(contextAnchor !== undefined ? { contextAnchor } : {}),

@@ -949,11 +949,36 @@ export const executeInstance = createAsyncThunk<
         // server writes a row (false for ephemeral).
         const pinnedVersionId = instance.initialAgentVersionId ?? null;
         const targetId = pinnedVersionId ?? instance.agentId;
-        const agentPath = resolveEndpointPath(
-          "/ai/agents/{agent_id}",
-          overrideConfig,
-        ).replace("{agent_id}", encodeURIComponent(targetId));
-        url = `${baseUrl}${agentPath}`;
+
+        // ── THE MANDATE DOOR (the one resolver) ─────────────────────────────
+        // A mandate-driven conversation POSTs `/ai/mandates/{key}` with the
+        // SAME AgentStartRequest body. The SERVER resolves principal →
+        // system default → org binding → user binding, applies the binding's
+        // config and provision/variable contract, then runs the identical
+        // downstream pipeline (`_run_mandated_agent` → `_run_agent`). That is
+        // what makes an org/user REBIND change who answers with no client
+        // deploy.
+        //
+        // There is no client-side re-resolve behind this: a 404
+        // `mandate_unfulfilled` surfaces verbatim through the normal stream
+        // error path. A second resolver deciding the run is exactly the
+        // no-third-mechanism violation this door exists to end.
+        //
+        // A version pin still wins: pinning a frozen agx_version is an
+        // explicit "run THIS row" that no binding may override, and the
+        // mandate path has no is_version channel of its own.
+        const mandateKey =
+          !pinnedVersionId && instance.mandateKey ? instance.mandateKey : null;
+        const startPath = mandateKey
+          ? resolveEndpointPath(
+              "/ai/mandates/{mandate_key}",
+              overrideConfig,
+            ).replace("{mandate_key}", encodeURIComponent(mandateKey))
+          : resolveEndpointPath(
+              "/ai/agents/{agent_id}",
+              overrideConfig,
+            ).replace("{agent_id}", encodeURIComponent(targetId));
+        url = `${baseUrl}${startPath}`;
         routedPayload = {
           ...payload,
           ...buildAgentStartLifecycleFields(conversationId, isEphemeral),
