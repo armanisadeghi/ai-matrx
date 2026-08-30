@@ -23,7 +23,12 @@ import {
   marketingSubViewHref,
   marketingSubViewHrefStyle,
 } from "@/features/marketing/lib/site-subviews";
-import { listMarketingSiteModes } from "@/features/marketing/lib/route-sections";
+import {
+  listMarketingSeoModes,
+  listMarketingWebsiteModes,
+  type MarketingSeoMode,
+  type MarketingWebsiteMode,
+} from "@/features/marketing/lib/route-sections";
 import { marketingSubViewIcon } from "@/features/marketing/lib/site-subview-icons";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
@@ -87,10 +92,15 @@ export function buildMarketingSubNav(
   pathname: string,
   rawViewParam: string | null,
 ): MarketingSiteSubNav {
-  const active = resolveActiveRouteMode(
-    listMarketingSiteModes(sitePath),
-    pathname,
-  );
+  // A site's screens live in two registries — the website INVENTORY and the
+  // SEO PRACTICE — and the base path says which branch is being navigated
+  // (`/marketing/<brand>/{websites|seo}/<site>`), so the header never offers a
+  // section that does not exist on the branch the user is on.
+  const modes: (MarketingWebsiteMode | MarketingSeoMode)[] =
+    sitePath.split("/").filter(Boolean)[2] === "seo"
+      ? listMarketingSeoModes(sitePath)
+      : listMarketingWebsiteModes(sitePath);
+  const active = resolveActiveRouteMode(modes, pathname);
   const section = active?.slug ?? "";
   const sectionHref = active?.href ?? sitePath;
   const pathView =

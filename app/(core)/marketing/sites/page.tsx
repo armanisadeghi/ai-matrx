@@ -1,13 +1,12 @@
-import { Suspense } from "react";
-import {
-  SitesPortfolio,
-  SitesPortfolioLoading,
-} from "@/features/marketing/components/sites/SitesPortfolio";
+import { permanentRedirect } from "next/navigation";
 
-export default function MarketingSitesPage() {
-  return (
-    <Suspense fallback={<SitesPortfolioLoading />}>
-      <SitesPortfolio />
-    </Suspense>
-  );
+/**
+ * LEGACY: the flat cross-brand site portfolio.
+ *
+ * The agency plane has no site list of its own any more — a website belongs to
+ * a client, so the roster is the door and each brand carries its own Websites
+ * section (`/marketing/[brandKey]/websites`).
+ */
+export default function LegacyMarketingSitesRedirect() {
+  permanentRedirect("/marketing/brands");
 }
