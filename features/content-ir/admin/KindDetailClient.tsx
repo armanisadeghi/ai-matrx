@@ -25,6 +25,7 @@ import { ChevronRight, Loader2 } from "lucide-react";
 import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-types";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
+import KindEmitTemplate from "@/features/content-ir/render-paths/KindEmitTemplate";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
@@ -106,6 +107,7 @@ const TABS = [
   "try-input",
   "gate",
   "schema",
+  "template",
   "inputs",
   "variants",
 ] as const;
@@ -118,6 +120,10 @@ const TAB_LABELS: Record<TabId, string> = {
   "try-input": "Try input",
   gate: "Gate",
   schema: "Schema",
+  // The emit template is what an agent PUTS ON THE WIRE, not a preview of
+  // anything — it sat under Preview and belonged beside the schema it derives
+  // from (Arman, 2026-08-29).
+  template: "Template",
   inputs: "Inputs",
   variants: "Variants",
 };
@@ -303,6 +309,26 @@ export default function KindDetailClient({
               fieldData={detail.fieldData}
               emittedJsonSchema={detail.emittedJsonSchema}
             />
+          )}
+          {tab === "template" && (
+            <div className="mx-auto max-w-4xl">
+              {canonicalExampleData ? (
+                <KindEmitTemplate
+                  kind={detail.kind}
+                  value={canonicalExampleData}
+                />
+              ) : (
+                <div className="rounded-md border border-border bg-card px-4 py-8 text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    No canonical example yet.
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    The emit template is built from a real sample — author one
+                    on the Examples tab.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
           {tab === "inputs" && (
             <KindInputsTab
