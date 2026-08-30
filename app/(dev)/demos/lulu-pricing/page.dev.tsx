@@ -16,7 +16,7 @@
  * the (dev) demo that proves the surface against the real server.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   Calculator,
@@ -183,6 +183,18 @@ function labelFor(options: LuluOption[], id: string | null): string | null {
 // Page
 // ---------------------------------------------------------------------------
 
+/**
+ * Every async result is stored KEYED by the request that produced it, and the
+ * rendered state is derived from whether that key still matches what the user
+ * is looking at. That is what keeps the effects write-only on settle: an
+ * effect here never calls setState synchronously in its body, so a keystroke
+ * cannot cascade renders, and a stale response can never paint.
+ */
+interface Keyed<T> {
+  key: string;
+  state: LuluFetchState<T>;
+}
+
 export default function LuluPricingDemoPage() {
   const [catalogState, setCatalogState] = useState<LuluFetchState<LuluCatalog>>({
     status: "loading",
@@ -193,21 +205,23 @@ export default function LuluPricingDemoPage() {
   const [pageCountText, setPageCountText] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [destinationId, setDestinationId] = useState(DESTINATIONS[0].id);
-  const [shippingLevel, setShippingLevel] = useState<string | null>(null);
 
-  const [shippingState, setShippingState] = useState<
-    LuluFetchState<LuluShippingOption[]>
-  >({ status: "idle" });
+  const [shippingResult, setShippingResult] =
+    useState<Keyed<LuluShippingOption[]> | null>(null);
+  const [shippingChoice, setShippingChoice] = useState<{
+    key: string;
+    level: string;
+  } | null>(null);
 
-  const [priceState, setPriceState] = useState<LuluFetchState<LuluPriceResult>>({
-    status: "idle",
-  });
+  const [priceResult, setPriceResult] = useState<Keyed<LuluPriceResult> | null>(
+    null,
+  );
   const [priceAttempt, setPriceAttempt] = useState(0);
 
-  const [tierResults, setTierResults] = useState<
-    Record<number, LuluFetchState<LuluPriceResult>>
+  /** Tier prices, cached by `${configKey}@${quantity}` — never refetched. */
+  const [tierCache, setTierCache] = useState<
+    Record<string, LuluFetchState<LuluPriceResult>>
   >({});
-  const tierCache = useRef(new Map<string, LuluFetchState<LuluPriceResult>>());
 
   const destination =
     DESTINATIONS.find((entry) => entry.id === destinationId) ?? DESTINATIONS[0];
@@ -215,45 +229,60 @@ export default function LuluPricingDemoPage() {
   // ── Catalog ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const controller = new AbortController();
-    let cancelled = false;
-    setCatalogState({ status: "loading" });
     fetchCatalog(controller.signal)
       .then((catalog) => {
-        if (!cancelled) setCatalogState({ status: "ready", data: catalog });
+        if (!controller.signal.aborted) {
+          setCatalogState({ status: "ready", data: catalog });
+        }
       })
       .catch((error: unknown) => {
-        if (!cancelled && !controller.signal.aborted) {
+        if (!controller.signal.aborted) {
           setCatalogState(toFetchState<LuluCatalog>(error));
         }
       });
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [catalogAttempt]);
 
+  function retryCatalog() {
+    setCatalogState({ status: "loading" });
+    setCatalogAttempt((n) => n + 1);
+  }
+
   // ── Shipping options, per destination country ────────────────────────────
+  const shippingKey = `${destination.countryCode}#${catalogAttempt}`;
+  const shippingState: LuluFetchState<LuluShippingOption[]> =
+    shippingResult?.key === shippingKey
+      ? shippingResult.state
+      : { status: "loading" };
+
   useEffect(() => {
     const controller = new AbortController();
-    let cancelled = false;
-    setShippingState({ status: "loading" });
-    setShippingLevel(null);
+    const key = shippingKey;
     fetchShippingOptions(destination.countryCode, controller.signal)
       .then((options) => {
-        if (cancelled) return;
-        setShippingState({ status: "ready", data: options });
-        if (options.length > 0) setShippingLevel(options[0].level);
+        if (!controller.signal.aborted) {
+          setShippingResult({ key, state: { status: "ready", data: options } });
+        }
       })
       .catch((error: unknown) => {
-        if (!cancelled && !controller.signal.aborted) {
-          setShippingState(toFetchState<LuluShippingOption[]>(error));
+        if (!controller.signal.aborted) {
+          setShippingResult({
+            key,
+            state: toFetchState<LuluShippingOption[]>(error),
+          });
         }
       });
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [destination.countryCode, catalogAttempt]);
+    return () => controller.abort();
+  }, [shippingKey, destination.countryCode]);
+
+  // First available level is the default until the user picks one for THIS
+  // country; changing destination therefore resets the choice with no effect.
+  const shippingLevel: string | null =
+    shippingChoice?.key === destination.countryCode
+      ? shippingChoice.level
+      : shippingState.status === "ready"
+        ? (shippingState.data[0]?.level ?? null)
+        : null;
 
   const catalog = catalogState.status === "ready" ? catalogState.data : null;
   const previewOnly = catalogState.status !== "ready";
@@ -270,73 +299,73 @@ export default function LuluPricingDemoPage() {
       : null;
 
   // ── Debounced live price ─────────────────────────────────────────────────
+  const priceKey =
+    configKey === null || quantity < 1
+      ? null
+      : `${configKey}|q${quantity}|a${priceAttempt}`;
+
+  const priceState: LuluFetchState<LuluPriceResult> =
+    priceKey === null
+      ? { status: "idle" }
+      : priceResult?.key === priceKey
+        ? priceResult.state
+        : { status: "loading" };
+
   useEffect(() => {
-    if (
-      podPackageId === null ||
-      selection.pageCount === null ||
-      shippingLevel === null ||
-      quantity < 1
-    ) {
-      setPriceState({ status: "idle" });
+    if (priceKey === null || podPackageId === null || selection.pageCount === null || shippingLevel === null) {
       return;
     }
     const controller = new AbortController();
-    let cancelled = false;
-    setPriceState({ status: "loading" });
+    const key = priceKey;
+    const request = {
+      podPackageId,
+      pageCount: selection.pageCount,
+      quantity,
+      shippingLevel,
+      address: {
+        city: destination.city,
+        countryCode: destination.countryCode,
+        postcode: destination.postcode,
+        street1: destination.street1,
+        stateCode: destination.stateCode,
+      },
+    };
     const timer = setTimeout(() => {
-      fetchPrice(
-        {
-          podPackageId,
-          pageCount: selection.pageCount ?? 0,
-          quantity,
-          shippingLevel,
-          address: {
-            city: destination.city,
-            countryCode: destination.countryCode,
-            postcode: destination.postcode,
-            street1: destination.street1,
-            stateCode: destination.stateCode,
-          },
-        },
-        controller.signal,
-      )
+      fetchPrice(request, controller.signal)
         .then((result) => {
-          if (!cancelled) setPriceState({ status: "ready", data: result });
+          if (!controller.signal.aborted) {
+            setPriceResult({ key, state: { status: "ready", data: result } });
+          }
         })
         .catch((error: unknown) => {
-          if (!cancelled && !controller.signal.aborted) {
-            setPriceState(toFetchState<LuluPriceResult>(error));
+          if (!controller.signal.aborted) {
+            setPriceResult({ key, state: toFetchState<LuluPriceResult>(error) });
           }
         });
     }, PRICE_DEBOUNCE_MS);
 
     return () => {
-      cancelled = true;
       clearTimeout(timer);
       controller.abort();
     };
   }, [
+    priceKey,
     podPackageId,
     selection.pageCount,
     shippingLevel,
     quantity,
     destination,
-    priceAttempt,
   ]);
 
-  // ── Bulk tiers reset when the configuration changes ──────────────────────
-  useEffect(() => {
-    if (configKey === null) {
-      setTierResults({});
-      return;
-    }
-    const restored: Record<number, LuluFetchState<LuluPriceResult>> = {};
-    for (const tier of BULK_TIERS) {
-      const cached = tierCache.current.get(`${configKey}@${tier.quantity}`);
-      if (cached) restored[tier.quantity] = cached;
-    }
-    setTierResults(restored);
-  }, [configKey]);
+  // ── Bulk tiers — derived straight from the cache, no effect ──────────────
+  const tierResults: Record<number, LuluFetchState<LuluPriceResult>> = {};
+  for (const tier of BULK_TIERS) {
+    const cached =
+      configKey === null
+        ? undefined
+        : tierCache[`${configKey}@${tier.quantity}`];
+    if (cached) tierResults[tier.quantity] = cached;
+  }
 
   const tiersCalculating = BULK_TIERS.some(
     (tier) => tierResults[tier.quantity]?.status === "loading",
@@ -352,37 +381,36 @@ export default function LuluPricingDemoPage() {
       return;
     }
     const pageCount = selection.pageCount;
+    const address = {
+      city: destination.city,
+      countryCode: destination.countryCode,
+      postcode: destination.postcode,
+      street1: destination.street1,
+      stateCode: destination.stateCode,
+    };
     for (const tier of BULK_TIERS) {
       const cacheKey = `${configKey}@${tier.quantity}`;
-      const cached = tierCache.current.get(cacheKey);
-      if (cached && cached.status === "ready") continue;
+      if (tierCache[cacheKey]?.status === "ready") continue;
 
-      setTierResults((prev) => ({ ...prev, [tier.quantity]: { status: "loading" } }));
+      setTierCache((prev) => ({ ...prev, [cacheKey]: { status: "loading" } }));
       fetchPrice({
         podPackageId,
         pageCount,
         quantity: tier.quantity,
         shippingLevel,
-        address: {
-          city: destination.city,
-          countryCode: destination.countryCode,
-          postcode: destination.postcode,
-          street1: destination.street1,
-          stateCode: destination.stateCode,
-        },
+        address,
       })
         .then((result) => {
-          const next: LuluFetchState<LuluPriceResult> = {
-            status: "ready",
-            data: result,
-          };
-          tierCache.current.set(cacheKey, next);
-          setTierResults((prev) => ({ ...prev, [tier.quantity]: next }));
+          setTierCache((prev) => ({
+            ...prev,
+            [cacheKey]: { status: "ready", data: result },
+          }));
         })
         .catch((error: unknown) => {
-          const next = toFetchState<LuluPriceResult>(error);
-          tierCache.current.set(cacheKey, next);
-          setTierResults((prev) => ({ ...prev, [tier.quantity]: next }));
+          setTierCache((prev) => ({
+            ...prev,
+            [cacheKey]: toFetchState<LuluPriceResult>(error),
+          }));
         });
     }
   }
@@ -534,7 +562,7 @@ export default function LuluPricingDemoPage() {
       {catalogState.status === "awaiting_credentials" ? (
         <AwaitingCredentialsCard
           detail={catalogState.detail}
-          onRetry={() => setCatalogAttempt((n) => n + 1)}
+          onRetry={retryCatalog}
           retrying={false}
         />
       ) : null}
@@ -543,7 +571,7 @@ export default function LuluPricingDemoPage() {
         <UpstreamErrorCard
           headline={catalogState.headline}
           detail={catalogState.detail}
-          onRetry={() => setCatalogAttempt((n) => n + 1)}
+          onRetry={retryCatalog}
           retrying={false}
         />
       ) : null}
@@ -727,7 +755,12 @@ export default function LuluPricingDemoPage() {
                     <Label className="text-xs">Shipping level</Label>
                     <Select
                       value={shippingLevel ?? ""}
-                      onValueChange={setShippingLevel}
+                      onValueChange={(level) =>
+                        setShippingChoice({
+                          key: destination.countryCode,
+                          level,
+                        })
+                      }
                       disabled={
                         previewOnly ||
                         shippingState.status !== "ready" ||
