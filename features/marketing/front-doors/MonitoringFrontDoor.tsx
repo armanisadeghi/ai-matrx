@@ -22,6 +22,7 @@
  * than quietly dropped.
  */
 
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { Link2Off, MessagesSquare, Newspaper, ShieldAlert } from "lucide-react";
 
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -34,7 +35,6 @@ import {
 } from "./MarketingDoorBoard";
 import {
   FrontDoorSiteSelect,
-  frontDoorSitePath,
   useFrontDoorSite,
 } from "./FrontDoorSiteSelect";
 
@@ -56,32 +56,35 @@ export function MonitoringFrontDoor({
 
   const doors: MarketingDoor[] = [];
   if (siteState.site) {
-    const sitePath = frontDoorSitePath(siteState.site);
+    const site = siteState.site;
+    // Cross-branch doors compose through the ONE mapping so they land on the
+    // seo branch directly instead of riding a redirect hop (2026-08-30 sweep).
+    const door = (sub: string) => marketingRoutes.site(site.brand_id, site.id, sub);
     doors.push(
       {
         label: "Coverage",
-        href: `${sitePath}/backlinks?view=coverage`,
+        href: door("/backlinks?view=coverage"),
         description:
           "Who wrote about this brand, refreshed from the news index every 30 minutes and then verified by our own crawl — most of it never links.",
         Icon: Newspaper,
       },
       {
         label: "Link changes",
-        href: `${sitePath}/backlinks?view=changes`,
+        href: door("/backlinks?view=changes"),
         description:
           "What happened to the backlinks you already have: new, lost, nofollowed, or re-anchored — written nightly.",
         Icon: Link2Off,
       },
       {
         label: "AI visibility",
-        href: `${sitePath}/ai-visibility`,
+        href: door("/ai-visibility"),
         description:
           "Ask ChatGPT, Claude, Gemini and Perplexity a real buyer question and see whether they cite you, and which pages they cite.",
         Icon: MessagesSquare,
       },
       {
         label: "Reputation",
-        href: `${sitePath}/reputation`,
+        href: door("/reputation"),
         description:
           "The decision brief: which published pages hurt, what each one needs, and the pitch angle that fixes it.",
         Icon: ShieldAlert,
