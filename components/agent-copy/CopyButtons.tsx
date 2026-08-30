@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Braces, Check, Copy } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
@@ -219,11 +218,7 @@ export function CopyButtons({
       className="inline-flex"
       onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
     >
-      <CopyActionGroup
-        size={size}
-        appearance={appearance}
-        className={className}
-      >
+      <CopyActionGroup size={size} appearance={appearance} className={className}>
         {visible.copy && human !== undefined ? (
           <span className={copyActionCellClass(size)}>
             <Button

@@ -48,11 +48,11 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/agents/mandates",
+      url: "/mandates",
       label: "Mandates (my overrides)",
       description:
-        "User/org-facing Mandate override surface — browse every Mandate, see the resolved Holder with provenance, swap in your own agent or override settings. Admin bind console: /administration/agents/mandates.",
-      filePath: "app/(core)/agents/mandates/page.tsx",
+        "User/org-facing Mandate override surface — browse every Mandate, see the resolved Holder with provenance, swap in your own agent or override settings. Admin bind console: /administration/mandates.",
+      filePath: "app/(core)/mandates/page.tsx",
       status: "Live",
     },
     {

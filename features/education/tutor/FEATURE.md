@@ -71,7 +71,7 @@ that makes it a tutor: **grounding injection**.
   `TrustEnvelope`), `reviewSession` (`flashcards.review_batch` end-of-session review), and
   `microCoach` (`flashcards.micro_coach` per-card tip) — all mandate-resolved (keys default from
   `FC_MANDATES`; the old `config.ts` localStorage agent-id overrides are RETIRED, bindings at
-  `/agents/mandates` replace them) — plus `learnerContext` (reshapes the CURRENT session's
+  `/mandates` replace them) — plus `learnerContext` (reshapes the CURRENT session's
   in-memory state). Consumed by flashcards study surfaces (`StudyDeck`, Fast Fire) — NOT the
   conversation; these are one-shot JSON lanes.
 

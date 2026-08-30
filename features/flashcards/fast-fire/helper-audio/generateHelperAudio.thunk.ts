@@ -36,7 +36,7 @@ import { readAudioFileId } from "../spoken-front/generateSpokenFront.thunk";
 import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
 
 /** Mandate key for the helper-audio TTS lane — resolves live to the DB-bound
- *  TTS agent; swap the voice at /agents/mandates, no deploy. The variables it
+ *  TTS agent; swap the voice at /mandates, no deploy. The variables it
  *  sends are the `flashcards.tts_render` offer (the generated offers file has
  *  no per-voice entry for helper_tts / spoken_front_tts — both mandates share
  *  that one shape). */

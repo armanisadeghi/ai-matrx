@@ -1,13 +1,46 @@
 # Pattern Patrol P2 — Inventory Law
 
-**Run:** 2026-08-18 weekly structural-novelty + full detector pass (America/Los_Angeles)
-**Authority:** Tier C/R catalogue plus a bounded two-file Tier-M standing-authority repair
-**Base:** `4f0e491c03460506c9ee440e0cff3140d4c3ba61`
-**Candidate:** `2f491773093442f46036fe14cbb266fe79466311`
-**Certification:** **CERTIFIED** — exact candidate `2f491773093442f46036fe14cbb266fe79466311`
-**Delivery:** **DELIVERED** — integrated as ancestor of `82bb374523d1ef83f559f0c3d08a455c766b3e21`; first shipped in `v0.4.779` (`03bb4b60e51c1ef5862696525bb20ca1f9336f37`)
+**Run:** 2026-08-30 ERADICATION, ranked catalogue item 1 (America/Los_Angeles)
+**Authority:** Tier C/R catalogue plus one bounded standing-authority adoption batch
+**Base:** `857dcd2c3b7bed591441c6a175caf72eb1397ec4`
+**Candidate:** `01e441fdf958ca20cafd5497cc8e007e41d77f70`
+**Certification:** **CERTIFIED** — independent exact-candidate archive proof
+**Delivery:** **QUEUED** — candidate is an ancestor of `origin/main`; preserved at `refs/heads/patrol-runs/P2/20260830T142407Z`; no version tag contains it yet and no redundant release was created
 
 ## Outcome
+
+- **2 verified findings in this eradication unit:** the bespoke
+  `/marketing/sites` list/action duplication and the shared shell's erasure of
+  an explicit unsupported sort. **Both are fixed.** The route now consumes
+  `EntityListPage`; `listSites` remains the one server data path; eight
+  table/mobile presentations consume one column registry; and kebab, mobile,
+  and right-click consume one seven-action site authority.
+- Existing paging, search, name/status filters, KPI sorts, card/table content,
+  site editor and `site_editor_draft`, list/row copy payloads, governed delete,
+  brand-first doors, and lazy Quick view are preserved. Connections remains
+  explicitly non-sortable because the server has no honest Connections order.
+  KPI filtering is not fabricated: extending the generic filter vocabulary and
+  canonical server query is a focused missing-machinery task, not a product
+  decision.
+- Exact candidate verification: full type-check PASS, focused ESLint PASS, 4
+  Jest suites / 9 tests PASS, owned dead-end detector clean, and independent
+  adversarial verdict **CERTIFIED**. The in-app Browser runtime was unavailable;
+  the canonical preview lease stayed healthy and this infrastructure limit did
+  not reject a batch with no concrete defect.
+- **29 prior catalogue units remain** after closing ranked list-shell item 1;
+  the partially advanced `PlanSitesList` action-authority adoption remains
+  open. The next unit cannot begin until this valid delivery-queued run is
+  reconciled with a containing serialized release.
+- **Only genuine product decision remains unchanged:** after a comparison is
+  revealed, should each agent name in the comparison header become a canonical
+  new-tab agent door? Blind mode must keep every identity-bearing link, title,
+  peek control, and accessible label out of the DOM.
+- The permanent-record controller gained the missing `patrol:run queue` command
+  after certification exposed that the model supported `delivery_queued` but
+  the CLI could not append it. Its 13 focused record/authority tests and full
+  type-check pass.
+
+## Prior weekly outcome — 2026-08-18
 
 - **4 detector-verified findings this run:** two bounded canonical-agent-door repairs, one blind-comparison product decision, and one skill-resource item blocked on missing populated evidence.
 - **2 fixed in this run:** the summary sub-agent in `ContextPolicyDetailSheet` and selected agent in `SurfaceAgentBindPanel` now use canonical `EntityRef` doors. Both preserve the current work by opening the label in a new tab and expose the registered agent peek.
@@ -124,9 +157,9 @@ Stale worklist claims closed during triage:
 
 Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang refactor. Any implementation must invoke the relevant named skill and receive adversarial certification before shipping.
 
-### Rank 1 — canonical list shell (8 open findings)
+### Rank 1 — canonical list shell (7 open findings, 1 certified delivery queued)
 
-1. **`/marketing/sites` — `SitesPortfolio.tsx`.** Convert the route to an `EntityListPage` config, keeping server paging/filter counts, card/table behavior, inline edit, copy payloads, and all seven site actions. Extract the site action registry first so the shell, cards, rows, and right-click share it. Verify every visible column sorts and filters server-side.
+1. **FIXED + CERTIFIED; DELIVERY QUEUED — `/marketing/sites` — `SitesPortfolio.tsx`.** Exact candidate `01e441fdf958ca20cafd5497cc8e007e41d77f70` adopts `EntityListPage`, delegates to canonical `listSites`, preserves paging/search/name/status filters, all eight table/mobile presentations, editor and agent-write behavior, copy payloads, governed delete, Quick view, and all seven site actions through one authority. The shared shell now preserves explicit `sortable:false`, so Connections cannot silently fall through to `updated_at`. Numeric KPI filters remain a focused generic-vocabulary/server-query machinery task; none is falsely advertised.
 2. **`/schedules` — `ScheduleList.tsx` + `ScheduleRow.tsx`.** Build the scoped page/count/facet service required by `EntityListPage`, then replace the bespoke roster. Preserve the surface runtime scope emitter, error Retry, New schedule path, and schedule-specific status/action behavior.
 3. **`/agents/orchestras` — `OrchestrasBrowser.tsx` + `OrchestraCard.tsx`.** Add an Orchestra list config and one Orchestra action registry. Preserve Generate orchestrator/Create Orchestra dialogs, search semantics, card presentation, and the canonical `orchestratorId` identity.
 4. **`/documents` — `DocumentsHubTable.tsx`.** Move the hub onto the canonical shell and its controlled table path. Preserve document-kind routing, existing `EntityRef` behavior, copy/export actions, and the persisted view mapping; do not collapse distinct document entity tokens.
@@ -139,7 +172,7 @@ Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang
 
 10. **`AgentListDropdown.tsx`.** It now has 45 importing surfaces and still does not consume `useAgentRowActions`. Decide the singleton-host contract first (page-owned host or provider); do not instantiate dialog hosts per row/dropdown. Adapt its row shape, then feed the canonical registry without changing selection behavior.
 11. **`AgentActionModal.tsx`.** Replace its seven hard-coded actions with the same canonical agent menu used by table/cards/rows. Preserve the modal as a chooser when that is the primary click; delete only actions made redundant by the registry.
-12. **`SitesPortfolio.tsx` + `PlanSitesList.tsx`.** Build one `buildSiteMenu`/`useSiteRowActions` authority. Keep each surface’s unique section (portfolio management vs plan navigation) while sharing copy, Copy for AI, edit, delete, peek, and live-site actions. Mount dialog hosts once.
+12. **`PlanSitesList.tsx` adoption remains.** `SitesPortfolio.tsx` now owns the canonical `buildSiteMenu` authority and consumes it from table, mobile, and right-click. Adapt `PlanSitesList` to that authority next while retaining its plan-navigation-only section and singleton dialog hosts; do not fork the seven shared actions again.
 13. **`CrmListPage.tsx`.** Extract its inline `ItemMenuConfig` into the CRM entity registry created with the list-shell conversion; table, cards, rows, and right-click must consume the same config.
 14. **`KeywordResearchWorkbench.tsx`.** Extract the inline menu builder into a keyword-research entity action registry and reuse it from every keyword row presentation; retain workbench-only actions as an appended section.
 15. **`SiteKeywordPerformanceWorkspace.tsx`.** Extract `rowMenuConfig` into the same keyword/site-performance authority used by sibling performance surfaces; verify action availability against server capabilities.

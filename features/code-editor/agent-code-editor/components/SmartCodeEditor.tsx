@@ -51,7 +51,7 @@ import {
   smartCodeEditorManifest,
 } from "@/features/surfaces/manifests/smart-code-editor.manifest";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandateSet } from "@/features/agents/mandates/useMandateSet";
+import { useMandateSet } from "@/features/mandates/useMandateSet";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";

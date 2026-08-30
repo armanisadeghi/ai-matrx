@@ -30,7 +30,7 @@
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
 
-/** Mandate for the kit namer — swap the agent at /agents/mandates, no deploy. */
+/** Mandate for the kit namer — swap the agent at /mandates, no deploy. */
 export const KIT_TITLE_MANDATE = "education.kit_title";
 
 /** How much of the material the namer reads. A title needs the opening, not the book. */

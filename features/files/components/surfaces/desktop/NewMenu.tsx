@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";

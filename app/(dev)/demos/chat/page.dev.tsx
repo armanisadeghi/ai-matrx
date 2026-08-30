@@ -7,7 +7,7 @@ import {
   getDefaultAgent,
   resolveAgentForSSR,
 } from "@/features/cx-chat/components/agent/agents";
-import { resolveMandateServer } from "@/features/agents/mandates/service.server";
+import { resolveMandateServer } from "@/features/mandates/service.server";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { warmAgent } from "@/lib/api/warm-helpers";
 

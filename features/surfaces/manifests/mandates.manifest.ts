@@ -1,11 +1,11 @@
 /**
  * Surface manifest — Mandates admin (`matrx-admin/mandates`).
  *
- * ADMIN SURFACE. Drives `/administration/agents/mandates` — the console over
+ * ADMIN SURFACE. Drives `/administration/mandates` — the console over
  * every DB-managed mandate (`agent.mandate` / `agent.mandate_binding`):
  * current pin (vs latest), health, enable/disable, rebind, per-principal
  * overrides, and the exemplar test bench. Backed by
- * `features/admin/mandates/MandatesConsole.tsx`; cross-repo
+ * `features/mandates/admin/MandatesConsole.tsx`; cross-repo
  * system-of-record: common-docs/systems/mandates/FEATURE.md.
  *
  * What an agent bound here may safely do: read the mandate list, the health
@@ -324,9 +324,9 @@ export const mandatesManifest: SurfaceManifest = {
   readinessNote:
     "Console emitter is live (list, health roll-up, selected mandate + pin + contract + overrides), and the bench's exemplars + exemplar draft are published up through bench-draft.ts. Candidate-run state (comparison columns, batch results, verdict notes) still lives in MandateTestBench local state and is not lifted into the scope.",
   label: "Mandates Admin",
-  urlPattern: "/administration/agents/mandates",
+  urlPattern: "/administration/mandates",
   intro: `<surface_intro>
-This is an ADMIN surface: the Mandates console at /administration/agents/mandates.
+This is an ADMIN surface: the Mandates console at /administration/mandates.
 
 A mandate is a named platform position (agent.mandate) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The console shows every mandate with its current pin (a specific agent version, or floating "latest"), a worst-first Health verdict (including live code↔agent and code↔contract drift), per-principal bindings (agent.mandate_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
 

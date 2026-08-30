@@ -165,7 +165,7 @@ Ordered by importance. These are the honest gaps.
 
 7. ~~Script-agent SELECTION is not a registry~~ **SUPERSEDED by Mandates
    (2026-08-08).** Every pipeline agent resolves through a `podcast.*` mandate in
-   `agent.mandate` (admin console `/administration/agents/mandates`;
+   `agent.mandate` (admin console `/administration/mandates`;
    declarations in `aidream/services/agent_slots/podcast_slots.py`). Swapping
    or upgrading an agent is a DB rebind. The band ROUTER (which mandate runs for a
    given host count/format/language) is still code in `_create_script` —

@@ -10,7 +10,7 @@ import { agaAppsAdapter } from "@/features/code/library-sources/adapters/aga-app
 // Side-effect: register `aga-app:` previewer with the render-preview registry.
 import "@/features/agent-apps/code-preview/registerAgentAppRenderPreview";
 import type { AgentApp } from "@/features/agent-apps/types";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 
 interface AgentAppEditPageClientProps {
   app: AgentApp;
@@ -21,7 +21,7 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
   const openSourceEntry = useOpenSourceEntry();
   const openRenderPreview = useOpenRenderPreview();
   const bootstrappedRef = useRef(false);
-  // The editor's coding agent is a MANDATE — swappable per user at /agents/mandates
+  // The editor's coding agent is a MANDATE — swappable per user at /mandates
   // and rebindnable in the admin console without a deploy.
   const { mandate: promptAppDev } = useMandate(PROMPT_APP_DEV_MANDATE);
   const basePath = `/agent-apps/${app.id}`;

@@ -22,7 +22,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -307,20 +306,16 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
             className="text-sm h-7"
           />
         ) : (
-          <EntityRef
-            token="cx_agent_task"
-            id={task.id}
-            name={task.title}
-            showIcon={false}
-            onOpen={() => setEditing(true)}
-            wrap
-            fill
-            className="w-full text-sm leading-snug"
-            labelClassName={cn(
-              "text-left",
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className={cn(
+              "text-sm text-left w-full leading-snug",
               task.status === "done" && "text-muted-foreground line-through",
             )}
-          />
+          >
+            {task.title}
+          </button>
         )}
       </div>
       <button

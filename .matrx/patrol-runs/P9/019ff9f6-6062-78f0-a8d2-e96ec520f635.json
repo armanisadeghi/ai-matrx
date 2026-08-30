@@ -205,6 +205,45 @@
       },
       "previousEventHash": "3dc41a7bded30cf148520bd9146d0aa07cb881523ac8c38cdd8e7d594fcd9340",
       "eventHash": "8bdc54dde7c4902a6e82c71a31bb84c8c7b223bbe78b55063c06454f89efa86f"
+    },
+    {
+      "sequence": 13,
+      "state": "closed",
+      "at": "2026-08-30T14:35:14.888Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Closed the corrected P9 delivery after confirming v0.4.1442 shipped the certified replacement for the rejected v0.4.561 escape.",
+      "evidence": [
+        "release:v0.4.561-original-escape",
+        "release:v0.4.1442-certified-replacement"
+      ],
+      "previousEventHash": "8bdc54dde7c4902a6e82c71a31bb84c8c7b223bbe78b55063c06454f89efa86f",
+      "eventHash": "62b3280c76943436e21d980f2f4385b1a62686eb240345f8bef7265381e9aa04"
+    },
+    {
+      "sequence": 14,
+      "state": "reconciled",
+      "at": "2026-08-30T14:35:15.642Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Reconciled the original v0.4.561 escape truthfully: exact candidate 5bf578b was interaction-tested then rejected for concrete false-promise defects; certified replacement e8ea694 shipped in v0.4.1442 without a redundant release.",
+      "evidence": [
+        "original-release:v0.4.561",
+        "corrected-release:v0.4.1442",
+        "rejected-defects:chat.add-to-docs-and-image-capability-promises"
+      ],
+      "reconciliation": {
+        "candidateSha": "5bf578b45e084d57beeeb6eb5198f58a90bd9c0d",
+        "escapedEventHash": "02a03d932cfe99defb68c523659d6a4e5b75823401bc57d4a2c0280d6493392b",
+        "checks": [
+          "exact-candidate:focused-interaction-3-of-3",
+          "exact-candidate:REJECTED",
+          "replacement:CERTIFIED",
+          "replacement:delivered-v0.4.1442"
+        ],
+        "outcome": "exact_candidate_rejected",
+        "replacementCandidateSha": "e8ea694e74a39b7a1d7253737a62278d00196e3d"
+      },
+      "previousEventHash": "62b3280c76943436e21d980f2f4385b1a62686eb240345f8bef7265381e9aa04",
+      "eventHash": "b3784efda5937dbab92aece928e29a65c621afc3051d6469e50fbbf602d11dcf"
     }
   ]
 }

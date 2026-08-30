@@ -46,7 +46,7 @@ Full doctrine, corollaries and the "done means" checklist:
 - **Registries to fix instead of the call site:** routes →
   `features/scopes/registry/entityRegistry.ts` (`hrefFor`); peeks →
   `features/organizations/peek/registry.ts` **and** `kinds-list.ts` together.
-- **Reference implementation:** `features/admin/mandates/MandatesConsole.tsx`
+- **Reference implementation:** `features/mandates/admin/MandatesConsole.tsx`
   (Agent / Pin / Health columns + the drawer identity card).
 - **Login for verification:** `/login`, `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 
@@ -131,7 +131,7 @@ real damage lives (doctrine §Corollaries):
 
 - Detector + scoreboard + ESLint rule built — see `scripts/dead-ends/FEATURE.md`.
 - `EntityRef` primitive + Mandates console rebuilt on it — see
-  `features/admin/mandates/MandatesConsole.tsx`.
+  `features/mandates/admin/MandatesConsole.tsx`.
 
 ## Decisions needed
 

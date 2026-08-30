@@ -141,6 +141,9 @@ import { publicAgentAppManifest } from "./public-agent-app.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
+import { keywordQuickAnswersManifest } from "./keyword-quick-answers.manifest";
+import { keywordResearchWindowManifest } from "./keyword-research-window.manifest";
+import { pageResearchManifest } from "./page-research.manifest";
 import { marketingSiteKeywordsManifest } from "./marketing-site-keywords.manifest";
 import { marketingSiteMediaManifest } from "./marketing-site-media.manifest";
 import { quickTasksManifest } from "./quick-tasks.manifest";
@@ -356,6 +359,9 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentConnectionsManifest,
   connectionsSkillsManifest,
   keywordResearchManifest,
+  keywordQuickAnswersManifest,
+  keywordResearchWindowManifest,
+  pageResearchManifest,
   marketingSiteKeywordsManifest,
   marketingSiteMediaManifest,
   // 2026-07-24 overlay-surface fleet — window panels are surfaces too

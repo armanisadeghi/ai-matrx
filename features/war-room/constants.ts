@@ -15,12 +15,12 @@ export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 //
 // Each tier's default persona is an AGENT MANDATE, not a hardcoded id (SoR
 // /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md; client
-// half `features/agents/mandates/`). The mandate's system default is the builtin
+// half `features/mandates/`). The mandate's system default is the builtin
 // War Room persona — an agent that knows its tier role, the read-only board
 // context it receives, and that it can list/read the user's notes, tasks,
 // projects and transcripts via the `data` tool. Admins rebind the mandate at
-// /administration/agents/mandates; a user overrides it for themselves at
-// /agents/mandates or from the MandateAgentPicker in the tier's header.
+// /administration/mandates; a user overrides it for themselves at
+// /mandates or from the MandateAgentPicker in the tier's header.
 //
 // THE PERSISTED-ID DOCTRINE (why this migration needed care):
 //   1. A mandate resolves what a NEW conversation is CREATED with. It never

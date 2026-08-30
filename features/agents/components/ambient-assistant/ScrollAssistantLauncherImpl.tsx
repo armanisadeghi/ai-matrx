@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandateChain } from "@/features/agents/mandates/useMandateChain";
+import { useMandateChain } from "@/features/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";

@@ -5,7 +5,7 @@
 so anyone can run the agent with realistic data in one click, and so contract
 changes have concrete evidence of what breaks. User-visible copy says **"test
 case"** or **"sample"**, never "exemplar" (that is the contract name only —
-same rule as `features/admin/mandates/FEATURE.md`).
+same rule as `features/mandates/admin/FEATURE.md`).
 
 ## The three laws of this feature
 
@@ -55,7 +55,7 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
   (RLS-scoped) showing raw inputs + expandable final response, click-through
   to the run (no-dead-ends), one-click save as `source='borrowed'` candidate
   with `source_conversation_id` provenance.
-- **Mandate bench** — `features/admin/mandates/` reads the same table filtered
+- **Mandate bench** — `features/mandates/admin/` reads the same table filtered
   by `mandate_id`; its saves stamp `agent_id` too.
 
 ## Server side (aidream)

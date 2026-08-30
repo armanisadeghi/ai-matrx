@@ -18,7 +18,7 @@ import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { EmitAssistInput } from "@/features/assists/types";
 import { KIND_CREATOR_MANDATE_KEY } from "./constants";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import { resolveMandate } from "@/features/mandates/service";
 import { composeKindAgentIntent } from "./kind-agent-intents";
 import type { ShapeBrowseRow } from "@/features/content-ir/browse/types";
 

@@ -46,7 +46,7 @@ import {
 } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import {
   normalizeNoteEditorMode,
   usePreferredDefaultEditorMode,

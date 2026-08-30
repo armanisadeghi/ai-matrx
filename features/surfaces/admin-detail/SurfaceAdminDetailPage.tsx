@@ -2002,6 +2002,18 @@ function RoleOverridePicker({
 // Config namespaces (global/admin tier is editable)
 // ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * The `menu` namespace is offered on EVERY surface, declared or not — the
+ * exclusion valve is a property of being a place, not of a manifest opting
+ * in. Shape: `{ "excludedItemIds": ["<shortcut/mandate id>", ...] }`.
+ */
+const UNIVERSAL_MENU_NAMESPACE = {
+  namespace: "menu",
+  label: "Context menu (exclusion valve)",
+  description:
+    'Item ids this surface REFUSES even though they qualify. Menu availability is otherwise derived — an item is offered here iff every surface value it consumes has a read path on this page. Shape: {"excludedItemIds":["<id>"]}. Org and user tiers may exclude MORE; no tier can re-admit.',
+} as const;
+
 function ConfigNamespacesSection({
   surfaceName,
   configBundle,
@@ -2028,7 +2040,17 @@ function ConfigNamespacesSection({
   const globalRowFor = (ns: string) =>
     rows.find((row) => row.namespace === ns && tierOf(row) === "global");
   const allNamespaces = [
-    ...new Set([...declared.map((d) => d.namespace), ...counts.keys()]),
+    ...new Set([
+      ...declared.map((d) => d.namespace),
+      ...counts.keys(),
+      // THE EXCLUSION VALVE (#43) is universal — every place may refuse a
+      // context-menu item the derived requirement gate offered it
+      // (THE-MODEL law 3). Declaring it on all ~100 manifests would be
+      // noise, and injecting it into every RESOLVED manifest would flood the
+      // user-facing surfaces hub (which lists a surface iff it has roles or
+      // namespaces). So it is declared HERE, where the valve is authored.
+      UNIVERSAL_MENU_NAMESPACE.namespace,
+    ]),
   ].sort((a, b) => a.localeCompare(b));
 
   return (
@@ -2044,7 +2066,11 @@ function ConfigNamespacesSection({
       ) : (
         <div className="rounded-md border border-border bg-card divide-y divide-border">
           {allNamespaces.map((ns) => {
-            const decl = declared.find((d) => d.namespace === ns) ?? null;
+            const decl =
+              declared.find((d) => d.namespace === ns) ??
+              (ns === UNIVERSAL_MENU_NAMESPACE.namespace
+                ? UNIVERSAL_MENU_NAMESPACE
+                : null);
             const tierCounts = counts.get(ns) ?? {};
             return (
               <NamespaceConfigEditorRow

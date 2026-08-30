@@ -479,7 +479,7 @@ export function InvitationsPanel({
                 size="sm"
                 onClick={onRefresh}
                 disabled={refreshing}
-                className="h-7 px-2"
+                className="h-11 px-2 lg:h-7"
                 title="Refresh"
               >
                 <RefreshCw
@@ -577,6 +577,7 @@ export function InvitationsPanel({
                           size="sm"
                           onClick={handleCopyLink}
                           title="Copy invitation link"
+                          className="h-11 lg:h-8"
                         >
                           <Copy className="h-4 w-4 mr-1" />
                           Copy Link
@@ -592,6 +593,7 @@ export function InvitationsPanel({
                             ? "Renew and extend expiry"
                             : "Resend and extend expiry"
                         }
+                        className="h-11 lg:h-8"
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />
                         {isExpired ? "Renew" : "Resend"}
@@ -601,7 +603,7 @@ export function InvitationsPanel({
                         size="sm"
                         onClick={() => setInvitationToCancel(invitation)}
                         disabled={operationLoading}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        className="h-11 min-w-11 px-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 lg:h-8 lg:min-w-0 lg:px-3"
                         title="Cancel invitation"
                       >
                         <X className="h-4 w-4" />

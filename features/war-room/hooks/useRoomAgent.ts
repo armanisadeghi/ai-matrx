@@ -39,7 +39,7 @@ import { setClientTools } from "@/features/agents/redux/execution-system/instanc
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";
 import {
   selectActiveConversationIdForRoom,

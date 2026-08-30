@@ -8,7 +8,7 @@
  * `launchAgentExecution({ mandateKey })` / `runHeadlessAgentJson({ mandateKey })`
  * so BOTH halves of the binding (agent AND `config_overrides`) apply —
  * resolving here and passing an agent id would silently drop the settings
- * half. Recipe: `features/agents/mandates/FEATURE.md`.
+ * half. Recipe: `features/mandates/FEATURE.md`.
  *
  * Adding a job = declare the mandate in aidream
  * `services/mandates/client_mandates.py`, then add its key here.

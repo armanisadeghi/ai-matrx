@@ -4,7 +4,7 @@
 //
 // Suggest + apply optimized titles for a FINISHED episode. The
 // podcast.title_optimizer agent (DB-managed mandate — rebind from
-// /administration/agents/mandates) reads the episode's real script plus the same
+// /administration/mandates) reads the episode's real script plus the same
 // episode_metadata JSON the blog/show-notes agents consume, and emits the
 // canonical `episode_title_options` render block. Deliberately post-episode
 // only (Arman's ruling): the agent always sees the FINAL script, so a chosen

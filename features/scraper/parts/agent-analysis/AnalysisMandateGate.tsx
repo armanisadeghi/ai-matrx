@@ -4,14 +4,14 @@
  * The UNBOUND state of a scraper analysis tab — rendered when the tab's mandate
  * cannot resolve (not seeded yet, no Holder bound, disabled). Says plainly what
  * is missing, and carries the two ways out: the reusable mandate picker (bind
- * an agent right here) and the door to /agents/mandates filtered to scraper.
+ * an agent right here) and the door to /mandates filtered to scraper.
  * The tab never silently runs a hardcoded agent id.
  */
 
 import { BrainCircuit } from "lucide-react";
 import { Card } from "@/components/official/PageTemplate";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 export function AnalysisMandateGate({
   mandateKey,

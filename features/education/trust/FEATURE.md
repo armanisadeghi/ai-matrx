@@ -42,7 +42,7 @@ not_in_material`; grounded answering refuses ("that isn't in your material") ins
 | `flashcards.verify_against_source`   | `card_verification` | front+back+source_excerpt → `{status: verified\|drifted\|unverifiable, explanation, suggested_fix}`.            |
 | `flashcards.grade_typed_answer`      | `answer_grade`      | question+expected+learner → `GradeVerdict` core (paraphrase-tolerant, names misconceptions).                   |
 
-Mandate keys live in [`features/flashcards/data/mandates.ts`](../../flashcards/data/mandates.ts) (`FC_MANDATES`); the agents behind them are DB-bound (swap at `/agents/mandates`).
+Mandate keys live in [`features/flashcards/data/mandates.ts`](../../flashcards/data/mandates.ts) (`FC_MANDATES`); the agents behind them are DB-bound (swap at `/mandates`).
 
 ## Data flow (flashcards reference retrofit)
 

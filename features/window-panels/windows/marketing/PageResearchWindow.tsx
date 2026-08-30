@@ -62,7 +62,10 @@ import {
   type PageResearchRunSummary,
 } from "@/features/surfaces/manifests/page-research.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import {
+  getSurfaceDisplayLabel,
+  surfaceValueLabels,
+} from "@/features/surfaces/utils/surface-display";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -167,6 +170,7 @@ function PageResearchWindowInner({
     setAttachment({ status: "not_started", error: null });
     setPhase({ status: "starting" });
     let topicId: string | null = null;
+    let attachmentOutcome: PageResearchAttachmentStatus = "not_started";
     try {
       const { topic } = await createTopic(organizationId, {
         name: name.trim(),
@@ -180,6 +184,7 @@ function PageResearchWindowInner({
       // ATTACH FIRST, run second. The topic row and its edge are the durable
       // result of this window; the run is the paid work on top. A run that
       // dies still leaves the page pointing at real research.
+      attachmentOutcome = "attaching";
       setAttachment({ status: "attaching", error: null });
       const attached = await links.attach(
         "research_topic",
@@ -190,11 +195,13 @@ function PageResearchWindowInner({
         const attachmentError =
           attached.error ??
           "The association write did not return an error message.";
+        attachmentOutcome = "failed";
         setAttachment({ status: "failed", error: attachmentError });
         toast.error(
           `Research started, but attaching it to this page failed: ${attachmentError}`,
         );
       } else {
+        attachmentOutcome = "attached";
         setAttachment({ status: "attached", error: null });
       }
 
@@ -219,8 +226,18 @@ function PageResearchWindowInner({
     } catch (error) {
       const message = extractErrorMessage(error);
       toast.error(`Page research failed: ${message}`);
-      // The topic exists and is attached — the user keeps it and can re-run
-      // from the research page rather than losing the work.
+      if (
+        topicId &&
+        (attachmentOutcome === "not_started" ||
+          attachmentOutcome === "attaching")
+      ) {
+        setAttachment({
+          status: "failed",
+          error: `The topic was created before page attachment completed: ${message}`,
+        });
+      }
+      // A created topic is kept even when keyword setup or attachment failed;
+      // the visible topic link lets the user inspect or recover it.
       setPhase(topicId ? { status: "done", topicId } : { status: "form" });
     }
   }, [
@@ -446,13 +463,12 @@ function PageResearchWindowInner({
                 : "at most " + PAGE_RESEARCH_MAX_KEYWORDS}
             </span>
           </Label>
-          <span
-            className="sr-only"
+          <p
+            className="text-[11px] text-muted-foreground"
             data-surface-value="primary_keyword"
-            title={primaryKeyword ?? ""}
           >
-            {V.primary_keyword}
-          </span>
+            {V.primary_keyword}: {primaryKeyword?.trim() || "not supplied yet"}
+          </p>
           {keywords.map((keyword, index) => (
             <div
               key={index}
@@ -511,18 +527,32 @@ function PageResearchWindowInner({
       </div>
 
       {phase.status === "form" ? (
-        <div className="mt-auto flex items-center justify-end gap-2 pt-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            disabled={!canStart}
-            onClick={() => void start()}
-            data-surface-value="can_start"
-          >
-            Start research
-          </Button>
+        <div
+          className="mt-auto space-y-2 pt-2"
+          data-surface-value="run_summary"
+        >
+          <p className="text-[11px] text-muted-foreground">
+            <span data-surface-value="research_phase">Draft phase.</span>{" "}
+            <span data-surface-value="attachment_status">
+              Nothing is attached until you start research.
+            </span>{" "}
+            <span data-surface-value="is_streaming">
+              No research is running.
+            </span>
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!canStart}
+              onClick={() => void start()}
+              data-surface-value="can_start"
+            >
+              Start research
+            </Button>
+          </div>
         </div>
       ) : (
         <div
@@ -633,7 +663,7 @@ function PageResearchWindowInner({
       <WindowPanel
         id="page-research-window"
         overlayId="pageResearchWindow"
-        title="Research for this page"
+        title={getSurfaceDisplayLabel(PAGE_RESEARCH_SURFACE_NAME)}
         onClose={onClose}
         width={520}
         height={480}

@@ -265,7 +265,7 @@ export function contractOfMandate(row: MandateRowLike): Json {
 /**
  * The mandate a mandate falls back to. `metadata.fallback` pre-cutover, the
  * promoted `fallback_mandate_key` column after.
- * Authority: `/common-docs/systems/agents/mandates/FALLBACK-MANDATES.md`.
+ * Authority: `/common-docs/systems/mandates/FALLBACK-MANDATES.md`.
  */
 export function fallbackKeyOfMandate(row: MandateRowLike): string | null {
   const anyRow = row as Record<string, unknown>;

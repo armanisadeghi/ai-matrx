@@ -94,7 +94,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
   2026-06-10** (1–10 hosts, all formats, per-host names/voices; the ceiling
   came down from 20 on 2026-08-09 — see the change log). Since
   2026-08-08 every pipeline agent routes through a `podcast.*` mandate
-  (DB-managed; admin console `/administration/agents/mandates`) — adding or
+  (DB-managed; admin console `/administration/mandates`) — adding or
   swapping an agent is a rebind, not a code change.
 - `docs/BLOG_PER_EPISODE.md` — rich SEO blog article per episode (≠ transcript).
   **Live 2026-06-11:** generate from the run page (`EpisodeContentStudio`),
@@ -266,11 +266,11 @@ is easy to fill in.
   in `podcast_generator.py` carries a `mandate_key` and runs through
   `run_mandated`; every FE-run agent resolves via `resolveMandate`. 36 live
   mandates across `podcast.*` + `podcast_client.*`. The Studio now links to
-  **`/agents/mandates?feature=podcast`** ("Podcast agents") — before this the
+  **`/mandates?feature=podcast`** ("Podcast agents") — before this the
   surface named none of that and there was no way in from the feature.
   Rebinding, forking the system agent into your own, and settings-only
   overrides are all handled by the platform surface; see
-  `common-docs/systems/agents/mandates/FEATURE.md`.
+  `common-docs/systems/mandates/FEATURE.md`.
 - 2026-08-18 — **THE USER-INPUT LAW fix: source resolvers no longer double-ship scraped/URL content as `user_input`.** `useSourceResolvers.ts` (`resolveWebsite`, `resolveYouTube`) sent the same value via both `userInput` and `variables` (`scraped_content` / `youtube_url`) — pure duplication, since both target mandates (`podcast_client.web_content_extractor`, `podcast_client.youtube_research`) already declare and consume those variables via `{{...}}` placeholders (verified live). Removed the redundant `userInput` fields; the variables carry the content exclusively.
 
 - 2026-08-18 — **The blog and show-notes agents write MARKDOWN; the JSON middleman is gone (Arman's call).** Both answered with a structured envelope (`{title, intro, sections[], resources[]}` / `{key_takeaways[], topics[], links[], people[]}`) that `articleMarkdown.ts` flattened into markdown the instant it landed — and markdown is what `pc_articles.content_markdown` stores, so **nothing in the product ever read that structure**. The cost was the entire live view: the floating window renders markdown as it streams, but an un-kinded JSON blob has nothing to show until it is parsed at the end, so the user watched an EMPTY window for the whole run and then got raw JSON (FOUND_DEFECTS D170). Per the Class E rule — a kind is earned only when the output is consumed STRUCTURALLY — the structure was not earning anything, so it was removed rather than promoted to a kind. Both agents rewritten through `agent_author` (`podcast_blog_writer`, `podcast_show_notes_generator`) with the same anti-fabrication, resources-integrity and timestamp-estimation rules intact; the blog's `output_schema` cleared and both mandates' `output_kind` set to `text`. The blog's first line is a single `# ` H1 that **owns the title and the public slug** (`headingTitle()` reads it off the markdown itself, so the title can never drift from the body the reader sees); show notes start at `## Key takeaways` and never emit an H1. `articleMarkdown.ts` is DELETED. **Platform half:** `runHeadlessAgentJson` gained `expect: "json" | "text"` — a prose agent's product is its answer text, and asking the JSON primitive for it failed a run that answered perfectly. Live-verified end to end: show notes and a blog post generated on real episodes, each rendered as formatted markdown in the floating window (headings, bold timestamps, bullets — no JSON), saved with the H1-derived title and slug. **Known unrelated defect seen while testing:** regenerating an article row created by ANOTHER user fails RLS and surfaces as a bare "Generation failed." toast — the agent ran and its output is lost. That is Access-Gate work, not article work.
@@ -598,7 +598,7 @@ fixed` window titled "Marking chapters" — the page did not move — chapters
   languages stopped being one-size-fits-all.** Server (aidream, same-day):
   every pipeline agent (research, extraction, all script bands, both audio
   bands, metadata, image/video mandates, feature-image pair) resolves through a
-  `podcast.*` mandate — rebind from `/administration/agents/mandates`, never a
+  `podcast.*` mandate — rebind from `/administration/mandates`, never a
   code constant; default cast names + voices now ROTATE per episode
   (gender-aware seeded draw on both the Gemini and ElevenLabs bands;
   cast-preview draws a fresh cast per form load — kills the eternal

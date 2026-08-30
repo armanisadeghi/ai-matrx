@@ -24,7 +24,7 @@ component set (`kindConfig` parameterizes labels/routes/timer/capability).
     → `GradeWorkSurface` + `useGradeWork`): snap a photo of a worked problem → step-level grade.
 - Feature code: `features/education/assessment/` (`data/`, `components/`, `grade-work/`).
 - Mandates (keys in `data/mandates.ts`; the DB decides which agent fulfils each — swap at
-  `/agents/mandates`): `ASSESSMENT_MANDATES` — `education.quiz_generate`,
+  `/mandates`): `ASSESSMENT_MANDATES` — `education.quiz_generate`,
   `education.quiz_generate_from_source`, `education.quiz_deepen_item`; grading REUSES the
   flashcards mandates `flashcards.grade_typed_answer` (grade-on-meaning), `flashcards.grade_spoken`,
   `flashcards.verify_against_source`. **Vision/handwritten:** `education.grade_handwritten` —

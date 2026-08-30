@@ -16,7 +16,7 @@
 import { useState } from "react";
 import { Mic, Square, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { QuestionPacing } from "./types";

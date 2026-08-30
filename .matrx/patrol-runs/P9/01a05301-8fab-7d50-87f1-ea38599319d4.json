@@ -94,6 +94,130 @@
       },
       "previousEventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179",
       "eventHash": "15e5723e68cc840a036b8febc21089acd5ee1e9f6eb5c2c549572ef427db86d7"
+    },
+    {
+      "sequence": 6,
+      "state": "fixing",
+      "at": "2026-08-30T14:56:04.775Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Added typed reconciliation for a rejected escaped candidate and its certified delivered replacement.",
+      "evidence": [
+        "candidate:afa75585af",
+        "escape:5bf578b",
+        "replacement:e8ea694"
+      ],
+      "previousEventHash": "15e5723e68cc840a036b8febc21089acd5ee1e9f6eb5c2c549572ef427db86d7",
+      "eventHash": "6082b5ddf88f0ba7ca46dc4c4ce22824cd6e06abc7089f54bf0ae96a44160bd3"
+    },
+    {
+      "sequence": 7,
+      "state": "certifying",
+      "at": "2026-08-30T14:56:05.402Z",
+      "actor": "p9-certification-controller",
+      "summary": "Started adversarial certification of rejected-escape reconciliation.",
+      "evidence": [
+        "candidate:afa75585af"
+      ],
+      "previousEventHash": "6082b5ddf88f0ba7ca46dc4c4ce22824cd6e06abc7089f54bf0ae96a44160bd3",
+      "eventHash": "15d6c0cbfd08a2488bdb2bda6d085a9a7933d4196bb58a3d81bf7401913bca91"
+    },
+    {
+      "sequence": 8,
+      "state": "rejected",
+      "at": "2026-08-30T14:56:06.006Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "REJECTED: a later different-candidate rejection could be borrowed for the escaped candidate.",
+      "evidence": [
+        "defect:cross-candidate-rejection-binding"
+      ],
+      "previousEventHash": "15d6c0cbfd08a2488bdb2bda6d085a9a7933d4196bb58a3d81bf7401913bca91",
+      "eventHash": "d141c94d3ffcdc3864fe8cefc21b124d96c149dbb3b751f51441a485bca191cb"
+    },
+    {
+      "sequence": 9,
+      "state": "fixing",
+      "at": "2026-08-30T14:56:06.713Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Bound rejection to the event immediately after the exact-candidate certification attempt and added a cross-candidate negative regression.",
+      "evidence": [
+        "candidate:05ad7aa37e"
+      ],
+      "previousEventHash": "d141c94d3ffcdc3864fe8cefc21b124d96c149dbb3b751f51441a485bca191cb",
+      "eventHash": "fefde92928ec9f1dd3829fde6d2bb0dcd97f696116ea1f307d40f487000a4dc7"
+    },
+    {
+      "sequence": 10,
+      "state": "certifying",
+      "at": "2026-08-30T14:56:07.355Z",
+      "actor": "p9-certification-controller",
+      "summary": "Retried adversarial certification of exact-attempt rejection binding.",
+      "evidence": [
+        "candidate:05ad7aa37e"
+      ],
+      "previousEventHash": "fefde92928ec9f1dd3829fde6d2bb0dcd97f696116ea1f307d40f487000a4dc7",
+      "eventHash": "074d03aeb8c1d6db4cf8e12ceccc8912931652d72800d18459d029a9cb177ea0"
+    },
+    {
+      "sequence": 11,
+      "state": "rejected",
+      "at": "2026-08-30T14:56:07.981Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "REJECTED: selecting the first exact attempt incorrectly refused a legitimate blocked-then-retried exact candidate.",
+      "evidence": [
+        "defect:exact-candidate-retry-false-negative"
+      ],
+      "previousEventHash": "074d03aeb8c1d6db4cf8e12ceccc8912931652d72800d18459d029a9cb177ea0",
+      "eventHash": "eb4ce14a73d034501bbc2f3b64eae6f14b0203db5aec58a1e6a1298b85b8239f"
+    },
+    {
+      "sequence": 12,
+      "state": "fixing",
+      "at": "2026-08-30T14:56:08.608Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Changed validation to find an adjacent exact-candidate certifying-to-rejected pair and added positive retry plus negative cross-candidate regressions.",
+      "evidence": [
+        "candidate:57d8d60d3974525dd346a9f250d82b1726470d6a"
+      ],
+      "previousEventHash": "eb4ce14a73d034501bbc2f3b64eae6f14b0203db5aec58a1e6a1298b85b8239f",
+      "eventHash": "188a24fd5701a6b34ba92745f56a958ee2039088792daa3f91b1d93f1547bfdc"
+    },
+    {
+      "sequence": 13,
+      "state": "certifying",
+      "at": "2026-08-30T14:56:09.239Z",
+      "actor": "p9-certification-controller",
+      "summary": "Started final adversarial review of the adjacent-pair validator.",
+      "evidence": [
+        "candidate:57d8d60d3974525dd346a9f250d82b1726470d6a"
+      ],
+      "previousEventHash": "188a24fd5701a6b34ba92745f56a958ee2039088792daa3f91b1d93f1547bfdc",
+      "eventHash": "3e7f988026c1fd7379be1cfe65d478f03e0bebbfb44461bd201563decceb159d"
+    },
+    {
+      "sequence": 14,
+      "state": "certified",
+      "at": "2026-08-30T14:56:09.840Z",
+      "actor": "/root/p9_repair_certifier",
+      "summary": "Rejected-escape reconciliation controller is independently CERTIFIED.",
+      "evidence": [
+        "prior-rejections:2",
+        "records:legacy-14-current-13"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "57d8d60d3974525dd346a9f250d82b1726470d6a",
+        "certifierTaskId": "/root/p9_repair_certifier",
+        "checks": [
+          "focused-tests:20-of-20",
+          "cross-candidate-bypass:refused",
+          "exact-candidate-retry:accepted",
+          "adjacent-pair-variant:accepted",
+          "diff-check:pass",
+          "type-check:unrelated-post-candidate-debt-only"
+        ]
+      },
+      "previousEventHash": "3e7f988026c1fd7379be1cfe65d478f03e0bebbfb44461bd201563decceb159d",
+      "eventHash": "450cc731254dfed6902dd8c80e31a345f2e9cb8147566f395def573bfa38b35a"
     }
   ]
 }

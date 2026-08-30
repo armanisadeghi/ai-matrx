@@ -82,7 +82,6 @@ const PLACEHOLDER_SHELLS = [
   "MePillarPlaceholder",
   "HrPillarSurface",
   "HrPillarPlaceholder",
-  "PageShell",
 ] as const;
 
 const PLACEHOLDER_RE = new RegExp(`\\b(?:${PLACEHOLDER_SHELLS.join("|")})\\b`);
@@ -133,14 +132,14 @@ export async function generateRouteManifest(repoRoot: string): Promise<RouteMani
     const pattern = patternForPageFile(rel);
     const source = path.relative(repoRoot, file);
     const src = readFileSync(file, "utf8");
-    const key = PROMISE_KEY_RE.exec(src);
-    const isPlaceholder = PLACEHOLDER_RE.test(src) && Boolean(key);
+    const isPlaceholder = PLACEHOLDER_RE.test(src);
     const entry: RouteManifestEntry = {
       pattern,
       status: isPlaceholder ? "placeholder" : "live",
       source,
     };
     if (isPlaceholder) {
+      const key = PROMISE_KEY_RE.exec(src);
       if (key) entry.promiseKey = key[1];
     }
     // Parallel routes can hand one pattern several page files. A pattern is

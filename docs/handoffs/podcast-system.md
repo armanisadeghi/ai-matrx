@@ -62,7 +62,7 @@ voice/cast diversity + voice-selection UX → `docs/handoffs/podcast-voice-diver
    bake their own cast, so default no-speaker 2-host runs on the legacy path always sound like
    the same pair. Mitigated: the FE always sends a fresh previewed cast (which routes OFF the
    legacy path); the gap is API callers hitting the legacy band. Fix = add a `speaker_names`
-   variable to those three agents' prompts (rebind via /administration/agents/mandates) or retire
+   variable to those three agents' prompts (rebind via /administration/mandates) or retire
    the legacy band once the multihost generic matches its quality.
 
 ## Done

@@ -7,7 +7,7 @@ import {
 import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveMandateServer } from "@/features/agents/mandates/service.server";
+import { resolveMandateServer } from "@/features/mandates/service.server";
 
 /**
  * SSR mandate resolution: which agent owns `/chat/new` for THIS user (system

@@ -31,7 +31,7 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -43,7 +43,7 @@ import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/
 import {
   missingRequiredVariables,
   missingVariablesMessage,
-} from "@/features/agents/mandates/service";
+} from "@/features/mandates/service";
 import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
@@ -53,7 +53,7 @@ const SOURCE_FEATURE = "masterwork" as const;
 /**
  * Which agent conducts the interview is DB-managed via the `masterwork.scout`
  * Mandate (declared in aidream `mandates/client_mandates.py`, rebindable from
- * /administration/agents/mandates). No hardcoded agent id, no silent fallback —
+ * /administration/mandates). No hardcoded agent id, no silent fallback —
  * if the Mandate can't resolve, the panel says so and refuses.
  */
 const SCOUT_MANDATE_KEY = "masterwork.scout";

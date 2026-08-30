@@ -134,6 +134,58 @@ registerNamespace<DictionaryConfig>({
 });
 
 // ---------------------------------------------------------------------------
+// "menu" — THE EXCLUSION VALVE (THE-MODEL law 3: "A place may explicitly
+// exclude"). Phase 6.7 made context-menu availability DERIVED — an item is
+// offered wherever every key it consumes has a read path
+// (`features/context-menu-v3/model/requirement-gate.ts`). This namespace is
+// the one sanctioned override: a surface names the item ids it refuses even
+// though they qualify.
+//
+// WHY HERE and not a new column: the valve belongs to the PLACE, not the
+// item, and this registry is the platform's existing per-surface authored
+// config — already layered global → org → scope → user, already fetched once
+// per surface by `useSurfaceConfig` (which the menu already calls for agent
+// roles), already editable in the surface admin detail. Zero SQL, and it is
+// storage-position-agnostic: it never names `agent.shortcut` OR
+// `mandate.vw_shortcut`, only the ids both of them carry.
+//
+// MERGE = UNION, and it is deliberately one-way. An org may exclude more than
+// the platform did and a user more than their org did; no tier can RE-ADMIT
+// what a weaker tier excluded. A valve that can be re-opened from a stronger
+// tier is a second gate, and law 3 allows exactly one override.
+// ---------------------------------------------------------------------------
+
+export interface MenuConfig {
+  /**
+   * Menu item ids (shortcut / mandate ids — the same id on both storage
+   * positions) this surface refuses. Absent or empty = nothing excluded.
+   */
+  excludedItemIds?: string[];
+}
+
+registerNamespace<MenuConfig>({
+  namespace: "menu",
+  validate: (input): input is MenuConfig => {
+    if (!isPlainObject(input)) return false;
+    const ids = (input as MenuConfig).excludedItemIds;
+    return (
+      ids === undefined ||
+      (Array.isArray(ids) && ids.every((id) => typeof id === "string"))
+    );
+  },
+  merge: (layers) => {
+    const excluded = new Set<string>();
+    for (const layer of layers) {
+      for (const id of layer.excludedItemIds ?? []) {
+        if (id) excluded.add(id);
+      }
+    }
+    return excluded.size > 0 ? { excludedItemIds: [...excluded] } : {};
+  },
+  empty: {},
+});
+
+// ---------------------------------------------------------------------------
 // "listening" — app-wide speech playback defaults (voice / speed / language),
 // layered system → org → user (user wins). Hosted on the listening HOME
 // surface (`matrx-user/assistant-message`, see

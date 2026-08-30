@@ -33,7 +33,7 @@ import {
   SCRAPER_ANALYSIS_CONTENT_VARIABLE,
   SCRAPER_ANALYSIS_MANDATES,
 } from "@/features/scraper/constants/analysis-agents";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
 
 interface KeywordAnalysisPageProps {

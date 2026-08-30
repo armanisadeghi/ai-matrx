@@ -951,7 +951,7 @@ global view): `common-docs/systems/crm/HANDOFF.md` (the contact-table folds feed
 supply) · aidream `docs/handoffs/features-to-workflows.md` (plans CRM/outreach WORKFLOW NODES —
 when built, they must go through the one send/draft primitives, never a side door) ·
 aidream `docs/handoffs/assist-producer-noise.md` (assists-dock hygiene; outreach's producers write
-into that same dock) · `common-docs/systems/agents/mandates/ROLLOUT.md` (vocabulary/binding campaign that
+into that same dock) · `common-docs/systems/mandates/ROLLOUT.md` (vocabulary/binding campaign that
 renamed agent slots to Mandates across these docs).
 
 1. **The five human gates** — see the status block above. All guided by

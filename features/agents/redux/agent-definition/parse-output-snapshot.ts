@@ -76,6 +76,17 @@ function requiredString(record: Record<string, unknown>, key: string): string {
   return value;
 }
 
+function requiredNullableString(
+  record: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = requiredField(record, key);
+  if (value !== null && typeof value !== "string") {
+    fail(key, "a string or null");
+  }
+  return value;
+}
+
 function requiredNumber(record: Record<string, unknown>, key: string): number {
   const value = requiredField(record, key);
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -403,6 +414,6 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     ui_gates: parseUiGates(requiredField(raw, "ui_gates")),
     default_rag_boost: requiredNumber(raw, "default_rag_boost"),
     rag_awareness_mode: requiredString(raw, "rag_awareness_mode"),
-    input_kind: requiredString(raw, "input_kind"),
+    input_kind: requiredNullableString(raw, "input_kind"),
   };
 }

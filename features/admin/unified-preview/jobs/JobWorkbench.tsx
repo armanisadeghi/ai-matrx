@@ -9,7 +9,7 @@
  *  - THE REBIND GUARD — an impact preflight on every holder swap, loud and
  *    never blocking (`useGuardedRebind.tsx:65-209`).
  *  - THE PRECEDENCE RIBBON, reused verbatim from
- *    `features/agents/mandates/components/MandateResolutionRibbon.tsx`.
+ *    `features/mandates/components/MandateResolutionRibbon.tsx`.
  *
  * New here, because it exists NOWHERE in the product today (harvest gap #9):
  *  - THE GOAL EDITOR. The frozen triad's first element has no management
@@ -34,8 +34,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
-import type { MandateResolutionLayer } from "@/features/agents/mandates/components/MandateResolutionRibbon";
+import { MandateResolutionRibbon } from "@/features/mandates/components/MandateResolutionRibbon";
+import type { MandateResolutionLayer } from "@/features/mandates/components/MandateResolutionRibbon";
 import { cn } from "@/lib/utils";
 import {
   findJobByKey,

@@ -15,7 +15,7 @@
 
 import { useCallback, useState } from "react";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import {
   DICTIONARY_ASSISTANT_MANDATE_KEY,
   DICT_LEVEL_LABELS,

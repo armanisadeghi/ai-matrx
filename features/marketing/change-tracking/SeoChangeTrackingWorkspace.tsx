@@ -1864,14 +1864,20 @@ export function SeoChangeTrackingWorkspace() {
               title={`${row.supported_theory_count ?? 0} supported`}
             >
               <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-              {row.supported_theory_count ?? 0}
+              <span className="sr-only">
+                {row.supported_theory_count ?? 0} supported
+              </span>
+              <span aria-hidden="true">{row.supported_theory_count ?? 0}</span>
             </span>{" "}
             <span
               className="inline-flex items-center gap-0.5 text-destructive"
               title={`${row.refuted_theory_count ?? 0} refuted`}
             >
               <XCircle className="h-3 w-3" aria-hidden="true" />
-              {row.refuted_theory_count ?? 0}
+              <span className="sr-only">
+                {row.refuted_theory_count ?? 0} refuted
+              </span>
+              <span aria-hidden="true">{row.refuted_theory_count ?? 0}</span>
             </span>
           </span>
         ),

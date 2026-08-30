@@ -9,7 +9,7 @@ import {
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
 } from "./chat-quick-actions.config";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 
 /**
  * `/chat/new` — landing surface.

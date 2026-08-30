@@ -86,7 +86,7 @@ export function ExportMenu({
                 )
               : isIcon
                 ? cn(
-                    "h-7 w-7",
+                    "h-11 w-11 shrink-0 lg:h-7 lg:w-7",
                     appearance === "bare" &&
                       "bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 active:bg-transparent data-[state=open]:bg-transparent",
                     className,

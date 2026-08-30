@@ -271,8 +271,8 @@ function SiteEditorDialogBody({
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              Changing this moves the site (and its website property) to
-              another brand in the same organization.
+              Changing this moves the site (and its website property) to another
+              brand in the same organization.
             </p>
           </div>
 

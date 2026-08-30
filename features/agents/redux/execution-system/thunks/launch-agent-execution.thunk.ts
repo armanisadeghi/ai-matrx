@@ -29,7 +29,7 @@ import {
   resolveMandate,
   assertMandateVariables,
   type ResolvedMandate,
-} from "@/features/agents/mandates/service";
+} from "@/features/mandates/service";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";

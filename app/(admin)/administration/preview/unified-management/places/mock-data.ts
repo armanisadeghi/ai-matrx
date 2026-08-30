@@ -2,7 +2,7 @@
  * THE PLACES WORKSPACE — mock data (preview only, nothing here is real).
  *
  * Typed to the NEW model in
- * `common-docs/systems/agents/mandates/THE-MODEL.md`:
+ * `common-docs/systems/mandates/THE-MODEL.md`:
  *
  *  - **Known values are the shared middle vocabulary** — each one a UUID-identified,
  *    kind-typed, key-labeled slot, sitting in one of three layers (system interaction /

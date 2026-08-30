@@ -4,7 +4,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import TopicList from "@/features/research/components/landing/TopicList";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 export default async function ResearchTopicsPage() {
   // Guests bounce to the public `/research` marketing landing — the topics

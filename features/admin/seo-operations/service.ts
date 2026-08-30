@@ -6,7 +6,7 @@
  * the two surfaces cannot drift into competing value inventories.
  */
 import { createClient } from "@/utils/supabase/client";
-import { parseOfferedValues } from "@/features/agents/mandates/provision-shapes";
+import { parseOfferedValues } from "@/features/mandates/provision-shapes";
 import {
   MANDATE_CONTRACT_COLUMNS,
   MANDATE_HOLDER_COLUMNS,

@@ -6,7 +6,7 @@
  * and actions in-body (canonical entry-list shape) — the header stays quiet.
  */
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
-import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 export function ContentPlanListHeader() {
   return (

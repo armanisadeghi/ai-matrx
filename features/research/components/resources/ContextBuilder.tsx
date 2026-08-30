@@ -44,8 +44,8 @@ import {
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
-import { useMandate } from "@/features/agents/mandates/useMandate";
-import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { useMandate } from "@/features/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   DOMAIN_OUTPUTS,

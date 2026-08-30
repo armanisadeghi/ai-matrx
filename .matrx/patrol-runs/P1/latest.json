@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260830T141853Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:19:05.762Z",
-  "summary": "Implementing three disjoint canonical EntityRef door repairs from the leading still-open HIGH queue.",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:40:15.256Z",
+  "summary": "Closed certified HIGH repair wave after origin/main integration; next repair wave remains queued from 54-item scoreboard.",
   "source": "20260830T141853Z.json",
-  "eventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a"
+  "eventHash": "38ff66ab86f27fe4b6db748d73e376488db11eeee6896b9ee77c6f451f40ff65"
 }

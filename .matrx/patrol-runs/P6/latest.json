@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P6",
-  "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:27:20.283Z",
-  "summary": "Exact 15-file feature-surface candidate preserved remotely and awaiting independent adversarial certification.",
-  "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
-  "eventHash": "c41eb65f388d133a77f722f6f61f5494accd3f09905c735a98b848c46981eef0"
+  "runId": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T14:51:27.247Z",
+  "summary": "DELIVERED to origin/main as a certified ancestor; versioned release remains pending in the serialized release lane.",
+  "source": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f.json",
+  "eventHash": "a4058e0a2bb1997993dbdf581e3e1f8c114ea48eadd30f16bdc6cea04fcc7a1e"
 }

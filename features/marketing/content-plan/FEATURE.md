@@ -86,7 +86,7 @@ plan CRUD through it.
   streams into `<LiveRunDisplay>`. The other four moved server-side (the two
   bullets below).
   🚨 **Agents are addressed by MANDATE KEY, never a UUID.** `content_plan.*` mandates
-  resolve through `resolveMandate` (`features/agents/mandates/service.ts`) —
+  resolve through `resolveMandate` (`features/mandates/service.ts`) —
   `agent.mandate` for the platform default, `agent.mandate_binding` for
   the user's own override. An unseeded, disabled, or version-pinned mandate
   THROWS with the reason; it never falls back to a hardcoded agent. Adding a

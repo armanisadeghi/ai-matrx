@@ -10,7 +10,11 @@ import {
   validatePatrolRunRecord,
 } from "./run-record";
 
-function git(repoRoot: string, args: string[], options?: { input?: string; env?: NodeJS.ProcessEnv }): string {
+function git(
+  repoRoot: string,
+  args: string[],
+  options?: { input?: string; env?: NodeJS.ProcessEnv },
+): string {
   return execFileSync("git", args, {
     cwd: repoRoot,
     encoding: "utf8",
@@ -20,8 +24,13 @@ function git(repoRoot: string, args: string[], options?: { input?: string; env?:
 }
 
 function safeRef(ref: string): void {
-  if (!/^refs\/heads\/patrol-runs\/[A-Za-z0-9._/-]+$/.test(ref) || ref.includes("..")) {
-    throw new Error(`patrol authority ref must be under refs/heads/patrol-runs/: ${ref}`);
+  if (
+    !/^refs\/heads\/patrol-runs\/[A-Za-z0-9._/-]+$/.test(ref) ||
+    ref.includes("..")
+  ) {
+    throw new Error(
+      `patrol authority ref must be under refs/heads/patrol-runs/: ${ref}`,
+    );
   }
 }
 
@@ -78,22 +87,36 @@ export function publishPatrolRunAuthority(input: {
     throw new Error(`authority ref must be ${expectedAuthorityRef(record)}`);
   }
   const problems = validatePatrolRunRecord(record);
-  if (problems.length > 0) throw new Error(`refusing to publish invalid run: ${problems.join("; ")}`);
+  if (problems.length > 0)
+    throw new Error(`refusing to publish invalid run: ${problems.join("; ")}`);
   git(repoRoot, ["cat-file", "-e", `${candidateSha}^{commit}`]);
 
   const priorAuthority = remoteRefSha(repoRoot, authorityRef);
+  let candidateAlreadyPreserved = false;
   if (priorAuthority) {
     git(repoRoot, ["fetch", "--no-tags", "origin", authorityRef]);
-    try {
-      git(repoRoot, ["merge-base", "--is-ancestor", candidateSha, priorAuthority]);
-    } catch {
-      throw new Error(`authority ref ${authorityRef} does not preserve candidate ${candidateSha}`);
-    }
+    candidateAlreadyPreserved = (() => {
+      try {
+        git(repoRoot, [
+          "merge-base",
+          "--is-ancestor",
+          candidateSha,
+          priorAuthority,
+        ]);
+        return true;
+      } catch {
+        return false;
+      }
+    })();
     const priorPath = recordPath(record);
-    const prior = JSON.parse(git(repoRoot, ["show", `${priorAuthority}:${priorPath}`])) as PatrolRunRecord;
+    const prior = JSON.parse(
+      git(repoRoot, ["show", `${priorAuthority}:${priorPath}`]),
+    ) as PatrolRunRecord;
     const priorProblems = validatePatrolRunRecord(prior);
     if (priorProblems.length > 0) {
-      throw new Error(`remote authority record is invalid: ${priorProblems.join("; ")}`);
+      throw new Error(
+        `remote authority record is invalid: ${priorProblems.join("; ")}`,
+      );
     }
     if (prior.patrolId !== record.patrolId || prior.runId !== record.runId) {
       throw new Error("remote authority belongs to a different patrol run");
@@ -101,12 +124,30 @@ export function publishPatrolRunAuthority(input: {
     if (
       prior.events.length > record.events.length ||
       prior.events.some(
-        (event, index) => JSON.stringify(event) !== JSON.stringify(record.events[index]),
+        (event, index) =>
+          JSON.stringify(event) !== JSON.stringify(record.events[index]),
       )
     ) {
-      throw new Error("remote authority history is not an exact prefix of the new record");
+      throw new Error(
+        "remote authority history is not an exact prefix of the new record",
+      );
     }
-    if (canonicalPatrolRecordJson(prior) === canonicalPatrolRecordJson(record)) {
+    if (!candidateAlreadyPreserved) {
+      const replacementWasAuthorized = record.events
+        .slice(prior.events.length)
+        .some(
+          (event) => event.state === "rejected" || event.state === "reversed",
+        );
+      if (!replacementWasAuthorized) {
+        throw new Error(
+          `authority ref ${authorityRef} does not preserve candidate ${candidateSha}, and no later rejection or reversal authorizes replacement`,
+        );
+      }
+    }
+    if (
+      candidateAlreadyPreserved &&
+      canonicalPatrolRecordJson(prior) === canonicalPatrolRecordJson(record)
+    ) {
       return priorAuthority;
     }
   }
@@ -114,21 +155,29 @@ export function publishPatrolRunAuthority(input: {
   const temp = mkdtempSync(join(tmpdir(), "matrx-patrol-authority-"));
   try {
     const env = { ...process.env, GIT_INDEX_FILE: join(temp, "index") };
-    git(repoRoot, ["read-tree", priorAuthority ?? candidateSha], { env });
+    // The authority tree is always the exact candidate plus the two run-record
+    // projections. A prior authority is ancestry/history, never a source tree:
+    // using it here would silently restore rejected product bytes on retry.
+    git(repoRoot, ["read-tree", candidateSha], { env });
     for (const [path, contents] of [
       [recordPath(record), canonicalPatrolRecordJson(record)],
       [latestPath(record), latestJson(record)],
     ] as const) {
       const object = blob(repoRoot, contents);
-      git(repoRoot, ["update-index", "--add", "--cacheinfo", "100644", object, path], { env });
+      git(
+        repoRoot,
+        ["update-index", "--add", "--cacheinfo", "100644", object, path],
+        { env },
+      );
     }
     const tree = git(repoRoot, ["write-tree"], { env });
-    const parent = priorAuthority ?? candidateSha;
+    const parents = priorAuthority
+      ? [priorAuthority, ...(candidateAlreadyPreserved ? [] : [candidateSha])]
+      : [candidateSha];
     const commit = git(repoRoot, [
       "commit-tree",
       tree,
-      "-p",
-      parent,
+      ...parents.flatMap((parent) => ["-p", parent]),
       "-m",
       `patrol run authority: ${record.patrolId}/${record.runId} ${currentPatrolRunState(record)}`,
       "-m",
@@ -136,9 +185,24 @@ export function publishPatrolRunAuthority(input: {
     ]);
     git(repoRoot, ["push", "origin", `${commit}:${authorityRef}`]);
     git(repoRoot, ["merge-base", "--is-ancestor", candidateSha, commit]);
-    const published = git(repoRoot, ["show", `${commit}:${recordPath(record)}`]);
+    git(repoRoot, [
+      "diff",
+      "--quiet",
+      candidateSha,
+      commit,
+      "--",
+      ".",
+      `:(exclude)${recordPath(record)}`,
+      `:(exclude)${latestPath(record)}`,
+    ]);
+    const published = git(repoRoot, [
+      "show",
+      `${commit}:${recordPath(record)}`,
+    ]);
     if (`${published}\n` !== canonicalPatrolRecordJson(record)) {
-      throw new Error(`published authority record does not match ${record.patrolId}/${record.runId}`);
+      throw new Error(
+        `published authority record does not match ${record.patrolId}/${record.runId}`,
+      );
     }
     return commit;
   } finally {

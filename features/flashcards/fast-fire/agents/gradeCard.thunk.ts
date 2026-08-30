@@ -45,7 +45,7 @@
 // was produced DURING THE DRILL. The learner is told once per session.
 //
 // The grader resolves through the mandate (FC_MANDATES.gradeSpoken) — swap the
-// agent behind it at /agents/mandates (the old localStorage agent-id config is
+// agent behind it at /mandates (the old localStorage agent-id config is
 // RETIRED; bindings replaced it). NO-AUDIO GUARD: with no uploaded clip we
 // STILL record a result-less attempt and mark the grade `skipped` — grading
 // with no audio hallucinates a "correct" from the card back.

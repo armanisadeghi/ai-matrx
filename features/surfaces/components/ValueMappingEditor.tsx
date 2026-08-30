@@ -69,7 +69,7 @@ interface Props {
 }
 
 /** The map types THIS editor offers — `offered_value` belongs to the Mandate
- * consumption map (features/agents/mandates/), never to surface bindings. */
+ * consumption map (features/mandates/), never to surface bindings. */
 type SurfaceMapType = Exclude<ValueMapping["mapType"], "offered_value">;
 
 const MAP_TYPE_LABELS: Record<SurfaceMapType, string> = {

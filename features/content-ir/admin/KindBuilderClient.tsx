@@ -19,7 +19,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useMandate } from "@/features/mandates/useMandate";
 import { Hammer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -39,7 +39,7 @@ const KIND_ARCHITECT_MANDATE = "content_ir.kind_architect";
 
 export default function KindBuilderClient() {
   // Which agent builds a kind is a MANDATE, not a hardcoded id — swappable from
-  // the admin console or an override at /agents/mandates, no deploy.
+  // the admin console or an override at /mandates, no deploy.
   const { mandate: architect, error: architectError } = useMandate(KIND_ARCHITECT_MANDATE);
   const router = useRouter();
   const openRun = useOpenAgentRunWindow();
