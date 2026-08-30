@@ -88,6 +88,14 @@ describe("MandateOutputCell", () => {
     expect(markup).toContain("leading-tight");
     expect(markup).not.toMatch(/class="[^"]*(?:^|\s)h-5(?:\s|$)/);
   });
+
+  it("keeps secondary foreground contrast when the output-kind badge is hovered", () => {
+    const markup = renderToStaticMarkup(<MandateOutputCell row={row} />);
+
+    expect(markup).toContain("hover:bg-secondary/80");
+    expect(markup).toContain("hover:text-secondary-foreground");
+    expect(markup).not.toContain("hover:bg-accent");
+  });
 });
 
 /**

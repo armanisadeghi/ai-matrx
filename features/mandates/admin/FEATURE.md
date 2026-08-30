@@ -119,6 +119,8 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-30 — Output-kind pills now keep the secondary foreground/background pair on hover instead of swapping only the purple background for the pale accent surface and making their white text unreadable. A focused regression test holds the contrast classes.
+
 - 2026-08-30 — Removed the repeated registry glyph from every Agent cell. Agent names remain compact text links with the canonical open, new-tab, and peek doors.
 
 - 2026-08-29 — **ONE mandate UI, and management is admin-side.** Two mandate experiences

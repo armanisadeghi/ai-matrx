@@ -118,7 +118,7 @@ export function MandateOutputCell({
       >
         <Badge
           variant="secondary"
-          className={`${CONTRACT_BADGE_CLASS} font-mono hover:bg-accent`}
+          className={`${CONTRACT_BADGE_CLASS} font-mono hover:bg-secondary/80 hover:text-secondary-foreground`}
         >
           {kind}
         </Badge>
