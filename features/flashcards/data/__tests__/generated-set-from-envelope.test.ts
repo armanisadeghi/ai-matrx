@@ -80,7 +80,15 @@ describe("generatedSetFromEnvelope", () => {
         cards: [{ __kind: "flashcard", front: "Q?", back: "A" }],
       }),
     );
-    expect(envelope.root.kind).not.toBe("flashcard_set");
+    // content-ir PRESERVES the kind on a schema failure (KIND PRESERVATION,
+    // 2026-08-29) so callers can say a flashcard_set is BROKEN rather than
+    // seeing an anonymous object, and `status` reports only that parsing
+    // finished. `kindState` is the validity signal — this assertion used to
+    // read `root.kind`, which is exactly the misread that let
+    // generatedSetFromEnvelope persist a degraded root as a real set.
+    expect(envelope.root.kind).toBe("flashcard_set");
+    expect(envelope.root.status).toBe("complete");
+    expect(envelope.root.kindState).toBe("raw");
     expect(generatedSetFromEnvelope(envelope)).toBeNull();
   });
 
