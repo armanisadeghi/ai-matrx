@@ -460,13 +460,12 @@ function PageResearchWindowInner({
                 : "at most " + PAGE_RESEARCH_MAX_KEYWORDS}
             </span>
           </Label>
-          <span
-            className="sr-only"
+          <p
+            className="text-[11px] text-muted-foreground"
             data-surface-value="primary_keyword"
-            title={primaryKeyword ?? ""}
           >
-            {V.primary_keyword}
-          </span>
+            {V.primary_keyword}: {primaryKeyword?.trim() || "not supplied yet"}
+          </p>
           {keywords.map((keyword, index) => (
             <div
               key={index}
@@ -525,18 +524,32 @@ function PageResearchWindowInner({
       </div>
 
       {phase.status === "form" ? (
-        <div className="mt-auto flex items-center justify-end gap-2 pt-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            disabled={!canStart}
-            onClick={() => void start()}
-            data-surface-value="can_start"
-          >
-            Start research
-          </Button>
+        <div
+          className="mt-auto space-y-2 pt-2"
+          data-surface-value="run_summary"
+        >
+          <p className="text-[11px] text-muted-foreground">
+            <span data-surface-value="research_phase">Draft phase.</span>{" "}
+            <span data-surface-value="attachment_status">
+              Nothing is attached until you start research.
+            </span>{" "}
+            <span data-surface-value="is_streaming">
+              No research is running.
+            </span>
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!canStart}
+              onClick={() => void start()}
+              data-surface-value="can_start"
+            >
+              Start research
+            </Button>
+          </div>
         </div>
       ) : (
         <div

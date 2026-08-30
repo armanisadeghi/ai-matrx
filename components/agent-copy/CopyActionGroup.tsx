@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * CopyActionGroup — legacy grouped chrome for export-only callers.
- * Standard data actions use one CopyButtons icon and its unified menu.
+ * Standard data actions use the compact CopyButtons pair: human Copy first,
+ * then the Copy-for-AI menu.
  * Touch layouts keep the full 44px hit areas but drop the heavy shared frame;
  * desktop restores the compact segmented chrome. Cells are wide enough for
  * the AI chevron so that segment is never the odd one.

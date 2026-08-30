@@ -38,7 +38,7 @@ no page reimplements them.
   free via the `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds
   view-shaped CSV.
 - `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
-  workspace opened from the **one unified menu**. It grooms the
+  workspace opened from the **Copy-for-AI menu**. It grooms the
   whole-page payload before copying; its footer also exports payload `.md` /
   data `.json`. Pass `groomer={() => config}` to `CopyButtons`; **never place
   `AgentCopyGroomerLauncher` beside it.**
@@ -182,8 +182,8 @@ _"what would someone actually hand an AI here?"_:
 
 ## Built-in integrations (don't rewire by hand)
 
-- **`MatrxDataTable`** — pass the `copy` config and you get per-row single-icon
-  menus, a toolbar this-view menu (markdown table + summaries + JSON/CSV/Excel/
+- **`MatrxDataTable`** — pass the `copy` config and you get per-row two-icon
+  pairs, a toolbar this-view pair (markdown table + summaries + JSON/CSV/Excel/
   Google Sheets), a record control in the row window header
   (`DataRowWindow.headerActions`), and per-field hover controls in
   `DataRowInspector` (side panel + window View tab). One config, five surfaces.
@@ -191,7 +191,7 @@ _"what would someone actually hand an AI here?"_:
   (`fieldCopy={false}` to opt out); pass `recordKind`/`recordLabel`/`location`
   for correct payloads.
 - **`JsonInspector`** — pass `agentCopy` (an `AgentPayloadInput` or builder) to
-  render the canonical single control whose menu contains Copy JSON and agent
+  render the canonical compact pair whose AI menu contains Copy JSON and agent
   variants.
 
 ## Whole-page copy — the Groomer inside the AI menu

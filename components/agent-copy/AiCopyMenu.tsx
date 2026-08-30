@@ -51,8 +51,8 @@ import { useExportActions } from "@/components/agent-copy/useExportActions";
  * A "Copy for AI" control is not a copy button — it is an AI context source: a
  * named point in the UI that turns whatever data is in scope into a
  * model-ready payload. This is also the internal chrome for CopyButtons'
- * unified Copy / JSON / AI / Export menu; the historical name remains for API
- * compatibility. Once the data is medium/massive, the menu gains graded
+ * second icon: JSON / AI / Export actions live here while human Copy remains
+ * the first icon. Once the data is medium/massive, the menu gains graded
  * variants (Short / Everything) and, for data with real shortening knobs, a
  * custom-preview dialog with live char / byte / ~token counts.
  *
@@ -357,8 +357,8 @@ export function AiCopyMenu({
             size="icon"
             className={cn(buttonCls, className)}
             disabled={disabled || busy}
-            aria-label={`Copy or export ${label}`}
-            title={`Copy or export ${label}`}
+            aria-label={`Copy ${label} for AI or export`}
+            title={`Copy ${label} for AI or export`}
           >
             {triggerBody}
           </Button>

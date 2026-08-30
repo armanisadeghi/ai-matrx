@@ -284,7 +284,7 @@ first and emit the gap list; only then wire, batch by batch:
 2. **Classify each rendered data element** as one of: **list/table** (needs
    row control + view menu with export), **record/detail** (header control +
    per-field), **field group / metric cards** (hover-reveal `xs` controls),
-   **whole page** (one control with Groomer inside its menu when multi-section), or **non-record
+   **whole page** (one pair with Groomer inside its AI menu when multi-section), or **non-record
    tool** (composer/visualizer — SKIP, no forced buttons).
 3. **Size each one's AI control** (single icon / `aiVariants` dropdown /
    `+aiCustom` composer) per the sized-to-data table above, and note truncated
@@ -330,7 +330,7 @@ first and emit the gap list; only then wire, batch by batch:
   (groomer-types) and `keyFieldsAiVariant` (marketing `copy-payloads.ts`).
   Wired on the medium/massive marketing site tabs (keywords, ranks, findings,
   analysis, audit, links, crawls, discovery, cost + backlinks reference);
-  small bounded tabs deliberately keep the plain single control — the sized-to-data call
+   small bounded tabs deliberately keep the plain direct AI control inside the pair — the sized-to-data call
   is part of the job. `AiCopyMenu` remains in step with aidream
   `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`.
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
@@ -350,7 +350,7 @@ first and emit the gap list; only then wire, batch by batch:
   cannot drift from screen. `PublicAccessTab` declares its rendered sentences
   once and both renders and copies them. The share tabs stay composers — no
   forced record buttons — but their rendered failures are copyable with LIVE
-  form state. `SiteAccessWorkspace` adds the page unified menu, threads
+  form state. `SiteAccessWorkspace` adds the page Copy-for-AI menu, threads
   one `SharingCopyContext` (identity + KPIs) into every child, and offers an
   "Errors & access blockers" variant beside the what-I-see default.
   `accessKpis` is the what-I-see KPI mirror here, the `auditPageKpis` analogue.
@@ -405,8 +405,8 @@ first and emit the gap list; only then wire, batch by batch:
   `EntityManager`'s two lists, the `PlanDriftBar` KPI strip and
   `PlanDriftSheet` worklist, `PlanAiRunsView`, `NodeRealityCard`, the
   form-heavy `BriefEditor` (payload from live `lines`, never the fetched row),
-  and the workbench's page-level control with its six-section Groomer inside the
-  unified menu. Shared
+  and the workbench's page-level pair with its six-section Groomer inside the
+  Copy-for-AI menu. Shared
   summaries + the KPI mirror: `features/marketing/content-plan/format.ts`
   (`contentPlanKpis` — the module's `auditPageKpis`). Fixed while there:
   `PlanSitesList`'s `.slice(0, 4)` status chips now say "+N more".

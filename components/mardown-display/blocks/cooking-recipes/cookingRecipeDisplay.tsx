@@ -546,10 +546,13 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                                 }`}
                               >
                                 {isCompleted ? (
-                                  <Check
-                                    className="h-3.5 w-3.5"
-                                    aria-hidden="true"
-                                  />
+                                  <>
+                                    <Check
+                                      className="h-3.5 w-3.5"
+                                      aria-hidden="true"
+                                    />
+                                    <span className="sr-only">Completed</span>
+                                  </>
                                 ) : (
                                   index + 1
                                 )}

@@ -186,7 +186,7 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     );
 
     expect(markup).toContain("lg:h-5");
-    expect(markup).toContain("lg:w-5");
+    expect(markup).toContain("lg:w-8");
     expect(markup).toContain('aria-label="Open in window"');
   });
 

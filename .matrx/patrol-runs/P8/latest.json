@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:31:20.602Z",
-  "summary": "Correcting rejected AgentComparisonPage delta while preserving the exact contextual wrapper and spinner styling.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:32:21.371Z",
+  "summary": "Corrected candidate 5d46322225 restores exact AgentComparison wrapper/theme/geometry and re-enters independent certification.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3"
+  "eventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae"
 }

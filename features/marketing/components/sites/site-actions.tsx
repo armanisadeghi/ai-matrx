@@ -12,10 +12,7 @@ import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import type {
-  MarketingSite,
-  SiteListRow,
-} from "@/features/marketing/types";
+import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { toast } from "@/lib/toast";
 
 export interface SiteActionCallbacks {

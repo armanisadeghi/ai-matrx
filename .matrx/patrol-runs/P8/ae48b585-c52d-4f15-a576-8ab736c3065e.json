@@ -76,6 +76,21 @@
       ],
       "previousEventHash": "4c294b8ae80c668181cb32ac6fa645324325a4644cf701125c51152749b4ef30",
       "eventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:32:21.371Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Corrected candidate 5d46322225 restores exact AgentComparison wrapper/theme/geometry and re-enters independent certification.",
+      "evidence": [
+        "rejected candidate 18a0f0ce19 remains ancestor",
+        "corrected candidate=5d46322225ddc07a366620b9c304513ccaf4e6ec",
+        "authority-ref=refs/heads/codex/p8-eradication-20260830-batch1",
+        "only legitimate AgentComparison repair retained: Loading agent versions contextual placeholder"
+      ],
+      "previousEventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3",
+      "eventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae"
     }
   ]
 }
