@@ -89,6 +89,31 @@
       ],
       "previousEventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf",
       "eventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T14:58:28.778Z",
+      "actor": "p3-hover-certifier-fresh",
+      "summary": "Exact retry candidate hides a mobile action when the browser reports a hover-capable pointer",
+      "evidence": [
+        "375x812 dark /workbooks: Delete workbook 44x44 but computed opacity 0; Quick look 44x44 opacity 1; page scrollWidth 375",
+        "candidate used hover-capable media without a viewport breakpoint, so mobile visibility was not guaranteed"
+      ],
+      "previousEventHash": "fc116a0d6cf004657e556e954fcbff99ae993f99d9bd9a0a13a0a19c41d7f069",
+      "eventHash": "fefd9c2895d6010a1f308697622594e4f61e6109f069a6370e943ae5a1bed28b"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T14:58:29.329Z",
+      "actor": "root",
+      "summary": "Correct all repaired hide/reveal rules with an explicit desktop breakpoint",
+      "evidence": [
+        "preserve base mobile visibility and desktop hover behavior"
+      ],
+      "previousEventHash": "fefd9c2895d6010a1f308697622594e4f61e6109f069a6370e943ae5a1bed28b",
+      "eventHash": "e8f7cd0f3e73c5cd17261b7bfc4f58bcd1497e9532f1e1e5f65d9ccaa259a67f"
     }
   ]
 }

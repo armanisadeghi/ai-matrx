@@ -37,6 +37,7 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     agent_id: "",
     agent_version_id: null,
     use_latest: true,
+    mandate_id: null,
 
     app_kind: "single",
     shared_context_policies: null,

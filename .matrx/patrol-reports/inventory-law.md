@@ -3,7 +3,7 @@
 **Run:** 2026-08-30 ERADICATION, ranked catalogue item 1 (America/Los_Angeles)
 **Authority:** Tier C/R catalogue plus one bounded standing-authority adoption batch
 **Base:** `857dcd2c3b7bed591441c6a175caf72eb1397ec4`
-**Candidate:** `01e441fdf958ca20cafd5497cc8e007e41d77f70`
+**Candidate:** `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` (replacement after recorded integration reversal)
 **Certification:** **CERTIFIED** — independent exact-candidate archive proof
 **Delivery:** **QUEUED** — candidate is an ancestor of `origin/main`; preserved at `refs/heads/patrol-runs/P2/20260830T142407Z`; no version tag contains it yet and no redundant release was created
 
@@ -27,6 +27,14 @@
   adversarial verdict **CERTIFIED**. The in-app Browser runtime was unavailable;
   the canonical preview lease stayed healthy and this infrastructure limit did
   not reject a batch with no concrete defect.
+- A post-integration blob audit caught later shared-lane merges restoring the
+  pre-adoption `SitesPortfolio`, unconditional `sortable:true`, and deleting
+  two focused tests even though the first certified SHA remained an ancestor.
+  Permanent event 6 records that reversal. Replacement `05ad7aa37e` reapplied
+  only the seven owned paths; the independent certifier proved every owned
+  blob byte-identical to the first certified batch and repeated type-check,
+  lint, and 9/9 tests before returning **CERTIFIED** again. Current
+  `origin/main` contains the replacement behavior and both tests.
 - **29 prior catalogue units remain** after closing ranked list-shell item 1;
   the partially advanced `PlanSitesList` action-authority adoption remains
   open. The next unit cannot begin until this valid delivery-queued run is
@@ -35,10 +43,11 @@
   revealed, should each agent name in the comparison header become a canonical
   new-tab agent door? Blind mode must keep every identity-bearing link, title,
   peek control, and accessible label out of the DOM.
-- The permanent-record controller gained the missing `patrol:run queue` command
-  after certification exposed that the model supported `delivery_queued` but
-  the CLI could not append it. Its 13 focused record/authority tests and full
-  type-check pass.
+- The permanent-record controller gained the missing `patrol:run queue` and
+  `patrol:run reverse` commands. Authority publication also now accepts a
+  rejection/reversal already present as the final remote-prefix event; without
+  that fix, correctly publishing the reversal made replacement preservation
+  impossible. The final record/authority suite passes 15/15.
 
 ## Prior weekly outcome — 2026-08-18
 
@@ -159,7 +168,7 @@ Each numbered item is one Tier-C task unit. Do not combine ranks into a big-bang
 
 ### Rank 1 — canonical list shell (7 open findings, 1 certified delivery queued)
 
-1. **FIXED + CERTIFIED; DELIVERY QUEUED — `/marketing/sites` — `SitesPortfolio.tsx`.** Exact candidate `01e441fdf958ca20cafd5497cc8e007e41d77f70` adopts `EntityListPage`, delegates to canonical `listSites`, preserves paging/search/name/status filters, all eight table/mobile presentations, editor and agent-write behavior, copy payloads, governed delete, Quick view, and all seven site actions through one authority. The shared shell now preserves explicit `sortable:false`, so Connections cannot silently fall through to `updated_at`. Numeric KPI filters remain a focused generic-vocabulary/server-query machinery task; none is falsely advertised.
+1. **FIXED + CERTIFIED; DELIVERY QUEUED — `/marketing/sites` — `SitesPortfolio.tsx`.** Replacement candidate `05ad7aa37eb95e8f0f539068ff732ec87a3957d5` adopts `EntityListPage`, delegates to canonical `listSites`, preserves paging/search/name/status filters, all eight table/mobile presentations, editor and agent-write behavior, copy payloads, governed delete, Quick view, and all seven site actions through one authority. It is the independently recertified restoration of first candidate `01e441fdf9`, whose bytes were later reversed by the shared integration lane. The shared shell now preserves explicit `sortable:false`, so Connections cannot silently fall through to `updated_at`. Numeric KPI filters remain a focused generic-vocabulary/server-query machinery task; none is falsely advertised.
 2. **`/schedules` — `ScheduleList.tsx` + `ScheduleRow.tsx`.** Build the scoped page/count/facet service required by `EntityListPage`, then replace the bespoke roster. Preserve the surface runtime scope emitter, error Retry, New schedule path, and schedule-specific status/action behavior.
 3. **`/agents/orchestras` — `OrchestrasBrowser.tsx` + `OrchestraCard.tsx`.** Add an Orchestra list config and one Orchestra action registry. Preserve Generate orchestrator/Create Orchestra dialogs, search semantics, card presentation, and the canonical `orchestratorId` identity.
 4. **`/documents` — `DocumentsHubTable.tsx`.** Move the hub onto the canonical shell and its controlled table path. Preserve document-kind routing, existing `EntityRef` behavior, copy/export actions, and the persisted view mapping; do not collapse distinct document entity tokens.

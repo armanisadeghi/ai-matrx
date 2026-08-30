@@ -18,7 +18,7 @@
  */
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 
 import {
@@ -35,6 +35,7 @@ import {
   type MarketingBrandSection,
 } from "@/features/marketing/lib/brand-sections";
 import { useBrandOptions } from "@/features/marketing/data/hooks";
+import { brandSwitchHref } from "@/features/marketing/lib/brand-switch";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,8 @@ function useCurrentSection(): { name: string } | null {
 export function MarketingBrandCrumb() {
   const brand = useMarketingBrand();
   const section = useCurrentSection();
+  const pathname = usePathname() ?? `/marketing/${brand.seg}`;
+  const searchParams = useSearchParams();
   // access-errors: ok — sibling-client switcher; a failed read only shrinks the
   // dropdown, and the brand itself is already resolved by the layout.
   const options = useBrandOptions(brand.organizationId);
@@ -124,9 +127,17 @@ export function MarketingBrandCrumb() {
                         className={cn(active && "bg-accent/60")}
                       >
                         <Link
-                          href={marketingRoutes.brand(
-                            active ? brand.seg : row.id,
-                          )}
+                          // Same route, new client (degraded only where the
+                          // path was entity-scoped) — lib/brand-switch.ts.
+                          href={
+                            active
+                              ? marketingRoutes.brand(brand.seg)
+                              : brandSwitchHref(
+                                  row.id,
+                                  pathname,
+                                  searchParams.toString(),
+                                )
+                          }
                           className="flex items-center gap-2"
                         >
                           <Check

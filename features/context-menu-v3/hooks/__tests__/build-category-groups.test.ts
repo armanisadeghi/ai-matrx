@@ -121,12 +121,26 @@ function build(args: {
   contentBlocks?: AgentContentBlockRecord[];
   placementTypes?: string[];
   surfaceName?: string | null;
+  availableKeys?: string[];
+  hasSelection?: boolean;
+  excludedItemIds?: string[];
 }): AgentMenuCategoryGroup[] {
   return buildCategoryGroups({
     placementTypes: args.placementTypes ?? ALL_PLACEMENTS,
     surfaceName: args.surfaceName ?? null,
-    availableKeys: new Set(),
-    hasSelection: false,
+    // Default: the baseline floor every surface has, and a live selection.
+    // Tests that exercise the derived gate narrow or widen this explicitly.
+    availableKeys: new Set(
+      args.availableKeys ?? [
+        "selection",
+        "text_before",
+        "text_after",
+        "content",
+        "context",
+      ],
+    ),
+    hasSelection: args.hasSelection ?? true,
+    excludedItemIds: new Set(args.excludedItemIds ?? []),
     shortcuts: args.shortcuts ?? [],
     categories: args.categories ?? [],
     contentBlocks: args.contentBlocks ?? [],

@@ -51,6 +51,8 @@ import { useMemo } from "react";
 
 import { useMandate } from "@/features/mandates/useMandate";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
 
 /** OFF — ships dark. The flip is a one-line release (Arman's nod). */
 export const APP_MANDATE_CUTOVER = false;
@@ -137,9 +139,13 @@ function guestHolder(app: AppHolderSource): AppHolder {
 
 export interface UseAppHolderOptions {
   /**
-   * Anonymous surfaces (`/p/[slug]`) pass `true`. It is not an optimisation:
-   * `anon` cannot read `mandate.definition`, so the client resolver would
-   * throw a permission error rather than answer.
+   * Force the guest lane. Normally you do NOT pass this: the hook reads the
+   * session itself, because the guest lane is not a surface's choice — it is a
+   * fact about the caller. `anon` cannot read `mandate.definition`, so a
+   * signed-out visitor on ANY surface must take the RPC's columns, and a
+   * signed-in visitor on the public page must take the full ladder so their
+   * own override applies. Pass it only where the session is deliberately
+   * ignored (a preview rendering the app as the public sees it).
    */
   guest?: boolean;
 }

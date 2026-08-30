@@ -290,6 +290,23 @@ commit time.
 
 ## Change Log
 
+- 2026-08-30 — **THE DETACH, code side (program item 6.10).** A mandate is fulfilled by an
+  Agent, an Orchestra, or a Workflow, so the feature stopped living under the agent
+  namespace. Moved, imports rewritten repo-wide, no behaviour change:
+  `features/agents/mandates/` → **`features/mandates/`**; `features/admin/mandates/` →
+  **`features/mandates/admin/`**; `features/window-panels/windows/agents/MandateWindow.tsx`
+  → `windows/mandates/MandateWindow.tsx`; routes `/agents/mandates{,/[mandateKey]}` →
+  **`/mandates{,/[mandateKey]}`** and `/administration/agents/mandates/**` →
+  **`/administration/mandates/**`**. Every old URL 308s (`next.config.js`, pinned in
+  `admin/__tests__/retired-slot-producer.test.ts`, curl-proven), and the retired
+  `/agents/mandates/new` lands on `/administration/mandates/new`. Admin nav: Mandates is now
+  a top-level `/administration` domain (`slug: "mandates"`), a PEER of Agents rather than a
+  row inside its "Tools & MCP" section. **The security shape is unchanged** — management
+  (create / rebind / enable / bench) stays super-admin gated under `/administration`, and the
+  user route stays browse + self-service. Window slug, `overlayId`, `urlSync` key, storage
+  tables, and the `/ai/mandates/{key}` server door were all deliberately untouched. Doc
+  pointers here now read `common-docs/systems/mandates/` (the node moved out of
+  `systems/agents/` in the same sweep).
 - 2026-08-30 — **THE MANDATE-DOOR FORK CLOSED: `useMandateRunner` deleted.** The
   one-resolver work left one client-side RUN resolver standing — `useMandateRunner`
   resolved the key in the browser, POSTed `/ai/agents/{resolvedId}`, and echoed the

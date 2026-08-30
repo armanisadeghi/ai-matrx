@@ -26,6 +26,7 @@ export function AgentAppRenderer({
     agent_id: app.agent_id,
     agent_version_id: app.agent_version_id,
     use_latest: app.use_latest,
+    mandate_id: app.mandate_id,
     app_kind: app.app_kind,
     shared_context_policies: app.shared_context_policies,
     search_tsv: app.search_tsv,
