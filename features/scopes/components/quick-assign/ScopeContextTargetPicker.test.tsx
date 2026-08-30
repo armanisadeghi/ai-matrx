@@ -99,7 +99,7 @@ jest.mock("@/components/official/entity-ref/EntityDoorControls", () => ({
     name: string;
     href: string;
   }) => (
-    <a data-token={token} href={href}>
+    <a data-token={token} data-tap-target href={href}>
       Open {name}
     </a>
   ),
@@ -168,6 +168,9 @@ describe("ScopeContextTargetPicker owner doors", () => {
       );
     });
 
+    const touchTargetScope = container.querySelector(".matrx-touch-targets");
+    expect(touchTargetScope).not.toBeNull();
+
     expect(
       container
         .querySelector('[data-token="organization"]')
@@ -186,6 +189,9 @@ describe("ScopeContextTargetPicker owner doors", () => {
         .querySelector('[data-token="context_item"]')
         ?.getAttribute("href"),
     ).toBe("/organizations/acme/scopes/type-1/context-items/case-notes");
+    expect(
+      touchTargetScope?.querySelectorAll("a[data-tap-target]"),
+    ).toHaveLength(8);
 
     for (const [label, href] of [
       ["Create or manage organizations", "/organizations"],
@@ -196,11 +202,10 @@ describe("ScopeContextTargetPicker owner doors", () => {
         "/organizations/acme/scopes/type-1/context-items",
       ],
     ]) {
-      expect(
-        container
-          .querySelector(`[aria-label="${label}"]`)
-          ?.getAttribute("href"),
-      ).toBe(href);
+      const creationDoor = container.querySelector(`[aria-label="${label}"]`);
+      expect(creationDoor?.getAttribute("href")).toBe(href);
+      expect(creationDoor?.hasAttribute("data-tap-target")).toBe(true);
+      expect(touchTargetScope?.contains(creationDoor)).toBe(true);
     }
   });
 

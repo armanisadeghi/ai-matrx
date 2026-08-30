@@ -152,7 +152,7 @@ export function ScopeContextTargetPicker({
     });
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className="matrx-touch-targets grid gap-2 sm:grid-cols-2">
       <div className="space-y-1.5">
         <Label className="text-xs">Organization</Label>
         <div className="flex items-center gap-1">
@@ -191,6 +191,7 @@ export function ScopeContextTargetPicker({
           ) : null}
           <Link
             href="/organizations"
+            data-tap-target
             target="_blank"
             rel="noopener noreferrer"
             title="Create or manage organizations"
@@ -239,6 +240,7 @@ export function ScopeContextTargetPicker({
           {organization && orgSegment ? (
             <Link
               href={orgScopesHref(orgSegment)}
+              data-tap-target
               target="_blank"
               rel="noopener noreferrer"
               title={`Create or manage scope types in ${organization.name}`}
@@ -293,6 +295,7 @@ export function ScopeContextTargetPicker({
           {scopeType && orgSegment ? (
             <Link
               href={scopeTypeHref(orgSegment, scopeType)}
+              data-tap-target
               target="_blank"
               rel="noopener noreferrer"
               title={`Create or manage ${scopeType.label_plural.toLowerCase()}`}
@@ -361,6 +364,7 @@ export function ScopeContextTargetPicker({
           {scopeType && orgSegment ? (
             <Link
               href={contextItemsHref(orgSegment, scopeType)}
+              data-tap-target
               target="_blank"
               rel="noopener noreferrer"
               title={`Create or manage context items for ${scopeType.label_plural}`}

@@ -71,6 +71,7 @@ this directory.
   organization → scope type → scope → context-item cascade. **Never add structural
   writers here.** Every selected row opens through `EntityDoorControls`; each level's
   `+` door opens its canonical management/create surface from `lib/scopeRoutes.ts`.
+  Its `matrx-touch-targets` root keeps every control at the 44px coarse-pointer floor.
 - `components/associations/` — the container-centric association UI (see the section below).
 - `components/management/` — the canonical scope-management surfaces: `ScopesManager`
   (the `/organizations/[orgId]/scopes` page), `OrgScopeTypeSection`, `NewScopeInline`,
@@ -197,7 +198,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 - 2026-08-30 — Pattern Patrol P13: quick-assign's four existing-record pickers
   retain their cascade/reset behavior and now expose selected-record doors plus
-  canonical owner/create doors; no second organization or scope writer exists.
+  canonical owner/create doors with the shared 44px touch-target floor; no second
+  organization or scope writer exists.
 - 2026-08-29 — Lane F W6–W8 (context-core teardown): the eight `notYetImplemented`
   mutation stubs in `scopesService` are real implementations over the live
   SECURITY DEFINER RPC family (create/update/delete scope type + scope,

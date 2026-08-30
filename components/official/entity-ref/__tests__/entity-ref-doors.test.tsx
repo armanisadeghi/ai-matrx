@@ -13,6 +13,7 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { EntityDoorControls } from "../EntityDoorControls";
 import { EntityRef } from "../EntityRef";
 
 jest.mock("next/link", () => ({
@@ -75,6 +76,25 @@ describe("EntityRef doors for mandates/shortcuts surfaces", () => {
         'button[title="Quick look at Flashcard Generator"]',
       ),
     ).not.toBeNull();
+  });
+
+  it("opts compact link doors into a host touch-target scope", () => {
+    renderRef(
+      <EntityDoorControls
+        token="organization"
+        id="org-9"
+        name="Acme Health"
+        href="/organizations/org-9"
+        disablePeek
+        showOpen
+      />,
+    );
+
+    const links = container.querySelectorAll("a");
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link.hasAttribute("data-tap-target")).toBe(true);
+    }
   });
 
   it("organization: opens via the registry route added for the org door", () => {
