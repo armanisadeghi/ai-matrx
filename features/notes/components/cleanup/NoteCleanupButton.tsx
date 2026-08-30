@@ -12,7 +12,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { TapTargetButtonForGroup } from "@ai-matrx/tap-target";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";

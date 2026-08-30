@@ -32,7 +32,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

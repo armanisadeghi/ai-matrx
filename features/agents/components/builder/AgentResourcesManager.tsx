@@ -8,7 +8,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";

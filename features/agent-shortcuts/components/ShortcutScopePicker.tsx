@@ -30,7 +30,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { getIconComponent } from "@ai-matrx/icons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";

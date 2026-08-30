@@ -37,7 +37,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 
 /** token → reason shown on the disabled row (e.g. "Already have this rule"). */
 export type EntityTypeDisabledMap = ReadonlyMap<string, string>;

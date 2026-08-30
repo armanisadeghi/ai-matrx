@@ -8,7 +8,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import type { SettingsCommonProps, SettingsOption } from "../types";
 
 export type SettingsMultiSelectProps<T extends string = string> =

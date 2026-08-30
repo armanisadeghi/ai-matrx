@@ -230,4 +230,4 @@ export {
   PopoverTrigger,
   PopoverContent,
   PopoverAnchor,
-} from "./popover";
+} from "@ai-matrx/design-system";

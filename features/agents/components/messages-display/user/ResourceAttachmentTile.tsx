@@ -35,7 +35,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import {
   resolveResourceAttachmentTileTheme,
   resourceAttachmentTileAdaptiveSurface,

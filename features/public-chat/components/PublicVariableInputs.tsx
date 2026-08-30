@@ -7,7 +7,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";

@@ -24,7 +24,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { useOpenReviewWalkWindow } from "@/features/overlays/openers/reviewWalkWindow";
 import { cn } from "@/lib/utils";

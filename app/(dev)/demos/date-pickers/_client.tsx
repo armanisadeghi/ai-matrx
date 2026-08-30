@@ -11,7 +11,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Local primitives — a card and a section header

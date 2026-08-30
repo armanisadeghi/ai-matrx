@@ -12,7 +12,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectThreadById,

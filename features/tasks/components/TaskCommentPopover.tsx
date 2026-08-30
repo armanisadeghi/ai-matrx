@@ -16,7 +16,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { CommentThread, useComments } from "@ai-matrx/associations/react";
 import { cn } from "@/lib/utils";
 

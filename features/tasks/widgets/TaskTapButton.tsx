@@ -10,7 +10,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {

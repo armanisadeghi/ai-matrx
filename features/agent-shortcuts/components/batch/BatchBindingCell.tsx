@@ -13,7 +13,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {

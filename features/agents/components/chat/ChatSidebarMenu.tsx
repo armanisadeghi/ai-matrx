@@ -56,7 +56,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import {

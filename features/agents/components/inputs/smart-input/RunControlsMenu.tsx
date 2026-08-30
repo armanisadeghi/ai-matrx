@@ -39,7 +39,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useDialogContainer } from "@/components/ui/dialog";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { cn } from "@/lib/utils";

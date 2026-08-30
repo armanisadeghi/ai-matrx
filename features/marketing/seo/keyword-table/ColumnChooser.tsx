@@ -26,7 +26,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
 import {
   KEYWORD_CORE_COLUMNS,

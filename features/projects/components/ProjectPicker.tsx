@@ -25,7 +25,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useUserProjects } from "@/features/projects/hooks";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { cn } from "@/lib/utils";

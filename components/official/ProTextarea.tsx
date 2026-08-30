@@ -109,7 +109,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { MicWithDeviceMenu } from "@/components/audio/MicWithDeviceMenu";
 import { supabase } from "@/utils/supabase/client";
 import type { SessionContextItem } from "@/features/transcript-studio/types";

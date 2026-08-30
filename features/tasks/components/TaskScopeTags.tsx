@@ -20,7 +20,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { cn } from "@/utils/cn";

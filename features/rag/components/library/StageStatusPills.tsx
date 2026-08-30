@@ -37,7 +37,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useStageAction } from "@/features/rag/hooks/useStageAction";
 import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";

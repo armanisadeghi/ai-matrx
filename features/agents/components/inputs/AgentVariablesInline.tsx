@@ -19,7 +19,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,

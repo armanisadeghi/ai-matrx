@@ -7,7 +7,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { MessageRole } from "@/features/message-templates/types/message-templates-db";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
 import { SaveTemplateModal } from "./SaveTemplateModal";

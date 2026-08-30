@@ -14,7 +14,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunSettingsQuickControls } from "@/features/agents/components/run-controls/RunSettingsEditor";

@@ -91,7 +91,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { ENTITY_TYPES, type CuratedEntityType } from "../setup/ai";
 import { useSetupAgents } from "../setup/ai";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";

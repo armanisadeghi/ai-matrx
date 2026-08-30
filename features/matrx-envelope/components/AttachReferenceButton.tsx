@@ -21,7 +21,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { PaperclipTapButton } from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";

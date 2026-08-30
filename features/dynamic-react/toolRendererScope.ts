@@ -281,8 +281,9 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
   },
   {
     path: "@/components/ui/popover",
-    loader: () => import("@/components/ui/popover"),
-    scopeStrategy: "spread",
+    loader: () => import("@ai-matrx/design-system"),
+    scopeStrategy: "named",
+    exports: ["Popover", "PopoverTrigger", "PopoverContent", "PopoverAnchor"],
     core: true,
   },
   {

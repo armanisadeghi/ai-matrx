@@ -40,7 +40,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
 import { cn } from "@/lib/utils";
 

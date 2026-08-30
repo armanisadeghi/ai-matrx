@@ -25,7 +25,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { marketingRoutes } from "@/features/marketing/lib/routes";

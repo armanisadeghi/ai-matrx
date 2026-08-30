@@ -16,7 +16,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useImpairments } from "../../api/hooks";
 import type { WcImpairmentDefinitionRead } from "../../api/types";
 import { LookupError } from "./LookupError";

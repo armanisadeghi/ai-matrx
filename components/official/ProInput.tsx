@@ -82,7 +82,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { MicWithDeviceMenu } from "@/components/audio/MicWithDeviceMenu";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {

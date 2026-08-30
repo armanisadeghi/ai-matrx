@@ -19,7 +19,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useTasks } from "@/features/tasks/hooks/useTaskManager";
 import { getTaskById } from "@/features/tasks/services/taskService";
 import { useOpenTaskQuickCreateWindow } from "@/features/overlays/openers/taskQuickCreateWindow";

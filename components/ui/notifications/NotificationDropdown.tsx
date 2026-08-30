@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Bell, Check, Trash2, Settings } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@ai-matrx/design-system';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';

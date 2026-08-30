@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
   PopoverContent,
   PopoverAnchor,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectThreadEffectiveContext } from "@/features/war-room/redux/selectors";
 import {

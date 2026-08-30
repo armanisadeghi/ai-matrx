@@ -13,7 +13,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import {
   audioExtensionForType,

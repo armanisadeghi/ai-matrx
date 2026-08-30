@@ -25,7 +25,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
 import { contextItemValueTypeToPolicyType } from "@/features/agents/utils/context-item-policy-mapping";

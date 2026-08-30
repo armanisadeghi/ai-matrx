@@ -9,7 +9,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Pipette } from "lucide-react";
 import { CATEGORY_PRESET_COLORS } from "../constants";

@@ -8,7 +8,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";

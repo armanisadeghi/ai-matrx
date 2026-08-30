@@ -73,7 +73,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";

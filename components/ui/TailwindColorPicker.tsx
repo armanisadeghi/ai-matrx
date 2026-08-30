@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { tailwindColors } from '@/constants/tailwind-colors';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@ai-matrx/design-system';
 import { cn } from '@/lib/utils';
 
 export interface TailwindColorPickerProps {

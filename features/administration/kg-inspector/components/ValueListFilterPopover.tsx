@@ -25,7 +25,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { cn } from "@/styles/themes/utils";
 
 export interface ValueListFilterPopoverProps {

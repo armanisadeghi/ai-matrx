@@ -314,8 +314,9 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
   },
   {
     path: "@/components/ui/popover",
-    loader: () => require("@/components/ui/popover"),
-    scopeStrategy: "spread", // Popover, PopoverTrigger, PopoverContent
+    loader: () => require("@ai-matrx/design-system"),
+    scopeStrategy: "named",
+    exports: ["Popover", "PopoverTrigger", "PopoverContent", "PopoverAnchor"],
   },
   {
     path: "@/components/ui/avatar",
@@ -328,7 +329,7 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     scopeStrategy: "spread", // Alert, AlertTitle, AlertDescription
   },
   {
-    path: "@ai-matrx/design-system",
+    path: "@/components/ui/skeleton",
     loader: () => require("@ai-matrx/design-system"),
     scopeStrategy: "named",
     exports: ["Skeleton"],
@@ -760,7 +761,7 @@ export function getImportDescription(importPath: string): string {
     "@/components/ui/popover": "Popover components (Popover, PopoverTrigger, PopoverContent)",
     "@/components/ui/avatar": "Avatar components (Avatar, AvatarImage, AvatarFallback)",
     "@/components/ui/alert": "Alert components (Alert, AlertTitle, AlertDescription)",
-    "@ai-matrx/design-system": "Skeleton loading component",
+    "@/components/ui/skeleton": "Skeleton loading component",
     recharts:
       "Charts and graphs (recharts: ResponsiveContainer, LineChart, BarChart, PieChart, ...)",
   };

@@ -609,7 +609,7 @@ describe("allowlist expansion (2026-07-17)", () => {
       "@/components/ui/table",
       "@/components/ui/checkbox",
       "@/components/ui/radio-group",
-      "@/components/ui/popover",
+      "@ai-matrx/design-system",
       "@/components/ui/avatar",
       "@/components/ui/alert",
       "@ai-matrx/design-system",

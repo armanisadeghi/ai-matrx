@@ -21,7 +21,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import { cn } from "@/lib/utils";
 import type {

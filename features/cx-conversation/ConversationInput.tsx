@@ -50,7 +50,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { chatConversationsActions } from "./_legacy-stubs";
 import { sendMessage } from "./_legacy-stubs";

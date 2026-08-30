@@ -7,7 +7,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";

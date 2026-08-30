@@ -8,7 +8,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { ResourcePickerMenu } from "./ResourcePickerMenu";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
 import type { Resource } from "@/features/agents/resources/types";

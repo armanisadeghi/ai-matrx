@@ -8,7 +8,7 @@ import {
   Popover,
   PopoverAnchor,
   PopoverContent,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface DeleteConfirmationAnchorPoint {

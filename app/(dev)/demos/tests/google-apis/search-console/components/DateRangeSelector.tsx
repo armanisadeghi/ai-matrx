@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 
 interface DateRangeSelectorProps {
     startDate: string;

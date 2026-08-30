@@ -46,7 +46,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 
 import type { CompetitorRow } from "./data";
