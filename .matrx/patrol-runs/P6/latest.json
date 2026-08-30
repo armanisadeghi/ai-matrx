@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P6",
-  "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
-  "state": "delivered",
-  "updatedAt": "2026-08-29T14:34:23.048Z",
-  "summary": "DELIVERED: exact certified P6 candidate 508177a056 is on origin/main and contained in v0.4.1441; delivery ordering was reconciled after the automatic lane released before certification.",
-  "source": "e266c3f6-22ec-4f63-8446-e251e5b46f25.json",
-  "eventHash": "62f18e63414c648535187741d42fe4c2274bd78ca14bb255edfee474acf3aa00"
+  "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:47:58.774Z",
+  "summary": "CERTIFIED exact accessible 15-file feature-surface candidate.",
+  "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
+  "eventHash": "1af5adde4e5d1e8cab532a85bb23b11904095aa1c46387c2b0973545b4e2731f"
 }

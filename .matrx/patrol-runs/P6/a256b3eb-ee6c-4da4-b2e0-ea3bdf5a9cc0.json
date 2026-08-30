@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:26:47.470Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:26:47.470Z",
+      "actor": "codex-p6",
+      "summary": "P6 ERADICATION batch 3: 15-file feature-surface semantic glyph repair candidate reconstructed after shared integration race.",
+      "evidence": [
+        "Pre-edit type-check PASS; raw detector 1,146 lines in 434 files; canonical shared checkout dirty paths captured and excluded."
+      ],
+      "previousEventHash": null,
+      "eventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:53.476Z",
+      "actor": "/root/p6_feature_surfaces",
+      "summary": "Repaired 20 detector-visible glyphs plus one multiplication glyph across 15 feature-surface files.",
+      "evidence": [
+        "Initial candidate e99069021a6a5adaf39aeb449137beaffa880dbf."
+      ],
+      "previousEventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e",
+      "eventHash": "7a2ee7ca58bb1c74ab6bd208f59b5a0e9e7137df2a5b3d2b15f3a4e2cf271e2c"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:54.045Z",
+      "actor": "codex-p6-controller",
+      "summary": "Initial feature-surface candidate entered adversarial certification.",
+      "evidence": [
+        "Remote candidate preserved."
+      ],
+      "previousEventHash": "7a2ee7ca58bb1c74ab6bd208f59b5a0e9e7137df2a5b3d2b15f3a4e2cf271e2c",
+      "eventHash": "ddee2d5cf5b710284059b9948fc26a4a622a4235292e0cba0e8c726dab35a0d7"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:47:54.668Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "REJECTED initial candidate: unrelated CompetitorAutopsy table-copy contract contaminated the boundary.",
+      "evidence": [
+        "Candidate changed copy behavior outside P6."
+      ],
+      "previousEventHash": "ddee2d5cf5b710284059b9948fc26a4a622a4235292e0cba0e8c726dab35a0d7",
+      "eventHash": "203999ae84b00f6d5a57478bb74b1e025f3f0a7ae1013d428edadf5312b6dc17"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:55.255Z",
+      "actor": "codex-p6-repair",
+      "summary": "Rebuilt batch 3 from path-scoped P6 hunks and excluded the copy contract.",
+      "evidence": [
+        "Retry candidate 2e8ee7eeb5e4834bf7bfa5817c1e57f7f353e804."
+      ],
+      "previousEventHash": "203999ae84b00f6d5a57478bb74b1e025f3f0a7ae1013d428edadf5312b6dc17",
+      "eventHash": "f11dedc7d98f5cc74b8159641d3e2a2c92a1cd2f94b17b75e4fda8211b75125f"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:55.841Z",
+      "actor": "codex-p6-controller",
+      "summary": "Batch 3 retry entered adversarial recertification.",
+      "evidence": [
+        "Remote retry preserved."
+      ],
+      "previousEventHash": "f11dedc7d98f5cc74b8159641d3e2a2c92a1cd2f94b17b75e4fda8211b75125f",
+      "eventHash": "21c57be36f4c2a6556e45f28127c7968ec3025df53708dc0866524da39e229e5"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-30T14:47:56.470Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "REJECTED retry: rating and status-count icon replacements lost explicit accessible meanings.",
+      "evidence": [
+        "Concrete defects in CompetitorAutopsy, EditHistorySection, MessageFilesStrip, and SeoChangeTrackingWorkspace."
+      ],
+      "previousEventHash": "21c57be36f4c2a6556e45f28127c7968ec3025df53708dc0866524da39e229e5",
+      "eventHash": "def9660a4e1f62e69fa203674304dfc9dd30c3802f177fdde08f517e25c78667"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-30T14:47:57.240Z",
+      "actor": "codex-p6-repair",
+      "summary": "Added screen-reader rating/review and applied/rejected/supported/refuted labels while keeping icons decorative.",
+      "evidence": [
+        "Corrected candidate abe3c5ca9ab8bd25a2bd895527add992a4324dab has exactly 15 files."
+      ],
+      "previousEventHash": "def9660a4e1f62e69fa203674304dfc9dd30c3802f177fdde08f517e25c78667",
+      "eventHash": "72489ef21a7ad565c98a1e3a742502e9a83335d74d37e7d6e2b30e0e7a75e10e"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T14:47:57.901Z",
+      "actor": "codex-p6-controller",
+      "summary": "Accessible batch 3 retry 2 entered adversarial recertification.",
+      "evidence": [
+        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch3-retry2"
+      ],
+      "previousEventHash": "72489ef21a7ad565c98a1e3a742502e9a83335d74d37e7d6e2b30e0e7a75e10e",
+      "eventHash": "ffbfeb716071a0742793d4c9bf040a4a695c274525c06341dff9750513131bba"
+    },
+    {
+      "sequence": 10,
+      "state": "certified",
+      "at": "2026-08-30T14:47:58.774Z",
+      "actor": "/root/p6_three_batch_certifier",
+      "summary": "CERTIFIED exact accessible 15-file feature-surface candidate.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "abe3c5ca9ab8bd25a2bd895527add992a4324dab",
+        "certifierTaskId": "/root/p6_three_batch_certifier",
+        "checks": [
+          "Exactly 15 files; diff-check PASS; seven remaining detector hits are comments.",
+          "Copy contamination absent; explicit screen-reader meanings restored; type/doctrine baseline delta accepted."
+        ]
+      },
+      "previousEventHash": "ffbfeb716071a0742793d4c9bf040a4a695c274525c06341dff9750513131bba",
+      "eventHash": "1af5adde4e5d1e8cab532a85bb23b11904095aa1c46387c2b0973545b4e2731f"
+    }
+  ]
+}
