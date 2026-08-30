@@ -14,6 +14,7 @@ import {
   MapPin,
   RefreshCw,
   ScanSearch,
+  Star,
   Swords,
   Target,
 } from "lucide-react";
@@ -85,6 +86,12 @@ import {
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
+
+import {
+  competitorOpportunityCopyRow,
+  competitorOpportunityHuman,
+} from "./copy";
 
 type Artifact = {
   executive_verdict?: string;
@@ -1235,8 +1242,9 @@ export default function CompetitorAutopsyWorkspace({
                             </Badge>
                           )}
                           {business.rating != null ? (
-                            <span className="text-xs text-muted-foreground">
-                              ★ {business.rating}
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Star className="h-3 w-3" aria-hidden="true" />
+                              {business.rating}
                               {business.reviews != null ? ` (${business.reviews})` : ""}
                             </span>
                           ) : null}
@@ -1276,6 +1284,47 @@ export default function CompetitorAutopsyWorkspace({
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
+              copy={{
+                label: "Competitor opportunity",
+                listLabel: "Competitor opportunities",
+                location: webLocation(
+                  `Competitor autopsy — ${selectedSite ? siteBrandLabel(selectedSite) : "Choose a brand"}`,
+                ),
+                rowKind: "web-competitor-opportunity",
+                listKind: "web-competitor-opportunities",
+                rowDescription:
+                  "One prioritized competitor opportunity with the verdict, evidence, and recommended action shown in its record window.",
+                listDescription:
+                  "The current filtered and sorted competitor opportunity worklist.",
+                humanRow: competitorOpportunityHuman,
+                agentRow: competitorOpportunityCopyRow,
+                rowAttributes: (row) => ({
+                  id: row.id,
+                  site_id: resolvedSiteId ?? "",
+                  status: row.status,
+                  priority: row.priority,
+                  tracked_competitors: tracked,
+                  open_actions: openActions,
+                }),
+                listAttributes: (visible, all) => ({
+                  site_id: resolvedSiteId ?? "",
+                  visible_opportunities: visible.length,
+                  total_opportunities: all.length,
+                  tracked_competitors: tracked,
+                  open_actions: openActions,
+                }),
+                listContext: () => ({
+                  site: selectedSite
+                    ? siteBrandLabel(selectedSite)
+                    : "Choose a brand",
+                  site_id: resolvedSiteId ?? "",
+                  total_competitors: data?.competitors.length ?? 0,
+                  tracked_competitors: tracked,
+                  open_actions: openActions,
+                  coverage_percent:
+                    latestArtifact?.already_have_percentage ?? null,
+                }),
+              }}
               // MSR-19/20: row click opens the canonical WindowPanel, never
               // the side drawer. `detail: { enabled: false }` removes the
               // drawer entirely; `onOpen` is required or the opener falls
