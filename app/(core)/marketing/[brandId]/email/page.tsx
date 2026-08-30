@@ -14,7 +14,7 @@
 import type { Metadata } from "next";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { EmailFrontDoor } from "@/features/marketing/front-doors/EmailFrontDoor";
+import { BrandScopedEmail } from "@/features/marketing/front-doors/BrandScopedEmail";
 
 export const metadata: Metadata = {
   title: "Email",
@@ -32,7 +32,7 @@ export default function BrandEmailPage() {
           </h1>
         </div>
       </PageHeader>
-      <EmailFrontDoor />
+      <BrandScopedEmail />
     </>
   );
 }

@@ -9,8 +9,8 @@
 // `useMarketingBrand()` is a component change, tracked in the restructure
 // handoff.
 
-import { InitiativesListPage } from "@/features/marketing/initiatives/InitiativesListPage";
+import { BrandScopedInitiatives } from "@/features/marketing/initiatives/BrandScopedInitiatives";
 
 export default function BrandInitiativesPage() {
-  return <InitiativesListPage />;
+  return <BrandScopedInitiatives />;
 }

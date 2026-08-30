@@ -48,15 +48,17 @@ describe("requirementsOf", () => {
   });
 
   it("ignores direct_value, prompt_user, empty targets and reserved keys", () => {
+    const valueMappings: NonNullable<GateableItem["valueMappings"]> = {
+      a: { mapType: "direct_value", target: "a literal" },
+      b: { mapType: "prompt_user", prompt: "Tone?" },
+      c: { mapType: "surface_value", target: "   " },
+    };
+    Reflect.set(valueMappings, "__write_policies", { whatever: true });
+
     expect(
       requirementsOf(
         item({
-          valueMappings: {
-            a: { mapType: "direct_value", target: "a literal" },
-            b: { mapType: "prompt_user", target: "tone", prompt: "Tone?" },
-            c: { mapType: "surface_value", target: "   " },
-            __write_policies: { whatever: true },
-          } as GateableItem["valueMappings"],
+          valueMappings,
         }),
       ),
     ).toEqual([]);

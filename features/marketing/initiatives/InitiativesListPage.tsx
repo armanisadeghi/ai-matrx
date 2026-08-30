@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -11,9 +11,35 @@ import { InitiativeEditorDialog } from "./InitiativeEditorDialog";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingInitiativesScope } from "@/features/surfaces/manifests/marketing-initiatives.manifest";
 
-export function InitiativesListPage() {
+export function InitiativesListPage({
+  brandName,
+}: {
+  /**
+   * 🚨 BRAND SCOPE (2026-08-30). This list is ORG-scoped by design, and the
+   * brand route mounted it with nothing — so `/marketing/<client>/planning/
+   * initiatives` opened on "All brands" and showed every OTHER client's goals,
+   * timelines and budgets inside that client's workspace. Mounted from a brand
+   * it now opens pre-filtered to that brand. It stays a DEFAULT rather than a
+   * hidden predicate: the facet still carries every brand's true count and the
+   * user can widen it deliberately (THE DOOR LAW), which a silent SQL filter
+   * would quietly lie about.
+   */
+  brandName?: string | null;
+} = {}) {
   const [creating, setCreating] = useState(false);
   const orgId = useAppSelector(selectActiveOrganizationId);
+  const scopedConfig = useMemo(
+    () =>
+      brandName
+        ? {
+            ...initiativeListConfig,
+            defaultFilters: {
+              brand_name: { kind: "select" as const, values: [brandName] },
+            },
+          }
+        : initiativeListConfig,
+    [brandName],
+  );
   const action = (
     <Button size="sm" className="h-11 lg:h-7" onClick={() => setCreating(true)}>
       <Plus className="h-4 w-4" />
@@ -34,7 +60,7 @@ export function InitiativesListPage() {
         </div>
       </PageHeader>
       <EntityListPage
-        config={initiativeListConfig}
+        config={scopedConfig}
         headerActions={action}
         emptyAction={action}
       />

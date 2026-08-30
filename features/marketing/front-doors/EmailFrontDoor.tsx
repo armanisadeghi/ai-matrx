@@ -36,7 +36,18 @@ import {
 
 const LANE_A_PROMISE_ID = "marketing.email.opt-in-campaigns";
 
-export function EmailFrontDoor() {
+export function EmailFrontDoor({
+  organizationId,
+}: {
+  /**
+   * 🚨 ORG SCOPE (2026-08-30). `listSendingIdentities` accepts an org and the
+   * caller never passed one, so the mailbox count on a client's Email page
+   * counted sending identities across EVERY org the signed-in user belongs
+   * to — an agency operator saw one number that silently spanned all of their
+   * clients. The brand route passes the brand's own organization.
+   */
+  organizationId?: string | null;
+} = {}) {
   const ctx = useCrmContext();
   const promise = getComingSoon(LANE_A_PROMISE_ID);
   const [mailboxes, setMailboxes] = useState<number | null>(null);
@@ -45,7 +56,7 @@ export function EmailFrontDoor() {
     let cancelled = false;
     // The mailbox count is aidream's, not Supabase's. A failure leaves the door
     // without a number rather than without a door.
-    void listSendingIdentities()
+    void listSendingIdentities(organizationId ?? undefined)
       .then((rows) => {
         if (!cancelled) setMailboxes(rows.length);
       })
@@ -55,7 +66,7 @@ export function EmailFrontDoor() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [organizationId]);
 
   const doors: MarketingDoor[] = [
     {
