@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm/outreach-lists/[listId] — header strip + rollup + table. */
 export default function CrmOutreachListLoading() {

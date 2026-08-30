@@ -13,7 +13,7 @@ import React, { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Copy, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 interface StatItem {

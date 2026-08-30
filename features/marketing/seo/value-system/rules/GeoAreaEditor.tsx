@@ -55,7 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

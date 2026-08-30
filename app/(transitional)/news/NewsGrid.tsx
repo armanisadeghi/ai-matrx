@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import NewsCard from './NewsCard';
 import { LoadingSkeleton } from './ProgressiveNewsImage';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@ai-matrx/design-system';
 import { Article } from './types';
 
 interface NewsGridProps {

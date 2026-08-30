@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 const ImageStudioShell = dynamic(
   () =>

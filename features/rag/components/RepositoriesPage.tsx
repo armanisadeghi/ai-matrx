@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import { TapTargetButton } from "@ai-matrx/tap-target";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   Table,
   TableBody,

@@ -299,7 +299,7 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
   },
   {
     path: "@/components/ui/skeleton",
-    loader: () => import("@/components/ui/skeleton"),
+    loader: () => import("@ai-matrx/design-system"),
     scopeStrategy: "named",
     exports: ["Skeleton"],
     core: true,

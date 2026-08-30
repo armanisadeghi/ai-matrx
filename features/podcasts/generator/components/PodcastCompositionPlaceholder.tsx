@@ -7,7 +7,7 @@
 // generated content already exists; every content region is an honest skeleton.
 
 import { AudioLines, Clapperboard, ImageIcon } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 function SectionHeading({
   icon: Icon,

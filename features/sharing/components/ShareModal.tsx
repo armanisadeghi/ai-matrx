@@ -25,7 +25,7 @@ import {
   getResourceSharePath,
 } from "@/utils/permissions/registry";
 import type { ResourceType } from "@/utils/permissions/types";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { AlertTriangle, Lock } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PermissionsList } from "./PermissionsList";

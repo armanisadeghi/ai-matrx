@@ -45,7 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { listBusinessLocations } from "@/features/marketing/data/service";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { GeoPlacePicker } from "../rules/GeoPlacePicker";

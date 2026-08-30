@@ -45,7 +45,7 @@ import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,

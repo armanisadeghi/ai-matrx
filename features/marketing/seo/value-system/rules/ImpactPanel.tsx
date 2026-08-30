@@ -17,7 +17,7 @@
 
 import { ArrowRight, Loader2, ShieldCheck, TriangleAlert } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { bandMetaFor, type BandMeta } from "../lib";

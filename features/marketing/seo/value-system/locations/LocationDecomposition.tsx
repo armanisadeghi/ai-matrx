@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
   ColumnFiltersState,

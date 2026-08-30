@@ -17,7 +17,7 @@ import Link from "next/link";
 import { Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationMemoryScope,

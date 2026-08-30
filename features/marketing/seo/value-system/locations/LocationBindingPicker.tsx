@@ -26,7 +26,7 @@ import Link from "next/link";
 import { Building2, ExternalLink, Plus, Search } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useBusinessLocations } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";

@@ -13,7 +13,7 @@ import { ExternalLink, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

@@ -25,7 +25,7 @@ import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/Unified
 import { EpisodeContentStudio } from "@/features/podcasts/studio/components/EpisodeContentStudio";
 import { EpisodeChaptersPanel } from "@/features/podcasts/studio/components/EpisodeChaptersPanel";
 import { EpisodeTitlePanel } from "@/features/podcasts/studio/components/EpisodeTitlePanel";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import type { PodcastAudioPlayerHandle } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";

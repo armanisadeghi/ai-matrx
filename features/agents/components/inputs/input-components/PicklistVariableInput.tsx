@@ -6,7 +6,7 @@ import { SelectInput } from "./SelectInput";
 import { RadioGroupInput } from "./RadioGroupInput";
 import { CheckboxGroupInput } from "./CheckboxGroupInput";
 import { PillToggleInput } from "./PillToggleInput";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import {
   buildPicklistItemFence,

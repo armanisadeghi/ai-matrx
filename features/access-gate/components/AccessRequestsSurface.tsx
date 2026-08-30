@@ -39,7 +39,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { UserIdentity } from "@/components/user/UserIdentity";

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Copy, Check, ExternalLink, ChevronDown, Chev
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 interface SEOImageMetadata {
   url: string;

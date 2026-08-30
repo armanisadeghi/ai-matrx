@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm/[partyId] — identity rail + activity main. */
 export default function CrmPartyLoading() {

@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /**
  * Skeleton matches the inner FromBase64 shell layout. The outer chrome

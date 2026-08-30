@@ -33,7 +33,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { EDU_TOOLS } from "../data/tools";
 import { eduHref } from "../constants";
 import { EducationHubSurface } from "../components/landing/EducationHubSurface";

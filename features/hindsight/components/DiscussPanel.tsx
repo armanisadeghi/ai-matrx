@@ -35,7 +35,7 @@ import { toast } from "@/lib/toast";
 import MarkdownStream from "@/components/MarkdownStream";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
 
 import { discussFinding, discussReview, getReviewThread } from "../api";

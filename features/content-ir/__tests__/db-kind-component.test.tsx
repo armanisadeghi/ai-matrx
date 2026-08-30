@@ -612,7 +612,7 @@ describe("allowlist expansion (2026-07-17)", () => {
       "@/components/ui/popover",
       "@/components/ui/avatar",
       "@/components/ui/alert",
-      "@/components/ui/skeleton",
+      "@ai-matrx/design-system",
       "recharts",
     ]) {
       expect(paths).toContain(expected);

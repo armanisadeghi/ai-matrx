@@ -31,7 +31,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { AddLocationDialog } from "./AddLocationDialog";

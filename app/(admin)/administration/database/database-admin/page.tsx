@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import DatabaseAdminDashboard from "@/features/administration/database-admin/DatabaseAdminDashboard";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 export default function DatabaseAdminPage() {
   return (

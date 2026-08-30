@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Code2, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { SmartCodeEditor } from "@/features/code-editor/agent-code-editor/components/SmartCodeEditor";
 import { GENERIC_CODE_EDITOR_AGENT } from "@/features/code-editor/agent-code-editor/agents";
 import {

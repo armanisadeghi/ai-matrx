@@ -14,7 +14,7 @@ import { toast } from "@/lib/toast";
 import { Plus, Search, Clock, AlertCircle, NotebookPen, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";

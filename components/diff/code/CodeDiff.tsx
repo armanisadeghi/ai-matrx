@@ -11,7 +11,7 @@
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import dynamic from "next/dynamic";
 import type { DiffOnMount } from "@monaco-editor/react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 // Monaco is ~2MB and browser-only. ONE `next/dynamic({ssr:false})` boundary

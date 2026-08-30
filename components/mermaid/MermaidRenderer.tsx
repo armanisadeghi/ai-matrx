@@ -21,7 +21,7 @@ console.log(
 import { Copy, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import { detectDiagramType, extractMermaidTitle } from "./diagram-type";

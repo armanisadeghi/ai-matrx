@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { CapabilityGate } from "@/features/entitlements/components/CapabilityGate";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";

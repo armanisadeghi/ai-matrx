@@ -42,7 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";

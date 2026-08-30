@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm/deals/[dealId] — stage strip + two-column record. */
 export default function CrmDealLoading() {

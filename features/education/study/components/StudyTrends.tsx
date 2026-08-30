@@ -34,7 +34,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
 import { displayMasteryPct } from "../utils/masteryFsrs";

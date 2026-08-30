@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm/deals — mirrors the toggle strip + board columns. */
 export default function CrmDealsLoading() {

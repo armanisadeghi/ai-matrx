@@ -14,7 +14,7 @@ import dynamic from "next/dynamic";
 import { Check, Columns2, Copy, GitCompareArrows, Rows3, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 interface DiffSpec {

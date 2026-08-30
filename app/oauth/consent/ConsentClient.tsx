@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { extractErrorMessage } from "@/utils/errors";
 import { Logo } from "@/components/branding/MatrixLogo";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   ShieldCheck,

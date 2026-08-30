@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm/chasebox — scope tabs + the five queue cards + the list. */
 export default function CrmChaseboxLoading() {

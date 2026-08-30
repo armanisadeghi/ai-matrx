@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { AgentModelConfiguration } from "./AgentModelConfiguration";
 import { AgentVariablesManager } from "@/features/agents/components/variables-management/AgentVariablesManager";
 import { AgentContextPoliciesManager } from "../context-policies-management/AgentContextPoliciesManager";

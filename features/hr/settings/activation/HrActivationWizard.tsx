@@ -76,7 +76,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { getOrganizationMembers } from "@/features/organizations/service";

@@ -328,8 +328,8 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     scopeStrategy: "spread", // Alert, AlertTitle, AlertDescription
   },
   {
-    path: "@/components/ui/skeleton",
-    loader: () => require("@/components/ui/skeleton"),
+    path: "@ai-matrx/design-system",
+    loader: () => require("@ai-matrx/design-system"),
     scopeStrategy: "named",
     exports: ["Skeleton"],
   },
@@ -760,7 +760,7 @@ export function getImportDescription(importPath: string): string {
     "@/components/ui/popover": "Popover components (Popover, PopoverTrigger, PopoverContent)",
     "@/components/ui/avatar": "Avatar components (Avatar, AvatarImage, AvatarFallback)",
     "@/components/ui/alert": "Alert components (Alert, AlertTitle, AlertDescription)",
-    "@/components/ui/skeleton": "Skeleton loading component",
+    "@ai-matrx/design-system": "Skeleton loading component",
     recharts:
       "Charts and graphs (recharts: ResponsiveContainer, LineChart, BarChart, PieChart, ...)",
   };

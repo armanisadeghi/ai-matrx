@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import CallbackClient from './CallbackClient';
 import { getAppConfig } from '../app-config';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@ai-matrx/design-system';
 
 interface Props {
     params: Promise<{ app: string }>;

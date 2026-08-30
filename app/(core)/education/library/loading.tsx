@@ -1,5 +1,5 @@
 // Suspense fallback for the authenticated canonical artifact Library.
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 export default function LibraryLoading() {
   return (

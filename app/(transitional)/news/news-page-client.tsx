@@ -18,7 +18,7 @@ import {
     CardHeader,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@ai-matrx/design-system';
 import { fetchNews } from '@/actions/ai-actions/news-api';
 import NewsCard from './NewsCard';
 

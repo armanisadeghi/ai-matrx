@@ -11,7 +11,7 @@
  */
 
 import { Search } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 function ResultRowSkeleton() {
   return (

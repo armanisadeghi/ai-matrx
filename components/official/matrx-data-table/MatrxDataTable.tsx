@@ -46,7 +46,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";

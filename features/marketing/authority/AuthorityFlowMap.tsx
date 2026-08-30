@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import type { LinkGraphElement } from "@/features/marketing/components/inspection/link-graph/LinkGraphCytoscape";
 import type { LinkGraphEdge } from "@/features/marketing/components/inspection/link-graph/model";
 import type { AuthorityRouterResult } from "./types";

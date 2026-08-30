@@ -22,7 +22,7 @@ import {
   DeleteConfirmationPopover,
   type DeleteConfirmationAnchorPoint,
 } from "@/components/ui/delete-confirmation-popover";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,

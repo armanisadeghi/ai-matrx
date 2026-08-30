@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ClipboardList, Plus, Trash2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClassAssignments } from "../hooks/useClassAssignments";
 import { AssignResourceSheet } from "./AssignResourceSheet";

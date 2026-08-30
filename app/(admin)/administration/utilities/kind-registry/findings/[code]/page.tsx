@@ -21,7 +21,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CircleAlert, TriangleAlert } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { gatherFindingCodePayload } from "@/features/content-ir/admin/shape-findings-server";
 import {
   findingSpec,

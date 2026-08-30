@@ -35,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { SourceFavicon } from "@/features/research/components/results/SourceFavicon";
 import { useAuthenticator } from "../../hooks/use-authenticator";
 import { useVault, useVaultDefinitions } from "../../vault-hooks";

@@ -9,7 +9,7 @@
 
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { buildKindStatusBoard } from "@/features/content-ir/admin/shape-doctor-server";
 import type { KindStatusBoardModel } from "@/features/content-ir/admin/kind-detail-types";
 import KindRegistryPageClient from "@/features/content-ir/admin/KindRegistryPageClient";

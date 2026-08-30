@@ -39,7 +39,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Gauge, TriangleAlert } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   humanLines,

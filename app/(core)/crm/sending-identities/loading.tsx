@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm/sending-identities — mirrors the intro + mailbox cards. */
 export default function SendingIdentitiesLoading() {

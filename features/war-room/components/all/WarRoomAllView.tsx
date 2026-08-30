@@ -17,7 +17,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";

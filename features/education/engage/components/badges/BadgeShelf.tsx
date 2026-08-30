@@ -9,7 +9,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useBadges } from "../../data/useEngageMeta";
 import { BADGE_LIST } from "../../engine/badges";
 

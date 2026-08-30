@@ -19,7 +19,7 @@
 
 import { Network } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
 import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
 import type { KgGlobalFilter } from "@/features/kg-suggestions/types";

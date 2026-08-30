@@ -8,7 +8,7 @@
  */
 import { Check } from "lucide-react";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { cn } from "@/lib/utils";
 

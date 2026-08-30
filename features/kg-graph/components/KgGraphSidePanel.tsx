@@ -19,7 +19,7 @@ import { Copy, ExternalLink, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import {

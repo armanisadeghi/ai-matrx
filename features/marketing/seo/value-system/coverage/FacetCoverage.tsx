@@ -54,7 +54,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";

@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for one sending mailbox — status, gates, health. */
 export default function SendingIdentityLoading() {

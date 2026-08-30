@@ -44,7 +44,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

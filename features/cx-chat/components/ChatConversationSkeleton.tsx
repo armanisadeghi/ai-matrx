@@ -6,7 +6,7 @@
 // Shown instantly when the URL contains a conversation ID, preventing
 // the welcome screen flash while the real conversation loads.
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /**
  * Skeleton shown while ConversationShell dynamic import loads.

@@ -12,7 +12,7 @@
 import { Trophy, TrendingUp, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useLeague } from "../../data/useEngageMeta";
 import { useCurrentPlayer } from "../../data/useCurrentPlayer";
 

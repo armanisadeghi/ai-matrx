@@ -1,7 +1,7 @@
 "use client";
 
 import { RefObject } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentConversationMessageIndices } from "@/features/agents/redux/agent-definition/selectors";
 import { MessageItem } from "@/features/agents/components/builder/message-builders/MessageItem";

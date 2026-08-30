@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { RotateCcw, Search, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@ai-matrx/design-system';
 import { HierarchyFilterPill, type FilterOption } from './HierarchyFilterPill';
 import type { UseHierarchyFilterReturn } from './types';
 

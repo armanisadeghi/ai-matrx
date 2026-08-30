@@ -32,7 +32,7 @@ import { Layers, Lock, Plus, Timer } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   InlineQueryError,

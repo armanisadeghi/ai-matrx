@@ -23,7 +23,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
 import { useAppSelector } from "@/lib/redux/hooks";

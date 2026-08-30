@@ -43,7 +43,7 @@ import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

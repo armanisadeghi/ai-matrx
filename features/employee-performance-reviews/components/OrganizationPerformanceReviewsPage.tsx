@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import PerformanceReviewApp from "@/features/employee-performance-reviews/components/PerformanceReviewApp";
 import { organizationPerformanceReviewStorageKey } from "@/features/employee-performance-reviews/use-reviews";
 import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";

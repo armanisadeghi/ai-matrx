@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { AiWorkHeader } from "@/features/ai-work/components/AiWorkHeader";
 
 export default function WorkLoading() {

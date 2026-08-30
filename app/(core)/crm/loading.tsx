@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Skeleton for /crm — mirrors the tabs + toolbar + table shape. */
 export default function CrmLoading() {

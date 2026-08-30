@@ -24,7 +24,7 @@ import type { VisibilityValue } from "@/utils/permissions/service";
 import { PublicBadge } from "../PermissionBadge";
 import { useToast } from "@/components/ui/use-toast";
 import { ShareLinkPanel } from "../ShareLinkPanel";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import {

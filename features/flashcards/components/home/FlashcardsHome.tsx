@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";

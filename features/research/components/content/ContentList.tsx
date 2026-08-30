@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { FileText } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useResearchSources,

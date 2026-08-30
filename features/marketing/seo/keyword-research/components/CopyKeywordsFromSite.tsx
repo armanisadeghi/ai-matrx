@@ -19,7 +19,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { copySiteKeywords } from "../data/queries";

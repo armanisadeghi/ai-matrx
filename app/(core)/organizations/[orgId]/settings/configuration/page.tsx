@@ -22,7 +22,7 @@ import { OrganizationAccessGate } from "@/features/organizations/components/Orga
 import { hrSettingsHref } from "@/features/hr/routes";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 export default function OrgConfigurationPage() {
   const params = useParams();

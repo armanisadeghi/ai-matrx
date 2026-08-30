@@ -15,7 +15,7 @@
 import { useState } from "react";
 import { BarChart3, ChevronRight, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { educationEntityRoute } from "@/features/education/data/entityRoutes";

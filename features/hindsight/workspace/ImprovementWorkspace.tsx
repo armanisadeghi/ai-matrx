@@ -31,7 +31,7 @@ import {
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 
 import { getEnrollment, listEnrollments } from "../api";

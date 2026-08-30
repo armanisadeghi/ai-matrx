@@ -19,7 +19,7 @@ import { createPortal } from "react-dom";
 import { BarChart3, Check, Copy, Expand, TriangleAlert, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import { parseChartSpec, type ChartSpec } from "./chart-spec";

@@ -11,7 +11,7 @@
 
 import { ClipboardList, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useClassAssignments } from "../hooks/useClassAssignments";
 import { useMyClassProgress } from "../hooks/useClassProgress";
 import {

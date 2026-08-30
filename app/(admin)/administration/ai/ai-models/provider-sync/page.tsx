@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useCallback } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { aiModelService } from "@/features/ai-models/service";
 import ProviderSyncDashboard from "@/features/ai-models/components/ProviderSyncDashboard";

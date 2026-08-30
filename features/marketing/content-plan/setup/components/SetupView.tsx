@@ -28,7 +28,7 @@ import { MobilePanelShell } from "@/features/shell/components/header/templates/M
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/useResearchState";

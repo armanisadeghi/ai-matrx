@@ -26,7 +26,7 @@ import { Eye, MessageSquare, RefreshCw, Send, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 

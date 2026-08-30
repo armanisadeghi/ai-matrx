@@ -21,7 +21,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";

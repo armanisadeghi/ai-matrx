@@ -11,7 +11,7 @@
 
 import { KeyRound, RefreshCcw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 interface AwaitingCredentialsProps {
   detail: string;

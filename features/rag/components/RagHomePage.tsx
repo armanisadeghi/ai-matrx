@@ -25,7 +25,7 @@ import {
   CheckCircle2,
   Binary,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";

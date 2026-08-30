@@ -24,7 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Coins } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { getValueVocabulary } from "../data";

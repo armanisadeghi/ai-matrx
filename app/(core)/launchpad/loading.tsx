@@ -1,6 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderIconTitle from "@/features/shell/components/header/variants/variants/HeaderIconTitle";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 export default function LaunchpadLoading() {
   return (

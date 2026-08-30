@@ -14,7 +14,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useCurationData } from "../../hooks/useResearchState";
 import {

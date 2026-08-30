@@ -46,7 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";

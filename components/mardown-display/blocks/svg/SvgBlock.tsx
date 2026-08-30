@@ -18,7 +18,7 @@ import { createPortal } from "react-dom";
 import { Check, Copy, Download, Expand, Image as ImageIcon, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import { cn } from "@/lib/utils";
 

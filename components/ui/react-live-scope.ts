@@ -142,7 +142,7 @@ export {
   SheetTitle,
   SheetDescription,
 } from "./sheet";
-export { Skeleton } from "./skeleton";
+export { Skeleton } from "@ai-matrx/design-system";
 export { Slider } from "./slider";
 export { Switch } from "./switch";
 export {

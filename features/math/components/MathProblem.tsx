@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 // Props type: import `MathProblemProps` from "@/features/math/types" — it lives in
 // that pure (zero-runtime, dependency-free) module, so consumers already get full

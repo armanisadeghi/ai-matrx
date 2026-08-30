@@ -18,7 +18,7 @@ import {
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";

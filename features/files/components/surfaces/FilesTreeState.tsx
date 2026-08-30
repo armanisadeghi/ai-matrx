@@ -2,7 +2,7 @@
 
 import { FolderOpen, RefreshCw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 export function FilesTreeLoadingState() {
   return (

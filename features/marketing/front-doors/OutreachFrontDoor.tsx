@@ -31,7 +31,7 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useCrmContext } from "@/features/crm/hooks/useCrmContext";
 import { fetchOutreachLists } from "@/features/crm/outreach-lists/service";

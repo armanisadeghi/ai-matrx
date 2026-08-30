@@ -5,7 +5,7 @@
 // instantly with zero layout shift. Used by BOTH each tab's loading.tsx and
 // the in-page <Suspense> fallback around the awaited data child.
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 function FiltersBarSkeleton() {
   return (

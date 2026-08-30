@@ -63,7 +63,7 @@ import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilld
 import { archiveRule } from "@/features/marketing/search-console/data-class-rules";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import type { GscFilters } from "@/features/marketing/search-console/types";

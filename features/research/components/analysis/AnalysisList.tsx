@@ -20,7 +20,7 @@ import {
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/markdown";

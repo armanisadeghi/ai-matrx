@@ -43,7 +43,7 @@ import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBui
 import { withAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
 /** Extract text from a TextBlock. Canonical field is `.text` — normalised at the Redux boundary. */
 function extractTextFromBlock(block: Record<string, unknown>): string {

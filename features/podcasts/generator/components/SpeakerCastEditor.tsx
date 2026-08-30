@@ -48,7 +48,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import type { PodcastSpeaker, PodcastSpeakerGender } from "../types";
 import type { Voice, VoiceProvider } from "../voiceCatalog";

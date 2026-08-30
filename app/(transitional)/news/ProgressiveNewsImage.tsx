@@ -2,7 +2,7 @@
 import React, { Suspense } from 'react';
 import Image from 'next/image';
 import { ImageIcon } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@ai-matrx/design-system';
 
 interface ProgressiveNewsImageProps {
     src: string;

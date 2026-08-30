@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { Users, Check, X, UserMinus, Crown, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClassRoster } from "../hooks/useClassRoster";
 import { InviteStudentsSheet } from "./InviteStudentsSheet";

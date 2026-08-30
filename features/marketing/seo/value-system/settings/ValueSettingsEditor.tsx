@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";

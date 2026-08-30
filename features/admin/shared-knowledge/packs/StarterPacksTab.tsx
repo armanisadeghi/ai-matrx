@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { BrainCircuit, Layers, ListChecks, Package, Plus, Search, TreePine, Users } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";

@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { formatPct, type Delta, type ValueKpis } from "../lib";
 
