@@ -1,5 +1,15 @@
 /* globals.css */
 
+/* THE PACKAGE-CSS CASCADE ORDER — must stay the first rule in this file.
+   @ai-matrx/design-system ships its structural CSS (`styles.css`) and a set of
+   DEFAULT token values (`tokens.css`) so it renders correctly in any app,
+   themed or not. Declaring its two layers HERE, before Tailwind's, parks them
+   at the BOTTOM of the cascade: every token value below in @layer base wins
+   over the package default, and every Tailwind utility wins over the package's
+   utility-tier rules — exactly as it worked when those rules lived in this
+   file. Both sheets are imported in app/layout.tsx. */
+@layer matrx-design-system-tokens, matrx-design-system;
+
 @import "tailwindcss";
 @source "../node_modules/@ai-matrx/design-system/dist";
 @source "../node_modules/@ai-matrx/capture/dist";
@@ -1270,22 +1280,17 @@
       var(--matrx-glass-border-color);
   }
 
-  .matrx-glass-thin-border {
-    @apply bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass;
-    border: var(--matrx-glass-border-width-thin) solid
-      var(--matrx-glass-border-color);
-  }
-  .matrx-glass-thin-border:hover {
-    @apply bg-glass-hover;
-  }
-  .matrx-glass-thin-border:active {
-    @apply bg-glass-active;
-  }
-  /* Segmented pills (RouteModeNav): direct child segments own hover — don't lift the shell. */
-  .matrx-glass-thin-border:has(> a:hover),
-  .matrx-glass-thin-border:has(> a:active) {
-    @apply bg-glass;
-  }
+  /* .matrx-glass-thin-border (+ :hover / :active / :has(> a:…)) moved to
+     @ai-matrx/design-system/styles.css — it is the chrome that package's
+     BottomSheet close control wears, so it ships with the component (C26,
+     2026-08-30). The package expands the @apply into the leaf --matrx-glass-*
+     tokens (identical result, no Tailwind needed) and keeps it in the
+     `matrx-design-system` layer, declared FIRST at the top of this file, so
+     these decoration classes and every Tailwind utility still win over it —
+     the same relative order it had while it lived in @layer components here.
+     The token VALUES stay ours, below in @layer base. The sibling classes
+     (core / card / interactive / shadow) are host-only decoration with no
+     package consumer, and stay here. */
 
   .matrx-glass-card {
     @apply bg-glass shadow-glass;
@@ -2134,50 +2139,13 @@
   justify-content: flex-start !important;
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   Scroll fade — the "there is more below" cue.
-   Driven by useScrollFade from @ai-matrx/design-system, which sets the
-   data attributes ONLY on edges that actually overflow. A hard-clipped last
-   row reads as "finished" and the user never scrolls; a permanent fade makes
-   a non-scrolling list's last item look broken. Hence: measured, not assumed.
+/* Scroll fade (.matrx-scroll-fade + data-fade-top/bottom) moved VERBATIM to
+   @ai-matrx/design-system — imported once in app/layout.tsx as
+   `@ai-matrx/design-system/styles.css` (C26 CSS extraction, 2026-08-30). The
+   hook that sets the attributes (useScrollFade) already lived there; the mask
+   geometry now travels with it, so a consumer that is not this app gets the
+   cue too. Shipped UNLAYERED, exactly as it was authored here. */
 
-   mask-image is used (not an overlay element) so the fade works over any
-   background — popovers, drawers, cards — with no extra DOM and no
-   pointer-event interception.
-   ──────────────────────────────────────────────────────────────────────── */
-.matrx-scroll-fade[data-fade-bottom] {
-  mask-image: linear-gradient(
-    to bottom,
-    black calc(100% - 2rem),
-    transparent 100%
-  );
-}
-.matrx-scroll-fade[data-fade-top] {
-  mask-image: linear-gradient(
-    to top,
-    black calc(100% - 2rem),
-    transparent 100%
-  );
-}
-.matrx-scroll-fade[data-fade-top][data-fade-bottom] {
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black 2rem,
-    black calc(100% - 2rem),
-    transparent 100%
-  );
-}
-
-/* Sonner backstop: a toast measured while the window was hidden/zero-width
-   records a garbage --initial-height (thousands of px) that later renders as a
-   giant blank box swallowing clicks (height: var(--initial-height) applies in
-   expanded/stacked states). The Toaster wrapper self-heals the var on
-   resize/visibilitychange (components/ui/sonner.tsx); this cap bounds the
-   blast radius if a case slips through. */
-[data-sonner-toast] {
-  max-height: min(40rem, 90dvh);
-}
 
 /* Radix/Vaul modal layers temporarily put `pointer-events: none` on <body>.
    Sonner portals beside those layers, so its very high z-index can paint a
@@ -2188,53 +2156,13 @@
   pointer-events: auto;
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   .matrx-mobile-sheet — ONE mobile density for any desktop panel hosted in a
-   bottom sheet (TabbedBottomSheet sets it; see that file's header).
+/* .matrx-mobile-sheet (the ONE mobile density for a desktop panel hosted in a
+   bottom sheet) moved VERBATIM to @ai-matrx/design-system/styles.css — the
+   class is set by that package's TabbedBottomSheet, so the density restatement
+   travels with the component (C26 CSS extraction, 2026-08-30). Still
+   UNLAYERED there, for the same reason it was unlayered here: it must beat
+   @layer utilities to re-scale utility-set font sizes. */
 
-   The run-controls tabs (tools, skills, overrides, settings…) are the SAME
-   components the desktop window renders, authored at desktop density —
-   text-[9px]…text-xs and h-7 rows. On a phone that is unreadable, untappable,
-   and inconsistent with the 16px index list one tap away, so the sheet
-   restates the scale once, here, instead of every panel growing an
-   `isMobile` branch (which is what made these surfaces diverge).
-
-   Deliberately UNLAYERED: Tailwind utilities live in @layer utilities, and
-   unlayered CSS beats every layered rule regardless of specificity — the only
-   way to re-scale utility-set font sizes from the host. Scoped to this class,
-   so the blast radius is exactly the sheet. Font size and control height
-   ONLY — never color, spacing, or layout.
-
-   Fields are forced to 16px because anything smaller makes iOS Safari zoom the
-   page on focus, which is itself a "the panel resized" bug.
-   ──────────────────────────────────────────────────────────────────────── */
-.matrx-mobile-sheet .text-\[9px\],
-.matrx-mobile-sheet .text-\[10px\],
-.matrx-mobile-sheet .text-\[11px\] {
-  font-size: 0.8125rem;
-  line-height: 1.15rem;
-}
-.matrx-mobile-sheet .text-xs {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-.matrx-mobile-sheet .text-sm {
-  font-size: 0.9375rem;
-  line-height: 1.375rem;
-}
-.matrx-mobile-sheet input,
-.matrx-mobile-sheet textarea,
-.matrx-mobile-sheet select,
-.matrx-mobile-sheet [contenteditable="true"] {
-  font-size: 16px;
-}
-/* h-7 rows (list rows, search fields) are below the 44pt touch target. Raise
-   the floor with min-height — it wins over the utility's height without
-   unpinning it. Square icon buttons (h-7 w-7) are excluded so they stay
-   square. */
-.matrx-mobile-sheet .h-7:not([class*="w-7"]) {
-  min-height: 2.25rem;
-}
 
 /* ────────────────────────────────────────────────────────────────────────
    THE iOS ZOOM FLOOR — global, mechanical, coarse-pointer only.

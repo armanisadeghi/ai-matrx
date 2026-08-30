@@ -2,6 +2,13 @@
 import "./globals.css";
 // Tap-button geometry (the .matrx-tap-* system) ships in the package.
 import "@ai-matrx/tap-target/styles.css";
+// Design-system CSS ships in the package too (C26): default token values first,
+// then the structural rules its components require (.matrx-scroll-fade,
+// .matrx-mobile-sheet, .matrx-glass-thin-border, .pb-safe, .shadow-input).
+// Both sheets are layered; globals.css declares those layers first so this
+// app's own token values and Tailwind utilities win. See the header there.
+import "@ai-matrx/design-system/tokens.css";
+import "@ai-matrx/design-system/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
