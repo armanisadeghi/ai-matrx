@@ -132,6 +132,18 @@ Then confirm the service is up: `curl https://files.matrxserver.com/files-servic
 
 ## Change log
 
+- **2026-08-30** — **QA F2/F3/F4 media-cutover fixes.** Host side (F2): the media-client
+  now promotes our authenticated byte-endpoint URLs (`{base}/files/{id}/download`,
+  `{base}/media/{id}/v/{class}`) to the file_id lane via the new
+  `fileIdFromFileEndpointUrl` recognizer origin (`lib/media/our-file-sources.ts`
+  "files-endpoint") — a pasted private Files URL rides the bearer-authenticated blob
+  transport instead of failing as an unauthenticated external `<img>` (fixed
+  /images/annotate). Package side (`@ai-matrx/media` 0.2.2, F3/F4): the thumbnail blob
+  lane is kind-gated to image/video (no more full-byte downloads of markdown/PDF into
+  an `<img>`), and blob object URLs render `loading="eager"` (lazy-loading in-memory
+  bytes stalled grids and persisted chat attachments silently in hidden/offscreen
+  documents). Regression tests: `features/files/media-client/client.test.ts`,
+  `lib/media/__tests__/file-endpoint-url.test.ts`, plus package suites.
 - **2026-08-30** — **Media wave 2.** `hooks/useFileAs.ts` (+ test) and its unreferenced
   wrappers `hooks/useFileDownloadUrl.ts` / `hooks/useFileMediaBlock.ts` DELETED (last
   consumers — the block URL hooks and FilePreview — moved onto `useMediaResolution`).
