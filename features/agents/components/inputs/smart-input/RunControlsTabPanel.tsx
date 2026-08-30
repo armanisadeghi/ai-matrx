@@ -277,6 +277,7 @@ export interface RunControlsTabPanelProps {
     supportsAudio?: boolean;
   };
   onResourceSelected: (resource: Resource) => void;
+  onResourceDeselected?: (resource: Resource) => void;
   onClose: () => void;
   isCreator: boolean;
   showCreatorPanel: boolean;
@@ -292,6 +293,7 @@ export function RunControlsTabPanel({
   heightClassName = "h-[32rem]",
   attachmentCapabilities,
   onResourceSelected,
+  onResourceDeselected,
   onClose,
   isCreator,
   showCreatorPanel,
@@ -334,6 +336,7 @@ export function RunControlsTabPanel({
             conversationId={conversationId}
             fillHost
             onResourceSelected={onResourceSelected}
+            onResourceDeselected={onResourceDeselected}
             onClose={onClose}
             attachmentCapabilities={attachmentCapabilities}
           />

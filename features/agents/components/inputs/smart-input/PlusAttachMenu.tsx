@@ -35,7 +35,10 @@ import { ResourcePickerSubViewHeader } from "@/features/resource-manager/resourc
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "@/features/agents/components/run-controls/RunInputCapabilities";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import {
+  useAttachResource,
+  useDetachResource,
+} from "@/features/agents/components/inputs/resources/attach-resource";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.selectors";
 import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
@@ -216,6 +219,7 @@ export function PlusAttachMenu({
 
   const openRunControlsWindow = useOpenRunControlsWindow();
   const attachResource = useAttachResource(conversationId);
+  const detachResource = useDetachResource(conversationId);
   const handleResourceSelected = async (resource: Resource) => {
     return attachResource(resource);
   };
@@ -290,6 +294,7 @@ export function PlusAttachMenu({
                   conversationId={conversationId}
                   fillHost
                   onResourceSelected={handleResourceSelected}
+                  onResourceDeselected={detachResource}
                   onClose={closeMenu}
                   attachmentCapabilities={attachmentCapabilities}
                   onDebugClick={onDebugClick}

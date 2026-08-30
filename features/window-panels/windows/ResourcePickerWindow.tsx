@@ -12,6 +12,9 @@ interface ResourcePickerWindowProps {
   onResourceSelected: (
     resource: Resource,
   ) => boolean | void | Promise<boolean | void>;
+  onResourceDeselected?: (
+    resource: Resource,
+  ) => boolean | void | Promise<boolean | void>;
   attachmentCapabilities?: {
     supportsImageUrls?: boolean;
     supportsFileUrls?: boolean;
@@ -33,6 +36,7 @@ export function ResourcePickerWindow({
   isOpen,
   onClose,
   onResourceSelected,
+  onResourceDeselected,
   attachmentCapabilities,
   onSettingsClick,
   onDebugClick,
@@ -56,6 +60,7 @@ export function ResourcePickerWindow({
     >
       <ResourcePickerMenu
         onResourceSelected={onResourceSelected}
+        onResourceDeselected={onResourceDeselected}
         onClose={onClose}
         attachmentCapabilities={attachmentCapabilities}
         onSettingsClick={onSettingsClick}

@@ -48,7 +48,10 @@ export type StreamDispatch = (action: unknown) => unknown;
 import { processStream } from "./process-stream";
 import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import {
+  isRecordUnavailableError,
+  recordUnavailable,
+} from "@/lib/records/recordUnavailable";
 import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
 import { isStreamTransportLost } from "@/lib/api/errors";
 import type { JsonExtractionConfig } from "./process-stream";
@@ -148,7 +151,10 @@ export function parseApiErrorBody(body: unknown): ParsedApiErrorBody {
 }
 
 export function shouldCaptureStreamFailure(error: unknown): boolean {
-  return !(error instanceof ExpectedRequestConflictError);
+  return !(
+    error instanceof ExpectedRequestConflictError ||
+    isRecordUnavailableError(error)
+  );
 }
 
 /**

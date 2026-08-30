@@ -5,6 +5,7 @@ import {
   parseApiErrorBody,
   shouldCaptureStreamFailure,
 } from "../run-ai-stream";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 describe("parseApiErrorBody", () => {
   test("preserves a nested attachment organization conflict code", () => {
@@ -43,6 +44,17 @@ describe("parseApiErrorBody", () => {
       ),
     ).toBe(false);
     expect(shouldCaptureStreamFailure(new Error("stream crashed"))).toBe(true);
+  });
+
+  test("does not duplicate the canonical record-unavailable capture", () => {
+    const error = recordUnavailable({
+      entity: "conversation",
+      reason: "unknown",
+      recordId: "conversation-1",
+      token: "conversation",
+    });
+
+    expect(shouldCaptureStreamFailure(error)).toBe(false);
   });
 });
 

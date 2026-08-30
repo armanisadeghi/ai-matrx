@@ -527,9 +527,11 @@ export function InlineUploadArea({
               : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
           )}
         >
-          <Upload className="h-3.5 w-3.5 shrink-0" />
           {isDragging ? (
-            <span className="flex min-h-12 items-center">Drop to upload and add</span>
+            <span className="flex min-h-12 items-center gap-1.5">
+              <Upload className="h-4 w-4 shrink-0" />
+              Drop to upload and add
+            </span>
           ) : (
             <>
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">

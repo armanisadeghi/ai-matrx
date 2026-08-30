@@ -47,7 +47,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { PlusAttachMenu } from "./PlusAttachMenu";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import {
+  useAttachResource,
+  useDetachResource,
+} from "@/features/agents/components/inputs/resources/attach-resource";
 import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
 import {
   RunControlsTabPanel,
@@ -115,6 +118,7 @@ export function RunControlsMenu({
   };
 
   const attachResource = useAttachResource(conversationId);
+  const detachResource = useDetachResource(conversationId);
   const handleResourceSelected = async (resource: Resource) => {
     return attachResource(resource);
   };
@@ -129,6 +133,7 @@ export function RunControlsMenu({
   const panelProps = {
     ...rc.panelProps,
     onResourceSelected: handleResourceSelected,
+    onResourceDeselected: detachResource,
     onClose: () => setOpen(false),
   };
 

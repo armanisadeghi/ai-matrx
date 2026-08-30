@@ -27,7 +27,10 @@ import {
   useRunControlsState,
   type RunControlsTab,
 } from "@/features/agents/components/inputs/smart-input/RunControlsTabPanel";
-import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import {
+  useAttachResource,
+  useDetachResource,
+} from "@/features/agents/components/inputs/resources/attach-resource";
 import { cn } from "@/lib/utils";
 import type { Resource } from "@/features/agents/resources/types";
 
@@ -55,6 +58,7 @@ function RunControlsWindowInner({
   const activeTab = rc.resolveTab(tab);
 
   const attachResource = useAttachResource(conversationId);
+  const detachResource = useDetachResource(conversationId);
   const close = () => dispatch(closeOverlay({ overlayId: OVERLAY_ID }));
   const handleResourceSelected = async (resource: Resource) => {
     return attachResource(resource);
@@ -85,6 +89,7 @@ function RunControlsWindowInner({
               activeTab={t.id}
               fill
               onResourceSelected={handleResourceSelected}
+              onResourceDeselected={detachResource}
               onClose={close}
             />
           ),
@@ -145,6 +150,7 @@ function RunControlsWindowInner({
         activeTab={activeTab}
         fill
         onResourceSelected={handleResourceSelected}
+        onResourceDeselected={detachResource}
         onClose={close}
       />
     </WindowPanel>

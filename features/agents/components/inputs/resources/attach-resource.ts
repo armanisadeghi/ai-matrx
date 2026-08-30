@@ -26,6 +26,7 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import {
   addResource,
+  removeResource,
   setResourcePreview,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -361,6 +362,62 @@ export function useAttachResource(
           : resource.data,
       resourcePreviewLabel,
     );
+    return true;
+  };
+}
+
+/**
+ * Inverse of `useAttachResource` for files toggled in the live picker.
+ * Owned media can have both a durable authorization edge and a per-turn media
+ * resource; documents have one representation based on whether the
+ * conversation is materialized. Remove each through its canonical owner.
+ */
+export function useDetachResource(
+  conversationId: string,
+): (resource: Resource) => Promise<boolean> {
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
+
+  return async (resource: Resource) => {
+    const fileId = extractFileId(resource.data);
+    if (!fileId) return false;
+
+    const getState = () => store.getState() as RootState;
+    const isDurableConversation =
+      !selectIsCacheOnly(conversationId)(getState());
+
+    if (isDurableConversation) {
+      const result = await getAssociationsStore().remove({
+        sourceType: "file",
+        sourceId: fileId,
+        targetType: "conversation",
+        targetId: conversationId,
+      });
+      if (!result.ok) {
+        console.error("[attached-file] detach failed", {
+          conversationId,
+          fileId,
+          error: result.error,
+        });
+        toast.error(`Couldn't remove file: ${result.error}`);
+        return false;
+      }
+    }
+
+    const resources = Object.values(
+      getState().instanceResources.byConversationId[conversationId] ?? {},
+    );
+    for (const attached of resources) {
+      const attachedFileId =
+        pendingFileId(attached.source) ?? pendingFileId(attached.finalPayload);
+      if (attachedFileId !== fileId) continue;
+      dispatch(
+        removeResource({
+          conversationId,
+          resourceId: attached.resourceId,
+        }),
+      );
+    }
     return true;
   };
 }

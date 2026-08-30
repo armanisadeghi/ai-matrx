@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-29`
+**Last updated:** `2026-08-30`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -192,6 +192,9 @@ neither prompt blocks nor run inputs: a canonical
   stream boundary preserves `attachment_organization_mismatch`, shows the
   server's reselect guidance, and never records that successful guard as a
   system failure.
+- A conversation 404 emits the canonical `record-unavailable` diagnostic once.
+  The stream boundary surfaces that same error but never duplicates it as an
+  `agent-stream-client-error`.
 - Files enter the backend Document Evidence System: processed text is primary,
   while RAG, raw/clean representations, selected physical PDF pages, and
   verification tools are auto-injected.
@@ -411,6 +414,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-30` — **Conversation 404s no longer double-capture.** `recordUnavailable` remains the canonical loud diagnostic; the shared stream catch surfaces it without emitting a duplicate `agent-stream-client-error` row.
 - `2026-08-30` — **Expected attachment tenant conflicts no longer become red stream failures.** The shared stream boundary preserves the nested or top-level `attachment_organization_mismatch` code, surfaces the server's reselect guidance without the false "Conversation already exists" prefix, and excludes the successful tenant guard from system-error capture.
 - `2026-08-30` — **Agent-definition JSON reads validate their runtime contracts at ingress.**
   Messages, variable definitions, settings, context policies, and output schemas now use shared
