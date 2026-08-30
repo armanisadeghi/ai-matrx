@@ -70,7 +70,7 @@ import {
   trimSizeLine,
 } from "./labels";
 import { BookPreview } from "./BookPreview";
-import { BulkTierTable, PricePanel } from "./PricePanel";
+import { BulkTierTable, MobilePriceBar, PricePanel } from "./PricePanel";
 import {
   AwaitingCredentialsCard,
   ConfiguratorSkeleton,
@@ -1052,6 +1052,8 @@ export default function LuluPricingDemoPage() {
           </Button>
         </aside>
       </div>
+
+      <MobilePriceBar state={priceState} quantity={quantity} />
     </div>
   );
 }

@@ -134,6 +134,55 @@ function HeroPrice({
   );
 }
 
+/**
+ * Phone-only price bar.
+ *
+ * On a narrow screen the full panel sits below six configuration steps, so the
+ * number you are shopping for scrolls out of sight exactly while you change
+ * the things that move it. This keeps it pinned.
+ */
+export function MobilePriceBar({
+  state,
+  quantity,
+}: {
+  state: LuluFetchState<LuluPriceResult>;
+  quantity: number;
+}) {
+  if (state.status === "idle") return null;
+
+  const ready = state.status === "ready" ? state.data : null;
+  const unit = ready ? unitPriceOf(ready, quantity) : null;
+
+  return (
+    <div className="sticky bottom-0 z-20 -mx-4 border-t border-border bg-card/95 px-4 py-3 backdrop-blur lg:hidden">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <span className="text-[0.6875rem] font-medium uppercase tracking-wider text-muted-foreground">
+            Per book
+          </span>
+          <span className="text-2xl font-semibold tabular-nums text-foreground">
+            {state.status === "loading" ? (
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            ) : (
+              formatMoney(unit, ready?.currency ?? null)
+            )}
+          </span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="text-[0.6875rem] font-medium uppercase tracking-wider text-muted-foreground">
+            Total
+          </span>
+          <span className="text-base font-semibold tabular-nums text-foreground">
+            {state.status === "loading"
+              ? "…"
+              : formatMoney(ready?.totalCostInclTax ?? null, ready?.currency ?? null)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Panel
 // ---------------------------------------------------------------------------
