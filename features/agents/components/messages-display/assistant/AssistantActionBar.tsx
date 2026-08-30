@@ -47,6 +47,7 @@ import {
   selectMessagePosition,
   selectIsLatestAssistantMessage,
   extractFlatText,
+  extractInspectableText,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import type { RootState } from "@/lib/redux/store";
@@ -186,7 +187,13 @@ export function AssistantActionBar({
   );
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
 
-  const content = useMemo(() => extractFlatText(record), [record]);
+  // Inspectable content — the raw-faithful view. For text-bearing messages
+  // this IS the flat text; for structured payloads (e.g. a media-block array
+  // that flattens to "") it is the pretty-printed JSON of the stored content
+  // with `isStructuredRaw: true`, so copy / edit / menu actions never render
+  // or operate on a blank ("the screen lies" class defect).
+  const inspectable = useMemo(() => extractInspectableText(record), [record]);
+  const content = inspectable.text;
   // Count of archived versions on this message — surfaces the "Edit
   // history (N)" item only when there's something recoverable.
   const contentHistoryCount = useMemo(() => {
@@ -255,8 +262,15 @@ export function AssistantActionBar({
   // match what the user reads on screen).
   const copySpeakContent = aggregatedContent ?? content;
   const editTarget = useMemo(
-    () => resolveAssistantEditTarget(groupMessageIds, byId, messageId, content),
-    [groupMessageIds, byId, messageId, content],
+    () =>
+      resolveAssistantEditTarget(
+        groupMessageIds,
+        byId,
+        messageId,
+        content,
+        inspectable.isStructuredRaw,
+      ),
+    [groupMessageIds, byId, messageId, content, inspectable.isStructuredRaw],
   );
 
   // Selection-aware Speak: when the user has highlighted a part of THIS
@@ -373,6 +387,9 @@ export function AssistantActionBar({
       conversationId,
       messageId: editTarget.messageId,
       metadata,
+      // Structured payloads open the read-only raw view — the stored JSON is
+      // shown faithfully, never fed to the text-edit save path.
+      structuredRaw: editTarget.isStructuredRaw,
     });
   };
 

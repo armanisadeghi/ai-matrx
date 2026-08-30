@@ -359,6 +359,66 @@ export function extractFlatText(
 }
 
 /**
+ * Inspectable view of a message's stored content — the class fix for the
+ * "structured content renders blank" defect.
+ *
+ * `extractFlatText` walks text blocks only, so a `cx_message.content` that is
+ * a pure media/structured array (e.g. `[{type:"media", kind:"image", …}]`)
+ * flattens to `""` — and every consumer that fed that empty string to an
+ * edit view, copy action, or inspect preview rendered NOTHING, hiding what
+ * the agent actually returned. A raw/inspect surface must ALWAYS faithfully
+ * show the stored payload:
+ *
+ * - text-bearing content → the flat text, exactly as before
+ *   (`isStructuredRaw: false`);
+ * - non-empty content with NO extractable text → pretty-printed JSON of the
+ *   stored payload (`isStructuredRaw: true`) so the viewer sees the truth.
+ *   Callers MUST treat `isStructuredRaw` content as read-only raw data —
+ *   saving the JSON string back as a text block would corrupt the row.
+ *
+ * Use this (never bare `extractFlatText`) anywhere the output is "the raw
+ * message" — edit views, copy actions, inspect panels, previews.
+ */
+export interface InspectableMessageContent {
+  text: string;
+  /**
+   * True when `text` is a pretty-printed JSON view of a structured payload
+   * that had no extractable text. Read-only — never write it back.
+   */
+  isStructuredRaw: boolean;
+}
+
+/**
+ * Pretty-print a non-text `cx_message.content` payload. Returns null when the
+ * payload is empty/absent (nothing to show — the honest render is "empty").
+ */
+export function stringifyStructuredContent(content: unknown): string | null {
+  if (content == null) return null;
+  if (typeof content === "string") return content.length > 0 ? content : null;
+  if (Array.isArray(content) && content.length === 0) return null;
+  if (typeof content === "object" && Object.keys(content).length === 0)
+    return null;
+  try {
+    return JSON.stringify(content, null, 2);
+  } catch {
+    return String(content);
+  }
+}
+
+export function extractInspectableText(
+  record: MessageRecord | undefined,
+  options?: ExtractFlatTextOptions,
+): InspectableMessageContent {
+  const flat = extractFlatText(record, options);
+  if (flat.length > 0) return { text: flat, isStructuredRaw: false };
+  const raw = stringifyStructuredContent(record?.content);
+  if (raw !== null && typeof record?.content !== "string") {
+    return { text: raw, isStructuredRaw: true };
+  }
+  return { text: raw ?? "", isStructuredRaw: false };
+}
+
+/**
  * True when a message record represents a FAILED turn. The backend persists a
  * failed assistant turn as a real `cx_message` with `status='failed'` and a
  * structured top-level `error` jsonb (PRESENCE of `error` means failure). The
