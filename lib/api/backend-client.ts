@@ -7,6 +7,10 @@ import { BackendApiError, parseHttpError } from "./errors";
 import { parseNdjsonStream, consumeStream } from "./stream-parser";
 import type { StreamCallbacks } from "./stream-parser";
 import { BACKEND_URLS, ENDPOINTS } from "./endpoints";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "./organization-context";
 
 // ============================================================================
 // CLIENT
@@ -265,8 +269,27 @@ export class BackendClient {
   // INTERNAL
   // ========================================================================
 
+  /**
+   * Build request headers, attaching `X-Organization-Id` for every
+   * IDENTIFIED request — mandatory, fail-closed, never a fallback
+   * organization.
+   *
+   * Mirrors `resolveRequestOrganizationId` in `lib/python-client.ts` and
+   * `resolveScope` in `lib/api/call-api.ts`: run the configured scope through
+   * the ONE published `requireOrganizationContext` kernel so a missing
+   * organization throws `OrganizationContextError` BEFORE any networking,
+   * matching the server's `organization_required` 400 gate (aidream commit
+   * 8e5ee0b93) one hop earlier.
+   *
+   * Only `auth.type === "anonymous"` is exempt — that lane carries no
+   * identity at all, so the server's admission gate (which keys off
+   * `ctx.user_id`) never reaches the organization check for it either. Both
+   * `token` and `fingerprint` (guest) auth ARE identified and are held to the
+   * same rule the gate itself documents ("Guest and JWT lanes are held to
+   * the same rule").
+   */
   private buildHeaders(includeContentType = true): Record<string, string> {
-    const headers: Record<string, string> = {};
+    let headers: Record<string, string> = {};
 
     if (includeContentType) {
       headers["Content-Type"] = "application/json";
@@ -275,11 +298,20 @@ export class BackendClient {
     switch (this.auth.type) {
       case "token":
         headers["Authorization"] = `Bearer ${this.auth.token}`;
+        headers = applyOrganizationContextHeader(
+          headers,
+          requireOrganizationContext(this.scope.organization_id ?? null),
+        );
         break;
       case "fingerprint":
         headers["X-Fingerprint-ID"] = this.auth.fingerprintId;
+        headers = applyOrganizationContextHeader(
+          headers,
+          requireOrganizationContext(this.scope.organization_id ?? null),
+        );
         break;
-      // 'anonymous' — no auth headers
+      // 'anonymous' — no identity, no auth headers, no org check: the
+      // server's admission gate never applies to an unidentified request.
     }
 
     return headers;

@@ -110,11 +110,14 @@ const NOT_DEPLOYED_MESSAGE =
 export async function resolveCatalogLink(params: {
   baseUrl: string;
   accessToken: string;
+  organizationId: string;
   url: string;
   kindHint: string | null;
   signal?: AbortSignal;
 }): Promise<ResolveOutcome> {
-  const client = createAuthenticatedClient(params.accessToken, params.baseUrl);
+  const client = createAuthenticatedClient(params.accessToken, params.baseUrl, {
+    organization_id: params.organizationId,
+  });
   try {
     const data = await client.postJson(
       "/api/catalog-resolver/resolve",
@@ -169,13 +172,15 @@ export type ArtifactProbeResult =
 export async function probeArtifactUrl(params: {
   baseUrl: string | null;
   accessToken: string | null;
+  organizationId: string | null;
   url: string;
   signal?: AbortSignal;
 }): Promise<ArtifactProbeResult> {
-  if (params.baseUrl && params.accessToken) {
+  if (params.baseUrl && params.accessToken && params.organizationId) {
     const outcome = await resolveCatalogLink({
       baseUrl: params.baseUrl,
       accessToken: params.accessToken,
+      organizationId: params.organizationId,
       url: params.url,
       kindHint: null,
       signal: params.signal,

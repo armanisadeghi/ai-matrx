@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
@@ -144,6 +145,7 @@ export function CatalogEntryEditor({
   const { toast } = useToast();
   const accessToken = useAppSelector(selectAccessToken);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const organizationId = useAppSelector(selectOrganizationId);
   const isNew = row === null;
   const seed = isNew ? (prefill ?? null) : null;
 
@@ -226,6 +228,7 @@ export function CatalogEntryEditor({
     void probeArtifactUrl({
       baseUrl: baseUrl ?? null,
       accessToken: accessToken ?? null,
+      organizationId: organizationId ?? null,
       url: probeTargetUrl,
       signal: controller.signal,
     }).then((result) => {
@@ -236,7 +239,7 @@ export function CatalogEntryEditor({
       cancelled = true;
       controller.abort();
     };
-  }, [probeTargetUrl, baseUrl, accessToken]);
+  }, [probeTargetUrl, baseUrl, accessToken, organizationId]);
 
   const artifactProbe: ArtifactProbe = !probeTargetUrl
     ? { status: "idle" }

@@ -42,6 +42,7 @@ import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidC
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   isConflictError,
   rpcErrorMessage,
@@ -105,6 +106,7 @@ export function CatalogKindTable({
   const { toast } = useToast();
   const accessToken = useAppSelector(selectAccessToken);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const organizationId = useAppSelector(selectOrganizationId);
   const adminEmails = useAdminEmails();
   const def = kindDef(kind);
 
@@ -134,6 +136,7 @@ export function CatalogKindTable({
     void probeArtifactUrl({
       baseUrl: baseUrl ?? null,
       accessToken: accessToken ?? null,
+      organizationId: organizationId ?? null,
       url: probeTarget,
       signal: controller.signal,
     }).then((result) => {
@@ -144,7 +147,7 @@ export function CatalogKindTable({
       cancelled = true;
       controller.abort();
     };
-  }, [probeTarget, baseUrl, accessToken]);
+  }, [probeTarget, baseUrl, accessToken, organizationId]);
 
   const probe: ActivationProbe = !probeTarget
     ? { status: "none" }

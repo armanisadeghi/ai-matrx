@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { formatBytes } from "@/features/admin/shared/UrlProbeField";
 import { resolveCatalogLink } from "@/features/admin/applications/catalogs/resolver";
 import { CATALOG_KINDS, CATALOG_KEY_REGEX } from "@/features/admin/applications/catalogs/schemas";
@@ -95,6 +96,7 @@ export function AddFromLinkDialog({
 }: AddFromLinkDialogProps) {
   const accessToken = useAppSelector(selectAccessToken);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const [url, setUrl] = useState("");
   const [kindHint, setKindHint] = useState<string>(
@@ -124,6 +126,13 @@ export function AddFromLinkDialog({
       });
       return;
     }
+    if (!organizationId) {
+      setState({
+        status: "error",
+        message: "No organization selected — choose an organization before resolving a link.",
+      });
+      return;
+    }
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -132,6 +141,7 @@ export function AddFromLinkDialog({
     const outcome = await resolveCatalogLink({
       baseUrl,
       accessToken,
+      organizationId,
       url: trimmed,
       kindHint: resolvedKindHint,
       signal: controller.signal,
