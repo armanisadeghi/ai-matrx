@@ -26,6 +26,7 @@ import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-typ
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
 import KindEmitTemplate from "@/features/content-ir/render-paths/KindEmitTemplate";
+import ShapeOpenSightings from "@/features/content-ir/render-paths/ShapeOpenSightings";
 import ShapeStreamTabLoader from "@/features/content-ir/studio/components/ShapeStreamTabLoader";
 import ShapeInstancesTabLoader from "@/features/content-ir/studio/components/ShapeInstancesTabLoader";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
@@ -294,7 +295,12 @@ export default function KindDetailClient({
           }
         >
           {tab === "preview" && (
-            <KindPreviewTab kind={detail.kind} examples={examples} />
+            <div className="mx-auto max-w-4xl space-y-3">
+              {/* Sightings first: an admin opening a broken kind must not have
+                  to go looking for the one fact that matters. */}
+              <ShapeOpenSightings kind={detail.kind} canResolve />
+              <KindPreviewTab kind={detail.kind} examples={examples} />
+            </div>
           )}
           {tab === "code" && (
             <KindComponentCodeTab detail={detail} examples={readyExamples} />
