@@ -211,6 +211,15 @@ export interface AgentAppRecord {
    */
   mandate_id: string | null;
 
+  /**
+   * The same job addressed by KEY, hydrated at read time from `mandate_id`
+   * (`features/agents/redux/agent-apps/thunks.ts` → `withMandateKeys`) because
+   * `app.definition` stores only the id. `useAppHolder` resolves by key, so a
+   * row without this refuses to run for a signed-in caller. Never derived from
+   * the slug — identity resolves, keys describe.
+   */
+  mandate_key?: string | null;
+
   app_kind: string;
   shared_context_policies: Json | null;
   search_tsv: unknown;

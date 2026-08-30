@@ -24,6 +24,7 @@ import {
   assignField,
   fieldFlagsKeys,
 } from "@/features/agents/redux/shared/field-flags";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { AgentApp } from "./types";
 import { agentAppActions } from "./slice";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
@@ -31,6 +32,51 @@ import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication"
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
+}
+
+/**
+ * Attach `mandate_key` to app rows.
+ *
+ * 🚨 `app.definition` stores the JOB by **id**, and `useAppHolder` resolves it
+ * by **key** — so a row read straight from the table has `mandate_id` and no
+ * `mandate_key`, and the signed-in cutover branch reads it as "this app does
+ * not name a mandate yet". With `APP_MANDATE_CUTOVER` ON that is not a cosmetic
+ * gap: the holder returns `agentId: null` and the renderer refuses before
+ * spend, so EVERY app breaks for a signed-in caller while guests (who take the
+ * public RPC, which already carries the key) keep working. Found on the flip
+ * day, on `/agent-apps/<id>/settings` → Agent, over an app whose `mandate_id`
+ * was populated.
+ *
+ * The key is looked up by identity, never derived from the slug — a key that
+ * merely looks right is the name-coincidence bug class THE MODEL bans.
+ */
+async function withMandateKeys(rows: AgentApp[]): Promise<AgentApp[]> {
+  const ids = [
+    ...new Set(
+      rows.map((row) => row.mandate_id).filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  if (ids.length === 0) return rows;
+
+  const { data, error } = await readAllRows(
+    supabase.schema("mandate").from("definition").select("id, mandate_key").in("id", ids),
+  );
+  if (error) {
+    // A key we could not read is reported as absent, loudly — never guessed.
+    console.error(
+      "[agent-apps] could not resolve mandate keys; signed-in app runs will refuse:",
+      error.message,
+    );
+    return rows;
+  }
+  const keyById = new Map(
+    (data ?? []).map((row) => [String(row.id), row.mandate_key as string | null]),
+  );
+  return rows.map((row) =>
+    row.mandate_id
+      ? { ...row, mandate_key: keyById.get(row.mandate_id) ?? null }
+      : row,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +113,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
       throw pgErrorToError(error);
     }
 
-    for (const row of (data ?? []) as AgentApp[]) {
+    for (const row of await withMandateKeys((data ?? []) as AgentApp[])) {
       dispatch(agentAppActions.upsertApp(row));
     }
     dispatch(agentAppActions.setAppsInitialLoaded(true));
@@ -107,7 +153,8 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
       throw error ? pgErrorToError(error) : unavailable;
     }
 
-    dispatch(agentAppActions.upsertApp(data as AgentApp));
+    const [hydrated] = await withMandateKeys([data as AgentApp]);
+    dispatch(agentAppActions.upsertApp(hydrated));
     dispatch(agentAppActions.setAppLoading({ id: appId, loading: false }));
   },
 );
