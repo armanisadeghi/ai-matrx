@@ -23,12 +23,14 @@ export function AssetsHeader() {
           <TapTargetButton
             icon={<MessageCircleQuestion className="h-4 w-4" />}
             label="Answers"
+            mobileIconOnly
             href="/commerce/intake/answer"
             ariaLabel="Open the answer queue"
           />
           <TapTargetButtonSolid
             icon={<Camera className="h-4 w-4" />}
             label="Capture"
+            mobileIconOnly
             href="/commerce/intake"
             ariaLabel="Open the capture screen"
           />

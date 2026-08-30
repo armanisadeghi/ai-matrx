@@ -20,6 +20,7 @@ export function AnswerHeader() {
         <TapTargetButton
           icon={<LayoutGrid className="h-4 w-4" />}
           label="Assets"
+          mobileIconOnly
           href="/commerce/intake/assets"
           ariaLabel="Open the intake assets list"
         />

@@ -222,6 +222,10 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-29 — **Mobile header actions collapse to icons.** The assets hub, answer queue,
+  and asset detail keep their full labeled actions at `sm+`, while every labeled shell-header
+  action uses the canonical tap target's `mobileIconOnly` mode below `sm`; accessible names
+  remain explicit, and the header no longer overflows into the shell controls on phones.
 - 2026-08-29 — **v2 round 3: package-completeness + adversarial-review fixes.** `@ai-matrx/capture` 0.2.x absorbs the whole review loop (filmstrip → swipe viewer → edit-with-REPLACE, tuned gestures, neighbor preload, package media-resolution cache, delete-with-consequence, audio items) — `IntakeCaptureScreenV2` now passes a `media` session (items with `src`/`resolve` via the new imperative `fetchFileBlobUrl` in `features/files/hooks/useFileBlob.ts`) and deleted its own filmstrip/pager/editor wiring. Host fixes from the 22-finding adversarial review: removal of a still-uploading artifact now deletes the row its upload creates (the second half of "edit didn't replace"); QR scanning pauses under any overlay (`onReviewOpenChange` + library/process gates); QR failures toast; upload failures after Next toast; flip hidden+guarded while recording; double-tap shutter guard; shutter-failure toast; video-probe 10s timeout; serial draft commits on unmount; library sheet paginates (60/page); v1 `MediaPager` preload slides no longer steal touches (`interactive={false}` on hidden copies). Type gate green on these files.
 
 - 2026-08-29 — **v2 real-phone round 2 (Arman's pager/edit feedback).** Edit now REPLACES: saving from `ImageEditSheet` adds the edited frame, removes the source artifact (`session.removeArtifact`), and closes the viewer — returning to the uncropped original was a defect. Shared `MediaPager`: swipe thresholds tuned for real flicks (40px / 200 velocity, was 60/400) and a hidden NEIGHBOR-PRELOAD layer keeps ±2 photos (±1 videos) mounted so page turns stop paying mount + resolve + full-JPEG decode (the perceived "refetch" lag). My files type-clean (repo gate red on unrelated in-flight HR work).
