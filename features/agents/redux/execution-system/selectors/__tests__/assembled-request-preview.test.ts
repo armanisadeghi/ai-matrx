@@ -34,6 +34,10 @@ function makeState(
           sourceFeature: "agent-runner",
           isEphemeral: false,
           initialAgentVersionId: null,
+          // Every execution carries an explicit organization (the no-assigned-org
+          // law): assembleRequest refuses to build without one, so the preview
+          // fixture declares it the way an entity-bound launcher would.
+          organizationId: "org-1",
         },
       },
       allConversationIds: [CONVERSATION_ID],
