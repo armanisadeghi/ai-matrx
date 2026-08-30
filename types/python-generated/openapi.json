@@ -15766,6 +15766,50 @@
         }
       }
     },
+    "/arxiv/public/publication": {
+      "get": {
+        "tags": [
+          "arXiv Integrations"
+        ],
+        "summary": "Public Publication",
+        "operationId": "public_publication_arxiv_public_publication_get",
+        "parameters": [
+          {
+            "name": "arxiv_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 9,
+              "maxLength": 10,
+              "title": "Arxiv Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArxivPublicPublication"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/met-museum/public/object": {
       "get": {
         "tags": [
@@ -15980,6 +16024,93 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OpenversePublicImageAttribution"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/open-library/public/work": {
+      "get": {
+        "tags": [
+          "Open Library Integrations"
+        ],
+        "summary": "Public Work",
+        "operationId": "public_work_open_library_public_work_get",
+        "parameters": [
+          {
+            "name": "work_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 15,
+              "title": "Work Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenLibraryPublicWork"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inaturalist/public/observation": {
+      "get": {
+        "tags": [
+          "iNaturalist Integrations"
+        ],
+        "summary": "Public Observation",
+        "operationId": "public_observation_inaturalist_public_observation_get",
+        "parameters": [
+          {
+            "name": "observation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Observation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/INaturalistPublicObservation"
                 }
               }
             }
@@ -16551,6 +16682,160 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TerraformRegistryPublicModuleVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/endoflife-date/public/release": {
+      "get": {
+        "tags": [
+          "endoflife.date Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_endoflife_date_public_release_get",
+        "parameters": [
+          {
+            "name": "product",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Product"
+            }
+          },
+          {
+            "name": "release",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Release"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndOfLifeDatePublicRelease"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nager-holidays/public/holidays": {
+      "get": {
+        "tags": [
+          "Nager.Holidays Integrations"
+        ],
+        "summary": "Public Holidays",
+        "operationId": "public_holidays_nager_holidays_public_holidays_get",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 1970,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "country_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "title": "Country Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NagerHolidaysCalendar"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/europe-pmc/public/publication": {
+      "get": {
+        "tags": [
+          "Europe PMC Integrations"
+        ],
+        "summary": "Public Publication",
+        "operationId": "public_publication_europe_pmc_public_publication_get",
+        "parameters": [
+          {
+            "name": "pmid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12,
+              "title": "Pmid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EuropePmcPublicPublication"
                 }
               }
             }
@@ -33027,6 +33312,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -45431,6 +45776,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MandateCoverageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/coverage/states": {
+      "get": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Mandate Coverage States",
+        "description": "One coverage verdict per mandate, for a list surface's per-row badge.",
+        "operationId": "mandate_coverage_states_mandates_coverage_states_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Scope to ONE owner's mandates (law 5: screams follow ownership) — the org mandate list passes its own org. Membership is verified. Omit for the whole live registry.",
+              "title": "Organization Id"
+            },
+            "description": "Scope to ONE owner's mandates (law 5: screams follow ownership) — the org mandate list passes its own org. Membership is verified. Omit for the whole live registry."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateCoverageStatesResponse"
                 }
               }
             }
@@ -58960,6 +59357,96 @@
             "schema": {
               "type": "string",
               "title": "Arm"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/comparisons": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Start Comparison",
+        "description": "Run one comparison — every arm, concurrently, on ONE locked input set.\n\nStreams a typed started event carrying the row id the moment the row\nexists; the row is durable from the first moment, so a disconnect never\nstops the work and the client re-reads the row.",
+        "operationId": "start_comparison_workflows_comparisons_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComparisonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/comparisons/{comparison_id}/arms/{arm_index}/rerun": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Rerun Comparison Arm",
+        "description": "Re-run ONE arm onto the same comparison row.\n\nRefuses an arm under a LIVE lease — a fresh heartbeat means another runner\nis driving it right now, and two writers on one arm interleave their\nresults (the failure that silently overwrote a completed arm in the\nharness this service was generalized from).",
+        "operationId": "rerun_comparison_arm_workflows_comparisons__comparison_id__arms__arm_index__rerun_post",
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Comparison Id"
+            }
+          },
+          {
+            "name": "arm_index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Arm Index"
             }
           }
         ],
@@ -73075,6 +73562,48 @@
         ],
         "title": "ArchiveWorkflowResponse"
       },
+      "ArmSpec": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "definition_id": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Definition Id"
+          },
+          "version_number": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Number"
+          },
+          "input_overrides": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Input Overrides"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "definition_id"
+        ],
+        "title": "ArmSpec",
+        "description": "One competitor: a workflow definition at a pinned version.\n\n`version_number=None` runs the CURRENT definition; a number pins that\nexact stored version, so a comparison is reproducible after the workflow\nmoves on. `input_overrides` is the arm's ONLY private input surface — the\nvaried dimension, explicit and visible beside the locked spec."
+      },
       "ArtICPublicArtwork": {
         "properties": {
           "__kind": {
@@ -73334,6 +73863,88 @@
         ],
         "title": "ArtifactHubPublicHelmPackage",
         "description": "Safe bounded projection of one public Helm package."
+      },
+      "ArxivPublicPublication": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "arxiv_public_publication",
+            "title": "Kind",
+            "default": "arxiv_public_publication"
+          },
+          "provider": {
+            "type": "string",
+            "const": "arxiv",
+            "title": "Provider",
+            "default": "arxiv"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "arxiv_id": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 9,
+            "title": "Arxiv Id"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 20,
+            "title": "Published At"
+          },
+          "updated_at": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 20,
+            "title": "Updated At"
+          },
+          "primary_category": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Primary Category"
+          },
+          "record_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Record Page"
+          },
+          "attribution": {
+            "type": "string",
+            "const": "Thank you to arXiv for use of its open access interoperability.",
+            "title": "Attribution",
+            "default": "Thank you to arXiv for use of its open access interoperability."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "arxiv_id",
+          "version",
+          "title",
+          "published_at",
+          "updated_at",
+          "primary_category",
+          "record_page"
+        ],
+        "title": "ArxivPublicPublication",
+        "description": "Safe bounded projection of one arXiv publication."
       },
       "Asset": {
         "properties": {
@@ -93563,6 +94174,184 @@
         "title": "CompactionSettings",
         "description": "Optional overrides for the 5-tier context compaction pipeline.\n\nRarely sent by clients today — reserved for explicit compaction control."
       },
+      "ComparisonRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
+            "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Title",
+            "default": ""
+          },
+          "shared_inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Shared Inputs"
+          },
+          "arms": {
+            "items": {
+              "$ref": "#/components/schemas/ArmSpec"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 2,
+            "title": "Arms"
+          },
+          "input_sources": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Input Sources"
+          },
+          "normalization": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Normalization"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "arms"
+        ],
+        "title": "ComparisonRequest",
+        "description": "One comparison's locked spec — the SAME inputs to every arm.\n\n🚨 Inherits ScopedRequest, not BaseModel: the frontend's `callApi` injects\norganization/project/task onto every mutating body, and an `extra=\"forbid\"`\nmodel without the scope base 422s the moment a real UI calls it."
+      },
       "CompensationOut": {
         "properties": {
           "compensation": {
@@ -104072,6 +104861,61 @@
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -108562,6 +109406,175 @@
         ],
         "title": "EmbeddingResponse"
       },
+      "EndOfLifeDatePublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "endoflife_date_public_release",
+            "title": "Kind",
+            "default": "endoflife_date_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "endoflife_date",
+            "title": "Provider",
+            "default": "endoflife_date"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "product": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Product"
+          },
+          "release": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Release"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "codename": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codename"
+          },
+          "release_date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Release Date"
+          },
+          "is_lts": {
+            "type": "boolean",
+            "title": "Is Lts"
+          },
+          "lts_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lts From"
+          },
+          "is_active_support_ended": {
+            "type": "boolean",
+            "title": "Is Active Support Ended"
+          },
+          "active_support_ends": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Support Ends"
+          },
+          "is_eol": {
+            "type": "boolean",
+            "title": "Is Eol"
+          },
+          "eol_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eol From"
+          },
+          "is_maintained": {
+            "type": "boolean",
+            "title": "Is Maintained"
+          },
+          "latest_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Latest Name"
+          },
+          "latest_date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Latest Date"
+          },
+          "latest_link": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Latest Link"
+          },
+          "schema_version": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Schema Version"
+          },
+          "generated_at": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 20,
+            "title": "Generated At"
+          },
+          "provider_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Provider Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product",
+          "release",
+          "label",
+          "release_date",
+          "is_lts",
+          "is_active_support_ended",
+          "is_eol",
+          "is_maintained",
+          "latest_name",
+          "latest_date",
+          "latest_link",
+          "schema_version",
+          "generated_at",
+          "provider_page"
+        ],
+        "title": "EndOfLifeDatePublicRelease",
+        "description": "Safe bounded projection of one public product release lifecycle."
+      },
       "EngineRef": {
         "properties": {
           "key": {
@@ -109764,6 +110777,81 @@
         ],
         "title": "EssentialState",
         "description": "The three parts that ARE the podcast."
+      },
+      "EuropePmcPublicPublication": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "europe_pmc_public_publication",
+            "title": "Kind",
+            "default": "europe_pmc_public_publication"
+          },
+          "provider": {
+            "type": "string",
+            "const": "europe_pmc",
+            "title": "Provider",
+            "default": "europe_pmc"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "pmid": {
+            "type": "string",
+            "maxLength": 12,
+            "minLength": 1,
+            "title": "Pmid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "journal_title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Journal Title"
+          },
+          "publication_year": {
+            "type": "string",
+            "maxLength": 4,
+            "minLength": 4,
+            "title": "Publication Year"
+          },
+          "publication_type": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Publication Type"
+          },
+          "is_open_access": {
+            "type": "boolean",
+            "title": "Is Open Access"
+          },
+          "record_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Record Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pmid",
+          "title",
+          "journal_title",
+          "publication_year",
+          "publication_type",
+          "is_open_access",
+          "record_page"
+        ],
+        "title": "EuropePmcPublicPublication",
+        "description": "Safe bounded projection of one public scholarly publication."
       },
       "EvalJsCommand": {
         "properties": {
@@ -121024,6 +122112,125 @@
           "detected_at"
         ],
         "title": "HumanRequiredSignal"
+      },
+      "INaturalistPublicObservation": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "inaturalist_public_observation",
+            "title": "Kind",
+            "default": "inaturalist_public_observation"
+          },
+          "provider": {
+            "type": "string",
+            "const": "inaturalist",
+            "title": "Provider",
+            "default": "inaturalist"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_notice": {
+            "type": "string",
+            "const": "verify-observation-license-before-reuse",
+            "title": "Source Notice",
+            "default": "verify-observation-license-before-reuse"
+          },
+          "observation_id": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Observation Id"
+          },
+          "observer": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Observer"
+          },
+          "taxon_id": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Taxon Id"
+          },
+          "scientific_name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Scientific Name"
+          },
+          "common_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Common Name"
+          },
+          "quality_grade": {
+            "type": "string",
+            "enum": [
+              "casual",
+              "needs_id",
+              "research"
+            ],
+            "title": "Quality Grade"
+          },
+          "observed_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed On"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "license_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Code"
+          },
+          "inaturalist_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Inaturalist Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "observation_id",
+          "observer",
+          "taxon_id",
+          "scientific_name",
+          "quality_grade",
+          "created_at",
+          "inaturalist_url"
+        ],
+        "title": "INaturalistPublicObservation",
+        "description": "Privacy-bounded metadata for one public iNaturalist observation."
       },
       "IceBlock": {
         "properties": {
@@ -133388,6 +134595,92 @@
         ],
         "title": "MandateCoverageResponse"
       },
+      "MandateCoverageState": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "green",
+              "orange",
+              "red"
+            ],
+            "title": "State"
+          },
+          "leader_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Key"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "state",
+          "leader_key",
+          "reason"
+        ],
+        "title": "MandateCoverageState"
+      },
+      "MandateCoverageStatesResponse": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MandateCoverageCounts"
+          },
+          "states": {
+            "items": {
+              "$ref": "#/components/schemas/MandateCoverageState"
+            },
+            "type": "array",
+            "title": "States"
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "counts",
+          "states",
+          "computed_at"
+        ],
+        "title": "MandateCoverageStatesResponse"
+      },
       "MandateCreateRequest": {
         "properties": {
           "mandate_key": {
@@ -138318,6 +139611,150 @@
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
       },
+      "NagerHolidaysCalendar": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nager_holidays_public_holiday_calendar",
+            "title": "Kind",
+            "default": "nager_holidays_public_holiday_calendar"
+          },
+          "provider": {
+            "type": "string",
+            "const": "nager_holidays",
+            "title": "Provider",
+            "default": "nager_holidays"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "year": {
+            "type": "integer",
+            "maximum": 2100,
+            "minimum": 1970,
+            "title": "Year"
+          },
+          "country_code": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Code"
+          },
+          "holiday_count": {
+            "type": "integer",
+            "maximum": 366,
+            "minimum": 0,
+            "title": "Holiday Count"
+          },
+          "holidays": {
+            "items": {
+              "$ref": "#/components/schemas/NagerHolidaysPublicHoliday"
+            },
+            "type": "array",
+            "maxItems": 366,
+            "title": "Holidays"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "year",
+          "country_code",
+          "holiday_count",
+          "holidays"
+        ],
+        "title": "NagerHolidaysCalendar",
+        "description": "One bounded country-year public holiday calendar."
+      },
+      "NagerHolidaysPublicHoliday": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Date"
+          },
+          "local_name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Local Name"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "country_code": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Code"
+          },
+          "fixed": {
+            "type": "boolean",
+            "title": "Fixed"
+          },
+          "global_holiday": {
+            "type": "boolean",
+            "title": "Global Holiday"
+          },
+          "counties": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counties"
+          },
+          "launch_year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2100,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Launch Year"
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Types"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "local_name",
+          "name",
+          "country_code",
+          "fixed",
+          "global_holiday",
+          "types"
+        ],
+        "title": "NagerHolidaysPublicHoliday",
+        "description": "Safe bounded projection of one official public holiday."
+      },
       "NamespaceField": {
         "properties": {
           "path": {
@@ -141144,6 +142581,82 @@
         ],
         "title": "OpenEdxDemoCourseResult",
         "description": "Bounded public metadata for the official sandbox demo course."
+      },
+      "OpenLibraryPublicWork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "open_library_public_work",
+            "title": "Kind",
+            "default": "open_library_public_work"
+          },
+          "provider": {
+            "type": "string",
+            "const": "open_library",
+            "title": "Provider",
+            "default": "open_library"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_notice": {
+            "type": "string",
+            "const": "low-volume-human-lookup-only",
+            "title": "Source Notice",
+            "default": "low-volume-human-lookup-only"
+          },
+          "work_id": {
+            "type": "string",
+            "maxLength": 15,
+            "minLength": 4,
+            "title": "Work Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "author_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Author Ids"
+          },
+          "subject_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Subject Count"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Revision"
+          },
+          "open_library_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Open Library Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "work_id",
+          "title",
+          "author_ids",
+          "subject_count",
+          "revision",
+          "open_library_url"
+        ],
+        "title": "OpenLibraryPublicWork",
+        "description": "Safe metadata projection for one public Open Library work."
       },
       "OpenRuntimeResponse": {
         "properties": {},

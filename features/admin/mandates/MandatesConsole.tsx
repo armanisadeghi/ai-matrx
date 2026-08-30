@@ -87,7 +87,7 @@ import {
   fetchMandateCoverage,
   type MandateCoverageBucket,
   type MandateCoverageResponse,
-} from "./mandate-coverage";
+} from "@/features/agents/mandates/coverage";
 import { readMandateBenchSnapshot } from "./bench-draft";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { fetchProvisions } from "@/features/agents/mandates/provisions";

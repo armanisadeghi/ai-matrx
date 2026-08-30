@@ -11,6 +11,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import { HEALTH_META, LAYER_META, type MandateListRow } from "./types";
+import { MandateCoverageBadge } from "./CoverageBadge";
 
 export function MandateBrowseRows({
   rows,
@@ -60,6 +61,7 @@ export function MandateBrowseRows({
                 >
                   {layer.label}
                 </Badge>
+                <MandateCoverageBadge mandateKey={row.mandate_key} />
                 {row.health !== "ok" ? (
                   <Badge
                     variant="outline"

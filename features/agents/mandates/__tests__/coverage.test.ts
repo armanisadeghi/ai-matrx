@@ -14,7 +14,7 @@ import {
   buildCoverageIndex,
   coverageBucketOf,
   type MandateCoverageResponse,
-} from "../mandate-coverage";
+} from "../coverage";
 
 const report = (
   overrides: Partial<MandateCoverageResponse> = {},

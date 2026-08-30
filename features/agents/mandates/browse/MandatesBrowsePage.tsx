@@ -15,14 +15,26 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { MandatesHeader } from "@/features/agents/mandates/components/MandatesHeader";
 import { mandateListConfig } from "./listConfig";
+import { MandateCoverageProvider } from "./CoverageBadge";
+import { MandateCoverageNotice, useCoverageList } from "./useCoverageList";
+import { MINE_SCOPE } from "./service";
 
 export function MandatesBrowsePage() {
+  // The WHOLE registry's coverage — this page is every caller's view of every
+  // platform mandate, so the report is unscoped.
+  const { view, service } = useCoverageList({ scope: MINE_SCOPE });
+
   return (
     <>
       <PageHeader>
         <MandatesHeader />
       </PageHeader>
-      <EntityListPage config={mandateListConfig} />
+      <MandateCoverageProvider value={view}>
+        <EntityListPage
+          config={{ ...mandateListConfig, service }}
+          notice={(list) => <MandateCoverageNotice list={list} />}
+        />
+      </MandateCoverageProvider>
     </>
   );
 }

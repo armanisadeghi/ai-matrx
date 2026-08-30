@@ -65,6 +65,9 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 | `components/MandateNotesPanel.tsx`             | THE notes surface — composer (four fixed kinds: observation / issue / idea / praise; Cmd+Enter saves) plus the history with kind, relative time, author and the surface it was written from. Composed in exactly two places: the Agents header menu's mandate row (`compact`, the moment of truth) and the admin drawer's **Notes & observations** section (review time). Never forked. |
 | `components/MandateAgentPicker.tsx`            | The reusable consumer-facing "which agent runs this step" control — compact popover: system default + the user's own/shared agents, save-on-pick, reset-to-default, link to `/agents/mandates`. First consumer: podcast topic ideas (`TopicIdeaHelper`, mandate `podcast_client.topic_ideas`). Drop it beside any mandate-resolved affordance.                                                                                                                                                                                                                                                                                                                                              |
 
+| `coverage.ts`                                  | **COVERAGE — the three-state scoreboard's client half**, shared by the admin console and both user-facing lists. Types + vocabulary (`COVERAGE_META`: Assigned / Running on fallback / Nothing assigned) and the two reads of the SAME server classification: `fetchMandateCoverage` (super-admin, counts + the NAMED orange/red rows → the console board) and `fetchMandateCoverageStates` (authenticated, ONE verdict per mandate → the per-row badge; `organizationId` scopes it to one owner and the server verifies membership). Green is SAID in the states shape, so a badge never infers it: a key ABSENT from `states` is unanswered (another owner's mandate on an org-scoped report), never assigned. Nothing here re-derives green/orange/red — that rule lives once, in aidream `services/mandates/coverage.py`. |
+| `browse/CoverageBadge.tsx`                     | The per-row badge + its context. `coverageBadgeVerdict` is the pure rule set (met → quiet · report failed → **unknown**, never quiet · unanswered on a scoped report → `—` · orange names its LEADER · red says Unassigned), jest-pinned in `browse/__tests__/coverage-badge.test.ts`. Clicking a badge narrows the list to that state. |
+| `browse/useCoverageList.tsx`                   | What both lists share: ONE coverage fetch, the active narrowing, the service wired to it, and `MandateCoverageNotice` (the "Showing only …" strip that owns the refetch). The narrowing sends the KEYS the server classified into `p_filters.coverage_keys` — never a second implementation of the rule in SQL. |
 | `browse/`                                      | **The list** — `listConfig.tsx` on the canonical entity-list shell over the `mnd_list_scoped` RPC triple (`migrations/mnd_list_scoped.sql`): per-caller `resolved_layer`, drift, honest DB-derived health; facets Feature / Decided by / Output kind / Status; 3 layouts; `urlState`. **The RPC reads only post-1W `mandate.definition` / `mandate.provision` / `mandate.binding`; `post-cutover-rpc.test.ts` refuses the graveyarded `agent.*` names and retired Holder columns.** `url-compat.ts` is the LOAD-BEARING legacy shim: `?feature=<domain>` redirects server-side onto the canonical `?filters=` select-filter form (jest-pinned). |
 | `workspace/`                                   | **THE core** — `MandateWorkspace` (§1–§4 per the vision), `OverrideFlow` (the stepper; principal-aware user/org), `RunThisJobSection` (the run affordance — ADMIN ROUTE only since 2026-08-29 and still super-admin gated inside, Provision-driven inputs, canonical output pipeline, workflow-run door), `Section.tsx` (the shared section chrome), `useMandateWorkspaceData` (the ONE single-mandate load both hosts share; refresh reloads ONE mandate, never the registry), `save-payload.ts` (pure, jest-pinned wipe guards: full map re-send; stored `config_overrides` survive when the settings step never opened; legacy mandates send NO map — the server 422s on `{}`). |
 | `provision-shapes.ts`                          | LEAF module (the `contract.ts` pattern) for the Provision era: `OfferedValue` + `parseOfferedValues`, the ONE client consumption-map deserializer `parseConsumptionMap` (legacy `code_value` normalizes to `offered_value`), `parseMandateWave1`/`parseBindingWave1` (runtime narrowing of the wave-1 columns off `select("*")` rows — see the DB-types note below), the kind-law mirrors (`SCALAR_VALUE_KINDS`, `GENERIC_VALUE_KINDS`, `ALLOWED_PIN_KEYS`, `EXECUTABLE_HOLDER_TYPES`), the ONE holder-refusal message (`holderNotExecutableMessage`), and the `consumptionMapProblems` pre-flight. |
@@ -277,6 +280,32 @@ commit time.
 
 ## Change Log
 
+- 2026-08-29 — **Coverage badges on both mandate LISTS.** The green/orange/red
+  scoreboard existed only on the admin console, so a person browsing
+  `/agents/mandates` (or an admin on `/organizations/[orgId]/settings/mandates`)
+  could not see that a row runs on somebody else's Holder. Now every row carries a
+  compact badge: met is QUIET, amber names the leader carrying it, red says nothing
+  is assigned — and clicking one narrows the list to that state (the console board's
+  click-to-filter pattern), server-side, with a "Showing only …" strip to clear it.
+  - **Data source:** a new authenticated `GET /mandates/coverage/states` in aidream
+    (the `mandate_coverage` router's second mount), which calls the SAME
+    `services/mandates/coverage.py` the super-admin scoreboard does. Deriving the
+    badge from the row's own `fallback_mandate_key` was the alternative and was
+    rejected: the classification walks fallback CHAINS across the whole registry
+    (leaders, cycles, dead ends), which a 25-row page cannot see — it would have
+    been a second, wrong implementation of the rule.
+  - **Green is now SAID, not inferred.** The scoreboard payload names only orange
+    and red; the states payload names every mandate it covers, so a key that is
+    ABSENT means the report does not answer for it. That is what makes an
+    org-scoped report honest: a platform mandate the organization does not own
+    shows `—`, never a false green.
+  - **Ownership law:** the org page passes `?organization_id=` (its own org), so it
+    answers for what that organization owns. Today the platform owns 377 of 378
+    mandates, so that page's badges are mostly `—` by construction — correct, and
+    the reason the unanswered state had to be visible.
+  - Narrowing rides `p_filters.coverage_keys` in `mnd_list_scoped` — the KEYS the
+    server classified, never the rule. The coverage column deliberately does not
+    sort (sorting it would mean re-deriving the classification in SQL).
 - 2026-08-29 — **Demoted to self-service: browse/view + your own override.** Arman's
   ruling: mandate management is admin-side, because a mandate's goal, its declared inputs
   and running it are platform definitions, not user settings. So this route no longer

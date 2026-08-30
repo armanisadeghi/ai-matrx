@@ -6166,6 +6166,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/arxiv/public/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Publication */
+        get: operations["public_publication_arxiv_public_publication_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/met-museum/public/object": {
         parameters: {
             query?: never;
@@ -6243,6 +6260,40 @@ export interface paths {
         };
         /** Public Image Attribution */
         get: operations["public_image_attribution_openverse_public_image_attribution_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/open-library/public/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Work */
+        get: operations["public_work_open_library_public_work_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inaturalist/public/observation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Observation */
+        get: operations["public_observation_inaturalist_public_observation_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6447,6 +6498,57 @@ export interface paths {
         };
         /** Public Module Version */
         get: operations["public_module_version_terraform_registry_public_module_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/endoflife-date/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_endoflife_date_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nager-holidays/public/holidays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Holidays */
+        get: operations["public_holidays_nager_holidays_public_holidays_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/europe-pmc/public/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Publication */
+        get: operations["public_publication_europe_pmc_public_publication_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13179,6 +13281,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -17499,6 +17625,26 @@ export interface paths {
          * @description Green/orange/red for every live mandate, computed against live storage.
          */
         get: operations["mandate_coverage_mandates_coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/coverage/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mandate Coverage States
+         * @description One coverage verdict per mandate, for a list surface's per-row badge.
+         */
+        get: operations["mandate_coverage_states_mandates_coverage_states_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -22775,6 +22921,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/comparisons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Comparison
+         * @description Run one comparison — every arm, concurrently, on ONE locked input set.
+         *
+         *     Streams a typed started event carrying the row id the moment the row
+         *     exists; the row is durable from the first moment, so a disconnect never
+         *     stops the work and the client re-reads the row.
+         */
+        post: operations["start_comparison_workflows_comparisons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/comparisons/{comparison_id}/arms/{arm_index}/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rerun Comparison Arm
+         * @description Re-run ONE arm onto the same comparison row.
+         *
+         *     Refuses an arm under a LIVE lease — a fresh heartbeat means another runner
+         *     is driving it right now, and two writers on one arm interleave their
+         *     results (the failure that silently overwrote a completed arm in the
+         *     harness this service was generalized from).
+         */
+        post: operations["rerun_comparison_arm_workflows_comparisons__comparison_id__arms__arm_index__rerun_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests/examples": {
         parameters: {
             query?: never;
@@ -28031,6 +28226,27 @@ export interface components {
             deleted?: boolean;
         };
         /**
+         * ArmSpec
+         * @description One competitor: a workflow definition at a pinned version.
+         *
+         *     `version_number=None` runs the CURRENT definition; a number pins that
+         *     exact stored version, so a comparison is reproducible after the workflow
+         *     moves on. `input_overrides` is the arm's ONLY private input surface — the
+         *     varied dimension, explicit and visible beside the locked spec.
+         */
+        ArmSpec: {
+            /** Label */
+            label: string;
+            /** Definition Id */
+            definition_id: string;
+            /** Version Number */
+            version_number?: number | null;
+            /** Input Overrides */
+            input_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /**
          * ArtICPublicArtwork
          * @description Safe CC0 projection of one public Art Institute artwork record.
          */
@@ -28131,6 +28347,50 @@ export interface components {
             keywords: string[];
             /** Provider Page */
             provider_page: string;
+        };
+        /**
+         * ArxivPublicPublication
+         * @description Safe bounded projection of one arXiv publication.
+         */
+        ArxivPublicPublication: {
+            /**
+             * Kind
+             * @default arxiv_public_publication
+             * @constant
+             */
+            __kind?: "arxiv_public_publication";
+            /**
+             * Provider
+             * @default arxiv
+             * @constant
+             */
+            provider?: "arxiv";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Arxiv Id */
+            arxiv_id: string;
+            /** Version */
+            version: number;
+            /** Title */
+            title: string;
+            /** Published At */
+            published_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Primary Category */
+            primary_category: string;
+            /** Record Page */
+            record_page: string;
+            /**
+             * Attribution
+             * @default Thank you to arXiv for use of its open access interoperability.
+             * @constant
+             */
+            attribution?: "Thank you to arXiv for use of its open access interoperability.";
         };
         /** Asset */
         Asset: {
@@ -36106,6 +36366,88 @@ export interface components {
             tier5_hard_compression?: boolean | null;
         };
         /**
+         * ComparisonRequest
+         * @description One comparison's locked spec — the SAME inputs to every arm.
+         *
+         *     🚨 Inherits ScopedRequest, not BaseModel: the frontend's `callApi` injects
+         *     organization/project/task onto every mutating body, and an `extra="forbid"`
+         *     model without the scope base 422s the moment a real UI calls it.
+         */
+        ComparisonRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
+            scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("user" | "auto") | null;
+            /**
+             * Store
+             * @description Persist request outputs when true; run ephemerally when false.
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
+            target_instance_id?: string | null;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /** Shared Inputs */
+            shared_inputs?: {
+                [key: string]: unknown;
+            };
+            /** Arms */
+            arms: components["schemas"]["ArmSpec"][];
+            /** Input Sources */
+            input_sources?: {
+                [key: string]: string;
+            };
+            /** Normalization */
+            normalization?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * CompensationOut
          * @description Per-claim compensation block.
          *
@@ -40162,6 +40504,33 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -41875,6 +42244,66 @@ export interface components {
             vectors: number[][];
         };
         /**
+         * EndOfLifeDatePublicRelease
+         * @description Safe bounded projection of one public product release lifecycle.
+         */
+        EndOfLifeDatePublicRelease: {
+            /**
+             * Kind
+             * @default endoflife_date_public_release
+             * @constant
+             */
+            __kind?: "endoflife_date_public_release";
+            /**
+             * Provider
+             * @default endoflife_date
+             * @constant
+             */
+            provider?: "endoflife_date";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Product */
+            product: string;
+            /** Release */
+            release: string;
+            /** Label */
+            label: string;
+            /** Codename */
+            codename?: string | null;
+            /** Release Date */
+            release_date: string;
+            /** Is Lts */
+            is_lts: boolean;
+            /** Lts From */
+            lts_from?: string | null;
+            /** Is Active Support Ended */
+            is_active_support_ended: boolean;
+            /** Active Support Ends */
+            active_support_ends?: string | null;
+            /** Is Eol */
+            is_eol: boolean;
+            /** Eol From */
+            eol_from?: string | null;
+            /** Is Maintained */
+            is_maintained: boolean;
+            /** Latest Name */
+            latest_name: string;
+            /** Latest Date */
+            latest_date: string;
+            /** Latest Link */
+            latest_link: string;
+            /** Schema Version */
+            schema_version: string;
+            /** Generated At */
+            generated_at: string;
+            /** Provider Page */
+            provider_page: string;
+        };
+        /**
          * EngineRef
          * @description Which engine produced a figure, and at what deployed revision.
          */
@@ -42311,6 +42740,44 @@ export interface components {
              * @enum {string}
              */
             episode: "completed" | "pending" | "failed" | "skipped";
+        };
+        /**
+         * EuropePmcPublicPublication
+         * @description Safe bounded projection of one public scholarly publication.
+         */
+        EuropePmcPublicPublication: {
+            /**
+             * Kind
+             * @default europe_pmc_public_publication
+             * @constant
+             */
+            __kind?: "europe_pmc_public_publication";
+            /**
+             * Provider
+             * @default europe_pmc
+             * @constant
+             */
+            provider?: "europe_pmc";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Pmid */
+            pmid: string;
+            /** Title */
+            title: string;
+            /** Journal Title */
+            journal_title: string;
+            /** Publication Year */
+            publication_year: string;
+            /** Publication Type */
+            publication_type: string;
+            /** Is Open Access */
+            is_open_access: boolean;
+            /** Record Page */
+            record_page: string;
         };
         /** EvalJsCommand */
         EvalJsCommand: {
@@ -46788,6 +47255,62 @@ export interface components {
             detected_at: string;
             /** Adapter Version */
             adapter_version?: string | null;
+        };
+        /**
+         * INaturalistPublicObservation
+         * @description Privacy-bounded metadata for one public iNaturalist observation.
+         */
+        INaturalistPublicObservation: {
+            /**
+             * Kind
+             * @default inaturalist_public_observation
+             * @constant
+             */
+            __kind?: "inaturalist_public_observation";
+            /**
+             * Provider
+             * @default inaturalist
+             * @constant
+             */
+            provider?: "inaturalist";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source Notice
+             * @default verify-observation-license-before-reuse
+             * @constant
+             */
+            source_notice?: "verify-observation-license-before-reuse";
+            /** Observation Id */
+            observation_id: number;
+            /** Observer */
+            observer: string;
+            /** Taxon Id */
+            taxon_id: number;
+            /** Scientific Name */
+            scientific_name: string;
+            /** Common Name */
+            common_name?: string | null;
+            /**
+             * Quality Grade
+             * @enum {string}
+             */
+            quality_grade: "casual" | "needs_id" | "research";
+            /** Observed On */
+            observed_on?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** License Code */
+            license_code?: string | null;
+            /** Inaturalist Url */
+            inaturalist_url: string;
         };
         /** IceBlock */
         IceBlock: {
@@ -51394,6 +51917,30 @@ export interface components {
             /** Computed At */
             computed_at: string;
         };
+        /** MandateCoverageState */
+        MandateCoverageState: {
+            /** Mandate Key */
+            mandate_key: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "green" | "orange" | "red";
+            /** Leader Key */
+            leader_key: string | null;
+            /** Reason */
+            reason: string | null;
+        };
+        /** MandateCoverageStatesResponse */
+        MandateCoverageStatesResponse: {
+            /** Organization Id */
+            organization_id: string | null;
+            counts: components["schemas"]["MandateCoverageCounts"];
+            /** States */
+            states: components["schemas"]["MandateCoverageState"][];
+            /** Computed At */
+            computed_at: string;
+        };
         /** MandateCreateRequest */
         MandateCreateRequest: {
             /** Mandate Key */
@@ -53484,6 +54031,62 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * NagerHolidaysCalendar
+         * @description One bounded country-year public holiday calendar.
+         */
+        NagerHolidaysCalendar: {
+            /**
+             * Kind
+             * @default nager_holidays_public_holiday_calendar
+             * @constant
+             */
+            __kind?: "nager_holidays_public_holiday_calendar";
+            /**
+             * Provider
+             * @default nager_holidays
+             * @constant
+             */
+            provider?: "nager_holidays";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Year */
+            year: number;
+            /** Country Code */
+            country_code: string;
+            /** Holiday Count */
+            holiday_count: number;
+            /** Holidays */
+            holidays: components["schemas"]["NagerHolidaysPublicHoliday"][];
+        };
+        /**
+         * NagerHolidaysPublicHoliday
+         * @description Safe bounded projection of one official public holiday.
+         */
+        NagerHolidaysPublicHoliday: {
+            /** Date */
+            date: string;
+            /** Local Name */
+            local_name: string;
+            /** Name */
+            name: string;
+            /** Country Code */
+            country_code: string;
+            /** Fixed */
+            fixed: boolean;
+            /** Global Holiday */
+            global_holiday: boolean;
+            /** Counties */
+            counties?: string[] | null;
+            /** Launch Year */
+            launch_year?: number | null;
+            /** Types */
+            types: string[];
+        };
         /** NamespaceField */
         NamespaceField: {
             /** Path */
@@ -54776,6 +55379,48 @@ export interface components {
             invitation_only: boolean;
             /** Short Description */
             short_description: string;
+        };
+        /**
+         * OpenLibraryPublicWork
+         * @description Safe metadata projection for one public Open Library work.
+         */
+        OpenLibraryPublicWork: {
+            /**
+             * Kind
+             * @default open_library_public_work
+             * @constant
+             */
+            __kind?: "open_library_public_work";
+            /**
+             * Provider
+             * @default open_library
+             * @constant
+             */
+            provider?: "open_library";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source Notice
+             * @default low-volume-human-lookup-only
+             * @constant
+             */
+            source_notice?: "low-volume-human-lookup-only";
+            /** Work Id */
+            work_id: string;
+            /** Title */
+            title: string;
+            /** Author Ids */
+            author_ids: string[];
+            /** Subject Count */
+            subject_count: number;
+            /** Revision */
+            revision: number;
+            /** Open Library Url */
+            open_library_url: string;
         };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
@@ -88959,6 +89604,37 @@ export interface operations {
             };
         };
     };
+    public_publication_arxiv_public_publication_get: {
+        parameters: {
+            query: {
+                arxiv_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArxivPublicPublication"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_object_met_museum_public_object_get: {
         parameters: {
             query: {
@@ -89102,6 +89778,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenversePublicImageAttribution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_work_open_library_public_work_get: {
+        parameters: {
+            query: {
+                work_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenLibraryPublicWork"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_observation_inaturalist_public_observation_get: {
+        parameters: {
+            query: {
+                observation_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["INaturalistPublicObservation"];
                 };
             };
             /** @description Validation Error */
@@ -89478,6 +90216,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TerraformRegistryPublicModuleVersion"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_release_endoflife_date_public_release_get: {
+        parameters: {
+            query: {
+                product: string;
+                release: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndOfLifeDatePublicRelease"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_holidays_nager_holidays_public_holidays_get: {
+        parameters: {
+            query: {
+                year: number;
+                country_code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NagerHolidaysCalendar"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_publication_europe_pmc_public_publication_get: {
+        parameters: {
+            query: {
+                pmid: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EuropePmcPublicPublication"];
                 };
             };
             /** @description Validation Error */
@@ -100517,6 +101350,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -108636,6 +109504,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateCoverageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mandate_coverage_states_mandates_coverage_states_get: {
+        parameters: {
+            query?: {
+                /** @description Scope to ONE owner's mandates (law 5: screams follow ownership) — the org mandate list passes its own org. Membership is verified. Omit for the whole live registry. */
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateCoverageStatesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -117402,6 +118302,71 @@ export interface operations {
             path: {
                 race_id: string;
                 arm: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_comparison_workflows_comparisons_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComparisonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rerun_comparison_arm_workflows_comparisons__comparison_id__arms__arm_index__rerun_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comparison_id: string;
+                arm_index: number;
             };
             cookie?: never;
         };

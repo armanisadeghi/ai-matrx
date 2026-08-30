@@ -21,6 +21,7 @@ import {
   mandateRoute,
   type MandateListRow,
 } from "./types";
+import { MandateCoverageBadge } from "./CoverageBadge";
 
 const LAYER_FILTER_OPTIONS = [
   { value: "user", label: "Yours" },
@@ -113,6 +114,25 @@ export const MANDATE_COLUMNS: EntityColumnSpec<MandateListRow>[] = [
           </div>
         );
       },
+    },
+  },
+  {
+    id: "coverage",
+    label: "Coverage",
+    locked: true,
+    column: {
+      id: "coverage",
+      accessorFn: (row) => row.mandate_key,
+      header: "Coverage",
+      // The verdict comes from aidream (GET /mandates/coverage/states), not
+      // from this row — so there is no database column to sort or filter on.
+      // Sorting it would mean re-deriving the classification in SQL, which is
+      // the one thing FALLBACK-MANDATES.md forbids. Narrowing happens by
+      // CLICKING a badge (the console board's pattern), which sends the keys
+      // the server already classified.
+      sortable: false,
+      width: 140,
+      cell: (row) => <MandateCoverageBadge mandateKey={row.mandate_key} nameLeader />,
     },
   },
   {

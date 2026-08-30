@@ -214,6 +214,16 @@ BEGIN
         OR s.r_agent_name ILIKE '%' || (v_f->'fulfilled_by'->>'value') || '%')
       AND (NOT v_f ? 'inputs'
         OR ((v_f->'inputs'->>'value')::boolean = (s.r_provision_key IS NOT NULL)))
+      -- COVERAGE BADGE narrowing. The three-state classification lives in ONE
+      -- place — aidream services/mandates/coverage.py, read over
+      -- GET /mandates/coverage/states — and what arrives here is only the KEY
+      -- LIST that server already classified. Re-deriving orange/red from
+      -- fallback_mandate_key in SQL would be a second implementation of the
+      -- rule (chain walking, cycles, dead ends included) and the two would
+      -- drift. The client sends a sentinel when a bucket is empty, so an empty
+      -- bucket shows an empty list rather than every row.
+      AND (NOT v_f ? 'coverage_keys'
+        OR s.r_key IN (SELECT jsonb_array_elements_text(v_f->'coverage_keys'->'values')))
       AND (NOT v_f ? 'updated'
         OR (v_f->'updated'->'values'->>0) IS NULL
         OR s.r_updated_at >= public.agx_since_bucket(v_f->'updated'->'values'->>0))

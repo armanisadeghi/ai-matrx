@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/mandates/mandate-coverage.ts
+// features/agents/mandates/coverage.ts
 //
 // COVERAGE — the scoreboard FALLBACK-MANDATES.md §The cost demands: for every
 // live mandate, is somebody actually assigned to it?
@@ -10,9 +10,19 @@
 //                                holder is carrying it — that leader is NAMED
 //   red     Nothing assigned  no holder and no fallback that resolves
 //
-// Server truth, never re-derived here: `GET /mandates/coverage` computes the
-// three buckets against live storage and returns the orange and red rows by
-// name (green rows are counted only — 300+ silent rows are not a work queue).
+// Server truth, never re-derived here. TWO shapes of the SAME classification
+// (aidream services/mandates/coverage.py — one implementation, two payloads):
+//
+//   GET /mandates/coverage         super-admin scoreboard. Counts + the NAMED
+//                                  orange and red rows; green is counted only,
+//                                  because 300+ silent rows are not a work queue.
+//   GET /mandates/coverage/states  authenticated, one verdict per mandate, for
+//                                  the per-ROW badge on the user-facing lists.
+//                                  Green is SAID here, so a badge never has to
+//                                  guess: a key missing from `states` means the
+//                                  report does not answer for it (an org-scoped
+//                                  report skips mandates that org does not own),
+//                                  never "assigned".
 //
 // The words on screen are the platform's: Mandate · Holder · assigned ·
 // fallback. Never "job", never "coverage state".
@@ -27,6 +37,10 @@ export type MandateCoverageOrangeRow =
   components["schemas"]["MandateCoverageOrangeRow"];
 export type MandateCoverageRedRow =
   components["schemas"]["MandateCoverageRedRow"];
+export type MandateCoverageStatesResponse =
+  components["schemas"]["MandateCoverageStatesResponse"];
+export type MandateCoverageStateRow =
+  components["schemas"]["MandateCoverageState"];
 
 /** The three buckets, in worst-last reading order (green · orange · red). */
 export type MandateCoverageBucket = "green" | "orange" | "red";
@@ -134,6 +148,84 @@ export async function fetchMandateCoverage(
     );
   }
   return response.data;
+}
+
+// ---------------------------------------------------------------------------
+// The per-ROW half — what a LIST badge reads.
+// ---------------------------------------------------------------------------
+
+/**
+ * Verdict per mandate key. A key that is ABSENT is unanswered, not assigned —
+ * that distinction is the whole reason this shape exists (see the header).
+ */
+export type MandateCoverageStateIndex = ReadonlyMap<
+  string,
+  MandateCoverageStateRow
+>;
+
+export function buildCoverageStateIndex(
+  report: MandateCoverageStatesResponse,
+): MandateCoverageStateIndex {
+  return new Map(report.states.map((row) => [row.mandate_key, row]));
+}
+
+/** The mandate keys in one bucket — what a badge click filters the list to. */
+export function coverageKeysInBucket(
+  report: MandateCoverageStatesResponse,
+  bucket: MandateCoverageBucket,
+): string[] {
+  return report.states
+    .filter((row) => row.state === bucket)
+    .map((row) => row.mandate_key);
+}
+
+/**
+ * One verdict per mandate, for a list surface's per-row badge.
+ *
+ * `organizationId` scopes the report to ONE owner's mandates (law 5: screams
+ * follow ownership) — the org mandate list passes its own org, and the server
+ * verifies membership. Omit it for the whole live registry.
+ */
+export async function fetchMandateCoverageStates(
+  dispatch: AppDispatch,
+  organizationId?: string | null,
+): Promise<MandateCoverageStatesResponse> {
+  const response = await dispatch(
+    callApi({
+      path: "/mandates/coverage/states",
+      method: "GET",
+      queryParams: organizationId
+        ? { organization_id: organizationId }
+        : undefined,
+    }),
+  );
+  if (response.error) throw new Error(response.error.message);
+  if (!isCoverageStatesReport(response.data)) {
+    throw new Error(
+      "GET /mandates/coverage/states did not return coverage verdicts — coverage is unknown, not clean.",
+    );
+  }
+  return response.data;
+}
+
+function isCoverageStatesReport(
+  value: unknown,
+): value is MandateCoverageStatesResponse {
+  if (typeof value !== "object" || value === null) return false;
+  const body = value as { states?: unknown; counts?: unknown };
+  if (!Array.isArray(body.states)) return false;
+  const counts = body.counts as { green?: unknown } | undefined;
+  if (typeof counts !== "object" || counts === null) return false;
+  if (typeof counts.green !== "number") return false;
+  return body.states.every((row) => {
+    const state = (row as { mandate_key?: unknown; state?: unknown }) ?? {};
+    return (
+      typeof state.mandate_key === "string" &&
+      (state.state === "green" ||
+        state.state === "orange" ||
+        state.state === "red")
+    );
+  });
 }
 
 function isCoverageReport(value: unknown): value is MandateCoverageResponse {

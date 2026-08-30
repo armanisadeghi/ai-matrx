@@ -19,7 +19,7 @@ import {
   COVERAGE_META,
   type MandateCoverageBucket,
   type MandateCoverageResponse,
-} from "./mandate-coverage";
+} from "@/features/agents/mandates/coverage";
 
 /** How many named rows a strip shows before it counts the rest. */
 export const COVERAGE_NAMED_ROW_CAP = 6;

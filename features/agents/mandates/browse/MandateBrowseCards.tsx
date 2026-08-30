@@ -11,6 +11,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import { HEALTH_META, LAYER_META, type MandateListRow } from "./types";
+import { MandateCoverageBadge } from "./CoverageBadge";
 
 export function MandateBrowseCards({
   rows,
@@ -81,6 +82,7 @@ export function MandateBrowseCards({
               <Badge variant="outline" className={cn("py-0 text-[10px]", layer.className)}>
                 {layer.label}
               </Badge>
+              <MandateCoverageBadge mandateKey={row.mandate_key} />
               {row.resolved_agent_name ? (
                 <span className="inline-flex min-w-0 items-center gap-1 text-[11.5px] text-muted-foreground">
                   <ArrowDownUp className="h-3 w-3 shrink-0" />

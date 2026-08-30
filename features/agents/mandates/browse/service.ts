@@ -93,10 +93,43 @@ export type MandateListScope =
 
 export const MINE_SCOPE: MandateListScope = { kind: "mine" };
 
+/**
+ * Narrow the page to one coverage state, server-side.
+ *
+ * The classification stays where it belongs (aidream's coverage.py, reached via
+ * GET /mandates/coverage/states); what crosses into SQL is only the KEY LIST
+ * that server already classified. Re-deriving green/orange/red in the RPC would
+ * be a second implementation of the rule, and the two would drift.
+ *
+ * A bucket with no mandates in it must show an EMPTY list, never every row —
+ * hence the sentinel, which no mandate key can equal.
+ */
+const NO_MANDATE_MATCHES = "__no_mandate__";
+
+export interface MandateCoverageNarrowing {
+  bucket: string;
+  keys: string[];
+}
+
+export function withCoverageKeys(
+  filters: EntityListQuery["filters"],
+  coverage: MandateCoverageNarrowing | null,
+): Json {
+  if (!coverage) return filters as unknown as Json;
+  return {
+    ...filters,
+    coverage_keys: {
+      kind: "select",
+      values: coverage.keys.length > 0 ? coverage.keys : [NO_MANDATE_MATCHES],
+    },
+  } as unknown as Json;
+}
+
 export async function fetchMandateListPage(
   query: EntityListQuery,
   sort: EntityListSort,
   scope: MandateListScope = MINE_SCOPE,
+  coverage: MandateCoverageNarrowing | null = null,
 ): Promise<EntityListPage<MandateListRow>> {
   const rows = await mndRpc("mnd_list_scoped", {
     p_scope: scope.kind,
@@ -104,7 +137,7 @@ export async function fetchMandateListPage(
     p_search: query.search.trim() || undefined,
     p_sort: sort.sort,
     p_dir: sort.direction,
-    p_filters: query.filters as unknown as Json,
+    p_filters: withCoverageKeys(query.filters, coverage),
     p_limit: sort.pageSize,
     p_offset: (query.page - 1) * sort.pageSize,
   });
@@ -112,10 +145,13 @@ export async function fetchMandateListPage(
 }
 
 /** The list-config service triple for one scope. */
-export function mandateListService(scope: MandateListScope) {
+export function mandateListService(
+  scope: MandateListScope,
+  coverage: MandateCoverageNarrowing | null = null,
+) {
   return {
     fetchPage: (query: EntityListQuery, sort: EntityListSort) =>
-      fetchMandateListPage(query, sort, scope),
+      fetchMandateListPage(query, sort, scope, coverage),
     fetchCounts: fetchMandateScopeCounts,
     fetchFacets: fetchMandateFacets,
   };
