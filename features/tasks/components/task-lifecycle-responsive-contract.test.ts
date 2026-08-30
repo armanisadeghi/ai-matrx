@@ -7,6 +7,21 @@ const projectSource = (name: string) =>
     join(__dirname, "..", "..", "projects", "components", name),
     "utf8",
   );
+const taskRouteSource = () =>
+  readFileSync(
+    join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "app",
+      "(core)",
+      "tasks",
+      "[id]",
+      "page.tsx",
+    ),
+    "utf8",
+  );
 
 describe("task lifecycle responsive contract", () => {
   it("keeps date-only table labels out of UTC parsing", () => {
@@ -76,6 +91,19 @@ describe("task lifecycle responsive contract", () => {
     expect(mobileDetails).toContain('location="Tasks — mobile task editor"');
     expect(mobileDetails).toContain("description,");
     expect(mobileDetails).toContain("isDirty,");
+  });
+
+  it("keeps every task editor header on the live draft copy control", () => {
+    const editor = source("TaskEditor.tsx");
+    const route = taskRouteSource();
+
+    expect(editor).toContain("routeHeader?: ReactNode");
+    expect(editor).toContain("{routeHeader}");
+    expect(editor).toContain("TaskEditorCopyButtons");
+    expect(editor).not.toContain("TaskCopyForAiButton");
+    expect(route).toContain("TaskEditorCopyButtons");
+    expect(route).toContain("routeHeader={taskHeader}");
+    expect(route).not.toContain("TaskCopyForAiButton");
   });
 
   it("keeps search on the project task list", () => {

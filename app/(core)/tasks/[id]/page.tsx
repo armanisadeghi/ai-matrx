@@ -13,7 +13,7 @@ import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
-import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
+import { TaskEditorCopyButtons } from "@/features/tasks/components/editor/TaskEditorCopyButtons";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -50,67 +50,70 @@ export default function TaskPage() {
     }
   }, [dispatch, selectedId, taskId]);
 
+  const taskHeader = (
+    <PageHeader>
+      <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
+        <ChevronLeftTapButton
+          href="/tasks"
+          variant="transparent"
+          ariaLabel="Back to tasks"
+        />
+        {/* Project breadcrumb — a DOOR, not a label. The unreachable
+            TaskDetailPage showed the project name as dead text; naming it
+            here without a way to reach it would be the same dead end. */}
+        {project ? (
+          <>
+            <Link
+              href={`/projects/${project.id}`}
+              className="ml-2 shrink-0 max-w-[10rem] truncate text-sm text-muted-foreground transition-colors hover:text-foreground"
+              title={project.name}
+            >
+              {project.name}
+            </Link>
+            <ChevronRight
+              size={14}
+              className="mx-1 shrink-0 text-muted-foreground/50"
+            />
+          </>
+        ) : null}
+        <h1
+          className={`text-sm font-medium text-foreground truncate ${project ? "" : "ml-2"}`}
+        >
+          {task?.title ?? "Task"}
+        </h1>
+        {task ? (
+          <div className="ml-auto shrink-0 flex items-center gap-0.5">
+            <ReferenceCopyButton
+              referenceType="task"
+              id={taskId}
+              label={task.title}
+              toastLabel={task.title}
+              size="sm"
+            />
+            <TaskEditorCopyButtons location="Tasks — task page" size="sm" />
+          </div>
+        ) : null}
+      </div>
+    </PageHeader>
+  );
+
+  if (task) {
+    return <TaskEditor taskId={taskId} routeHeader={taskHeader} />;
+  }
+
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
-          <ChevronLeftTapButton
-            href="/tasks"
-            variant="transparent"
-            ariaLabel="Back to tasks"
-          />
-          {/* Project breadcrumb — a DOOR, not a label. The unreachable
-              TaskDetailPage showed the project name as dead text; naming it
-              here without a way to reach it would be the same dead end. */}
-          {project ? (
-            <>
-              <Link
-                href={`/projects/${project.id}`}
-                className="ml-2 shrink-0 max-w-[10rem] truncate text-sm text-muted-foreground transition-colors hover:text-foreground"
-                title={project.name}
-              >
-                {project.name}
-              </Link>
-              <ChevronRight
-                size={14}
-                className="mx-1 shrink-0 text-muted-foreground/50"
-              />
-            </>
-          ) : null}
-          <h1
-            className={`text-sm font-medium text-foreground truncate ${project ? "" : "ml-2"}`}
-          >
-            {task?.title ?? "Task"}
-          </h1>
-          {task ? (
-            <div className="ml-auto shrink-0 flex items-center gap-0.5">
-              <ReferenceCopyButton
-                referenceType="task"
-                id={taskId}
-                label={task.title}
-                toastLabel={task.title}
-                size="sm"
-              />
-              <TaskCopyForAiButton
-                taskId={taskId}
-                taskTitle={task.title}
-                location="Tasks — task page"
-                size="sm"
-              />
-            </div>
-          ) : null}
-        </div>
-      </PageHeader>
+      {taskHeader}
 
       <div
         className="h-full overflow-hidden"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
-        {!task && loading ? (
+        {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : !task ? (
+        ) : (
           // An empty single-task read has four different causes (denied,
           // trashed, missing, signed out) — the gate resolves the true one and
           // offers the way forward instead of asserting "not found".
@@ -120,8 +123,6 @@ export default function TaskPage() {
             fallbackHref="/tasks"
             fallbackLabel="Back to Tasks"
           />
-        ) : (
-          <TaskEditor />
         )}
       </div>
     </>

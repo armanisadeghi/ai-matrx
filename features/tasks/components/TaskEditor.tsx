@@ -27,12 +27,12 @@ import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
-import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useTaskEditorController } from "./editor/useTaskEditorController";
 import { TaskEditorControllerProvider } from "./editor/TaskEditorControllerContext";
 import { TaskEditorBody } from "./editor/TaskEditorBody";
+import { TaskEditorCopyButtons } from "./editor/TaskEditorCopyButtons";
 
 /** Icon-only control for embedded tile chrome — no label padding. */
 function EmbeddedToolbarButton({
@@ -74,6 +74,7 @@ export default function TaskEditor({
   compact,
   footerAppend,
   onOpenLinkedTask,
+  routeHeader,
 }: {
   /** When provided, edit this task directly (e.g. embedded in a War Room tile).
    *  Falls back to the global selected task (the /tasks/[id] route) when omitted. */
@@ -86,6 +87,8 @@ export default function TaskEditor({
   footerAppend?: ReactNode;
   /** In-tile drill-down: open a linked task (subtask) without leaving the tile. */
   onOpenLinkedTask?: (taskId: string) => void;
+  /** Full-page chrome that must share this editor's live draft controller. */
+  routeHeader?: ReactNode;
 } = {}) {
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const taskId = taskIdProp ?? selectedTaskId;
@@ -111,6 +114,7 @@ export default function TaskEditor({
       compact={compact}
       footerAppend={footerAppend}
       onOpenLinkedTask={onOpenLinkedTask}
+      routeHeader={routeHeader}
       key={taskId}
     />
   );
@@ -122,12 +126,14 @@ function TaskEditorInner({
   compact,
   footerAppend,
   onOpenLinkedTask,
+  routeHeader,
 }: {
   taskId: string;
   embedded?: boolean;
   compact?: boolean;
   footerAppend?: ReactNode;
   onOpenLinkedTask?: (taskId: string) => void;
+  routeHeader?: ReactNode;
 }) {
   const controller = useTaskEditorController(taskId);
   const {
@@ -156,6 +162,7 @@ function TaskEditorInner({
 
   return (
     <TaskEditorControllerProvider value={controller}>
+      {routeHeader}
       <div className="flex flex-col h-full min-h-0 bg-background">
         {/* Title row — tiles get a thinner icon-only strip; full editor keeps labels. */}
         {embedded ? (
@@ -206,10 +213,10 @@ function TaskEditorInner({
               )}
             </EmbeddedToolbarButton>
 
-            <TaskCopyForAiButton
-              taskId={taskId}
-              taskTitle={effective.title}
-              location={embedded ? "War Room — task tile" : "Tasks — task editor"}
+            <TaskEditorCopyButtons
+              location={
+                embedded ? "War Room — task tile" : "Tasks — task editor"
+              }
               size="icon"
             />
 
@@ -251,12 +258,7 @@ function TaskEditorInner({
             />
 
             <div className="flex items-center gap-0.5 shrink-0">
-              <TaskCopyForAiButton
-                taskId={taskId}
-                taskTitle={effective.title}
-                location="Tasks — task editor"
-                size="sm"
-              />
+              <TaskEditorCopyButtons location="Tasks — task editor" size="sm" />
               <ReferenceCopyButton
                 referenceType="task"
                 id={taskId}
