@@ -115,3 +115,27 @@ export function unresolvedRequiredVariables(
     })
     .map((v) => v.name);
 }
+
+/**
+ * The launch-time precedence rule, in one testable place.
+ *
+ * caller's explicit literal → the surface binding's stored answer → whatever
+ * instance-ui-state was seeded with (a shortcut's own `auto_run`, or the hard
+ * default) → false.
+ *
+ * The binding sits ABOVE the seed on purpose: a direct-agent launch seeds a
+ * meaningless hard `false`, and letting that win is exactly the inversion this
+ * work exists to fix — the binding could never say "run it".
+ */
+export function resolveEffectiveAutoRun(args: {
+  /** `config.autoRun` as the caller literally passed it. */
+  callerAutoRun: boolean | undefined;
+  /** The merged surface-binding answer, or null when no layer had one. */
+  bindingAutoRun: boolean | null;
+  /** instance-ui-state's seeded value (always concrete once seeded). */
+  seededAutoRun: boolean | undefined;
+}): boolean {
+  return (
+    args.callerAutoRun ?? args.bindingAutoRun ?? args.seededAutoRun ?? false
+  );
+}

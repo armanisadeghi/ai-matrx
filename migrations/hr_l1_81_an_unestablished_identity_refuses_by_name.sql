@@ -50,7 +50,7 @@
 -- ── WHAT CHANGES, IN EACH OF THE FIVE ─────────────────────────────────────────────────────────
 --
 --   + a first statement:  if v_uid is null then return {granted:false, reason:'no_caller', …}
---   - the `v_uid is not null and` conjunct in front of every capability check
+--   - the caller-is-established conjunct in front of every capability check
 --
 -- The refusal reuses hr.wf_request's existing `no_caller` word, so one fact has one name across
 -- the engine and no surface needs a new branch (the refusal envelope renders `detail` verbatim).
@@ -664,7 +664,7 @@ update hr.function_contract
        reason = reason || E'\n\nAMENDED by hr_l1_81 (2026-08-30): the pin asserted `auth.uid` and '
              || 'nothing more, so it stayed green while the branch it protects was being SKIPPED '
              || 'for any caller whose auth.uid() was null — fail-open on identity absence. The pin '
-             || 'now requires the named `no_caller` refusal and forbids the `v_uid is not null and` '
+             || 'now requires the named `no_caller` refusal and forbids the caller-is-established '
              || 'conjunct that made the authorization branch evaporate.'
  where schema_name = 'hr'
    and function_name in ('wf_resolve_failure','wf_cancel','wf_reassign_step',

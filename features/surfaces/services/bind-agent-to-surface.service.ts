@@ -204,6 +204,29 @@ const MENU_SURFACE_COLUMNS =
 // Writes
 // ---------------------------------------------------------------------------
 
+/**
+ * The `surface_binding` edge payload (v3), built in ONE place so every writer
+ * produces the same shape the DB trigger validates.
+ *
+ * Empty/false fields are OMITTED rather than written: they are the schema
+ * defaults, and storing them explicitly would make every untouched binding
+ * look like somebody made a decision about them.
+ */
+export function buildSurfaceBindingPayload(args: {
+  valueMappings: ValueMappingMap;
+  writePolicies?: WritePolicyMap;
+  autoRun?: boolean;
+}): SurfaceBindingPayload {
+  const { valueMappings, writePolicies, autoRun } = args;
+  return {
+    value_mappings: valueMappings,
+    ...(writePolicies && Object.keys(writePolicies).length > 0
+      ? { write_policies: writePolicies }
+      : {}),
+    ...(autoRun === true ? { auto_run: true } : {}),
+  };
+}
+
 export interface BindAgentToSurfaceScope extends ScopeInput {}
 
 export interface BindAgentToSurfaceArgs {
@@ -397,15 +420,11 @@ export async function bindAgentToSurface(
     role: bindingRoleForScope(scope),
     metadata,
     payloadKind: "surface_binding",
-    payload: {
-      value_mappings: valueMappings,
-      ...(writePolicies && Object.keys(writePolicies).length > 0
-        ? { write_policies: writePolicies }
-        : {}),
-      // Only stored when ON: false is the schema default, and writing it
-      // explicitly would make every untouched binding look like a decision.
-      ...(autoRun === true ? { auto_run: true } : {}),
-    } satisfies SurfaceBindingPayload,
+    payload: buildSurfaceBindingPayload({
+      valueMappings,
+      writePolicies,
+      autoRun,
+    }),
   });
 
   if (!result.ok) {

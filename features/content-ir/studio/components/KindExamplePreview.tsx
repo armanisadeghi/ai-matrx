@@ -24,28 +24,23 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
-  Copy,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
 import KindRenderPaths from "@/features/content-ir/render-paths/KindRenderPaths";
-import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
-import {
-  emitPayloadFence,
-  emitPayloadJson,
-} from "@ai-matrx/content-ir";
 
 interface KindExamplePreviewProps {
   kind: string;
   examples: ExamplesState;
   /** Rendered when the kind has zero examples — caller owns the copy. */
   emptyState: ReactNode;
-  /** Show the "rendered through the production path" footnote (admin). */
+  /**
+   * Retired 2026-08-29 — each path now states what it exercises, inline, in
+   * `KindRenderPaths`. Kept so existing callers keep compiling; ignored.
+   */
   showPathFootnote?: boolean;
 }
 
@@ -53,27 +48,8 @@ export default function KindExamplePreview({
   kind,
   examples,
   emptyState,
-  showPathFootnote = false,
 }: KindExamplePreviewProps) {
   const [index, setIndex] = useState(0);
-  const [copied, setCopied] = useState<"json" | "fence" | null>(null);
-
-  async function copy(kind: string, data: unknown, mode: "json" | "fence") {
-    const text =
-      mode === "fence" ? emitPayloadFence(kind, data) : emitPayloadJson(kind, data);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(mode);
-      toast.success(
-        mode === "fence"
-          ? "Render block copied — paste it into a chat to see it live"
-          : "Render payload copied (with __kind)",
-      );
-      window.setTimeout(() => setCopied(null), 1800);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
-  }
 
   if (examples.status === "loading") {
     return (

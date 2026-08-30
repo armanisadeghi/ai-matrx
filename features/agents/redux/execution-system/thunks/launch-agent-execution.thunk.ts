@@ -36,7 +36,10 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
-import { unresolvedRequiredVariables } from "@/features/surfaces/utils/binding-auto-run";
+import {
+  resolveEffectiveAutoRun,
+  unresolvedRequiredVariables,
+} from "@/features/surfaces/utils/binding-auto-run";
 import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
@@ -931,8 +934,11 @@ export const launchAgentExecution = createAsyncThunk<
   // seed because a direct-agent launch seeds a meaningless hard false, which
   // would otherwise swallow the binding's answer entirely — the exact
   // inversion this work exists to fix.
-  const effectiveAutoRun =
-    autoRun ?? bindingAutoRun ?? seededUiState?.autoRun ?? false;
+  const effectiveAutoRun = resolveEffectiveAutoRun({
+    callerAutoRun: autoRun,
+    bindingAutoRun,
+    seededAutoRun: seededUiState?.autoRun,
+  });
   if (bindingAutoRun !== null && autoRun === undefined) {
     // The binding decided. Seed instance-ui-state too, so any consumer that
     // renders AgentRunner directly (its own autoRun effect) agrees with the
