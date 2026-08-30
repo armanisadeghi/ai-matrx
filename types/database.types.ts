@@ -58447,6 +58447,75 @@ export type Database = {
           },
         ]
       }
+      route_manifest: {
+        Row: {
+          app: string
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          pattern: string
+          promise_key: string | null
+          source: string
+          source_sha: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          app: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          pattern: string
+          promise_key?: string | null
+          source: string
+          source_sha: string
+          status: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          app?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          pattern?: string
+          promise_key?: string | null
+          source?: string
+          source_sha?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_manifest_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_manifest_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rulebook: {
         Row: {
           assurance_level: string | null
@@ -60278,6 +60347,7 @@ export type Database = {
         Args: { p_reason: string; p_token_id: string }
         Returns: Json
       }
+      route_manifest_snapshot: { Args: { p_app: string }; Returns: Json }
       rulebook_library_catalog: {
         Args: { p_organization_id?: string }
         Returns: {
@@ -60324,6 +60394,14 @@ export type Database = {
           action: string
           detail: string
           token: string
+        }[]
+      }
+      sync_route_manifest: {
+        Args: { p_app: string; p_routes: Json; p_source_sha: string }
+        Returns: {
+          inserted: number
+          removed: number
+          updated: number
         }[]
       }
       upsert_output_feedback: {
