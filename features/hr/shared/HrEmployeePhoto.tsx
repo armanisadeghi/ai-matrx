@@ -32,7 +32,7 @@ import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
-import { ensureFilesSession } from "@/features/files/handler/session";
+import { mediaFilesClient } from "@/features/files/media-client/client";
 
 /** First letters of the first and last word — the existing placeholder rule. */
 export function hrInitials(name: string | null | undefined): string {
@@ -63,7 +63,7 @@ export function HrEmployeePhoto({
   useEffect(() => {
     // The cookie is what authorizes the <img>. Idempotent and deduped, so every
     // photo on a directory page shares one establishment.
-    if (id) void ensureFilesSession();
+    if (id) void mediaFilesClient.ensureSession();
   }, [id]);
 
   useEffect(() => {
@@ -100,7 +100,7 @@ export function HrEmployeePhoto({
           */
           if (!retried) {
             setRetried(true);
-            void ensureFilesSession({ force: true }).then(() => {
+            void mediaFilesClient.ensureSession({ force: true }).then(() => {
               // Re-mount the <img> by clearing the failure flag on the next tick.
               setFailed(false);
             });

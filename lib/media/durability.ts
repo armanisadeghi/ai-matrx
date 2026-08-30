@@ -1,91 +1,44 @@
 // lib/media/durability.ts
 //
-// The frontend twin of the database `mtx_is_durable_media_url` guard. Two jobs:
+// The frontend twin of the database `mtx_is_durable_media_url` guard. The
+// classification itself (durable vs. expiring, the revocable-share-link
+// rule, the fail-closed share guard) is canonical in `@ai-matrx/data/files`
+// (the C9 collapse) and re-exported here so the 20+ existing call sites keep
+// one import path. What stays host-side is the LOUD violation report — it
+// writes to the app's Error Inspector capture store, which is host identity.
 //
-//   1. CLASSIFY a media URL as durable (permanent) vs. expiring (a signed,
-//      time-limited S3 link that WILL break days later).
-//   2. LOUDLY surface a violation — when an expiring/private "our own" URL reaches
-//      a render or store path, that is a server-side defect (media should have
-//      been persisted public). We do NOT silently paper over it (that hides the
-//      bug); we scream in the console so it can't be ignored, and the caller can
-//      then route it through the canonical heal path.
-//
-// Render durable media via the canonical `<InlineMediaRef>` (it re-mints from a
-// file_id for authed owners). NEVER hand-render our media with a raw <img src>.
+// Render durable media via the canonical `<InlineMediaRef>` (it re-mints from
+// a file_id for authed owners). NEVER hand-render our media with a raw
+// <img src>.
 
-import { isSignedUrl } from "@/lib/media/signed-url";
+import {
+  classifyMediaUrl,
+  createFileUrlRecognizer,
+  isDurableMediaUrl,
+  shareableMediaUrl,
+  type MediaUrlKind,
+} from "@ai-matrx/data/files";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export { classifyMediaUrl, isDurableMediaUrl, shareableMediaUrl };
+export type { MediaUrlKind };
 
-export type MediaUrlKind = "empty" | "durable" | "expiring";
-
-/**
- * A revocable share link (`…/share/<token>/download`) is never a durable
- * identity for an asset — being revocable and expirable is the entire POINT of
- * a share link. It carries no signature, so the signed-URL test alone called it
- * durable, and that is exactly how D108's seven feedback screenshots became
- * dead pointers: the files were public and alive the whole time, but the link
- * that named them had been revoked. The durable ref is the CDN/public URL, or
- * the `file_id` re-minted on read.
- *
- * Keep in parity with the DB twin `public.mtx_is_durable_media_url`.
- */
-const REVOCABLE_SHARE_URL_RE = /\/share\/[0-9a-f-]{8,}\/(download|view|raw)(\?|$)/i;
-
-/** Mirror of the DB `mtx_is_durable_media_url` classifier. */
-export function classifyMediaUrl(url: string | null | undefined): MediaUrlKind {
-  if (!url) return "empty";
-  if (isSignedUrl(url) || REVOCABLE_SHARE_URL_RE.test(url)) return "expiring";
-  return "durable";
-}
-
-export function isDurableMediaUrl(url: string | null | undefined): boolean {
-  return classifyMediaUrl(url) !== "expiring";
-}
-
-/**
- * Return a URL only when it is safe to expose through a share/copy action.
- *
- * Playback and downloads may legitimately use a short-lived signed URL for an
- * authenticated user. Sharing may not: a presigned object-store URL is a
- * bearer credential and exposes storage-provider authentication details. The
- * caller must mint a canonical share link (or use an internal viewer URL)
- * instead when this returns null.
- */
-export function shareableMediaUrl(
-  url: string | null | undefined,
-): string | null {
-  if (!url || !isDurableMediaUrl(url)) return null;
-  return url;
-}
+const recognizer = createFileUrlRecognizer();
 
 /**
  * Recover the cld_files file_id from an our-own user-files signed S3 URL
- * (`…/{user_id}/{file_id}?…`). Used to render via the handler (which re-mints) or
- * to publish the file. Returns null for non-user-files URLs.
+ * (`…/{user_id}/{file_id}?…`). Used to render via the handler (which
+ * re-mints) or to publish the file. Returns null for non-user-files URLs.
  */
 export function fileIdFromUserFilesUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (
-      !/(^|\.)matrx-user-files\.s3|s3[.-].*amazonaws\.com/i.test(u.hostname)
-    ) {
-      return null;
-    }
-    const segs = u.pathname.split("/").filter(Boolean); // [user_id, file_id, …]
-    const candidate = segs[1] ?? segs[segs.length - 1];
-    return candidate && UUID_RE.test(candidate) ? candidate : null;
-  } catch {
-    return null;
-  }
+  return recognizer.fileIdFromUserFilesUrl(url);
 }
 
 /**
- * LOUD: log a durability violation. A non-public, expiring URL reaching `context`
- * means the media was persisted wrong server-side. Returns true if it WAS a
- * violation (so callers can trigger a heal), false otherwise. Never throws.
+ * LOUD: log a durability violation. A non-public, expiring URL reaching
+ * `context` means the media was persisted wrong server-side. Returns true if
+ * it WAS a violation (so callers can trigger a heal), false otherwise. Never
+ * throws.
  */
 export function reportMediaDurabilityViolation(
   url: string | null | undefined,

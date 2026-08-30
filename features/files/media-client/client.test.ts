@@ -1,52 +1,57 @@
 /**
- * Regression lock for QA F2 (feedback dc739d98): the MediaClient must treat a
- * pasted AUTHENTICATED byte-endpoint URL
- * (`https://files.matrxserver.com/files/{id}/download?inline=1`) as the
- * file_id it names — never as an opaque external URL. The external lane has
- * no Authorization header and no session cookie guarantee, so /images/annotate
- * (crossOrigin canvas) got refused bytes and rendered the error panel.
+ * Host smoke for the C9 collapse: the app's construction of
+ * `@ai-matrx/data/files` (the REAL package — nothing package-side is mocked)
+ * must preserve the media 0.2.2/0.2.3 parity items:
+ *
+ *   - QA F2 (feedback dc739d98): a pasted AUTHENTICATED byte-endpoint URL
+ *     (`…/files/{id}/download?inline=1`) is the file_id it names — promoted
+ *     to the blob lane, never treated as an opaque external URL;
+ *   - the transport decision: private pixels ride the bearer-authenticated
+ *     blob lane; foreign URLs stay on the element lane, unrecoverable.
+ *
+ * Only HOST identity is mocked (bases, Redux store, byte cache, batch door).
  */
 
+jest.mock("@/lib/python-client", () => ({
+  resolveBaseUrl: () => "https://server.app.matrxserver.com",
+  resolveFilesBaseUrl: () => "https://files.matrxserver.com",
+}));
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => null,
+  getStoreSingleton: () => ({
+    getState: () => ({}),
+    dispatch: jest.fn(),
+  }),
+}));
+jest.mock("@/lib/redux/slices/userSlice", () => ({
+  selectAccessToken: () => "jwt-token",
+  selectFingerprintId: () => null,
+}));
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  captureError: jest.fn(),
 }));
 jest.mock("@/features/files/handler/handler", () => ({
-  fileHandler: { use: jest.fn(), upload: jest.fn() },
+  fileHandler: { upload: jest.fn() },
 }));
-jest.mock("@/features/files/handler/session", () => ({
-  ensureFilesSession: jest.fn(async () => {}),
-}));
-jest.mock("@/features/files/upload/UploadGuardHost", () => ({
-  requestUpload: jest.fn(),
+jest.mock("@/features/files/redux/selectors", () => ({
+  selectFileById: () => undefined,
 }));
 jest.mock("@/features/files/redux/thunks", () => ({
-  createShareLink: jest.fn(),
-  ensureCloudFileFields: jest.fn(),
-  loadShareLinks: jest.fn(),
+  ensureCloudFileFields: jest.fn(() => async () => undefined),
+}));
+jest.mock("@/features/files/redux/file-hydration", () => ({
+  areCloudFileFieldsLoaded: () => false,
+  FILE_RENDER_FIELDS: ["fileName", "mimeType", "fileSize", "visibility"],
 }));
 jest.mock("@/features/files/hooks/blob-cache", () => ({
   getCached: jest.fn(() => null),
   hydrateFromIdb: jest.fn(async () => null),
   setCached: jest.fn(),
 }));
-jest.mock("@/features/files/api/files", () => ({
-  downloadFileWithProgress: jest.fn(async () => ({
-    blob: new Blob(["png-bytes"], { type: "image/png" }),
-    filename: "download.png",
-    meta: {},
-  })),
-}));
-jest.mock("@/features/files/handler/utils/python-base", () => ({
-  fileUrls: (fileId: string) => ({
-    download: `https://files.matrxserver.com/files/${fileId}/download`,
-    inline: `https://files.matrxserver.com/files/${fileId}/download?inline=1`,
-  }),
-  pythonShareUrl: (token: string) =>
-    `https://files.matrxserver.com/share/${token}`,
+jest.mock("@/features/files/upload/UploadGuardHost", () => ({
+  requestUpload: jest.fn(),
 }));
 
-import { mediaClient } from "./client";
-import * as Files from "@/features/files/api/files";
+import { mediaClient, mediaFilesClient } from "./client";
 
 const FILE_ID = "e57d04c1-8c0d-41c4-aa40-476ea19b3782";
 const ENDPOINT_URL = `https://files.matrxserver.com/files/${FILE_ID}/download?inline=1`;
@@ -80,16 +85,47 @@ describe("mediaClient.resolve — authenticated endpoint URL promotion (F2)", ()
     expect(resolution!.transport).toBe("element");
     expect(resolution!.recoverable).toBe(false);
   });
+
+  it("refuses a legacy signed URL (D108) instead of rendering it", () => {
+    expect(() =>
+      mediaClient.resolve(
+        "https://matrx-user-files.s3.amazonaws.com/u/f.png?X-Amz-Signature=abc&X-Amz-Expires=300",
+      ),
+    ).toThrow(/signed URL is a handoff/i);
+  });
 });
 
 describe("mediaClient.getBlob — authenticated endpoint URL promotion (F2)", () => {
   it("downloads bytes via the authenticated file_id download, not a bare fetch", async () => {
+    // jsdom has no Response constructor — a minimal shape is enough.
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(["png-bytes"], { type: "image/png" }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
     const handle = await mediaClient.getBlob(ENDPOINT_URL);
-    expect(Files.downloadFileWithProgress).toHaveBeenCalledWith(
-      FILE_ID,
-      expect.any(Function),
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe(
+      `https://files.matrxserver.com/files/${FILE_ID}/download`,
     );
+    expect(
+      (init.headers as Record<string, string>).Authorization,
+    ).toBe("Bearer jwt-token");
     expect(handle.blob.type).toBe("image/png");
     expect(handle.url.startsWith("blob:")).toBe(true);
+  });
+});
+
+describe("construction", () => {
+  it("exposes ONE client instance whose port satisfaction is structural", () => {
+    // The MediaClient assignment in client.ts is the compile-time proof;
+    // at runtime the two names are the same singleton.
+    expect(mediaClient).toBe(mediaFilesClient);
   });
 });

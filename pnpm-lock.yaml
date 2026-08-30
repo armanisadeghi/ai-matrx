@@ -31,7 +31,7 @@ importers:
         version: 0.7.1(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
-        version: 0.4.0
+        version: 0.4.1
       '@ai-matrx/design-system':
         specifier: latest
         version: 0.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -845,8 +845,8 @@ packages:
     resolution: {integrity: sha512-waZZuB0CX9NkphvIwWXA9F9ztlH2Fpj7zOpHem+MvtuSfeHqc1Cuhy1Xx4pxqREf5Y+pzVRHpxVFPnTBAA8HXQ==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/data@0.4.0':
-    resolution: {integrity: sha512-fxJUBTh//eezbw5w4MS5Jp5j1ogtccuw19955c+qLQ93kmPNqpnvi8e2JUi//N81ztr4zCfQZi2OoVLdbf90XA==}
+  '@ai-matrx/data@0.4.1':
+    resolution: {integrity: sha512-d8BHqDwxs4zaBUAKsO25nfZ7naFQkLSAl2nFbaVvHylOBUi7z5jJ7n4bOeIshYUYTqvubLzgpqs9LP0EL6gbPQ==}
     engines: {node: '>=20'}
 
   '@ai-matrx/design-system@0.3.1':
@@ -13097,7 +13097,7 @@ snapshots:
 
   '@ai-matrx/agents@0.6.0(react@19.2.7)':
     dependencies:
-      '@ai-matrx/data': 0.4.0
+      '@ai-matrx/data': 0.4.1
     optionalDependencies:
       react: 19.2.7
 
@@ -13127,7 +13127,7 @@ snapshots:
     dependencies:
       ajv: 8.20.0
 
-  '@ai-matrx/data@0.4.0': {}
+  '@ai-matrx/data@0.4.1': {}
 
   '@ai-matrx/design-system@0.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:

@@ -24,13 +24,12 @@ in-flight uploads in `cloudFiles.uploads`).
 ## Where things are
 
 `handler.ts` (entry) · `types.ts` (15 `FileSource` variants, `NormalizedFile`, 11 `FileTarget`
-variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) · `session.ts` (the
-file-session cookie) ·
+variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) ·
 `utils/python-base.ts` (`fileUrls()` — THE durable URL builder) · `../upload/cloudUpload.ts` +
 `../upload/tusUpload.ts` + `../upload/__tests__/transport-policy.test.ts` ·
 `../vault/vaultAttachmentTransport.ts`.
 
-## Durable URLs + the file-session cookie (`session.ts`)
+## Durable URLs + the file-session cookie (`@ai-matrx/data/files` session)
 
 Nothing mints signed URLs anymore — **every URL the platform emits or builds is durable**:
 `{base}/files/{id}/download` (`?inline=1` for render), `cdn_url` for public files. A durable URL
@@ -40,16 +39,19 @@ Auth lanes for the durable byte routes:
 
 - **`fetch()` through the python-client** — attaches `Authorization: Bearer` (all reads/downloads).
 - **Plain `<img>`/`<video>`/`<audio>` bindings and navigations** — authenticate via the HttpOnly
-  `mx_files_session` cookie. `ensureFilesSession()` (`session.ts`) POSTs `/files/session` with
+  `mx_files_session` cookie. The session tracker lives in `@ai-matrx/data/files` (the C9
+  collapse; the old `session.ts` is deleted) — `mediaFilesClient.ensureSession()`
+  (`features/files/media-client/client.ts`, the ONE client instance) POSTs `/files/session` with
   normal auth headers + `credentials: 'include'`; the backend sets the cookie (SameSite=None,
   7-day TTL) and accepts it ONLY on GET byte routes. Fired at auth bootstrap
   (`components/layout/AuthSessionWatcher.tsx`) and established on BOTH backend bases (main +
-  standalone files host) since cookies are per-host. In-memory dedupe/freshness only.
+  standalone files host) since cookies are per-host. In-memory dedupe/freshness only, owned by
+  the client instance.
 - **Error recovery = session refresh, not URL re-mint.** `MediaClient.recoverLoadError`
-  (media-client adapter; consumed by `useMediaLoadRecovery` from `@ai-matrx/media/core`) calls
-  `ensureFilesSession({ force: true })` once on a media load failure and re-requests the SAME URL
-  (key bump). A second failure is terminal. The ONE retry contract — no consumer-side copies remain
-  (the divergent `useUnifiedImageUrl`/`useUnifiedVideoUrl` twins were deleted in media wave 2).
+  (now package policy in `@ai-matrx/data/files`; consumed by `useMediaLoadRecovery` from
+  `@ai-matrx/media/core`) forces a fresh session once on a media load failure and re-requests
+  the SAME URL (key bump). A second failure is terminal. The ONE retry contract — no
+  consumer-side copies remain.
 - A bare `fetch(durableUrl)` outside the python-client does NOT send the cross-origin cookie —
   byte reads go through `Files.downloadFile` / `useFileBlob`.
 
@@ -132,6 +134,13 @@ Then confirm the service is up: `curl https://files.matrxserver.com/files-servic
 
 ## Change log
 
+- **2026-08-30** — **C9 collapse: the media-client rides `@ai-matrx/data/files` 0.4.1.**
+  `handler/session.ts` (+ test) DELETED — the `mx_files_session` tracker is package policy;
+  the ONE door is `mediaFilesClient.ensureSession()` (consumers repointed:
+  `AuthSessionWatcher`, `HrEmployeePhoto`, `usePdfRemoteSource`). The handler stays the
+  engine for the TUS lane (injected as the client's `largeUploadTransport`) and the batch
+  door (`requestUpload` injected as `uploadMany`). See `features/files/FEATURE.md` change
+  log for the full swap.
 - **2026-08-30** — **QA F2/F3/F4 media-cutover fixes.** Host side (F2): the media-client
   now promotes our authenticated byte-endpoint URLs (`{base}/files/{id}/download`,
   `{base}/media/{id}/v/{class}`) to the file_id lane via the new

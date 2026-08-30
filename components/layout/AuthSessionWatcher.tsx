@@ -46,7 +46,7 @@ import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
 import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
-import { ensureFilesSession } from "@/features/files/handler/session";
+import { mediaFilesClient } from "@/features/files/media-client/client";
 
 const AuthSessionWatcherImpl = dynamic(
   () => import("./AuthSessionWatcherImpl"),
@@ -97,7 +97,7 @@ export default function AuthSessionWatcher() {
       // Establish the durable-file-URL session cookie as soon as this tab has
       // an authenticated identity (app load with an existing session). Fire
       // and forget — private media renders retry via force on error.
-      void ensureFilesSession();
+      void mediaFilesClient.ensureSession();
     }
   }, [userAuthId]);
 
@@ -161,7 +161,7 @@ export default function AuthSessionWatcher() {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         setSessionExpired(false);
         // Fresh sign-in → establish the file-session cookie for this identity.
-        void ensureFilesSession({ force: event === "SIGNED_IN" });
+        void mediaFilesClient.ensureSession({ force: event === "SIGNED_IN" });
         const booted = bootedIdRef.current;
         const current = session?.user;
         if (booted && current && current.id !== booted) {

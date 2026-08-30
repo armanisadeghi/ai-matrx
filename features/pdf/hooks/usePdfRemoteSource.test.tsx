@@ -15,8 +15,10 @@ jest.mock("@/features/files/hooks/useFileAsset", () => ({
   useFileAsset: (...args: unknown[]) => mockUseFileAsset(...args),
 }));
 
-jest.mock("@/features/files/handler/session", () => ({
-  ensureFilesSession: (...args: unknown[]) => mockEnsureFilesSession(...args),
+jest.mock("@/features/files/media-client/client", () => ({
+  mediaFilesClient: {
+    ensureSession: (...args: unknown[]) => mockEnsureFilesSession(...args),
+  },
 }));
 
 jest.mock("@/lib/python-client", () => ({

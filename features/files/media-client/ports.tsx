@@ -30,7 +30,7 @@ import { useMediaElementPlaybackSession } from "@/features/audio/session/useMedi
 import type { AudioSessionSource } from "@/features/audio/session/types";
 import { fileHandler } from "@/features/files/handler/handler";
 import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
-import { mediaClient, shareableUrlNoMint } from "./client";
+import { mediaClient, mediaFilesClient } from "./client";
 import { MediaSharePopoverSlot } from "./share-slot";
 import { toast } from "@/lib/toast";
 
@@ -118,7 +118,7 @@ const actions: MediaHostPorts["actions"] = {
     // otherwise the durable resolution src (never a signed URL: resolve()
     // refuses). Copy never MINTS a share link — that is the share door's
     // job (`mediaClient.shareableUrl`).
-    const shareable = shareableUrlNoMint(ctx.ref);
+    const shareable = mediaFilesClient.shareableUrlNoMint(ctx.ref);
     const url = shareable ?? ctx.resolution?.src ?? null;
     if (!url) {
       toast.error("No link available for this file");

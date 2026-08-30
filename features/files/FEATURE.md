@@ -97,6 +97,23 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-30** — **C9 collapse: `media-client/client.ts` is now a thin construction over
+  `@ai-matrx/data/files` 0.4.1** (436 → 202 lines, all injection per C22). Absorbed into the
+  package and DELETED here: ref normalization + byte-endpoint promotion (QA F2), the
+  resolution/transport decisions, blob in-flight dedup, the ONE retry contract, the
+  share-link door (REST against `/files/{id}/share-links` — the Redux share-link thunks no
+  longer sit in the media path), `shareableUrlNoMint`, error classification, and the
+  session tracker (`handler/session.ts` DELETED; consumers use
+  `mediaFilesClient.ensureSession()`). What the host injects: Redux credentials, the two
+  byte bases, the Redux file store as the metadata port (`ensureCloudFileFields` +
+  `selectFileById`), the 3-tier blob cache, the fileHandler TUS lane as
+  `largeUploadTransport`, `requestUpload` as the batch door, and the Error Inspector
+  diagnostics sink. `lib/media/our-file-sources.ts` collapsed onto the package recognizer
+  (keeps only the marker pre-gate + the host `FileSource` mapping);
+  `lib/media/{durability,signed-url}.ts` re-export the package classifiers (the loud
+  violation report stays host-side). Package 0.4.1 absorbed two census gaps:
+  `parentFolderId` batch-door routing in `upload()` and `fileNameFromUrl`. Host smoke:
+  `media-client/client.test.ts` runs the REAL package through the app construction.
 - **2026-08-30** — **Media wave 2 (M6 + M7 + M-SHARE hookup).** The unified image/video
   block renderers resolve through `@ai-matrx/media`: `blocks/useBlockMediaSource.ts`
   (over `useMediaResolution` + `useMediaLoadRecovery`) replaces the DELETED divergent

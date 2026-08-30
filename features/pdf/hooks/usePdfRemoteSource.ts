@@ -18,7 +18,7 @@
 import { useEffect, useState } from "react";
 import { getCached, invalidate } from "@/features/files/hooks/blob-cache";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
-import { ensureFilesSession } from "@/features/files/handler/session";
+import { mediaFilesClient } from "@/features/files/media-client/client";
 import { buildHeaders } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -74,7 +74,7 @@ export function usePdfRemoteSource(
       setPrivateAuth(null);
       setAuthFailure(null);
       void Promise.all([
-        ensureFilesSession({ force: true }),
+        mediaFilesClient.ensureSession({ force: true }),
         buildHeaders({}, false),
       ])
         .then(([, auth]) => {
@@ -97,7 +97,7 @@ export function usePdfRemoteSource(
       };
     }
 
-    void Promise.all([ensureFilesSession(), buildHeaders({}, false)]).then(
+    void Promise.all([mediaFilesClient.ensureSession(), buildHeaders({}, false)]).then(
       ([, auth]) => {
         if (active) setPrivateAuth({ fileId, headers: auth.headers });
       },
