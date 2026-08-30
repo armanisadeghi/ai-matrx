@@ -202,9 +202,17 @@ Recipe: React run site → `useMandateRunner`; React non-run site (a `defaultAge
 
 **When the call site PERSISTS the agent id** (War Room is the worked reference): the mandate decides only what a NEW record is CREATED with. A stored id — an association edge's `metadata.agentId`, a localStorage roster keyed by agent — always wins on rebind, so rebinding can neither rewrite nor orphan existing rows, and a migration of legacy state stamps the agent it was born under, never today's resolution. Gate the MINT affordance on resolution (disabled + the message) and let already-persisted records bind without the mandate. **Surface manifests** (`war-room*.manifest.ts`) keep a hardcoded `agentRoles[].defaultAgentId`: a manifest is static module-scope data seeded into `ui_surface_agent_role` and cannot resolve a mandate — the ruling is that it stays a documented SEED MIRROR of the mandate's system default, not a second authority (nothing reads it at run time).
 
-**Launching through the execution system? Pass `mandateKey`, never a resolved `agentId`.** `launchAgentExecution({mandateKey})` resolves the mandate itself and applies BOTH halves of the binding — the agent AND its `config_overrides`, merged over the caller's `config.llmOverrides` (binding wins per key) into the instance-model-overrides slice, so every turn's request carries them. Resolving yourself and passing `agentId` silently drops the settings half, which is what made settings-only bindings inert on that path. `mandateKey` is mutually exclusive with `agentId`/`shortcutId` (loud throw). Pinned by `execution-system/thunks/__tests__/launch-mandate-config-overrides.test.ts`.
+🚨 **THE MANDATE DOOR — the server is the ONE resolver on the run path (2026-08-29).** `launchAgentExecution({mandateKey})` stamps the key on the conversation and `executeInstance` POSTs turn 1 to **`/ai/mandates/{key}`** (`lib/api/endpoints.ts` → `ai.mandateStart`; `/v2` covered), with the SAME `AgentStartRequest` body. aidream resolves principal → system default → org binding → user binding, applies the binding's `config_overrides`, the provision consumption map and the variable contract, then runs the identical downstream pipeline (`_run_mandated_agent` → `_run_agent`). A 404 `mandate_unfulfilled` surfaces verbatim — there is NO client-side re-resolve behind the door.
 
-**Known gap — a DURABLE conversation keeps only the agent, not the settings.** Consumers that mint a lasting chat through `createManualInstance` directly (`war_room.room` / `war_room.thread` provisioning, the master-tools `message-thread` handler) pass `mandate.agentId` and drop `configOverrides`; `createManualInstance` has no `mandateKey` parameter. Instance overrides live only in Redux, so even seeding them would evaporate when the conversation is reloaded from the DB — the fix is a design decision (persist per-conversation overrides vs. re-resolve the mandate each turn), not a call-site patch. Consumers that only need a DEFAULT agent id for a picker or a window (`chat.default_new_chat` tiles, `KindAgentButton`, assists `launch_agent`) are correct as they are — they never run the agent themselves.
+Consequences a call site must know:
+- **Pass `mandateKey`, never a resolved `agentId` alone.** A surface that already knows what to PAINT (SSR-resolved, e.g. `/chat/new`) may pass `agentId` **alongside** `mandateKey`: it is display identity only, and the thunk then resolves nothing client-side. `mandateKey` remains mutually exclusive with `shortcutId`.
+- **Never send mandate-derived `config_overrides`.** The server treats request config as the EXPLICIT layer that WINS over the binding, so echoing a client-resolved binding back beats the binding it came from. The thunk sends only the caller's own `config.llmOverrides`.
+- **A version pin still wins** over the door (an explicit "run THIS row"; the mandate path has no `is_version` channel).
+- The rule lives in `execution-system/utils/resolve-start-path.ts`; pinned by its own test plus `execution-system/thunks/__tests__/launch-mandate-config-overrides.test.ts`.
+
+`resolveMandate` / `resolveMandateServer` are therefore **display-side** on this path: naming, painting, gating an affordance, snapshotting an instance. They are still the RUN resolver for `useMandateRunner`/`useRunAgent` and for consumers that persist an agent id — the un-converged remainder (see the gaps below).
+
+**Known gap — a DURABLE conversation keeps only the agent, not the settings.** Consumers that mint a lasting chat through `createManualInstance` directly (`war_room.room` / `war_room.thread` provisioning, the master-tools `message-thread` handler) pass `mandate.agentId` and drop `configOverrides`. `createManualInstance` DOES take `mandateKey` now (that is what opens the door), so those call sites can converge by passing the key instead of a resolved id — but they persist the id into their own records, so it is a design decision, not a rename. Instance overrides live only in Redux, so even seeding them would evaporate when the conversation is reloaded from the DB — the fix is a design decision (persist per-conversation overrides vs. re-resolve the mandate each turn), not a call-site patch. Consumers that only need a DEFAULT agent id for a picker or a window (`chat.default_new_chat` tiles, `KindAgentButton`, assists `launch_agent`) are correct as they are — they never run the agent themselves.
 
 **Known gap — `useMandateRunner`/`useRunAgent` cannot live-render.** They produce
 no requestId (the stream drains into a local string), so a surface using them
@@ -350,6 +358,22 @@ commit time.
   under "Fulfilled by". The RPC now honours org scope (personal bindings excluded, only the
   named org may decide, membership proved inside the SECURITY DEFINER body) and
   `MandateWorkspace` resolves for the principal the surface speaks for.
+
+- 2026-08-29 — **THE MANDATE DOOR: two resolvers collapsed to one.** matrx-frontend resolved
+  mandates in the browser and POSTed `/ai/agents/{resolvedId}` while aidream's own
+  `POST /ai/mandates/{key}` (built, tested, already used by matrx-extend and matrx-local) sat
+  unused — so a server-side rebind or provision never reached client chat. `launchAgentExecution`
+  now stamps `mandateKey` on the conversation and `executeInstance` routes turn 1 through the
+  door (`resolve-start-path.ts`); mandate-derived `config_overrides` are no longer echoed back
+  (they were landing as the EXPLICIT layer and beating their own binding); `mandateKey` and
+  `agentId` are no longer mutually exclusive (`agentId` is display identity — `/chat/new` passes
+  its SSR-resolved default and resolves nothing client-side). Every `launchMandate(...)` site
+  (11) converged for free through the funnel. Browser-proved on `/chat/new`:
+  `POST /v2/ai/mandates/chat.default_new_chat`, and a user rebind to a different agent changed
+  who answered, with no client deploy, and reverted on delete. Still un-converged and still
+  resolving client-side to run: `useMandateRunner`/`useRunAgent` (4 consumers), the War Room /
+  transcript-studio / content-ir sites that PERSIST an agent id, and the routing-only resolvers
+  that compute a `/chat/a/<agentId>` href.
 
 - 2026-08-27 — **The client resolvers were HOLDER-BLIND; a workflow binding resolved to the
   system default.** `resolveMandate` / `resolveMandateServer` never selected `holder_type`, so a
