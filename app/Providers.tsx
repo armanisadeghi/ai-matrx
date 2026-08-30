@@ -46,6 +46,12 @@ import { RequestRecoveryProvider } from "@/features/request-recovery/providers/R
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
 
+// The @ai-matrx/associations host binding: ONE provider mount (store + the
+// five UI ports). Sits directly inside StoreProvider so the identity port's
+// store-singleton reads share exactly the coverage the deleted Redux
+// association cache had. Heavy port bindings (WindowPanel, FilePickerWindow)
+// are behind their own lazy edges inside the host — this import stays light.
+import { AssociationsHost } from "@/features/scopes/host/AssociationsHost";
 import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
@@ -126,6 +132,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
   return (
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
+        <AssociationsHost>
         <WindowPersistenceManager>
           <PersistentComponentProvider>
             <ToastProvider>
@@ -222,6 +229,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
             </ToastProvider>
           </PersistentComponentProvider>
         </WindowPersistenceManager>
+        </AssociationsHost>
       </StoreProvider>
     </ReactQueryProvider>
   );

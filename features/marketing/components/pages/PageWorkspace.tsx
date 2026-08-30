@@ -125,8 +125,8 @@ import {
 } from "@/features/marketing/components/pages/cards/PushToCmsCard";
 import { pageRouteKey } from "@/features/marketing/lib/page-url";
 import { LinksPlan } from "@/features/marketing/components/pages/cards/LinksPlanCard";
-import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
-import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
+import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
+import { AssociationCardGrid } from "@ai-matrx/associations/react";
 import { PagePerformanceCard } from "@/features/marketing/components/pages/cards/PagePerformanceCard";
 import { PageAnalyticsCard } from "@/features/marketing/components/pages/cards/PageAnalyticsCard";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";

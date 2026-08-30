@@ -5,6 +5,17 @@ description: The repeatable recipe for canonicalizing entity-to-entity relations
 
 # Canonical Associations — the campaign playbook
 
+> **W5 SWAP NOTICE (2026-08-29):** the association/category UI + hooks + service
+> implementations now ship in **`@ai-matrx/associations`** (`/react` for faces +
+> hooks, `/core` for the headless services/store). Paths in this document that
+> point at `features/scopes/components/associations/**`,
+> `features/scopes/components/Category*`, or `features/scopes/redux/**`
+> association/category fragments refer to DELETED files — import from
+> `@ai-matrx/associations/react` (hooks also re-exported under
+> `features/scopes/hooks/`), and see `features/scopes/host/` for the host
+> binding. The rules and contracts described remain in force.
+
+
 There is **ONE** way to relate two entities (content↔content, content↔container) in this app: an edge in **`platform.associations`**, written ONLY through `associationsService` (`features/scopes/service/associationsService.ts`), which is the sole caller of the `assoc_*` RPCs. Every bespoke M2M junction table, `associate_*`/`get_*_associations` RPC, and FK-tag column used as a relationship is **debt to migrate onto this edge**. This skill is the exact recipe a subagent follows, one file at a time.
 
 ## ⚡ Field realities — "make this table associable everywhere" (verified 2026-07-05)

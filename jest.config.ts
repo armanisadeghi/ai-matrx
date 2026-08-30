@@ -62,6 +62,11 @@ const config: Config = {
         // subpath rule below (which would resolve it to dist/matrx.js).
         "^@ai-matrx/agents/matrx$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/matrx/index.js",
+        // @ai-matrx/associations subpaths are DIRECTORIES too
+        // (dist/core/index.js, dist/react/index.js) — map before the generic
+        // rule, same reason as agents/matrx above.
+        "^@ai-matrx/associations/(core|react)$":
+            "<rootDir>/node_modules/@ai-matrx/associations/dist/$1/index.js",
         "^@ai-matrx/([^/]+)/(.+)$":
             "<rootDir>/node_modules/@ai-matrx/$1/dist/$2.js",
         // BARE specifiers for the packages that ship `exports` but NO `main`

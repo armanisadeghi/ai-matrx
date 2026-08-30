@@ -40,7 +40,7 @@ import {
   AssociationList,
   useContainerLinksAdapter,
   type ContainerResourcesAdapter,
-} from "@/features/scopes/components/associations/AssociationList";
+} from "@ai-matrx/associations/react";
 import { isUuid } from "@/features/scopes/service/associationGuards";
 import { RESEARCH_LINEAGE_TOKENS } from "@/features/cms/hooks/useCmsResearchLineage";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";

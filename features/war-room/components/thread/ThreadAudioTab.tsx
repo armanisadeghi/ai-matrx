@@ -36,7 +36,7 @@ import {
 } from "@/features/war-room/service/roomRecordingBridge";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import { useThreadAudioSessionSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 // Code-split: CleanupPad pulls the whole transcription-cleanup graph
 // (transcript-studio + agents + audio + dictionary). Loading it lazily keeps it

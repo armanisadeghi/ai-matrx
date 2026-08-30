@@ -5,7 +5,7 @@ import { useState } from "react";
 import type {
   ContainerResourceRow,
   ContainerResourcesAdapter,
-} from "@/features/scopes/components/associations/AssociationList";
+} from "@ai-matrx/associations/react";
 import {
   useContainerLinks,
   type ContainerLink,

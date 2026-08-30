@@ -1,7 +1,7 @@
 "use client";
 
-import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
-import type { ContainerResourcesAdapter } from "@/features/scopes/components/associations/AssociationList";
+import { AssociationList } from "@ai-matrx/associations/react";
+import type { ContainerResourcesAdapter } from "@ai-matrx/associations/react";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import {
   createAssignment,

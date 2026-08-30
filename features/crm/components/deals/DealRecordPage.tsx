@@ -19,8 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
-import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AssociationCardGrid } from "@ai-matrx/associations/react";
+import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   UserAvatarDisplay,

@@ -17,6 +17,9 @@ importers:
       '@ai-matrx/agents':
         specifier: latest
         version: 0.5.1
+      '@ai-matrx/associations':
+        specifier: latest
+        version: 0.5.0(@ai-matrx/design-system@0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       '@ai-matrx/capture':
         specifier: latest
         version: 0.4.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -43,7 +46,7 @@ importers:
         version: 0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@ai-matrx/media':
         specifier: latest
-        version: 0.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.2.0(@ai-matrx/associations@0.5.0(@ai-matrx/design-system@0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/print':
         specifier: latest
         version: 0.2.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -807,6 +810,18 @@ packages:
   '@ai-matrx/agents@0.5.1':
     resolution: {integrity: sha512-AvLsiQrTkm1gQVH0OX0gModa8C/+1Q4k9eiI1jsvSTFFmzgCVOPbrjQFucvR6shyi75ZZUElJ25QG+95RN60Pw==}
     engines: {node: '>=20'}
+
+  '@ai-matrx/associations@0.5.0':
+    resolution: {integrity: sha512-Gm6qEZO1bgX3iLtd4MyJXrfMdjmnu2SvFDJ93efTZbeQj7uF69DtNlKc7frtx4iGSkYDEJHH94JKvKtt0IQXtw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@ai-matrx/design-system': '>=0.3.0'
+      react: 19.2.7
+    peerDependenciesMeta:
+      '@ai-matrx/design-system':
+        optional: true
+      react:
+        optional: true
 
   '@ai-matrx/capture@0.4.0':
     resolution: {integrity: sha512-VGq62PGnj+iJ0YvlSHReCSiGwkxVXJfiuENf3pxkqgrHBp7CZexl0H6lqZmVtOPitevrtITyHxGSt6njx7PwCw==}
@@ -13089,6 +13104,11 @@ snapshots:
 
   '@ai-matrx/agents@0.5.1': {}
 
+  '@ai-matrx/associations@0.5.0(@ai-matrx/design-system@0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+    optionalDependencies:
+      '@ai-matrx/design-system': 0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+
   '@ai-matrx/capture@0.4.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       lucide-react: 0.545.0(react@19.2.7)
@@ -13153,11 +13173,12 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@ai-matrx/media@0.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/media@0.2.0(@ai-matrx/associations@0.5.0(@ai-matrx/design-system@0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       react: 19.2.7
       tailwind-merge: 3.6.0
     optionalDependencies:
+      '@ai-matrx/associations': 0.5.0(@ai-matrx/design-system@0.3.0(@ai-matrx/kit@0.7.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
 
   '@ai-matrx/print@0.2.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':

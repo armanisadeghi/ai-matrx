@@ -26,7 +26,7 @@ import { Loader2, MessageCircle, Plus } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import { useMandate } from "@/features/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";

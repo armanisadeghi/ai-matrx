@@ -116,14 +116,14 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "Thread tabs (Task / Notes / Audio / Resources / Agent + derived entity tabs)",
       filePath: "features/war-room/components/thread/ThreadTaskTab.tsx",
       description:
-        "ThreadTaskTab (name/subtasks/attachments/comments; canvas-anchored threads route to Resources), ThreadNotesTab (NoteEditorCore + autosave), ThreadAudioTab (embedded CleanupPad over transcript-studio), ThreadResourcesTab (the canonical AssociationList over useThreadResourcesAdapter — every attached entity type, role-grouped, universal search-attach, pin, detach; upload/pick/new-file/new-doc toolbar) — all platform.associations edges. Notes/Audio/Agent entity lifecycle (name display + inline rename + switch + unlink + '+ New') = the canonical AssociationEntitySelect (features/scopes/components/associations/) over the adapters in features/war-room/hooks/useThreadEntitySelect.ts. The tab set is DERIVED (useThreadTabs): one entity:<token> tab per attached type the core tabs don't cover, rendered as a token-scoped AssociationList.",
+        "ThreadTaskTab (name/subtasks/attachments/comments; canvas-anchored threads route to Resources), ThreadNotesTab (NoteEditorCore + autosave), ThreadAudioTab (embedded CleanupPad over transcript-studio), ThreadResourcesTab (the canonical AssociationList over useThreadResourcesAdapter — every attached entity type, role-grouped, universal search-attach, pin, detach; upload/pick/new-file/new-doc toolbar) — all platform.associations edges. Notes/Audio/Agent entity lifecycle (name display + inline rename + switch + unlink + '+ New') = the canonical AssociationEntitySelect (@ai-matrx/associations/react) over the adapters in features/war-room/hooks/useThreadEntitySelect.ts. The tab set is DERIVED (useThreadTabs): one entity:<token> tab per attached type the core tabs don't cover, rendered as a token-scoped AssociationList.",
       tier: "internal",
     },
     {
       name: "ThreadResourcesButton / ThreadResourcesSheet + RoomResourcesSheet",
       filePath: "features/war-room/components/thread/ThreadResourcesSheet.tsx",
       description:
-        "The 1-click resources surfaces: a paperclip+count button on EVERY thread header (grid tile + stage) opening the full resources view in a Sheet/Drawer, and the room-scope sibling RoomResourcesSheet launched from RoomHeader's '…' menu (room-wide attachments every thread's agent sees). Both render the canonical AssociationList (features/scopes/components/associations/).",
+        "The 1-click resources surfaces: a paperclip+count button on EVERY thread header (grid tile + stage) opening the full resources view in a Sheet/Drawer, and the room-scope sibling RoomResourcesSheet launched from RoomHeader's '…' menu (room-wide attachments every thread's agent sees). Both render the canonical AssociationList (@ai-matrx/associations/react).",
       tier: "internal",
     },
     {

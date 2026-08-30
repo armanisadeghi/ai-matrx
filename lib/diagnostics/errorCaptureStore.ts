@@ -203,7 +203,15 @@ export type CapturedErrorSource =
    * router. Both are defects to find, so every firing lands here with its
    * entity, id, and whether deletion was actually PROVEN.
    */
-  | "record-unavailable";
+  | "record-unavailable"
+  /**
+   * The `@ai-matrx/associations` package's required errorSink port fired —
+   * a degraded port path, a guard rejection recovery, a create-then-attach
+   * partial failure, or the `demanded_schema_violation` scream (the DB this
+   * client points at does not answer a demanded RPC). Bound once in
+   * `features/scopes/host/errorSink.ts`.
+   */
+  | "associations";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

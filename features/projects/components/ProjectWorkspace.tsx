@@ -65,8 +65,8 @@ import { buildProjectWriteHandlers } from "@/features/projects/agent-context/pro
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
-import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
-import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AssociationCardGrid } from "@ai-matrx/associations/react";
+import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { ProjectTaskList } from "./ProjectTaskList";

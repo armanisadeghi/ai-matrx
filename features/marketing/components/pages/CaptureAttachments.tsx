@@ -20,7 +20,7 @@ import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import {
   UniversalAssociationPicker,
   attachedKey,
-} from "@/features/scopes/components/associations/UniversalAssociationPicker";
+} from "@ai-matrx/associations/react";
 import { cn } from "@/lib/utils";
 
 const ATTACH_TOKENS = ["note", "file"] as const;

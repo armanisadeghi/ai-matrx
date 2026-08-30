@@ -95,6 +95,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "unsaved-work": "Unsaved user work at risk",
   "durable-run": "Durable run could not be rejoined or settled",
   "record-unavailable": "Record unavailable (deleted, or access gap)",
+  associations: "Associations package scream (port degradation / schema violation)",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {
