@@ -3,8 +3,8 @@
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
   "state": "certifying",
-  "updatedAt": "2026-08-30T14:36:33.239Z",
-  "summary": "Correct exact replacement candidate 029667a044490df629fc088506558e5d1ae4b77a is ready for adversarial certification; product bytes are unchanged.",
+  "updatedAt": "2026-08-30T14:38:03.621Z",
+  "summary": "Clean exact candidate 292810bf1cdf1f8dba539d0c5a2e355e426d8e2f is ready for independent certification.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5"
+  "eventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a"
 }

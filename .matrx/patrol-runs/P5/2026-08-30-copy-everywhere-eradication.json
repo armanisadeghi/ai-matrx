@@ -128,6 +128,44 @@
       ],
       "previousEventHash": "6a83e9c80b8832c7e9126db2dbbf5430966c1aec6a8757b03f6fa1baef55d212",
       "eventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5"
+    },
+    {
+      "sequence": 10,
+      "state": "rejected",
+      "at": "2026-08-30T14:38:01.980Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "REJECTED candidate packaging 029667a044490df629fc088506558e5d1ae4b77a: shared integration bundled the P5 replacement with unrelated patrol work, so it was not a bounded exact candidate.",
+      "evidence": [
+        "Product bytes and gates remain valid; rejection is exact-candidate contamination only."
+      ],
+      "previousEventHash": "9a389d702d52c425f6f577523b0ff865ae6796f1974ec2f9f7e24e37f64e92f5",
+      "eventHash": "070201eea056214ca519a408fb79e277e86aa6918067b2ff7d919b62fbc19241"
+    },
+    {
+      "sequence": 11,
+      "state": "fixing",
+      "at": "2026-08-30T14:38:02.743Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Repackaging the same verified bytes as a clean 12-path commit from the canonical checkout without a worktree.",
+      "evidence": [
+        "Used a temporary Git index rooted at certified-layer parent 0b9729b4e6; no checkout or product edit occurred."
+      ],
+      "previousEventHash": "070201eea056214ca519a408fb79e277e86aa6918067b2ff7d919b62fbc19241",
+      "eventHash": "a2053aeb1f955914256b99620746d3b5e3572dfc2206fbc4229aff5ff2f8815b"
+    },
+    {
+      "sequence": 12,
+      "state": "certifying",
+      "at": "2026-08-30T14:38:03.621Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Clean exact candidate 292810bf1cdf1f8dba539d0c5a2e355e426d8e2f is ready for independent certification.",
+      "evidence": [
+        "Exactly 12 changed paths; parent 0b9729b4e6 contains the independently certified competitor payload layer and the core Unwired repair ancestry.",
+        "Preserved at origin/patrol/p5-copy-everywhere-2026-08-30.",
+        "Candidate P5 path bytes match the green canonical checkout."
+      ],
+      "previousEventHash": "a2053aeb1f955914256b99620746d3b5e3572dfc2206fbc4229aff5ff2f8815b",
+      "eventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a"
     }
   ]
 }
