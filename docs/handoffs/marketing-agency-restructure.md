@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-29
+updated: 2026-08-30
 repos: [matrx-frontend]
 scope: program
 feature: Marketing
@@ -23,15 +23,15 @@ vision: []
 
 ## Remaining work (in order)
 
+0. **Adversarial audit CLOSED 2026-08-30** — three Sonnet sweeps (105-page loss audit, orphan hunt, nav/tabs audit) found six defects; all six repaired same day: KeywordIntelligenceHub re-doored as the brand SEO overview (its `LIST_STATE` was silently broken pre-restructure — `columnFilters` fixed), OutreachFrontDoor mounted at `[brandId]/pr/outreach` (+ sidebar row), site-less Search Console / Capabilities landings restored (`reports/search-console`, `operations/capabilities`), Reputation site shell branch-aware (pills + non-jumping switcher), Keyword Value family carries its own routed pills, keywords pills path-style with a declared Research view. Also same-route brand switching (`lib/brand-switch.ts`) and anon hardening (42501-tolerant resolvers; signed-out deep brand links → `/login?redirectTo=`). Remaining below is unchanged.
+
 1. **Back-port ID→key canonicalization to the org-scope system** (Arman-ratified): UUID segments 308 to slug URLs across `/organizations/[orgId]/scopes/…`, and `/scopes/s/[scopeId]` emits slug segments. Mirror `features/marketing/lib/keys-server.ts` + the `CanonicalSegment` client helper.
 2. **aidream/ORM brand+site creates don't stamp slugs** — a brand created server-side lands with `slug NULL` (seen live 2026-08-29) and falls back to UUID addresses. Port the FE's `insertWithSlug` rule (slugify name, reserved-word suffix, collision suffix) into aidream's create paths, then run a NULL-slug backfill sweep (the migration's DO-block is rerunnable).
 3. **Sweep `${sitePath}` composition to `marketingRoutes`.** `MarketingSiteContext.sitePath` is now the BRANCH base; ~130 call sites compose `${sitePath}/<section>` and cross-branch ones ride the `[...rest]` mappers (one 308 hop). Replace with `marketingRoutes.site(brandId, siteId, sub)` (maps directly via `MARKETING_SITE_SECTION_HOMES`) as files are touched; then delete the two `[...rest]` mappers.
-4. **Reputation sub-view switcher**: `ReputationWorkspace` reads `useMarketingSubView("reputation")` but no header renders its five pills at `[brandId]/intelligence/reputation/[siteId]` (the site header's subnav only serves the websites/seo branches). Render the pills from `MARKETING_SITE_SUBVIEWS` on that page.
-5. **Keywords pills still write `?view=`** for start/performance/workbench (the routes exist and match); flip the `keywords` entry in `site-subviews.ts` to `hrefStyle: "path"` and map ids→sub-routes so header pills emit the canonical addresses.
-6. **Brand-scope the org-wide mounts**: `[brandId]/websites` (SitesPortfolio), `content/plan` (PlanSitesList), `planning/initiatives`, `email`, `pr`, `intelligence/monitoring` all mount org-wide components with a NOTE comment; thread a brand filter through each.
-7. **FEATURE.md deep sections** (Entry points / flows tables, ~L200–580) still show pre-restructure URL examples — they all redirect, but sweep them to the new addresses.
-8. **Rename affordance + alias ledger**: brand/site keys are immutable in UI until renames ship WITH the alias table + 308s (ratified rule; don't build the ledger before the affordance).
-9. **Socials/Ads build-out**: reserved structure is live (`socials` coming-soon; `ads` mounts the Google Ads workspace as the center's first room) — the full per-account depth (`socials/[accountId]/{posts,schedule,inbox,audience,performance}`, `ads/[accountId]/campaigns/…`) is the artifact's spec when those systems are built.
+4. **Brand-scope the org-wide mounts**: `[brandId]/websites` (SitesPortfolio), `content/plan` (PlanSitesList), `planning/initiatives`, `email`, `pr`, `intelligence/monitoring` all mount org-wide components with a NOTE comment; thread a brand filter through each.
+5. **FEATURE.md deep sections** (Entry points / flows tables, ~L200–580) still show pre-restructure URL examples — they all redirect, but sweep them to the new addresses.
+6. **Rename affordance + alias ledger**: brand/site keys are immutable in UI until renames ship WITH the alias table + 308s (ratified rule; don't build the ledger before the affordance).
+7. **Socials/Ads build-out**: reserved structure is live (`socials` coming-soon; `ads` mounts the Google Ads workspace as the center's first room) — the full per-account depth (`socials/[accountId]/{posts,schedule,inbox,audience,performance}`, `ads/[accountId]/campaigns/…`) is the artifact's spec when those systems are built.
 
 Traps: shared checkout (parallel sessions sweep working files into their commits — verify content, not commit messages); Bing OAuth callback stays at `/marketing/connections/bing/callback` (registered redirect URI — move only with the Bing app registration + `BING_WEBMASTER_OAUTH_REDIRECT_URI` in aidream); pre-existing GA4 `campaign-pause.test.ts` failure is logged in `FOUND_DEFECTS.md`, not this program's.
 
