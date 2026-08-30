@@ -62,7 +62,6 @@ function fulfillmentFee(result: LuluPriceResult): number | null {
   if (block !== null) return block;
   return feeTotal(result, "FULFILLMENT_FEE");
 }
-
 // ---------------------------------------------------------------------------
 // Rows
 // ---------------------------------------------------------------------------
@@ -82,7 +81,7 @@ function PriceRow({
     <div className="flex items-baseline justify-between gap-4">
       <span
         className={cn(
-          "text-xs",
+          "text-sm",
           emphasis ? "font-semibold text-foreground" : "text-muted-foreground",
         )}
       >
@@ -96,6 +95,40 @@ function PriceRow({
         )}
       >
         {value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The hero number. Lulu's calculator makes the per-book price the largest
+ * thing on the page, and it is the number a course creator is actually
+ * shopping for — so it gets the same weight here.
+ */
+function HeroPrice({
+  amount,
+  currency,
+  quantity,
+  muted = false,
+}: {
+  amount: string;
+  currency: string | null;
+  quantity: number;
+  muted?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 px-4 py-6 text-center">
+      <span
+        className={cn(
+          "text-5xl font-semibold tracking-tight tabular-nums",
+          muted ? "text-muted-foreground/50" : "text-foreground",
+        )}
+      >
+        {amount}
+      </span>
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {currency ?? "USD"} per book
+        {quantity > 1 ? ` · ${quantity} copies` : ""}
       </span>
     </div>
   );
@@ -121,19 +154,23 @@ export function PricePanel({
 }: PricePanelProps) {
   if (state.status === "loading") {
     return (
-      <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" />
-          Pricing this configuration…
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="flex flex-col items-center gap-2 px-4 py-6">
+          <Loader2 className="size-7 animate-spin text-muted-foreground/60" />
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Pricing this book…
+          </span>
         </div>
-        <PriceSkeleton />
+        <div className="border-t border-border p-4">
+          <PriceSkeleton />
+        </div>
       </div>
     );
   }
 
   if (state.status === "error") {
     return (
-      <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+      <div className="space-y-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
         <p className="text-sm font-semibold text-foreground">{state.headline}</p>
         {state.detail ? (
           <p className="break-words font-mono text-xs text-muted-foreground">
@@ -151,26 +188,26 @@ export function PricePanel({
   if (state.status !== "ready") {
     // Idle / awaiting credentials — the shape of the answer, with no numbers.
     return (
-      <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-        <PriceRow label="Unit price" value="—" emphasis />
-        <div className="space-y-1.5 border-t border-border pt-3">
-          <PriceRow label="Book Total" value="—" />
-          <PriceRow label="Shipping & Handling" value="—" />
-          <PriceRow label="Fulfillment Fee" value="—" />
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <HeroPrice amount="—" currency={null} quantity={quantity} muted />
+        <div className="space-y-2 border-t border-border p-4">
+          <PriceRow label="Books" value="—" />
+          <PriceRow label="Shipping & handling" value="—" />
+          <PriceRow label="Fulfillment fee" value="—" />
           <PriceRow label="Tax" value="—" />
         </div>
-        <div className="border-t border-border pt-3">
-          <PriceRow label="Subtotal" value="—" emphasis />
+        <div className="border-t border-border p-4">
+          <PriceRow label="Total" value="—" emphasis />
+          {missingFields.length > 0 ? (
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Choose your {missingFields.join(", ")} and the price appears here.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Pricing is unavailable until the print service is connected.
+            </p>
+          )}
         </div>
-        {missingFields.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Still needed: {missingFields.join(", ")}.
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Pricing is unavailable until the Lulu service is connected.
-          </p>
-        )}
       </div>
     );
   }
@@ -184,24 +221,24 @@ export function PricePanel({
   const discount = parseMoney(result.totalDiscountAmount);
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <span className="text-xs text-muted-foreground">
-          Unit price · {quantity} {quantity === 1 ? "book" : "books"}
-        </span>
-        <span className="text-2xl font-semibold tabular-nums text-foreground">
-          {formatMoney(unit, currency)}
-        </span>
-      </div>
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <HeroPrice
+        amount={formatMoney(unit, currency)}
+        currency={currency}
+        quantity={quantity}
+      />
 
-      <div className="space-y-1.5 border-t border-border pt-3">
-        <PriceRow label="Book Total" value={formatMoney(bookTotal, currency)} />
+      <div className="space-y-2 border-t border-border p-4">
         <PriceRow
-          label="Shipping & Handling"
+          label={quantity === 1 ? "Book" : `Books × ${quantity}`}
+          value={formatMoney(bookTotal, currency)}
+        />
+        <PriceRow
+          label="Shipping & handling"
           value={formatMoney(shippingAndHandling(result), currency)}
         />
         <PriceRow
-          label="Fulfillment Fee"
+          label="Fulfillment fee"
           value={formatMoney(fulfillmentFee(result), currency)}
         />
         {discount !== null && discount > 0 ? (
@@ -214,20 +251,20 @@ export function PricePanel({
         <PriceRow label="Tax" value={formatMoney(result.totalTax, currency)} />
       </div>
 
-      <div className="space-y-1.5 border-t border-border pt-3">
+      <div className="space-y-2 border-t border-border bg-muted/30 p-4">
         <PriceRow
           label="Subtotal (excl. tax)"
           value={formatMoney(result.totalCostExclTax, currency)}
         />
         <PriceRow
-          label="Total (incl. tax)"
+          label="Total"
           value={formatMoney(result.totalCostInclTax, currency)}
           emphasis
         />
       </div>
 
       {result.lineItems[0]?.discounts.length ? (
-        <ul className="space-y-1 border-t border-border pt-3">
+        <ul className="space-y-1 border-t border-border p-4">
           {result.lineItems[0].discounts.map((entry, index) => (
             <li
               key={`${entry.description ?? "discount"}-${index}`}
@@ -268,7 +305,7 @@ export function BulkTierTable({
   calculating,
 }: BulkTierTableProps) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
           <Layers className="size-4 text-muted-foreground" />
