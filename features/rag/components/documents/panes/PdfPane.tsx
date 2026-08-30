@@ -22,7 +22,7 @@ import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher
 // welded all ~440 barrel modules into one strongly-connected component, so tree
 // shaking could not drop anything and all ~82 InlineMediaRef consumers compiled the
 // Knowledge library and PDF viewer. Breaking this edge breaks the cycle.
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 
 interface PdfPreviewProps {
   fileId: string;
