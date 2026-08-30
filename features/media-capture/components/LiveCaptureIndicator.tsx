@@ -41,6 +41,7 @@ import {
 } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 import { interceptableHref } from "@/features/media-capture/runtime/live-capture-nav";
 import { formatClock } from "@/features/media-capture/components/RecordingHud";
+import { resolveGlobalCaptureControls } from "@/features/media-capture/components/live-capture-indicator-state";
 
 /** The live capture, or null. Server snapshot is null — capture is client-only. */
 function useLiveCapture(): LiveCaptureInfo | null {
@@ -53,6 +54,10 @@ function useLiveCapture(): LiveCaptureInfo | null {
 
 export function LiveCaptureIndicator() {
   const live = useLiveCapture();
+  const controls = resolveGlobalCaptureControls(
+    live,
+    getLiveCaptureControls(),
+  );
   const router = useRouter();
   const pathname = usePathname();
   const [saving, setSaving] = useState(false);
@@ -61,10 +66,10 @@ export function LiveCaptureIndicator() {
   // there is no stored duration to go stale and no setState-in-effect cascade.
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (!live) return;
+    if (!live || !controls) return;
     const t = window.setInterval(() => setTick((n) => n + 1), 250);
     return () => window.clearInterval(t);
-  }, [live]);
+  }, [live, controls]);
 
   /**
    * Stop the recording, finalize it, upload it. Resolves true when the media
@@ -130,14 +135,13 @@ export function LiveCaptureIndicator() {
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [live, router, stopAndSave]);
+  }, [live, controls, router, stopAndSave]);
 
-  if (!live) return null;
+  if (!live || !controls) return null;
 
-  const controls = getLiveCaptureControls();
   const progress = getLiveCaptureProgress();
   const paused = progress?.state === "paused";
-  const returnPath = controls?.returnPath ?? "/camera";
+  const returnPath = controls.returnPath;
   // The owning surface has its own record HUD — a second control there is
   // redundant clutter. While SAVING it stays up everywhere, so the user can
   // see their recording being rescued as the route changes under them.
@@ -185,8 +189,8 @@ export function LiveCaptureIndicator() {
 
         <button
           type="button"
-          onClick={() => (paused ? controls?.resume() : controls?.pause())}
-          disabled={!controls || saving}
+          onClick={() => (paused ? controls.resume() : controls.pause())}
+          disabled={saving}
           aria-label={paused ? "Resume recording" : "Pause recording"}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-foreground active:bg-accent disabled:opacity-60"
         >
@@ -200,7 +204,7 @@ export function LiveCaptureIndicator() {
         <button
           type="button"
           onClick={() => void stopAndSave()}
-          disabled={!controls || saving}
+          disabled={saving}
           aria-label="Stop recording and save it"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive text-destructive-foreground active:scale-95 disabled:opacity-60"
         >
