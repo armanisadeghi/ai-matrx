@@ -10,7 +10,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MediaProvider, type MediaProviderProps } from "@ai-matrx/media/core";
+import { MediaProvider } from "@ai-matrx/media/core";
 import { mediaClient } from "./client";
 import { mediaHostPorts } from "./ports";
 
