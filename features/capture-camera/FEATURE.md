@@ -1,25 +1,26 @@
 # Capture Camera — FEATURE.md
 
-**Status:** SHIPPED as **`@ai-matrx/capture` 0.1.0 on npm** — the package (`aidream/apps/shared/capture`) is the SINGLE source of truth for the chrome; the staged copies here were deleted on the swap (no-legacy). This directory now holds ONLY the app glue: `host/` + this doc. Live at `/commerce/intake/v2` (+ `/v2/instant`), `/commerce/intake/v3` (+ `/v3/instant`), and `/tools/product-capture` (+ `/instant` — the product-capture `CaptureScreen`, swapped 2026-08-30); real-phone acceptance pass pending. Chrome changes go in the aidream package (bump + tag `npm/capture/vX.Y.Z` + `pnpm sync:matrx-packages` here), never in this repo. Package classes reach Tailwind via the `@source` line for `@ai-matrx/capture/dist` in `app/globals.css`.
+**Status:** SHIPPED as **`@ai-matrx/capture` 0.5.0 on npm** — the package (`aidream/apps/shared/capture`) is the SINGLE source of truth for the chrome; the staged copies here were deleted on the swap (no-legacy). This directory now holds ONLY the app glue: `host/` + this doc. Live at `/commerce/intake/v2` (+ `/v2/instant`), `/commerce/intake/v3` (+ `/v3/instant`), and `/tools/product-capture` (+ `/instant` — the product-capture `CaptureScreen`, swapped 2026-08-30); real-phone acceptance pass pending. Chrome changes go in the aidream package (bump + tag `npm/capture/vX.Y.Z` + `pnpm sync:matrx-packages` here), never in this repo. Package classes reach Tailwind via the `@source` line for `@ai-matrx/capture/dist` in `app/globals.css`.
 
 The opinionated iPhone-style camera chrome: full-bleed feed under semi-transparent near-black bars, two-tap options grid, honest zoom pills, shutter, VIDEO·PHOTO·UPLOAD mode row, iOS-style sheets, instant in-browser crop/rotate editing.
 
 ## The three laws
 
 - 🚨 **THE CLOUD LAW: cloud integration is WHAT this system does, never an option.** `CameraCapture` requires `cloud: CaptureCloudPort` (recents thumb → tiled cloud library, save-edited persistence). The host injects HOW, never WHETHER. Enforced by the package `laws.test.ts` (a `cloud?:` is a test failure).
-- 🚨 **The engine is injected — no getUserMedia here.** The host adapts the ONE camera runtime (`features/media-capture`) via `host/useCameraCaptureHost.ts`; the chrome renders and orchestrates UI state only. No network, no storage (laws test).
-- **Honest capabilities only.** Torch/zoom/exposure render ONLY when `MediaTrackCapabilities` reports them (`hooks/useTrackControls.ts`). Never a fake toggle. Aspect (full/4:3/1:1/16:9) is a REAL center-crop of the full-sensor frame, applied host-side (`cropBlobToAspect`).
+- 🚨 **The engine is injected HERE — this app has a runtime.** Since 0.5.0 the package ships a production default engine (`useDefaultCaptureEngine`, `src/engine/` — permission pre-check, combined prompt, warm-mic with the four iOS branches, flip, clock) for runtime-less hosts; THIS app instead adapts the ONE camera runtime (`features/media-capture`) via `host/useCameraCaptureHost.ts`, which per C22 injects identity only and imports the package's quirk helpers (`cropBlobToAspect`, `classifyCameraBlockReason`, `nextCameraDevice`) instead of carrying twins.
+- **Honest capabilities only.** Torch/zoom/exposure render ONLY when `MediaTrackCapabilities` reports them (`hooks/useTrackControls.ts`). Never a fake toggle. Aspect (full/4:3/1:1/16:9) is a REAL center-crop of the full-sensor frame (the package's `cropBlobToAspect`).
 
 ## Layout
 
 ```
-@ai-matrx/capture           the chrome (npm): CameraCapture · ShutterButton · ModeSelector · ZoomRow ·
-                            OptionsGridPanel (two-tap grid) · CaptureSheet (iOS sheet, content+busy) ·
-                            ImageEditSheet (crop/rotate/flip) · GridOverlay · CountdownOverlay ·
-                            useTrackControls · the ports/slots types (root entry, RSC-safe)
-host/                       APP-SIDE: useCameraCaptureHost (lease/photo/video via media-capture runtime,
-                            aspect crop) · CloudLibrarySheet (tiled cloud gallery over the files layer;
-                            tiles open /files/f/[id])
+@ai-matrx/capture           the chrome + engine (npm): CameraCapture(V3) · ShutterButton · ModeSelector ·
+                            ZoomRow · OptionsGridPanel · CaptureSheet · ImageEditSheet · GridOverlay ·
+                            CountdownOverlay · useTrackControls · CloudLibrarySheet (tiled gallery over
+                            injected CaptureCloudLibraryItem[]) · useDefaultCaptureEngine + warm-mic +
+                            permission/crop/flip helpers · the ports/slots types (root entry, RSC-safe)
+host/                       APP-SIDE injection wiring ONLY (C22): useCameraCaptureHost (lease runtime →
+                            engine port; each kept block carries its justification) · CloudLibrarySheet
+                            (Redux files + MediaThumbnail + router → the PACKAGE sheet; same props)
 ```
 
 **Deterministic browser QA uses the host adapter, never decoder injection.**
@@ -39,6 +40,8 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 - Edit for persisted-only slides (fileId → blob fetch) — today Edit shows only when local pixels (`previewUrl`) exist.
 
 ## Change Log
+
+- 2026-08-30 — **C22/C23 retrofit: the hard parts moved INTO the package (capture 0.5.0) and the host collapsed to injection wiring.** `useCameraCaptureHost` now imports the package's `cropBlobToAspect` / `classifyCameraBlockReason` / `nextCameraDevice` / `PHOTO_JPEG_QUALITY` (local twins deleted) and every kept block carries its C22 justification (lease lifecycle, device persistence, app mic-singleton warm hold, canonical capture/record paths, toasts). The 206-line `CloudLibrarySheet` chrome moved to the package; the host copy is now a 110-line data wrapper (Redux files → `CaptureCloudLibraryItem[]`, `MediaThumbnail`, router push) with unchanged props, so intake v2/v3 did not move. Host `host/` total: 621 → 528 lines, none of it chrome or quirk branches. Package side: warm-mic manager with the four iOS branches ported verbatim, production default engine, laws amended (see aidream `apps/shared/capture/FEATURE.md`).
 
 - 2026-08-30 — Added development-only denied-camera and image-stream inputs to the shared host adapter for isolated-browser acceptance.
 
