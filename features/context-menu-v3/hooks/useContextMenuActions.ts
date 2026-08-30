@@ -299,8 +299,6 @@ export function useContextMenuActions(
     selectedText,
     selectionRange,
     fallbackContent,
-    addedContexts,
-    excludedContexts,
     placementMode,
     scope: shortcutScope,
     scopeId,

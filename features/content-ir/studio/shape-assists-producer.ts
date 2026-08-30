@@ -18,7 +18,6 @@ import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { EmitAssistInput } from "@/features/assists/types";
 import { KIND_CREATOR_MANDATE_KEY } from "./constants";
-import { resolveMandate } from "@/features/mandates/service";
 import { composeKindAgentIntent } from "./kind-agent-intents";
 import type { ShapeBrowseRow } from "@/features/content-ir/browse/types";
 
@@ -31,19 +30,12 @@ export async function produceMissingComponentAssists(
   userId: string,
   dispatch: AppDispatch,
 ): Promise<void> {
-  // The `content_ir.kind_creator` mandate decides which agent the chip launches
-  // (the user's own binding wins). Unresolvable → no chips this sweep, loudly.
-  let creatorId: string;
-  try {
-    creatorId = (await resolveMandate(KIND_CREATOR_MANDATE_KEY)).agentId;
-  } catch (error) {
-    console.error(
-      `[shape-assists] mandate "${KIND_CREATOR_MANDATE_KEY}" failed to resolve — skipping missing-component assists:`,
-      error,
-    );
-    return;
-  }
-
+  // THE DURABLE IDENTITY IS THE KEY. An emitted chip lives for 30 days; storing
+  // the agent this mandate resolved to at EMIT time would pin a month of chips
+  // to whoever held the job that morning, and a rebind would never reach them.
+  // The key is stored instead and resolved at CLICK time by the `launch_agent`
+  // handler — the same posture as every sibling producer (tasks, notes,
+  // search-console, backlinks).
   const candidates = entries
     .filter((e) => e.created_by === userId && e.is_active && !e.has_component)
     .slice(0, MAX_PER_SWEEP);
@@ -67,7 +59,7 @@ export async function produceMissingComponentAssists(
       body: `Your shape ${entry.kind} renders with the generic viewer. One click opens the shape-creator agent with the component brief ready.`,
       action: {
         kind: "launch_agent",
-        agentId: creatorId,
+        mandateKey: KIND_CREATOR_MANDATE_KEY,
         agentName: "Shape Creator",
         draftText: seed.draftText,
         variableValues: seed.variables,

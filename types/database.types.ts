@@ -3104,6 +3104,7 @@ export type Database = {
           is_verified: boolean | null
           last_execution_at: string | null
           layout_config: Json | null
+          mandate_id: string | null
           metadata: Json
           name: string
           organization_id: string
@@ -3157,6 +3158,7 @@ export type Database = {
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
+          mandate_id?: string | null
           metadata?: Json
           name: string
           organization_id: string
@@ -3210,6 +3212,7 @@ export type Database = {
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
+          mandate_id?: string | null
           metadata?: Json
           name?: string
           organization_id?: string
@@ -52399,10 +52402,15 @@ export type Database = {
       }
     }
     Functions: {
+      generate_app_mandate_key: {
+        Args: { p_name: string; p_slug: string }
+        Returns: string
+      }
       generate_shortcut_mandate_key: {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
+      sanitize_app_segment: { Args: { p_seg: string }; Returns: string }
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
       shortcut_slug: { Args: { p_text: string }; Returns: string }
       shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
@@ -66176,6 +66184,10 @@ export type Database = {
           favicon_url: string
           id: string
           layout_config: Json
+          mandate_agent_id: string
+          mandate_agent_version_id: string
+          mandate_id: string
+          mandate_key: string
           name: string
           preview_image_url: string
           shell_config: Json
