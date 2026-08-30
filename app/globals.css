@@ -2287,6 +2287,18 @@
   }
 }
 
+/* Google Picker is injected directly under <body> with provider defaults of
+   1000/1001. Those values sit below Matrx window panels and dialogs, leaving
+   the picker visible but unable to receive pointer input. Picker is a modal
+   provider surface, so keep both its scrim and dialog above every app layer. */
+.picker-dialog-bg {
+  z-index: calc(var(--z-max) - 1) !important;
+}
+
+.picker-dialog {
+  z-index: var(--z-max) !important;
+}
+
 /* Public workspaces such as shared canvases own their entire viewport. The
    marker lives inside the route so the shared public layout can keep its
    normal marketing chrome everywhere else without client-side pathname
@@ -2306,4 +2318,14 @@
 
 [data-public-layout]:has([data-public-immersive-surface]) > [data-public-main] {
   overflow: hidden;
+}
+
+/* Google Picker portals outside the Matrx overlay tree. Keep both of its
+   provider-owned layers above our highest window/panel so the picker remains
+   visible and interactive when launched from an overlay. */
+.picker-dialog-bg {
+  z-index: calc(var(--z-max) - 1) !important;
+}
+.picker-dialog {
+  z-index: var(--z-max) !important;
 }
