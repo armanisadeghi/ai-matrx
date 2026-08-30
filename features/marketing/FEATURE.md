@@ -634,6 +634,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- `2026-08-30` — **Referring domains now expose their actual linking pages.** The Provider data table remains honestly aggregated at one row per domain, but its Backlinks and new Linking pages cells are now direct doors to the Links table filtered to that domain. A user can open every stored source-page URL from the domain row instead of being stranded on a domain-only count.
+
 - `2026-08-30` — **Google read-only previews no longer auto-select another owner's admin-visible credential.** The reviewer workspace filters its RLS-visible inventory through the server's user/org reachability rule before choosing a connection, preventing a misleading permission toast from a credential the caller was never allowed to use.
 
 - 2026-08-30 — Pattern Patrol P13: the brand Identity website switcher now

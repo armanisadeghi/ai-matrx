@@ -359,11 +359,23 @@ export function BacklinkDimensionTable({
       header: "Backlinks",
       filter: false,
       align: "right",
-      cell: (row) => (
-        <span className="text-xs tabular-nums text-foreground">
-          {formatCount(row.backlinks)}
-        </span>
-      ),
+      cell: (row) => {
+        const label = row.label ?? row.dimension_key;
+        return kind === "referring_domain" ? (
+          <Link
+            href={domainLinksHref(sitePath, label)}
+            onClick={(event) => event.stopPropagation()}
+            className="text-xs font-medium tabular-nums text-primary"
+            title={`Open all ${formatCount(row.backlinks)} backlinks from ${label}`}
+          >
+            {formatCount(row.backlinks)}
+          </Link>
+        ) : (
+          <span className="text-xs tabular-nums text-foreground">
+            {formatCount(row.backlinks)}
+          </span>
+        );
+      },
     },
     ...(kind === "anchor" || kind === "competitor_domain"
       ? [
@@ -385,17 +397,26 @@ export function BacklinkDimensionTable({
       ? [
           {
             id: "referring_pages",
-            header: "Referring pages",
+            header: "Linking pages",
             sortable: false,
             filter: false,
-            align: "right",
             accessorFn: (row) =>
               parseDimensionExtras(row.extras).referringPages ?? 0,
-            cell: (row) => (
-              <span className="text-xs tabular-nums text-foreground">
-                {formatCount(parseDimensionExtras(row.extras).referringPages)}
-              </span>
-            ),
+            cell: (row) => {
+              const label = row.label ?? row.dimension_key;
+              const count = parseDimensionExtras(row.extras).referringPages;
+              return (
+                <Link
+                  href={domainLinksHref(sitePath, label)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+                  title={`Open the actual pages on ${label} that link to you`}
+                >
+                  View {formatCount(count)} {count === 1 ? "page" : "pages"}
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                </Link>
+              );
+            },
           } satisfies MatrxColumnDef<BacklinkDimensionRow>,
           {
             id: "platform",
