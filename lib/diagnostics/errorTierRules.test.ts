@@ -164,6 +164,7 @@ describe("classifyTier", () => {
 
     expect(c.tier).toBe("yellow");
     expect(c.ruleId).toBe("supabase-browser-transport-loss");
+    expect(c.persist).toBe(false);
   });
 
   it("keeps an HTTP Supabase failure red even when its message mentions fetch", () => {
