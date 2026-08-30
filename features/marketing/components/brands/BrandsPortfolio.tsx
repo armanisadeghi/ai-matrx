@@ -15,10 +15,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   humanLines,
-  webCopy,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -155,26 +153,6 @@ export function BrandsPortfolio() {
         : {}),
     });
 
-  const listCopy = webCopy({
-    kind: "web-brands-list",
-    label: "Brand portfolio",
-    description:
-      "The brand portfolio list currently loaded at /marketing/brands (respects active search/filters/page).",
-    surface: "Brands portfolio",
-    data: listRows,
-    lines: [
-      ["Brands on this page", listRows.length],
-      ["Total matching", brands.data?.total ?? listRows.length],
-      ...listRows.map(
-        (row): [string, string] => [
-          row.name,
-          `${row.status} · ${row.sites.map((site) => site.domain).join(", ") || "no websites"} · ${row.asset_count} assets · ${row.fact_count} facts`,
-        ],
-      ),
-    ],
-    attributes: { count: listRows.length, total: brands.data?.total ?? null },
-  });
-
   const columns: MatrxColumnDef<BrandListRow>[] = [
     {
       id: "name",
@@ -186,7 +164,7 @@ export function BrandsPortfolio() {
       // is the real anchor (keyboard, screen reader, cmd/middle-click).
       href: (row) => marketingRoutes.brand(row.id),
       cell: (row) => (
-        <div className="flex min-w-52 items-center gap-2.5">
+        <div className="flex w-52 min-w-52 max-w-52 items-center gap-2.5">
           <SiteIdentityMark site={row} size={30} />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-foreground">
@@ -238,7 +216,11 @@ export function BrandsPortfolio() {
       className: "max-lg:hidden",
       headerClassName: "max-lg:hidden",
       cell: (row) => (
-        <CountPill icon={Share2} count={row.social_count} label="social profiles" />
+        <CountPill
+          icon={Share2}
+          count={row.social_count}
+          label="social profiles"
+        />
       ),
     },
     {
@@ -264,7 +246,11 @@ export function BrandsPortfolio() {
       className: "max-lg:hidden",
       headerClassName: "max-lg:hidden",
       cell: (row) => (
-        <CountPill icon={MapPin} count={row.fact_count} label="business facts" />
+        <CountPill
+          icon={MapPin}
+          count={row.fact_count}
+          label="business facts"
+        />
       ),
     },
     {
@@ -332,17 +318,12 @@ export function BrandsPortfolio() {
         }
         center={<MarketingWorkspaceNav />}
         right={
-          <div className="flex items-center gap-1">
-            {listRows.length > 0 ? (
-              <CopyButtons size="icon" {...listCopy} />
-            ) : null}
-            <RefreshCwTapButton
-              ariaLabel="Refresh brands"
-              onClick={() => void brands.refetch()}
-              disabled={brands.isFetching}
-              className={brands.isFetching ? "animate-spin" : undefined}
-            />
-          </div>
+          <RefreshCwTapButton
+            ariaLabel="Refresh brands"
+            onClick={() => void brands.refetch()}
+            disabled={brands.isFetching}
+            className={brands.isFetching ? "animate-spin" : undefined}
+          />
         }
       />
       <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
@@ -368,9 +349,15 @@ export function BrandsPortfolio() {
               toolbar={{
                 searchPlaceholder: "Search brand name or website…",
                 actions: (
-                  <Button size="sm" className="h-8 gap-1.5" onClick={openCreate}>
+                  <Button
+                    size="sm"
+                    aria-label="Add brand"
+                    title="Add brand"
+                    className="h-11 w-11 shrink-0 gap-1.5 p-0 sm:h-8 sm:w-auto sm:px-3"
+                    onClick={openCreate}
+                  >
                     <Plus className="h-3.5 w-3.5" />
-                    Add brand
+                    <span className="hidden sm:inline">Add brand</span>
                   </Button>
                 ),
               }}
@@ -398,10 +385,13 @@ export function BrandsPortfolio() {
               onRowOpen={(row) => router.push(marketingRoutes.brand(row.id))}
               rowActions={(row) => (
                 <div className="flex items-center gap-0.5">
-                  <button
+                  <Button
                     type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Edit ${row.name}`}
                     title="Edit brand"
+                    className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 lg:min-w-5"
                     onClick={(event) => {
                       event.stopPropagation();
                       setEditing(row);
@@ -409,18 +399,21 @@ export function BrandsPortfolio() {
                     }}
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Delete ${row.name}`}
                     title="Delete brand"
+                    className="h-11 w-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive lg:h-5 lg:w-5 lg:min-w-5"
                     onClick={(event) => {
                       event.stopPropagation();
                       setDeleting(row);
                     }}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  </Button>
                 </div>
               )}
               emptyState={{

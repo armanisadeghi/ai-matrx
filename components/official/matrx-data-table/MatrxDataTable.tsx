@@ -294,12 +294,8 @@ function MatrxDataTableCore<T>({
   tableClassName,
   mobileCards,
   mobileCardsBreakpoint = "sm",
-  mobile = "scroll",
   onRowOpen,
 }: MatrxDataTableProps<T>) {
-  // Two sticky leading cells would overlap, and a frozen checkbox identifies
-  // nothing — selection and the mobile frozen identity column are exclusive.
-  const mobileScroll = !mobileCards && mobile !== "plain" && !selection;
   /**
    * A checkbox must NOT be stretched to the 44px touch floor — a bordered
    * 44×44 box with a 14px tick lost inside it reads as an empty text field,
@@ -1125,11 +1121,15 @@ function MatrxDataTableCore<T>({
           toolbar?.actions ||
           hasActiveFilters ||
           showToolbarCopy) && (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div
+            data-matrx-table-toolbar
+            className="flex shrink-0 flex-nowrap items-center gap-2 sm:flex-wrap"
+          >
             {showSearch ? (
               <div
+                data-matrx-table-search
                 className={cn(
-                  "flex w-full",
+                  "flex min-w-0 flex-1 sm:w-full sm:flex-none",
                   toolbar?.searchMatch ? "sm:max-w-md" : "sm:max-w-xs",
                 )}
               >
@@ -1226,7 +1226,10 @@ function MatrxDataTableCore<T>({
             {renderedFacets ? <ToolbarFacets facets={renderedFacets} /> : null}
             {toolbar?.leading}
 
-            <div className="ml-auto flex flex-wrap items-center gap-2">
+            <div
+              data-matrx-table-actions
+              className="ml-auto flex shrink-0 flex-nowrap items-center gap-2 sm:flex-wrap"
+            >
               {hasActiveFilters ? (
                 <Button
                   type="button"
@@ -1529,17 +1532,18 @@ function MatrxDataTableCore<T>({
               {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
             global `table { max-width: 100% }` otherwise clamps it and silently
             kills the scroll) so the container scrolls horizontally instead of
-            crushing every column into an unreadable wrap. Cells go nowrap and
-            the first column freezes (unless `mobile="plain"`), so a row stays
-            identifiable while scrolling. Written mobile-first rather than with
-            `max-sm:` because a base `w-full` outranks `max-sm:w-max`; `sm:`
-            restores the exact desktop rendering.
+            crushing every column into an unreadable wrap. Cells go nowrap, and
+            the WHOLE row scrolls as one surface. A mobile column may never pin
+            over the remaining data: a wide identity cell can otherwise consume
+            the viewport and make every later value functionally unreachable.
+            Written mobile-first rather than with `max-sm:` because a base
+            `w-full` outranks `max-sm:w-max`; `sm:` restores the exact desktop
+            rendering.
             The `table` + `overflow-visible` utilities are LOAD-BEARING: a
             globals.css base rule makes every `table` `display:block;
-            overflow-x:auto` under 768px, which turns the table into its own
-            scroller — the frozen column then sticks to the table's scrollport
-            (which itself moves) and never freezes. Utilities outrank the
-            `@layer base` rule and restore real table layout. */}
+            overflow-x:auto` under 768px, which would turn the table into a
+            second nested scroller. Utilities outrank the `@layer base` rule
+            and restore real table layout. */}
               <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
                   <tr>
@@ -1564,7 +1568,7 @@ function MatrxDataTableCore<T>({
                         />
                       </th>
                     ) : null}
-                    {visibleColumns.map((col, colIdx) => {
+                    {visibleColumns.map((col) => {
                       const id = columnId(col);
                       const meta = filterMeta.get(id);
                       const isSorted = sort?.id === id;
@@ -1589,12 +1593,6 @@ function MatrxDataTableCore<T>({
                             // breakpoint — no hydration mismatch, and the column
                             // stays sortable/filterable from the toolbar.
                             col.mobileHidden && "max-sm:hidden",
-                            // bg-inherit picks up the thead's translucent bg-muted/90
-                            // but NOT its backdrop-filter — re-apply the blur so
-                            // scrolled-under header text can't ghost through.
-                            mobileScroll &&
-                              colIdx === 0 &&
-                              "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
                             // Consumer widths are desktop tuning: applied from `sm`
                             // up via a CSS var. The minimum is load-bearing: without
                             // it, a crowded table crushes a declared 190px column to a
@@ -1722,11 +1720,9 @@ function MatrxDataTableCore<T>({
                             openRow(row);
                           }}
                           className={cn(
-                            // bg-card is a visual no-op (the container is bg-card) but
-                            // gives the frozen first cell an OPAQUE background to
-                            // inherit, so horizontally-scrolled content never shows
-                            // through it. The translucent tints (zebra/hover) would
-                            // let it bleed, so they are desktop-only.
+                            // Keep the mobile row opaque while the complete row scrolls
+                            // horizontally. The translucent zebra/hover tints remain
+                            // desktop-only so densely layered mobile content stays crisp.
                             "border-b border-border/60 bg-card transition-colors",
                             (detailEnabled || Boolean(onRowOpen)) &&
                               "cursor-pointer sm:hover:bg-muted/50",
@@ -1793,9 +1789,6 @@ function MatrxDataTableCore<T>({
                                   // defeats w-max, killing the horizontal scroll).
                                   "max-sm:whitespace-nowrap",
                                   col.mobileHidden && "max-sm:hidden",
-                                  mobileScroll &&
-                                    colIdx === 0 &&
-                                    "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
                                   col.width !== undefined &&
                                     "sm:w-[var(--matrx-col-w)] sm:min-w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
                                   col.className,
@@ -1945,20 +1938,18 @@ function MatrxDataTableCore<T>({
                 </tbody>
               </table>
             </div>
-            {/* THE OFF-SCREEN COLUMNS MUST BE DISCOVERABLE — at EVERY width.
+            {/* THE OFF-SCREEN COLUMNS MUST BE DISCOVERABLE ON DESKTOP.
             These measured, glass edge controls remain fixed over the scroll
-            viewport while the table moves beneath them. They are real 44px
-            tap targets, not decorative hints, and move one readable section
-            at a time without replacing native mouse/touch scrolling.
+            viewport while the table moves beneath them. On phones native touch
+            scrolling plus the visible next-column edge provides discovery;
+            floating 44px controls covered the very row data they were meant to
+            reveal, so the buttons begin at `sm`.
 
-            This used to be `sm:hidden` and gated on `mobileScroll`, which is
-            false whenever `selection` is on. Measured 2026-08-25 on Search
+            Measured 2026-08-25 on Search
             Console → Queries at 1362px: 1,662px of table in a 1,284px
             container — Position, Score and Level were entirely off the right
-            edge with NOTHING on screen saying so, because both gates were
-            closed. A desktop viewport is not a promise that everything fits.
-            `mobile="plain"` still opts out of the frozen identity column; it
-            does not opt out of knowing there is more to read. */}
+            edge with NOTHING on screen saying so. A desktop viewport is not a
+            promise that everything fits. */}
             {scrollHintLeft ? (
               <Button
                 type="button"
@@ -1967,7 +1958,7 @@ function MatrxDataTableCore<T>({
                 aria-label="Scroll table left"
                 title="More columns to the left"
                 data-matrx-table-scroll-control="left"
-                className="absolute left-1.5 top-1/2 z-30 h-11 w-11 -translate-y-1/2 rounded-full border border-glass-edge bg-glass p-0 text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover active:bg-glass-active"
+                className="absolute left-1.5 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 rounded-full border border-glass-edge bg-glass p-0 text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover active:bg-glass-active sm:inline-flex"
                 onClick={() => scrollTableHorizontally("left")}
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -1981,7 +1972,7 @@ function MatrxDataTableCore<T>({
                 aria-label="Scroll table right"
                 title="More columns to the right"
                 data-matrx-table-scroll-control="right"
-                className="absolute right-1.5 top-1/2 z-30 h-11 w-11 -translate-y-1/2 rounded-full border border-glass-edge bg-glass p-0 text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover active:bg-glass-active"
+                className="absolute right-1.5 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 rounded-full border border-glass-edge bg-glass p-0 text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover active:bg-glass-active sm:inline-flex"
                 onClick={() => scrollTableHorizontally("right")}
               >
                 <ChevronRight className="h-5 w-5" />

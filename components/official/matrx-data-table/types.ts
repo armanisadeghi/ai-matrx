@@ -563,9 +563,8 @@ export interface MatrxDataTableHierarchyMove {
  * select-all semantics, its own bar — is exactly the fork `components/official/`
  * exists to prevent.
  *
- * Selection turns OFF the mobile frozen-identity-column treatment: two sticky
- * leading cells would overlap, and a frozen checkbox identifies nothing.
- * Horizontal scrolling is unchanged.
+ * Selection does not alter mobile horizontal scrolling. The complete row moves
+ * as one surface below `sm`; no leading column is allowed to pin over the data.
  */
 export interface MatrxDataTableSelectionConfig<T> {
   /** Selected row ids (`getRowId`). Ids not on the current page are kept. */
@@ -707,15 +706,6 @@ export interface MatrxDataTableProps<T> {
   ) => ReactNode;
   /** Card/table handoff. `sm` is phone-only; `lg` includes portrait tablets. */
   mobileCardsBreakpoint?: "sm" | "lg";
-  /**
-   * Mobile (< sm) presentation. Default `"scroll"` — a deliberate horizontal
-   * scroll surface: the table sizes to its content, the first (identity)
-   * column freezes, and a right-edge fade + chevron affordance shows while
-   * more columns sit off-screen. `"plain"` opts out of the frozen column and
-   * the affordance (content-sized scrolling stays — wrapping every column at
-   * 390px is never the right rendering). Zero-config for consumers.
-   */
-  mobile?: "scroll" | "plain";
   /** Called after a row is selected for detail (in addition to opening the panel). */
   onRowOpen?: (row: T) => void;
 }

@@ -6,11 +6,11 @@ describe("directive catalog mobile table contract", () => {
 
     expect(classes.has("max-lg:table")).toBe(true);
     expect(classes.has("max-lg:overflow-visible")).toBe(true);
-    expect(
-      classes.has("max-lg:[&_tbody_tr>*:first-child]:sticky"),
-    ).toBe(true);
-    expect(classes.has("max-lg:[&_tbody_tr>*:first-child]:left-0")).toBe(
-      true,
+    expect([...classes].some((className) => className.includes("sticky"))).toBe(
+      false,
+    );
+    expect([...classes].some((className) => className.includes("left-0"))).toBe(
+      false,
     );
   });
 });

@@ -400,7 +400,6 @@ export default function AgentReviewQueueTable() {
                 pageSize={25}
                 pageSizeOptions={[25, 50, 100]}
                 zebra
-                mobile="scroll"
                 emptyState={{
                   title:
                     view === "inbox"

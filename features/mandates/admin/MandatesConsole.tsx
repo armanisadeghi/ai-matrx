@@ -396,7 +396,10 @@ export function MandatesConsole() {
         const entry = coverageIndex[base.mandateKey];
         return {
           ...base,
-          goal: catalogue?.[base.mandateKey]?.goal ?? null,
+          // The stored goal is the truth post-1W (goal NOT NULL on every
+          // definition, 'H' edits permanent); the code catalogue is the
+          // fallback for rows the DB read missed, not the source.
+          goal: mandate.goal ?? catalogue?.[base.mandateKey]?.goal ?? null,
           coverage: coverageBucketOf(coverageIndex, base.mandateKey),
           coverageDetail: entry
             ? entry.bucket === "orange"

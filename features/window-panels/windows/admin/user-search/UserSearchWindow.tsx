@@ -266,7 +266,6 @@ function UserSearchWindowInner({
               Select
             </Button>
           )}
-          mobile="scroll"
         />
       </div>
     </WindowPanel>

@@ -304,29 +304,35 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain('title="Drag to move"');
   });
 
-  it("freezes the first (identity) column below sm by default", () => {
+  it("never freezes a column over mobile table data", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable
         data={[{ id: "row-a", name: "Alpha" }]}
         columns={COLUMNS}
         getRowId={(row) => row.id}
         detail={{ enabled: false }}
-      />,
-    );
-    expect(markup).toContain("max-sm:sticky");
-  });
-
-  it('mobile="plain" opts out of the frozen first column', () => {
-    const markup = renderToStaticMarkup(
-      <MatrxDataTable
-        data={[{ id: "row-a", name: "Alpha" }]}
-        columns={COLUMNS}
-        getRowId={(row) => row.id}
-        detail={{ enabled: false }}
-        mobile="plain"
       />,
     );
     expect(markup).not.toContain("max-sm:sticky");
+  });
+
+  it("keeps search and persistent actions in one mobile toolbar row", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+        toolbar={{
+          actions: <button type="button">Add row</button>,
+        }}
+      />,
+    );
+    expect(markup).toContain("data-matrx-table-toolbar");
+    expect(markup).toContain("flex-nowrap");
+    expect(markup).toContain("data-matrx-table-search");
+    expect(markup).toContain("min-w-0 flex-1");
+    expect(markup).toContain("data-matrx-table-actions");
   });
 
   it("supports an explicit phone card presentation without replacing the desktop table", () => {

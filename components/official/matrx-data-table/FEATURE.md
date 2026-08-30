@@ -124,40 +124,36 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Never static-import `WindowPanel`** from a route — go through `DataRowWindow.dynamic.tsx`.
 - **No barrel `index.ts`.** Import from source files.
 
-## Mobile presentation (< `sm`, ~640px) — deliberate horizontal scroll
+## Mobile presentation (< `sm`, ~640px) — one whole-row scroll surface
 
-**Chosen: a frozen-identity-column scroll surface, not a card/list mode.**
-Below `sm` the table sizes to its content (`w-max`) and the container scrolls
-horizontally; the **first column freezes** (`max-sm:sticky left-0`, opaque
-`bg-card` inherit) so every row stays identifiable. Desktop rendering is
-untouched.
+Below `sm` the table sizes to its content (`w-max`) and its container scrolls
+horizontally. **No column may freeze or pin on a phone.** The complete row moves
+as one surface, so even a wide identity cell can never mask every later value.
+Desktop rendering is untouched.
 
-🚨 **The scroll affordance is NOT mobile-only, and no prop turns it off.** Round
-44px glass chevrons float at the overflowing edge (both sides as applicable),
-are real buttons that move one readable section per tap, and render from the
-**measured** overflow at every width — a `ResizeObserver` on the container and
-the table keeps them honest when a sidebar or panel changes the width without a
-window resize. There is no instructional footer sentence: the controls make the
-action self-evident without spending a row on chrome. The affordance used to be
-`sm:hidden` AND gated on the frozen-column flag, which is false whenever
-`selection` is on:
-Search Console → Queries at 1362px put 1,662px of table in a 1,284px container
-with Position, Score and Level entirely off the right edge and nothing on
-screen saying so. A desktop viewport is not a promise that everything fits.
-`mobile="plain"` opts out of the frozen identity column only.
+Phones use native touch scrolling and the visible edge of the next column for
+discovery. The measured 44px glass chevrons begin at `sm`: they remain available
+for overflowing desktop/tablet tables without floating over phone row content.
+A `ResizeObserver` on the container and table keeps their desktop visibility
+honest when a sidebar or panel changes width without a window resize. Search
+Console → Queries previously measured 1,662px of table in a 1,284px desktop
+container, so a desktop viewport is not a promise that everything fits.
+
+The persistent mobile toolbar is one row. Search owns the flexible width
+(`min-w-0 flex-1`); clear/copy/consumer actions remain in a non-wrapping trailing
+cluster. Consumers keep one primary action visible and make its label icon-only
+below `sm`; secondary action families belong in their existing drawer/menu.
 
 _Why scroll over cards:_ every consumer keeps full parity for free — sort,
 per-column filters, inline edit, FK cells, row/window actions all keep working
 with zero per-consumer config. A card mode would fork rendering (its own edit,
 copy, FK, selection surfaces), demand a "primary column" convention ~20
 existing consumers never declared, and silently drop the column-comparison
-scanning that admin tables exist for. Scroll keeps ONE rendering path; the
-frozen identity column + visible affordance is what makes it intentional
-rather than raw overflow.
+scanning that admin tables exist for. Scroll keeps ONE rendering path while
+moving every column together, so horizontal discovery never locks the user out.
 
-- **Zero-config.** Consumers do nothing. Opt out with `mobile="plain"`
-  (removes the frozen column; content-sized scrolling stays —
-  wrapping every column at 390px is never the right rendering).
+- **Zero-config.** Consumers do nothing. Content-sized scrolling stays;
+  wrapping every column at 390px is never the right rendering.
 - **Explicit card exception.** `mobileCards={(row) => ...}` replaces the narrow
   row presentation when a product surface must expose every essential value
   and action without horizontal discovery. The default handoff is below `sm`;
@@ -168,8 +164,8 @@ rather than raw overflow.
   card never forks or bypasses controlled/URL-backed selection.
   `controls.actions` carries the canonical row Copy/Copy-for-AI group and
   consumer `rowActions`; render it instead of rebuilding either action path.
-- The first visible column is the identity column — order columns so the
-  row's name/title/id comes first.
+- Put the row's identity first for scanability, but never use sticky positioning
+  to keep it there on a phone.
 
 ## Icon columns — `compact: true`, never a per-consumer override
 
@@ -287,6 +283,11 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change log
 
+- 2026-08-30 — Mobile tables now scroll every column together: removed the
+  frozen-first-column API and CSS, kept desktop overflow chevrons while removing
+  their phone data overlay, and made search plus persistent actions a single
+  non-wrapping mobile toolbar row. Regression coverage now rejects mobile sticky
+  columns and pins the toolbar geometry contract.
 - 2026-08-30 — Row actions now receive the visible row with pending inline
   edits merged. `MatrxDataTableRecordControls.hasPendingEdits` and
   `discardPendingEdits()` let an explicit row action persist that visible state
@@ -324,6 +325,9 @@ Do not drop these when replacing `AiModelTable`:
   at 375px. It keeps its size and gains an invisible 44×44 `::before` hit area
   (`CHECKBOX_TAP_AREA`). The same missing exclusion was fixed in
   `.matrx-touch-targets` (app/globals.css), whose comment had always claimed it.
+  The mobile edge-control behavior in item (1) was superseded on 2026-08-30:
+  mobile now uses direct whole-row scrolling without controls covering cells,
+  while the measured chevrons remain available from `sm` upward.
 
 - 2026-08-25 — Added `mobileCardsBreakpoint="sm" | "lg"`; card consumers stay
   phone-only by default and can deliberately include portrait tablets without
@@ -427,7 +431,7 @@ Do not drop these when replacing `AiModelTable`:
   input, and row link now keeps a 44px touch target below `lg`; desktop density is
   unchanged. This applies once at the primitive root, so toolbars, filters,
   actions, and pagination cannot independently regress to micro targets.
-- `2026-08-08` — Mobile scroll surface completed: right-edge fade + chevron scroll affordance, `mobile="scroll"|"plain"` opt-out, frozen-column decision documented. Accessible-name audit: `aria-label` on every icon-only control (header filter trigger with column name, clear Xs, panel-icon, UUID open/copy, editor Save/Cancel, Copy/Export), `aria-sort` on sorted `<th>`. Consumer aria-label rule added.
+- `2026-08-08` — Initial mobile scroll surface added frozen-column and chevron behavior; the frozen-column portion and its opt-out were superseded by the 2026-08-30 whole-row mobile contract. Accessible-name audit: `aria-label` on every icon-only control (header filter trigger with column name, clear Xs, panel-icon, UUID open/copy, editor Save/Cancel, Copy/Export), `aria-sort` on sorted `<th>`. Consumer aria-label rule added.
 - `2026-07-19` — Sticky header uses `bg-muted/90` + backdrop blur so column labels contrast with `bg-card` body rows.
 - `2026-07-19` — Filter overhaul: multi-select (OR `values` set, back-compat with single `value`), automatic (empty)/(not empty) select sentinels, text filter Contains/(empty)/(not empty) modes, explicit-select options uncapped, empties sort last both directions.
 

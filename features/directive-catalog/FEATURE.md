@@ -36,7 +36,7 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 - **Envelope render (the "test it" payoff):** `reference`/`view` with state `yes` renders LIVE through the canonical `MatrxEnvelopeBlock` + `referenceResolvers.ts` from `features/matrx-envelope/` — the same reference-chip renderer chat uses (resolves the value from Supabase, opens the entity on click). No second renderer.
 - **Identity selection:** searchable fields reuse `RecordReferencePicker` + the RLS-aware `reference_search_candidates` path; files use `openFilePicker`. The ephemeral `directiveReferencePickerWindow` returns selection through `callbackManager`; Redux carries no callbacks or chosen-record state.
 - **Reference examples stay derived:** `referenceFieldsForSpecs` projects only the current noun's server-declared fields and fills missing values with `<noun.field>` placeholders. Changing noun clears prior ids; selected records render through `EntityRef` with open/new-tab/peek doors.
-- **Phone/tablet layout stays deliberate:** compact header metadata, 44 px filter/builder/action controls, and `MOBILE_TABLE_FROZEN_THROUGH_TABLET` keep noun identity visible without collapsing verb columns. The grid wrapper is the single horizontal scroller; the table stays `overflow-visible` through tablet so sticky cells anchor to that wrapper.
+- **Phone/tablet layout stays deliberate:** compact header metadata, 44 px filter/builder/action controls, and the shared `MOBILE_TABLE_FROZEN_THROUGH_TABLET` compatibility token keep the matrix content-sized without pinning any column. The grid wrapper is the single horizontal scroller, so the entire row moves together and every verb column remains reachable.
 - Component library: `Select`, `Input`, `Button`, `Badge`; Lucide icons; semantic tokens.
 
 ## Execute (writes)
@@ -79,9 +79,11 @@ alias map. Consequences here:
 
 ## Change Log
 
-- 2026-08-26 — Kept the noun column frozen during real phone/tablet horizontal scrolling by making the grid wrapper the sole scroll container.
+- 2026-08-30 — Adopted the platform-wide whole-row mobile table contract. The noun column now scrolls with the verb columns instead of consuming the viewport as a sticky layer; the historical shared token name remains only as a compatibility name while consumers are inventoried for a later rename.
 
-- 2026-08-25 — Made the phone catalog intentional: compacted server metadata, raised interactive targets to 44 px, named icon-only actions, and preserved the frozen-noun horizontal matrix.
+- 2026-08-26 — Kept the noun column frozen during real phone/tablet horizontal scrolling by making the grid wrapper the sole scroll container. Superseded by the 2026-08-30 whole-row mobile contract.
+
+- 2026-08-25 — Made the phone catalog intentional: compacted server metadata, raised interactive targets to 44 px, named icon-only actions, and preserved the frozen-noun horizontal matrix. The frozen behavior was superseded on 2026-08-30.
 
 - 2026-08-23 — Synchronized the unified directive grammar: `directive_version`
   replaces the retired envelope version, verbs derive from noun capabilities, Kind
