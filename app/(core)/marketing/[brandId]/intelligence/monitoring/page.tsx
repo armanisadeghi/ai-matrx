@@ -4,18 +4,19 @@
 // own workspace, so this section scopes to a site and opens them. It never
 // re-renders them.
 //
-// NOTE (agency restructure, 2026-08-29): `MonitoringFrontDoor` is the canonical
-// component the flat `/marketing/monitoring` route used and is mounted here
-// unchanged. Its site picker is still org-wide (`?site=`) rather than scoped to
-// the brand in the path; scoping it is a component change, tracked in the
-// restructure handoff.
+// 🚨 BRAND SCOPE (2026-08-30). `MonitoringFrontDoor` is the canonical component
+// the flat `/marketing/monitoring` route uses, mounted here WITH this brand's
+// scope. Mounted without it (as it was until today) the picker was org-wide and
+// defaulted to the first site on the platform: All Green Recycling's Monitoring
+// page opened on AI Matrx's website, every door beneath it linked into that
+// other client's workspace, and choosing the right site appeared to do nothing.
 
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { MonitoringFrontDoor } from "@/features/marketing/front-doors/MonitoringFrontDoor";
+import { BrandScopedMonitoring } from "@/features/marketing/front-doors/BrandScopedMonitoring";
 
 export const metadata: Metadata = {
   title: "Monitoring",
@@ -35,7 +36,7 @@ export default function BrandMonitoringPage() {
       </PageHeader>
       {/* The site selector reads `?site=` on the client. */}
       <Suspense fallback={<LoadingSurface label="Loading monitoring…" />}>
-        <MonitoringFrontDoor />
+        <BrandScopedMonitoring />
       </Suspense>
     </>
   );

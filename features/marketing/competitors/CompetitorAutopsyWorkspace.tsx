@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowUpRight,
   CircleDot,
@@ -113,12 +113,25 @@ function competitorView(raw: string | null): CompetitorView {
   return COMPETITOR_VIEWS.find((view) => view.id === raw)?.id ?? "run";
 }
 
-function competitorViewHref(view: CompetitorView, siteId: string | null): string {
+/**
+ * 🚨 A TAB MUST STAY ON THE ROUTE IT WAS CLICKED FROM (2026-08-30). These
+ * hrefs were hardcoded to the FLAT `/marketing/competitors` route, so inside a
+ * brand (`/marketing/<brand>/intelligence/competitors`) five of the six tabs —
+ * Review, Opportunities, Competitors, Evidence, History — navigated off the
+ * brand entirely, and the flat route bounced the user to the clients list with
+ * every bit of context lost. Only the default Run tab appeared to work. The
+ * base is now whatever route the workspace is actually mounted on.
+ */
+function competitorViewHref(
+  view: CompetitorView,
+  siteId: string | null,
+  basePath: string,
+): string {
   const params = new URLSearchParams();
   if (siteId) params.set("siteId", siteId);
   if (view !== "run") params.set("view", view);
   const query = params.toString();
-  return `${marketingRoutes.competitors()}${query ? `?${query}` : ""}`;
+  return `${basePath}${query ? `?${query}` : ""}`;
 }
 
 function siteBrandLabel(site: CompetitorSite): string {
@@ -239,6 +252,7 @@ export default function CompetitorAutopsyWorkspace({
 } = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const requestedSiteId = searchParams.get("siteId");
   const activeView = competitorView(searchParams.get("view"));
   const [domains, setDomains] = useState("");
@@ -249,6 +263,9 @@ export default function CompetitorAutopsyWorkspace({
   const dispatch = useAppDispatch();
   const { sites, scopedSites, workspace, run, start, resolvedSiteId } =
     useCompetitorAutopsy(requestedSiteId, brandId);
+  // The route this workspace is mounted on — the brand route when brand-scoped,
+  // the flat route otherwise. Every tab href is built from it.
+  const basePath = pathname ?? marketingRoutes.competitors();
 
   const data = workspace.data;
   const completedRun = data?.runs.find((item) => item.status === "completed");
@@ -776,7 +793,7 @@ export default function CompetitorAutopsyWorkspace({
   const headerModes = COMPETITOR_VIEWS.map((view) => ({
     name: view.name,
     icon: view.icon,
-    href: competitorViewHref(view.id, resolvedSiteId),
+    href: competitorViewHref(view.id, resolvedSiteId, basePath),
   }));
   const headerOptions = availableSites.map((site) => {
     const brandLabel = siteBrandLabel(site);
@@ -785,7 +802,7 @@ export default function CompetitorAutopsyWorkspace({
         (brandSiteCounts.get(brandLabel) ?? 0) > 1
           ? `${brandLabel} · ${site.domain}`
           : brandLabel,
-      href: competitorViewHref(activeView, site.id),
+      href: competitorViewHref(activeView, site.id, basePath),
       active: site.id === resolvedSiteId,
     };
   });
@@ -822,7 +839,7 @@ export default function CompetitorAutopsyWorkspace({
         }
         entityOptions={headerOptions}
         modes={headerModes}
-        activeModeHref={competitorViewHref(activeView, resolvedSiteId)}
+        activeModeHref={competitorViewHref(activeView, resolvedSiteId, basePath)}
         actions={[
           {
             label: "Refresh",
@@ -1069,7 +1086,7 @@ export default function CompetitorAutopsyWorkspace({
                 size="sm"
                 className="shrink-0"
                 onClick={() =>
-                  router.push(competitorViewHref("review", resolvedSiteId))
+                  router.push(competitorViewHref("review", resolvedSiteId, basePath))
                 }
               >
                 Review them

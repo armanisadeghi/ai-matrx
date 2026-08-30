@@ -316,6 +316,7 @@ function mergeSiteListRow(
 export async function listSites(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
+  brandId?: string | null,
 ): Promise<PagedResult<SiteListRow>> {
   const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
@@ -340,6 +341,14 @@ export async function listSites(
     .from("site")
     .select(SITE_COLUMNS, { count: "exact" })
     .is("deleted_at", null);
+
+  // 🚨 BRAND SCOPE (2026-08-30). `/marketing/<brand>/websites` mounted this
+  // portfolio unscoped, so a client's own workspace listed EVERY client's
+  // websites — 15 sites across 14 brands inside All Green Recycling's shell.
+  // The page carried a comment acknowledging the gap ("no brand-scoped list
+  // component exists") and deferring it; deferring it is what shipped one
+  // client's roster into another's workspace.
+  if (brandId) query = query.eq("brand_id", brandId);
 
   const search = cleanSearch(state.search);
   if (search) {

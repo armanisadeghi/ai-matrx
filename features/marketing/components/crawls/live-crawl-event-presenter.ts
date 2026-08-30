@@ -87,6 +87,48 @@ function pageSubject(event: CrawlLiveEvent): string {
 // eslint-disable-next-line no-control-regex -- ANSI escape detection needs the raw control char
 const RAW_ERROR_DUMP = /\u001b|\bquery=|\bargs=|Traceback|^\s*\w*(Error|Exception)\b/;
 
+// eslint-disable-next-line no-control-regex -- stripping the raw control char is the point
+const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
+
+/**
+ * A crawl error as a PERSON should read it.
+ *
+ * 🚨 Added 2026-08-30. The crawl-sessions table rendered `session.error` raw,
+ * so a failed crawl showed the user a full backend dump — ANSI colour codes,
+ * the ORM's banner, the failing SQL, and a developer hint about
+ * `get_or_none()`. The durable row keeps every byte (that is what the logs are
+ * for); the CELL gets the first real sentence, and the untouched text stays on
+ * the element's title for whoever needs it.
+ *
+ * Returns null when there is no error at all.
+ */
+export function humanizeCrawlError(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const clean = raw.replace(ANSI_ESCAPE, "").replace(/\s+/g, " ").trim();
+  if (!clean) return null;
+
+  // The ORM's own banner puts the readable sentence after a labelled line;
+  // prefer it over the exception class and the SQL that follows.
+  const labelled = clean.match(
+    /(?:Database integrity error|DB error|Reason|message)\s*:\s*([^:]{8,240}?)(?:\s+(?:DETAIL|Hint|Query|Args|Operation)\b|$)/i,
+  );
+  if (labelled?.[1]) return sentence(labelled[1]);
+
+  // Otherwise drop a leading `SomeError:` prefix and everything from the first
+  // developer-facing section onward.
+  const withoutClass = clean.replace(/^\s*\w*(?:Error|Exception)\s*:\s*/i, "");
+  const cut = withoutClass.split(
+    /\s+(?:DETAIL|Hint|Query|Args|Operation|Traceback)\b/i,
+  )[0];
+  return sentence(cut || withoutClass);
+}
+
+function sentence(value: string): string {
+  const trimmed = value.replace(/[-\s]+$/, "").trim();
+  if (!trimmed) return "The crawl failed. The full technical detail is in the crawl logs.";
+  return trimmed.length > 200 ? `${trimmed.slice(0, 197)}...` : trimmed;
+}
+
 function warningText(event: CrawlLiveEvent): string | null {
   const message = event.message;
   if (typeof message !== "string") return null;

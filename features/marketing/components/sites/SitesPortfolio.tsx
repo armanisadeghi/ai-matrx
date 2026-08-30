@@ -99,12 +99,18 @@ async function copyToClipboard(text: string, message: string) {
   toast.success(message);
 }
 
-export function SitesPortfolio() {
+export function SitesPortfolio({
+  brandId,
+}: {
+  /** When set, the portfolio lists only this brand's websites. The brand
+   * workspace ALWAYS sets it — see listSites' brand-scope note. */
+  brandId?: string | null;
+} = {}) {
   const router = useRouter();
   const table = useMarketingTableState({
     defaultSort: { id: "gsc_clicks_28d", direction: "desc" },
   });
-  const sites = useSites(table.queryState);
+  const sites = useSites(table.queryState, brandId);
   // access-errors: ok — header count chip; the sites table is the primary read and absence only hides the number
   const siteCount = useSiteCount();
   const deleteMutation = useDeleteSite();
