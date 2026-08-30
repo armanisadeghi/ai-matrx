@@ -8,7 +8,7 @@ import type {
   GitHubRepository,
   GitHubResourceRow,
 } from "./types";
-import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { postJson, del as deleteJson } from "@/lib/python-client";
 
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_item_id, vault_secret_key, deleted_at";
@@ -100,32 +100,28 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
   };
 }
 
-function backendBase(): string {
-  return AIDREAM_PRODUCTION_URL;
-}
-
+/**
+ * Routed through the canonical `lib/python-client.ts` kernel instead of a
+ * hand-rolled fetch — this used to build its own Authorization-only headers
+ * and never attached X-Organization-Id, even though GitHub connections are
+ * organization-scoped (`users.integration_connections.organization_id`).
+ * `postJson`/`del` resolve the organization from Redux and are mandatory,
+ * fail-closed (aidream commit 8e5ee0b93's AuthMiddleware admission gate).
+ */
 async function githubBackend(
   path: string,
   method: "POST" | "DELETE" = "POST",
 ): Promise<void> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Sign in to manage GitHub.");
-  const response = await fetch(`${backendBase()}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: "{}",
-  });
-  if (!response.ok) {
-    const payload: unknown = await response.json().catch(() => null);
+  try {
+    if (method === "DELETE") {
+      await deleteJson(path);
+    } else {
+      await postJson(path, {});
+    }
+  } catch (err) {
     const detail =
-      isJsonObject(payload) && typeof payload.detail === "string"
-        ? payload.detail
+      err instanceof Error && err.message
+        ? err.message
         : "GitHub connection request failed.";
     throw new Error(detail);
   }
@@ -139,18 +135,35 @@ export function disconnectGitHubConnection(): Promise<void> {
   return githubBackend("/api/github-integrations/connection", "DELETE");
 }
 
-export function githubConnectUrl(returnUrl: string): string {
-  return `/api/github/oauth/start?return_url=${encodeURIComponent(returnUrl)}`;
+export function githubConnectUrl(
+  returnUrl: string,
+  organizationId: string,
+): string {
+  const params = new URLSearchParams({
+    return_url: returnUrl,
+    organization_id: organizationId,
+  });
+  return `/api/github/oauth/start?${params.toString()}`;
 }
 
+/**
+ * `organizationId` is mandatory here — GitHub connections are
+ * organization-scoped (users.integration_connections.organization_id) and
+ * neither this call nor the OAuth round trip it starts can resolve one on
+ * its own (a Redux read has to happen at the call site, which has React
+ * context this module does not). Callers pass the currently selected
+ * organization (`selectOrganizationId`); `start/route.ts` re-validates it
+ * fail-closed before ever redirecting to GitHub.
+ */
 export function startGitHubConnection(
   returnUrl: string,
+  organizationId: string,
 ): Promise<
   | { ok: true; value: "connected" }
   | { ok: false; error: string; cancelled: boolean }
 > {
   return startOAuthPopup({
-    url: githubConnectUrl(returnUrl),
+    url: githubConnectUrl(returnUrl, organizationId),
     target: "github_oauth",
     successType: "github_oauth_complete",
     errorType: "github_oauth_error",

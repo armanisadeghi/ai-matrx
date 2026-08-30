@@ -13,6 +13,7 @@ import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { useMcpServerTools } from "@/features/agents/hooks/useMcpTools";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   mcpConnectionActionLabel,
   mcpConnectionRouteFor,
@@ -142,6 +143,7 @@ function McpDetail({
   entry: McpCatalogEntry;
   onBack: () => void;
 }) {
+  const organizationId = useAppSelector(selectOrganizationId);
   const { connect, disconnect, reload } = useMcpCatalog();
   const { tools, discovery, refresh } = useMcpServerTools(entry.serverId);
   const [busy, setBusy] = useState(false);
@@ -152,7 +154,13 @@ function McpDetail({
   const handleConnect = async () => {
     setActionError(null);
     if (route === "github") {
-      window.location.assign(githubConnectUrl(window.location.pathname));
+      if (!organizationId) {
+        setActionError("Select an organization before connecting GitHub.");
+        return;
+      }
+      window.location.assign(
+        githubConnectUrl(window.location.pathname, organizationId),
+      );
       return;
     }
     if (route === "configure") {
@@ -242,7 +250,9 @@ function McpDetail({
             disabled={!connected || discovery?.status === "loading"}
             className="h-7 px-3 rounded-md text-xs border border-border bg-background hover:bg-accent transition-colors disabled:opacity-50"
           >
-            {discovery?.status === "loading" ? "Checking tools…" : "Refresh tools"}
+            {discovery?.status === "loading"
+              ? "Checking tools…"
+              : "Refresh tools"}
           </button>
         </div>
       </div>
@@ -286,7 +296,9 @@ function McpDetail({
               {discovery.error ?? "Tool discovery failed"}
             </p>
           ) : discovery?.status === "loading" ? (
-            <p className="text-xs text-muted-foreground">Checking available tools…</p>
+            <p className="text-xs text-muted-foreground">
+              Checking available tools…
+            </p>
           ) : tools.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               No tools were reported by this server.
@@ -294,7 +306,10 @@ function McpDetail({
           ) : (
             <ul className="space-y-2">
               {tools.map((tool) => (
-                <li key={tool.name} className="rounded-md border border-border/50 p-2">
+                <li
+                  key={tool.name}
+                  className="rounded-md border border-border/50 p-2"
+                >
                   <code className="text-xs font-mono">{tool.name}</code>
                   {tool.description && (
                     <p className="mt-1 text-xs text-muted-foreground">

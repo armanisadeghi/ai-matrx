@@ -15,6 +15,7 @@ import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { toast } from "@/lib/toast";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { googleConnectedIds } from "./google-status";
 import {
   buildLiveConnectorDefinitions,
@@ -28,6 +29,7 @@ export function useLiveConnectors() {
   const inventory = useGoogleConnectionInventory();
   const mcp = useMcpCatalog();
   const mcpError = useAppSelector(selectMcpCatalogError);
+  const organizationId = useAppSelector(selectOrganizationId);
   const openGoogleConnect = useOpenGoogleConnectWindow();
   const [connectingId, setConnectingId] = useState<ConnectorId | null>(null);
   const [isNavigating, startTransition] = useTransition();
@@ -84,7 +86,13 @@ export function useLiveConnectors() {
       return;
     }
     if (route === "github") {
-      window.location.assign(githubConnectUrl(window.location.pathname));
+      if (!organizationId) {
+        toast.error("Select an organization before connecting GitHub.");
+        return;
+      }
+      window.location.assign(
+        githubConnectUrl(window.location.pathname, organizationId),
+      );
       return;
     }
 

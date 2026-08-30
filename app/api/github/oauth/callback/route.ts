@@ -7,6 +7,7 @@ import {
   requestBaseUrl,
 } from "../session";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 
 function errorRedirect(
   request: NextRequest,
@@ -68,10 +69,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       `${backendBase}/api/github-integrations/exchange`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        headers: applyOrganizationContextHeader(
+          {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          oauthSession.organizationId,
+        ),
         body: JSON.stringify({ code, redirect_uri: oauthSession.redirectUri }),
         signal: AbortSignal.timeout(30_000),
       },

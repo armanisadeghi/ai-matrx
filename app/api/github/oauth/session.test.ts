@@ -18,19 +18,37 @@ describe("GitHub OAuth session", () => {
     ).toBeNull();
   });
 
-  test("parses a valid session and revalidates its return path", () => {
+  // REFUSAL: a cookie minted before organization threading existed (or one
+  // tampered with to drop it) must not be treated as a valid session - the
+  // eventual exchange call would 400 server-side (organization_required)
+  // with no clear path back for the user. Paired CONTROL below.
+  test("REFUSAL: rejects a session cookie with no organizationId", () => {
+    expect(
+      parseGitHubOAuthSession(
+        JSON.stringify({
+          state: "csrf-state",
+          redirectUri: "https://www.aimatrx.com/api/github/oauth/callback",
+          returnUrl: "/code",
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  test("CONTROL: parses a valid session (with organizationId) and revalidates its return path", () => {
     expect(
       parseGitHubOAuthSession(
         JSON.stringify({
           state: "csrf-state",
           redirectUri: "https://www.aimatrx.com/api/github/oauth/callback",
           returnUrl: "//attacker.example/steal",
+          organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
         }),
       ),
     ).toEqual({
       state: "csrf-state",
       redirectUri: "https://www.aimatrx.com/api/github/oauth/callback",
       returnUrl: "/code",
+      organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
     });
   });
 });

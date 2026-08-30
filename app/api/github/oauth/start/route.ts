@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import {
+  OrganizationContextError,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
+import {
   GITHUB_OAUTH_COOKIE,
   githubAuthorizationUrl,
   requestBaseUrl,
@@ -21,6 +25,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Mandatory, fail-closed, same kernel as every other transport in this
+  // remediation - GitHub connections are organization-scoped
+  // (users.integration_connections.organization_id) and the eventual
+  // exchange call to aidream now 400s without X-Organization-Id (aidream
+  // commit 8e5ee0b93). The caller (features/github-integration/service.ts's
+  // githubConnectUrl) already has the selected organization from Redux and
+  // must pass it - refuse BEFORE ever redirecting to GitHub if it's missing
+  // or invalid, rather than discovering the gap after a real OAuth round
+  // trip. No fallback organization is ever chosen.
+  let organizationId: string;
+  try {
+    organizationId = requireOrganizationContext(
+      request.nextUrl.searchParams.get("organization_id"),
+    );
+  } catch (error) {
+    const message =
+      error instanceof OrganizationContextError
+        ? error.message
+        : "An organization is required to connect GitHub.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const clientId = process.env.GITHUB_CLIENT_ID;
   if (!clientId) {
     return NextResponse.json(
@@ -34,7 +60,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const returnUrl = safeReturnUrl(
     request.nextUrl.searchParams.get("return_url"),
   );
-  const session: GitHubOAuthSession = { state, redirectUri, returnUrl };
+  const session: GitHubOAuthSession = {
+    state,
+    redirectUri,
+    returnUrl,
+    organizationId,
+  };
   const cookieStore = await cookies();
   cookieStore.set(GITHUB_OAUTH_COOKIE, JSON.stringify(session), {
     httpOnly: true,

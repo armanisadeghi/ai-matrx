@@ -8,6 +8,8 @@ import {
   syncGitHubConnection,
 } from "./service";
 import type { GitHubConnectionInventory } from "./types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 const EMPTY: GitHubConnectionInventory = {
   connection: null,
@@ -15,6 +17,7 @@ const EMPTY: GitHubConnectionInventory = {
 };
 
 export function useGitHubConnection() {
+  const organizationId = useAppSelector(selectOrganizationId);
   const [inventory, setInventory] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -56,9 +59,13 @@ export function useGitHubConnection() {
   }, []);
 
   const connect = async (returnUrl = window.location.pathname) => {
+    if (!organizationId) {
+      setError("Select an organization before connecting GitHub.");
+      return;
+    }
     setBusy(true);
     setError(null);
-    const outcome = await startGitHubConnection(returnUrl);
+    const outcome = await startGitHubConnection(returnUrl, organizationId);
     if (outcome.ok) {
       await reload();
     } else if (!outcome.cancelled) {

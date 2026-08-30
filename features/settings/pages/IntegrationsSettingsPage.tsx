@@ -67,6 +67,7 @@ import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -139,6 +140,7 @@ type ViewFilter = "all" | "connected" | "available" | "coming_soon";
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function IntegrationsPage() {
+  const organizationId = useAppSelector(selectOrganizationId);
   const dispatch = useAppDispatch();
   const catalog = useAppSelector(selectMcpCatalog);
   const status = useAppSelector(selectMcpCatalogStatus);
@@ -226,7 +228,13 @@ export default function IntegrationsPage() {
   const handleOAuthConnect = useCallback(
     async (entry: McpCatalogEntry, endpointOverride?: string) => {
       if (entry.slug === "github") {
-        window.location.assign(githubConnectUrl(window.location.pathname));
+        if (!organizationId) {
+          toast.error("Select an organization before connecting GitHub.");
+          return;
+        }
+        window.location.assign(
+          githubConnectUrl(window.location.pathname, organizationId),
+        );
         return;
       }
       const outcome = await startMcpOAuthPopup(
@@ -243,7 +251,7 @@ export default function IntegrationsPage() {
         });
       }
     },
-    [dispatch],
+    [dispatch, organizationId],
   );
 
   const handleBearerConnect = useCallback(
