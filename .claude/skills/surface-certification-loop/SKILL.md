@@ -51,14 +51,22 @@ facts and exceptions. Never launch one schedule per surface.
    `ui.ui_surface`, SQL, timestamps, a local list, or conversation memory.
    The Work Loop row's `claim_holder`, `claimed_at`, and `lease_expires_at` are
    the exact checkout audit trail.
-3. Heartbeat active claims before half the lease elapses. Ownership loss stops
+3. **Serialize the live Browser lane.** The host has one machine-wide isolated
+   in-app Browser. Claims, source audits, repairs, and tests may run in parallel,
+   but the coordinator grants live Browser ownership to exactly one worker or
+   verifier at a time. Everyone else stays in static/code work. The owner closes
+   every tab and resets Browser state before handoff. Any viewport/theme/menu
+   evidence captured while another pilot worker owned or used the Browser is
+   invalid and must be rerun. This makes the existing no-shared-browser rule
+   operational; it does not reduce Work Loop claim concurrency.
+4. Heartbeat active claims before half the lease elapses. Ownership loss stops
    writes immediately.
-4. Settle each worker through `complete`, `retry`, or `defer`, then refill the
+5. Settle each worker through `complete`, `retry`, or `defer`, then refill the
    slot. `complete` means a full candidate; it is not certification.
-5. Let the service create an independent verifier. A passed verifier promotes
+6. Let the service create an independent verifier. A passed verifier promotes
    the durable `ui.ui_surface.last_check`; rejection creates repair work at a
    higher priority than untouched backlog.
-6. Continue while claimable work exists. Report pilot/review batches from
+7. Continue while claimable work exists. Report pilot/review batches from
    durable state, never from agent recollection.
 
 ## Settlement rules

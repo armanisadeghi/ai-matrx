@@ -45,8 +45,13 @@ roles, bindings, disclosure, or agent UI.
 **Browser availability.** Live proof is a completion gate. If the isolated in-app
 Browser is unavailable, finish safe static repairs, record the exact missing
 proof, and settle the Work Loop item with `retry`; never complete it and never
-write certification. Parallel workers may share neither a tab nor browser
-state. Each live pass starts from a fresh isolated session and closes its tabs.
+write certification. The host has one machine-wide in-app Browser, so parallel
+workers may share neither a tab nor browser state: the certification coordinator
+serializes the live Browser lane while static audits, repairs, and tests remain
+parallel. Use it only while the coordinator has granted this claim ownership.
+Each live pass starts from a fresh isolated session, closes its tabs, and resets
+Browser state before the next worker or verifier receives the lane. Evidence
+captured during overlapping Browser use is invalid and must be rerun.
 
 ## Step 2 — Run S1 → S18 in order, fixing as you go
 
