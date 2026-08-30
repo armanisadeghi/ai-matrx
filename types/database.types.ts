@@ -47865,6 +47865,15 @@ export type Database = {
         Args: { p_instance_id: string }
         Returns: Json
       }
+      corrective_action_state: {
+        Args: {
+          p_acknowledged_at: string
+          p_acknowledgement_kind: string
+          p_follow_up_on: string
+          p_outcome: string
+        }
+        Returns: string
+      }
       dead_capability_doors: {
         Args: never
         Returns: {
@@ -59785,6 +59794,20 @@ export type Database = {
           p_user: string
         }
         Returns: number
+      }
+      access_request_recipient_report: {
+        Args: { p_sample?: number }
+        Returns: {
+          class: string
+          entity: string
+          is_container: boolean
+          org_col: string
+          owner_col: string
+          parent_type: string
+          rows_sampled: number
+          rows_with_recipients: number
+          token: string
+        }[]
       }
       actor_system: { Args: never; Returns: string }
       actor_tier: { Args: never; Returns: string }
@@ -90088,6 +90111,7 @@ export type Database = {
           notes: string | null
           og_image_url: string | null
           organization_id: string
+          previous_slugs: string[]
           profile: Json
           settings: Json
           slug: string | null
@@ -90112,6 +90136,7 @@ export type Database = {
           notes?: string | null
           og_image_url?: string | null
           organization_id: string
+          previous_slugs?: string[]
           profile?: Json
           settings?: Json
           slug?: string | null
@@ -90136,6 +90161,7 @@ export type Database = {
           notes?: string | null
           og_image_url?: string | null
           organization_id?: string
+          previous_slugs?: string[]
           profile?: Json
           settings?: Json
           slug?: string | null
@@ -92422,6 +92448,7 @@ export type Database = {
           og_image_url: string | null
           organization_id: string
           plan_profile_id: string | null
+          previous_slugs: string[]
           root_url: string
           settings: Json
           slug: string | null
@@ -92452,6 +92479,7 @@ export type Database = {
           og_image_url?: string | null
           organization_id: string
           plan_profile_id?: string | null
+          previous_slugs?: string[]
           root_url: string
           settings?: Json
           slug?: string | null
@@ -92482,6 +92510,7 @@ export type Database = {
           og_image_url?: string | null
           organization_id?: string
           plan_profile_id?: string | null
+          previous_slugs?: string[]
           root_url?: string
           settings?: Json
           slug?: string | null
@@ -93317,6 +93346,7 @@ export type Database = {
           og_image_url: string | null
           organization_id: string
           plan_profile_id: string | null
+          previous_slugs: string[]
           root_url: string
           settings: Json
           slug: string | null
@@ -93372,6 +93402,7 @@ export type Database = {
           og_image_url: string | null
           organization_id: string
           plan_profile_id: string | null
+          previous_slugs: string[]
           root_url: string
           settings: Json
           slug: string | null
