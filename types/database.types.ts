@@ -46830,6 +46830,10 @@ export type Database = {
         Args: { p_target_id: string; p_target_table: string }
         Returns: string
       }
+      _approval_subject_required: {
+        Args: { p_target_table: string }
+        Returns: boolean
+      }
       _break_glass_active: {
         Args: { p_id: string; p_token: string; p_user: string }
         Returns: boolean
