@@ -21,6 +21,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +79,7 @@ export function LandscapeBriefCard({
 }) {
   const dispatch = useAppDispatch();
   const [brief, setBrief] = useState<LandscapeBriefRow | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<"generate" | "save" | null>(null);
   const [correction, setCorrection] = useState("");
@@ -89,14 +91,20 @@ export function LandscapeBriefCard({
     }
     let alive = true;
     setLoading(true);
+    setLoadError(null);
     void loadLandscapeBrief(site.id)
       .then((row) => {
         if (!alive) return;
         setBrief(row);
         setCorrection(row?.guidance ?? "");
       })
-      .catch((error) => {
+      // 🚨 Swallowing this made a FAILURE look like a first run (2026-08-30).
+      // The card fell through to "Nothing established yet", so an owner whose
+      // read failed saw the same copy as one who had never run it — and the
+      // button just re-ran the same silent failure.
+      .catch((error: unknown) => {
         console.error("[landscape-brief] load failed", error);
+        if (alive) setLoadError(error);
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -209,6 +217,12 @@ export function LandscapeBriefCard({
               message="Loading competitor landscape…"
             />
           </p>
+        ) : loadError ? (
+          <InlineQueryError
+            what="the landscape brief"
+            error={loadError}
+            onRetry={() => void refresh()}
+          />
         ) : !brief ? (
           <p className="text-sm text-muted-foreground">
             Nothing established yet. Work it out first — competitor judgments
