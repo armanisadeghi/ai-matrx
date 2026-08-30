@@ -166,6 +166,33 @@
       ],
       "previousEventHash": "a2053aeb1f955914256b99620746d3b5e3572dfc2206fbc4229aff5ff2f8815b",
       "eventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a"
+    },
+    {
+      "sequence": 13,
+      "state": "certified",
+      "at": "2026-08-30T14:40:47.929Z",
+      "actor": "p5-replacement-certifier",
+      "summary": "CERTIFIED exact clean candidate 80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b: no batch-caused defect remains.",
+      "evidence": [
+        "Two-icon manifest, skill, README, primitive, and tests agree; JSON, AI variants, exports, and Unwired finish brief remain under the second icon.",
+        "rowAiVariants reaches cards, desktop rows, side panels, and windows.",
+        "Browser automation unavailable because required node_repl js was not exposed; infrastructure evidence only."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b",
+        "certifierTaskId": "/root/p5_replacement_certifier",
+        "checks": [
+          "Focused Jest 6 suites / 36 tests passed.",
+          "Full type-check passed.",
+          "Scoped ESLint 0 errors; one unchanged barrel warning.",
+          "P5 detector 105 compliant / 26 auto-approved / 0 equivalent / 33 review / 17 excluded; detector tests 8/8 passed.",
+          "check:patrol-contracts passed with semantic P5 recipe guard.",
+          "git diff --check passed."
+        ]
+      },
+      "previousEventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a",
+      "eventHash": "48994a0a2d064aac7a6301ef0acf7873b5fd4b7d91cc5883ae66fb4104e52623"
     }
   ]
 }

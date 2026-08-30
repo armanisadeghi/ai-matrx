@@ -1,10 +1,15 @@
 # P9 — Coming-soon compliance patrol
 
 **Run:** 2026-08-30
+
 **Run ID:** `01a05301-8fab-7d50-87f1-ea38599319d4`
+
 **Mode:** ACTIVE · ERADICATION · canonical shared checkout
+
 **Baseline:** `857dcd2c3b7bed591441c6a175caf72eb1397ec4`
+
 **Certified candidate inspected:** `8f0041cebc3d8e3a05520bfdb5e7629c514dfebc`
+
 **Current outcome:** Batch 1 **CERTIFIED**; Batch 2 **INFRASTRUCTURE BLOCKED** for delivery only.
 
 ## Scope scanned
