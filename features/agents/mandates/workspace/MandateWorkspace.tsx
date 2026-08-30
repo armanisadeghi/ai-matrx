@@ -2,12 +2,15 @@
 
 // features/agents/mandates/workspace/MandateWorkspace.tsx
 //
-// THE mandate workspace — the ONE core component both hosts wrap:
+// THE mandate workspace — the ONE core component every host wraps:
 //   · the dedicated route  app/(core)/agents/mandates/[mandateKey]
+//   · the admin route      app/(admin)/administration/agents/mandates/[mandateKey]
 //   · the window panel     features/window-panels/windows/agents/MandateWindow
 // Identical functionality by construction (Arman's rule 3, 2026-08-26);
-// divergence only where a host genuinely differs (the window's multi-mandate
-// scope list — a shell concern, not a workspace one).
+// divergence only where a HOST genuinely differs — the window's multi-mandate
+// scope list, and the admin shell's header offset. There is no second mandate
+// detail implementation anywhere: the admin console's row click lands HERE
+// (2026-08-29), it no longer opens a drawer of its own.
 //
 // ORDER OF IMPORTANCE (the vision, verbatim doctrine in ../FEATURE.md):
 //   §1 THE TRIAD — INPUT → GOAL → OUTPUT (TriadSections.tsx). Arman: "INPUT ->
@@ -70,7 +73,14 @@ import {
 export interface MandateWorkspaceProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
   mandateKeyOrId: string;
-  host: "route" | "window";
+  /**
+   * Which shell wraps this workspace. `route` is the (core) page (its own
+   * `<PageHeader>` floats, so the body owns the offset); `admin-route` is the
+   * same page inside the admin shell, where content already sits below the
+   * header; `window` is the draggable panel. Chrome only — every host renders
+   * the identical workspace.
+   */
+  host: "route" | "admin-route" | "window";
   /** Whose binding §4 edits. Defaults to the personal principal. */
   principal?: WorkspacePrincipal;
 }
@@ -185,7 +195,10 @@ export function MandateWorkspace({
   return (
     <div
       className={cn(
-        "h-full overflow-y-auto",
+        // The admin shell's page owns the scroll (the workspace shares that
+        // page with the Admin controls section), so it must not open a second
+        // scroll container of its own here.
+        host !== "admin-route" && "h-full overflow-y-auto",
         host === "route" && "pt-[calc(var(--shell-header-h)+0.5rem)]",
       )}
     >
@@ -260,7 +273,13 @@ export function MandateWorkspace({
         <MandateNotesPanel
           mandateId={data.mandate.id}
           mandateKey={data.mandate.mandate_key}
-          surfaceName={host === "window" ? undefined : "matrx-user/mandate-workspace"}
+          surfaceName={
+            host === "window"
+              ? undefined
+              : host === "admin-route"
+                ? "matrx-admin/mandates"
+                : "matrx-user/mandate-workspace"
+          }
         />
       </div>
     </div>

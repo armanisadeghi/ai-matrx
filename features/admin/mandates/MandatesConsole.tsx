@@ -1,11 +1,19 @@
 "use client";
 
 /**
- * Mandates console — the admin view of every DB-managed mandate:
- * current pin (vs latest), enable/disable, rebind, overrides, and the
- * test bench. Canonical MatrxDataTable surface: every column sorts +
- * filters, row → issue-driven side-panel workbench (MandateDetailPanel),
- * Copy for AI. System-of-record: common-docs/systems/mandates/FEATURE.md.
+ * Mandates console — the admin LIST of every DB-managed mandate: the coverage
+ * board, goal + coverage + health columns, filters, enable/disable, Copy for
+ * AI. Canonical MatrxDataTable surface: every column sorts and filters.
+ *
+ * 🚨 ONE MANDATE UI (2026-08-29). This console owns the LIST and nothing else.
+ * Every way of opening one mandate — row click, the coverage board's named
+ * rows, the drift strip, the right-click menu, `?mandate=` — lands on the
+ * SAME workspace page the rest of the product uses
+ * (`/administration/agents/mandates/[key]`, the admin shell around the very
+ * same `MandateWorkspace` as `/agents/mandates/[key]`). The old side-panel
+ * drawer is no longer on any path from here.
+ *
+ * System-of-record: common-docs/systems/agents/mandates/FEATURE.md.
  */
 
 import React, {
@@ -14,8 +22,9 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useTransition,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import {
   AlertTriangle,
@@ -80,7 +89,7 @@ import {
 import { readMandateBenchSnapshot } from "./bench-draft";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { fetchProvisions } from "@/features/agents/mandates/provisions";
-import { MandateDetailView } from "./MandateDetailPanel";
+import { adminMandateHref } from "@/features/agents/mandates/browse/url-compat";
 import {
   CreateSystemTwinButton,
   LineageChip,
@@ -200,6 +209,20 @@ export function humanRow(r: ConsoleRow): string {
 
 export function MandatesConsole() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  // Every door out of this list goes to the ONE mandate page. `pendingKey`
+  // puts the loading state on the element that was clicked and guards the
+  // duplicate click, per the repo's navigation rule.
+  const [navPending, startNav] = useTransition();
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const openMandatePage = useCallback(
+    (mandateKeyOrId: string) => {
+      if (navPending) return;
+      setPendingKey(mandateKeyOrId);
+      startNav(() => router.push(adminMandateHref(mandateKeyOrId)));
+    },
+    [navPending, router],
+  );
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByMandateKey, setCodeTruthByMandateKey] = useState<
@@ -232,10 +255,9 @@ export function MandatesConsole() {
     (id: string | null) => setUrlSelectedId(id ?? ""),
     [setUrlSelectedId],
   );
-  // DEEP LINK — `?mandate=<mandate_key>` selects that mandate on arrival.
-  // Any surface that names the AI it runs links here (see
-  // top Agents menu); without this the link would open the
-  // console on nothing, which is the dead end THE DOOR LAW forbids.
+  // DEEP LINK — `?mandate=<mandate_key>` is the LEGACY door (it used to open
+  // the console's drawer). It now forwards to that mandate's page, so an old
+  // link lands on the same UI as a new one rather than on a highlighted row.
   const searchParams = useSearchParams();
   const deepLinkKey = searchParams.get("mandate");
   const deepLinkedRef = useRef<string | null>(null);
@@ -483,14 +505,14 @@ export function MandatesConsole() {
   const mandateMenuSections: ContextMenuExtraSection[] = (() => {
     const row = menuRow;
     if (!row) return [];
-    const deepLinkHref = `/administration/agents/mandates?mandate=${encodeURIComponent(row.mandateKey)}`;
+    const deepLinkHref = adminMandateHref(row.mandateKey);
     const items: ContextMenuExtraSection["items"] = [
       {
         kind: "item",
         id: "mandate-open",
         label: `Open "${row.mandateKey}"`,
         icon: ExternalLink,
-        onSelect: () => setSelectedId(row.id),
+        onSelect: () => openMandatePage(row.mandateKey),
       },
       {
         kind: "link",
@@ -652,15 +674,14 @@ export function MandatesConsole() {
   // live-ref idiom `UserTableViewer` uses, and the only one that stays fresh
   // every render without touching a ref during render.
   const rowsRef = useRef<ConsoleRow[]>(rows);
-  // Runs once per distinct ?mandate= value, after rows load.
+  // Runs once per distinct ?mandate= value. No row lookup is needed — the page
+  // resolves the key itself — so an old link works even before rows load.
   useEffect(() => {
-    if (!deepLinkKey || allRows.length === 0) return;
+    if (!deepLinkKey) return;
     if (deepLinkedRef.current === deepLinkKey) return;
-    const match = allRows.find((row) => row.mandateKey === deepLinkKey);
-    if (!match) return;
     deepLinkedRef.current = deepLinkKey;
-    setSelectedId(match.id);
-  }, [deepLinkKey, allRows]);
+    router.replace(adminMandateHref(deepLinkKey));
+  }, [deepLinkKey, router]);
 
   const selectedIdRef = useRef<string | null>(selectedId);
 
@@ -1149,29 +1170,6 @@ export function MandatesConsole() {
                 health: r.health,
                 enabled: r.isEnabled,
               }),
-            }}
-            detail={{
-              title: (r) => (
-                <span className="font-mono text-sm">{r.mandateKey}</span>
-              ),
-              description: (r) => r.label ?? undefined,
-              defaultWidth: 520,
-              render: (r) =>
-                data ? (
-                  <MandateDetailView
-                    row={r}
-                    data={data}
-                    lineage={
-                      (r.agentId ? lineageIndex[r.agentId] : undefined) ?? {
-                        parent: null,
-                        children: [],
-                        systemTwin: null,
-                      }
-                    }
-                    builtinAgentsById={builtinAgentsById}
-                    onSaved={reload}
-                  />
-                ) : null,
             }}
             window={{
               title: (r) => `Mandate — ${r.mandateKey}`,

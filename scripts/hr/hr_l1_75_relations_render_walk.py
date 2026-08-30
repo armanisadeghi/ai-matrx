@@ -111,7 +111,8 @@ async def main():
             page = await ctx.new_page()
             errs = []
             page.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
-            await page.goto(f"{ORIGIN}{path}", wait_until="domcontentloaded")
+            # a cold Next dev compile of an HR route can exceed the 30s default on this machine.
+            await page.goto(f"{ORIGIN}{path}", wait_until="domcontentloaded", timeout=180000)
             await page.wait_for_timeout(wait)
             # 🚨 THE COPPA AGE GATE IS A MODAL AND IT IS NOT THIS WALK'S SUBJECT. A fixture
             # account that has never declared an age range gets it on first load, and it swallows
@@ -200,8 +201,17 @@ async def main():
             [l for l in body.split("\n") if "Harassment" in l][:3])
         rec("D3 · 'What happens next' renders as a SENTENCE, not a date and not nothing",
             "waiting to be picked up by the people who handle these" in body)
-        rec("D3 · nothing from the case leaks into the reporter's own view",
-            "G2V-Priya Raman" not in body.split("Report something to HR")[-1])
+        # 🚨 SCOPED TO THE PANEL, BECAUSE THE FIRST VERSION OF THIS ASSERT WAS WRONG AND SAID SO
+        # LOUDLY. It split the whole page on the panel heading and took everything after — which
+        # on /hr/me is the panel PLUS the person's own profile, whose header legitimately reads
+        # "Reports to G2V-Priya Raman". The accused manager's name was on the page because she is
+        # this employee's manager and always has been, not because anything leaked out of the
+        # case. Read the panel's own subtree instead of guessing at a text boundary.
+        panel = await page.locator("section:has-text('Report something to HR')").first.inner_text()
+        rec("D3 · nothing from the case leaks into the reporter's own report list",
+            "G2V-Priya Raman" not in panel and "my accent" not in panel
+            and "Accused" not in panel,
+            panel[:200].replace("\n", " | "))
         await ctx.close()
 
         # the reporter opening the CASE URL gets the status page, not the case (hr_l1_75b)
@@ -255,7 +265,7 @@ async def main():
         await page.get_by_role("button", name="Zzz Punchemployee").first.click()
         await page.wait_for_timeout(400)
         await page.screenshot(path=f"{SHOTS}/09-adding-second-accused.png", full_page=True)
-        await page.get_by_role("button", name="Add", exact=True).click()
+        await page.get_by_role("button", name="Add", exact=True).first.click()
         await page.wait_for_timeout(900)
         # the confirmation the panel raises BECAUSE the act has an immediate access consequence
         confirm_text = await page.inner_text("body")

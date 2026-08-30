@@ -114,6 +114,11 @@ export function NewIncidentDialog({
   const [subject, setSubject] = useState<string | null>(
     subjectEmploymentId ?? null,
   );
+  // 🚨 THE REPORTER NAMES A PERSON. At the employee tier `hr_directory_list`
+  // does not return `employment_id`, so a rank-and-file reporter has only an
+  // employee id — and the door resolves the spell from it (hr_l1_79). Both are
+  // sent; the door prefers the spell when it has one.
+  const [subjectEmployee, setSubjectEmployee] = useState<string | null>(null);
   const [occurredAt, setOccurredAt] = useState("");
   const [summary, setSummary] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -145,6 +150,7 @@ export function NewIncidentDialog({
       // column; the client simply never sends one.
       reportedAnonymously: anonymous,
       subjectEmploymentId: subject,
+      subjectEmployeeId: subjectEmployee,
       subjectExcluded: excluded,
       occurredAt: occurredAt || null,
       summary: summary.trim(),
@@ -240,6 +246,10 @@ export function NewIncidentDialog({
               id="in-subject"
               value={subject}
               onChange={setSubject}
+              onChangeSubject={({ employmentId, employeeId }) => {
+                setSubject(employmentId);
+                setSubjectEmployee(employeeId);
+              }}
               disabled={Boolean(subjectEmploymentId)}
             />
           </div>

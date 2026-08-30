@@ -13,6 +13,7 @@ import type {
   Surface,
   TriggerType,
 } from "../types";
+import type { components as ApiComponents } from "@/types/python-generated/api-types";
 
 // ── Task ───────────────────────────────────────────────────────────────────
 
@@ -277,59 +278,19 @@ export interface ScannerStatusResponse {
 // The contract is deliberately defensive: aidream may return nulls for any
 // nested field, so consumers must not assume `trigger` / `last_run` exist.
 
-export interface SystemTaskTrigger {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
-  enabled: boolean;
-  next_due_at: string | null;
-}
+export type SystemTaskTrigger =
+  ApiComponents["schemas"]["SystemTaskTriggerInfo"];
 
-export interface SystemTaskLastRun {
-  id: string;
-  status: string;
-  started_at?: string | null;
-  finished_at?: string | null;
-  error_message?: string | null;
-}
+export type SystemTaskLastRun =
+  ApiComponents["schemas"]["SystemTaskLastRun"];
 
-export interface SystemTaskTaxonomyNode {
-  id: string;
-  slug: string;
-  name: string;
-  level: string;
-  parent_id?: string | null;
-}
+export type SystemTaskResponse = ApiComponents["schemas"]["SystemTaskItem"];
 
-export interface SystemTaskResponse {
-  id: string;
-  title: string;
-  description?: string | null;
-  tool_name?: string | null;
-  enabled: boolean;
-  handler_gate_pending: boolean;
-  handler_registered: boolean;
-  taxonomy_node_id: string;
-  taxonomy_path: SystemTaskTaxonomyNode[];
-  variables_args?: Record<string, unknown>;
-  trigger?: SystemTaskTrigger | null;
-  last_run?: SystemTaskLastRun | null;
-}
+export type SystemTaskListResponse =
+  ApiComponents["schemas"]["SystemTasksResponse"];
 
-export interface SystemTaskListResponse {
-  tasks: SystemTaskResponse[];
-  taxonomy_nodes: SystemTaskTaxonomyNode[];
-}
-
-export interface SystemTaskPatchRequest {
-  enabled?: boolean | null;
-  taxonomy_node_id?: string | null;
-  trigger?: {
-    type?: string | null;
-    config?: Record<string, unknown> | null;
-  } | null;
-  variables_args?: Record<string, unknown> | null;
-}
+export type SystemTaskPatchRequest =
+  ApiComponents["schemas"]["SystemTaskPatchRequest"];
 
 // ── DB jobs (admin, pg_cron) ───────────────────────────────────────────────
 //
@@ -353,20 +314,16 @@ export interface DbJobResponse {
   schedule: string;
   command: string;
   active: boolean;
-  taxonomy_node_id: string;
-  taxonomy_path: SystemTaskTaxonomyNode[];
   last_run: DbJobLastRun | null;
 }
 
 export interface DbJobListResponse {
   jobs: DbJobResponse[];
-  taxonomy_nodes: SystemTaskTaxonomyNode[];
 }
 
 export interface DbJobPatchRequest {
   schedule?: string;
   active?: boolean;
-  taxonomy_node_id?: string;
 }
 
 // ── List query params ──────────────────────────────────────────────────────

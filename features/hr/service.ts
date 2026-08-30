@@ -1219,6 +1219,14 @@ export function createHrIncident(args: {
   summary: string;
   reportedAnonymously: boolean;
   subjectEmploymentId?: string | null;
+  /**
+   * The person, when the caller has no spell id for them — which is every
+   * rank-and-file reporter, because the tiered directory withholds
+   * `employment_id` at the employee level (hr_l1_65). The door resolves it
+   * through `hr.subject_employment_as_of`, scoped to this employer, and prefers
+   * an explicit `subjectEmploymentId` when it is given (hr_l1_79).
+   */
+  subjectEmployeeId?: string | null;
   subjectExcluded?: boolean | null;
   occurredAt?: string | null;
   establishmentId?: string | null;
@@ -1247,6 +1255,7 @@ export function createHrIncident(args: {
         summary: args.summary,
         reported_anonymously: args.reportedAnonymously,
         subject_employment_id: args.subjectEmploymentId ?? null,
+        subject_employee_id: args.subjectEmployeeId ?? null,
         subject_excluded: args.subjectExcluded ?? null,
         occurred_at: args.occurredAt ?? null,
         establishment_id: args.establishmentId ?? null,

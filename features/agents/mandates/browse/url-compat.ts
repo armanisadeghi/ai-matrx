@@ -30,6 +30,16 @@ export function mandatesBrowseHref(feature?: string): string {
 }
 
 /**
+ * ONE mandate on its own page, in the ADMIN shell. Same workspace as
+ * `/agents/mandates/[key]`; the admin console links here so its rows stay
+ * inside the admin deployment (manage.aimatrx.com) instead of crossing to the
+ * app domain. Never hand-build this URL.
+ */
+export function adminMandateHref(mandateKeyOrId: string): string {
+  return `/administration/agents/mandates/${encodeURIComponent(mandateKeyOrId)}`;
+}
+
+/**
  * Server-side normalization for the route: given the incoming searchParams,
  * return the URL to redirect to when the LEGACY `?feature=` form is present
  * (and the canonical `filters` param is not), else null.
