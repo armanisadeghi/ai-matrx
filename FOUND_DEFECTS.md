@@ -15,6 +15,23 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D293 — duplicating or promoting a shortcut silently drops its value mappings and write policies
+
+`agx_duplicate_shortcut` / `agx_promote_shortcut_to_global` (and their `_m` mirrors on
+`mandate.vw_shortcut`) build their INSERT from an explicit column list that omits
+`value_mappings` — verified live on all four functions, 2026-08-30. So "Duplicate" and
+"Promote to global" produce a shortcut whose surface consumption map is empty, and since
+census #20 moved the write policies onto `mandate.treatment.config.write_policies` (exposed as
+`mandate.vw_shortcut.write_policies`), the new column is missing from those INSERTs too. The
+copy runs against different inputs than the original and nothing says so.
+
+Pre-existing on BOTH sides, so 6.6 parity is intact — this is not a cutover regression, and the
+`_m` mirrors were generated from originals that already had the hole.
+
+Fix: add `value_mappings` (and `write_policies` on the `_m` pair) to the four INSERT column
+lists + VALUES. Found while closing census #20; unrelated to the editor work, so filed rather
+than fixed.
+
 ### D292 — the mandate routes bounce signed-out users to `/agents` and lose the destination
 
 `app/(core)/mandates/page.tsx:23` and `app/(core)/mandates/[mandateKey]/page.tsx:20` do
