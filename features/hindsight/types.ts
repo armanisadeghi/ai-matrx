@@ -188,3 +188,19 @@ export function versionFromIsInferred(row: ChangeHistoryRow): boolean {
 export function hasSignal(value: number | null | undefined): value is number {
   return typeof value === "number";
 }
+
+/**
+ * The repo file a finding's proposal targets, when its change lives in a
+ * REPOSITORY (a tool definition, a skill, a node config) rather than in the
+ * database. Reviewer v8 carries `file_path`/`repo`/`unified_diff` on the
+ * proposal; the generated contract exposes them through the open index
+ * signature until the typed fields land in the next `pnpm sync-types` — this
+ * helper narrows the `unknown` in ONE place, no casts. Accepting such a
+ * finding files a tracked repo-diff proposal server-side (aidream
+ * `hindsight/apply.py::_file_repo_diff_on_accept`), so surfaces branch on
+ * this to say what Accept really does.
+ */
+export function proposalRepoFilePath(finding: Finding): string | null {
+  const value = finding.proposal?.["file_path"];
+  return typeof value === "string" && value.trim() ? value : null;
+}

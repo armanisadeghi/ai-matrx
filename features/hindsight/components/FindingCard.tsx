@@ -36,7 +36,12 @@ import {
 } from "../copy";
 import { conversationHref } from "../subject-doors";
 import { useDoorAudience } from "./door-audience";
-import { evidenceLine, splitEvidenceIds, type Finding } from "../types";
+import {
+  evidenceLine,
+  proposalRepoFilePath,
+  splitEvidenceIds,
+  type Finding,
+} from "../types";
 import { DiscussPanel } from "./DiscussPanel";
 import { RegressionCasesFromFinding } from "./RegressionCasesFromFinding";
 import { RevertButton } from "./RevertButton";
@@ -282,9 +287,22 @@ export function FindingCard({
           <RegressionCasesFromFinding finding={finding} />
           {!finding.machine_applicable && (
             <p className="text-xs text-muted-foreground">
-              {LEVER_LABEL[finding.lever]} findings are reports for a human —
-              “Accept” records the decision, it does not change anything by
-              itself. If the recommendation is close but not the real point, use{" "}
+              {proposalRepoFilePath(finding) ? (
+                <>
+                  This change lives in a repository file (
+                  <code className="font-mono">{proposalRepoFilePath(finding)}</code>
+                  ) — “Accept” files it as a <strong>tracked change request</strong>{" "}
+                  for the dev team, as a reviewable diff. Nothing is applied
+                  automatically.
+                </>
+              ) : (
+                <>
+                  {LEVER_LABEL[finding.lever]} findings are reports for a human —
+                  “Accept” records the decision, it does not change anything by
+                  itself.
+                </>
+              )}{" "}
+              If the recommendation is close but not the real point, use{" "}
               <strong>Guide</strong> and tell the reviewer.
             </p>
           )}
@@ -327,7 +345,9 @@ export function FindingActions({
       toast.success(
         res.applied_version_number != null
           ? `Applied — the agent is now v${res.applied_version_number}`
-          : "Accepted — this lever needs a human to carry it out",
+          : proposalRepoFilePath(finding)
+            ? "Accepted — filed as a tracked change request for the dev team"
+            : "Accepted — this lever needs a human to carry it out",
       );
       onChanged();
     },

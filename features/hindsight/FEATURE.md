@@ -211,6 +211,13 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-30** — Repo-artifact accepts are no longer dead ends: a report-only
+  finding whose proposal names a `file_path` now says "Accept files it as a
+  tracked change request" (and toasts so) — the server files the D8 repo-diff
+  on accept (`apply.py::_file_repo_diff_on_accept`). `proposalRepoFilePath` in
+  `types.ts` is the ONE narrowing of the proposal's open index signature;
+  typed `file_path`/`repo`/`unified_diff` + the `FindingDecisionOut.repo_diff`
+  receipt land on the next `pnpm sync-types`.
 - **2026-08-25** — Admins can replay one pending conversation or workflow run from the shared pending-examples panel after an explicit paid-run confirmation. The client sends the server's exclusive source shape (`source_conversation_id` or `source_wf_run_id`); workflow-node outcomes remain view-only evidence.
 - **2026-08-24** — Review honesty (blind-test item 4, both UIs):
   `PendingExamplesPanel` (shared by the admin detail panel and the workspace
