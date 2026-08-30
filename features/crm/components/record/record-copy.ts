@@ -1,5 +1,5 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import type { Comment } from "@/features/comments/types";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import { readInboundClassification } from "@/features/crm/inbox/attributes";
 import { MEDIUM_BLOCK_LABELS, mediumBlocks } from "@/features/crm/reachability";
 import type {

@@ -3,7 +3,7 @@
 import { useEffect, type MutableRefObject } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import type { StandaloneCodeEditor } from "../editor/MonacoEditor";
 import type { EditorFile } from "../types";
 import { editorSelectionKey, editorTabKey } from "./editorContextEntries";
@@ -55,6 +55,7 @@ export function useEditorContextMenuActions({
   defaultAgentId,
 }: UseEditorContextMenuActionsOptions): void {
   const dispatch = useAppDispatch();
+  const openAgentRunWindow = useOpenAgentRunWindow();
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -189,15 +190,10 @@ export function useEditorContextMenuActions({
           // conversationId — it spins up its own when the user picks an
           // agent. We just pre-load the agent so the user lands one click
           // away from typing.
-          dispatch(
-            openOverlay({
-              overlayId: "agentRunWindow",
-              data: {
-                initialAgentId: defaultAgentId ?? null,
-                initialSelectedConversationId: null,
-              },
-            }),
-          );
+          openAgentRunWindow({
+            initialAgentId: defaultAgentId ?? null,
+            initialSelectedConversationId: null,
+          });
           notify?.({
             type: "info",
             text: "Opened AI window. Pick an agent to continue.",
@@ -223,5 +219,6 @@ export function useEditorContextMenuActions({
     dispatch,
     notify,
     defaultAgentId,
+    openAgentRunWindow,
   ]);
 }

@@ -707,6 +707,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
       initialAgentId: null,
       initialSelectedConversationId: null,
     },
+    instanceMode: "multi",
     mobilePresentation: "fullscreen",
     mobileSidebarAs: "drawer",
     urlSync: { key: "agent" },

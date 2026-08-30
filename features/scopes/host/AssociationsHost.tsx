@@ -14,6 +14,8 @@
 //   pickerOverrides → token "file" → the ONE canonical FilePickerWindow (lazy)
 //   entityDoors     → EntityRef / EntityDoorControls / the access-gate
 //                     UnresolvedEntityRef (resolved per row via useAccessStates)
+//   authorDisplay   → current-user comment-author enrichment from the
+//                     canonical Redux identity selectors (0.5.0 comments UI)
 //
 // Code-splitting: the two WindowPanel-parsing bindings live in
 // associationsHostPortsImpl.tsx behind `dynamic({ ssr: false })` edges — they
@@ -33,7 +35,14 @@ import {
   AssociationsProvider,
   type AssociationsUiPorts,
 } from "@ai-matrx/associations/react";
+import type { AuthorDisplayPort } from "@ai-matrx/associations";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectActiveUserAvatarUrl,
+  selectActiveUserId,
+  selectActiveUserName,
+} from "@/lib/redux/selectors/userSelectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
@@ -110,6 +119,25 @@ const UI_PORTS: AssociationsUiPorts = {
 };
 
 export function AssociationsHost({ children }: { children: ReactNode }) {
+  // The `authorDisplay` port (0.5.0 comments UI): enrich the SIGNED-IN
+  // user's own comments from the canonical Redux identity (the same
+  // `selectActiveUser*` selectors every header/user-display surface reads —
+  // fresher than the RPC's denormalized author fields after a rename or
+  // avatar change). Other authors keep `cmt_list`'s denormalized fields;
+  // there is no user-directory primitive in this repo to resolve them
+  // synchronously (see components/official/record-stamps/useRecordActors.ts),
+  // and the package's documented degradation already renders them honestly.
+  const currentUserId = useAppSelector(selectActiveUserId);
+  const currentUserName = useAppSelector(selectActiveUserName);
+  const currentUserAvatarUrl = useAppSelector(selectActiveUserAvatarUrl);
+  const authorDisplay: AuthorDisplayPort = (author) => {
+    if (!author.userId || author.userId !== currentUserId) return null;
+    return {
+      displayName: currentUserName ?? author.displayName,
+      avatarUrl: currentUserAvatarUrl ?? author.avatarUrl,
+    };
+  };
+
   // Dev/CI boot diagnostic only — the demanded-schema probe (README § probed).
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
@@ -139,7 +167,11 @@ export function AssociationsHost({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AssociationsProvider store={getAssociationsStore()} {...UI_PORTS}>
+    <AssociationsProvider
+      store={getAssociationsStore()}
+      {...UI_PORTS}
+      authorDisplay={authorDisplay}
+    >
       {children}
     </AssociationsProvider>
   );

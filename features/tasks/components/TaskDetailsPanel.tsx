@@ -55,7 +55,7 @@ import { ReferenceCopyButton } from "@/features/matrx-envelope/components/Refere
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
-import type { Comment } from "@/features/comments/types";
+import { CommentThread } from "@ai-matrx/associations/react";
 import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -105,11 +105,6 @@ export default function TaskDetailsPanel({
 }: TaskDetailsPanelProps) {
   const dispatch = useAppDispatch();
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
-  const getTaskComments = (taskId: string) =>
-    taskService.getTaskComments(taskId);
-  const createTaskComment = async (taskId: string, content: string) => {
-    await taskService.createTaskComment(taskId, content);
-  };
   const createSubtask = async (parentTaskId: string, title: string) => {
     const created = await taskService.createSubtask(parentTaskId, title);
     if (created) await dispatch(invalidateAndRefetchFullContext());
@@ -133,13 +128,9 @@ export default function TaskDetailsPanel({
   const [isDirty, setIsDirty] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSubtask);
-  const [isAddingComment, setIsAddingComment] = useState(false);
   const { id: currentUserId } = useAppSelector(selectUser);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -164,19 +155,6 @@ export default function TaskDetailsPanel({
     setIsDirty(false); // Reset dirty state when task updates
   }, [task.id, task.title, task.description, task.dueDate, task.priority]);
 
-  // Load comments when task changes
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoadingComments(true);
-    taskService.getTaskComments(task.id).then((data) => {
-      if (cancelled) return;
-      setComments(data);
-      setIsLoadingComments(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [task.id]);
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
@@ -302,22 +280,6 @@ export default function TaskDetailsPanel({
     }
   };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim() || isAddingComment) return;
-
-    setIsAddingComment(true);
-    try {
-      await createTaskComment(task.id, newComment);
-      setNewComment("");
-      // Reload comments
-      const updatedComments = await getTaskComments(task.id);
-      setComments(updatedComments);
-    } catch (error) {
-      console.error("Error adding comment:", error);
-    } finally {
-      setIsAddingComment(false);
-    }
-  };
 
   // Publish the panel's LIVE edit state for the host surface to emit as
   // `selected_task_draft`. From an EFFECT, never during render: `getScope`
@@ -885,78 +847,15 @@ export default function TaskDetailsPanel({
           </div>
         </div>
 
-        {/* Activity / Comments */}
+        {/* Activity / Comments — the canonical CommentThread
+            (@ai-matrx/associations, W6 host adoption): threaded replies,
+            composer that keeps text on a failed post, edit/delete-own. */}
         <div>
           <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2 mb-2">
             <MessageSquare size={14} />
-            Activity {comments.length > 0 && `(${comments.length})`}
+            Activity
           </label>
-
-          {isLoadingComments ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2
-                size={20}
-                className="animate-spin text-muted-foreground"
-              />
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No comments yet.
-            </p>
-          ) : (
-            <div className="space-y-3 max-h-[200px] overflow-y-auto">
-              {comments.map((comment) => {
-                const isCurrentUser = comment.createdBy === currentUserId;
-                const authorName =
-                  comment.author.displayName ?? comment.author.email ?? null;
-                const displayName = isCurrentUser
-                  ? "You"
-                  : (authorName ?? "User");
-                const initial = (displayName[0] ?? "U").toUpperCase();
-
-                return (
-                  <div key={comment.id} className="text-sm">
-                    <div className="flex items-start gap-2">
-                      <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-medium">
-                        {initial}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {displayName}
-                          </p>
-                          <p className="text-xs text-muted-foreground/80">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-foreground mt-1 break-words">
-                          {comment.body}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <ProTextarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            onSubmit={() => void handleAddComment()}
-            submitOnEnter
-            submitLabel="Post comment"
-            submitDisabled={!newComment.trim() || isAddingComment}
-            isSubmitting={isAddingComment}
-            showCopyButton={false}
-            placeholder="Write a comment..."
-            disabled={isAddingComment}
-            autoGrow
-            minHeight={56}
-            maxHeight={160}
-            className="text-sm"
-            wrapperClassName="w-full"
-          />
+          <CommentThread token="task" id={task.id} showHeader={false} />
         </div>
       </div>
 

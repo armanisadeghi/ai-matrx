@@ -2,25 +2,23 @@
 
 // features/tasks/components/TaskCommentPopover.tsx
 //
-// Reusable task-comment surface: a compact button that opens a popover with the
-// comment thread + an inline composer. Backed by the canonical comments
-// primitive (`platform.comments`) via `commentsService` (entity_type='task'),
-// reached through taskService's comment helpers. Built here (not in War Room)
-// so the full task editor and any other surface can adopt it.
+// Reusable task-comment surface: a compact button that opens a popover with
+// the canonical comment thread. The thread itself is `CommentThread` from
+// `@ai-matrx/associations/react` (W6 host adoption, 2026-08-30) — threaded
+// replies, composer that never loses text on a failed post, edit/delete-own —
+// backed by the package's `cmt_*` chokepoint via the host store. The count
+// on the trigger rides the same store cache (`useComments`), so opening the
+// popover and posting stay in sync everywhere the thread renders.
 
 import { useState } from "react";
-import { MessageSquare, Loader2 } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { toast } from "@/lib/toast";
-import * as taskService from "@/features/tasks/services/taskService";
-import type { Comment } from "@/features/comments/types";
+import { CommentThread, useComments } from "@ai-matrx/associations/react";
 import { cn } from "@/lib/utils";
-import { formatRelativeTime } from "@/utils/datetime";
 
 export function TaskCommentPopover({
   taskId,
@@ -30,47 +28,12 @@ export function TaskCommentPopover({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const rows = await taskService.getTaskComments(taskId);
-      setComments(rows);
-      setLoaded(true);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleOpenChange(next: boolean) {
-    setOpen(next);
-    if (next && !loaded) void load();
-  }
-
-  async function submit() {
-    const content = draft.trim();
-    if (!content || submitting) return;
-    setSubmitting(true);
-    try {
-      const created = await taskService.createTaskComment(taskId, content);
-      if (created) {
-        setComments((prev) => [...prev, created]);
-        setDraft("");
-      } else {
-        toast.error("Couldn't add comment");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  // autoLoad only once the popover has been opened — the trigger renders on
+  // dense task rows and must not fan out one cmt_list per visible row.
+  const thread = useComments({ token: "task", id: taskId, autoLoad: open });
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -82,47 +45,17 @@ export function TaskCommentPopover({
           title="Comments"
         >
           <MessageSquare className="size-3.5" />
-          {loaded && comments.length > 0 ? comments.length : "Comment"}
+          {thread.status === "ready" && thread.comments.length > 0
+            ? thread.comments.length
+            : "Comment"}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start" onClick={(e) => e.stopPropagation()}>
-        <div className="max-h-52 overflow-y-auto p-2 space-y-2">
-          {loading ? (
-            <div className="grid place-items-center py-4">
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">
-              No comments yet
-            </p>
-          ) : (
-            comments.map((c) => (
-              <div key={c.id} className="rounded-md bg-muted/50 px-2 py-1.5">
-                <p className="text-xs text-foreground whitespace-pre-wrap break-words">
-                  {c.body}
-                </p>
-                <span className="text-[10px] text-muted-foreground">
-                  {formatRelativeTime(c.createdAt)}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="border-t border-border p-2">
-          <ProTextarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Add a comment…"
-            onSubmit={submit}
-            submitLabel="Post"
-            isSubmitting={submitting}
-            showCopyButton={false}
-            autoGrow
-            minHeight={38}
-            maxHeight={120}
-            className="text-sm"
-          />
-        </div>
+      <PopoverContent
+        className="w-80 p-3 max-h-96 overflow-y-auto"
+        align="start"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <CommentThread token="task" id={taskId} showHeader={false} />
       </PopoverContent>
     </Popover>
   );

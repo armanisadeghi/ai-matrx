@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
+import { selectAllWindows } from "@/lib/redux/slices/windowManagerSlice";
 import {
   selectAgentById,
   selectAgentExecutionPayload,
@@ -61,6 +62,13 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 
 const AGENT_RUN_SIDEBAR_DEFAULT_SIZE = Math.round(220 * 0.85);
+const AGENT_RUN_WINDOW_POSITIONS = [
+  "center",
+  "top-right",
+  "top-left",
+  "bottom-right",
+  "bottom-left",
+] as const;
 
 /** Header-scale primary disc — must stay ≤ traffic-light row height (see WindowPanel `WindowHeader`). */
 const HEADER_NEW_RUN_BTN =
@@ -70,10 +78,12 @@ const HEADER_NEW_RUN_BTN =
 
 function AgentRunWindowSidebar({
   agentId,
+  surfaceKey,
   activeConversationId,
   onSelect,
 }: {
   agentId: string | null;
+  surfaceKey: string | null;
   activeConversationId: string | null;
   onSelect: (conversationId: string) => void;
 }) {
@@ -82,8 +92,6 @@ function AgentRunWindowSidebar({
     const agent = selectAgentById(state, agentId);
     return agent?.parentAgentId ?? agent?.id ?? agentId;
   });
-
-  const surfaceKey = agentId ? `${SOURCE_FEATURE}:${agentId}` : undefined;
 
   const handleOpenConversation = useCallback(
     (conv: ConversationListItem) => {
@@ -124,7 +132,7 @@ function AgentRunWindowSidebar({
       activeConversationId={activeConversationId}
       onOpenConversation={handleOpenConversation}
       openInPlace
-      surfaceKey={surfaceKey}
+      surfaceKey={surfaceKey ?? undefined}
       getConversationHref={getConversationHref}
       className="bg-transparent"
     />
@@ -134,14 +142,13 @@ function AgentRunWindowSidebar({
 // ─── Header actions ───────────────────────────────────────────────────────────
 
 function AgentRunWindowNewRunButton({
-  agentId,
+  surfaceKey,
   onNewRunCleared,
 }: {
-  agentId: string;
+  surfaceKey: string;
   onNewRunCleared: () => void;
 }) {
   const dispatch = useAppDispatch();
-  const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
   const conversationId = useAppSelector(selectFocusedConversation(surfaceKey));
 
   const handleNewRun = useCallback(() => {
@@ -164,8 +171,8 @@ function AgentRunWindowNewRunButton({
       type="button"
       onClick={handleNewRun}
       disabled={!conversationId}
-      title="New run"
-      aria-label="New run"
+      title="New chat"
+      aria-label="New chat"
       className={HEADER_NEW_RUN_BTN}
     >
       <Plus strokeWidth={2.5} />
@@ -204,6 +211,7 @@ function WindowTitleContent({
 
 interface AgentRunBodyProps {
   agentId: string;
+  surfaceKey: string;
   selectedConversationId: string | null;
   /**
    * Composed intent to pre-fill into the composer on open. When set, the body
@@ -223,6 +231,7 @@ interface AgentRunBodyProps {
 
 function AgentRunBody({
   agentId,
+  surfaceKey,
   selectedConversationId,
   initialDraftText,
   initialVariableValues,
@@ -231,7 +240,6 @@ function AgentRunBody({
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
-  const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
   const hasDraft =
     Boolean(initialDraftText) ||
     Boolean(
@@ -460,8 +468,7 @@ function AgentRunBody({
 
 // Tracks the live conversation in the window for persistence (so reopening
 // lands you on whatever you last had focused rather than the initial pick).
-function useLiveConversationId(agentId: string | null): string | null {
-  const surfaceKey = agentId ? `${SOURCE_FEATURE}:${agentId}` : null;
+function useLiveConversationId(surfaceKey: string | null): string | null {
   const focusedId = useAppSelector((state: RootState) =>
     surfaceKey ? selectFocusedConversation(surfaceKey)(state) : null,
   );
@@ -476,6 +483,7 @@ function useLiveConversationId(agentId: string | null): string | null {
 
 interface AgentRunWindowProps {
   isOpen: boolean;
+  instanceId: string;
   onClose: () => void;
   initialAgentId?: string | null;
   initialSelectedConversationId?: string | null;
@@ -492,6 +500,7 @@ interface AgentRunWindowProps {
 
 export default function AgentRunWindow({
   isOpen,
+  instanceId,
   onClose,
   initialAgentId,
   initialSelectedConversationId,
@@ -503,6 +512,7 @@ export default function AgentRunWindow({
   if (!isOpen) return null;
   return (
     <AgentRunWindowInner
+      instanceId={instanceId}
       onClose={onClose}
       initialAgentId={initialAgentId ?? null}
       initialSelectedConversationId={initialSelectedConversationId ?? null}
@@ -515,6 +525,7 @@ export default function AgentRunWindow({
 }
 
 function AgentRunWindowInner({
+  instanceId,
   onClose,
   initialAgentId,
   initialSelectedConversationId,
@@ -523,6 +534,7 @@ function AgentRunWindowInner({
   initialVariableValues,
   initialAutoRun,
 }: {
+  instanceId: string;
   onClose: () => void;
   initialAgentId: string | null;
   initialSelectedConversationId: string | null;
@@ -535,6 +547,16 @@ function AgentRunWindowInner({
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(initialSelectedConversationId);
+  const siblingWindowCount = useAppSelector(
+    (state: RootState) =>
+      selectAllWindows(state).filter((entry) =>
+        entry.id.startsWith("agent-run-window:"),
+      ).length,
+  );
+  const initialPosition =
+    AGENT_RUN_WINDOW_POSITIONS[
+      siblingWindowCount % AGENT_RUN_WINDOW_POSITIONS.length
+    ];
 
   // Prefer the live name from the store; fall back to the caller-supplied name
   // — but only while we're still on the agent that name belongs to. Once the
@@ -548,7 +570,10 @@ function AgentRunWindowInner({
     (agentId && agentId === initialAgentId ? initialAgentName : null) ??
     "Agent";
 
-  const liveConversationId = useLiveConversationId(agentId);
+  const surfaceKey = agentId
+    ? `${SOURCE_FEATURE}:${instanceId}:${agentId}`
+    : null;
+  const liveConversationId = useLiveConversationId(surfaceKey);
   const activeConversationId = selectedConversationId ?? liveConversationId;
 
   const handleAgentSelect = useCallback((nextId: string) => {
@@ -574,7 +599,7 @@ function AgentRunWindowInner({
 
   return (
     <WindowPanel
-      id="agent-run-window"
+      id={`agent-run-window:${instanceId}`}
       titleNode={
         <WindowTitleContent
           agentId={agentId}
@@ -585,14 +610,17 @@ function AgentRunWindowInner({
       onClose={onClose}
       width={960}
       height={720}
+      position={initialPosition}
       minWidth={560}
       minHeight={420}
       overlayId="agentRunWindow"
+      overlayInstanceId={instanceId}
+      urlSyncId={instanceId}
       onCollectData={collectData}
       actionsRight={
-        agentId ? (
+        agentId && surfaceKey ? (
           <AgentRunWindowNewRunButton
-            agentId={agentId}
+            surfaceKey={surfaceKey}
             onNewRunCleared={handleNewRunCleared}
           />
         ) : undefined
@@ -600,6 +628,7 @@ function AgentRunWindowInner({
       sidebar={
         <AgentRunWindowSidebar
           agentId={agentId}
+          surfaceKey={surfaceKey}
           activeConversationId={activeConversationId}
           onSelect={handleConversationSelect}
         />
@@ -610,10 +639,11 @@ function AgentRunWindowInner({
       retainBodyOnMinimize
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      {agentId ? (
+      {agentId && surfaceKey ? (
         <AgentRunBody
           key={agentId}
           agentId={agentId}
+          surfaceKey={surfaceKey}
           selectedConversationId={selectedConversationId}
           initialDraftText={initialDraftText}
           initialVariableValues={initialVariableValues}

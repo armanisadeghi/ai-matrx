@@ -12,7 +12,7 @@ import type {
   TaskExportNode,
 } from "@/features/tasks/services/aiExportService";
 import type { TaskAttachment } from "@/features/tasks/services/taskService";
-import type { Comment } from "@/features/comments/types";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 
 function escapeXml(value: string): string {
   return value

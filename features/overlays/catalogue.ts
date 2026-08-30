@@ -217,7 +217,7 @@ export const OVERLAY_CATALOGUE = {
   },
   agentRunWindow: {
     label: "Chat Window",
-    instanceMode: "singleton",
+    instanceMode: "multi",
     isWindow: true,
   },
   agentTestCasesWindow: {

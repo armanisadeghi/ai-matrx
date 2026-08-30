@@ -1723,7 +1723,17 @@ function WindowHeader({
         ) : (
           <div
             className="pointer-events-auto flex min-w-0 max-w-full items-center overflow-hidden whitespace-nowrap px-16"
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(event) => {
+              const target = event.target;
+              if (!(target instanceof Element)) return;
+              if (
+                target.closest(
+                  'a, button, input, select, textarea, [role="button"], [role="menuitem"], [data-window-no-drag]',
+                )
+              ) {
+                event.stopPropagation();
+              }
+            }}
           >
             {title}
           </div>

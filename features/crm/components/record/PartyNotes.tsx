@@ -10,13 +10,13 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { AlertTriangle, NotebookText, Trash2 } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { commentsService } from "@/features/comments/service/commentsService";
+import { commentsService } from "@/features/scopes/service/commentsService";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   CollapsibleText,
   CollapsibleTextGroupControls,
 } from "@/components/official/CollapsibleText";
-import type { Comment } from "@/features/comments/types";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { formatRelativeTime } from "@/utils/datetime";

@@ -14,8 +14,8 @@ import type { DatabaseTask } from "../types";
 import { fileHandler } from "@/features/files/handler/handler";
 import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { commentsService } from "@/features/comments/service/commentsService";
-import type { Comment } from "@/features/comments/types";
+import { commentsService } from "@/features/scopes/service/commentsService";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { TaskStatus, TaskOrigin } from "../constants/status";
 import { nextOccurrence, ensureMonthDayAnchor } from "../utils/recurrence";
@@ -1013,71 +1013,8 @@ export async function getTaskComments(taskId: string): Promise<Comment[]> {
   return res.data.comments;
 }
 
-/**
- * Create a comment on a task.
- *
- * Writes through `commentsService` (entity_type='task'); the RPC resolves the
- * org from the task. Re-reads the created comment so the caller gets the full
- * `Comment` (with author) back, matching the list shape.
- */
-export async function createTaskComment(
-  taskId: string,
-  content: string,
-  parentId?: string | null,
-): Promise<Comment | null> {
-  const added = await commentsService.add({
-    entityType: "task",
-    entityId: taskId,
-    body: content,
-    parentId: parentId ?? null,
-  });
-  if (isScopesRpcErr(added)) {
-    console.error("Error creating task comment:", added.error.message);
-    return null;
-  }
-  const newId = added.data.id;
-
-  // Send comment notification to task owner (fire-and-forget).
-  sendTaskCommentNotification(taskId, content).catch((err) => {
-    console.error("Error sending comment notification:", err);
-  });
-
-  // Re-read the thread to return the freshly-created comment with its author.
-  const list = await commentsService.listForEntity("task", taskId);
-  if (isScopesRpcErr(list)) return null;
-  return list.data.comments.find((c) => c.id === newId) ?? null;
-}
-
-/**
- * Send task comment notification (internal helper)
- */
-async function sendTaskCommentNotification(
-  taskId: string,
-  commentText: string,
-): Promise<void> {
-  try {
-    // Get the task to find the owner
-    const { data: task } = await workspaceDb(supabase)
-      .from("tasks")
-      .select("id, title, created_by")
-      .is("deleted_at", null)
-      .eq("id", taskId)
-      .single();
-
-    if (!task?.created_by) return;
-
-    await fetch("/api/notifications/comment-added", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        resourceOwnerId: task.created_by,
-        commentText,
-        resourceTitle: task.title,
-        resourceType: "task",
-        resourceId: task.id,
-      }),
-    });
-  } catch (error) {
-    console.error("Failed to send comment notification:", error);
-  }
-}
+// Comment WRITES moved to the canonical `CommentThread` /
+// `useComments` (@ai-matrx/associations, W6 host adoption 2026-08-30);
+// the task owner-notification now fires from the host dataSource's
+// cmt_add tap (features/scopes/host/associationsStore.ts) via
+// features/tasks/services/taskCommentNotification.ts.

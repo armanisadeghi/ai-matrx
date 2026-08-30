@@ -4,13 +4,17 @@
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import {
+  useOpenAgentRunWindow,
+  type OpenAgentRunWindowOptions,
+} from "@/features/overlays/openers/agentRunWindow";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { resolveMandate } from "@/features/mandates/service";
 
-export interface OpenChatWindowOptions {
-  initialAgentId?: string | null;
-  initialSelectedConversationId?: string | null;
-}
+export type OpenChatWindowOptions = Pick<
+  OpenAgentRunWindowOptions,
+  "initialAgentId" | "initialSelectedConversationId"
+>;
 
 /**
  * Hook for opening quick action sheets via Redux
@@ -25,6 +29,7 @@ export interface OpenChatWindowOptions {
  */
 export function useQuickActions() {
   const dispatch = useAppDispatch();
+  const openAgentRunWindow = useOpenAgentRunWindow();
 
   const openQuickNotes = useCallback(
     (data?: any) => {
@@ -61,7 +66,8 @@ export function useQuickActions() {
         let agentId = opts.initialAgentId ?? null;
         if (!agentId) {
           try {
-            agentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
+            agentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY))
+              .agentId;
           } catch (error) {
             console.error(
               `[useQuickActions] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
@@ -69,19 +75,14 @@ export function useQuickActions() {
             );
           }
         }
-        dispatch(
-          openOverlay({
-            overlayId: "agentRunWindow",
-            data: {
-              initialAgentId: agentId,
-              initialSelectedConversationId:
-                opts.initialSelectedConversationId ?? null,
-            },
-          }),
-        );
+        openAgentRunWindow({
+          initialAgentId: agentId,
+          initialSelectedConversationId:
+            opts.initialSelectedConversationId ?? null,
+        });
       })();
     },
-    [dispatch],
+    [openAgentRunWindow],
   );
 
   const openQuickData = useCallback(

@@ -21,7 +21,7 @@ import {
   type CrmRecordContactableSummary,
 } from "@/features/surfaces/manifests/crm-record.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { Comment } from "@/features/comments/types";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import {
   CONTACT_BLOCK_REASON_LABELS,
   contactPointBlockReason,

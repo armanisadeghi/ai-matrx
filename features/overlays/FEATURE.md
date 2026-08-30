@@ -300,6 +300,8 @@ The catalogue's `instanceMode` is the source of truth:
 
 The opener encapsulates the mode choice; callers don't think about it.
 
+**Multi-instance means every downstream identity is instanced.** A mapped controller block alone is insufficient: thread the same `instanceId` through the component, `WindowPanel.id`, `overlayInstanceId`, close handler, URL/persistence identity, and any feature-owned surface/focus key. A static identity at any one of those layers couples otherwise separate overlays.
+
 ---
 
 ## Mounting
@@ -365,6 +367,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-08-30** — **`agentRunWindow` is fully multi-instance.** Its opener now mints and returns an exact instance id, every controller render/close is instance-scoped, and the window carries that identity into Window Manager, URL, and agent-execution surface keys. Quick Actions and Monaco use the typed opener, so all ordinary launch paths open independent chat windows.
 - **2026-08-28** — `googleConnectWindow` became callback-aware for selected-file Drive import. The
   opener stores only `mode` and `callbackGroupId` in Redux; the window returns materialized
   `File[]` plus per-file failures through the callback registry, so raw functions and Google access

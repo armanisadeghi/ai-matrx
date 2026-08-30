@@ -20,6 +20,8 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 const OVERLAY_ID = "agentRunWindow" as const;
 
 export interface OpenAgentRunWindowOptions {
+  /** Optional stable instance id. Omit to open an independent chat window. */
+  instanceId?: string;
   initialAgentId?: string | null;
   initialSelectedConversationId?: string | null;
   /**
@@ -54,6 +56,7 @@ export interface OpenAgentRunWindowOptions {
 }
 
 export interface AgentRunWindowHandle {
+  instanceId: string;
   close: () => void;
 }
 
@@ -61,9 +64,13 @@ export function useOpenAgentRunWindow() {
   const dispatch = useAppDispatch();
   return useCallback(
     (opts: OpenAgentRunWindowOptions = {}): AgentRunWindowHandle => {
+      const instanceId =
+        opts.instanceId ??
+        `${OVERLAY_ID}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
+          instanceId,
           data: {
             initialAgentId: opts.initialAgentId,
             initialSelectedConversationId: opts.initialSelectedConversationId,
@@ -75,7 +82,9 @@ export function useOpenAgentRunWindow() {
         }),
       );
       return {
-        close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),
+        instanceId,
+        close: () =>
+          dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
       };
     },
     [dispatch],
@@ -87,13 +96,16 @@ export function useOpenAgentRunWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function AgentRunWindowController(props: OpenAgentRunWindowOptions): null {
+export function AgentRunWindowController(
+  props: OpenAgentRunWindowOptions,
+): null {
   const open = useOpenAgentRunWindow();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
   }, [
     open,
+    props.instanceId,
     props.initialAgentId,
     props.initialSelectedConversationId,
     props.initialAgentName,

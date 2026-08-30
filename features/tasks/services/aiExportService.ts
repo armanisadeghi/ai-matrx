@@ -16,7 +16,7 @@ import {
   type TaskAttachment,
 } from "@/features/tasks/services/taskService";
 import type { DatabaseTask } from "@/features/tasks/types/database";
-import type { Comment } from "@/features/comments/types";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 
 export interface NoteExportRow {
   id: string;

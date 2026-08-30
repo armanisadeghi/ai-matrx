@@ -1208,9 +1208,6 @@ export default function OverlayController() {
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
-    agentRunWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "agentRunWindow"),
-    ),
     agentTestCasesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentTestCasesWindow"),
     ),
@@ -1580,9 +1577,6 @@ export default function OverlayController() {
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
     ) as Record<string, unknown> | null,
-    agentRunWindow: useAppSelector((s) =>
-      selectOverlayData(s, "agentRunWindow"),
-    ) as Record<string, unknown> | null,
     agentTestCasesWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentTestCasesWindow"),
     ) as Record<string, unknown> | null,
@@ -1884,6 +1878,9 @@ export default function OverlayController() {
   };
 
   const instancesById = {
+    agentRunWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "agentRunWindow"),
+    ),
     agentChatAssistant: useAppSelector((s) =>
       selectOpenInstances(s, "agentChatAssistant"),
     ),
@@ -2903,17 +2900,21 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* agentRunWindow */}
-      {(() => {
-        const isOpen = isOpenById.agentRunWindow;
-        const data = dataById.agentRunWindow as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
+      {/* agentRunWindow — multi-instance */}
+      {instancesById.agentRunWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
         return (
           <AgentRunWindow
+            key={inst.instanceId}
             isOpen
+            instanceId={inst.instanceId}
             onClose={() =>
-              dispatch(closeOverlay({ overlayId: "agentRunWindow" }))
+              dispatch(
+                closeOverlay({
+                  overlayId: "agentRunWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
             }
             initialAgentId={
               typeof data?.initialAgentId === "string"
@@ -2944,7 +2945,7 @@ export default function OverlayController() {
             initialAutoRun={data?.initialAutoRun === true}
           />
         );
-      })()}
+      })}
 
       {/* agentTestCasesWindow */}
       {(() => {

@@ -9,7 +9,7 @@ export type DatabaseTask = Database["workspace"]["Tables"]["tasks"]["Row"];
 
 // NOTE: task comments, attachments, and assignments moved off the legacy
 // junction tables in the 2026-06 canonical-DB cutover:
-//   - comments    → platform.comments  (via features/comments/commentsService)
+//   - comments    → platform.comments  (via @ai-matrx/associations cmt_* chokepoint)
 //   - attachments → platform.associations (file → task; associationsService)
 //   - assignments → ctx_tasks.assignee_id (primary assignee; no junction)
 // The dead `DatabaseTaskAttachment` / `DatabaseTaskComment` /

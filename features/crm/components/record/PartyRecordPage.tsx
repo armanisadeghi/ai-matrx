@@ -29,7 +29,7 @@ import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-recor
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
-import type { Comment } from "@/features/comments/types";
+import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import { buildCrmRecordContextData } from "../../agent-context/buildCrmRecordContextData";
 import { CRM_RECORD_CONTEXT_MENU_PROPS } from "../../agent-context/crmRecordContextMenuProps";
 import { usePartyDetail } from "../../hooks/usePartyDetail";

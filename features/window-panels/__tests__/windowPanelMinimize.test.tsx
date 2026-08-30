@@ -234,4 +234,92 @@ describe("WindowPanel minimize boundary", () => {
     expect(onMount).toHaveBeenCalledTimes(1);
     expect(onUnmount).not.toHaveBeenCalled();
   });
+
+  it("keeps rich-title controls interactive while adjacent title space drags", async () => {
+    const store = configureStore({
+      reducer: {
+        overlays: overlayReducer,
+        windowManager: windowManagerReducer,
+        adminDebug: adminDebugReducer,
+        urlSync: urlSyncReducer,
+      },
+    });
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <WindowPanel
+            id="rich-title-drag-window"
+            title="Rich title"
+            titleNode={<button type="button">Choose agent</button>}
+            onClose={() => undefined}
+          >
+            body
+          </WindowPanel>
+        </Provider>,
+      );
+      await Promise.resolve();
+    });
+
+    const trigger = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Choose agent",
+    );
+    expect(trigger).toBeDefined();
+    const titleContainer = trigger?.parentElement;
+    expect(titleContainer).not.toBeNull();
+
+    const initialRect = {
+      ...store.getState().windowManager.windows["rich-title-drag-window"]
+        .windowed,
+    };
+
+    await act(async () => {
+      trigger?.dispatchEvent(
+        new MouseEvent("pointerdown", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 50,
+        }),
+      );
+      document.dispatchEvent(
+        new MouseEvent("pointermove", {
+          bubbles: true,
+          clientX: 160,
+          clientY: 90,
+        }),
+      );
+      document.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(
+      store.getState().windowManager.windows["rich-title-drag-window"].windowed,
+    ).toEqual(initialRect);
+
+    await act(async () => {
+      titleContainer?.dispatchEvent(
+        new MouseEvent("pointerdown", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 50,
+        }),
+      );
+      document.dispatchEvent(
+        new MouseEvent("pointermove", {
+          bubbles: true,
+          clientX: 160,
+          clientY: 90,
+        }),
+      );
+      document.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(
+      store.getState().windowManager.windows["rich-title-drag-window"].windowed,
+    ).toMatchObject({
+      x: initialRect.x + 60,
+      y: initialRect.y + 40,
+    });
+  });
 });

@@ -4,8 +4,7 @@
 //
 // `scopesService.ts` grew its own private copies of `ok`/`err`/`mapPgError`/
 // `mapPgErrorPair`; this file extracts them and exports them so every sibling
-// chokepoint — `scopesService.ts`, `associationsService.ts`, and
-// `features/comments/service/commentsService.ts` — consumes ONE
+// chokepoint — `scopesService.ts` and `associationsService.ts` — consumes ONE
 // implementation. The private copies are gone; this file is the only one.
 //
 // Every method that returns a `ScopesRpcResult` builds it through `ok`/`err`

@@ -30,7 +30,6 @@ import {
   Copy,
   Tag,
   Info,
-  Clock,
   CircleDot,
   Repeat,
   CalendarArrowUp,
@@ -48,7 +47,7 @@ import {
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
-import type { Comment } from "@/features/comments/types";
+import { CommentThread, useComments } from "@ai-matrx/associations/react";
 import { TaskContextPicker } from "../TaskContextSection";
 import TaskAssigneePicker from "../TaskAssigneePicker";
 import TaskAttachmentsPanel from "../TaskAttachmentsPanel";
@@ -128,10 +127,11 @@ export function TaskEditorBody({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
 
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isLoadingComments, setIsLoadingComments] = useState(true);
-  const [isAddingComment, setIsAddingComment] = useState(false);
+  // Canonical comment thread (@ai-matrx/associations, W6 host adoption):
+  // the hook feeds the surface-scope contextData; `CommentThread` below is
+  // the rendered face (same store cache — one cmt_list per task).
+  const commentThread = useComments({ token: "task", id: taskId });
+  const comments = commentThread.comments;
 
   // Subtasks live in the global tasks slice — derive them via selector so any
   // component (TaskListPane counts, mobile views, sidebar) stays in sync.
@@ -141,17 +141,6 @@ export function TaskEditorBody({
   const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSubtask);
 
-  useEffect(() => {
-    let cancelled = false;
-    taskService.getTaskComments(taskId).then((data) => {
-      if (cancelled) return;
-      setComments(data);
-      setIsLoadingComments(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [taskId]);
 
   // One-shot freshness fetch — Redux is the source of truth, but the user
   // may have created subtasks elsewhere or RLS scope changed. Upsert any
@@ -297,22 +286,6 @@ export function TaskEditorBody({
     );
   };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim() || isAddingComment) return;
-    setIsAddingComment(true);
-    try {
-      const created = await taskService.createTaskComment(
-        taskId,
-        newComment.trim(),
-      );
-      if (created) {
-        setComments((prev) => [...prev, created]);
-        setNewComment("");
-      }
-    } finally {
-      setIsAddingComment(false);
-    }
-  };
 
   const toggleLabel = (label: TaskLabel) => {
     const next = effective.labels.includes(label)
@@ -733,74 +706,33 @@ export function TaskEditorBody({
           {/* Associated resources — anything FK-linked to this task (task_id) */}
           <TaskAssociatedResources taskId={taskId} />
 
-          {/* Comments — ProTextarea with floating label + existing thread */}
-          <section>
-            {isLoadingComments ? (
-              <div className="flex items-center gap-2 py-2 pl-1.5 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" /> Loading task
-                comments…
-              </div>
-            ) : comments.length > 0 ? (
-              // Presentational region — right-click the read-only comment
-              // thread to run an agent over the COMMENTS (no text-replace
-              // callbacks; this view is not editable). It must NOT reuse the
-              // description-based `getApplicationScope` (that would launch the
-              // agent over the description textarea's content/selection, not
-              // the comments). Instead the surface scope's `content` is the
-              // joined comment thread; the menu captures any live DOM text
-              // selection itself at launch.
-              <NonEditableContextMenu
-                {...TASKS_CONTEXT_MENU_PROPS}
-                contextData={{
-                  ...contextData,
-                  content: comments.map((c) => c.body).join("\n\n"),
-                }}
-                contentSource={{ type: "raw" }}
-                entity={{
-                  type: "task",
-                  id: taskId,
-                  title: effective.title,
-                  resourceType: "task",
-                }}
-              >
-                <div className="mb-2 space-y-1.5 pl-1.5">
-                  {comments.map((c) => (
-                    <div
-                      key={c.id}
-                      className="rounded-md border border-border/60 bg-card/40 p-2"
-                    >
-                      <p className="whitespace-pre-wrap text-xs text-foreground">
-                        {c.body}
-                      </p>
-                      <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <Clock className="size-2.5" />
-                        {new Date(c.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </NonEditableContextMenu>
-            ) : null}
-            <ProTextarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              floatingLabel="Comment"
-              autoGrow
-              minHeight={compact ? 64 : 88}
-              maxHeight={compact ? 160 : 220}
-              enableHelpWithThis
-              enableCustomAgent
-              onSubmit={handleAddComment}
-              submitDisabled={!newComment.trim()}
-              isSubmitting={isAddingComment}
-              submitLabel="Post comment"
-              className={cn(
-                "resize-none border-border/60 bg-card/40 text-sm",
-                compact && "rounded-none border-x-0",
-              )}
-              wrapperClassName="w-full"
-              style={{ fontSize: "16px" }}
-            />
+          {/* Comments — the canonical CommentThread (@ai-matrx/associations,
+              W6 host adoption): threaded replies, composer that keeps text on
+              a failed post, edit/delete-own. Wrapped in a presentational
+              context-menu region — right-click the thread to run an agent
+              over the COMMENTS (no text-replace callbacks; this view is not
+              editable). It must NOT reuse the description-based
+              `getApplicationScope` (that would launch the agent over the
+              description textarea's content/selection, not the comments).
+              Instead the surface scope's `content` is the joined comment
+              thread; the menu captures any live DOM text selection itself. */}
+          <section className="pl-1.5">
+            <NonEditableContextMenu
+              {...TASKS_CONTEXT_MENU_PROPS}
+              contextData={{
+                ...contextData,
+                content: comments.map((c) => c.body).join("\n\n"),
+              }}
+              contentSource={{ type: "raw" }}
+              entity={{
+                type: "task",
+                id: taskId,
+                title: effective.title,
+                resourceType: "task",
+              }}
+            >
+              <CommentThread token="task" id={taskId} />
+            </NonEditableContextMenu>
           </section>
 
           {/* Advanced */}
