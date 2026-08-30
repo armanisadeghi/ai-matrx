@@ -389,9 +389,13 @@ export function FilePreview({
     );
   }
 
-  // Fetch-based previewers receive `fileId` (through PreviewerSwitch) so
-  // they can pull the bytes via the Python `/files/{id}/download` endpoint
-  // with Authorization headers through the python-client.
+  // The viewer receives the file IDENTITY (through PreviewerSwitch, into
+  // `@ai-matrx/media/viewers`), and the package resolves bytes + the durable
+  // display URL through the injected MediaClient. `url` stays ONLY as the
+  // asset-lane override for the two kinds that genuinely have a better source
+  // than plain resolution: images (hero/cover variant, or the authenticated
+  // blob for a private image) and PDFs (the `/files/{id}/asset` inline URL).
+  // It reaches the app's own image/pdf viewers and nothing else.
   const body = (
     <PreviewerSwitch
       source={{ kind: "fileId", fileId }}

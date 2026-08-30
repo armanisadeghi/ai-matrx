@@ -4,8 +4,10 @@
  * The host ports for `@ai-matrx/media` — the app-shaped halves the package
  * deliberately does not own:
  *
- *   - `ImageComponent` — a next/image adapter (unoptimized, matching the
- *     original InlineMediaRef's CDN branch);
+ *   - `ImageComponent` — the PACKAGE's next/image binding
+ *     (`@ai-matrx/media/next`). This used to be a 35-line local wrapper with
+ *     four handler casts; since media 0.4.0 the binding ships in the package
+ *     and the wiring is identity (C22 / THE ALL-INCLUSIVE LAW);
  *   - `playbackSession` — the existing audio system (output-sink routing +
  *     exclusive-playback join). Port members are HOOKS; the port object is
  *     a module constant so it is referentially stable for the app lifetime;
@@ -18,13 +20,12 @@
 "use client";
 
 import type { Ref, RefObject } from "react";
-import Image from "next/image";
 import type {
   MediaActionContext,
   MediaHostPorts,
-  MediaImageComponentProps,
   PlaybackSessionPort,
 } from "@ai-matrx/media";
+import { NextMediaImage } from "@ai-matrx/media/next";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import type { AudioSessionSource } from "@/features/audio/session/types";
@@ -35,42 +36,12 @@ import { MediaSharePopoverSlot } from "./share-slot";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 
-function HostImage({
-  src,
-  alt,
-  width,
-  height,
-  className,
-  onError,
-  onClick,
-  onKeyDown,
-  role,
-  tabIndex,
-}: MediaImageComponentProps) {
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-      unoptimized
-      onError={onError as React.ReactEventHandler<HTMLImageElement> | undefined}
-      onClick={onClick as React.MouseEventHandler<HTMLImageElement> | undefined}
-      onKeyDown={
-        onKeyDown as React.KeyboardEventHandler<HTMLImageElement> | undefined
-      }
-      role={role}
-      tabIndex={tabIndex}
-    />
-  );
-}
-
 const playbackSession: PlaybackSessionPort = {
   useMediaElementSink(forward) {
     // eslint-disable-next-line react-hooks/rules-of-hooks -- port member IS a hook, called unconditionally by the package
     return useOutputSinkRef(
-      forward as Ref<HTMLImageElement | HTMLVideoElement | HTMLAudioElement> | undefined,
+      forward as
+        Ref<HTMLImageElement | HTMLVideoElement | HTMLAudioElement> | undefined,
     ) as (node: unknown) => void;
   },
   usePlaybackSession(registration, elementRef) {
@@ -193,7 +164,7 @@ const diagnostics = {
 export const mediaHostPorts: MediaHostPorts & {
   diagnostics?: typeof diagnostics;
 } = {
-  ImageComponent: HostImage,
+  ImageComponent: NextMediaImage,
   playbackSession,
   actions,
   diagnostics,

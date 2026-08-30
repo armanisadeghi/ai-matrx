@@ -30,8 +30,9 @@
  * `MediaFileViewer` in this graph renders.
  */
 
-import { lazy, Suspense } from "react";
+import { createContext, lazy, Suspense, use } from "react";
 import {
+  HtmlViewer,
   MediaFileViewer,
   registerMediaCodeHighlighter,
   registerMediaViewer,
@@ -39,6 +40,7 @@ import {
   type MediaViewerProps,
   type MediaViewerSource,
 } from "@ai-matrx/media/viewers";
+import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
 import type { PreviewKind } from "@/features/files/utils/file-types";
 import { ImagePreview } from "./previewers/ImagePreview";
 import { VideoPreview } from "./previewers/VideoPreview";
@@ -78,6 +80,26 @@ export function PreviewerSkeleton() {
 // exactly one URL story on this screen).
 // ---------------------------------------------------------------------------
 
+/**
+ * The host's asset-lane display URL, for the host's OWN viewers only.
+ *
+ * `FilePreview` resolves images and PDFs through `/files/{id}/asset` (which
+ * picks the hero/cover variant) and private images through an authenticated
+ * blob — both strictly better sources than plain `resolve()`, and both
+ * app-specific. Rather than push a raw URL back into the package's props (law
+ * 3: a component binds a resolved src, never a caller's string), it travels
+ * host-side, in this context, and only the app's own registered viewers read
+ * it. The package's built-in bodies always resolve through the MediaClient.
+ */
+const HostPreviewUrlContext = createContext<string | null>(null);
+
+/** Host asset URL if there is one, else the package's client resolution. */
+function useHostOrResolvedUrl(source: MediaViewerSource): string | null {
+  const hostUrl = use(HostPreviewUrlContext);
+  const { url } = useViewerDisplayUrl(source);
+  return hostUrl ?? url;
+}
+
 function fileIdOf(source: MediaViewerSource): string | null {
   if (source.kind !== "ref") return null;
   const { ref } = source;
@@ -86,7 +108,7 @@ function fileIdOf(source: MediaViewerSource): string | null {
 }
 
 function HostImageViewer({ source, fileName, className }: MediaViewerProps) {
-  const { url } = useViewerDisplayUrl(source);
+  const url = useHostOrResolvedUrl(source);
   return <ImagePreview url={url} fileName={fileName} className={className} />;
 }
 
@@ -96,7 +118,7 @@ function HostVideoViewer({
   mimeType,
   className,
 }: MediaViewerProps) {
-  const { url } = useViewerDisplayUrl(source);
+  const url = useHostOrResolvedUrl(source);
   return (
     <VideoPreview
       url={url}
@@ -113,7 +135,7 @@ function HostAudioViewer({
   mimeType,
   className,
 }: MediaViewerProps) {
-  const { url } = useViewerDisplayUrl(source);
+  const url = useHostOrResolvedUrl(source);
   return (
     <AudioPreview
       url={url}
@@ -131,7 +153,7 @@ function HostPdfViewer({
   pageNumber,
   onPageChange,
 }: MediaViewerProps) {
-  const { url } = useViewerDisplayUrl(source);
+  const url = useHostOrResolvedUrl(source);
   const fileId = fileIdOf(source);
   if (!fileId) {
     return (
@@ -183,11 +205,36 @@ function requiresFileId(
   };
 }
 
-registerMediaViewer("image", HostImageViewer as never);
-registerMediaViewer("video", HostVideoViewer as never);
-registerMediaViewer("audio", HostAudioViewer as never);
-registerMediaViewer("pdf", HostPdfViewer as never);
-registerMediaCodeHighlighter(PrismCodeHighlighter as never);
+/**
+ * The package's HtmlViewer, wired to the app's control rail. When
+ * `SingleFileShell` mounts `FileViewerControlsProvider`, the rail drives
+ * mode / viewport / reload and the viewer hides its own toolbar; in the
+ * compact PreviewPane there is no provider and the viewer is self-driving.
+ * This adapter injects VALUES only — the rendered/source behavior, the
+ * viewport widths and the (non-negotiable) iframe sandbox are the package's.
+ */
+function HostHtmlViewer(props: MediaViewerProps) {
+  const controls = useFileViewerControls();
+  if (!controls) return <HtmlViewer {...props} />;
+  return (
+    <HtmlViewer
+      {...props}
+      markupControls={{
+        mode: controls.htmlMode,
+        onModeChange: controls.setHtmlMode,
+        viewport: controls.htmlViewport,
+        reloadKey: controls.htmlReloadKey,
+      }}
+    />
+  );
+}
+
+registerMediaViewer("image", HostImageViewer);
+registerMediaViewer("video", HostVideoViewer);
+registerMediaViewer("audio", HostAudioViewer);
+registerMediaViewer("pdf", HostPdfViewer);
+registerMediaViewer("html", HostHtmlViewer);
+registerMediaCodeHighlighter(PrismCodeHighlighter);
 
 // ---------------------------------------------------------------------------
 // The public adapter. Its three call sites (the FilePreview pane, the inline
@@ -209,6 +256,13 @@ export interface PreviewerSwitchProps {
   /** Optional controlled 1-based page for PDF files. */
   pageNumber?: number;
   onPageChange?: (pageNumber: number) => void;
+  /**
+   * Asset-lane display URL for the app's OWN image / video / audio / PDF
+   * viewers (hero/cover variant, or the authenticated blob for a private
+   * image). The package's built-in bodies never see it — they resolve through
+   * the MediaClient.
+   */
+  url?: string | null;
   /** Passthroughs for the generic (no-previewer) card. */
   generic?: {
     onDownload?: () => void;
@@ -228,6 +282,7 @@ export function PreviewerSwitch({
   fileName,
   fileSize,
   mimeType,
+  url,
   className,
   pageNumber,
   onPageChange,
@@ -240,19 +295,21 @@ export function PreviewerSwitch({
       : { kind: "blob", blob: source.blob, url: source.url };
 
   return (
-    <Suspense fallback={loadingFallback ?? <PreviewerSkeleton />}>
-      <MediaFileViewer
-        source={viewerSource}
-        previewKind={previewKind}
-        fileName={fileName}
-        fileSize={fileSize ?? null}
-        mimeType={mimeType ?? null}
-        className={className}
-        pageNumber={pageNumber}
-        onPageChange={onPageChange}
-        generic={generic}
-      />
-    </Suspense>
+    <HostPreviewUrlContext value={url ?? null}>
+      <Suspense fallback={loadingFallback ?? <PreviewerSkeleton />}>
+        <MediaFileViewer
+          source={viewerSource}
+          previewKind={previewKind}
+          fileName={fileName}
+          fileSize={fileSize ?? null}
+          mimeType={mimeType ?? null}
+          className={className}
+          pageNumber={pageNumber}
+          onPageChange={onPageChange}
+          generic={generic}
+        />
+      </Suspense>
+    </HostPreviewUrlContext>
   );
 }
 
@@ -264,7 +321,7 @@ registerMediaViewer(
       <MarkdownPreview fileId={fileId} className={cls} />
     ),
     (props) => <MediaFileViewer {...props} previewKind="generic" />,
-  ) as never,
+  ),
 );
 for (const kind of ["data", "spreadsheet"] as const) {
   registerMediaViewer(
@@ -274,7 +331,7 @@ for (const kind of ["data", "spreadsheet"] as const) {
         <DataPreview fileId={fileId} fileName={name} className={cls} />
       ),
       (props) => <MediaFileViewer {...props} previewKind="generic" />,
-    ) as never,
+    ),
   );
 }
 registerMediaViewer(
@@ -284,5 +341,5 @@ registerMediaViewer(
       <OfficePreview fileId={fileId} fileName={name} className={cls} />
     ),
     (props) => <MediaFileViewer {...props} previewKind="generic" />,
-  ) as never,
+  ),
 );
