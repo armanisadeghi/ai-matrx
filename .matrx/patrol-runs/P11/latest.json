@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P11",
-  "runId": "20260830T153054Z",
-  "state": "closed",
-  "updatedAt": "2026-08-30T15:37:27.281Z",
-  "summary": "Closed first P11 eradication wave with four route files fixed and independently certified",
-  "source": "20260830T153054Z.json",
-  "eventHash": "b84899170b5e9af25a5fa7a2bbd694475bf0a688389bd653e326de608b831f92"
+  "runId": "20260830T153806Z",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T15:38:47.464Z",
+  "summary": "Ten-file wave passed repository type-check and strict shell gates; preparing exact independent candidate",
+  "source": "20260830T153806Z.json",
+  "eventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1"
 }

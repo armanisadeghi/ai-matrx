@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P11",
+  "runId": "20260830T153806Z",
+  "baseSha": "e1439c28d4",
+  "createdAt": "2026-08-30T15:38:18.190Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T15:38:18.190Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "P11 eradication wave 2: normalize agent, operations, podcast, and organization body roots to canonical shell-header clearance",
+      "evidence": [
+        "Ten verified product files use missing, hard-coded, or obsolete header clearance",
+        "Batch is path-disjoint from concurrent P2, HR, Marketing router, and auth work"
+      ],
+      "previousEventHash": null,
+      "eventHash": "d8af1802ef48f2265a379c5b30425f7ac289d30cdedcf91148d9ea41a43b2389"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T15:38:18.868Z",
+      "actor": "codex-root",
+      "summary": "Applying canonical shell-header body clearance to ten verified route surfaces",
+      "evidence": [
+        "Behavior and navigation remain unchanged; only body root clearance and full-height ownership are normalized"
+      ],
+      "previousEventHash": "d8af1802ef48f2265a379c5b30425f7ac289d30cdedcf91148d9ea41a43b2389",
+      "eventHash": "762db898f64dfcf6323edeee35c54b7f567b3f79c2a6e8bf3a4ea6a70015fdfb"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T15:38:47.464Z",
+      "actor": "codex-root",
+      "summary": "Ten-file wave passed repository type-check and strict shell gates; preparing exact independent candidate",
+      "evidence": [
+        "All ten body roots now reserve var(--shell-header-h); hard-coded pt-10/pt-12 and obsolete --header-height removed from owned paths",
+        "type-check PASS; page-header strict PASS; scroll-chain strict PASS; diff-check PASS"
+      ],
+      "previousEventHash": "762db898f64dfcf6323edeee35c54b7f567b3f79c2a6e8bf3a4ea6a70015fdfb",
+      "eventHash": "c85fd12971fc4ee8a9533194974dfbb129ec1679aecd1a331c190bd547a73da1"
+    }
+  ]
+}
