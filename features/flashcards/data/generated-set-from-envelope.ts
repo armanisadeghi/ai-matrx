@@ -22,7 +22,7 @@ import { coerceCards, setTitleOf } from "./coerce-card";
 /**
  * Map a complete flashcard_set envelope to the persistable set shape.
  * Returns null unless the envelope's root is a `flashcard_set` that finished
- * parsing cleanly (`status: "complete"`) — callers fall back to the legacy
+ * parsing cleanly AND passed its schema — callers fall back to the legacy
  * extraction result in that case.
  */
 export function generatedSetFromEnvelope(
@@ -30,6 +30,20 @@ export function generatedSetFromEnvelope(
 ): Omit<GeneratedCardSet, "conversationId"> | null {
   if (envelope.root.kind !== "flashcard_set") return null;
   if (envelope.root.status !== "complete") return null;
+  // 🚨 `kind` + `status` are NOT a validity check. content-ir PRESERVES the
+  // kind on a schema failure (a broken flashcard_set stays a flashcard_set so
+  // callers can say what broke), and `status` reports only that parsing
+  // finished. `kindState` is the validity signal: `"raw"` means the payload
+  // was checked against its schema and LOST — e.g. an old-shape payload
+  // carrying the retired `set_title` against a schema where `title` is
+  // required. Persisting that would invent a set with an empty title instead
+  // of handing the region to the extraction fallback.
+  //
+  // Deliberately `=== "raw"` and NOT `!== "resolved"`: `"unverified"` means no
+  // schema was ever registered for the kind, so nothing was checked and the
+  // payload is as trustworthy as it ever was. Treating unverified as failure
+  // is THE OUTAGE PIN (2026-08-29) that cost ~221 live kinds their component.
+  if (envelope.root.kindState === "raw") return null;
 
   // Zero-loss read (residue extras merged back), markers included — nothing
   // strips `__kind` any more (KINDS_EVERYWHERE_PLAN §4.2). Nothing leaks
