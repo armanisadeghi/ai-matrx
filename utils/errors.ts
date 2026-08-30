@@ -130,6 +130,40 @@ const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
  * the first real sentence; callers put the untouched text on `title` for
  * whoever needs it. Returns null when there is no error at all.
  */
+/**
+ * Plain-English readings of the failure classes that actually reach our
+ * screens. Each is an accurate paraphrase of the condition — never a guess at
+ * WHY it happened, which only the logs can say. Anything unmatched keeps the
+ * server's own sentence rather than being flattened into something vague.
+ */
+const PLAIN_ENGLISH: ReadonlyArray<readonly [RegExp, string]> = [
+  [
+    /duplicate key value|unique constraint/i,
+    "It tried to save a record that already existed.",
+  ],
+  [
+    /violates foreign key constraint/i,
+    "It referred to something that no longer exists.",
+  ],
+  [
+    /violates (?:not-null|check) constraint/i,
+    "A required value was missing or out of range.",
+  ],
+  [
+    /statement timeout|query timed out|timeouterror|timed out/i,
+    "It took too long and was stopped.",
+  ],
+  [
+    /name or service not known|connection refused|unreachable|econnrefused|enotfound/i,
+    "A service it needed could not be reached.",
+  ],
+  [
+    /permission denied|not authorized|insufficient privilege|rls/i,
+    "It was not allowed to read or write something it needed.",
+  ],
+  [/rate limit|429|too many requests/i, "The provider was rate-limiting us."],
+];
+
 export function humanizeBackendError(
   raw: string | null | undefined,
   fallback = "It failed. The full technical detail is in the logs.",
@@ -148,6 +182,12 @@ export function humanizeBackendError(
   const labelled = clean.match(
     /(?:Database integrity error|DB error|Reason|message)\s*:\s*([^:]{8,240}?)(?:\s+(?:DETAIL|Hint|Query|Args|Operation)\b|$)/i,
   );
+  // A recognized failure class reads as English; the exact text stays on the
+  // element's `title` for whoever needs it.
+  for (const [pattern, plain] of PLAIN_ENGLISH) {
+    if (pattern.test(clean)) return plain;
+  }
+
   if (labelled?.[1]) return clampSentence(labelled[1], fallback);
 
   // Otherwise drop a leading `SomeError:` prefix and everything from the first
