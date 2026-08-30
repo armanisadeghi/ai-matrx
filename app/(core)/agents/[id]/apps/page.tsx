@@ -20,11 +20,13 @@ export default async function AgentAppsRoute({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <AgentAppsPanel
-        agentId={id}
-        agentName={agent.name}
-        apps={apps}
-      />
+      <div className="h-full pt-[var(--shell-header-h)]">
+        <AgentAppsPanel
+          agentId={id}
+          agentName={agent.name}
+          apps={apps}
+        />
+      </div>
     </>
   );
 }

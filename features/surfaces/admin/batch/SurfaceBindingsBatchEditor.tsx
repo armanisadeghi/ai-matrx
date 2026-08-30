@@ -378,7 +378,7 @@ export function SurfaceBindingsBatchEditor({
   const updateCount = targetSurfaceNames.size - createCount;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       <div className="flex-1 min-h-0 overflow-auto">
         <div className="mx-auto max-w-3xl px-4 py-5 space-y-5">
           {/* Intro */}

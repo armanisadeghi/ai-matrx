@@ -16,7 +16,9 @@ export default async function AgentBatchSurfacesRoute({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <SurfaceBindingsBatchEditor agent={agent} basePath="/agents" />
+      <div className="h-full pt-[var(--shell-header-h)]">
+        <SurfaceBindingsBatchEditor agent={agent} basePath="/agents" />
+      </div>
     </>
   );
 }
