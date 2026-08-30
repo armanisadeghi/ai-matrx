@@ -110,6 +110,20 @@ describe("P3 hover-only interaction detector", () => {
     });
   });
 
+  it("does not confuse an imported ExternalLink icon with a Link control", () => {
+    const [finding] = analyzeP3HoverSource(`
+      import { ExternalLink } from "lucide-react";
+      export const Indicator = () => (
+        <ExternalLink className="opacity-0 group-hover:opacity-100" />
+      );
+    `);
+    expect(finding).toMatchObject({
+      classification: "decoration",
+      rank: 20,
+      tag: "ExternalLink",
+    });
+  });
+
   it("keeps ambiguous custom subtrees in a visible review category", () => {
     const [finding] = analyzeP3HoverSource(
       `<div className="opacity-0 group-hover:opacity-100"><UnknownAction /></div>`,

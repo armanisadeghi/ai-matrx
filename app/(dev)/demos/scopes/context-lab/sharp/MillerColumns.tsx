@@ -102,8 +102,8 @@ export function MillerColumns({ data, sel, footer }: MillerColumnsProps) {
                   <span className="min-w-0 flex-1 truncate text-[13px]">
                     {org.name}
                   </span>
+                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
                 </EntityRef>
-                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
               </div>
             );
           })}

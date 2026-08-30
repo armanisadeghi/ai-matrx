@@ -593,9 +593,9 @@ export interface AgentVersionSnapshot {
   ui_gates: UiGates;
   default_rag_boost: number;
   rag_awareness_mode: string;
-  // Supabase models RETURNS TABLE text as non-null even though historical rows
-  // can return SQL NULL. The converter normalizes that runtime case to null.
-  input_kind: string;
+  // Supabase models RETURNS TABLE text as non-null, but older version rows
+  // legitimately retain SQL NULL because their input contract is inline.
+  input_kind: string | null;
 }
 
 /**
@@ -638,8 +638,12 @@ type _Check_AgentSearchRow =
 declare const _agentSearchRow: _Check_AgentSearchRow;
 true satisfies typeof _agentSearchRow;
 
+type AgentVersionSnapshotDbProjection = Omit<
+  AgentVersionSnapshot,
+  "input_kind"
+> & { input_kind: string };
 type _Check_AgentVersionSnapshot =
-  AgentVersionSnapshot extends DbRpcRow<"agx_get_version_snapshot">
+  AgentVersionSnapshotDbProjection extends DbRpcRow<"agx_get_version_snapshot">
     ? true
     : false;
 declare const _agentVersionSnapshot: _Check_AgentVersionSnapshot;

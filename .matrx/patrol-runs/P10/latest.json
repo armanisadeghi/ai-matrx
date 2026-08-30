@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:29:22.802Z",
-  "summary": "Frozen exact integrated candidate d28f75c13e for independent adversarial certification.",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:34:17.279Z",
+  "summary": "Repairing the rejected nullable input_kind runtime contract and adding regression coverage.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4"
+  "eventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4"
 }

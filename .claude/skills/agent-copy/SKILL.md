@@ -86,7 +86,8 @@ this page the moment they click this?"_ — then hand the agent exactly that.
 - **Exactly two compact top-level controls:** an icon-only human Copy action,
   followed by the canonical `CopyForAiIcon` menu ordered Copy JSON → Copy for AI → shaped AI variants →
   downloads/destinations. Large or visibly labeled top-level copy buttons are
-  banned. Scalars skip JSON. Copy-for-AI is NEVER just JSON in an envelope.
+  banned. Keep JSON inside the Copy-for-AI menu; never create a third top-level
+  control. Scalars skip JSON. Copy-for-AI is NEVER just JSON in an envelope.
   **`CopyButtons` owns the pair** — pass `export` for downloads and
   destinations, `hide` to drop any category (cards: omit `export` or
   `hide={["export"]}`). A menu item may

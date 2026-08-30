@@ -83,6 +83,32 @@
       ],
       "previousEventHash": "d0a34234701830e99759e5fab7b3f5dca250668fd1480d65a4f512f68522c40f",
       "eventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4"
+    },
+    {
+      "sequence": 6,
+      "state": "rejected",
+      "at": "2026-08-30T14:34:16.224Z",
+      "actor": "/root/p10_certifier",
+      "summary": "REJECTED: exact candidate d28f75c13e rejected historical null input_kind rows.",
+      "evidence": [
+        "candidate-caused runtime TypeError for input_kind:null",
+        "focused tests lacked historical nullable row"
+      ],
+      "previousEventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4",
+      "eventHash": "1c3b9b50a099a4c2e56862aefcadfeedcfc7628915f7e79fd51bebcf2b8b1d5a"
+    },
+    {
+      "sequence": 7,
+      "state": "fixing",
+      "at": "2026-08-30T14:34:17.279Z",
+      "actor": "/root",
+      "summary": "Repairing the rejected nullable input_kind runtime contract and adding regression coverage.",
+      "evidence": [
+        "input_kind:string|null runtime schema",
+        "historical-null regression test"
+      ],
+      "previousEventHash": "1c3b9b50a099a4c2e56862aefcadfeedcfc7628915f7e79fd51bebcf2b8b1d5a",
+      "eventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4"
     }
   ]
 }

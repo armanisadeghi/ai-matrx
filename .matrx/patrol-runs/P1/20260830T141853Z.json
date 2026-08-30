@@ -44,6 +44,30 @@
       ],
       "previousEventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a",
       "eventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:34:28.188Z",
+      "actor": "p1-certifier",
+      "summary": "REJECTED: organization chevron lost its navigation hit area in MillerColumns.",
+      "evidence": [
+        "Concrete candidate-caused defect in b0ae0f612e: ChevronRight moved outside EntityRef and became inert."
+      ],
+      "previousEventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778",
+      "eventHash": "99af132e4cd6cfc4c0e4505b1b4aef329c3af9da4c0ff7ceb4717c1e18dc7f71"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:34:29.068Z",
+      "actor": "codex-root",
+      "summary": "Repairing the concrete MillerColumns interaction regression before recertification.",
+      "evidence": [
+        "ChevronRight restored inside the EntityRef label so its prior click target is preserved."
+      ],
+      "previousEventHash": "99af132e4cd6cfc4c0e4505b1b4aef329c3af9da4c0ff7ceb4717c1e18dc7f71",
+      "eventHash": "d934d99a373d94fcb21fdd86b3010ee39e5d31db8ab75fb7b0749201843d5140"
     }
   ]
 }
