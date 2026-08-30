@@ -46,6 +46,124 @@
       ],
       "previousEventHash": "ea12dca5f7653a8440a0baaffd4a6706e890e1c8db1918a07500eab91900ed77",
       "eventHash": "4680d66d0a7560ce7201aac5bfcf6b1ebbc18f75eee6fc80f14c6a5a00f59237"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T08:24:57.601Z",
+      "actor": "root",
+      "summary": "Fleet release integrated the candidate before certification completed",
+      "evidence": [
+        "v0.4.1485 includes candidate bfd76db84e4760ed73380389306689ba6174de26"
+      ],
+      "blocker": {
+        "prerequisite": "exact-candidate independent certification after delivery escape",
+        "preservedRef": "refs/heads/patrol-runs/P13/20260830T081317Z",
+        "preservedSha": "bfd76db84e4760ed73380389306689ba6174de26"
+      },
+      "previousEventHash": "4680d66d0a7560ce7201aac5bfcf6b1ebbc18f75eee6fc80f14c6a5a00f59237",
+      "eventHash": "16da38d3bf3ae3ea3e73661c98bba829f07bce90d3177b18d9ae535ec239bf4d"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T08:24:58.125Z",
+      "actor": "release-controller",
+      "summary": "Recorded pre-certification fleet release escape",
+      "evidence": ["origin/main=1c345d7f6660196238ee5775693e3d7e71390c8e"],
+      "escape": {
+        "candidateSha": "bfd76db84e4760ed73380389306689ba6174de26",
+        "integratedSha": "1c345d7f6660196238ee5775693e3d7e71390c8e",
+        "release": "v0.4.1485",
+        "reason": "The scheduled fleet release consumed shared checkout main while independent P13 certification was still running"
+      },
+      "previousEventHash": "16da38d3bf3ae3ea3e73661c98bba829f07bce90d3177b18d9ae535ec239bf4d",
+      "eventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T08:25:03.590Z",
+      "actor": "competitor_pickers",
+      "summary": "Resumed exact-candidate independent certification after release escape",
+      "evidence": ["candidate=bfd76db84e4760ed73380389306689ba6174de26"],
+      "previousEventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd",
+      "eventHash": "a1a144ea3550b5824885688c5edfbc76c2d88ed03295e30dffbfe50c7c180253"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T08:25:42.600Z",
+      "actor": "competitor_pickers",
+      "summary": "Exact P13 wave 1 candidate independently certified",
+      "evidence": [
+        "No candidate-caused defect across 10 changed files",
+        "Isolated in-app Browser unavailable; static and test proof retained"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "bfd76db84e4760ed73380389306689ba6174de26",
+        "certifierTaskId": "competitor_pickers",
+        "checks": [
+          "pnpm type-check",
+          "pnpm check:picker-add",
+          "ResearchTopicSelect tests 2/2",
+          "website URL normalization tests 11/11",
+          "scoped ESLint",
+          "git diff --check and ancestry"
+        ]
+      },
+      "previousEventHash": "a1a144ea3550b5824885688c5edfbc76c2d88ed03295e30dffbfe50c7c180253",
+      "eventHash": "41375043e08a6fade177ae251b22903704e7ee9727fd21f19464cee9765925b0"
+    },
+    {
+      "sequence": 8,
+      "state": "delivered",
+      "at": "2026-08-30T08:25:49.577Z",
+      "actor": "release-controller",
+      "summary": "Recorded certified candidate as delivered in fleet release v0.4.1485",
+      "evidence": [
+        "candidate is ancestor of release integration and origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "bfd76db84e4760ed73380389306689ba6174de26",
+        "preservedRef": "refs/heads/patrol-runs/P13/20260830T081317Z",
+        "integratedSha": "1c345d7f6660196238ee5775693e3d7e71390c8e",
+        "release": "v0.4.1485"
+      },
+      "previousEventHash": "41375043e08a6fade177ae251b22903704e7ee9727fd21f19464cee9765925b0",
+      "eventHash": "4a297e050568d32971881c1ee224b6eab517854e9ce46888068fa1d981bb439e"
+    },
+    {
+      "sequence": 9,
+      "state": "closed",
+      "at": "2026-08-30T08:25:56.332Z",
+      "actor": "root",
+      "summary": "Closed certified repair wave after delivered release reconciliation evidence",
+      "evidence": [
+        "Two actionable picker dead ends repaired; remaining open items classified separately"
+      ],
+      "previousEventHash": "4a297e050568d32971881c1ee224b6eab517854e9ce46888068fa1d981bb439e",
+      "eventHash": "278822ffb30b41b0abd6afac80e5d875ca26903359fc295f872072a943a33d64"
+    },
+    {
+      "sequence": 10,
+      "state": "reconciled",
+      "at": "2026-08-30T08:25:56.842Z",
+      "actor": "release-controller",
+      "summary": "Reconciled v0.4.1485 ordering escape with later exact-candidate certification",
+      "evidence": [],
+      "reconciliation": {
+        "candidateSha": "bfd76db84e4760ed73380389306689ba6174de26",
+        "escapedEventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd",
+        "checks": [
+          "Exact candidate independently CERTIFIED",
+          "Candidate remains ancestor of release v0.4.1485",
+          "origin/main contains release integration 1c345d7f6660196238ee5775693e3d7e71390c8e"
+        ]
+      },
+      "previousEventHash": "278822ffb30b41b0abd6afac80e5d875ca26903359fc295f872072a943a33d64",
+      "eventHash": "88e872dfc9f4f2f56816e5ca1b313b8a01a52c8b0427eb532564a71d2c49b42a"
     }
   ]
 }
