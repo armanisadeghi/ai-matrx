@@ -20,7 +20,10 @@
 "use client";
 
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { listGeneratedFrom, type GeneratedArtifact } from "@/features/education/convert/lineage";
+import {
+  listGeneratedFrom,
+  type GeneratedArtifact,
+} from "@/features/education/convert/lineage";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import {
   libraryRowStats,
@@ -32,7 +35,12 @@ import type { TargetKind } from "@/features/education/convert/types";
 import type { Json } from "@/types/database.types";
 
 /** Artifact entity tokens a kit can contain (the converter's four writers). */
-const KIT_ARTIFACT_TYPES = ["fc_set", "study_media", "assessment", "note"] as const;
+const KIT_ARTIFACT_TYPES = [
+  "fc_set",
+  "study_media",
+  "assessment",
+  "note",
+] as const;
 
 /** Page size for the artifact scan. PostgREST caps a bare select at 1000, so
  *  this stays well under it and the read PAGES to exhaustion instead. */
@@ -94,7 +102,7 @@ export async function readKitArtifactStats(
         filters: { id: { kind: "select", values: ids } },
       },
       {
-        sort: "updated_at",
+        sort: "updated",
         direction: "desc",
         favoritesFirst: false,
         pageSize: Math.max(1, ids.length),
@@ -182,7 +190,11 @@ function kitName(members: GeneratedArtifact[]): string {
  * replaced with what is true now. One query per kit, only when it has media.
  */
 function liveDetail(
-  row: { status: string | null; media_kind: string; duration_seconds: number | null },
+  row: {
+    status: string | null;
+    media_kind: string;
+    duration_seconds: number | null;
+  },
   frozen: string | null,
 ): string | null {
   if (row.status === "generating") return "Still being produced";
@@ -354,7 +366,9 @@ export async function listKits(): Promise<StudyKit[]> {
       };
     })
     .filter((kit) => kit.artifacts.length > 0)
-    .sort((a, b) => b.artifacts[0].createdAt.localeCompare(a.artifacts[0].createdAt));
+    .sort((a, b) =>
+      b.artifacts[0].createdAt.localeCompare(a.artifacts[0].createdAt),
+    );
 }
 
 /** The kit hub route for an anchor. */

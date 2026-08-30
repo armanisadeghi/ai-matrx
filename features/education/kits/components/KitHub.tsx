@@ -2,98 +2,220 @@
 
 // features/education/kits/components/KitHub.tsx
 //
-// THE KIT — one page, one subject, everything made from it.
-//
-// A kit run produces up to eight artifacts and then scattered them into six flat
-// per-type lists, so the one thing the learner actually has — "my chemistry
-// chapter" — existed nowhere in the product. This is that place: they came here
-// with ONE piece of material, so they get ONE page for it.
-//
-// It reads the lineage that kit runs already write (no kit table, no new
-// column); the kit's id IS its source material's id.
+// A study kit is a PATH through one piece of material, not a directory of eight
+// copies of its title. The page therefore names the learning MODE first, keeps
+// every claim tied to that mode's real library/study-spine evidence, and gives
+// the learner one inviting next move.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowUpRight,
+  ArrowRight,
   BrainCircuit,
+  CalendarClock,
   FileSearch,
-  GraduationCap,
-  Layers,
+  Flag,
+  Route,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
+import type { GeneratedArtifact } from "@/features/education/convert/lineage";
+import type { TargetKind } from "@/features/education/convert/types";
+import {
+  artifactDuration,
+  artifactTile,
+} from "@/features/education/library/artifactVisuals";
+import { StudyProgressBar } from "@/features/education/library/components/StudyProgressBar";
+import type { LibraryRowStats } from "@/features/education/library/types";
+import { relativeTime } from "@/lib/entity-list/columns";
+import { cn } from "@/lib/utils";
 import { peekHref } from "@/features/organizations/peek/peekHref";
 import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
-import type { GeneratedArtifact } from "@/features/education/convert/lineage";
-import type { TargetKind } from "@/features/education/convert/types";
-import { readKit, type StudyKit } from "../kitService";
-import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import {
-  kitStudyAction,
-  readKitStudyState,
-  type KitStudyState,
-} from "../kitStudy";
+  kitArtifactKey,
+  readKit,
+  readKitArtifactStats,
+  type KitArtifactStats,
+  type StudyKit,
+} from "../kitService";
+import { MakeMoreFromKit } from "./MakeMoreFromKit";
 
-/** Study-first ordering: what you practise with, then what you read, then audio. */
-const KIND_ORDER: Record<string, number> = {
-  deck: 0,
-  quiz: 1,
-  practice_test: 2,
-  summary: 3,
-  notes: 4,
-  mind_map: 5,
-  memory_aid: 6,
-  audio: 7,
+interface StudyStage {
+  number: string;
+  title: string;
+  description: string;
+  kinds: TargetKind[];
+}
+
+const STUDY_PATH: StudyStage[] = [
+  {
+    number: "01",
+    title: "Understand it",
+    description: "Get the big picture before you start testing yourself.",
+    kinds: ["summary", "notes", "mind_map"],
+  },
+  {
+    number: "02",
+    title: "Make it stick",
+    description: "Turn recognition into recall with active review.",
+    kinds: ["deck", "memory_aid", "audio"],
+  },
+  {
+    number: "03",
+    title: "Prove you know it",
+    description: "Find the gaps, then come back stronger.",
+    kinds: ["quiz", "practice_test"],
+  },
+];
+
+const FORMAT_PROMISE: Record<TargetKind, string> = {
+  deck: "Build recall one card at a time.",
+  quiz: "Run a quick check and find the gaps.",
+  practice_test: "Test your readiness across the whole topic.",
+  summary: "Start with the most important ideas.",
+  notes: "Review the key terms and details.",
+  mind_map: "See how the ideas connect.",
+  memory_aid: "Make the hardest details easier to remember.",
+  audio: "Keep learning away from the screen.",
 };
 
-function ArtifactCard({ artifact }: { artifact: GeneratedArtifact }) {
-  const look = artifact.targetKind
-    ? TARGET_PRESENTATION[artifact.targetKind]
-    : null;
-  const Icon = look?.icon ?? Layers;
+const TRACKED_KINDS = new Set<TargetKind>(["deck", "quiz", "practice_test"]);
+
+function unitCount(kind: TargetKind, count: number | null): string | null {
+  const unit = TARGET_PRESENTATION[kind].unit;
+  if (!unit || count == null) return null;
+  return `${count} ${count === 1 ? unit.one : unit.many}`;
+}
+
+function artifactActionHref(artifact: GeneratedArtifact): string {
+  return artifact.targetKind === "deck"
+    ? `${artifact.href}/study`
+    : artifact.href;
+}
+
+function ArtifactCard({
+  artifact,
+  stats,
+  statsLoading,
+  statsFailed,
+}: {
+  artifact: GeneratedArtifact;
+  stats?: LibraryRowStats;
+  statsLoading: boolean;
+  statsFailed: boolean;
+}) {
+  const kind = artifact.targetKind;
+  if (!kind) return null;
+  const look = TARGET_PRESENTATION[kind];
+  const Icon = look.icon;
+  const count = unitCount(kind, stats?.itemCount ?? null);
+  const duration = artifactDuration(stats?.durationSeconds ?? null);
+  const hasTrackedProgress = stats?.hasProgress ?? false;
+  const showProgressUnavailable = statsFailed && TRACKED_KINDS.has(kind);
+
   return (
     <Link
-      href={artifact.href}
-      className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+      href={artifactActionHref(artifact)}
+      className={cn(
+        "group flex min-h-48 flex-col rounded-2xl border border-border bg-card p-4 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:bg-accent/30",
+        look.hoverBorder,
+      )}
+      aria-label={`${look.verb} ${look.label}`}
     >
-      <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${look?.chip ?? "bg-muted"}`}
-      >
-        <Icon className={`h-4.5 w-4.5 ${look?.fg ?? "text-muted-foreground"}`} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-          <span className="truncate">{artifact.title}</span>
-          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+            artifactTile(look),
+          )}
+        >
+          <Icon className="h-6 w-6" />
         </span>
-        {artifact.detail && (
-          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-            {artifact.detail}
+        {stats?.dueCount ? (
+          <span className="inline-flex min-h-7 items-center gap-1 rounded-full bg-warning/10 px-2.5 text-xs font-semibold text-warning">
+            <CalendarClock className="h-3.5 w-3.5" />
+            {stats.dueCount} due
           </span>
+        ) : null}
+      </div>
+
+      <div className="mt-4">
+        <h3 className="text-lg font-semibold text-foreground">{look.label}</h3>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {FORMAT_PROMISE[kind]}
+        </p>
+      </div>
+
+      <div className="mt-4 min-h-12">
+        {statsLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-1.5 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        ) : hasTrackedProgress && stats ? (
+          <>
+            <StudyProgressBar
+              studied={stats.studiedCount}
+              total={stats.itemCount}
+              accuracy={stats.accuracy}
+              className="mb-2"
+            />
+            <p className="text-xs font-medium text-foreground">
+              {stats.itemCount != null
+                ? `${stats.studiedCount} of ${stats.itemCount} practiced`
+                : `${stats.studiedCount} practiced`}
+              {stats.accuracy != null &&
+                ` · ${Math.round(stats.accuracy * 100)}% correct`}
+            </p>
+            {stats.lastStudiedAt && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Last studied {relativeTime(stats.lastStudiedAt)}
+              </p>
+            )}
+          </>
+        ) : showProgressUnavailable ? (
+          <p className="text-xs text-warning">
+            Progress is unavailable right now.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {duration ?? count ?? artifact.detail ?? "Ready when you are"}
+          </p>
         )}
+      </div>
+
+      <span
+        className={cn(
+          "mt-auto inline-flex min-h-10 items-center gap-1.5 self-start rounded-lg px-3 text-sm font-semibold transition-colors group-hover:brightness-110",
+          artifactTile(look),
+        )}
+      >
+        {hasTrackedProgress ? `Continue ${look.label}` : look.verb}
+        <ArrowRight className="h-4 w-4" />
       </span>
     </Link>
   );
 }
 
-/** The kit's primary action — resolved once, not twice. */
-function StudyActionButton({ study }: { study: KitStudyState }) {
-  const { href, label } = kitStudyAction(study);
+function KitLoading() {
   return (
-    // Full-width on phone: the primary action must not compete with the stats
-    // for a 375px row ("mobile is the product, not a port").
-    <Button asChild size="lg" className="w-full gap-1.5 sm:w-auto">
-      <Link href={href}>
-        <GraduationCap className="h-4 w-4" />
-        {label}
-      </Link>
-    </Button>
+    <>
+      <EducationToolHeader title="Study kit" />
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-10">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -108,66 +230,90 @@ export function KitHub({
   addTarget?: TargetKind;
 }) {
   const [kit, setKit] = useState<StudyKit | null>(null);
-  const [study, setStudy] = useState<KitStudyState | null>(null);
-  // Separate from `study` so "still reading" and "this kit has no deck to
-  // study" are distinguishable — they render differently, and collapsing them
-  // is what makes a bar pop in and shove the page down after paint.
-  const [studyLoading, setStudyLoading] = useState(true);
+  const [stats, setStats] = useState<KitArtifactStats>({});
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsFailed, setStatsFailed] = useState(false);
   const [loading, setLoading] = useState(true);
-  // Bumped when a new artifact is made from this kit, so the page shows what the
-  // learner just created instead of the contents it had when they arrived.
+  const [loadError, setLoadError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    // Only the FIRST read blanks the page. A refresh after "make more" replaces
-    // a rendered kit with a skeleton otherwise — the learner watches their own
-    // kit disappear at the moment it grew.
-    setLoading((prev) => prev || refreshKey === 0);
-    setStudyLoading(true);
-    void readKit(sourceType, sourceId).then(async (result) => {
-      if (!active) return;
-      setKit(result);
-      setLoading(false);
-      // The study bar is a SECOND, slower read (deck cards + mastery). It lands
-      // after the kit renders rather than holding the whole page behind it.
-      if (!result) {
-        setStudyLoading(false);
-        return;
+    if (refreshKey === 0) setLoading(true);
+    setLoadError(false);
+    setStatsLoading(true);
+    setStatsFailed(false);
+
+    void (async () => {
+      try {
+        const result = await readKit(sourceType, sourceId);
+        if (!active) return;
+        setKit(result);
+        setLoading(false);
+        if (!result) {
+          setStats({});
+          setStatsLoading(false);
+          return;
+        }
+
+        try {
+          const nextStats = await readKitArtifactStats(result.artifacts);
+          if (!active) return;
+          setStats(nextStats);
+        } catch (error) {
+          console.error("[kits] artifact progress read failed:", error);
+          if (!active) return;
+          setStats({});
+          setStatsFailed(true);
+        } finally {
+          if (active) setStatsLoading(false);
+        }
+      } catch (error) {
+        console.error("[kits] kit read failed:", error);
+        if (!active) return;
+        setLoading(false);
+        setStatsLoading(false);
+        setLoadError(true);
       }
-      const setIds = result.artifacts
-        .filter((a) => a.artifactType === "fc_set")
-        .map((a) => a.artifactId);
-      const state = await readKitStudyState(setIds);
-      if (!active) return;
-      setStudy(state);
-      setStudyLoading(false);
-    });
+    })();
+
     return () => {
       active = false;
     };
   }, [sourceId, sourceType, refreshKey]);
 
-  if (loading) {
+  if (loading) return <KitLoading />;
+
+  if (loadError) {
     return (
       <>
         <EducationToolHeader title="Study kit" />
-        <div className="mx-auto w-full max-w-3xl space-y-3 px-4 pb-8">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <div className="mx-auto w-full max-w-3xl px-4 pb-10">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
+            <BrainCircuit className="h-8 w-8 text-warning" />
+            <div>
+              <h2 className="font-semibold text-foreground">
+                This study kit could not be loaded
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your material is still safe. Try the read again.
+              </p>
+            </div>
+            <Button onClick={() => setRefreshKey((key) => key + 1)}>
+              Try again
+            </Button>
+          </div>
         </div>
       </>
     );
   }
 
-  // Honest empty state: this anchor exists but nothing was ever made from it.
   if (!kit) {
     return (
       <>
         <EducationToolHeader title="Study kit" />
-        <div className="mx-auto w-full max-w-3xl px-4 pb-8">
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
+        <div className="mx-auto w-full max-w-3xl px-4 pb-10">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
             <BrainCircuit className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               Nothing has been made from this material yet.
@@ -184,7 +330,6 @@ export function KitHub({
     );
   }
 
-  // The origin's own route + icon, for any anchor kind the registry knows.
   const originToken = resolveEntityToken(kit.sourceType);
   const materialHref =
     originToken === "file"
@@ -192,84 +337,195 @@ export function KitHub({
       : (peekHref(originToken, kit.sourceId) ?? null);
   const MaterialIcon = tryGetEntityInfo(originToken)?.Icon ?? FileSearch;
 
-  const ordered = [...kit.artifacts].sort(
-    (a, b) =>
-      (KIND_ORDER[a.targetKind ?? ""] ?? 99) -
-      (KIND_ORDER[b.targetKind ?? ""] ?? 99),
+  const ordered = STUDY_PATH.flatMap((stage) =>
+    stage.kinds.flatMap((kind) =>
+      kit.artifacts.filter((artifact) => artifact.targetKind === kind),
+    ),
   );
+  const knownIds = new Set(ordered.map((artifact) => artifact.edgeId));
+  ordered.push(
+    ...kit.artifacts.filter((artifact) => !knownIds.has(artifact.edgeId)),
+  );
+
+  const itemTotal = ordered.reduce(
+    (sum, artifact) => sum + (stats[kitArtifactKey(artifact)]?.itemCount ?? 0),
+    0,
+  );
+  const practicedTotal = ordered.reduce(
+    (sum, artifact) =>
+      sum + (stats[kitArtifactKey(artifact)]?.studiedCount ?? 0),
+    0,
+  );
+  const dueTotal = ordered.reduce(
+    (sum, artifact) => sum + (stats[kitArtifactKey(artifact)]?.dueCount ?? 0),
+    0,
+  );
+  const challenge =
+    ordered.find(
+      (artifact) => (stats[kitArtifactKey(artifact)]?.dueCount ?? 0) > 0,
+    ) ??
+    ordered.find((artifact) => {
+      const artifactStats = stats[kitArtifactKey(artifact)];
+      return (
+        artifact.targetKind != null &&
+        TRACKED_KINDS.has(artifact.targetKind) &&
+        !artifactStats?.hasProgress
+      );
+    }) ??
+    ordered[0];
+  const challengeKind = challenge?.targetKind ?? null;
+  const challengeLook = challengeKind
+    ? TARGET_PRESENTATION[challengeKind]
+    : null;
+  const challengeStats = challenge
+    ? stats[kitArtifactKey(challenge)]
+    : undefined;
 
   return (
     <>
       <EducationToolHeader title={kit.title} />
-      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            {ordered.length} {ordered.length === 1 ? "thing" : "things"} made
-            from this material — everything for it lives here.
-          </p>
-          <div className="flex items-center gap-2">
-            {/* THE DOOR LAW: the material opens whatever it IS. A kit anchored
-                on a note or a deck (note→deck, deck→quiz) is as real as a file
-                kit, and omitting the button for those left the learner with no
-                way back to what the kit was made from. Resolved through the
-                canonical entity registry, exactly like `MadeFromSource`. */}
-            {materialHref && (
-              <Button asChild variant="outline" size="sm" className="gap-1.5">
-                <Link href={materialHref}>
-                  <MaterialIcon className="h-4 w-4" />
-                  The material
-                </Link>
-              </Button>
-            )}
-            {/* NOT the generic ingest. That asked the learner to upload the
-                same document again and built a SECOND, disconnected kit — the
-                fragmentation this page exists to end. This converts the kit's
-                OWN material, so what it makes lands in this kit. */}
-            <MakeMoreFromKit
-              sourceType={kit.sourceType}
-              sourceId={kit.sourceId}
-              kitTitle={kit.title}
-              addTarget={addTarget}
-              onConverted={() => setRefreshKey((k) => k + 1)}
-            />
-          </div>
+      <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+          {materialHref && (
+            <Button asChild variant="outline" className="min-h-10 gap-1.5">
+              <Link href={materialHref}>
+                <MaterialIcon className="h-4 w-4" />
+                Material
+              </Link>
+            </Button>
+          )}
+          <MakeMoreFromKit
+            sourceType={kit.sourceType}
+            sourceId={kit.sourceId}
+            kitTitle={kit.title}
+            addTarget={addTarget}
+            onConverted={() => setRefreshKey((key) => key + 1)}
+          />
         </div>
 
-        {/* STUDY FIRST — the kit exists to be studied, so where the learner
-            stands and their next tap sit above the contents, not below.
-            The slot RESERVES its height while the (slower) spine read lands, so
-            the artifact grid never jumps down after paint. */}
-        {studyLoading && <Skeleton className="h-[104px] w-full rounded-xl" />}
-        {!studyLoading && study && (
-          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums text-foreground">
-                  {study.masteryPct}%
-                </span>
-                <span className="text-sm text-muted-foreground">mastered</span>
+        <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card-textured p-5 sm:p-7">
+          <div className="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                <Route className="h-3.5 w-3.5" />
+                Your study path
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width]"
-                  style={{ width: `${Math.min(100, study.masteryPct)}%` }}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {study.studiedCount} of {study.cardCount} cards studied
-                {study.dueCount > 0 && ` · ${study.dueCount} due for review`}
+              <h1 className="mt-4 max-w-2xl text-[clamp(1.75rem,1.4rem+1.5vw,2.75rem)] font-semibold leading-tight text-foreground">
+                Pick a way in. Build toward what you can prove.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                Start with the big picture, strengthen recall, then test what
+                sticks. Every result below comes from this study aid—not from a
+                made-up kit score.
               </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {ordered.length} study aids
+                </span>
+                {!statsLoading && itemTotal > 0 && (
+                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                    {itemTotal} practice items
+                  </span>
+                )}
+                {!statsLoading && practicedTotal > 0 && (
+                  <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                    {practicedTotal} practiced
+                  </span>
+                )}
+                {!statsLoading && dueTotal > 0 && (
+                  <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning">
+                    {dueTotal} due now
+                  </span>
+                )}
+              </div>
             </div>
-            <StudyActionButton study={study} />
-          </div>
-        )}
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {ordered.map((artifact) => (
-            <ArtifactCard key={artifact.edgeId} artifact={artifact} />
-          ))}
-        </div>
-      </div>
+            {challenge && challengeLook && (
+              <div className="rounded-2xl border border-glass-edge bg-glass p-4 shadow-glass backdrop-blur-glass backdrop-saturate-glass sm:p-5">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <Flag className="h-4 w-4" />
+                  Next challenge
+                </div>
+                <p className="mt-3 text-xl font-semibold text-foreground">
+                  {challengeStats?.dueCount
+                    ? `Clear ${challengeStats.dueCount} due ${challengeStats.dueCount === 1 ? "item" : "items"}`
+                    : challengeStats?.hasProgress
+                      ? `Continue ${challengeLook.label}`
+                      : `Try ${challengeLook.label}`}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {challengeStats?.dueCount
+                    ? `A focused ${challengeLook.label.toLowerCase()} review is ready.`
+                    : challengeKind
+                      ? FORMAT_PROMISE[challengeKind]
+                      : "Choose a study aid to begin."}
+                </p>
+                <Button
+                  asChild
+                  size="lg"
+                  className="mt-4 min-h-11 w-full gap-1.5"
+                >
+                  <Link href={artifactActionHref(challenge)}>
+                    {challengeStats?.hasProgress
+                      ? "Continue"
+                      : challengeLook.verb}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section aria-labelledby="study-path-heading">
+          <div className="mb-4 flex items-center gap-2">
+            <Route className="h-5 w-5 text-primary" />
+            <h2
+              id="study-path-heading"
+              className="text-lg font-semibold text-foreground"
+            >
+              Choose your route
+            </h2>
+          </div>
+          <div className="grid gap-7 lg:grid-cols-3 lg:gap-5">
+            {STUDY_PATH.map((stage) => {
+              const stageArtifacts = stage.kinds.flatMap((kind) =>
+                ordered.filter((artifact) => artifact.targetKind === kind),
+              );
+              if (stageArtifacts.length === 0) return null;
+              return (
+                <div key={stage.number} className="min-w-0">
+                  <div className="mb-3 flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {stage.number}
+                    </span>
+                    <div>
+                      <h3 className="font-semibold text-foreground">
+                        {stage.title}
+                      </h3>
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                        {stage.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {stageArtifacts.map((artifact) => (
+                      <ArtifactCard
+                        key={artifact.edgeId}
+                        artifact={artifact}
+                        stats={stats[kitArtifactKey(artifact)]}
+                        statsLoading={statsLoading}
+                        statsFailed={statsFailed}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </main>
     </>
   );
 }

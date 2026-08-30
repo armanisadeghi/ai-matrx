@@ -20,10 +20,7 @@ import Link from "next/link";
 import { ArrowRight, Package, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "@/lib/entity-list/columns";
-import {
-  artifactTile,
-  targetVisual,
-} from "../../library/artifactVisuals";
+import { artifactTile, targetVisual } from "../../library/artifactVisuals";
 import { kitHref, type StudyKit } from "../../kits/kitService";
 import { missingFormatsFor } from "../nudges";
 
@@ -34,15 +31,15 @@ function KitCard({ kit }: { kit: StudyKit }) {
     new Map(
       kit.artifacts.map((a) => {
         const kind = a.targetKind ?? a.artifactType;
-        return [kind, targetVisual(kind)] as const;
+        return [kind, { artifact: a, visual: targetVisual(kind) }] as const;
       }),
     ).values(),
   );
   const missing = missingFormatsFor(kit);
 
   return (
-    <div className="flex flex-col rounded-xl border border-border bg-card transition-colors hover:border-primary/40">
-      <Link href={href} className="flex items-start gap-3 p-3.5 pb-2">
+    <article className="flex flex-col rounded-2xl border border-border bg-card transition-colors hover:border-primary/40">
+      <Link href={href} className="group flex min-h-16 items-start gap-3 p-3.5">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Package className="h-5 w-5" />
         </span>
@@ -56,23 +53,56 @@ function KitCard({ kit }: { kit: StudyKit }) {
             {relativeTime(kit.createdAt)}
           </span>
         </span>
+        <ArrowRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
       </Link>
 
-      {/* What this kit already contains, as its formats' own colours. */}
-      <div className="flex flex-wrap gap-1 px-3.5 pb-2">
-        {present.map((visual) => {
+      {/* Phone: four clear, labeled destinations and one honest door to the
+          complete kit. The former row of eight 24px mystery icons was not a
+          usable navigation surface. */}
+      <div className="grid grid-cols-2 gap-1.5 px-3.5 pb-3 sm:hidden">
+        {present.slice(0, 4).map(({ artifact, visual }) => {
           const Icon = visual.icon;
           return (
-            <span
+            <Link
               key={visual.label}
-              title={visual.label}
+              href={artifact.href}
               className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-md",
+                "flex min-h-10 min-w-0 items-center gap-2 rounded-lg px-2.5 text-xs font-semibold",
+                artifactTile(visual),
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{visual.label}</span>
+            </Link>
+          );
+        })}
+        {present.length > 4 && (
+          <Link
+            href={href}
+            className="col-span-2 flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 px-3 text-xs font-semibold text-foreground"
+          >
+            Open all {present.length} study aids
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+
+      {/* Desktop has room to expose every destination by name. */}
+      <div className="hidden flex-wrap gap-1.5 px-3.5 pb-3 sm:flex">
+        {present.map(({ artifact, visual }) => {
+          const Icon = visual.icon;
+          return (
+            <Link
+              key={visual.label}
+              href={artifact.href}
+              className={cn(
+                "inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-[11px] font-semibold transition-colors hover:brightness-110",
                 artifactTile(visual),
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-            </span>
+              {visual.label}
+            </Link>
           );
         })}
       </div>
@@ -80,7 +110,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
       {/* THE ONE NUDGE — about this learner's own material, not about a
           feature they're missing out on. Renders nothing on a complete kit. */}
       {missing.length > 0 && (
-        <div className="mt-auto flex flex-wrap items-center gap-1 border-t border-border px-3.5 py-2">
+        <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border px-3.5 py-2.5">
           {/* An honest statement of fact about THIS kit, not a feature pitch. */}
           <span className="mr-0.5 text-[11px] text-muted-foreground">
             Not in this kit yet:
@@ -92,7 +122,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
                 key={option.target}
                 href={option.href}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:brightness-110",
+                  "inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors hover:brightness-110 sm:min-h-7",
                   artifactTile(option.visual),
                 )}
               >
@@ -104,7 +134,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
           })}
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
