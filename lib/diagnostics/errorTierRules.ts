@@ -389,6 +389,36 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "associations-demanded-schema-uuid-probe",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "@ai-matrx/associations deliberately supplies the impossible __not_a_uuid__ sentinel while probing its demanded RPC surface. PostgREST resolving the RPC and returning 22P02 proves the door exists; keep that expected probe answer local without filing one repair incident per function. Ordinary invalid UUIDs remain red.",
+    addedAt: "2026-08-30",
+    match: {
+      source: "supabase-postgrest",
+      operation: "rpc",
+      code: "22P02",
+      status: 400,
+      messageIncludes: '__not_a_uuid__',
+    },
+  },
+  {
+    id: "associations-demanded-schema-entity-probe",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "@ai-matrx/associations deliberately supplies the impossible __probe__ entity token while probing demanded RPCs without UUID arguments. The expected P0001 answer proves the door exists; keep it local while unrelated unknown-entity failures remain red.",
+    addedAt: "2026-08-30",
+    match: {
+      source: "supabase-postgrest",
+      operation: "rpc",
+      code: "P0001",
+      status: 400,
+      messageIncludes: 'unknown or inactive entity token "__probe__"',
+    },
+  },
+  {
     id: "tool-error-normal-operation",
     tier: "yellow",
     reason:

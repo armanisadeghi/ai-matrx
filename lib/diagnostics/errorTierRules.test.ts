@@ -574,6 +574,74 @@ describe("classifyTier", () => {
     },
   );
 
+  it.each([
+    [
+      "cat_reparent",
+      "22P02",
+      'invalid input syntax for type uuid: "__not_a_uuid__"',
+      "associations-demanded-schema-uuid-probe",
+    ],
+    [
+      "reference_search_candidates",
+      "P0001",
+      'unknown or inactive entity token "__probe__"',
+      "associations-demanded-schema-entity-probe",
+    ],
+  ])(
+    "keeps the associations demanded-schema probe local (%s)",
+    (relation, code, message, ruleId) => {
+      const c = classifyTier(
+        captured({
+          source: "supabase-postgrest",
+          relation,
+          operation: "rpc",
+          code,
+          status: 400,
+          message,
+        }),
+      );
+
+      expect(c.tier).toBe("yellow");
+      expect(c.ruleId).toBe(ruleId);
+      expect(c.persist).toBe(false);
+    },
+  );
+
+  it.each([
+    [
+      "cat_reparent",
+      "22P02",
+      'invalid input syntax for type uuid: "a real malformed value"',
+    ],
+    [
+      "reference_search_candidates",
+      "P0001",
+      'unknown or inactive entity token "customer_record"',
+    ],
+    [
+      "cat_reparent",
+      "42501",
+      'permission denied for function cat_reparent using "__not_a_uuid__"',
+    ],
+  ])(
+    "keeps non-probe RPC failures red (%s %s)",
+    (relation, code, message) => {
+      const c = classifyTier(
+        captured({
+          source: "supabase-postgrest",
+          relation,
+          operation: "rpc",
+          code,
+          status: 400,
+          message,
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+      expect(c.persist).toBe(true);
+    },
+  );
+
   it("keeps a handled non-conveying association access refusal local", () => {
     const c = classifyTier(
       captured({

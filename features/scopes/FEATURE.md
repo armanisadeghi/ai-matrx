@@ -41,7 +41,9 @@ this directory.
 9. **Templates are read-only catalog here.** Mutations happen in seed scripts / admin paths.
 10. **Transport failures warn; database refusals scream.** `service/rpcResult.ts` uses
     `@ai-matrx/data/net` (the NetError vocabulary) for browser-network and upstream-connect/reset classification. Never
-    downgrade an error carrying a Postgres code or HTTP status.
+    downgrade an error carrying a Postgres code or HTTP status. The sole probe exception is
+    the package's demanded-schema contract check: exact `__not_a_uuid__`/`__probe__`
+    sentinels remain local and non-persisting; every ordinary `22P02`/`P0001` stays red.
 
 ## File map
 
@@ -285,6 +287,9 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   comment UI (tasks panel/editor/popover swapped); `authorDisplay` port bound on
   the provider; `cmt_add` tap on the host dataSource carries the task
   comment-added notification.
+- 2026-08-30 — Demanded-schema probe answers no longer file production repair incidents:
+  only the package's exact impossible sentinels are local/non-persisting; ordinary RPC
+  failures stay red.
 - 2026-08-30 — Pattern Patrol P13: quick-assign's four existing-record pickers
   retain their cascade/reset behavior and now expose selected-record doors plus
   canonical owner/create doors with the shared 44px touch-target floor; no second
