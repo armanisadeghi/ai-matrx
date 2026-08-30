@@ -11,24 +11,11 @@ import type { AgentShortcutCategoryRecord } from "@/features/agents/redux/agent-
 import type { AgentContentBlockRecord } from "@/features/agent-connections/redux/skl/content-block-compat";
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
+import { decideOffer, requirementsOf } from "../model/requirement-gate";
 
 export type AgentMenuEntry =
-  | ({
-      entryType: "agent_shortcut";
-      scopeLevel: Scope;
-      /**
-       * True when this entry is only visible because of the LEGACY
-       * `enabledFeatures`/untagged fallback — i.e. it did NOT match the
-       * current surface's `surfaceName`. Surfaced in red so we can find
-       * what to backfill before retiring the old mechanism.
-       */
-      legacyMatch: boolean;
-    } & AgentShortcutRecord)
-  | ({
-      entryType: "content_block";
-      scopeLevel: Scope;
-      legacyMatch: boolean;
-    } & AgentContentBlockRecord);
+  | ({ entryType: "agent_shortcut"; scopeLevel: Scope } & AgentShortcutRecord)
+  | ({ entryType: "content_block"; scopeLevel: Scope } & AgentContentBlockRecord);
 
 export interface AgentMenuCategoryGroup {
   category: AgentShortcutCategoryRecord & { scopeLevel: Scope };
@@ -36,27 +23,45 @@ export interface AgentMenuCategoryGroup {
   children: AgentMenuCategoryGroup[];
 }
 
+/**
+ * Keys whose POPULATION (not just existence) is checked — the single
+ * population-level gate the menu keeps, and the only exception to
+ * "availability is the key existing, not the value".
+ *
+ * Kept because the menu is selection-triggered anyway: "No text selected →
+ * nothing to translate → no translate option in the menu" (Arman, INTERVIEW
+ * R8). Everything else gates on key-existence only.
+ *
+ * The value tested is the RESOLVED scope's `selection`, which already carries
+ * the platform's `active_text` convention (`value-resolution.ts`): on a
+ * surface that knows the acting text, an unhighlighted right-click still has
+ * a selection, so these items stay offered. Only a genuinely empty one hides
+ * them.
+ */
+const SELECTION_DEPENDENT_KEYS: ReadonlySet<string> = new Set(["selection"]);
+
 export interface UseUnifiedAgentContextMenuArgs {
+  /**
+   * Which placement submenus this host renders. LAYOUT ONLY — see
+   * `buildCategoryGroups`. It never decides whether an ITEM is available.
+   */
   placementTypes: string[];
   /**
-   * Contexts to ADD to the default `{general}` allow-set.
-   * Example: `['code-editor']` makes code-editor shortcuts visible alongside general ones.
-   */
-  addedContexts?: string[];
-  /**
-   * Contexts to REMOVE from the allow-set after `addedContexts` is applied.
-   * Example: `['general']` with `addedContexts: ['code-editor']` → only code-editor shortcuts.
-   */
-  excludedContexts?: string[];
-  /**
-   * The Surface Registry `ui_surface.name` (`<client>/<surface>`) this menu
-   * is mounted on. When provided, shortcuts whose `surfaceName` matches are
-   * shown as first-class (modern) matches; everything else that still shows
-   * does so via the legacy `enabledFeatures`/untagged path and is flagged
-   * `legacyMatch` (rendered red). When omitted, surface matching can't run,
-   * so every visible item is treated as a legacy match.
+   * The Surface Registry `ui_surface.name` (`<client>/<surface>`) this menu is
+   * mounted on, or null on a page the platform cannot name. It is the
+   * page-level rung of the scope hierarchy and the key to the exclusion valve.
    */
   surfaceName?: string | null;
+  /**
+   * Every surface value name that has a READ PATH here: the manifest's
+   * declared values + the baseline floor + whatever actually landed in the
+   * resolved scope. Built by `buildAvailableKeys` in the engine.
+   */
+  availableKeys: ReadonlySet<string>;
+  /** True when the resolved scope carries a non-empty `selection`. */
+  hasSelection: boolean;
+  /** The surface's exclusion valve (`menu` surface-config namespace). */
+  excludedItemIds?: ReadonlySet<string>;
   enabled?: boolean;
   scope?: Scope;
   scopeId?: string | null;
@@ -76,10 +81,6 @@ const SCOPE_PRIORITY: Record<Scope, number> = {
   organization: 2,
   global: 1,
 };
-
-function higherPriority(a: Scope, b: Scope): Scope {
-  return SCOPE_PRIORITY[a] >= SCOPE_PRIORITY[b] ? a : b;
-}
 
 function dedupeByPrecedence<T extends { scopeLevel: Scope }>(
   items: T[],
@@ -105,84 +106,44 @@ function dedupeByPrecedence<T extends { scopeLevel: Scope }>(
   return [...winners.values(), ...passthrough];
 }
 
-// Allowed-feature set: `{general} ∪ addedContexts − excludedContexts`.
-// An item is visible iff its `enabledFeatures` intersects the set, OR the
-// item has no `enabledFeatures` declared (legacy data — treated as general).
-function buildAllowedContexts(
-  addedContexts: string[] | undefined,
-  excludedContexts: string[] | undefined,
-): Set<string> {
-  const allowed = new Set<string>(["general"]);
-  for (const c of addedContexts ?? []) allowed.add(c);
-  for (const c of excludedContexts ?? []) allowed.delete(c);
-  return allowed;
-}
-
-// Does the item qualify via the LEGACY context mechanism?
-// (enabledFeatures intersects the allow-set, or it's untagged → general.)
-function matchesAllowedContexts(
-  item: { enabledFeatures?: string[] | null },
-  allowed: Set<string>,
-): boolean {
-  if (allowed.size === 0) return false;
-  const ec = item.enabledFeatures;
-  if (!ec || ec.length === 0) {
-    // Legacy rows with no features declared — treat as general.
-    return allowed.has("general");
-  }
-  for (const c of ec) {
-    if (allowed.has(c)) return true;
-  }
-  return false;
-}
-
-// "Both" matching: an item is visible if it matches the current surface by
-// `surfaceName` (modern, NOT legacy) OR via the legacy context path. Returns
-// whether the item is visible and whether it only qualified via the legacy
-// path (so the UI can flag it red).
-function classifyVisibility(
-  item: { enabledFeatures?: string[] | null; surfaceName?: string | null },
-  allowed: Set<string>,
-  surfaceName: string | null,
-): { visible: boolean; legacy: boolean } {
-  if (surfaceName && item.surfaceName && item.surfaceName === surfaceName) {
-    return { visible: true, legacy: false };
-  }
-  // A shortcut that declares a home surface and NO explicit contexts is
-  // exclusive to that surface — don't leak it onto every page via the
-  // untagged→general fallback. Declaring enabledFeatures alongside a
-  // surfaceName still opts it into other contexts deliberately.
-  if (
-    item.surfaceName &&
-    item.surfaceName !== surfaceName &&
-    (!item.enabledFeatures || item.enabledFeatures.length === 0)
-  ) {
-    return { visible: false, legacy: false };
-  }
-  if (matchesAllowedContexts(item, allowed)) {
-    return { visible: true, legacy: true };
-  }
-  return { visible: false, legacy: false };
-}
-
 export interface BuildCategoryGroupsArgs {
   placementTypes: string[];
-  addedContexts?: string[];
-  excludedContexts?: string[];
   surfaceName?: string | null;
+  availableKeys: ReadonlySet<string>;
+  hasSelection: boolean;
+  excludedItemIds?: ReadonlySet<string>;
   shortcuts: AgentShortcutRecord[];
   categories: AgentShortcutCategoryRecord[];
   contentBlocks: AgentContentBlockRecord[];
 }
 
 /**
- * THE grouping function — pure and unit-tested (`__tests__/build-category-groups.test.ts`).
- * Turns the fetched shortcut/category/content-block rows into the nested
- * category tree each placement submenu renders. The hook below is a thin
- * memo wrapper over this; keep ALL grouping behavior here so the tests pin it.
+ * THE grouping function — pure and unit-tested
+ * (`__tests__/build-category-groups.test.ts`,
+ * `../model/__tests__/requirement-gate.test.ts`). Turns the fetched
+ * shortcut/category/content-block rows into the nested category tree each
+ * placement submenu renders.
+ *
+ * 🚨 PHASE 6.7 — AVAILABILITY IS DERIVED (THE-MODEL law 3). An item is
+ * offered here iff every surface value it consumes has a read path on this
+ * surface; then its authored scope (global / domain / page) must reach here;
+ * then the surface's exclusion valve gets the last word. The 16 hardcoded
+ * `enabled_features` slugs and the RED `legacyMatch` rows they produced are
+ * GONE: an item qualifies or is absent, and nothing renders as broken.
+ *
+ * 🚨 CATEGORIES GROUP, THEY NEVER GATE. A category's `placementType` still
+ * decides WHICH placement submenu it renders under — that is layout, and it
+ * is the only thing `placementTypes` does here. A category is never dropped
+ * for failing a context filter, and an item's availability never consults its
+ * category.
  *
  * Guarantees the tests certify:
- *  - placement fidelity: a row renders under exactly its category's placementType;
+ *  - the derived gate: missing key → absent; key declared-but-empty → present;
+ *  - the hierarchy: global reaches everywhere, a domain reaches its surfaces,
+ *    a page-pinned item reaches only its page;
+ *  - the valve: an excluded id is absent even though it qualified;
+ *  - placement fidelity: a row renders under exactly its category's
+ *    placementType;
  *  - nested categories nest under their parent, sorted by sortOrder then label;
  *  - an EMPTY category still returns (with `items: []`) so the UI can render it
  *    greyed — never silently dropped;
@@ -194,15 +155,17 @@ export function buildCategoryGroups(
 ): AgentMenuCategoryGroup[] {
   const {
     placementTypes,
-    addedContexts,
-    excludedContexts,
     surfaceName = null,
+    availableKeys,
+    hasSelection,
+    excludedItemIds,
     shortcuts,
     categories,
     contentBlocks,
   } = args;
   if (placementTypes.length === 0) return [];
 
+  // LAYOUT: which placement submenus this host draws.
   const placementSet = new Set(placementTypes);
 
   const scopedCategories = categories
@@ -223,24 +186,24 @@ export function buildCategoryGroups(
       scopeLevel: resolveRowScope(b),
     }));
 
-  const allowedContexts = buildAllowedContexts(addedContexts, excludedContexts);
+  const offerCtx = {
+    surfaceName,
+    availableKeys,
+    excludedItemIds,
+  };
 
-  // Shortcuts: "both" matching (surfaceName OR legacy context), tagging the
-  // legacy-only ones so the menu can render them red.
-  const filteredShortcuts = scopedShortcuts.flatMap((s) => {
-    const { visible, legacy } = classifyVisibility(
-      s,
-      allowedContexts,
-      surfaceName,
-    );
-    return visible ? [{ ...s, legacyMatch: legacy }] : [];
+  const filteredShortcuts = scopedShortcuts.filter((s) => {
+    if (!decideOffer(s, offerCtx).offered) return false;
+    // The ONE population check (see SELECTION_DEPENDENT_KEYS).
+    if (hasSelection) return true;
+    return !requirementsOf(s).some((key) => SELECTION_DEPENDENT_KEYS.has(key));
   });
-  // Content blocks are static insertable text — no surfaceName/enabledFeatures
-  // today, so they always pass through and are never flagged legacy.
-  const filteredBlocks = scopedBlocks.map((b) => ({
-    ...b,
-    legacyMatch: false,
-  }));
+
+  // Content blocks are static insertable text — they consume nothing, so the
+  // gate offers them everywhere. They still pass through the valve.
+  const filteredBlocks = scopedBlocks.filter(
+    (b) => !excludedItemIds?.has(b.id),
+  );
 
   const dedupedShortcuts = dedupeByPrecedence(filteredShortcuts, (s) => {
     if (s.keyboardShortcut) return `kbd:${s.keyboardShortcut}`;
@@ -264,30 +227,13 @@ export function buildCategoryGroups(
     byCategory.get(cid)!.push(b as AgentMenuEntry);
   }
 
-  // Category inclusion: keep a category if it passes the legacy context
-  // allow-set OR it actually holds a visible item (so a surface-matched
-  // shortcut is never orphaned by a category that the context filter would
-  // have dropped). Pull in ancestors so the submenu tree can nest.
-  const catById = new Map(scopedCategories.map((c) => [c.id, c]));
-  const keepCategoryIds = new Set<string>();
-  for (const c of scopedCategories) {
-    if (matchesAllowedContexts(c, allowedContexts)) keepCategoryIds.add(c.id);
-  }
-  for (const cid of byCategory.keys()) {
-    let cur = catById.get(cid);
-    while (cur && !keepCategoryIds.has(cur.id)) {
-      keepCategoryIds.add(cur.id);
-      cur = cur.parentCategoryId
-        ? catById.get(cur.parentCategoryId)
-        : undefined;
-    }
-  }
-  const filteredCategories = scopedCategories.filter((c) =>
-    keepCategoryIds.has(c.id),
-  );
-
+  // CATEGORIES GROUP, NEVER GATE: every active category whose placement this
+  // host renders is kept, empty or not. (An empty category still renders
+  // greyed — Arman must see where new items will land the moment he creates
+  // one.) Nothing here inspects the category's own `enabledFeatures`; the
+  // column no longer decides anything.
   const dedupedCategories = dedupeByPrecedence(
-    filteredCategories,
+    scopedCategories,
     (c) => `${c.placementType}:${c.parentCategoryId ?? "_root"}:${c.label}`,
   );
 
@@ -330,9 +276,10 @@ export function useUnifiedAgentContextMenu(
 ): UseUnifiedAgentContextMenuResult {
   const {
     placementTypes,
-    addedContexts,
-    excludedContexts,
     surfaceName = null,
+    availableKeys,
+    hasSelection,
+    excludedItemIds,
     enabled = true,
     scope = "global",
     scopeId = null,
@@ -371,9 +318,10 @@ export function useUnifiedAgentContextMenu(
     if (!enabled) return [];
     return buildCategoryGroups({
       placementTypes,
-      addedContexts,
-      excludedContexts,
       surfaceName,
+      availableKeys,
+      hasSelection,
+      excludedItemIds,
       shortcuts,
       categories,
       contentBlocks,
@@ -384,9 +332,10 @@ export function useUnifiedAgentContextMenu(
     categories,
     shortcuts,
     contentBlocks,
-    addedContexts,
-    excludedContexts,
     surfaceName,
+    availableKeys,
+    hasSelection,
+    excludedItemIds,
   ]);
 
   return {
