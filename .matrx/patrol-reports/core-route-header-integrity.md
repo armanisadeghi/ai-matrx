@@ -7,7 +7,7 @@
 - **Findings:** 6
 - **Fixed in source:** 6
 - **Approvals needed:** 0
-- **Degradation:** required exact-worktree visual certification incomplete
+- **Degradation:** required isolated in-app Browser runtime is unavailable
 
 ## Resume and configuration reconciliation
 
@@ -15,6 +15,10 @@ The prior P11 run `2026-08-26T161415Z` was hash-valid, closed clean, and
 already reconciled on `origin/main`; no candidate or human decision remained to
 resume. The live P11 automation id, name, M/R tier, recipe, report slug,
 schedule, and run instruction match `scripts/pattern-patrol/manifest.ts`.
+The current 2026-08-29 contract requires `executionEnvironment=local` in the
+canonical `/Users/armanisadeghi/code/matrx-frontend` checkout and forbids
+worktrees; that live ruling supersedes the historical worktree wording retained
+in earlier append-only events.
 `pnpm check:patrol-contracts` continues to report only the unrelated
 `pattern-patrol-fleet-health` prompt drift.
 
@@ -27,8 +31,9 @@ schedule, and run instruction match `scripts/pattern-patrol/manifest.ts`.
   faux body headers, and avatar-clearance padding in route and feature-owned
   `PageHeader` consumers.
 - The sighting ledger contained no open P11 item.
-- The exact-worktree preview lease was checked repeatedly and remained owned
-  by `/Users/armanisadeghi/code/matrx-frontend`; it was never reused or stopped.
+- The canonical managed preview is running from
+  `/Users/armanisadeghi/code/matrx-frontend` on port 3001 and contains the
+  corrected candidate in its ancestry.
 
 ## Findings and standing-authority repairs
 
@@ -69,15 +74,18 @@ preserves the infrastructure loss, escaped delivery, and rejection.
 ### Corrected candidate — infrastructure blocked
 
 - Candidate: `4b06080808465764e280fbfef3cd895abb093c24`
-- Preserved ref: `refs/heads/codex/p11-20260829-repair`
+- Integration merge: `a6e0cc9b340cb7e8ccb742235d78625c0aeb8e56`
+- First containing release: `v0.4.1449`
 - Authority projection: `refs/heads/patrol-runs/P11/2026-08-29T161426Z`
-  at `f691b19a8724d5dee632d61e45251ce2f42401fc`
+  at `5530b8fd472543d2485c9b024f28c83c76569610`
 - Second certifier: `/root/p11_certifier_4b060808`
 - Verdict: **INFRASTRUCTURE BLOCKED** — no candidate-caused defect found
 
-The corrected candidate fixes the scanner callsite and detector scope. It
-remains preserved off `origin/main`; it was not reverted or integrated because
-the required exact-worktree viewport/theme matrix could not run.
+The corrected candidate fixes the scanner callsite and detector scope. It is
+already an ancestor of `origin/main` through the integration merge above and
+has shipped in `v0.4.1449` and every newer release. This preserves the
+historical release-before-certification escape; delivery is not rewritten as
+valid because the exact candidate still lacks the required visual verdict.
 
 ## Baseline-to-candidate verification
 
@@ -90,22 +98,25 @@ the required exact-worktree viewport/theme matrix could not run.
   warnings before and after; none is a P11 `(core)` finding.
 - `git diff --check`: PASS.
 - `pnpm check:doctrine`: PASS.
-- `pnpm check:migrations`: command PASS with the ledger check skipped because
-  this isolated worktree has no Supabase credentials; no migration was touched.
+- `pnpm check:migrations`: command PASS in the original candidate batch with
+  its credentialed ledger check skipped; no migration was touched.
 - `pnpm check:patrol-contracts`: unchanged baseline failure limited to the
   fleet-health prompt drift.
 - Run record hash verification: PASS.
-- Canonical authority publication: PASS after a fast-forward two-parent
-  reconciliation preserved both the earlier escaped-delivery authority chain
-  and the corrected candidate ancestry.
+- Canonical authority publication: PASS at
+  `5530b8fd472543d2485c9b024f28c83c76569610`; the 12-event record is hash-valid
+  and preserves the earlier escaped-delivery and rejection history.
 
 ## Missing proof and retry contract
 
 Required browser proof remains desktop 1280×800, intermediate 700–900px,
 mobile 375×812, and both light/dark themes on representative Marketing,
-Workflow Bake-off, and Scanner surfaces. The retry must acquire the managed
-preview lease from this exact worktree, use the isolated in-app Browser, and
-certify candidate `4b06080808465764e280fbfef3cd895abb093c24` before integration.
+Workflow Bake-off, and Scanner surfaces. The canonical preview lease is ready,
+but both the executor and independent certifier lack the required
+`mcp__node_repl__js` runtime, so `agent.browsers.get("iab")` cannot be called.
+The retry must run this exact candidate from a Codex task exposing that in-app
+Browser runtime. Chrome, Computer Use, standalone Playwright, and other browser
+fallbacks remain forbidden.
 
 ## Decisions and exceptions
 
@@ -119,4 +130,6 @@ This run proved that P11 detector scope must follow the canonical `PageHeader`
 portal consumer, not route-file location or component naming. The smallest next
 improvement is a focused detector fixture containing one route-owned and one
 feature-owned `PageHeader` clearance hack so this exact false-clean regression
-cannot recur.
+cannot recur. The process improvement is to validate in-app Browser capability
+when a visual-certification task is dispatched, before waiting on a healthy
+preview that the task cannot control.

@@ -3,8 +3,8 @@
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
   "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-29T16:26:03.128Z",
-  "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
+  "updatedAt": "2026-08-30T14:23:13.308Z",
+  "summary": "Corrected candidate remains uncertified because the required isolated in-app Browser control runtime is unavailable",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
+  "eventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679"
 }

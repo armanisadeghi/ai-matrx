@@ -155,6 +155,40 @@
       },
       "previousEventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e",
       "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
+    },
+    {
+      "sequence": 11,
+      "state": "certifying",
+      "at": "2026-08-30T14:23:12.077Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Resumed corrected candidate under the canonical shared-checkout contract with the managed preview available",
+      "evidence": [
+        "Live manifest requires executionEnvironment=local in /Users/armanisadeghi/code/matrx-frontend; worktrees are forbidden",
+        "Canonical pnpm preview lease is RUNNING on port 3001 and contains candidate 4b06080808465764e280fbfef3cd895abb093c24 as an ancestor",
+        "Required proof remains Marketing, Workflow Bake-off, and Scanner across desktop, intermediate, mobile, light, and dark"
+      ],
+      "previousEventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c",
+      "eventHash": "49db71a292e21b6d6c88ae334e32493429b7735532318793e9f99f91a206191e"
+    },
+    {
+      "sequence": 12,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:23:13.308Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "Corrected candidate remains uncertified because the required isolated in-app Browser control runtime is unavailable",
+      "evidence": [
+        "Canonical preview is healthy and correctly owned; preview ownership is no longer the blocker",
+        "This task and the independent certifier expose neither mcp__node_repl__js nor tool discovery, so agent.browsers.get(\"iab\") cannot be called",
+        "Contract-forbidden Chrome, Computer Use, standalone Playwright, and other browser fallbacks were not used",
+        "No concrete candidate-caused defect was found; static candidate checks remain passing"
+      ],
+      "blocker": {
+        "prerequisite": "Resume this exact candidate in a Codex task exposing the in-app Browser Node REPL and complete the required viewport/theme matrix",
+        "preservedRef": "refs/heads/patrol-runs/P11/2026-08-29T161426Z",
+        "preservedSha": "4b06080808465764e280fbfef3cd895abb093c24"
+      },
+      "previousEventHash": "49db71a292e21b6d6c88ae334e32493429b7735532318793e9f99f91a206191e",
+      "eventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679"
     }
   ]
 }
