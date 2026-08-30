@@ -770,6 +770,42 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-29 — **A broken Google connection is NAMED, everywhere, with its
+  door — and the domain property is the default binding.** Incident: nightly
+  GSC collection failed 24 times across 8 sites (`ResourceBindingError` —
+  the connection's discovered properties vanished pending re-consent) and no
+  user surface said so: the dashboard read "data is 3 days behind", Sync
+  produced a raw provider-error toast, and the repair page
+  (`/marketing/connections/google` / site Integrations) was undiscoverable.
+  Fixes, all keyed on the ONE classifier
+  `features/marketing/google/gsc-property.ts::classifyGscAccessFailure`
+  (patterns sourced from the real recorded errors): (1) `IngestionHealthBanner`
+  now detects an access-class `last_run_error`, retitles to "Google's Search
+  Console connection is broken for this site", explains it in plain English,
+  and carries a **Fix the connection** door (`fixConnectionHref` — the site's
+  Integrations settings). (2) `SearchConsoleWorkspace`'s sync/history failure
+  toasts route through `reportGscSyncFailure`: an access-class failure
+  headlines the broken connection and carries a **Fix the connection** action
+  button; everything else keeps `describeBackendFailure` rendering. (3) The
+  portfolio landing reads ingestion health for its STALE bound sites
+  (bounded), replaces each broken card's dead "Sync now" with a destructive
+  **Fix connection** door, says "Connection broken — data stopped <date>" on
+  the status line, and renders a first-screen banner naming every affected
+  site with one **Fix Google connection** door. A cause without its door is
+  the defect class this entry exists to prevent.
+  **THE DOMAIN-PROPERTY RULE (Arman's ruling, same day):** when discovery
+  holds `sc-domain:<site domain>`, that property IS the binding. Site
+  Integrations now: auto-binds it on connect (`preferredGscProperty` — it
+  used to bind whichever matching version discovery returned first),
+  auto-selects it when a connection is picked, leads the property picker with
+  it labeled "Recommended — covers every version", shows an inline warning
+  with a one-click **Use the domain property** swap whenever a URL version is
+  chosen/stored while the domain property exists, and the save path
+  (`confirmGscPropertyChoice`) makes a user who insists on a URL version
+  answer THREE separate destructive-styled confirmations before the save goes
+  through (agreeing at any point swaps to the domain property). The setup
+  checklist's "This is the right property" step now calls out a bound URL
+  version as the likely mistake instead of describing the versions as peers.
 - 2026-08-26 — **Queries fits, and the Location filter names a place.** (1) The
   Query column had no declared width, so it took 592px of a 1,284px container
   and pushed Position / Score / Level off the right edge with no affordance;
