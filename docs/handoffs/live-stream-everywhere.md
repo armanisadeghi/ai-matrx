@@ -26,10 +26,12 @@ The server already streams everything: normal agent endpoints emit live token
 chunks + a terminal `STRUCTURED_OUTPUT` event; nothing suppresses chunks for a
 client-launched run. The gap is 100% client consumption posture:
 
-- `useRunAgent` / `useMandateRunner` produce **no requestId at all** — they drain
-  the stream into a local string and resolve at the end. Canonical live
-  rendering is structurally impossible from them. They are for genuinely
-  headless text-in/text-out only; a UI-visible run must not use them.
+- `useRunAgent` produces **no requestId at all** — it drains
+  the stream into a local string and resolves at the end. Canonical live
+  rendering is structurally impossible from it. It is for genuinely headless
+  text-in/text-out only; a UI-visible run must not use it. (Its mandate twin
+  `useMandateRunner` was deleted 2026-08-30 — mandate runs go through the
+  mandate door via `useHeadlessAgentJson`/`useLiveAgentRun`.)
 - `runHeadlessAgentJson` / `useHeadlessAgentJson` (~30 call sites) supported
   live rendering (`displayMode:"direct"` + `keepInstance` + `activeRequestId`)
   but defaulted to background, so nearly every consumer shipped a spinner.
