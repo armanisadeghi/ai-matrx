@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "20260830T153806Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-30T15:40:26.334Z",
-  "summary": "Recorded integration-before-certification escape; exact clean candidate reconstructed and sent for independent certification",
+  "state": "certified",
+  "updatedAt": "2026-08-30T15:45:31.842Z",
+  "summary": "CERTIFIED final wave-2 replacement candidate after explicit host-ownership repair",
   "source": "20260830T153806Z.json",
-  "eventHash": "7e6b1b8d3751c8fef30a2f35770cc728b611ffeee461668a99fdea52392bbea4"
+  "eventHash": "871fc8e6af54e5c04d8c19d9b96d02b55e457cb06d60856e6ff81f96bff56a81"
 }

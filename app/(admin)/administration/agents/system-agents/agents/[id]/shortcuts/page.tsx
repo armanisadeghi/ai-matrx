@@ -25,7 +25,7 @@ export default async function AdminSystemAgentShortcutsPage({
           basePath={ADMIN_BASE_PATH}
         />
       </PageHeader>
-      <div className="h-full overflow-y-auto">
+      <div className="h-full overflow-y-auto pt-12">
         <AgentShortcutsPanel
           agentId={id}
           agentName={agent.name}
