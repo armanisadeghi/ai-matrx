@@ -72,7 +72,7 @@ const CAMPAIGN_STATUS_LABELS: Record<string, string> = {
   UNSPECIFIED: "Unknown",
 };
 
-function campaignStatusLabel(status: string | null): string {
+function campaignStatusLabel(status: string | null | undefined): string {
   if (!status) return "Status unavailable";
   const key = status.trim().toUpperCase();
   return (

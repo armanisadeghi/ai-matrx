@@ -26,6 +26,7 @@ import {
   Scale,
   Search,
 } from "lucide-react";
+import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import { useSites } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -73,15 +74,18 @@ const SCREENS = [
 
 // Plain-column sort ON PURPOSE: the default KPI sort routes through
 // web.v_site_kpis, which is GSC-access-gated and has no row for KPI-less
-// sites — either way a DOOR page must never lose a site over metrics
-// (2026-08-30). Click ordering happens client-side on whatever the rows carry.
-const LIST_STATE = {
+// sites — a DOOR page must never lose a site over metrics (2026-08-30).
+// Click ordering happens client-side on whatever the rows carry. The shape is
+// the REAL MatrxDataTableQueryState — the old `filters: {}` stub made
+// listSites read `state.columnFilters[...]` off undefined and throw.
+const LIST_STATE: MatrxDataTableQueryState = {
   page: 1,
   pageSize: 50,
   search: "",
+  anyOf: "",
+  columnFilters: {},
   sort: { id: "updated_at", direction: "desc" },
-  filters: {},
-} as const;
+};
 
 export function KeywordIntelligenceHub({
   brandId,
@@ -93,12 +97,7 @@ export function KeywordIntelligenceHub({
    */
   brandId?: string;
 } = {}) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the shared
-  // list hook's query-state type is the table's, not ours; this page needs only
-  // the first page of sites by clicks, which is that type's default shape.
-  const sites = useSites(LIST_STATE as any, brandId ?? null);
-  // TEMP-DIAG (remove before commit)
-  console.log("[kih]", { brandId, status: sites.status, fetch: sites.fetchStatus, rows: sites.data?.rows?.length, err: (sites.error as Error | null)?.message });
+  const sites = useSites(LIST_STATE, brandId ?? null);
 
   const rows = useMemo(
     () =>

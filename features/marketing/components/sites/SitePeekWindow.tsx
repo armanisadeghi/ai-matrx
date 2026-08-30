@@ -19,6 +19,7 @@ import {
   useSiteGscTopPages,
 } from "@/features/marketing/data/hooks";
 import type { SiteListRow } from "@/features/marketing/types";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
   formatCompactDate,
   StatusBadge,
@@ -180,7 +181,13 @@ export default function SitePeekWindow({
               ))}
             </div>
           </div>
-          {daily.isLoading ? (
+          {daily.isError ? (
+        <InlineQueryError
+          what="the Search Console trend"
+          error={daily.error}
+          onRetry={() => void daily.refetch()}
+        />
+      ) : daily.isLoading ? (
             <div className="h-[72px] animate-pulse rounded-md bg-muted" />
           ) : (
             <MiniTrendChart points={daily.data ?? []} metric={metric} />
@@ -193,7 +200,16 @@ export default function SitePeekWindow({
           </p>
           {(topPages.data?.length ?? 0) === 0 ? (
             <p className="text-[11px] text-muted-foreground">
-              {topPages.isLoading ? (
+              {topPages.isError ? (
+        // 🚨 A failed Search Console read is NOT "no data" (2026-08-30). The
+        // codebase already burned on exactly this: an empty state rendered
+        // over a site with 16 months of history.
+        <InlineQueryError
+          what="Search Console pages"
+          error={topPages.error}
+          onRetry={() => void topPages.refetch()}
+        />
+      ) : topPages.isLoading ? (
                 <SuspenseLoader
                   centered={false}
                   size="xs"

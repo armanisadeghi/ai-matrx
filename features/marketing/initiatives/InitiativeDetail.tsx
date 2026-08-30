@@ -11,16 +11,27 @@ import { LoadingSurface } from "@/features/marketing/components/shared/Marketing
 import { getInitiative } from "./service";
 import { InitiativeEditorDialog } from "./InitiativeEditorDialog";
 import type { Initiative } from "./types";
+import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 
 export function InitiativeDetail({ id }: { id: string }) {
   const [row, setRow] = useState<Initiative | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [editing, setEditing] = useState(false);
   useEffect(() => {
     let live = true;
+    setLoadError(null);
     getInitiative(id)
       .then((value) => {
         if (live) setRow(value);
+      })
+      // 🚨 "Initiative not found" used to be a GUESS (2026-08-30). There was no
+      // catch at all, so a permission refusal or a network blip rejected the
+      // promise, left `row` null, and told the owner their own initiative does
+      // not exist. The sibling change-tracking surface already learned this
+      // ("the platform can tell the difference"); this one never did.
+      .catch((error: unknown) => {
+        if (live) setLoadError(error);
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -30,6 +41,8 @@ export function InitiativeDetail({ id }: { id: string }) {
     };
   }, [id]);
   if (loading) return <LoadingSurface label="Loading initiative…" />;
+  if (loadError)
+    return <QueryError error={loadError} onRetry={() => window.location.reload()} />;
   if (!row)
     return (
       <div className="grid h-full place-items-center">
