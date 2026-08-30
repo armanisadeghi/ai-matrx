@@ -531,6 +531,7 @@ export function GroundTruthQueue({
               />
             ),
             enabled: true,
+            openOnRowClick: true,
             onOpen: () => {},
           }}
           rowActions={(row, controls) => (

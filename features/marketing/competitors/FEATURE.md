@@ -86,6 +86,10 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- 2026-08-30 — The ground-truth table's primary row click now opens the canonical
+  competitor classification WindowPanel. Inline editors, links, and row actions retain
+  their own click behavior instead of opening the panel accidentally.
+
 - 2026-08-30 — Review now exposes every editable classification value inline:
   business overlap, market overlap, entity role, peer scale, posture, link-gap
   eligibility, and custom labels. Confirm consumes the visible draft and clears it only
