@@ -67,7 +67,7 @@ The rendered `❯` is terminal prompt/protocol output. The P6 skill expressly fo
 - Exact candidate boundaries: 15 / 15 / 15 / 2 files.
 - `git diff --check`: PASS for all candidates.
 - `pnpm check:doctrine`: PASS.
-- `pnpm type-check`: pre-edit PASS; post-edit PASS before unrelated concurrent membership edits, and later diagnostics named only those unrelated files. No candidate error was reported.
+- `pnpm type-check`: pre-edit PASS; post-edit PASS before unrelated concurrent edits. Later shared-checkout diagnostics named only unrelated membership or context-menu files; no candidate error was reported.
 - Candidate detectors: demo/auth clean; admin/canvas two comment-only matches; feature surfaces seven comment-only matches; detector-gap batch clean under both the registry range and `∅` expansion.
 - Exact candidate-blob ESLint: only unchanged baseline debt; both detector-gap files clean.
 - Managed preview lease remained owned by the canonical checkout and was not stopped. Browser control was unavailable in this task, so certification used exact candidate/source, DOM/accessibility, detector, type, doctrine, lint, and adversarial evidence.
