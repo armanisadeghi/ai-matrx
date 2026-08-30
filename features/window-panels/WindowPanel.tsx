@@ -98,6 +98,7 @@ import {
   setTraySnapshot,
   clearTraySnapshot,
 } from "./WindowTray/traySnapshotMap";
+import { defaultTraySnapshotCapture } from "./WindowTray/defaultTraySnapshotCapture";
 import { MinimizedWindowContent } from "./WindowTray/MinimizedWindowContent";
 import { getTrayPreviewEntry } from "./registry/trayPreviewRegistry";
 import {
@@ -944,9 +945,17 @@ export function WindowPanel({
     height: number;
   } | null>(null);
   const captureGenerationRef = useRef(0);
+  // Capture precedence: explicit prop → registry capture → the fleet-wide
+  // default capture for any window WITHOUT a custom semantic preview. A
+  // window with `renderTrayPreview` skips capture entirely — its preview is
+  // cheaper and higher-fidelity than a screenshot.
+  const trayPreviewEntry = getTrayPreviewEntry(trayRegistryKey);
   const effectiveTrayCapture =
     captureTraySnapshot ??
-    getTrayPreviewEntry(trayRegistryKey).captureTraySnapshot;
+    trayPreviewEntry.captureTraySnapshot ??
+    (trayPreviewEntry.renderTrayPreview
+      ? undefined
+      : defaultTraySnapshotCapture);
   const [pendingTrayCapture, setPendingTrayCapture] = useState<{
     capture: (bodyEl: HTMLElement) => Promise<Blob | null>;
     width: number;
@@ -1469,6 +1478,9 @@ export function WindowPanel({
         visibility: windowsHidden ? "hidden" : undefined,
       }}
       onPointerDown={onFocus}
+      // Double-click anywhere on the minimized card — header included —
+      // restores it, matching the single-click-to-restore body affordance.
+      onDoubleClick={isMinimized ? handleRestoreClearingSnapshot : undefined}
     >
       {!isMinimized &&
         HANDLES.map((h) => (

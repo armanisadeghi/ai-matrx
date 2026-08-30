@@ -7,12 +7,17 @@
  *
  *   1. **Custom**   — registry provides `renderTrayPreview` returning JSX
  *                    (best fidelity; opt-in per window-type)
- *   2. **Snapshot** — registry provides `captureTraySnapshot`; chip shows the
- *                    captured image stored in `traySnapshotMap`
- *   3. **Default**  — generic muted "label · category" line + subtle hint
+ *   2. **Snapshot** — the image captured at minimize time and stored in
+ *                    `traySnapshotMap`. Every window without a custom
+ *                    renderer is a candidate — WindowPanel falls back to the
+ *                    fleet-wide `defaultTraySnapshotCapture` when neither the
+ *                    prop nor the registry supplies a capture.
+ *   3. **Default**  — generic muted "label · category" line + subtle hint,
+ *                    shown while a capture is pending or when it was
+ *                    skipped/failed.
  *
  * Each mode falls through gracefully — a missing snapshot or a render error
- * lands on the default text without breaking the chip.
+ * lands on the default body without breaking the chip.
  */
 
 import { memo, useEffect, useState } from "react";
@@ -103,14 +108,14 @@ export const TrayChipPreview = memo(function TrayChipPreview({
     }
   }
 
-  // ── 2. Snapshot mode ─────────────────────────────────────────────────────
-  if (trayPreview?.captureTraySnapshot) {
-    return <TraySnapshotImage snapshotKey={snapshotKey} title={title} />;
-  }
-
-  // ── 3. Default — muted label + subtle hint ───────────────────────────────
+  // ── 2 + 3. Snapshot with default fallback ────────────────────────────────
+  // Every window without a custom renderer is a snapshot candidate now that
+  // WindowPanel falls back to the fleet-wide default capture. While the async
+  // capture is pending (or when it was skipped/failed), the styled default
+  // body renders in place.
   return (
-    <DefaultTrayChipBody
+    <TraySnapshotImage
+      snapshotKey={snapshotKey}
       registryLabel={staticEntry?.label ?? null}
       category={staticEntry?.category ?? null}
       title={title}
@@ -159,9 +164,13 @@ const DefaultTrayChipBody = memo(function DefaultTrayChipBody({
 
 const TraySnapshotImage = memo(function TraySnapshotImage({
   snapshotKey,
+  registryLabel,
+  category,
   title,
 }: {
   snapshotKey: string;
+  registryLabel: string | null;
+  category: string | null;
   title: string;
 }) {
   const [snapshot, setSnapshot] = useState<string | null>(() =>
@@ -179,14 +188,14 @@ const TraySnapshotImage = memo(function TraySnapshotImage({
   }, [snapshotKey]);
 
   if (!snapshot) {
-    // Snapshot not yet captured (or failed) — show a quiet fallback rather
-    // than nothing. Looks better than blank space during the brief async gap.
+    // Snapshot not yet captured, skipped, or failed — render the styled
+    // default body so the chip never sits on blank space.
     return (
-      <div className="flex-1 flex items-center px-3 py-1 overflow-hidden">
-        <span className="truncate text-[11px] text-muted-foreground/60 italic">
-          {title}
-        </span>
-      </div>
+      <DefaultTrayChipBody
+        registryLabel={registryLabel}
+        category={category}
+        title={title}
+      />
     );
   }
 
