@@ -496,8 +496,8 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       sessionRef.current = session;
 
       // Browsers and surrounding app shortcuts may consume Ctrl-C before
-      // xterm turns it into ETX. Make interruption an explicit terminal
-      // contract; keep Ctrl-Shift-C available for the platform copy gesture.
+      // xterm can interrupt the remote process. Use the PTY's explicit
+      // signal frame; keep Ctrl-Shift-C available for the platform copy gesture.
       term.attachCustomKeyEventHandler((event) => {
         if (
           event.type === "keydown" &&
@@ -508,7 +508,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           event.key.toLowerCase() === "c"
         ) {
           if (session.pty?.isOpen) {
-            session.pty.write("\x03");
+            session.pty.signal("SIGINT");
           } else {
             handleData(session, "\x03");
           }

@@ -1,6 +1,6 @@
 # `/code` Workspace — System State & Gap Audit
 
-**Last updated:** 2026‑08‑23 (explicit sandbox organization contract)
+**Last updated:** 2026‑08‑30 (explicit live PTY interruption)
 **Scope:** Everything under `features/code/`, plus its hooks, adapters, and the slices it consumes from elsewhere in the app.
 
 > **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/agent-apps/[id]/code` keep `showActivityBar` (embedded rail).
@@ -137,9 +137,10 @@ collapses; only the active one is visible (`display:none` toggling in
 dials the returned orchestrator `ws_base` directly. It resolves only after
 `WebSocket.onopen` and rejects after 15 seconds. The daemon sends raw PTY bytes,
 which the adapter decodes from binary WebSocket frames; JSON is only used for
-client resize/signal controls. Plain Ctrl-C is captured and written as ETX so
-browser/app shortcuts cannot swallow process interruption; Ctrl-Shift-C stays
-available for copy. `TerminalTab` then keeps the buffered listener
+client resize/signal controls. Plain Ctrl-C is captured and sent as the PTY's
+explicit `SIGINT` control frame so browser/app shortcuts and terminal
+line-discipline differences cannot swallow interruption; Ctrl-Shift-C stays
+available for copy. The buffered fallback still consumes ETX. `TerminalTab` then keeps the buffered listener
 active and prints a visible fallback notice. While the handshake is pending it
 shows a connecting marker and disables input, preventing early keystrokes from
 being erased during listener handoff. An HTTPS page rejects a `ws://`

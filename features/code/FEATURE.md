@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-08-28`
+**Last updated:** `2026-08-30`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(a)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -133,7 +133,7 @@ container.
 - **Persisted file creation has one path.** The Code panel header, empty state, and `My Files` / folder context menus all dispatch `createCodeFileThunk`, derive Monaco language from the complete filename map, and immediately open the created file. Unknown extensions remain valid and open as plaintext.
 - **Sandbox routes have a 300s `maxDuration` ceiling on Vercel Pro** — see the 2026-04-26 maxDuration correction in [`SYSTEM_STATE.md`](./SYSTEM_STATE.md). Long-running operations must talk to the orchestrator directly, bypassing the Vercel proxy.
 - **Sandbox creation requires one explicit organization at every boundary.** `useSandboxCreate`, `useSandboxInstances`, `SandboxesPanel`, `POST /api/sandbox`, and the orchestrator all refuse absence; a stale request whose organization differs from live app context is refused before HTTP.
-- **PTY terminates at the sandbox orchestrator, never Next.js.** `SandboxProcessAdapter.openPty()` mints an existing sandbox-scoped `pty` token through `/api/sandbox/[id]/access-tokens`, then dials the returned `ws_base` directly. The daemon wire is raw text input/raw binary output; JSON is client-only resize/signal control. Plain Ctrl-C is captured explicitly and sent as ETX so browser/app shortcuts cannot swallow process interruption; Ctrl-Shift-C remains copy. `TerminalTab` stays on a visible buffered fallback when mint/connect fails; a 200 SSE response with zero events is an error, never success.
+- **PTY terminates at the sandbox orchestrator, never Next.js.** `SandboxProcessAdapter.openPty()` mints an existing sandbox-scoped `pty` token through `/api/sandbox/[id]/access-tokens`, then dials the returned `ws_base` directly. The daemon wire is raw text input/raw binary output; JSON is client-only resize/signal control. Plain Ctrl-C is captured explicitly and sends the PTY's `SIGINT` control frame so browser/app shortcuts and terminal line-discipline differences cannot swallow process interruption; the buffered fallback still consumes ETX, and Ctrl-Shift-C remains copy. `TerminalTab` stays on a visible buffered fallback when mint/connect fails; a 200 SSE response with zero events is an error, never success.
 
 ---
 
@@ -147,6 +147,7 @@ container.
 
 ## Change log
 
+- `2026-08-30` — **Ctrl-C now uses the PTY's explicit `SIGINT` control frame.** Live verification showed raw ETX could remain buffered while `sleep 30` kept running; the buffered terminal still handles ETX locally, and Ctrl-Shift-C remains copy.
 - `2026-08-28` — **Code chat agent selection now delegates to the canonical Chat picker.** Both the empty state and active-agent trigger use the shared Redux-backed picker, so Code inherits the full agent inventory and standard tabs, search, sort, favorites, category/tag filters, reset, origin badges, and detail actions. Starting a new selection still clears Code's conversation focus and URL through `beginFreshCodeChat`.
 
 - `2026-08-27` — **Persisted Library rows now expose the complete existing file/folder action pipeline.** Root and nested files share one canonical row implementation with Open, Properties, Rename, Delete, Copy path, and Refresh; folders expose New file, New folder, Properties, Rename, Delete, Copy path, and Refresh. All mutations still use the existing `code-files` thunks and dialogs, read-only files disable mutation actions, and tablet panel sizing uses a direct `12.0625rem` constraint—the `12rem` floor plus a one-pixel guard—because `react-resizable-panels` does not accept CSS `calc(...)` sizes.
