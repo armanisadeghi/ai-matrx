@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P13",
+  "runId": "20260830T083100Z",
+  "baseSha": "08fd9bf74fc1b4c7790944985997567a9a504898",
+  "createdAt": "2026-08-30T08:31:00.530Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T08:31:00.530Z",
+      "actor": "root",
+      "summary": "Started P13 scope/context owner-door repair wave",
+      "evidence": [
+        "Previous run 20260830T081317Z reconciled and checkout clean"
+      ],
+      "previousEventHash": null,
+      "eventHash": "840a3efa77633e3140627f9c57f2722020ef175d5ae6ffa1ec44d05cb8da1a77"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T08:31:01.041Z",
+      "actor": "brand_site_picker",
+      "summary": "Repairing ScopeContextTargetPicker through canonical owner doors",
+      "evidence": [
+        "No inline record writer authorized"
+      ],
+      "previousEventHash": "840a3efa77633e3140627f9c57f2722020ef175d5ae6ffa1ec44d05cb8da1a77",
+      "eventHash": "b694160b09e68d289542d454abcf10bb675fb214f14c427bf4cb7583eac6a345"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T08:38:56.050Z",
+      "actor": "root",
+      "summary": "Scope/context owner-door candidate frozen for independent certification",
+      "evidence": [
+        "candidate=e19ac1b5a0d2015f8e81174d53a8b2dc19f90a91",
+        "origin/patrol-candidates/P13/20260830T083821Z-scope-context-target"
+      ],
+      "previousEventHash": "b694160b09e68d289542d454abcf10bb675fb214f14c427bf4cb7583eac6a345",
+      "eventHash": "2aeebf5f131a4bf7a8103c2d49e86beb71eb62c2cb5c700841bfbba733667875"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T08:42:02.785Z",
+      "actor": "competitor_pickers",
+      "summary": "Rejected exact scope candidate for undersized mobile door targets",
+      "evidence": [
+        "EntityDoorControls and owner links inherit 20x20px hit targets without matrx-touch-targets ancestor"
+      ],
+      "previousEventHash": "2aeebf5f131a4bf7a8103c2d49e86beb71eb62c2cb5c700841bfbba733667875",
+      "eventHash": "69afa62e48621bd8e298a8a32a22c327a5818d48a4dd921f1d9a36db601407ee"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T08:42:03.291Z",
+      "actor": "brand_site_picker",
+      "summary": "Repairing mobile touch-target floor on scope owner-door cascade",
+      "evidence": [
+        "Preserve canonical routes and no-writer architecture"
+      ],
+      "previousEventHash": "69afa62e48621bd8e298a8a32a22c327a5818d48a4dd921f1d9a36db601407ee",
+      "eventHash": "7294fc3ae553342c9fd5d0a97fca0bcb1bd7db2ab4b36e6a67a133934b5cd2aa"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T08:46:59.755Z",
+      "actor": "root",
+      "summary": "Mobile-safe scope owner-door candidate frozen for re-certification",
+      "evidence": [
+        "candidate=562eaed419b332de4a1cf31136642fcf1e9248ae",
+        "origin/patrol-candidates/P13/20260830T084633Z-scope-context-touch-target"
+      ],
+      "previousEventHash": "7294fc3ae553342c9fd5d0a97fca0bcb1bd7db2ab4b36e6a67a133934b5cd2aa",
+      "eventHash": "0225abac04503cf7baa11de5ca272c0f9dd5a884d8a320464b7ee2f6a6fba803"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T08:48:52.128Z",
+      "actor": "competitor_pickers",
+      "summary": "Mobile-safe scope owner-door candidate independently certified",
+      "evidence": [
+        "Prior 20x20 mobile target rejection fixed by canonical touch-target contract",
+        "No candidate-caused defect across cumulative 5-file diff"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "562eaed419b332de4a1cf31136642fcf1e9248ae",
+        "certifierTaskId": "competitor_pickers",
+        "checks": [
+          "2 focused suites / 8 tests",
+          "pnpm type-check",
+          "pnpm check:picker-add:strict",
+          "scoped ESLint",
+          "git diff --check and ancestry"
+        ]
+      },
+      "previousEventHash": "0225abac04503cf7baa11de5ca272c0f9dd5a884d8a320464b7ee2f6a6fba803",
+      "eventHash": "6ea1c474b28db7d16a8bb149a2a5081e5fa2a0369debe6be1d369abd6e2c4849"
+    }
+  ]
+}
