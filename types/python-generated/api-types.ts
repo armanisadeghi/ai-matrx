@@ -6149,6 +6149,278 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/datamuse/public/synonyms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Synonyms */
+        get: operations["public_synonyms_datamuse_public_synonyms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dblp/public/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Publication */
+        get: operations["public_publication_dblp_public_publication_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discourse/public/site": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Site */
+        get: operations["public_site_discourse_public_site_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matrix-org/public/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Versions */
+        get: operations["public_versions_matrix_org_public_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kitsu/public/anime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Anime */
+        get: operations["public_anime_kitsu_public_anime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wordpress-org/public/plugin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Plugin */
+        get: operations["public_plugin_wordpress_org_public_plugin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikimedia-commons/public/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public File Metadata */
+        get: operations["public_file_metadata_wikimedia_commons_public_file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/usgs-earthquake/public/event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Event */
+        get: operations["public_event_usgs_earthquake_public_event_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vam-collections/public/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Object */
+        get: operations["public_object_vam_collections_public_object_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/getty-vocabularies/public/aat/concept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Aat Concept */
+        get: operations["public_aat_concept_getty_vocabularies_public_aat_concept_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/semantic-scholar/public/paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Paper */
+        get: operations["public_paper_semantic_scholar_public_paper_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/packagist/public/latest-release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Latest Release */
+        get: operations["public_latest_release_packagist_public_latest_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/read-the-docs/public/project-version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Project Version */
+        get: operations["public_project_version_read_the_docs_public_project_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/open-vsx/public/extension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Extension */
+        get: operations["public_extension_open_vsx_public_extension_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openssf-scorecard/public/repository": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Repository */
+        get: operations["public_repository_openssf_scorecard_public_repository_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/unpaywall/public/oa-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Oa Status */
+        get: operations["public_oa_status_unpaywall_public_oa_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/artic/public/artwork": {
         parameters: {
             query?: never;
@@ -6183,6 +6455,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ietf-datatracker/public/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Document */
+        get: operations["public_document_ietf_datatracker_public_document_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zenodo/public/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Record */
+        get: operations["public_record_zenodo_public_record_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/met-museum/public/object": {
         parameters: {
             query?: never;
@@ -6192,6 +6498,23 @@ export interface paths {
         };
         /** Public Object */
         get: operations["public_object_met_museum_public_object_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mastodon/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_mastodon_public_instance_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6294,6 +6617,23 @@ export interface paths {
         };
         /** Public Observation */
         get: operations["public_observation_inaturalist_public_observation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pokeapi/public/species": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Species */
+        get: operations["public_species_pokeapi_public_species_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6532,6 +6872,57 @@ export interface paths {
         };
         /** Public Holidays */
         get: operations["public_holidays_nager_holidays_public_holidays_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/timeapi/public/current-time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current Time */
+        get: operations["current_time_timeapi_public_current_time_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hex-pm/public/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Package */
+        get: operations["public_package_hex_pm_public_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/iconify/public/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Search */
+        get: operations["public_search_iconify_public_search_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13275,30 +13666,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -39367,6 +39734,48 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * DatamuseSynonym
+         * @description One ranked public synonym projected from Datamuse.
+         */
+        DatamuseSynonym: {
+            /** Word */
+            word: string;
+            /** Score */
+            score: number;
+        };
+        /**
+         * DatamuseSynonymResult
+         * @description Safe bounded projection of one public synonym lookup.
+         */
+        DatamuseSynonymResult: {
+            /**
+             * Kind
+             * @default datamuse_public_synonyms
+             * @constant
+             */
+            __kind?: "datamuse_public_synonyms";
+            /**
+             * Provider
+             * @default datamuse
+             * @constant
+             */
+            provider?: "datamuse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Query */
+            query: string;
+            /** Requested Max Results */
+            requested_max_results: number;
+            /** Result Count */
+            result_count: number;
+            /** Synonyms */
+            synonyms: components["schemas"]["DatamuseSynonym"][];
+        };
         /** DatasetCreate */
         DatasetCreate: {
             /**
@@ -39620,6 +40029,44 @@ export interface components {
             id: string;
             /** Fields */
             fields?: string[] | null;
+        };
+        /**
+         * DblpPublicPublication
+         * @description Safe bounded projection of one public DBLP publication.
+         */
+        DblpPublicPublication: {
+            /**
+             * Kind
+             * @default dblp_public_publication
+             * @constant
+             */
+            __kind?: "dblp_public_publication";
+            /**
+             * Provider
+             * @default dblp
+             * @constant
+             */
+            provider?: "dblp";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Publication Key */
+            publication_key: string;
+            /** Entry Type */
+            entry_type: string;
+            /** Title */
+            title: string;
+            /** Year */
+            year: number;
+            /** Venue */
+            venue?: string | null;
+            /** Pages */
+            pages?: string | null;
+            /** Record Page */
+            record_page: string;
         };
         /** DeclarePanelBody */
         DeclarePanelBody: {
@@ -40504,33 +40951,6 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -40919,6 +41339,48 @@ export interface components {
             job_id: string;
             /** Deleted */
             deleted: number;
+        };
+        /**
+         * DiscoursePublicSite
+         * @description Safe factual projection of the official Discourse community site.
+         */
+        DiscoursePublicSite: {
+            /**
+             * Kind
+             * @default discourse_public_site
+             * @constant
+             */
+            __kind?: "discourse_public_site";
+            /**
+             * Provider
+             * @default discourse
+             * @constant
+             */
+            provider?: "discourse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Domain
+             * @default meta.discourse.org
+             * @constant
+             */
+            domain?: "meta.discourse.org";
+            /**
+             * Title
+             * @default Discourse Meta
+             * @constant
+             */
+            title?: "Discourse Meta";
+            /** Locale */
+            locale: string;
+            /** Login Required */
+            login_required: boolean;
+            /** Included In Discourse Discover */
+            included_in_discourse_discover: boolean;
         };
         /** DiscoveryStatusResponse */
         DiscoveryStatusResponse: {
@@ -46435,6 +46897,56 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * GettyAatBroaderConcept
+         * @description One bounded broader-concept reference.
+         */
+        GettyAatBroaderConcept: {
+            /** Record Id */
+            record_id: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * GettyAatConcept
+         * @description Safe factual projection of one public Getty AAT concept.
+         */
+        GettyAatConcept: {
+            /**
+             * Kind
+             * @default getty_aat_public_concept
+             * @constant
+             */
+            __kind?: "getty_aat_public_concept";
+            /**
+             * Provider
+             * @default getty_vocabularies
+             * @constant
+             */
+            provider?: "getty_vocabularies";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Vocabulary
+             * @default aat
+             * @constant
+             */
+            vocabulary?: "aat";
+            /** Record Id */
+            record_id: string;
+            /** Canonical Uri */
+            canonical_uri: string;
+            /** Label */
+            label: string;
+            /** Concept Type */
+            concept_type: string;
+            /** Broader Concepts */
+            broader_concepts?: components["schemas"]["GettyAatBroaderConcept"][];
+        };
         /** GitHubConnectionResponse */
         GitHubConnectionResponse: {
             /** Connection Id */
@@ -47108,6 +47620,58 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * HexPackageMetadata
+         * @description Safe bounded projection of one public Hex.pm package.
+         */
+        HexPackageMetadata: {
+            /**
+             * Kind
+             * @default hex_pm_public_package_metadata
+             * @constant
+             */
+            __kind?: "hex_pm_public_package_metadata";
+            /**
+             * Provider
+             * @default hex_pm
+             * @constant
+             */
+            provider?: "hex_pm";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Package */
+            package: string;
+            /** Description */
+            description: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Latest Stable Version */
+            latest_stable_version: string;
+            /** Latest Release Has Docs */
+            latest_release_has_docs: boolean;
+            /** Latest Release Inserted At */
+            latest_release_inserted_at: string;
+            /** Inserted At */
+            inserted_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Release Count */
+            release_count: number;
+            /** Licenses */
+            licenses: string[];
+            /** Downloads All */
+            downloads_all: number;
+            /** Downloads Recent */
+            downloads_recent: number;
+            /** Downloads Week */
+            downloads_week: number;
+            /** Downloads Day */
+            downloads_day: number;
+        };
         /** HideRequest */
         HideRequest: {
             /**
@@ -47325,6 +47889,40 @@ export interface components {
             /** Turn Expires At */
             turn_expires_at: number;
         };
+        /**
+         * IconifySearchResult
+         * @description Safe bounded projection of one public icon search.
+         */
+        IconifySearchResult: {
+            /**
+             * Kind
+             * @default iconify_public_icon_search
+             * @constant
+             */
+            __kind?: "iconify_public_icon_search";
+            /**
+             * Provider
+             * @default iconify
+             * @constant
+             */
+            provider?: "iconify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Query */
+            query: string;
+            /** Requested Max Results */
+            requested_max_results: number;
+            /** Provider Total */
+            provider_total: number;
+            /** Result Count */
+            result_count: number;
+            /** Icons */
+            icons: string[];
+        };
         /** IdeDiagnostic */
         IdeDiagnostic: {
             /** Message */
@@ -47461,6 +48059,40 @@ export interface components {
             computed_at?: string;
             /** Breaches */
             breaches?: string[];
+        };
+        /**
+         * IetfPublicDocument
+         * @description Safe bounded projection of one public IETF document.
+         */
+        IetfPublicDocument: {
+            /**
+             * Kind
+             * @default ietf_public_document
+             * @constant
+             */
+            __kind?: "ietf_public_document";
+            /**
+             * Provider
+             * @default ietf_datatracker
+             * @constant
+             */
+            provider?: "ietf_datatracker";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Document Name */
+            document_name: string;
+            /** Title */
+            title: string;
+            /** Stream */
+            stream?: string | null;
+            /** Pages */
+            pages: number;
+            /** Record Page */
+            record_page: string;
         };
         /** ImageBgRemoveRequest */
         ImageBgRemoveRequest: {
@@ -50216,6 +50848,48 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /**
+         * KitsuPublicAnime
+         * @description Safe factual projection of one public Kitsu anime resource.
+         */
+        KitsuPublicAnime: {
+            /**
+             * Kind
+             * @default kitsu_public_anime
+             * @constant
+             */
+            __kind?: "kitsu_public_anime";
+            /**
+             * Provider
+             * @default kitsu
+             * @constant
+             */
+            provider?: "kitsu";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Anime Id */
+            anime_id: number;
+            /** Slug */
+            slug: string;
+            /** Subtype */
+            subtype: string;
+            /** Status */
+            status: string;
+            /** Age Rating */
+            age_rating?: string | null;
+            /** Episode Count */
+            episode_count?: number | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Canonical Page */
+            canonical_page: string;
+        };
         /** LLMParams */
         LLMParams: {
             /** Model */
@@ -52675,6 +53349,86 @@ export interface components {
              * @default []
              */
             notes?: string[];
+        };
+        /**
+         * MastodonPublicInstance
+         * @description Safe factual projection of the flagship Mastodon instance.
+         */
+        MastodonPublicInstance: {
+            /**
+             * Kind
+             * @default mastodon_public_instance
+             * @constant
+             */
+            __kind?: "mastodon_public_instance";
+            /**
+             * Provider
+             * @default mastodon
+             * @constant
+             */
+            provider?: "mastodon";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Domain
+             * @default mastodon.social
+             * @constant
+             */
+            domain?: "mastodon.social";
+            /** Title */
+            title: string;
+            /** Version */
+            version: string;
+            /** Primary Language */
+            primary_language: string;
+            /** Active Monthly Users */
+            active_monthly_users: number;
+            /** Registrations Enabled */
+            registrations_enabled: boolean;
+            /** Approval Required */
+            approval_required: boolean;
+            /** Mastodon Api Version */
+            mastodon_api_version: number;
+        };
+        /**
+         * MatrixOrgPublicVersions
+         * @description Safe projection of stable client-server protocol versions.
+         */
+        MatrixOrgPublicVersions: {
+            /**
+             * Kind
+             * @default matrix_org_public_versions
+             * @constant
+             */
+            __kind?: "matrix_org_public_versions";
+            /**
+             * Provider
+             * @default matrix.org
+             * @constant
+             */
+            provider?: "matrix.org";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Domain
+             * @default matrix.org
+             * @constant
+             */
+            domain?: "matrix.org";
+            /** Stable Versions */
+            stable_versions: string[];
+            /** Latest Stable Version */
+            latest_stable_version: string;
+            /** Historical Version Count */
+            historical_version_count: number;
         };
         /**
          * McpCatalogRefreshResult
@@ -55427,6 +56181,92 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * OpenSSFRepositoryScorecard
+         * @description Safe factual projection of one published OpenSSF Scorecard result.
+         */
+        OpenSSFRepositoryScorecard: {
+            /**
+             * Kind
+             * @default openssf_scorecard_public_repository
+             * @constant
+             */
+            __kind?: "openssf_scorecard_public_repository";
+            /**
+             * Provider
+             * @default openssf-scorecard
+             * @constant
+             */
+            provider?: "openssf-scorecard";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Repository */
+            repository: string;
+            /** Commit Sha */
+            commit_sha: string;
+            /** Evaluated At */
+            evaluated_at: string;
+            /** Aggregate Score */
+            aggregate_score: number;
+            /** Scorecard Version */
+            scorecard_version: string;
+            /** Scorecard Commit Sha */
+            scorecard_commit_sha: string;
+            /** Checks Total */
+            checks_total: number;
+            /** Checks Scored */
+            checks_scored: number;
+            /** Checks Inconclusive */
+            checks_inconclusive: number;
+            /** Viewer Page */
+            viewer_page: string;
+        };
+        /**
+         * OpenVSXExtension
+         * @description Safe factual projection of one public Open VSX extension.
+         */
+        OpenVSXExtension: {
+            /**
+             * Kind
+             * @default open_vsx_public_extension
+             * @constant
+             */
+            __kind?: "open_vsx_public_extension";
+            /**
+             * Provider
+             * @default open-vsx.org
+             * @constant
+             */
+            provider?: "open-vsx.org";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Namespace */
+            namespace: string;
+            /** Name */
+            name: string;
+            /** Display Name */
+            display_name: string;
+            /** Version */
+            version: string;
+            /** Published At */
+            published_at: string;
+            /** Download Count */
+            download_count: number;
+            /** Verified */
+            verified: boolean;
+            /** Deprecated */
+            deprecated: boolean;
+            /** Registry Page */
+            registry_page: string;
+        };
+        /**
          * OpenversePublicImageAttribution
          * @description Safe attribution projection for one openly indexed image.
          */
@@ -56507,6 +57347,49 @@ export interface components {
             crossed: boolean;
             /** Crosses At */
             crosses_at?: string | null;
+        };
+        /**
+         * PackagistReleaseResult
+         * @description Safe bounded projection of the latest tagged release for one package.
+         */
+        PackagistReleaseResult: {
+            /**
+             * Kind
+             * @default packagist_public_latest_tagged_release
+             * @constant
+             */
+            __kind?: "packagist_public_latest_tagged_release";
+            /**
+             * Provider
+             * @default packagist
+             * @constant
+             */
+            provider?: "packagist";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Package */
+            package: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Latest Version Normalized */
+            latest_version_normalized: string;
+            /** Package Type */
+            package_type?: string | null;
+            /** Licenses */
+            licenses: string[];
+            /**
+             * Released At
+             * Format: date-time
+             */
+            released_at: string;
+            /** Php Constraint */
+            php_constraint?: string | null;
+            /** Tagged Release Count */
+            tagged_release_count: number;
         };
         /** PageAnalysisResult */
         PageAnalysisResult: {
@@ -59269,6 +60152,60 @@ export interface components {
          * @enum {string}
          */
         PodcastType: "educational" | "news" | "persian";
+        /**
+         * PokeAPIPublicSpecies
+         * @description Safe factual projection for one public PokéAPI species record.
+         */
+        PokeAPIPublicSpecies: {
+            /**
+             * Kind
+             * @default pokeapi_public_species
+             * @constant
+             */
+            __kind?: "pokeapi_public_species";
+            /**
+             * Provider
+             * @default pokeapi
+             * @constant
+             */
+            provider?: "pokeapi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source Notice
+             * @default pokemon-names-are-nintendo-trademarks
+             * @constant
+             */
+            source_notice?: "pokemon-names-are-nintendo-trademarks";
+            /** Species Id */
+            species_id: number;
+            /** Name */
+            name: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Capture Rate */
+            capture_rate: number;
+            /** Base Happiness */
+            base_happiness: number;
+            /** Is Baby */
+            is_baby: boolean;
+            /** Is Legendary */
+            is_legendary: boolean;
+            /** Is Mythical */
+            is_mythical: boolean;
+            /** Growth Rate */
+            growth_rate: string;
+            /** Habitat */
+            habitat?: string | null;
+            /** Color */
+            color: string;
+            /** Pokeapi Url */
+            pokeapi_url: string;
+        };
         /** Position */
         Position: {
             /** X */
@@ -61806,6 +62743,79 @@ export interface components {
              * @default 0
              */
             start_char?: number;
+        };
+        /**
+         * ReadTheDocsProjectResult
+         * @description Safe bounded projection of one public Read the Docs project.
+         */
+        ReadTheDocsProjectResult: {
+            /**
+             * Kind
+             * @default read_the_docs_public_project_version
+             * @constant
+             */
+            __kind?: "read_the_docs_public_project_version";
+            /**
+             * Provider
+             * @default read_the_docs
+             * @constant
+             */
+            provider?: "read_the_docs";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Project */
+            project: string;
+            /** Name */
+            name: string;
+            /**
+             * Privacy Level
+             * @default public
+             * @constant
+             */
+            privacy_level?: "public";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * Format: date-time
+             */
+            modified_at: string;
+            /** Language Code */
+            language_code?: string | null;
+            /** Programming Language Code */
+            programming_language_code?: string | null;
+            /** Default Version */
+            default_version?: string | null;
+            /** Documentation Url */
+            documentation_url?: string | null;
+            version?: components["schemas"]["ReadTheDocsVersionResult"] | null;
+        };
+        /**
+         * ReadTheDocsVersionResult
+         * @description Safe projection of one public documentation version.
+         */
+        ReadTheDocsVersionResult: {
+            /** Slug */
+            slug: string;
+            /** Version Type */
+            version_type: string;
+            /** Ref */
+            ref: string;
+            /** Active */
+            active: boolean;
+            /** Built */
+            built: boolean;
+            /** Hidden */
+            hidden: boolean;
+            /** Documentation Url */
+            documentation_url?: string | null;
         };
         /**
          * RealtimeTool
@@ -66651,6 +67661,48 @@ export interface components {
             mime_type: string;
             /** Web View Link */
             web_view_link: string | null;
+        };
+        /**
+         * SemanticScholarPaperResult
+         * @description Safe bounded projection of one public Semantic Scholar paper record.
+         */
+        SemanticScholarPaperResult: {
+            /**
+             * Kind
+             * @default semantic_scholar_public_paper_metadata
+             * @constant
+             */
+            __kind?: "semantic_scholar_public_paper_metadata";
+            /**
+             * Provider
+             * @default semantic_scholar
+             * @constant
+             */
+            provider?: "semantic_scholar";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Doi */
+            doi: string;
+            /** Paper Id */
+            paper_id: string;
+            /** Title */
+            title: string;
+            /** Year */
+            year?: number | null;
+            /** Publication Date */
+            publication_date?: string | null;
+            /** Author Count */
+            author_count: number;
+            /** Citation Count */
+            citation_count: number;
+            /** Reference Count */
+            reference_count: number;
+            /** Is Open Access */
+            is_open_access: boolean;
         };
         /** SendResponse */
         SendResponse: {
@@ -72025,6 +73077,47 @@ export interface components {
             thumbnail_height?: number | null;
         };
         /**
+         * TimeApiCurrentTime
+         * @description Safe bounded projection of one timezone's current time.
+         */
+        TimeApiCurrentTime: {
+            /**
+             * Kind
+             * @default timeapi_io_current_time
+             * @constant
+             */
+            __kind?: "timeapi_io_current_time";
+            /**
+             * Provider
+             * @default timeapi_io
+             * @constant
+             */
+            provider?: "timeapi_io";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Timezone */
+            timezone: string;
+            /** Date Time */
+            date_time: string;
+            /** Date */
+            date: string;
+            /** Time */
+            time: string;
+            /**
+             * Day Of Week
+             * @enum {string}
+             */
+            day_of_week: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+            /** Dst Active */
+            dst_active: boolean;
+            /** Utc Offset Seconds */
+            utc_offset_seconds: number;
+        };
+        /**
          * TimesheetExportBody
          * @description E-21. Writes ``hr.access_audit action='export'`` and creates **no** ``hr.payroll_export``
          *     row — conflating the two would let a report supersede a payroll file.
@@ -73916,6 +75009,60 @@ export interface components {
             mapType: "unmapped";
         };
         /**
+         * UnpaywallStatusResult
+         * @description Safe bounded projection of one public Unpaywall DOI record.
+         */
+        UnpaywallStatusResult: {
+            /**
+             * Kind
+             * @default unpaywall_public_oa_status
+             * @constant
+             */
+            __kind?: "unpaywall_public_oa_status";
+            /**
+             * Provider
+             * @default unpaywall
+             * @constant
+             */
+            provider?: "unpaywall";
+            /**
+             * Access
+             * @default public_no_auth_email_identified
+             * @constant
+             */
+            access?: "public_no_auth_email_identified";
+            /** Doi */
+            doi: string;
+            /** Title */
+            title: string;
+            /** Year */
+            year?: number | null;
+            /** Is Oa */
+            is_oa: boolean;
+            /**
+             * Oa Status
+             * @enum {string}
+             */
+            oa_status: "bronze" | "closed" | "gold" | "green" | "hybrid";
+            /** Journal Is Oa */
+            journal_is_oa: boolean;
+            /** Journal Is In Doaj */
+            journal_is_in_doaj: boolean;
+            /** Has Repository Copy */
+            has_repository_copy: boolean;
+            /** Best Oa Host Type */
+            best_oa_host_type?: ("publisher" | "repository") | null;
+            /** Best Oa Version */
+            best_oa_version?: ("acceptedVersion" | "publishedVersion" | "submittedVersion") | null;
+            /** Best Oa License */
+            best_oa_license?: string | null;
+            /**
+             * Record Updated At
+             * Format: date-time
+             */
+            record_updated_at: string;
+        };
+        /**
          * UpdateAgentInput
          * @description Partial update — only provided (non-None) fields are written. This is the
          *     full manual-edit surface over an agx_agent row.
@@ -74799,6 +75946,54 @@ export interface components {
             /** Mime Type */
             mime_type?: string | null;
         };
+        /**
+         * UsgsPublicEarthquakeEvent
+         * @description Safe factual projection of one public USGS earthquake event.
+         */
+        UsgsPublicEarthquakeEvent: {
+            /**
+             * Kind
+             * @default usgs_public_earthquake_event
+             * @constant
+             */
+            __kind?: "usgs_public_earthquake_event";
+            /**
+             * Provider
+             * @default usgs_earthquake
+             * @constant
+             */
+            provider?: "usgs_earthquake";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Event Id */
+            event_id: string;
+            /** Magnitude */
+            magnitude: number;
+            /** Place */
+            place: string;
+            /** Event Time Ms */
+            event_time_ms: number;
+            /** Updated Time Ms */
+            updated_time_ms: number;
+            /** Review Status */
+            review_status: string;
+            /** Tsunami Flag */
+            tsunami_flag: boolean;
+            /** Event Type */
+            event_type: string;
+            /** Longitude */
+            longitude: number;
+            /** Latitude */
+            latitude: number;
+            /** Depth Km */
+            depth_km: number;
+            /** Official Page */
+            official_page: string;
+        };
         /** ValidateCronRequest */
         ValidateCronRequest: {
             /** Expression */
@@ -74923,6 +76118,46 @@ export interface components {
              * @default []
              */
             issues?: components["schemas"]["ValidationIssue"][];
+        };
+        /**
+         * VamPublicObject
+         * @description Safe factual projection of one public V&A collection object.
+         */
+        VamPublicObject: {
+            /**
+             * Kind
+             * @default vam_public_collection_object
+             * @constant
+             */
+            __kind?: "vam_public_collection_object";
+            /**
+             * Provider
+             * @default vam_collections
+             * @constant
+             */
+            provider?: "vam_collections";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** System Number */
+            system_number: string;
+            /** Accession Number */
+            accession_number: string;
+            /** Object Type */
+            object_type: string;
+            /** Primary Title */
+            primary_title?: string | null;
+            /** Production Date */
+            production_date?: string | null;
+            /** Materials */
+            materials?: string[];
+            /** Techniques */
+            techniques?: string[];
+            /** Official Page */
+            official_page: string;
         };
         /** VariableAssignmentSpec */
         VariableAssignmentSpec: {
@@ -77022,6 +78257,50 @@ export interface components {
             /** Organization Id */
             organization_id: string | null;
         };
+        /**
+         * WikimediaCommonsFileMetadata
+         * @description Safe factual projection of one public Commons file.
+         */
+        WikimediaCommonsFileMetadata: {
+            /**
+             * Kind
+             * @default wikimedia_commons_public_file_metadata
+             * @constant
+             */
+            __kind?: "wikimedia_commons_public_file_metadata";
+            /**
+             * Provider
+             * @default wikimedia_commons
+             * @constant
+             */
+            provider?: "wikimedia_commons";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Requested Title */
+            requested_title: string;
+            /** Canonical Title */
+            canonical_title: string;
+            /** Page Id */
+            page_id: number;
+            /**
+             * Repository
+             * @default local
+             * @constant
+             */
+            repository?: "local";
+            /** Byte Size */
+            byte_size: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Mime Type */
+            mime_type: string;
+        };
         /** WireReplayArmIn */
         WireReplayArmIn: {
             /**
@@ -77209,6 +78488,48 @@ export interface components {
              * @default 1
              */
             per_page?: number;
+        };
+        /**
+         * WordPressOrgPlugin
+         * @description Safe factual projection of one WordPress.org plugin-directory entry.
+         */
+        WordPressOrgPlugin: {
+            /**
+             * Kind
+             * @default wordpress_org_public_plugin
+             * @constant
+             */
+            __kind?: "wordpress_org_public_plugin";
+            /**
+             * Provider
+             * @default wordpress.org
+             * @constant
+             */
+            provider?: "wordpress.org";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+            /** Requires Wordpress */
+            requires_wordpress?: string | null;
+            /** Tested Through Wordpress */
+            tested_through_wordpress?: string | null;
+            /** Requires Php */
+            requires_php?: string | null;
+            /** Active Installs */
+            active_installs: number;
+            /** Last Updated */
+            last_updated: string;
+            /** Directory Page */
+            directory_page: string;
         };
         /** WorkbookInputPart */
         WorkbookInputPart: {
@@ -77898,6 +79219,44 @@ export interface components {
             comment_count: number | null;
             /** Privacy Status */
             privacy_status: string | null;
+        };
+        /**
+         * ZenodoPublicRecord
+         * @description Safe bounded projection of one public Zenodo record.
+         */
+        ZenodoPublicRecord: {
+            /**
+             * Kind
+             * @default zenodo_public_record
+             * @constant
+             */
+            __kind?: "zenodo_public_record";
+            /**
+             * Provider
+             * @default zenodo
+             * @constant
+             */
+            provider?: "zenodo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Record Id */
+            record_id: number;
+            /** Title */
+            title: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Resource Type */
+            resource_type: string;
+            /** Access Right */
+            access_right: string;
+            /** Doi */
+            doi: string;
+            /** Record Page */
+            record_page: string;
         };
         /** ZoteroCreator */
         ZoteroCreator: {
@@ -89573,6 +90932,484 @@ export interface operations {
             };
         };
     };
+    public_synonyms_datamuse_public_synonyms_get: {
+        parameters: {
+            query: {
+                word: string;
+                max_results?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatamuseSynonymResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_publication_dblp_public_publication_get: {
+        parameters: {
+            query: {
+                publication_key: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DblpPublicPublication"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_site_discourse_public_site_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoursePublicSite"];
+                };
+            };
+        };
+    };
+    public_versions_matrix_org_public_versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatrixOrgPublicVersions"];
+                };
+            };
+        };
+    };
+    public_anime_kitsu_public_anime_get: {
+        parameters: {
+            query: {
+                anime_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KitsuPublicAnime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_plugin_wordpress_org_public_plugin_get: {
+        parameters: {
+            query: {
+                plugin_slug: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WordPressOrgPlugin"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_file_metadata_wikimedia_commons_public_file_get: {
+        parameters: {
+            query: {
+                file_title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikimediaCommonsFileMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_event_usgs_earthquake_public_event_get: {
+        parameters: {
+            query: {
+                event_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsgsPublicEarthquakeEvent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_object_vam_collections_public_object_get: {
+        parameters: {
+            query: {
+                system_number: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VamPublicObject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_aat_concept_getty_vocabularies_public_aat_concept_get: {
+        parameters: {
+            query: {
+                record_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettyAatConcept"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_paper_semantic_scholar_public_paper_get: {
+        parameters: {
+            query: {
+                doi: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticScholarPaperResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_latest_release_packagist_public_latest_release_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackagistReleaseResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_project_version_read_the_docs_public_project_version_get: {
+        parameters: {
+            query: {
+                project: string;
+                version?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadTheDocsProjectResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_extension_open_vsx_public_extension_get: {
+        parameters: {
+            query: {
+                namespace: string;
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenVSXExtension"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_repository_openssf_scorecard_public_repository_get: {
+        parameters: {
+            query: {
+                owner: string;
+                repository: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenSSFRepositoryScorecard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_oa_status_unpaywall_public_oa_status_get: {
+        parameters: {
+            query: {
+                doi: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnpaywallStatusResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_artwork_artic_public_artwork_get: {
         parameters: {
             query: {
@@ -89635,6 +91472,68 @@ export interface operations {
             };
         };
     };
+    public_document_ietf_datatracker_public_document_get: {
+        parameters: {
+            query: {
+                document_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IetfPublicDocument"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_record_zenodo_public_record_get: {
+        parameters: {
+            query: {
+                record_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZenodoPublicRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_object_met_museum_public_object_get: {
         parameters: {
             query: {
@@ -89662,6 +91561,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_instance_mastodon_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MastodonPublicInstance"];
                 };
             };
         };
@@ -89840,6 +91759,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["INaturalistPublicObservation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_species_pokeapi_public_species_get: {
+        parameters: {
+            query: {
+                species_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PokeAPIPublicSpecies"];
                 };
             };
             /** @description Validation Error */
@@ -90280,6 +92230,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NagerHolidaysCalendar"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    current_time_timeapi_public_current_time_get: {
+        parameters: {
+            query: {
+                timezone: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeApiCurrentTime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_package_hex_pm_public_package_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HexPackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_search_iconify_public_search_get: {
+        parameters: {
+            query: {
+                query: string;
+                max_results?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IconifySearchResult"];
                 };
             };
             /** @description Validation Error */
@@ -101346,41 +103390,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
