@@ -12,6 +12,7 @@
 // Docs: https://supabase.com/docs/guides/getting-started/api-keys
 
 import { createNextSupabase } from "@ai-matrx/data/next";
+import type { AuthCookieValue } from "@ai-matrx/data/next";
 import type { CookieOptionsWithName } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 import { wrapClientForCapture } from "@/lib/diagnostics/supabaseErrorCapture";
@@ -37,7 +38,10 @@ export const supabaseNext = createNextSupabase<Database>({
   // store (lib/diagnostics/errorCaptureStore.ts) and surfaced in the admin
   // Error Inspector. The wrapper is a no-op on the server and never alters
   // query behavior — see supabaseErrorCapture.ts.
-  wrapBrowserClient: wrapClientForCapture,
+  wrapBrowserClient: (client) =>
+    typeof client === "object" && client !== null
+      ? wrapClientForCapture(client)
+      : client,
 });
 
 export const AUTH_COOKIE_NAME = supabaseNext.cookieName;
@@ -59,4 +63,11 @@ export function browserAuthCookieOptions(): CookieOptionsWithName {
 
 export function isCurrentAuthCookie(name: string): boolean {
   return supabaseNext.authCookie.isCurrentCookie(name);
+}
+
+/** Compatibility export for focused cookie-contract tests and callers. */
+export function legacyAuthCookieMigration(
+  cookies: readonly AuthCookieValue[],
+): AuthCookieValue[] {
+  return supabaseNext.authCookie.migrateLegacyCookies(cookies);
 }
