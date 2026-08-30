@@ -23,7 +23,6 @@ import {
   createMatrxTransport,
   followRuntimeOperationToEnd,
   getRuntimeOperationsByLink,
-  MatrxApiError,
   type MatrxTransport,
 } from "@ai-matrx/agents/matrx";
 import type { ResolvedBackend } from "../redux/execution-system/thunks/resolve-base-url";
@@ -60,21 +59,15 @@ export async function fetchOperationsByLink(
   conversationId: string,
   signal?: AbortSignal,
 ): Promise<RuntimeOperationsByLinkResponse | null> {
-  try {
-    return await getRuntimeOperationsByLink(
-      transportFor(backend),
-      "conversation",
-      conversationId,
-      { limit: 5, ...(signal ? { signal } : {}) },
-    );
-  } catch (error) {
-    if (error instanceof MatrxApiError) {
-      throw new Error(
-        `runtime operations-by-link failed: ${error.status} ${error.message}`,
-      );
-    }
-    throw error;
-  }
+  // The package's typed MatrxApiError propagates as-is (status/code/
+  // serverDetail intact) — re-wrapping it into a generic Error is the
+  // catch-and-reinterpret pattern C22 bans in host wiring.
+  return getRuntimeOperationsByLink(
+    transportFor(backend),
+    "conversation",
+    conversationId,
+    { limit: 5, ...(signal ? { signal } : {}) },
+  );
 }
 
 export interface FollowOperationResult {
