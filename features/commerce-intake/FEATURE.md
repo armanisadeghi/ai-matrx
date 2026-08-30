@@ -8,7 +8,11 @@ manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/in
 (print run detail) · `/l/[code]` (public label resolver) · `/commerce/intake/admin` (map) ·
 `/commerce/intake/v2` + `/v2/instant` (ISOLATED iPhone-style rebuild on `features/capture-camera/`
 — same engine and write rules, new chrome; replaces `/commerce/intake` only after Arman approves;
-read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before touching it). Project brief + contracts:
+read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before touching it) ·
+`/commerce/intake/v3` + `/v3/instant` (ISOLATED vertical-rail chrome, `CameraCaptureV3` from
+`@ai-matrx/capture` 0.3.x — one hold-shutter, right rail + chevron, expanding serial entry, the
+library drawer as the ONE media door; same engine and write rules; a candidate chrome alongside
+v2, same approval gate). Project brief + contracts:
 `/Users/armanisadeghi/code/common-docs/projects/ebay-store-management/BUILD.md` (W4) +
 `PROTOTYPE-CONCEPTS.md` (the concepts are REQUIREMENTS; the prototype's storage is not).
 
@@ -221,6 +225,8 @@ On a phone, logged into an org:
    working; notes and voice keep working.
 
 ## Change log
+
+- 2026-08-30 — **v3: the vertical-rail chrome (`/commerce/intake/v3` + `/v3/instant`).** `IntakeCaptureScreenV3` maps commerce onto `CameraCaptureV3` (`@ai-matrx/capture` 0.3.1): ONE hold-shutter (tap photo / hold video; mic warms on `onRecordIntent` so iOS never prompts mid-take — warm-hold keyed off intent, released 5s after recording ends), QR/Notes/Process as RIGHT-RAIL actions above the package's core set (extras collapse behind the chevron), serial entry as the expanding `topEntry` pill (commits on Enter/blur/unmount), Next/Break in `shutterTrailing`, voice note above the shutter, and the library drawer as the ONE door to existing media with Upload inside it (`CloudLibrarySheet.onUpload`; no UPLOAD mode). Same engine, session, media mapping and QR gating as v2 — deliberately no timing modes and no feature-promo tile. 0.3.1 package fixes found on first render: the rail survives a blocked camera (host actions stay usable; core camera actions disable) and status chips clear the `topCenter` line. Verified in-browser: expanding field, chevron expand/collapse, blocked-state rail, chips. v1/v2 untouched.
 
 - 2026-08-29 — **Asset route identity guard.** `/commerce/intake/assets/[id]` classifies its
   segment before rendering client readers: UUIDs reach the asset workspace, the reserved
