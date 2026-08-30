@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P13",
   "runId": "20260830T081317Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-30T08:24:58.125Z",
-  "summary": "Recorded pre-certification fleet release escape",
+  "state": "certified",
+  "updatedAt": "2026-08-30T08:25:42.600Z",
+  "summary": "Exact P13 wave 1 candidate independently certified",
   "source": "20260830T081317Z.json",
-  "eventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd"
+  "eventHash": "41375043e08a6fade177ae251b22903704e7ee9727fd21f19464cee9765925b0"
 }

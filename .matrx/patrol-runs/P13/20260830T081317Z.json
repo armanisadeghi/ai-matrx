@@ -81,6 +81,44 @@
       },
       "previousEventHash": "16da38d3bf3ae3ea3e73661c98bba829f07bce90d3177b18d9ae535ec239bf4d",
       "eventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T08:25:03.590Z",
+      "actor": "competitor_pickers",
+      "summary": "Resumed exact-candidate independent certification after release escape",
+      "evidence": [
+        "candidate=bfd76db84e4760ed73380389306689ba6174de26"
+      ],
+      "previousEventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd",
+      "eventHash": "a1a144ea3550b5824885688c5edfbc76c2d88ed03295e30dffbfe50c7c180253"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T08:25:42.600Z",
+      "actor": "competitor_pickers",
+      "summary": "Exact P13 wave 1 candidate independently certified",
+      "evidence": [
+        "No candidate-caused defect across 10 changed files",
+        "Isolated in-app Browser unavailable; static and test proof retained"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "bfd76db84e4760ed73380389306689ba6174de26",
+        "certifierTaskId": "competitor_pickers",
+        "checks": [
+          "pnpm type-check",
+          "pnpm check:picker-add",
+          "ResearchTopicSelect tests 2/2",
+          "website URL normalization tests 11/11",
+          "scoped ESLint",
+          "git diff --check and ancestry"
+        ]
+      },
+      "previousEventHash": "a1a144ea3550b5824885688c5edfbc76c2d88ed03295e30dffbfe50c7c180253",
+      "eventHash": "41375043e08a6fade177ae251b22903704e7ee9727fd21f19464cee9765925b0"
     }
   ]
 }
