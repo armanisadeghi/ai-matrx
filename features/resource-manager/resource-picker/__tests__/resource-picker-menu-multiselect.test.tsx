@@ -22,26 +22,43 @@ jest.mock("../useRunControlCounts", () => ({
 jest.mock("../FilesResourcePicker", () => ({
   FilesResourcePicker: ({
     onSelect,
+    onDeselect,
     selectionMode,
   }: {
     onSelect: (selection: object) => Promise<boolean | void>;
+    onDeselect: (selection: object) => Promise<boolean | void>;
     selectionMode: "single" | "multiple";
   }) => (
-    <button
-      type="button"
-      data-selection-mode={selectionMode}
-      onClick={() =>
-        void onSelect({
-          fileId: "file-1",
-          url: "/api/files/file-1/inline",
-          type: "image/jpeg",
-          mime_type: "image/jpeg",
-          details: { filename: "photo.jpg" },
-        })
-      }
-    >
-      Pick stored file
-    </button>
+    <div data-selection-mode={selectionMode}>
+      <button
+        type="button"
+        onClick={() =>
+          void onSelect({
+            fileId: "file-1",
+            url: "/api/files/file-1/inline",
+            type: "image/jpeg",
+            mime_type: "image/jpeg",
+            details: { filename: "photo.jpg" },
+          })
+        }
+      >
+        Pick stored file
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          void onDeselect({
+            fileId: "file-1",
+            url: "/api/files/file-1/inline",
+            type: "image/jpeg",
+            mime_type: "image/jpeg",
+            details: { filename: "photo.jpg" },
+          })
+        }
+      >
+        Unpick stored file
+      </button>
+    </div>
   ),
 }));
 
@@ -119,4 +136,38 @@ it("preserves one-and-done behavior for explicitly single-value hosts", async ()
   expect(
     container.querySelector('[data-selection-mode="single"]'),
   ).not.toBeNull();
+});
+
+it("forwards file unchecks to the host without closing the picker", async () => {
+  const onResourceSelected = jest.fn().mockResolvedValue(true);
+  const onResourceDeselected = jest.fn().mockResolvedValue(true);
+  const onClose = jest.fn();
+
+  act(() => {
+    root.render(
+      <ResourcePickerMenu
+        onResourceSelected={onResourceSelected}
+        onResourceDeselected={onResourceDeselected}
+        onClose={onClose}
+      />,
+    );
+  });
+
+  const filesButton = Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent?.trim() === "Files",
+  );
+  act(() => filesButton?.click());
+
+  const unpickButton = Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent === "Unpick stored file",
+  );
+  await act(async () => unpickButton?.click());
+
+  expect(onResourceDeselected).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: "file",
+      data: expect.objectContaining({ fileId: "file-1" }),
+    }),
+  );
+  expect(onClose).not.toHaveBeenCalled();
 });
