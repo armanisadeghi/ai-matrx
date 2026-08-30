@@ -44,6 +44,47 @@
       ],
       "previousEventHash": "cfe432fe4a77877c7d824ad087be3946a9dcd78e32d06b1dc1efbb5f29f01b4d",
       "eventHash": "106f7c91c8d8d119a6abeb9ca9df38924a9f7f67d26aa953167eab85f888598a"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-30T15:36:39.675Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "CERTIFIED exact four-route clearance candidate; no concrete candidate-caused defect",
+      "evidence": [
+        "All nine invitation states and Welcome reserve canonical shell-header clearance without clipping or overflow",
+        "Concurrent Marketing type failure disappeared without candidate changes and was baseline noise",
+        "In-app Browser runtime was unavailable to the certifier; canonical preview remained healthy"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "fb564b058e28fb4bbcb260a3ae26e21deac43d97",
+        "certifierTaskId": "/root/p11_certifier_4b060808",
+        "checks": [
+          "page-header core-only strict PASS",
+          "scroll-chain strict PASS across 8005 files, 1084 route pages, and 277 layouts",
+          "exact candidate and post-candidate diff-check PASS",
+          "repository type-check PASS on independent rerun"
+        ]
+      },
+      "previousEventHash": "106f7c91c8d8d119a6abeb9ca9df38924a9f7f67d26aa953167eab85f888598a",
+      "eventHash": "e1db7b886e07b5e1b8b761a816d60cf89de00332c0841fb18ddb5a00ea3a55d7"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-30T15:36:57.958Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified first eradication wave queued for immediate main integration",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P11/20260830T153054Z"
+      ],
+      "delivery": {
+        "candidateSha": "fb564b058e28fb4bbcb260a3ae26e21deac43d97",
+        "preservedRef": "refs/heads/patrol-runs/P11/20260830T153054Z"
+      },
+      "previousEventHash": "e1db7b886e07b5e1b8b761a816d60cf89de00332c0841fb18ddb5a00ea3a55d7",
+      "eventHash": "ae02542e0241c3479e013cddba4c90f525a08de333974db9bb151726779bf7de"
     }
   ]
 }

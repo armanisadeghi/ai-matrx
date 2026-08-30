@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "20260830T153054Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T15:33:40.451Z",
-  "summary": "First four-route clearance batch passed strict header, scroll-chain, diff, and repository type-check gates; preparing exact candidate for independent adversarial certification",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T15:36:57.958Z",
+  "summary": "Certified first eradication wave queued for immediate main integration",
   "source": "20260830T153054Z.json",
-  "eventHash": "106f7c91c8d8d119a6abeb9ca9df38924a9f7f67d26aa953167eab85f888598a"
+  "eventHash": "ae02542e0241c3479e013cddba4c90f525a08de333974db9bb151726779bf7de"
 }
