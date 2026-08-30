@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P13",
+  "runId": "20260830T081317Z",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-30T08:24:58.125Z",
+  "summary": "Recorded pre-certification fleet release escape",
+  "source": "20260830T081317Z.json",
+  "eventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd"
+}

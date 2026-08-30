@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P13",
+  "runId": "20260830T081317Z",
+  "baseSha": "920388cbe63aa759408b63722128b499f1673d87",
+  "createdAt": "2026-08-30T08:13:17.697Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T08:13:17.697Z",
+      "actor": "root",
+      "summary": "First automated P13 eradication run; resume known picker backlog before full discovery",
+      "evidence": [
+        "baseline git status clean at 920388cbe63aa759408b63722128b499f1673d87",
+        "baseline pnpm type-check PASS",
+        "baseline pnpm check:picker-add PASS with one finding: BrandIdentitySiteSurface.tsx",
+        "pnpm check:patrol-contracts PASS; manifest and live automation agree"
+      ],
+      "previousEventHash": null,
+      "eventHash": "ce541dbd43646170aa0be9845bbf2b67610a0aeb08a206fce26eff2300898a15"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T08:13:18.195Z",
+      "actor": "root",
+      "summary": "Consuming known backlog through disjoint repair units",
+      "evidence": [
+        "Known sightings verified before broad discovery; three disjoint units claimed"
+      ],
+      "previousEventHash": "ce541dbd43646170aa0be9845bbf2b67610a0aeb08a206fce26eff2300898a15",
+      "eventHash": "ea12dca5f7653a8440a0baaffd4a6706e890e1c8db1918a07500eab91900ed77"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T08:21:57.900Z",
+      "actor": "root",
+      "summary": "Wave 1 candidate frozen for independent adversarial certification",
+      "evidence": [
+        "candidate bfd76db84e4760ed73380389306689ba6174de26 contains brand website and research topic picker repairs",
+        "post-change pnpm type-check PASS",
+        "post-change pnpm check:picker-add PASS at zero findings",
+        "focused ResearchTopicSelect tests 2/2 PASS; website URL normalization tests 11/11 PASS"
+      ],
+      "previousEventHash": "ea12dca5f7653a8440a0baaffd4a6706e890e1c8db1918a07500eab91900ed77",
+      "eventHash": "4680d66d0a7560ce7201aac5bfcf6b1ebbc18f75eee6fc80f14c6a5a00f59237"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T08:24:57.601Z",
+      "actor": "root",
+      "summary": "Fleet release integrated the candidate before certification completed",
+      "evidence": [
+        "v0.4.1485 includes candidate bfd76db84e4760ed73380389306689ba6174de26"
+      ],
+      "blocker": {
+        "prerequisite": "exact-candidate independent certification after delivery escape",
+        "preservedRef": "refs/heads/patrol-runs/P13/20260830T081317Z",
+        "preservedSha": "bfd76db84e4760ed73380389306689ba6174de26"
+      },
+      "previousEventHash": "4680d66d0a7560ce7201aac5bfcf6b1ebbc18f75eee6fc80f14c6a5a00f59237",
+      "eventHash": "16da38d3bf3ae3ea3e73661c98bba829f07bce90d3177b18d9ae535ec239bf4d"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T08:24:58.125Z",
+      "actor": "release-controller",
+      "summary": "Recorded pre-certification fleet release escape",
+      "evidence": [
+        "origin/main=1c345d7f6660196238ee5775693e3d7e71390c8e"
+      ],
+      "escape": {
+        "candidateSha": "bfd76db84e4760ed73380389306689ba6174de26",
+        "integratedSha": "1c345d7f6660196238ee5775693e3d7e71390c8e",
+        "release": "v0.4.1485",
+        "reason": "The scheduled fleet release consumed shared checkout main while independent P13 certification was still running"
+      },
+      "previousEventHash": "16da38d3bf3ae3ea3e73661c98bba829f07bce90d3177b18d9ae535ec239bf4d",
+      "eventHash": "30b9df98d8e8293f1a2c5850e85239c6878f74f71f820daf6fc05996bfee9fcd"
+    }
+  ]
+}
