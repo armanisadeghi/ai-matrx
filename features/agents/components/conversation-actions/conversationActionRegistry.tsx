@@ -30,6 +30,7 @@ import {
   ArchiveRestore,
   Eye,
   EyeOff,
+  FolderKanban,
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -124,6 +125,8 @@ export interface ConversationMenuContext {
   showDelete?: boolean;
   /** Reconcile a host-owned read model after a successful mutation. */
   onMutationSuccess?: () => void;
+  /** Open the canonical project association picker for this conversation. */
+  onAddToProject?: () => void;
   dispatch: AppDispatch;
 }
 
@@ -245,6 +248,13 @@ export function buildConversationMenu(
         id: "manage",
         label: "Manage",
         items: [
+          {
+            id: "add-to-project",
+            label: "Add to project…",
+            icon: FolderKanban,
+            hidden: !ctx.onAddToProject,
+            onSelect: () => ctx.onAddToProject?.(),
+          },
           {
             id: "duplicate",
             label: "Duplicate",

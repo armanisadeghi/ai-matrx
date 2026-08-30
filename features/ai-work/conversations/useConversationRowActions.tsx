@@ -10,10 +10,13 @@
 // consumes that same builder — three divergent hard-coded action lists for one
 // entity is the defect the entity-list doctrine exists to kill.
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AssociationPicker } from "@ai-matrx/associations/react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { setConversationFavorite } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import type {
   EntityListController,
   EntityRowActionsResult,
@@ -45,6 +48,20 @@ export function useConversationRowActions(
 ): EntityRowActionsResult<ConversationBrowseRow> {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const [projectPickerRow, setProjectPickerRow] =
+    useState<ConversationBrowseRow | null>(null);
+  const projectRelationships = useAssociations({
+    type: "conversation",
+    id: projectPickerRow?.id ?? null,
+  });
+  const attachedProjectIds = new Set(
+    projectRelationships.edges
+      .filter(
+        (edge) =>
+          edge.direction === "outgoing" && edge.otherType === "project",
+      )
+      .map((edge) => edge.otherId),
+  );
 
   // No manual memoization — the React Compiler owns it (CLAUDE.md).
   const menuFor = (row: ConversationBrowseRow) => () =>
@@ -83,6 +100,7 @@ export function useConversationRowActions(
               )
           : undefined,
       },
+      onAddToProject: () => setProjectPickerRow(row),
       onMutationSuccess: list.refresh,
       dispatch,
     });
@@ -103,5 +121,35 @@ export function useConversationRowActions(
         );
       },
     },
+    modals: (
+      <AssociationPicker
+        open={projectPickerRow !== null}
+        onOpenChange={(open) => {
+          if (!open) setProjectPickerRow(null);
+        }}
+        token="project"
+        containerLabel={
+          projectPickerRow?.title?.trim() || "Untitled conversation"
+        }
+        orgId={projectPickerRow?.organization_id ?? null}
+        attachedIds={attachedProjectIds}
+        onAttach={async (projectId) => {
+          if (!projectPickerRow) {
+            return { ok: false, error: "No conversation selected" };
+          }
+          return projectRelationships.add({
+            targetType: "project",
+            targetId: projectId,
+            orgId: projectPickerRow.organization_id,
+          });
+        }}
+        onDetach={(projectId) =>
+          projectRelationships.remove({
+            targetType: "project",
+            targetId: projectId,
+          })
+        }
+      />
+    ),
   };
 }
