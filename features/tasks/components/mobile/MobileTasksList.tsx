@@ -41,6 +41,7 @@ import { ActiveScopeFilterChips } from "../TaskScopeFilter";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { formatDateOnly } from "@/utils/dateOnly";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { TASKS_CONTEXT_MENU_PROPS } from "@/features/tasks/agent-context/buildTasksContextData";
 import { useTasksListSurfaceScope } from "@/features/tasks/components/TasksListSurfaceRuntime";
 
@@ -98,6 +99,37 @@ export default function MobileTasksList({
       surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
       getApplicationScope={getApplicationScope}
       contentSource={{ type: "raw" }}
+      resolveContextOnOpen={(target) => {
+        const row = target?.closest<HTMLElement>("[data-task-id]");
+        const task = row
+          ? filteredTasks.find(
+              (candidate) => candidate.id === row.dataset.taskId,
+            )
+          : null;
+
+        if (!task) {
+          return {
+            content: filteredTasks
+              .map((candidate) => candidate.title)
+              .join("\n"),
+          };
+        }
+
+        return {
+          content: task.title,
+          task_id: task.id,
+          task_title: task.title,
+          task_status: task.status,
+          task_priority: task.priority ?? undefined,
+          task_due_date: task.dueDate || undefined,
+          [CONTEXT_MENU_ENTITY_KEY]: {
+            type: "task",
+            id: task.id,
+            title: task.title,
+            resourceType: "task",
+          },
+        };
+      }}
     >
       <div
         className="h-full flex flex-col bg-background overflow-hidden"
@@ -260,6 +292,7 @@ export default function MobileTasksList({
                 return (
                   <div
                     key={task.id}
+                    data-task-id={task.id}
                     onClick={() => onTaskSelect(task.id)}
                     className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors cursor-pointer"
                   >
