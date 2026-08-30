@@ -68,6 +68,18 @@
       ],
       "previousEventHash": "99af132e4cd6cfc4c0e4505b1b4aef329c3af9da4c0ff7ceb4717c1e18dc7f71",
       "eventHash": "d934d99a373d94fcb21fdd86b3010ee39e5d31db8ab75fb7b0749201843d5140"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:34:50.901Z",
+      "actor": "codex-root",
+      "summary": "Corrected 13-file candidate 6849bb0fac is ready for independent recertification.",
+      "evidence": [
+        "The rejected chevron hit-area regression is repaired; candidate remote force-updated with lease."
+      ],
+      "previousEventHash": "d934d99a373d94fcb21fdd86b3010ee39e5d31db8ab75fb7b0749201843d5140",
+      "eventHash": "0f48fc8ab67751cd5e761013eca2681d247d01c598c6bbdb6a979cc69d783e3c"
     }
   ]
 }
