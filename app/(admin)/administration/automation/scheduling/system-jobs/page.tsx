@@ -24,6 +24,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -70,6 +71,7 @@ import type {
   DbJobResponse,
   SystemTaskPatchRequest,
   SystemTaskResponse,
+  SystemTaskTaxonomyNode,
 } from "@/features/scheduling/service/schedulerApi.types";
 import {
   humanizeRelative,
@@ -121,8 +123,27 @@ function lastRunTone(
   return "outline";
 }
 
+function taxonomyNodeLabel(
+  node: SystemTaskTaxonomyNode,
+  nodes: SystemTaskTaxonomyNode[],
+): string {
+  const byId = new Map(nodes.map((candidate) => [candidate.id, candidate]));
+  const names: string[] = [];
+  const seen = new Set<string>();
+  let current: SystemTaskTaxonomyNode | undefined = node;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    names.push(current.name);
+    current = current.parent_id ? byId.get(current.parent_id) : undefined;
+  }
+  return names.reverse().join(" / ");
+}
+
 export default function SystemJobsPage() {
   const [rows, setRows] = useState<SystemTaskResponse[]>([]);
+  const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -132,6 +153,9 @@ export default function SystemJobsPage() {
 
   // ── Database jobs (pg_cron) — the second section ──────────────────────────
   const [dbRows, setDbRows] = useState<DbJobResponse[]>([]);
+  const [dbTaxonomyNodes, setDbTaxonomyNodes] = useState<
+    SystemTaskTaxonomyNode[]
+  >([]);
   const [dbLoading, setDbLoading] = useState(true);
   const [dbFetching, setDbFetching] = useState(false);
   const [dbLoadError, setDbLoadError] = useState<string | null>(null);
@@ -160,6 +184,9 @@ export default function SystemJobsPage() {
       // Defensive: the endpoint is being built in parallel — never assume the
       // envelope is complete.
       setRows(Array.isArray(res?.tasks) ? res.tasks : []);
+      setTaxonomyNodes(
+        Array.isArray(res?.taxonomy_nodes) ? res.taxonomy_nodes : [],
+      );
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err));
@@ -174,6 +201,9 @@ export default function SystemJobsPage() {
     try {
       const res = await listDbJobs();
       setDbRows(Array.isArray(res?.jobs) ? res.jobs : []);
+      setDbTaxonomyNodes(
+        Array.isArray(res?.taxonomy_nodes) ? res.taxonomy_nodes : [],
+      );
       setDbLoadError(null);
     } catch (err) {
       setDbLoadError(err instanceof Error ? err.message : String(err));
@@ -188,7 +218,6 @@ export default function SystemJobsPage() {
       void load();
       void loadDb();
     }, 0);
-
     return () => window.clearTimeout(timer);
   }, [load, loadDb]);
 
@@ -294,6 +323,33 @@ export default function SystemJobsPage() {
           title={r.tool_name ?? undefined}
         >
           {r.tool_name ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "classification",
+      accessorFn: (r) =>
+        (r.taxonomy_path ?? []).map((node) => node.name).join(" / "),
+      header: "Classification",
+      width: 260,
+      cell: (r) => (
+        <span className="flex min-w-0 items-center gap-1 text-xs">
+          {(r.taxonomy_path ?? []).map((node, index) => (
+            <span key={node.id} className="flex min-w-0 items-center gap-1">
+              {index > 0 && (
+                <span className="text-muted-foreground" aria-hidden="true">
+                  /
+                </span>
+              )}
+              <Link
+                href={`/administration/utilities/taxonomy?q=${encodeURIComponent(node.slug)}`}
+                className="truncate text-primary underline-offset-2 hover:underline"
+                title={`Open ${node.level}: ${node.name}`}
+              >
+                {node.name}
+              </Link>
+            </span>
+          ))}
         </span>
       ),
     },
@@ -563,6 +619,32 @@ export default function SystemJobsPage() {
       },
     },
     {
+      id: "classification",
+      accessorFn: (r) => r.taxonomy_path.map((node) => node.name).join(" / "),
+      header: "Classification",
+      width: 260,
+      cell: (r) => (
+        <span className="flex min-w-0 items-center gap-1 text-xs">
+          {r.taxonomy_path.map((node, index) => (
+            <span key={node.id} className="flex min-w-0 items-center gap-1">
+              {index > 0 && (
+                <span className="text-muted-foreground" aria-hidden="true">
+                  /
+                </span>
+              )}
+              <Link
+                href={`/administration/utilities/taxonomy?q=${encodeURIComponent(node.slug)}`}
+                className="truncate text-primary underline-offset-2 hover:underline"
+                title={`Open ${node.level}: ${node.name}`}
+              >
+                {node.name}
+              </Link>
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
       id: "state",
       header: "State",
       accessorFn: (r) => (r.active ? "Active" : "Inactive"),
@@ -680,7 +762,7 @@ export default function SystemJobsPage() {
           }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search title, tool…",
+            searchPlaceholder: "Search title, tool, classification…",
             actions: (
               <Button
                 size="sm"
@@ -706,12 +788,17 @@ export default function SystemJobsPage() {
               [
                 `Title: ${r.title}`,
                 `Tool: ${r.tool_name}`,
+                `Classification: ${(r.taxonomy_path ?? []).map((node) => node.name).join(" / ")}`,
                 `State: ${r.enabled ? "enabled" : "disabled"}`,
                 `Cadence: ${cadenceText(r)}`,
                 `Next due: ${humanizeRelative(r.trigger?.next_due_at ?? null)}`,
                 `Last run: ${r.last_run?.status ?? "never"}`,
               ].join("\n"),
-            rowAttributes: (r) => ({ id: r.id, enabled: r.enabled }),
+            rowAttributes: (r) => ({
+              id: r.id,
+              enabled: r.enabled,
+              taxonomy_node_id: r.taxonomy_node_id,
+            }),
           }}
         />
       </div>
@@ -746,7 +833,7 @@ export default function SystemJobsPage() {
           }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search job, command…",
+            searchPlaceholder: "Search job, classification, command…",
             actions: (
               <Button
                 size="sm"
@@ -772,11 +859,16 @@ export default function SystemJobsPage() {
               [
                 `Job: ${r.jobname ?? r.jobid}`,
                 `Schedule: ${r.schedule}`,
+                `Classification: ${r.taxonomy_path.map((node) => node.name).join(" / ")}`,
                 `State: ${r.active ? "active" : "inactive"}`,
                 `Last run: ${r.last_run?.status ?? "never"}`,
                 `Command: ${r.command}`,
               ].join("\n"),
-            rowAttributes: (r) => ({ jobid: r.jobid, active: r.active }),
+            rowAttributes: (r) => ({
+              jobid: r.jobid,
+              active: r.active,
+              taxonomy_node_id: r.taxonomy_node_id,
+            }),
           }}
         />
       </div>
@@ -784,6 +876,7 @@ export default function SystemJobsPage() {
       {editing && (
         <SystemJobEditDialog
           task={editing}
+          taxonomyNodes={taxonomyNodes}
           saving={busy.has(editing.id)}
           onClose={() => setEditing(null)}
           onSave={(body) => void saveEdit(editing.id, body)}
@@ -793,6 +886,7 @@ export default function SystemJobsPage() {
       {editingDbJob && (
         <DbJobEditDialog
           job={editingDbJob}
+          taxonomyNodes={dbTaxonomyNodes}
           saving={dbBusy.has(editingDbJob.jobid)}
           onClose={() => setEditingDbJob(null)}
           onSave={(body) => void saveDbEdit(editingDbJob.jobid, body)}
@@ -811,11 +905,13 @@ export default function SystemJobsPage() {
 
 function SystemJobEditDialog({
   task,
+  taxonomyNodes,
   saving,
   onClose,
   onSave,
 }: {
   task: SystemTaskResponse;
+  taxonomyNodes: SystemTaskTaxonomyNode[];
   saving: boolean;
   onClose: () => void;
   onSave: (body: SystemTaskPatchRequest) => void;
@@ -841,6 +937,7 @@ function SystemJobEditDialog({
   );
   const [argsText, setArgsText] = useState("");
   const [argsTouched, setArgsTouched] = useState(false);
+  const [taxonomyNodeId, setTaxonomyNodeId] = useState(task.taxonomy_node_id);
   const [formError, setFormError] = useState<string | null>(null);
 
   const hint = type === "cron" ? cronHint(expression) : null;
@@ -848,6 +945,14 @@ function SystemJobEditDialog({
   const submit = () => {
     setFormError(null);
     const body: SystemTaskPatchRequest = {};
+
+    if (!taxonomyNodeId) {
+      setFormError("Choose a Domain, Feature, or Sub-feature.");
+      return;
+    }
+    if (taxonomyNodeId !== task.taxonomy_node_id) {
+      body.taxonomy_node_id = taxonomyNodeId;
+    }
 
     if (type === "interval") {
       const secs = Number(everySeconds);
@@ -912,6 +1017,26 @@ function SystemJobEditDialog({
         </DialogHeader>
 
         <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Classification</Label>
+            <Select value={taxonomyNodeId} onValueChange={setTaxonomyNodeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a registry node" />
+              </SelectTrigger>
+              <SelectContent>
+                {taxonomyNodes.map((node) => (
+                  <SelectItem key={node.id} value={node.id}>
+                    {taxonomyNodeLabel(node, taxonomyNodes)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Canonical Feature Registry identity; the job cannot exist by name
+              alone.
+            </p>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Trigger type</Label>
             <Select
@@ -1023,16 +1148,19 @@ function SystemJobEditDialog({
 
 function DbJobEditDialog({
   job,
+  taxonomyNodes,
   saving,
   onClose,
   onSave,
 }: {
   job: DbJobResponse;
+  taxonomyNodes: SystemTaskTaxonomyNode[];
   saving: boolean;
   onClose: () => void;
   onSave: (body: DbJobPatchRequest) => void;
 }) {
   const [schedule, setSchedule] = useState(job.schedule);
+  const [taxonomyNodeId, setTaxonomyNodeId] = useState(job.taxonomy_node_id);
   const [formError, setFormError] = useState<string | null>(null);
 
   const hint = cronHint(schedule);
@@ -1045,11 +1173,20 @@ function DbJobEditDialog({
       setFormError("Schedule is required.");
       return;
     }
-    if (next === job.schedule) {
+    if (!taxonomyNodeId) {
+      setFormError("Choose a Domain, Feature, or Sub-feature.");
+      return;
+    }
+    if (next === job.schedule && taxonomyNodeId === job.taxonomy_node_id) {
       onClose();
       return;
     }
-    onSave({ schedule: next });
+    onSave({
+      ...(next !== job.schedule ? { schedule: next } : {}),
+      ...(taxonomyNodeId !== job.taxonomy_node_id
+        ? { taxonomy_node_id: taxonomyNodeId }
+        : {}),
+    });
   };
 
   return (
@@ -1064,6 +1201,26 @@ function DbJobEditDialog({
         </DialogHeader>
 
         <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Classification</Label>
+            <Select value={taxonomyNodeId} onValueChange={setTaxonomyNodeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a registry node" />
+              </SelectTrigger>
+              <SelectContent>
+                {taxonomyNodes.map((node) => (
+                  <SelectItem key={node.id} value={node.id}>
+                    {taxonomyNodeLabel(node, taxonomyNodes)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Canonical Feature Registry identity; the job cannot exist by name
+              alone.
+            </p>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="db-job-schedule">Schedule</Label>
             <Input
