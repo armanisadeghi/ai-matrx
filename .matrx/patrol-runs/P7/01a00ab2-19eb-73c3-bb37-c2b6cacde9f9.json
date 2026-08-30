@@ -43,6 +43,66 @@
       ],
       "previousEventHash": "0db5834922e81524b12d12044a667399219af52655e9891bb9de48d55092a8ef",
       "eventHash": "d9490610dc5415d9ef7a3529115ce09c1f1b8f4e7d135230ba1a051ba55f7ec8"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-29T14:32:59.519Z",
+      "actor": "/root/p7_certifier",
+      "summary": "CERTIFIED exact two-file P7 candidate; no concrete batch-caused defect.",
+      "evidence": [
+        "Independent review reproduced P7 ESLint 4 to 0, type-check PASS, clean diff, and valid run-record hash chain.",
+        "Canonical opener preserves cancel=false, confirm=true, queued requests, and writes only after awaited approval."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "f70638875cbae083e1b9f160ee32215e4ad2bb74",
+        "certifierTaskId": "/root/p7_certifier",
+        "checks": [
+          "Exact candidate identity and two-file scope",
+          "Scope-aware P7 detector 4 to 0",
+          "pnpm type-check PASS",
+          "Awaited destructive control flow and acknowledgement semantics",
+          "Pure opener import and unchanged chunk boundary",
+          "Valid hash-chained permanent record"
+        ]
+      },
+      "previousEventHash": "d9490610dc5415d9ef7a3529115ce09c1f1b8f4e7d135230ba1a051ba55f7ec8",
+      "eventHash": "e6b4b59ed0630c6f5f8bf8e2ca2df1668452155a32be6ec0d2d52bfa2ad549d8"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-29T14:33:05.562Z",
+      "actor": "pattern-patrol-p7-worker",
+      "summary": "Certified P7 candidate is preserved and queued for fast integration to origin/main.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9"
+      ],
+      "delivery": {
+        "candidateSha": "f70638875cbae083e1b9f160ee32215e4ad2bb74",
+        "preservedRef": "refs/heads/patrol-runs/P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9"
+      },
+      "previousEventHash": "e6b4b59ed0630c6f5f8bf8e2ca2df1668452155a32be6ec0d2d52bfa2ad549d8",
+      "eventHash": "dfb5d960e077d9302cf29bbe201e5a33ebe86524517ce5bdc0dbfb8bb270d1e2"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-30T14:20:06.117Z",
+      "actor": "pattern-patrol-p7-controller",
+      "summary": "Certified P7 candidate is contained in release v0.4.1441.",
+      "evidence": [
+        "Candidate f70638875cbae083e1b9f160ee32215e4ad2bb74 is an ancestor of release commit 50cfae5c4f967822f26e16ac25d2bab3b6aa34b3 and current origin/main."
+      ],
+      "delivery": {
+        "candidateSha": "f70638875cbae083e1b9f160ee32215e4ad2bb74",
+        "preservedRef": "refs/heads/patrol-runs/P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9",
+        "integratedSha": "50cfae5c4f967822f26e16ac25d2bab3b6aa34b3",
+        "release": "v0.4.1441"
+      },
+      "previousEventHash": "dfb5d960e077d9302cf29bbe201e5a33ebe86524517ce5bdc0dbfb8bb270d1e2",
+      "eventHash": "ee08b04f35e898be193b0a6bbff16fd692bc6e55b001667fbddca30bcd8cf74b"
     }
   ]
 }
