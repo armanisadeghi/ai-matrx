@@ -1,13 +1,15 @@
 "use client";
 
 /**
- * Lulu live-pricing calculator — the P10 calculator's first living surface.
+ * Print pricing calculator — the P10 calculator's first living surface.
  *
- * Capability parity with Lulu's own pricing page, in OUR design system: a
- * reactive constraint graph fed entirely from `GET /lulu/catalog` (nothing
- * about the product matrix is hardcoded here), invalid options disabled live
- * with an inline reason, a right-rail completeness checklist, and a debounced
- * `POST /lulu/price` once every field is set. No Lulu branding or assets.
+ * Capability AND experience parity with Lulu's own pricing page, in OUR
+ * design system: a reactive constraint graph fed entirely from
+ * `GET /lulu/catalog` (nothing about the product matrix is hardcoded here),
+ * invalid options disabled live with an inline reason, a book preview drawn
+ * to the chosen trim, and a debounced `POST /lulu/price` once every field is
+ * set. Their layout and information hierarchy; our tokens, our components,
+ * none of their branding or assets.
  *
  * Brief: common-docs/projects/npm-package-extraction/LULU-INTEGRATION-BRIEF.md
  * § "The calculator surface — UX spec".
@@ -19,11 +21,14 @@
 import { useEffect, useState } from "react";
 import {
   BookOpen,
-  Calculator,
+  Check,
   Info,
+  Layers,
   MapPin,
-  Package,
+  Palette,
   RefreshCcw,
+  Ruler,
+  Sparkle,
   Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +37,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -51,6 +58,18 @@ import {
   fetchShippingOptions,
   toFetchState,
 } from "./lulu-api";
+import {
+  decorateBinding,
+  decorateColor,
+  decorateCoverFinish,
+  decoratePaper,
+  colorLabel,
+  paperLabel,
+  trimName,
+  trimSizeClass,
+  trimSizeLine,
+} from "./labels";
+import { BookPreview } from "./BookPreview";
 import { BulkTierTable, PricePanel } from "./PricePanel";
 import {
   AwaitingCredentialsCard,
@@ -58,7 +77,6 @@ import {
   UpstreamErrorCard,
 } from "./LuluStateCards";
 import { OptionGrid, type OptionGridEntry } from "./OptionGrid";
-import { RequirementChecklist, type ChecklistRow } from "./RequirementChecklist";
 import type {
   BulkTier,
   LuluBindingGroup,
@@ -69,6 +87,7 @@ import type {
   LuluPriceResult,
   LuluSelection,
   LuluShippingOption,
+  LuluTrimOption,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -151,29 +170,75 @@ const PRICE_DEBOUNCE_MS = 500;
 // ---------------------------------------------------------------------------
 
 function Section({
+  step,
   icon,
   title,
   hint,
   children,
 }: {
+  step: number;
   icon: React.ReactNode;
   title: string;
   hint?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          {icon}
-          {title}
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2.5 text-base font-semibold text-foreground">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums text-muted-foreground">
+            {step}
+          </span>
+          <span className="flex items-center gap-1.5">
+            {icon}
+            {title}
+          </span>
         </h2>
         {hint ? (
-          <span className="text-xs text-muted-foreground">{hint}</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            {hint}
+          </span>
         ) : null}
       </div>
       {children}
     </section>
+  );
+}
+
+/** Right-rail completeness list — Lulu's checklist, in our tokens. */
+function SpecList({
+  rows,
+}: {
+  rows: { id: string; label: string; value: string | null }[];
+}) {
+  return (
+    <dl className="divide-y divide-border rounded-2xl border border-border bg-card">
+      {rows.map((row) => (
+        <div
+          key={row.id}
+          className="flex items-baseline justify-between gap-3 px-4 py-2.5"
+        >
+          <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {row.value !== null ? (
+              <Check className="size-3 text-success" strokeWidth={3} />
+            ) : (
+              <span className="size-3 rounded-full border border-dashed border-muted-foreground/50" />
+            )}
+            {row.label}
+          </dt>
+          <dd
+            className={cn(
+              "text-right text-xs font-medium",
+              row.value !== null
+                ? "text-foreground"
+                : "text-muted-foreground/60",
+            )}
+          >
+            {row.value ?? "Not selected"}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -344,7 +409,12 @@ export default function LuluPricingDemoPage() {
         : { status: "loading" };
 
   useEffect(() => {
-    if (priceKey === null || podPackageId === null || selection.pageCount === null || shippingLevel === null) {
+    if (
+      priceKey === null ||
+      podPackageId === null ||
+      selection.pageCount === null ||
+      shippingLevel === null
+    ) {
       return;
     }
     const controller = new AbortController();
@@ -503,27 +573,35 @@ export default function LuluPricingDemoPage() {
 
   function entriesFor(
     dimension: LuluDimension,
-    options: LuluOption[],
+    decorated: { option: LuluOption; label: string; hint: string | null }[],
   ): OptionGridEntry[] {
-    return options.map((option) => ({
+    return decorated.map(({ option, label, hint }) => ({
       option,
+      label,
+      hint,
       availability: catalog
         ? availabilityFor(catalog, selection, dimension, option.id)
         : { available: false, reason: null },
     }));
   }
 
-  // ── Checklist ────────────────────────────────────────────────────────────
-  const checklistRows: ChecklistRow[] = [
+  // ── Right rail spec list ─────────────────────────────────────────────────
+  const selectedTrim =
+    catalog?.trims.find((trim) => trim.id === selection.trimId) ?? null;
+  const selectedBinding =
+    catalog?.bindings.find((binding) => binding.id === selection.bindingId) ??
+    null;
+
+  const specRows = [
     {
       id: "trim",
-      label: "Trim size",
-      value: labelFor(catalog?.trims ?? [], selection.trimId),
+      label: "Size",
+      value: selectedTrim ? trimName(selectedTrim) : null,
     },
     {
       id: "pages",
-      label: "Page count",
-      value: selection.pageCount === null ? null : `${selection.pageCount} pages`,
+      label: "Pages",
+      value: selection.pageCount === null ? null : `${selection.pageCount}`,
     },
     {
       id: "binding",
@@ -532,33 +610,32 @@ export default function LuluPricingDemoPage() {
     },
     {
       id: "color",
-      label: "Interior color",
-      value: labelFor(catalog?.colors ?? [], selection.colorId),
+      label: "Interior",
+      value: selection.colorId === null ? null : colorLabel(selection.colorId),
     },
     {
       id: "paper",
-      label: "Paper type",
-      value: labelFor(catalog?.papers ?? [], selection.paperId),
+      label: "Paper",
+      value:
+        selection.paperId === null ? null : paperLabel(selection.paperId).label,
     },
     {
       id: "coverFinish",
-      label: "Cover finish",
+      label: "Cover",
       value: labelFor(catalog?.coverFinishes ?? [], selection.coverFinishId),
     },
-    { id: "quantity", label: "Quantity", value: `${quantity}` },
-    { id: "destination", label: "Ship to", value: destination.label },
     {
       id: "shipping",
-      label: "Shipping level",
+      label: "Shipping",
       value:
         shippingLevel === null
           ? null
-          : (shippingState.status === "ready"
+          : ((shippingState.status === "ready"
               ? shippingState.data.find((o) => o.level === shippingLevel)?.label
-              : null) ?? shippingLevel,
+              : null) ?? shippingLevel),
     },
   ];
-  const missingFields = checklistRows
+  const missingFields = specRows
     .filter((row) => row.value === null)
     .map((row) => row.label.toLowerCase());
 
@@ -569,121 +646,178 @@ export default function LuluPricingDemoPage() {
 
   const pageHint =
     pageWindow.min !== null || pageWindow.max !== null
-      ? `${pageWindow.min ?? 1}–${pageWindow.max ?? "∞"} pages available`
+      ? `${pageWindow.min ?? 1}–${pageWindow.max ?? "∞"} pages for this selection`
       : null;
 
+  // Group the size dropdown the way the catalog classes them (Small/Medium…).
+  const trimGroups = new Map<string, LuluTrimOption[]>();
+  for (const trim of catalog?.trims ?? []) {
+    const sizeClass = trimSizeClass(trim);
+    const bucket = trimGroups.get(sizeClass) ?? [];
+    bucket.push(trim);
+    trimGroups.set(sizeClass, bucket);
+  }
+
+  const belowMinimum =
+    selection.pageCount !== null &&
+    pageWindow.min !== null &&
+    selection.pageCount < pageWindow.min;
+  const aboveMaximum =
+    selection.pageCount !== null &&
+    pageWindow.max !== null &&
+    selection.pageCount > pageWindow.max;
+
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 lg:p-6">
-      <header className="space-y-1">
-        <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-          <Calculator className="size-5 text-muted-foreground" />
+    <div className="mx-auto w-full max-w-[80rem] px-4 py-8 lg:px-8 lg:py-12">
+      <header className="mb-10 max-w-3xl space-y-3">
+        <h1 className="text-4xl font-semibold tracking-tight text-foreground">
           Print pricing calculator
         </h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Live print-on-demand pricing over the aidream <code>/lulu</code>{" "}
-          service. Every option below comes from the ingested product catalog —
-          invalid combinations disable themselves as you configure, and a
-          complete configuration prices itself against the live cost API.
+        <p className="text-base leading-relaxed text-muted-foreground">
+          Build your book and see exactly what it costs to print and ship —
+          priced live, the moment every option is set. Combinations that
+          can&apos;t be printed switch themselves off as you go.
         </p>
         {catalog?.retrievedAt ? (
-          <p className="text-xs text-muted-foreground">
-            Catalog{catalog.source ? ` · ${catalog.source}` : ""} · retrieved{" "}
-            {catalog.retrievedAt}
+          <p className="text-xs text-muted-foreground/70">
+            Catalog updated {catalog.retrievedAt.slice(0, 10)}
           </p>
         ) : null}
       </header>
 
       {catalogState.status === "awaiting_credentials" ? (
-        <AwaitingCredentialsCard
-          detail={catalogState.detail}
-          onRetry={retryCatalog}
-          retrying={false}
-        />
+        <div className="mb-8">
+          <AwaitingCredentialsCard
+            detail={catalogState.detail}
+            onRetry={retryCatalog}
+            retrying={false}
+          />
+        </div>
       ) : null}
 
       {catalogState.status === "error" ? (
-        <UpstreamErrorCard
-          headline={catalogState.headline}
-          detail={catalogState.detail}
-          onRetry={retryCatalog}
-          retrying={false}
-        />
+        <div className="mb-8">
+          <UpstreamErrorCard
+            headline={catalogState.headline}
+            detail={catalogState.detail}
+            onRetry={retryCatalog}
+            retrying={false}
+          />
+        </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-12">
         {/* ── Configurator ───────────────────────────────────────────────── */}
-        <div className="space-y-6">
+        <div className="space-y-10">
           {catalogState.status === "loading" ? (
             <ConfiguratorSkeleton />
           ) : (
             <>
               <Section
-                icon={<BookOpen className="size-4 text-muted-foreground" />}
-                title="Trim size"
-              >
-                <OptionGrid
-                  entries={entriesFor("trim", catalog?.trims ?? [])}
-                  selectedId={selection.trimId}
-                  onSelect={(id) => chooseOption("trim", id)}
-                  columns={3}
-                  disabled={previewOnly}
-                />
-              </Section>
-
-              <Section
-                icon={<Package className="size-4 text-muted-foreground" />}
-                title="Page count"
+                step={1}
+                icon={<Ruler className="size-4 text-muted-foreground" />}
+                title="Size & page count"
                 hint={pageHint}
               >
-                <div className="flex flex-wrap items-center gap-3">
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={pageCountText}
-                    disabled={previewOnly}
-                    onChange={(event) => changePageCount(event.target.value)}
-                    placeholder="e.g. 200"
-                    className="h-9 w-40"
-                    aria-label="Page count"
-                  />
-                  {selection.pageCount !== null &&
-                  pageWindow.min !== null &&
-                  selection.pageCount < pageWindow.min ? (
-                    <span className="text-xs text-destructive">
-                      Below the minimum for the current selection.
-                    </span>
-                  ) : selection.pageCount !== null &&
-                    pageWindow.max !== null &&
-                    selection.pageCount > pageWindow.max ? (
-                    <span className="text-xs text-destructive">
-                      Above the maximum for the current selection.
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      The available range narrows as you pick binding and paper.
-                    </span>
-                  )}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lulu-trim" className="text-xs">
+                      Book size
+                    </Label>
+                    <Select
+                      value={selection.trimId ?? ""}
+                      onValueChange={(id) => chooseOption("trim", id)}
+                      disabled={previewOnly}
+                    >
+                      <SelectTrigger id="lulu-trim" className="h-11">
+                        <SelectValue placeholder="Choose a book size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[...trimGroups.entries()].map(([sizeClass, trims]) => (
+                          <SelectGroup key={sizeClass}>
+                            <SelectLabel>{sizeClass}</SelectLabel>
+                            {trims.map((trim) => {
+                              const availability = catalog
+                                ? availabilityFor(
+                                    catalog,
+                                    selection,
+                                    "trim",
+                                    trim.id,
+                                  )
+                                : { available: true, reason: null };
+                              return (
+                                <SelectItem
+                                  key={trim.id}
+                                  value={trim.id}
+                                  disabled={
+                                    !availability.available &&
+                                    trim.id !== selection.trimId
+                                  }
+                                >
+                                  <span className="font-medium">
+                                    {trimName(trim)}
+                                  </span>
+                                  <span className="ml-2 text-muted-foreground">
+                                    {trimSizeLine(trim)}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lulu-pages" className="text-xs">
+                      Page count
+                    </Label>
+                    <Input
+                      id="lulu-pages"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      value={pageCountText}
+                      disabled={previewOnly}
+                      onChange={(event) => changePageCount(event.target.value)}
+                      placeholder="e.g. 200"
+                      className="h-11"
+                    />
+                  </div>
                 </div>
+
+                {belowMinimum || aboveMaximum ? (
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+                    <Info className="size-3.5 shrink-0" />
+                    {belowMinimum
+                      ? `That is below the ${pageWindow.min}-page minimum for this selection.`
+                      : `That is above the ${pageWindow.max}-page maximum for this selection.`}
+                  </p>
+                ) : null}
               </Section>
 
               <Section
+                step={2}
                 icon={<BookOpen className="size-4 text-muted-foreground" />}
                 title="Binding"
               >
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {bindingGroups.map(({ group, title }) => {
                     const groupOptions = (catalog?.bindings ?? []).filter(
                       (binding) => binding.group === group,
                     );
                     if (groupOptions.length === 0) return null;
                     return (
-                      <div key={group} className="space-y-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <div key={group} className="space-y-2.5">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           {title}
                         </p>
                         <OptionGrid
-                          entries={entriesFor("binding", groupOptions)}
+                          entries={entriesFor(
+                            "binding",
+                            groupOptions.map(decorateBinding),
+                          )}
                           selectedId={selection.bindingId}
                           onSelect={(id) => chooseOption("binding", id)}
                           columns={3}
@@ -696,11 +830,15 @@ export default function LuluPricingDemoPage() {
               </Section>
 
               <Section
-                icon={<Package className="size-4 text-muted-foreground" />}
+                step={3}
+                icon={<Palette className="size-4 text-muted-foreground" />}
                 title="Interior color"
               >
                 <OptionGrid
-                  entries={entriesFor("color", catalog?.colors ?? [])}
+                  entries={entriesFor(
+                    "color",
+                    (catalog?.colors ?? []).map(decorateColor),
+                  )}
                   selectedId={selection.colorId}
                   onSelect={(id) => chooseOption("color", id)}
                   columns={2}
@@ -709,32 +847,41 @@ export default function LuluPricingDemoPage() {
               </Section>
 
               <Section
-                icon={<Package className="size-4 text-muted-foreground" />}
-                title="Paper type"
+                step={4}
+                icon={<Layers className="size-4 text-muted-foreground" />}
+                title="Paper"
               >
                 <OptionGrid
-                  entries={entriesFor("paper", catalog?.papers ?? [])}
+                  entries={entriesFor(
+                    "paper",
+                    (catalog?.papers ?? []).map(decoratePaper),
+                  )}
                   selectedId={selection.paperId}
                   onSelect={(id) => chooseOption("paper", id)}
-                  columns={2}
+                  columns={3}
                   disabled={previewOnly}
                 />
               </Section>
 
               <Section
-                icon={<Package className="size-4 text-muted-foreground" />}
+                step={5}
+                icon={<Sparkle className="size-4 text-muted-foreground" />}
                 title="Cover finish"
               >
                 <OptionGrid
-                  entries={entriesFor("coverFinish", catalog?.coverFinishes ?? [])}
+                  entries={entriesFor(
+                    "coverFinish",
+                    (catalog?.coverFinishes ?? []).map(decorateCoverFinish),
+                  )}
                   selectedId={selection.coverFinishId}
                   onSelect={(id) => chooseOption("coverFinish", id)}
-                  columns={2}
+                  columns={3}
                   disabled={previewOnly}
                 />
               </Section>
 
               <Section
+                step={6}
                 icon={<Truck className="size-4 text-muted-foreground" />}
                 title="Quantity & delivery"
               >
@@ -758,13 +905,13 @@ export default function LuluPricingDemoPage() {
                             : 1,
                         );
                       }}
-                      className="h-9"
+                      className="h-11"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs">
-                      <MapPin className="mr-1 inline size-3" />
+                    <Label className="flex items-center gap-1 text-xs">
+                      <MapPin className="size-3" />
                       Ship to
                     </Label>
                     <Select
@@ -772,7 +919,7 @@ export default function LuluPricingDemoPage() {
                       onValueChange={setDestinationId}
                       disabled={previewOnly}
                     >
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select a destination" />
                       </SelectTrigger>
                       <SelectContent>
@@ -786,7 +933,7 @@ export default function LuluPricingDemoPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Shipping level</Label>
+                    <Label className="text-xs">Shipping speed</Label>
                     <Select
                       value={shippingLevel ?? ""}
                       onValueChange={(level) =>
@@ -801,17 +948,17 @@ export default function LuluPricingDemoPage() {
                         shippingState.data.length === 0
                       }
                     >
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger className="h-11">
                         <SelectValue
                           placeholder={
                             shippingState.status === "idle"
-                              ? "Configure the book first"
+                              ? "Finish the book first"
                               : shippingState.status === "loading"
                                 ? "Loading options…"
                                 : shippingState.status === "ready" &&
                                     shippingState.data.length === 0
                                   ? "No options for this country"
-                                  : "Select a level"
+                                  : "Select a speed"
                           }
                         />
                       </SelectTrigger>
@@ -819,8 +966,14 @@ export default function LuluPricingDemoPage() {
                         {shippingState.status === "ready"
                           ? shippingState.data.map((option) => (
                               <SelectItem key={option.level} value={option.level}>
-                                {option.label}
-                                {option.sublabel ? ` · ${option.sublabel}` : ""}
+                                <span className="font-medium">
+                                  {option.label}
+                                </span>
+                                {option.sublabel ? (
+                                  <span className="ml-2 text-muted-foreground">
+                                    {option.sublabel}
+                                  </span>
+                                ) : null}
                               </SelectItem>
                             ))
                           : null}
@@ -832,8 +985,7 @@ export default function LuluPricingDemoPage() {
                 {shippingState.status === "awaiting_credentials" ? (
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Info className="size-3.5" />
-                    Shipping levels load once the Lulu sandbox credentials are
-                    connected.
+                    Shipping speeds load once the print service is connected.
                   </p>
                 ) : null}
                 {shippingState.status === "error" ? (
@@ -844,22 +996,27 @@ export default function LuluPricingDemoPage() {
                 ) : null}
               </Section>
 
-              {podPackageId ? (
-                <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                  <Package className="size-3.5" />
-                  Resolved package
-                  <code className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-foreground">
-                    {podPackageId}
-                  </code>
-                </p>
-              ) : null}
+              <BulkTierTable
+                tiers={BULK_TIERS}
+                results={tierResults}
+                currency={
+                  priceState.status === "ready" ? priceState.data.currency : null
+                }
+                onCalculate={configKey === null ? null : calculateTiers}
+                calculating={tiersCalculating}
+              />
             </>
           )}
         </div>
 
         {/* ── Right rail ─────────────────────────────────────────────────── */}
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <RequirementChecklist rows={checklistRows} />
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <BookPreview
+            trim={selectedTrim}
+            binding={selectedBinding}
+            pageCount={selection.pageCount}
+            coverFinishId={selection.coverFinishId}
+          />
 
           <PricePanel
             state={priceState}
@@ -868,20 +1025,21 @@ export default function LuluPricingDemoPage() {
             onRetry={() => setPriceAttempt((n) => n + 1)}
           />
 
-          <BulkTierTable
-            tiers={BULK_TIERS}
-            results={tierResults}
-            currency={
-              priceState.status === "ready" ? priceState.data.currency : null
-            }
-            onCalculate={configKey === null ? null : calculateTiers}
-            calculating={tiersCalculating}
-          />
+          <SpecList rows={specRows} />
+
+          {podPackageId ? (
+            <p className="px-1 text-[0.6875rem] leading-relaxed text-muted-foreground/70">
+              Product code{" "}
+              <code className="font-mono text-muted-foreground">
+                {podPackageId}
+              </code>
+            </p>
+          ) : null}
 
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className={cn("w-full")}
+            className="w-full text-muted-foreground"
             onClick={() => {
               setSelection(EMPTY_SELECTION);
               setPageCountText("");
@@ -890,7 +1048,7 @@ export default function LuluPricingDemoPage() {
             disabled={previewOnly}
           >
             <RefreshCcw className="size-3.5" />
-            Reset configuration
+            Start over
           </Button>
         </aside>
       </div>
