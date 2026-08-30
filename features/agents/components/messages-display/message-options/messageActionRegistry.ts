@@ -974,9 +974,17 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         const toastId = toast.loading("Generating PDF…");
         try {
           // Markdown → styled offscreen render → multi-page PDF blob.
-          const { markdownToPdfBlob } =
-            await import("@ai-matrx/print/pdf");
-          const blob = await markdownToPdfBlob(content);
+          const [
+            { markdownToPdfBlob },
+            { markdownToHtml, getMarkdownStylesheet },
+          ] = await Promise.all([
+            import("@ai-matrx/print/pdf"),
+            import("@ai-matrx/print/markdown"),
+          ]);
+          const blob = await markdownToPdfBlob(content, {
+            convertToHtml: markdownToHtml,
+            loadCss: getMarkdownStylesheet,
+          });
 
           const title = deriveMessageTitle(ctx);
           const ts = new Date()
@@ -2129,9 +2137,18 @@ export function resumePendingAuthAction(
         })
         .catch(() => toast.error("Failed to publish webpage"));
     } else if (action === "save-as-pdf") {
-      import("@ai-matrx/print/pdf")
-        .then(async ({ markdownToPdfBlob }) => {
-          const blob = await markdownToPdfBlob(savedContent);
+      Promise.all([
+        import("@ai-matrx/print/pdf"),
+        import("@ai-matrx/print/markdown"),
+      ])
+        .then(async ([
+          { markdownToPdfBlob },
+          { markdownToHtml, getMarkdownStylesheet },
+        ]) => {
+          const blob = await markdownToPdfBlob(savedContent, {
+            convertToHtml: markdownToHtml,
+            loadCss: getMarkdownStylesheet,
+          });
           const ts = new Date()
             .toISOString()
             .replace(/[:.]/g, "-")

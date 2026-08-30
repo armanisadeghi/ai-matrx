@@ -21,8 +21,15 @@ export function MarkdownPdfSection() {
         if (busy || !markdown.trim()) return;
         setBusy(true);
         try {
-            const { markdownToPdfBlob } = await import("@ai-matrx/print/pdf");
-            const blob = await markdownToPdfBlob(markdown);
+            const [{ markdownToPdfBlob }, { markdownToHtml, getMarkdownStylesheet }] =
+                await Promise.all([
+                    import("@ai-matrx/print/pdf"),
+                    import("@ai-matrx/print/markdown"),
+                ]);
+            const blob = await markdownToPdfBlob(markdown, {
+                convertToHtml: markdownToHtml,
+                loadCss: getMarkdownStylesheet,
+            });
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement("a");
             anchor.href = url;
