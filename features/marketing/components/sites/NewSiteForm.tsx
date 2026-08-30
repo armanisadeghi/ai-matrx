@@ -27,6 +27,8 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { useBrand, useCreateSite } from "@/features/marketing/data/hooks";
+import { useBrandBySegment } from "@/features/marketing/data/keys-hooks";
+import { isUuid } from "@/features/marketing/lib/keys";
 import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -49,7 +51,17 @@ export function NewSiteForm() {
   // `?brand=` pre-binds the new site to that brand: the RPC receives the id
   // explicitly (an explicit brand ALWAYS wins over name matching) and the
   // organization is locked to the brand's.
-  const targetBrandId = searchParams.get("brand");
+  // `?brand=` is dual-mode: callers hand over whatever segment they hold —
+  // the brand's URL key or its UUID. Resolve a key to the UUID first so the
+  // create RPC always receives a real id.
+  const brandParam = searchParams.get("brand");
+  const brandSegment = useBrandBySegment(
+    brandParam && !isUuid(brandParam) ? brandParam : null,
+  );
+  const targetBrandId =
+    brandParam && isUuid(brandParam)
+      ? brandParam
+      : (brandSegment.data?.id ?? null);
   const targetBrand = useBrand(targetBrandId ?? "");
   const selectedOrgId = targetBrand.data
     ? targetBrand.data.organization_id
@@ -69,18 +81,18 @@ export function NewSiteForm() {
       !orgs.loading &&
       // With a target brand in the URL, wait until it resolves so the create
       // can never silently fall back to name matching.
-      (!targetBrandId || targetBrand.data),
+      (!brandParam || targetBrand.data),
   );
 
   // A `?brand=` the viewer cannot read must not leave the form waiting on a
   // resolve that will never come (submit stays disabled until the brand
   // loads) — ask the platform why and say so.
-  if (targetBrandId && targetBrand.isError) {
+  if (brandParam && (targetBrand.isError || brandSegment.isError)) {
     return (
       <AccessGate
         token="web_brand"
-        id={targetBrandId}
-        error={targetBrand.error}
+        id={brandParam}
+        error={targetBrand.error ?? brandSegment.error}
         onRetry={() => void targetBrand.refetch()}
         fallbackHref={marketingRoutes.brands()}
         fallbackLabel="All brands"
@@ -142,8 +154,8 @@ export function NewSiteForm() {
     <>
       <EntityModeHeader
         backHref={
-          targetBrandId
-            ? marketingRoutes.brand(targetBrandId)
+          brandParam
+            ? marketingRoutes.brand(brandParam)
             : marketingRoutes.sites()
         }
         entityLabel="Add site"
@@ -220,10 +232,10 @@ export function NewSiteForm() {
                 </button>
               ))}
             </div>
-            {targetBrandId ? (
+            {brandParam ? (
               <div className="flex items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 sm:col-span-2">
                 <Landmark className="h-4 w-4 shrink-0 text-primary" />
-                {targetBrand.isLoading ? (
+                {targetBrand.isLoading || brandSegment.isLoading ? (
                   <span className="text-xs text-muted-foreground">
                     Resolving brand…
                   </span>

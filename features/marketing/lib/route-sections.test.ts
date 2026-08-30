@@ -21,6 +21,9 @@ const SEO_PATH = "/marketing/brand-1/seo/site-1";
 function childRouteDirectories(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
+    // Dynamic children ([crawlId], the [...rest] cross-branch mappers) are
+    // detail/plumbing routes, not sections.
+    .filter((entry) => !entry.name.startsWith("["))
     .filter((entry) => existsSync(join(directory, entry.name, "page.tsx")))
     .map((entry) => entry.name)
     .sort();
