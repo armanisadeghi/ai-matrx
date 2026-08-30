@@ -193,6 +193,22 @@
       },
       "previousEventHash": "2724d384d4cca8e4d1f395887d4db0b3868e515b0481553369adf7a0f652817a",
       "eventHash": "48994a0a2d064aac7a6301ef0acf7873b5fd4b7d91cc5883ae66fb4104e52623"
+    },
+    {
+      "sequence": 14,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:41:39.502Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Certified candidate integrated to origin/main as dd524d507a40462ff6fcfa8af5f6a10509b196c9; serialized release watch owns deployment and no redundant release was started.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P5/2026-08-30-copy-everywhere-eradication"
+      ],
+      "delivery": {
+        "candidateSha": "80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b",
+        "preservedRef": "refs/heads/patrol-runs/P5/2026-08-30-copy-everywhere-eradication"
+      },
+      "previousEventHash": "48994a0a2d064aac7a6301ef0acf7873b5fd4b7d91cc5883ae66fb4104e52623",
+      "eventHash": "2f694ceb19b464c941d1a90772b1f319cbfaef243697d373265841e2be3a16d1"
     }
   ]
 }

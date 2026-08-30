@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:40:47.929Z",
-  "summary": "CERTIFIED exact clean candidate 80dd109d6723dd32e2e2c5b40104c0f33ddf5a2b: no batch-caused defect remains.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:41:39.502Z",
+  "summary": "Certified candidate integrated to origin/main as dd524d507a40462ff6fcfa8af5f6a10509b196c9; serialized release watch owns deployment and no redundant release was started.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "48994a0a2d064aac7a6301ef0acf7873b5fd4b7d91cc5883ae66fb4104e52623"
+  "eventHash": "2f694ceb19b464c941d1a90772b1f319cbfaef243697d373265841e2be3a16d1"
 }
