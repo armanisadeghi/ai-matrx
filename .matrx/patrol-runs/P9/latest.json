@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P9",
+  "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
+  "state": "reconciled",
+  "updatedAt": "2026-08-30T14:35:15.642Z",
+  "summary": "Reconciled the original v0.4.561 escape truthfully: exact candidate 5bf578b was interaction-tested then rejected for concrete false-promise defects; certified replacement e8ea694 shipped in v0.4.1442 without a redundant release.",
+  "source": "019ff9f6-6062-78f0-a8d2-e96ec520f635.json",
+  "eventHash": "b3784efda5937dbab92aece928e29a65c621afc3051d6469e50fbbf602d11dcf"
+}
