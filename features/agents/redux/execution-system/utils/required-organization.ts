@@ -18,10 +18,18 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
  * over. This turns the refusal into a question whose answer continues the very
  * thing they were doing.
  *
- * It only ever asks in ONE situation: a conversation the server has not yet
- * confirmed (`cacheOnly`), with no organization from a launcher and none
- * selected in the app. A persisted conversation owns its organization forever
- * and is never asked about; neither is a launcher that supplied one.
+ * It asks in ONE situation: a conversation the server has not yet confirmed
+ * (`cacheOnly !== false`), with no organization from a launcher and none
+ * selected in the app.
+ *
+ * A PERSISTED conversation is never asked about — its organization is frozen,
+ * and if the row somehow carries none, that is a load bug for
+ * `requireExecutionOrganizationId` to report ("Reload it before sending another
+ * message"), not a question to put to the person. Answering it here would file
+ * the turn — and, through `usePasteImageResource`, any attachment — under the
+ * app-selected organization instead of the conversation's own: exactly the
+ * file-and-conversation-in-different-workspaces split this gate exists to
+ * prevent.
  *
  * Returns the organization id, or `null` when it could not be resolved without
  * asking and asking was not possible (SSR, tests, no picker mounted). `null`
@@ -35,11 +43,18 @@ export async function ensureExecutionOrganization(
   state: RootState,
   conversationId: string,
 ): Promise<string | null> {
-  // An explicit org from an entity-bound/headless launcher, or the durable org
-  // of an already-persisted conversation, is authoritative — never a question.
-  const declared =
-    state.conversations.byConversationId[conversationId]?.organizationId ??
-    undefined;
+  const instance = state.conversations.byConversationId[conversationId];
+  // No instance is not a question either — `requireExecutionOrganizationId`
+  // owns that error ("Conversation not found"). Asking first would spend a
+  // dialog to arrive at the same refusal.
+  if (!instance) return null;
+
+  // A persisted conversation owns its organization. Never ask; hand back what
+  // the row says (possibly null) and let the synchronous guard rule on it.
+  if (instance.cacheOnly === false) return instance.organizationId ?? null;
+
+  // An explicit org from an entity-bound/headless launcher is authoritative.
+  const declared = instance.organizationId ?? undefined;
 
   const {
     ensureOrganizationContext,
@@ -50,9 +65,9 @@ export async function ensureExecutionOrganization(
     return await ensureOrganizationContext({ organizationId: declared });
   } catch (error) {
     if (cancelled(error)) throw error;
-    // Could not ask. Leave the refusal to the synchronous guard so the person
-    // still gets the sentence written for this surface rather than the
-    // transport kernel's generic one.
+    // Could not ask, or the answer failed validation. Either way leave the
+    // refusal to the synchronous guard, so the person gets the sentence written
+    // for this surface rather than the transport kernel's generic one.
     return null;
   }
 }

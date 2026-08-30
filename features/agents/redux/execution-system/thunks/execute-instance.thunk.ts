@@ -469,7 +469,10 @@ export const executeInstance = createAsyncThunk<
     const requestId = generateRequestId();
 
     try {
-      const state = getState() as RootState;
+      // `let`, not `const`: the organization gate below can suspend for human
+      // time and commit a new active organization, and everything downstream
+      // (assembleRequest most of all) must see it.
+      let state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];
 
       if (!instance) {
@@ -492,7 +495,15 @@ export const executeInstance = createAsyncThunk<
       // selected — the case that used to end at "Select an organization before
       // sending this message. The request was not sent."
       await ensureExecutionOrganization(state, conversationId);
-      requireExecutionOrganizationId(getState() as RootState, conversationId);
+      // RE-READ. The gate may have sat open for human time and then committed a
+      // new active organization; `state` above is the pre-dialog snapshot, and
+      // everything downstream — `assembleRequest` at the bottom of this thunk
+      // most of all — reads from it. Without this line the gate was
+      // no-op-or-break: harmless when an org was already set, and a guaranteed
+      // "Select an organization before sending this message" AFTER the person
+      // had just selected one, which is the only case it exists for.
+      state = getState() as RootState;
+      requireExecutionOrganizationId(state, conversationId);
 
       // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
       // A live abort controller means a stream is OPEN on this conversation.

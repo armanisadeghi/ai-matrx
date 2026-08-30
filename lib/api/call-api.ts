@@ -609,13 +609,20 @@ function buildUrl(
  * Fields that are null/undefined are omitted from the final scope object.
  */
 /**
- * Resolve the organization for THIS call, opening the picker when nothing is
- * selected — the interactive half of the fail-closed kernel.
+ * Resolve the organization for THIS call — NEVER by asking the person.
  *
- * Split out so `callApi` reads as one line and so the "background calls must
- * not pop a dialog" rule lives in exactly one place: a call that supplies its
- * own organization never asks, and neither does any non-interactive context
- * (the gate itself refuses to ask when there is no window or no picker).
+ * 🚨 `callApi` cannot tell a deliberate action from a background one, and most
+ * of its traffic is background: fetch-on-mount, react-query refetch (which
+ * fires on window REFOCUS), rejoin-on-page-reload, retry/backoff loops, inbox
+ * hydration on every conversation open. A census found ~30 such call sites.
+ * Prompting here meant alt-tabbing back into the app could raise "Which
+ * workspace is this for?" with nothing behind it to explain why.
+ *
+ * The question belongs where a person actually did something — the upload path
+ * (`bindUploadOrganization`) and the AI execution path
+ * (`ensureExecutionOrganization`), both of which ask explicitly. Here the
+ * behaviour is exactly what it always was: fail closed. This call exists only
+ * so a request whose organization one of those seams JUST resolved uses it.
  */
 async function ensureOrganizationContextForCall(
   selectedOrganizationId: string | null | undefined,
@@ -626,6 +633,7 @@ async function ensureOrganizationContextForCall(
   );
   return ensureOrganizationContext({
     organizationId: overrideOrganizationId ?? selectedOrganizationId,
+    interactive: false,
   });
 }
 
