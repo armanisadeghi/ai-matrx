@@ -51,6 +51,18 @@ jobs:
         run: pnpm check:matrx-packages
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
+      - name: THE RENDER MATRIX — every recognition path x every shape archetype
+        # The witness for the 2026-08-28 outage, in which one gate in one
+        # package cost ~221 live kinds their component while every unit test
+        # passed and every readiness check stayed green. It asserts the single
+        # invariant the system exists to provide: a valid payload of a
+        # registered kind that HAS a component reaches that component, on every
+        # path, for every shape of data.
+        #
+        # Named separately from the content-ir suite so a failure shows ITS
+        # message — which names the archetype, the path, and what the route
+        # actually returned — instead of one red line among 1300 passing tests.
+        run: pnpm test:render-matrix
       - name: ONE SOURCE OF TRUTH for a kind's fields — derived from its schema
         # `emitted_json_schema` IS the contract; `kind_definition.data` is a
         # copy that had already drifted on 13 of the 62 live kinds carrying
