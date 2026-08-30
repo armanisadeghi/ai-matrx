@@ -44,7 +44,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 
 /** OFF — ships dark. The flip is a one-line release (R14 gate: Arman's nod). */
-export const SHORTCUT_STORAGE_CUTOVER = true;
+export const SHORTCUT_STORAGE_CUTOVER = false;
 
 type Client = SupabaseClient<Database>;
 
