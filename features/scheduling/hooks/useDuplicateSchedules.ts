@@ -39,7 +39,6 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
         if (cancelled) return;
         const message =
           cause instanceof Error ? cause.message : "Unknown scheduler error";
-        console.error("[scheduling] Duplicate schedule check failed", cause);
         captureError({
           source: "runtime-exception",
           operation: "select",
