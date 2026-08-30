@@ -291,7 +291,10 @@ The AI action is a two-choice menu at both inspector levels:
   orange dot inline. Mobile parity: a button in `AdminMobileMenu`.
 - Avatar/admin menu → "Error Inspector" (`ErrorInspectorMenuItem`).
 - Floating badge (`ErrorInspectorBadge`, `app/DeferredSingletons.tsx`): red pill,
-  else orange dot, else silent. Reflects the loudest tier.
+  else orange dot, else silent. Reflects the loudest tier. The badge is
+  intentionally suppressed on the immersive `/tools/product-capture` capture
+  routes: that screen owns every phone edge, including the bottom-left Recents
+  action, and its hide-controls contract permits only capture honesty chrome.
 - Overlay id: `errorInspectorWindow` (singleton, ephemeral). Open via
   `useOpenErrorInspector` / `useToggleErrorInspector`.
 - **Minimized preview** (`ErrorInspectorTrayChip` → shared `TrayStatusChip`): the

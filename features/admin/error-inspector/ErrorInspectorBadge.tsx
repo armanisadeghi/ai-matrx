@@ -14,18 +14,21 @@
  */
 
 import { AlertTriangle } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useToggleErrorInspector } from "./useOpenErrorInspector";
+import { suppressErrorInspectorBadge } from "./error-inspector-badge-state";
 
 export default function ErrorInspectorBadge() {
+  const pathname = usePathname();
   const isAdmin = useAppSelector(selectIsAdmin);
   const { red, orange, unseenRed, unseenOrange } = useCapturedErrorStats();
   const toggle = useToggleErrorInspector();
 
-  if (!isAdmin) return null;
+  if (!isAdmin || suppressErrorInspectorBadge(pathname)) return null;
 
   // ── Red present → loud pill ──────────────────────────────────────────────
   if (red > 0) {
