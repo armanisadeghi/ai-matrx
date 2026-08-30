@@ -36,7 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Check, Share2, Link2, Globe, Lock, X } from "lucide-react";
 import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CanvasType, CanvasVisibility } from "@/types/canvas-social";

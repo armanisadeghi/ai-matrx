@@ -52,7 +52,7 @@ import {
 import { toast } from "@/lib/toast";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import {
   useAppDispatch,

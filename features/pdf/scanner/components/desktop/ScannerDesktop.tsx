@@ -43,7 +43,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderBack from "@/features/shell/components/header/variants/shared/HeaderBack";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 
 import { fetchRecentScans, type RecentScanRow } from "../../processing";
 import type { Quad, ScanItem, ScanRotation } from "../../types";
@@ -452,16 +452,12 @@ export default function ScannerDesktop() {
                                 // (self-resolves the thumbnail_url variant from the
                                 // asset endpoint; falls back to a file icon).
                                 <MediaThumbnail
-                                  file={{
-                                    id: r.fileId,
-                                    fileName: r.name,
-                                    mimeType: "application/pdf",
-                                    fileSize: null,
-                                    metadata: {},
-                                    publicUrl: null,
-                                    thumbnailUrl: null,
-                                    visibility: "personal",
+                                  mediaRef={{
+                                    file_id: r.fileId,
+                                    mime_type: "application/pdf",
                                   }}
+                                  fileName={r.name}
+                                  mimeType="application/pdf"
                                   className="h-full w-full"
                                   rounded="rounded-none"
                                   iconSize={28}

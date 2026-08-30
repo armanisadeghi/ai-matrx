@@ -27,7 +27,7 @@ import { PRESET_COVERS } from "./preset-covers";
 import { cn } from "@/utils/cn";
 import { uploadAsset } from "@/features/files/api/assets";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 
 interface ShareCoverImagePickerProps {
   value: string | null;

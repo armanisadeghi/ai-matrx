@@ -27,7 +27,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";

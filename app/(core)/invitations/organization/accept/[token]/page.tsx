@@ -29,7 +29,7 @@ import type {
 } from "@/features/organizations/types";
 import { generateOrganizationAbbreviation } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";

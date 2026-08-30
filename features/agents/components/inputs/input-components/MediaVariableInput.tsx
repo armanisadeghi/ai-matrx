@@ -38,9 +38,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   FilesResourcePicker,
@@ -179,9 +179,8 @@ export function MediaVariableInput({
 
   // Resolve a renderable URL when the stored value is a cld_files UUID.
   // Returns null while loading; we hide the thumbnail in that case.
-  const resolvedSrc = useFileSrc(
-    isFileId ? { kind: "file_id", fileId: stored } : null,
-  );
+  const resolvedSrc =
+    useMediaResolution(isFileId ? stored : null).resolution?.src ?? null;
 
   // Pick what goes into <img src>. file_id values resolve via the handler;
   // URL values render directly. Don't try to render URL paths through

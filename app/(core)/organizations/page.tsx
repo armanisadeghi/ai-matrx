@@ -44,7 +44,7 @@ import type {
   OrganizationWithRole,
   OrgRole,
 } from "@/features/organizations/types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

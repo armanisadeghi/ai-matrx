@@ -17,7 +17,7 @@ import { toast } from "@/lib/toast";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 // Canonical media renderer — re-mints from file_id (media-durability
 // doctrine); never a raw <audio src> of a signed URL.
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ROLES, type InterviewTurnRow, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
 

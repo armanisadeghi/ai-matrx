@@ -108,7 +108,7 @@ import {
 } from "../format";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
 import { feedbackHref } from "../doors";

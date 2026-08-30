@@ -63,7 +63,7 @@ import {
   mediaMimeType,
   researchMediaRef,
 } from "./ownedMedia";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { uploadFileWithProgress } from "@/features/files/api/files";
