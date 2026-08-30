@@ -1,7 +1,50 @@
 import {
   classifyUnprocessableError,
+  ExpectedRequestConflictError,
   fetchThroughDeploymentDrain,
+  parseApiErrorBody,
+  shouldCaptureStreamFailure,
 } from "../run-ai-stream";
+
+describe("parseApiErrorBody", () => {
+  test("preserves a nested attachment organization conflict code", () => {
+    expect(
+      parseApiErrorBody({
+        detail: {
+          error: "attachment_organization_mismatch",
+          message: "Reselect the attachment.",
+        },
+      }),
+    ).toEqual({
+      errorCode: "attachment_organization_mismatch",
+      serverMessage: "Reselect the attachment.",
+    });
+  });
+
+  test("preserves production's top-level error envelope", () => {
+    expect(
+      parseApiErrorBody({
+        error: "attachment_organization_mismatch",
+        message: "Reselect the attachment.",
+      }),
+    ).toEqual({
+      errorCode: "attachment_organization_mismatch",
+      serverMessage: "Reselect the attachment.",
+    });
+  });
+
+  test("keeps expected tenant enforcement out of system-error capture", () => {
+    expect(
+      shouldCaptureStreamFailure(
+        new ExpectedRequestConflictError(
+          "attachment_organization_mismatch",
+          "Reselect the attachment.",
+        ),
+      ),
+    ).toBe(false);
+    expect(shouldCaptureStreamFailure(new Error("stream crashed"))).toBe(true);
+  });
+});
 
 describe("classifyUnprocessableError", () => {
   test("only invalid_uuid is labeled as a conversation ID error", () => {

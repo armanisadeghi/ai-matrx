@@ -188,6 +188,10 @@ neither prompt blocks nor run inputs: a canonical
   `file → conversation` edge therefore share one tenant even if the active
   sidebar organization changes; a cross-organization edge remains a rejected
   request, never an implicit move or copy.
+- A tenant-mismatched stored attachment is a clean, user-correctable 409. The
+  stream boundary preserves `attachment_organization_mismatch`, shows the
+  server's reselect guidance, and never records that successful guard as a
+  system failure.
 - Files enter the backend Document Evidence System: processed text is primary,
   while RAG, raw/clean representations, selected physical PDF pages, and
   verification tools are auto-injected.
@@ -407,6 +411,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-30` — **Expected attachment tenant conflicts no longer become red stream failures.** The shared stream boundary preserves the nested or top-level `attachment_organization_mismatch` code, surfaces the server's reselect guidance without the false "Conversation already exists" prefix, and excludes the successful tenant guard from system-error capture.
 - `2026-08-30` — **Agent-definition JSON reads validate their runtime contracts at ingress.**
   Messages, variable definitions, settings, context policies, and output schemas now use shared
   runtime parsers instead of double assertions. All three `agx_get_version_snapshot` consumers

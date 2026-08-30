@@ -96,6 +96,62 @@ export class RunInFlightError extends Error {
 }
 
 /**
+ * A request the server deliberately refused at a user-correctable boundary.
+ * It still reaches the normal request error UI, but must not be recorded as a
+ * system failure: the server is enforcing the tenant contract successfully.
+ */
+export class ExpectedRequestConflictError extends Error {
+  override name = "ExpectedRequestConflictError" as const;
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export interface ParsedApiErrorBody {
+  errorCode: string | null;
+  serverMessage: string | null;
+}
+
+/** Read both production's top-level envelope and raw FastAPI's detail shape. */
+export function parseApiErrorBody(body: unknown): ParsedApiErrorBody {
+  if (!body || typeof body !== "object") {
+    return { errorCode: null, serverMessage: null };
+  }
+  const envelope = body as Record<string, unknown>;
+  const detail = envelope.detail;
+  if (detail && typeof detail === "object") {
+    const nested = detail as Record<string, unknown>;
+    return {
+      errorCode:
+        typeof nested.code === "string"
+          ? nested.code
+          : typeof nested.error === "string"
+            ? nested.error
+            : null,
+      serverMessage:
+        typeof nested.message === "string"
+          ? nested.message
+          : JSON.stringify(detail),
+    };
+  }
+  if (typeof detail === "string") {
+    return { errorCode: null, serverMessage: detail };
+  }
+  return {
+    errorCode: typeof envelope.error === "string" ? envelope.error : null,
+    serverMessage:
+      typeof envelope.message === "string" ? envelope.message : null,
+  };
+}
+
+export function shouldCaptureStreamFailure(error: unknown): boolean {
+  return !(error instanceof ExpectedRequestConflictError);
+}
+
+/**
  * Thrown on a 409 `resume_conflict` from `/resume` (resume only). The server's
  * atomic run claim says another run is still live for this user_request —
  * usually the suspending run hasn't persisted `status='paused'` yet (a fast
@@ -425,20 +481,9 @@ export async function runAiStream(
       // — read all three so neither shape regresses silently.
       let errorCode: string | null = null;
       try {
-        const errBody = await response.json();
-        const detail: unknown = errBody?.detail;
-        if (detail && typeof detail === "object") {
-          const d = detail as { code?: unknown; message?: unknown };
-          if (typeof d.code === "string") errorCode = d.code;
-          serverMessage =
-            typeof d.message === "string" ? d.message : JSON.stringify(detail);
-        } else if (typeof detail === "string") {
-          serverMessage = detail;
-        } else if (errBody && typeof errBody === "object") {
-          if (typeof errBody.message === "string")
-            serverMessage = errBody.message;
-          if (typeof errBody.error === "string") errorCode = errBody.error;
-        }
+        const parsed = parseApiErrorBody(await response.json());
+        errorCode = parsed.errorCode;
+        if (parsed.serverMessage) serverMessage = parsed.serverMessage;
         // Message-prefix fallback ("resume_conflict: …") — covers an envelope
         // that passes message but maps `error` to a generic status word.
         if (
@@ -508,6 +553,9 @@ export async function runAiStream(
           // owns the bounded backoff. No error statuses, no composer clear.
           unregisterAbortController(conversationId);
           throw new RunInFlightError(serverMessage);
+        }
+        if (errorCode === "attachment_organization_mismatch") {
+          throw new ExpectedRequestConflictError(errorCode, serverMessage);
         }
         throw new Error(`Conversation already exists: ${serverMessage}`);
       } else if (code === 404) {
@@ -664,15 +712,17 @@ export async function runAiStream(
     // Feed the systemwide Error Inspector — a dead stream (heartbeat loss,
     // total-timeout, fetch failure) is a server-origin failure the admin wants
     // to see, but it arrives as a thrown exception, not a stream event.
-    captureStreamClientError({
-      cause: error,
-      errorType,
-      message,
-      userMessage: isConnectionLoss ? connectionLossMessage : undefined,
-      name: error instanceof Error ? error.name : undefined,
-      conversationId,
-      requestId,
-    });
+    if (shouldCaptureStreamFailure(error)) {
+      captureStreamClientError({
+        cause: error,
+        errorType,
+        message,
+        userMessage: isConnectionLoss ? connectionLossMessage : undefined,
+        name: error instanceof Error ? error.name : undefined,
+        conversationId,
+        requestId,
+      });
+    }
 
     dispatch(
       setRequestStatus({
