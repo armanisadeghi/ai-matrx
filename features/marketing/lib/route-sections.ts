@@ -195,7 +195,7 @@ export const MARKETING_SEO_SECTIONS = [
     titlePrefix: "Site Performance",
     description:
       "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
-    letter: "Pf",
+    letter: "Ps",
     group: "Technical",
   },
   {
@@ -319,7 +319,7 @@ export const MARKETING_CRAWL_SECTIONS = [
     name: "Reports",
     titlePrefix: "Crawl Reports",
     description: "Browse dedicated technical SEO reports for this crawl.",
-    letter: "Rp",
+    letter: "Cw",
   },
   {
     slug: "snapshots",

@@ -234,7 +234,7 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
         titlePrefix: "Audience & Personas",
         description:
           "Segments, ICPs, and personas that every brief, campaign, and agent reads from.",
-        letter: "Au",
+        letter: "Ae",
       },
     };
     const identity = room[segments[3]];
@@ -255,7 +255,7 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       titlePrefix: "Content Plan",
       description:
         "Plan every URL this site should have — pillars, clusters, briefs, keywords.",
-      letter: "Cp",
+      letter: "Pn",
     });
   }
 
@@ -273,7 +273,7 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       titlePrefix: "Calendar",
       description:
         "One publishing timeline across content, social, email, and paid.",
-      letter: "Cl",
+      letter: "Cy",
     });
   }
 
@@ -319,7 +319,7 @@ function seoIdentity(rest: readonly string[]): MarketingRouteIdentity {
       titlePrefix: "SEO",
       description:
         "The organic-search practice on this brand's sites — keywords, rankings, technical, links, AI visibility.",
-      letter: "Se",
+      letter: "Sr",
     };
   }
   const section = rest[1];

@@ -59639,10 +59639,20 @@ export type Database = {
           object_name: string
         }[]
       }
-      admin_db_cron_job_update: {
-        Args: { p_active?: boolean; p_jobid: number; p_schedule?: string }
-        Returns: Json
-      }
+      admin_db_cron_job_update:
+        | {
+            Args: { p_active?: boolean; p_jobid: number; p_schedule?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_active?: boolean
+              p_jobid: number
+              p_schedule?: string
+              p_taxonomy_node_id?: string
+            }
+            Returns: Json
+          }
       admin_db_cron_jobs: { Args: never; Returns: Json }
       admin_relation_catalog: {
         Args: never

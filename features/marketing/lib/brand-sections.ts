@@ -108,7 +108,7 @@ export const MARKETING_BRAND_SECTIONS = [
     titlePrefix: "SEO",
     description:
       "The organic-search practice on this brand's sites — keywords, rankings, technical, links, AI visibility.",
-    letter: "Se",
+    letter: "Sr",
     iconName: "Search",
     group: "Marketing",
   },
@@ -118,7 +118,7 @@ export const MARKETING_BRAND_SECTIONS = [
     titlePrefix: "Content",
     description:
       "Plan every URL a site should have; produce what the plan calls for.",
-    letter: "Cn",
+    letter: "Ce",
     iconName: "ListTree",
     group: "Marketing",
   },
@@ -148,7 +148,7 @@ export const MARKETING_BRAND_SECTIONS = [
     titlePrefix: "Advertising",
     description:
       "Ad accounts, campaigns, creative, and budgets across Google, Meta, and LinkedIn.",
-    letter: "Ad",
+    letter: "Az",
     iconName: "BadgeDollarSign",
     group: "Marketing",
   },
@@ -180,7 +180,7 @@ export const MARKETING_BRAND_SECTIONS = [
     titlePrefix: "Reputation",
     description:
       "Evidence-backed publication opportunities and reputation handling decisions.",
-    letter: "Rp",
+    letter: "Ru",
     iconName: "ShieldCheck",
     group: "Insight",
     subPath: "reputation",
@@ -191,7 +191,7 @@ export const MARKETING_BRAND_SECTIONS = [
     titlePrefix: "Analytics",
     description:
       "Cross-channel traffic, conversion, and attribution for this client.",
-    letter: "An",
+    letter: "Ay",
     iconName: "ChartNoAxesColumn",
     group: "Insight",
     status: "coming-soon",

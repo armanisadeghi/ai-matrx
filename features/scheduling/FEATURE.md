@@ -195,9 +195,9 @@ agent_runner_adapter.py` and writes results back with `claim_token`
 
 ## Tests
 
-| Layer   | Count                                           | Location                                  |
-| ------- | ----------------------------------------------- | ----------------------------------------- |
-| Python  | 25 (cron + edge cases + DST + malformed inputs) | `aidream/packages/matrx-scheduler/tests/` |
+| Layer   | Count                                             | Location                                                                     |
+| ------- | ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Python  | 25 (cron + edge cases + DST + malformed inputs)   | `aidream/packages/matrx-scheduler/tests/`                                    |
 | FE Jest | triggerHumanize + validation + run org provenance | `features/scheduling/utils/__tests__/`, `lib/scheduler-client/claim.test.ts` |
 
 Run: `pnpm exec jest features/scheduling/` and (inside aidream)
@@ -223,7 +223,9 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   edit dialogs can intentionally reclassify the job. The taxonomy admin search
   now persists `?q=` so those identity doors land on the named node. The API
   and DB boundaries scream on a missing identity, and generic creation of a
-  tool schedule is rejected without `taxonomy_node_id`.
+  tool schedule is rejected without `taxonomy_node_id`. The scheduling client
+  also resolves aidream through the canonical admin API target, so the shell's
+  Production/Localhost switch controls this console instead of being ignored.
 
 - **2026-08-29** — The System jobs tab gained a second section, **Database
   jobs (pg_cron)** — the ~12 jobs running SQL inside Postgres itself (log
@@ -416,11 +418,11 @@ routed a human to them. **Recording is not routing.**
 super-admin gated (the protected-resources pattern; RLS untouched, no new
 security layer) — returns ONLY schedules needing a human:
 
-| alarm | means |
-|---|---|
-| `suspended` | the repeat guard switched an enabled schedule off — nothing runs until a person re-enables it |
-| `overdue` | enabled, due in the past, past its grace window — the scanner may be down or the trigger is not firing |
-| `failing` | enabled, and its most recent run failed (the run's own `error_message`) |
+| alarm       | means                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------ |
+| `suspended` | the repeat guard switched an enabled schedule off — nothing runs until a person re-enables it          |
+| `overdue`   | enabled, due in the past, past its grace window — the scanner may be down or the trigger is not firing |
+| `failing`   | enabled, and its most recent run failed (the run's own `error_message`)                                |
 
 Healthy rows are deliberately absent: a health read that lists healthy rows
 becomes wallpaper. Read it through `fetchSystemScheduleAlarms()` in
