@@ -1796,6 +1796,7 @@ export type Database = {
           agent_tags: string[] | null
           agent_type: string | null
           agent_variable_definitions: Json | null
+          auto_run: boolean | null
           created_at: string | null
           created_by: string | null
           id: string | null

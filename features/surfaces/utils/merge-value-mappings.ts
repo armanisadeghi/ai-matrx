@@ -12,6 +12,9 @@
  * fully shadowed by a user binding). Callers must surface these loudly; a
  * silently ignored binding is exactly how the dead org-binding bug of
  * 2026-06 stayed invisible.
+ *
+ * `autoRun` (payload v3) is the one field that does NOT merge per key — see
+ * `MappingLayer.autoRun`.
  */
 
 import type {
@@ -30,6 +33,16 @@ export interface MappingLayer {
    * erase the org binding's override for another target.
    */
   writePolicies?: WritePolicyMap | null;
+  /**
+   * THE AUTO-RUN INVERSION (surface_binding payload v3). Unlike mappings and
+   * write policies this is NOT merged per key — it is one answer to one
+   * question, so the strongest layer that declares it wins outright: a user
+   * binding that turns auto-run off overrides an org binding that turned it
+   * on. `undefined`/`null` = the layer says nothing (shortcut layers never
+   * declare it — a shortcut carries its own `auto_run` through
+   * instance-ui-state and must not be overridden here).
+   */
+  autoRun?: boolean | null;
 }
 
 export interface MergedValueMappings {
@@ -40,6 +53,14 @@ export interface MergedValueMappings {
   inertLayers: string[];
   /** Merged per-target write-policy overrides (empty when no layer set any). */
   writePolicies: WritePolicyMap;
+  /**
+   * The winning layer's auto-run answer, or null when no layer declared one.
+   * Null is NOT false: it means "these layers have no opinion", which is what
+   * lets the launcher fall through to its own default.
+   */
+  autoRun: boolean | null;
+  /** Name of the layer that supplied `autoRun` (null when none did). */
+  autoRunProvenance: string | null;
 }
 
 export function mergeValueMappingLayers(
@@ -48,7 +69,13 @@ export function mergeValueMappingLayers(
   const merged: ValueMappingMap = {};
   const provenance: Record<string, string> = {};
   const writePolicies: WritePolicyMap = {};
+  let autoRun: boolean | null = null;
+  let autoRunProvenance: string | null = null;
   for (const layer of layers) {
+    if (layer.autoRun === true || layer.autoRun === false) {
+      autoRun = layer.autoRun;
+      autoRunProvenance = layer.name;
+    }
     if (layer.writePolicies) {
       for (const [target, policy] of Object.entries(layer.writePolicies)) {
         if (policy === "manual" || policy === "ask" || policy === "auto") {
@@ -68,8 +95,18 @@ export function mergeValueMappingLayers(
       (l) =>
         l.mappings &&
         Object.keys(l.mappings).length > 0 &&
-        !winners.has(l.name),
+        !winners.has(l.name) &&
+        // A layer whose mappings all lost but whose auto-run answer WON is not
+        // inert — it decided the one thing the user will actually notice.
+        autoRunProvenance !== l.name,
     )
     .map((l) => l.name);
-  return { merged, provenance, inertLayers, writePolicies };
+  return {
+    merged,
+    provenance,
+    inertLayers,
+    writePolicies,
+    autoRun,
+    autoRunProvenance,
+  };
 }
