@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { UniversalAssociationPicker } from "@/features/scopes/components/associations/UniversalAssociationPicker";
+import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import { ASSIGNABLE_TOKENS } from "../constants";
 import type { AssignableToken } from "../types";

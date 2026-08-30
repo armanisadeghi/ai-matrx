@@ -103,7 +103,7 @@ import {
   type PlanEntityRow,
   type PlanEntityType,
 } from "../types";
-import { CategorySelect } from "@/features/scopes/components/CategorySelect";
+import { CategorySelect } from "@ai-matrx/associations/react";
 import {
   parseOpenEntityEditorWrite,
   parseSourceTypeIdWrite,

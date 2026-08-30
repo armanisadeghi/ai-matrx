@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, MessageCircle, MessagesSquare, Plus, Sparkles } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";

@@ -86,8 +86,8 @@ import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextIt
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
-import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
-import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AssociationCardGrid } from "@ai-matrx/associations/react";
+import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
 import type {
   KgAcceptResult,
   KgDecisionResponse,

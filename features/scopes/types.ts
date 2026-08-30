@@ -110,209 +110,29 @@ export type EntityType =
 // `platform.entity_types` (then `EntityType`), never invented here.
 export type FavoriteKind = EntityType | "nav";
 
-// Allowed TARGET tokens for a `platform.associations` edge. There is NO DB CHECK
-// constraint on the type columns — the only gate is the FK to
-// `platform.entity_types.token` (any registered token is accepted). This list is
-// the app-side guard that keeps `add`/`setTargets` callers honest about which
-// containers we deliberately attach into.
+// ─── Association / category / per-user-state types — PACKAGE-OWNED ─────
 //
-// `satisfies readonly EntityTypeToken[]` PROVES at compile time that every token
-// here is a real, registered entity type — so this curated list can never drift
-// to a token that doesn't exist in `platform.entity_types`. A `source_type` is
-// validated at runtime (the full registry is allowed there); only the deliberate
-// container set is narrowed here.
-export const ASSOCIATION_TARGET_TYPES = [
-  "organization", //         an org — the top-level container resources attach into
-  "scope",
-  "scope_type",
-  "project",
-  "task",
-  "context_item",
-  "thread",
-  "war_room",
-  "category",
-  "conversation", //         a chat conversation a working_document is attached to
-  "fc_set", //               a flashcard set (card→set membership)
-  "fc_card", //              a flashcard (card→card hierarchy, quiz→card)
-  "study_media", //          a study-media artifact (summary/mind_map) — converter lineage target
-  "assessment", //           a quiz / practice test — a converter lineage target + origin (assessment→artifact 'source')
-  "note", //                 a note — the origin a converted study artifact links back to (artifact→note 'source' lineage, P4)
-  "file", //                 a file (card→file media + source lineage)
-  "quiz_session", //         a quiz a card is used in
-  "agent", //                an orchestrator agent — the container an Orchestra's member agents attach into (role 'member'); an 'orchestra' self-edge marks the orchestrator
-  "research_tag", //         a research tag a source is filed under (rs_source_tag M2M collapsed into associations, worklog §4.1)
-  "skill", //                a skill — projects link to it (skill→project, role 'member'); code_files attach as resources (code_file→skill, role 'resource')
-  "surface", //              a UI surface — agents bind here (agent→surface); context menu reads via agent.menu_surface
-  "plan_entity", //          a Content Planning source/media citation — plan_node role edges (about/cites/embeds) target it; person/org folded into crm.party 2026-08-12
-  "plan_node", //            a planned page — research topics/tags attach here and follow realization into web_page
-  "web_site", //             a web.site — parties attach onto a site's roster (party→web_site role 'writes_for'; plan_node/plan_entity containment edges are trigger-written)
-  "seo_topic", //            a taxonomy topic — plan_node/plan_entity tag into it (role 'topic')
-  "seo_keyword", //          a keyword — plan_node attaches secondaries (role 'secondary_keyword'; the primary is an FK, never an edge)
-  "web_page", //             a canonical page — the page workspace attaches notes/tasks/files/keywords onto it (keyword edges: role 'primary'|'supporting')
-  "web_screenshot", //       a page capture — per-image attachments on the page workspace
-  "party", //                a CRM person/company (crm.party) — the record page attaches tasks/files/notes onto it; roles come from party→category edges
-  "crm_outreach_list", //    a CRM outreach list (a worked send/dial queue) — parties and resources attach into it
-  "crm_deal", //             a CRM deal (crm.deal) — people on it (role 'deal_contact'), tasks/files attach onto it
-  "rulebook", //             a Masterwork Rulebook — its Scout interviews attach here (conversation→rulebook, role 'interview')
-] as const satisfies readonly EntityTypeToken[];
-
-export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];
-
-// ─── Association edges (per-entity, both-directions cache) ─────────────
-//
-// One row of `assoc_for_entity(p_type, p_id)` — every edge touching the
-// entity in BOTH directions. `direction` is relative to the queried entity:
-// "outgoing" = the entity is the edge's source; "incoming" = it is the
-// target. `otherType`/`otherId` is the entity on the far end.
-
-export interface AssociationEdge {
-  id: string;
-  direction: "outgoing" | "incoming";
-  otherType: string;
-  otherId: string;
-  role: string | null; //     the relationship's kind (e.g. member, expands_into, source)
-  label: string | null;
-  position: number | null; // ordering within a role (e.g. card order in a set)
-  metadata: Json;
-  orgId: string | null;
-  createdAt: string;
-}
-
-// One row of `assoc_for_targets(p_target_type, p_target_ids[])` — every INCOMING
-// edge (a member → one of the queried containers). `targetId` says which queried
-// target the edge points at, so a caller loading MANY containers at once can
-// group rows back by container in one pass. The batch counterpart of
-// `AssociationEdge` (single entity, both directions).
-export interface AssociationTargetEdge {
-  id: string;
-  targetId: string;
-  sourceType: string;
-  sourceId: string;
-  role: string | null;
-  label: string | null;
-  position: number | null;
-  metadata: Json;
-  orgId: string | null;
-  createdAt: string;
-}
-
-// ─── Denormalized scope display (scope + its type) ────────────────────
-//
-// A scope joined to its scope-type's presentation fields. Returned by
-// `scopesService.getEntityScopeDetails` / `listEntityScopeTags` so display
-// surfaces (AssignedScopesDisplay, the notes scope sidebar) never join
-// ctx_scopes / ctx_scope_types themselves — the chokepoint owns those tables.
-
-export interface ScopeTypeDisplay {
-  id: string;
-  label_singular: string;
-  label_plural: string;
-  icon: string | null;
-  color: string | null;
-}
-
-export interface ScopeWithType {
-  id: string;
-  name: string;
-  scope_type: ScopeTypeDisplay | null;
-}
-
-// One row of `assoc_for_sources` — the source-side batch counterpart of
-// `AssociationTargetEdge`. Every OUTGOING edge from a set of sources of one
-// type (optionally filtered to one target type). `sourceId` lets callers
-// group results back by source.
-export interface AssociationSourceEdge {
-  id: string;
-  sourceId: string;
-  targetType: string;
-  targetId: string;
-  role: string | null;
-  label: string | null;
-  position: number | null;
-  metadata: Json;
-  orgId: string | null;
-  createdAt: string;
-}
-
-// Cache entry for one `${type}:${id}` endpoint — mirrors `EntityScopesEntry`.
-export interface AssociationsEntry {
-  status: "idle" | "loading" | "ready" | "error";
-  edges: AssociationEdge[];
-  fetchedAt: number | null;
-  error: string | null;
-}
-
-// ─── Per-user entity state (platform.user_entity_state) ────────────────
-//
-// One row of the canonical per-user state ledger — the caller's favorite /
-// pinned / hidden flags + recency on a single entity. Reached ONLY via the
-// `ues_*` SECURITY-DEFINER RPCs; `favoritesService` is the sole chokepoint.
-// `entityType` is FREE TEXT in the DB (per-user state is tracked for non-
-// graph things too — e.g. `"nav"` destinations — so the table has no
-// entity_type CHECK), hence `string` here rather than the constrained
-// `EntityType`.
-export interface UserEntityState {
-  entityType: string;
-  entityId: string;
-  isFavorite: boolean;
-  isPinned: boolean;
-  isHidden: boolean;
-  lastViewedAt: string | null;
-}
-
-// ─── Categories (platform.categories) ─────────────────────────────────
-//
-// The canonical faceted taxonomy. ONE table, partitioned by `dimension`
-// (the facet — `agent-shortcut`, `skill`, `industry`, …), replacing the
-// fragmented per-feature category systems. System/global categories belong to
-// the Matrx System org and carry `isSystem=true`; ordinary categories belong to
-// their tenant org. The client has NO direct grant on `platform.categories`; every
-// read/write goes through the PUBLIC SECURITY-DEFINER `cat_*` RPCs, and every
-// call to those RPCs goes through `categoriesService.ts` —
-// the sibling chokepoint to `associationsService`.
-//
-// ASSIGNMENT of a category to an entity is NOT a category concern: it reuses
-// the association edge (`assoc_add(source, 'category', categoryId, orgId)` via
-// `associationsService` / `useAssociations`). `category` is already a valid
-// `AssociationTargetType`. A category is the noun; the association is the verb.
-
-/**
- * The facet a category belongs to. Open vocabulary (new dimensions need no
- * migration — `dimension` is free text in the DB), but the known dimensions
- * are enumerated in `CATEGORY_DIMENSIONS` so callsites use a constant, not a
- * stray string literal.
- */
-export type CategoryDimension = string;
-
-/** One `platform.categories` row, camelCased (mirrors `cat_list`'s return). */
-export interface PlatformCategory {
-  id: string;
-  /** Owning organization; system/global rows use the Matrx System org. */
-  orgId: string | null;
-  dimension: CategoryDimension;
-  name: string;
-  slug: string | null;
-  parentId: string | null;
-  isSystem: boolean;
-  color: string | null;
-  icon: string | null;
-  position: number | null;
-  /**
-   * The row's jsonb metadata — category rows CARRY semantics now: a
-   * `deal_pipeline` stage stores `{outcome: "won"|"lost", probability: 0..100}`
-   * here (see migrations/crm_11_deals_pipelines.sql). Null when empty or when
-   * hydrated from an older cache entry.
-   */
-  metadata: Record<string, unknown> | null;
-}
-
-/** Cache entry for one `dimension` — mirrors `AssociationsEntry`. */
-export interface CategoriesEntry {
-  status: "idle" | "loading" | "ready" | "error";
-  categories: PlatformCategory[];
-  fetchedAt: number | null;
-  error: string | null;
-}
+// W5 swap (2026-08-29): these shapes ship in `@ai-matrx/associations`
+// (src/edges.ts there carries the full per-token container commentary that
+// used to live here — targets list, edge direction semantics, the category
+// taxonomy contract). Re-exported under their historical names so the many
+// existing `@/features/scopes/types` imports keep working. NOTE
+// `AssociationEdge.metadata` is `unknown` (the package's independence
+// posture for jsonb) — narrow with a guard at the point of use.
+export {
+  ASSOCIATION_TARGET_TYPES,
+} from "@ai-matrx/associations";
+export type {
+  AssociationTargetType,
+  AssociationEdge,
+  AssociationTargetEdge,
+  AssociationSourceEdge,
+  AssociationsEntry,
+  UserEntityState,
+  CategoryDimension,
+  PlatformCategory,
+  CategoriesEntry,
+} from "@ai-matrx/associations";
 
 // ─── Tree shape (returned by the boot RPC and stored in scopesSlice) ───
 
@@ -781,6 +601,13 @@ export type ScopesRpcErrorCode =
   | "version_conflict"
   | "quota_exceeded"
   | "template_missing"
+  /**
+   * THE DEMANDED-SCHEMA SCREAM from `@ai-matrx/associations` (W5 swap): a
+   * PostgREST missing-function error (PGRST202) on a demanded association
+   * RPC. Present here so the package's `AssociationsRpcError` stays
+   * assignable to `ScopesRpcError` at the service wiring boundary.
+   */
+  | "demanded_schema_violation"
   | "internal";
 
 export interface ScopesRpcError {

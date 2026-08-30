@@ -46,11 +46,11 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { AssociationCaptureToolbar } from "@/features/scopes/components/associations/AssociationCaptureToolbar";
+import { AssociationCaptureToolbar } from "@ai-matrx/associations/react";
 import {
   UniversalAssociationPicker,
   attachedKey,
-} from "@/features/scopes/components/associations/UniversalAssociationPicker";
+} from "@ai-matrx/associations/react";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";

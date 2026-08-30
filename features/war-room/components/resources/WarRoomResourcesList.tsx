@@ -38,16 +38,16 @@ import { deleteDocument } from "@/features/data-tables/document-service";
 import { deleteFile } from "@/features/files/redux/thunks";
 import { deleteNote } from "@/features/notes/redux/thunks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import { AssociationPicker } from "@/features/scopes/components/associations/AssociationPicker";
+import { AssociationPicker } from "@ai-matrx/associations/react";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import {
   UniversalAssociationPicker,
   attachedKey,
-} from "@/features/scopes/components/associations/UniversalAssociationPicker";
+} from "@ai-matrx/associations/react";
 import type {
   ContainerResourceRow,
   ContainerResourcesAdapter,
-} from "@/features/scopes/components/associations/AssociationList";
+} from "@ai-matrx/associations/react";
 import {
   CONTENT_ROLES,
   getContentRoleMeta,

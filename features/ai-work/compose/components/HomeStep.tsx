@@ -15,7 +15,7 @@ import { X } from "lucide-react";
 import {
   UniversalAssociationPicker,
   attachedKey,
-} from "@/features/scopes/components/associations/UniversalAssociationPicker";
+} from "@ai-matrx/associations/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { SavedRequestHome, WorkHomeToken } from "../savedRequests";

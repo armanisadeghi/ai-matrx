@@ -23,7 +23,7 @@
 import type { Dispatch } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { RootState } from "@/lib/redux/store";
 import {
   addResource,
   setResourcePreview,
@@ -34,11 +34,10 @@ import {
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
-import {
-  addAssociation,
-  loadAssociations,
-  type AssociationWriteResult,
-} from "@/features/scopes/redux/thunks/associations";
+// W5 swap: durable association edges ride the @ai-matrx/associations store
+// (the Redux association thunks/cache fragments are deleted).
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
+import type { AssociationWriteResult } from "@ai-matrx/associations/core";
 import {
   cleanDocumentLabel,
   documentAttachLabelFromState,
@@ -217,23 +216,20 @@ function edgeMetadata(fileId: string | null, existing?: Json): Json {
 
 /** Create the canonical role-less `file → conversation` edge (idempotent). */
 async function attachConversationFileEdge(
-  dispatch: AppDispatch,
   conversationId: string,
   sourceId: string,
   fileId: string | null,
   label: string,
   existingMetadata?: Json,
 ): Promise<AssociationWriteResult> {
-  return dispatch(
-    addAssociation({
-      sourceType: "file",
-      sourceId,
-      targetType: "conversation",
-      targetId: conversationId,
-      label,
-      metadata: edgeMetadata(fileId, existingMetadata),
-    }),
-  );
+  return getAssociationsStore().add({
+    sourceType: "file",
+    sourceId,
+    targetType: "conversation",
+    targetId: conversationId,
+    label,
+    metadata: edgeMetadata(fileId, existingMetadata),
+  });
 }
 
 /**
@@ -270,7 +266,6 @@ export function useAttachResource(
 
     if (attachedFileId && isDurableConversation && blockType !== "document") {
       const result = await attachConversationFileEdge(
-        dispatch,
         conversationId,
         attachedFileId,
         attachedFileId,
@@ -309,19 +304,11 @@ export function useAttachResource(
           );
           return true;
         }
-        const cacheKey = `conversation:${conversationId}`;
+        const assocStore = getAssociationsStore();
         // Always refresh before a duplicate attach. A "ready" cache may be
         // stale after another tab or server-side variable attachment.
-        await dispatch(
-          loadAssociations({
-            type: "conversation",
-            id: conversationId,
-            force: true,
-          }),
-        );
-        if (
-          getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready"
-        ) {
+        await assocStore.load("conversation", conversationId, { force: true });
+        if (assocStore.getEdges("conversation", conversationId).status !== "ready") {
           toast.error("Couldn't verify existing document attachment metadata");
           return false;
         }
@@ -330,9 +317,10 @@ export function useAttachResource(
           fileId,
           resourcePreviewLabel,
         );
-        const existingEdge = getState().scopesTree.associationsByKey[
-          cacheKey
-        ]?.edges.find(
+        const existingEdge = assocStore.getEdges(
+          "conversation",
+          conversationId,
+        ).edges.find(
           (edge) =>
             edge.direction === "incoming" &&
             edge.otherType === "file" &&
@@ -343,7 +331,6 @@ export function useAttachResource(
         // another tab between refresh and mutation.
         if (existingEdge) return true;
         const result = await attachConversationFileEdge(
-          dispatch,
           conversationId,
           fileId,
           fileId,

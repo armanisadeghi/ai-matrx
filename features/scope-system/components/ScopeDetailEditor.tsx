@@ -42,8 +42,8 @@ import {
   scopeItemHref,
   scopeContextItemsHref,
 } from "@/features/scopes/lib/scopeRoutes";
-import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
-import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AssociationCardGrid } from "@ai-matrx/associations/react";
+import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
 
 interface ScopeDetailEditorProps {
   orgId: string;

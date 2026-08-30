@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { FlaskConical, LoaderCircle, MoveRight } from "lucide-react";
 
-import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { AssociationList } from "@ai-matrx/associations/react";
 import { toast } from "@/lib/toast";
 import {
   RESEARCH_LINEAGE_TOKENS,
   type ResearchLineageEntry,
 } from "../hooks/useCmsResearchLineage";
-import type { ContainerResourcesAdapter } from "@/features/scopes/components/associations/AssociationList";
+import type { ContainerResourcesAdapter } from "@ai-matrx/associations/react";
 
 export function ResearchLineagePanel({
   adapter,

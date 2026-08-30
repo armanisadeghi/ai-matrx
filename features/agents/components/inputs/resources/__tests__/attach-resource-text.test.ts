@@ -19,9 +19,9 @@ jest.mock("@/features/agents/redux/execution-system/instance-resources/resource-
 jest.mock("@/features/agents/redux/execution-system/instance-resources/editable-resource-types", () => ({
   isEditableCapableBlockType: jest.fn(() => false),
 }));
-jest.mock("@/features/scopes/redux/thunks/associations", () => ({
-  addAssociation: jest.fn(),
-  loadAssociations: jest.fn(),
+// W5 swap: durable edges ride the @ai-matrx/associations host store.
+jest.mock("@/features/scopes/host/associationsStore", () => ({
+  getAssociationsStore: jest.fn(),
 }));
 jest.mock("@/features/agents/components/inputs/resources/attached-documents", () => ({
   cleanDocumentLabel: jest.fn(),

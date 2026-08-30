@@ -38,7 +38,7 @@ import {
   type PlanNodeRow,
   type PlanNodeType,
 } from "../types";
-import { CategorySelect } from "@/features/scopes/components/CategorySelect";
+import { CategorySelect } from "@ai-matrx/associations/react";
 
 export function NewNodeDialog({
   siteId,

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { UniversalAssociationPicker } from "@/features/scopes/components/associations/UniversalAssociationPicker";
+import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import { CLASS_PICKER_TOKENS } from "../hooks/useClassContent";
 import { useClassContent } from "../hooks/useClassContent";
 

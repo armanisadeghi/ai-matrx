@@ -16,7 +16,7 @@
 import { useEffect } from "react";
 import { Loader2, Plus, StickyNote, Type, Columns2, Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import {
   NoteEditorCore,
   type EditorMode,

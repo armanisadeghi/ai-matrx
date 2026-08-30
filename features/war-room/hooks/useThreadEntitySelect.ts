@@ -14,7 +14,7 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { AssociationEntitySelectAdapter } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import type { AssociationEntitySelectAdapter } from "@ai-matrx/associations/react";
 import {
   getCachedEntityTitle,
   primeEntityTitle,

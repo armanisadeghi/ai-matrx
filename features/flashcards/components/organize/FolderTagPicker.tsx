@@ -13,7 +13,7 @@
 
 import { FolderPlus } from "lucide-react";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
-import { CategoryTagPicker } from "@/features/scopes/components/CategoryTagPicker";
+import { CategoryTagPicker } from "@ai-matrx/associations/react";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { EDGE_ROLE } from "@/features/flashcards/data/types";
 

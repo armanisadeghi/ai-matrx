@@ -17,7 +17,7 @@
 import { useEffect, useState } from "react";
 import type { Json } from "@/types/database.types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { ContainerResourcesAdapter } from "@/features/scopes/components/associations/AssociationList";
+import type { ContainerResourcesAdapter } from "@ai-matrx/associations/react";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import {
   entityToSource,

@@ -9,7 +9,7 @@
 //
 // The upload / drop / create toolbar this tab pioneered now lives in the
 // SHARED `AssociationCaptureToolbar`
-// (features/scopes/components/associations/AssociationCaptureToolbar.tsx) —
+// (@ai-matrx/associations/react AssociationCaptureToolbar) —
 // this tab is its reference consumer, adding only the war-room-specific
 // Monaco "New file" action via `extraActions`. Improvements to the capture
 // verbs land there and reach every container at once.
@@ -33,12 +33,12 @@ import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRe
 import { folderForWarRoomThread } from "@/features/files/utils/folder-conventions";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useFile } from "@/features/files/handler/hooks/useFile";
-import type { ContainerResourceRow } from "@/features/scopes/components/associations/AssociationList";
+import type { ContainerResourceRow } from "@ai-matrx/associations/react";
 import {
   AssociationCaptureToolbar,
   CaptureToolbarAction,
   type CaptureAttach,
-} from "@/features/scopes/components/associations/AssociationCaptureToolbar";
+} from "@ai-matrx/associations/react";
 import {
   WarRoomResourcesList,
   type ResourceRowContext,
