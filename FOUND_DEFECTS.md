@@ -35,38 +35,6 @@ other 85 use.
 
 ---
 
-### D289 — the mandate shortcut flip would ship 6 dead RPCs: EXECUTE revoked, no `client_callable_door`
-
-Found by the docs-steward `ddl_guard_log` sweep 2026-08-30 (the guard's `error` severity — a
-deliberate GRANT being undone, not a create without intent).
-
-Phase 6.6 generated the `agx_*_m` mandate RPC mirrors and GRANTed EXECUTE on them. Every grant
-was stripped by the DB-wide `definer_client_grant_revoked` guard, because the functions are
-SECURITY DEFINER and no `platform.client_callable_door` row was ever declared for them. Live
-state confirmed 2026-08-30: `has_function_privilege('authenticated', …, 'EXECUTE')` = **false**
-for all six, and `platform.client_callable_door` holds zero `agx%` rows.
-
-The six, all named in `lib/supabase/shortcutStorage.ts` `MANDATE_RPCS`:
-
-- `agx_create_shortcut_m`, `agx_duplicate_shortcut_m`, `agx_get_shortcuts_for_context_m`,
-  `agx_get_user_shortcuts_m`, `agx_list_non_global_shortcuts_for_admin_m`,
-  `agx_promote_shortcut_to_global_m`
-
-(The seventh, `agx_build_shortcut_menu_m`, is INVOKER and unaffected.)
-
-**Why it is not visible today:** `SHORTCUT_STORAGE_CUTOVER` is `false`, so the router still
-names the `agent.*` RPCs. The moment the flip lands — one line + release, currently gated on
-Arman — all six client calls fail with permission denied. The Phase 6.6 proofs ran locally with
-the switch ON and did not catch it, which fits the standing trap: a read-write test session
-cannot see a missing `authenticated` grant that only PostgREST enforces.
-
-**Fix:** declare the six doors (`platform.client_callable_door`, the `declared_by` pattern used
-by scoped-config's `scfg_03`/`scfg_40` rows), re-GRANT EXECUTE to `authenticated`, then prove
-each one THROUGH PostgREST with an anon/authenticated JWT — not through a service-role session.
-Do it before the flip, not with it.
-
----
-
 ### D288 — kind-render cracks still open after the 2026-08-29 audit (grouped remainder)
 
 The 2026-08-29 "kind slips through the cracks" audit found 27 ways a `__kind` payload renders as raw JSON/generic. The four production-dominant ones were fixed same-session (readAllRows on `content_ir` warm reads; miss TTL + `refresh()` + `kind-definitions` invalidation on `kindRegistry`; splitter structural brace counting; kind preservation on structural raws + `broken-instance` route in the 0.3.0 packages) plus the in-band Errors tab / `KindEscapedNotice` tripwire. Open remainder, in expected-volume order:
@@ -2456,6 +2424,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D291** (filed 2026-08-30 as "D289", renumbered — that id was already used by the resolved shortcuts-panel jest defect below) — the six SECURITY DEFINER `agx_*_m` mandate RPC mirrors (the Phase 6.6 flip's serving path, named in `lib/supabase/shortcutStorage.ts` `MANDATE_RPCS`) had EXECUTE stripped by the `definer_client_grant_revoked` guard because no `platform.client_callable_door` row existed; with `SHORTCUT_STORAGE_CUTOVER=true` every client call would have died with permission denied. **FIXED 2026-08-30** by migration `d289_agx_m_mirror_doors_and_grants`: seven door rows declared (the six + the INVOKER menu builder, reasons mirroring each original's posture) and EXECUTE re-granted to `authenticated` — the guard revoked the migration's own grants because they ran before the door inserts, so they were re-applied after; lesson: door row FIRST, grant second. **Proven through PostgREST with a real Supabase-signed admin JWT (generate_link+verify), not a service-role session**: `agx_get_user_shortcuts_m`/`agx_get_shortcuts_for_context_m`/`agx_list_non_global_shortcuts_for_admin_m`/`agx_build_shortcut_menu_m` → 200 with data; `agx_duplicate_shortcut_m` on a nonexistent id → P0001 "Shortcut not found" (execution entered the function body — the wall is gone). anon posture matches the originals (menu builder anon-callable like its original; the rest denied). The flip is no longer blocked by this. 2026-08-30.
 
 - **D289** — the `shortcuts-panel-doors` jest suite failed 5/5 because `AgentShortcutsPanel` mounts `LinkAgentToShortcutModal`, whose own state selectors the suite never mocked (`shortcuts.filter` on undefined). **FIXED 2026-08-29** in `features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx`: the modal is stubbed (its behaviour is its own concern, and the panel's door law is what this suite asserts), and the suite's `next/link` mock now drops `prefetch` instead of forwarding it to a bare `<a>`. 5/5 green. **Still true and NOT fixed:** the file runs in no CI jest job (jest jobs are scoped to content-ir/workflow-runtime/hr), so it can rot silently again. 2026-08-29.
 
