@@ -269,7 +269,8 @@
     "lab:run": "bash scripts/build-lab/run.sh",
     "route-manifest:generate": "tsx scripts/generate-route-manifest.ts",
     "check:route-manifest": "tsx scripts/check-route-manifest.ts",
-    "check:route-manifest:strict": "tsx scripts/check-route-manifest.ts --strict"
+    "check:route-manifest:strict": "tsx scripts/check-route-manifest.ts --strict",
+    "route-manifest:sync": "tsx scripts/sync-route-manifest.ts"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { normalizeShortLinkToken } from "@ai-matrx/kit/short-link";
+import { resolveShortLinkPath } from "@ai-matrx/kit/short-link";
 import { createClient } from "@/utils/supabase/server";
 
 // The platform short-link resolver (aidream migration 0557). A short token —
@@ -26,26 +26,19 @@ interface PageProps {
 
 export default async function ShortLinkPage({ params }: PageProps) {
   const { token: raw } = await params;
-  const token = normalizeShortLinkToken(decodeURIComponent(raw));
-  if (!token) notFound();
-
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("resolve_short_link", {
-    p_token: token,
-  });
-  if (error) {
-    // A transport/gateway failure is not "this link is gone" — surface it as
-    // the error it is rather than a lying 404.
-    throw new Error(`resolve_short_link failed: ${error.message}`);
-  }
-
-  const result = data as { ok: boolean; target_path?: string } | null;
-  const targetPath = result?.ok ? result.target_path : undefined;
-  // The mint CHECK-constrains target_path to a single-slash same-app path;
-  // re-assert it here so the redirect can never leave the app even if a row
-  // were tampered with.
-  if (!targetPath || !targetPath.startsWith("/") || targetPath.startsWith("//")) {
+  // The whole resolve contract — token normalization, the anon RPC, and the
+  // same-app-path re-assertion (the redirect can never leave the app even if
+  // a row were tampered with) — is @ai-matrx/kit's resolveShortLinkPath.
+  // This file is Next glue only.
+  const result = await resolveShortLinkPath(supabase, decodeURIComponent(raw));
+  if (!result.ok) {
+    if (result.transportError) {
+      // A gateway/transport failure is not "this link is gone" — surface the
+      // error rather than rendering a lying 404.
+      throw new Error(`resolve_short_link failed: ${result.transportError}`);
+    }
     notFound();
   }
-  redirect(targetPath);
+  redirect(result.targetPath);
 }
