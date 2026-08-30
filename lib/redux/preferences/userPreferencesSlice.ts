@@ -1545,16 +1545,22 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     write: async ({ identity, signal, body }) => {
       if (identity.type !== "auth") return; // guests only live in client storage
       const { supabase } = await import("@/utils/supabase/client");
-      const { ensureOrgId } = await import("@/lib/organizations/personalOrg");
-      await supabase
+      const { resolvePersonalOrgId } = await import(
+        "@/lib/organizations/personalOrg"
+      );
+      const { error } = await supabase
         .schema("users")
         .from("user_preferences")
         .upsert({
-          organization_id: await ensureOrgId(undefined),
+          // This is a user-global singleton (PK = user_id), so its ownership
+          // is the user's personal organization. The selected workspace org
+          // is unrelated and can fail RLS when the user is working in HR.
+          organization_id: await resolvePersonalOrgId(),
           user_id: identity.userId,
           preferences: body,
         })
         .abortSignal(signal);
+      if (error) throw error;
       void signal; // AbortSignal forwarded via query builder above
     },
   },

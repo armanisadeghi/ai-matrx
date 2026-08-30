@@ -31,6 +31,9 @@ hydration errors.
 
 ## Change log
 
+- 2026-08-30 — User-preference remote writes now stamp the personal organization
+  that owns the user-global singleton, never the currently selected workspace
+  organization; PostgREST write failures are propagated to the sync engine.
 - 2026-08-27 — Persisted boot reschedules while React still exposes a pending
   streamed Suspense boundary; browser idle alone did not close the Notes #418 race.
 - 2026-08-26 — Persisted boot now waits for window load plus browser idle; a parent passive effect
