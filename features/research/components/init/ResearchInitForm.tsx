@@ -992,7 +992,7 @@ function AiCanvas({
                 </Button>
               )}
               <span className="text-[11px] text-muted-foreground/60">
-                Click to edit · drag to reorder · ✕ to remove
+                Click to edit · drag to reorder · use the remove button to delete
               </span>
             </div>
           </div>
