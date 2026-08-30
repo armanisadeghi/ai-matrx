@@ -59,6 +59,9 @@ interface ResourcePickerMenuProps {
   onResourceSelected(
     resource: Resource,
   ): boolean | void | Promise<boolean | void>;
+  onResourceDeselected?(
+    resource: Resource,
+  ): boolean | void | Promise<boolean | void>;
   onClose: () => void;
   /** Required for Tools / Skills / Settings in-place pickers. */
   conversationId?: string;
@@ -86,6 +89,7 @@ interface ResourcePickerMenuProps {
 
 export function ResourcePickerMenu({
   onResourceSelected,
+  onResourceDeselected,
   onClose,
   conversationId,
   attachmentCapabilities,
@@ -170,6 +174,8 @@ export function ResourcePickerMenu({
 
   const selectOne = (resource: Resource) => selectResource(resource, false);
   const selectFromList = (resource: Resource) => selectResource(resource, true);
+  const deselectFromList = (resource: Resource) =>
+    onResourceDeselected?.(resource) ?? false;
 
   // Show specific resource picker based on selection
   if (activeView) {
@@ -207,6 +213,9 @@ export function ResourcePickerMenu({
           fillHost={fillHost}
           onSelect={(selection) =>
             selectFromList({ type: "file", data: selection })
+          }
+          onDeselect={(selection) =>
+            deselectFromList({ type: "file", data: selection })
           }
         />
       );

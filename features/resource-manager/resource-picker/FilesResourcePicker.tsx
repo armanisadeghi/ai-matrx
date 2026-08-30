@@ -137,9 +137,17 @@ interface FilesResourcePickerProps {
     selection: FileSelection,
   ) => boolean | void | Promise<boolean | void>;
   /**
-   * Multiple mode stages files with checkboxes and submits the batch together.
-   * Single mode preserves the scalar-picker contract used by media fields and
-   * imperative `openFilePicker` callers.
+   * Undo a file selected during this picker session. Chat supplies the
+   * inverse of its canonical attachment write so unchecking is a real detach,
+   * not a cosmetic local-state change.
+   */
+  onDeselect?: (
+    selection: FileSelection,
+  ) => boolean | void | Promise<boolean | void>;
+  /**
+   * Multiple mode attaches on check and detaches on uncheck. Single mode
+   * preserves the scalar-picker contract used by media fields and imperative
+   * `openFilePicker` callers.
    */
   selectionMode?: "single" | "multiple";
   /**
@@ -622,6 +630,7 @@ function FolderNode({
 export function FilesResourcePicker({
   onBack,
   onSelect,
+  onDeselect,
   selectionMode = "single",
   allowedBuckets,
   initialFilter = "all",
@@ -673,6 +682,8 @@ export function FilesResourcePicker({
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(
     new Set(),
   );
+  const selectedFileIdsRef = useRef<Set<string>>(new Set());
+  const pendingFileIdsRef = useRef<Set<string>>(new Set());
   const [fileFilter, setFileFilter] = useState<FileFilter>(initialFilter);
   const [fileSort, setFileSort] = useState<FileSort>("updated");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -844,7 +855,11 @@ export function FilesResourcePicker({
     return all;
   }, [rootFolderIds, foldersById, allowedBuckets]);
 
-  const submitFile = async (file: CloudFileRecord) => {
+  const notifyFileSelection = async (
+    file: CloudFileRecord,
+    callback: FilesResourcePickerProps["onSelect"] | undefined,
+  ) => {
+    if (!callback) return false;
     try {
       // Durable renderable URL — bind the record's own `url` when present,
       // else build it from the file id. Never expires.
@@ -875,7 +890,7 @@ export function FilesResourcePicker({
 
       const realMime =
         baseDetails.mimetype || file.mimeType || "application/octet-stream";
-      return await onSelect({
+      return await callback({
         fileId: file.id,
         url: fileUrl,
         type: realMime,
@@ -886,47 +901,53 @@ export function FilesResourcePicker({
         details: enhancedDetails,
       });
     } catch (error) {
-      console.error("Error getting file URL:", error);
+      console.error("Error preparing file selection:", error);
       return false;
     }
   };
 
+  const submitFile = (file: CloudFileRecord) =>
+    notifyFileSelection(file, onSelect);
+
+  const deselectFile = (file: CloudFileRecord) =>
+    notifyFileSelection(file, onDeselect);
+
+  const replaceSelectedFileIds = (next: Set<string>) => {
+    selectedFileIdsRef.current = next;
+    setSelectedFileIds(next);
+  };
+
   const handleFileSelect = (file: CloudFileRecord) => {
     if (selectionMode === "multiple") {
-      setSelectedFileIds((current) => {
-        const next = new Set(current);
-        if (next.has(file.id)) next.delete(file.id);
-        else next.add(file.id);
-        return next;
-      });
+      if (pendingFileIdsRef.current.has(file.id)) return;
+
+      const wasSelected = selectedFileIdsRef.current.has(file.id);
+      const optimistic = new Set(selectedFileIdsRef.current);
+      if (wasSelected) optimistic.delete(file.id);
+      else optimistic.add(file.id);
+      replaceSelectedFileIds(optimistic);
+
+      pendingFileIdsRef.current = new Set(pendingFileIdsRef.current).add(
+        file.id,
+      );
+      void (wasSelected ? deselectFile(file) : submitFile(file))
+        .then((accepted) => {
+          if (accepted !== false) return;
+          const rollback = new Set(selectedFileIdsRef.current);
+          if (wasSelected) rollback.add(file.id);
+          else rollback.delete(file.id);
+          replaceSelectedFileIds(rollback);
+        })
+        .finally(() => {
+          const pending = new Set(pendingFileIdsRef.current);
+          pending.delete(file.id);
+          pendingFileIdsRef.current = pending;
+        });
       return;
     }
 
     setIsProcessing(true);
     void submitFile(file).finally(() => setIsProcessing(false));
-  };
-
-  const clearSelectedFiles = () => setSelectedFileIds(new Set());
-
-  const addSelectedFiles = async () => {
-    if (selectedFileIds.size === 0) return;
-    const availableFiles = new Map(
-      [...allFiles, ...resolvedProcessedFiles].map((file) => [file.id, file]),
-    );
-    const remaining = new Set(selectedFileIds);
-    setIsProcessing(true);
-    try {
-      for (const fileId of selectedFileIds) {
-        const file = availableFiles.get(fileId);
-        if (!file) continue;
-        const selected = await submitFile(file);
-        if (selected === false) break;
-        remaining.delete(fileId);
-      }
-      setSelectedFileIds(remaining);
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const loading = isPdfExtractorFilter
@@ -958,28 +979,6 @@ export function FilesResourcePicker({
         }
         actions={
           <div className="flex min-w-0 items-center gap-1">
-            {selectionMode === "multiple" && selectedFileIds.size > 0 ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-1.5 text-[10px] text-muted-foreground pointer-coarse:h-10"
-                  disabled={isProcessing}
-                  onClick={clearSelectedFiles}
-                >
-                  Clear
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-1.5 text-[10px] text-primary hover:bg-primary/10 pointer-coarse:h-10"
-                  disabled={isProcessing}
-                  onClick={() => void addSelectedFiles()}
-                >
-                  Add ({selectedFileIds.size})
-                </Button>
-              </>
-            ) : null}
             <div
               role="radiogroup"
               aria-label="View mode"

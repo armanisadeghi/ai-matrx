@@ -515,13 +515,13 @@ export function InlineUploadArea({
   return (
     <div className="shrink-0 border-b border-border px-2 py-1.5">
       {fileStatuses.length === 0 ? (
-        /* Idle: one dense drop strip. */
+        /* Idle: compact drop target plus one aligned source row. */
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            "flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-dashed px-2 text-xs transition-colors",
+            "flex w-full flex-col items-center gap-1.5 rounded-md border border-dashed p-1.5 text-xs transition-colors",
             isDragging
               ? "border-primary bg-primary/5 text-primary"
               : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
@@ -529,14 +529,16 @@ export function InlineUploadArea({
         >
           <Upload className="h-3.5 w-3.5 shrink-0" />
           {isDragging ? (
-            <span>Drop to upload and add</span>
+            <span className="flex min-h-12 items-center">Drop to upload and add</span>
           ) : (
             <>
-              <span className="hidden sm:inline">
-                Drop files or folders here, or
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Upload className="h-3.5 w-3.5 shrink-0" />
+                Drop files or folders
               </span>
               <FileAcquisitionActions
                 presentation="inline"
+                className="w-full"
                 disabled={isLoading}
                 onFiles={(files) => handleFiles(files.map(candidateFromFile))}
                 onError={setUploadError}

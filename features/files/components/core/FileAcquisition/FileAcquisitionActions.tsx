@@ -243,23 +243,37 @@ export function FileAcquisitionActions({
     return (
       <div
         className={cn(
-          "flex flex-wrap items-center justify-center gap-1.5",
+          "grid w-full grid-cols-3 gap-1.5",
           className,
         )}
       >
         {actions.map((action) => {
           const Icon = action.icon;
           const busy = action.key === "google-drive" && googleBusy;
+          const compactLabel =
+            action.key === "files"
+              ? "Upload File"
+              : action.key === "folder"
+                ? "Upload Folder"
+                : action.key === "google-drive"
+                  ? "Google Drive"
+                  : action.label;
           return (
             <button
               key={action.key}
               type="button"
               onClick={() => runAction(action.key)}
               disabled={disabled || busy}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
+              title={action.label}
+              className="inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-border bg-background/60 px-1.5 py-1.5 text-center text-[11px] font-medium leading-tight text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-50"
             >
-              <Icon className={cn("h-3.5 w-3.5", busy && "animate-spin")} />
-              {action.label}
+              <Icon
+                className={cn(
+                  "h-4 w-4 shrink-0 text-primary",
+                  busy && "animate-spin",
+                )}
+              />
+              <span className="truncate">{compactLabel}</span>
             </button>
           );
         })}
