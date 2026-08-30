@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P6",
-  "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
-  "state": "discovered",
-  "updatedAt": "2026-08-30T14:26:47.470Z",
-  "summary": "P6 ERADICATION batch 3: 15-file feature-surface semantic glyph repair candidate reconstructed after shared integration race.",
-  "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
-  "eventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e"
+  "runId": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:48:07.141Z",
+  "summary": "CERTIFIED exact two-file detector-gap candidate.",
+  "source": "fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f.json",
+  "eventHash": "6503d4c69bc100d96700733c7e3d8aacdb810a0682d8ca40317088dabf3cff1e"
 }
