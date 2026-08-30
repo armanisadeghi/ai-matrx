@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T141852Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:18:53.739Z",
-  "summary": "Verified provider-sync mobile header defect; beginning bounded canonical responsive repair while detector machinery runs in a disjoint scripts-only unit.",
+  "state": "certified",
+  "updatedAt": "2026-08-30T14:39:24.078Z",
+  "summary": "Exact provider-sync candidate independently certified in canonical IAB matrix",
   "source": "20260830T141852Z.json",
-  "eventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020"
+  "eventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1"
 }
