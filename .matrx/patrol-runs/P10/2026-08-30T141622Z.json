@@ -109,6 +109,35 @@
       ],
       "previousEventHash": "1c3b9b50a099a4c2e56862aefcadfeedcfc7628915f7e79fd51bebcf2b8b1d5a",
       "eventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4"
+    },
+    {
+      "sequence": 8,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:35:36.132Z",
+      "actor": "/root",
+      "summary": "Corrected candidate 248f777479 reached origin/main before recertification through the canonical shared checkout.",
+      "evidence": [
+        "candidate:248f7774798ced21810e14770d447eb586218554",
+        "origin/main-ancestor:yes"
+      ],
+      "blocker": {
+        "prerequisite": "Independent exact-candidate recertification and reconciliation"
+      },
+      "previousEventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4",
+      "eventHash": "6a305d47a9c11d7cd133efa7e7e42c96defa9c0464bf28830dc0944043a0cb22"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-30T14:35:42.287Z",
+      "actor": "/root",
+      "summary": "Frozen corrected exact candidate 248f777479 for independent adversarial recertification.",
+      "evidence": [
+        "prior rejection repaired",
+        "candidate:248f7774798ced21810e14770d447eb586218554"
+      ],
+      "previousEventHash": "6a305d47a9c11d7cd133efa7e7e42c96defa9c0464bf28830dc0944043a0cb22",
+      "eventHash": "03362ee5812f9f44956336c62e89c82970a7bc259a9577e36d4827e6ff4387e9"
     }
   ]
 }

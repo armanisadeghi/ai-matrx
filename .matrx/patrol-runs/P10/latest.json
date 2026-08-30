@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:34:17.279Z",
-  "summary": "Repairing the rejected nullable input_kind runtime contract and adding regression coverage.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:35:42.287Z",
+  "summary": "Frozen corrected exact candidate 248f777479 for independent adversarial recertification.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "f036a5fae5f9734df889288f03f69ef5f1e41060e4a33b8c911d601fc24534f4"
+  "eventHash": "03362ee5812f9f44956336c62e89c82970a7bc259a9577e36d4827e6ff4387e9"
 }

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:29:59.877Z",
-  "summary": "Restoring the manifest-owned compact two-icon CopyButtons contract without reintroducing JSON or bespoke third controls.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:35:30.409Z",
+  "summary": "Replacement exact candidate 029667a044 restores the manifest-owned compact two-icon pair, retains Unwired row AI variants and competitor opportunity copy, and adds semantic patrol-contract drift detection.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce"
+  "eventHash": "d0d0c5577ee01428cf9863f9bfe8cce1de869b6ce7c2660198b61f2ecd2508d4"
 }

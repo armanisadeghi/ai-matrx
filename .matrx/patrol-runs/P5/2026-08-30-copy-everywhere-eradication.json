@@ -73,6 +73,24 @@
       ],
       "previousEventHash": "3e33972963ae9d1297fc013ac42dc89cffe558c91258831208c867f0dbf33505",
       "eventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:35:30.409Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Replacement exact candidate 029667a044 restores the manifest-owned compact two-icon pair, retains Unwired row AI variants and competitor opportunity copy, and adds semantic patrol-contract drift detection.",
+      "evidence": [
+        "Focused P5 Jest: 6 suites / 36 tests passed; P5 manifest contract test passed.",
+        "Full type-check passed.",
+        "P5 detector: 105 compliant, 26 auto-approved, 0 equivalent, 33 review, 17 excluded; detector tests 8/8 passed.",
+        "check:patrol-contracts passed and now rejects two-icon recipe drift.",
+        "Scoped ESLint: 0 errors, one unchanged barrel warning.",
+        "git diff --check passed.",
+        "In-app Browser automation remains unavailable because required node_repl js is not exposed; no browser rejection inferred."
+      ],
+      "previousEventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce",
+      "eventHash": "d0d0c5577ee01428cf9863f9bfe8cce1de869b6ce7c2660198b61f2ecd2508d4"
     }
   ]
 }
