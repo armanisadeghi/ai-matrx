@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-29T16:21:38.626Z",
-  "summary": "Repairing rejected detector scope and the verified scanner header callsite",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:23:13.308Z",
+  "summary": "Corrected candidate remains uncertified because the required isolated in-app Browser control runtime is unavailable",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce"
+  "eventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679"
 }

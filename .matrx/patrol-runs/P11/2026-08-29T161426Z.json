@@ -121,6 +121,74 @@
       ],
       "previousEventHash": "ea1978913851213500ecd79645bc5f3bdbf206c03eda7b311d8d9f6912d6714c",
       "eventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-29T16:22:53.216Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Corrected candidate 4b06080808465764e280fbfef3cd895abb093c24 preserved for fresh independent certification",
+      "evidence": [
+        "Candidate pushed to origin/codex/p11-20260829-repair",
+        "Detector now enumerates all feature PageHeader consumers plus named header/nav components",
+        "Post type-check PASS; core-only page-header strict PASS; full warnings unchanged; scroll-chain strict PASS"
+      ],
+      "previousEventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce",
+      "eventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e"
+    },
+    {
+      "sequence": 10,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-29T16:26:03.128Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
+      "evidence": [
+        "Type-check PASS; core-only strict page-header PASS; strict scroll-chain PASS; diff-check PASS",
+        "Full page-header remains exactly seven baseline dev/public warnings; patrol-contracts remains only fleet-health prompt drift",
+        "Prior feature-owned PageHeader detector rejection is fixed; no current false positive found",
+        "Preview lease remains owned by /Users/armanisadeghi/code/matrx-frontend; it was not reused or stopped"
+      ],
+      "blocker": {
+        "prerequisite": "Acquire this exact automation worktree preview lease and complete desktop, intermediate, mobile, light, and dark proof",
+        "preservedRef": "refs/heads/codex/p11-20260829-repair",
+        "preservedSha": "4b06080808465764e280fbfef3cd895abb093c24"
+      },
+      "previousEventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e",
+      "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
+    },
+    {
+      "sequence": 11,
+      "state": "certifying",
+      "at": "2026-08-30T14:23:12.077Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Resumed corrected candidate under the canonical shared-checkout contract with the managed preview available",
+      "evidence": [
+        "Live manifest requires executionEnvironment=local in /Users/armanisadeghi/code/matrx-frontend; worktrees are forbidden",
+        "Canonical pnpm preview lease is RUNNING on port 3001 and contains candidate 4b06080808465764e280fbfef3cd895abb093c24 as an ancestor",
+        "Required proof remains Marketing, Workflow Bake-off, and Scanner across desktop, intermediate, mobile, light, and dark"
+      ],
+      "previousEventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c",
+      "eventHash": "49db71a292e21b6d6c88ae334e32493429b7735532318793e9f99f91a206191e"
+    },
+    {
+      "sequence": 12,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:23:13.308Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "Corrected candidate remains uncertified because the required isolated in-app Browser control runtime is unavailable",
+      "evidence": [
+        "Canonical preview is healthy and correctly owned; preview ownership is no longer the blocker",
+        "This task and the independent certifier expose neither mcp__node_repl__js nor tool discovery, so agent.browsers.get(\"iab\") cannot be called",
+        "Contract-forbidden Chrome, Computer Use, standalone Playwright, and other browser fallbacks were not used",
+        "No concrete candidate-caused defect was found; static candidate checks remain passing"
+      ],
+      "blocker": {
+        "prerequisite": "Resume this exact candidate in a Codex task exposing the in-app Browser Node REPL and complete the required viewport/theme matrix",
+        "preservedRef": "refs/heads/patrol-runs/P11/2026-08-29T161426Z",
+        "preservedSha": "4b06080808465764e280fbfef3cd895abb093c24"
+      },
+      "previousEventHash": "49db71a292e21b6d6c88ae334e32493429b7735532318793e9f99f91a206191e",
+      "eventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679"
     }
   ]
 }
