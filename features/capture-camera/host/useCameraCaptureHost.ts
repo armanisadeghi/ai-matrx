@@ -1,14 +1,29 @@
 "use client";
 
 /**
- * useCameraCaptureHost — APP-SIDE glue (stays in matrx-frontend when
- * `features/capture-camera` is mirrored into `@ai-matrx/capture`).
+ * useCameraCaptureHost — APP-SIDE lease-integration wiring for
+ * `@ai-matrx/capture` (collapsed 2026-08-30 in the C22/C23 retrofit).
  *
- * Adapts the canonical media-capture runtime — `acquireCameraLease`,
- * `CameraPreview`, `capturePhotoFromVideo`, `startVideoRecording` — to the
- * package's `CaptureCameraEngine` port. Reused, never reimplemented; the
- * lease/permission/mic-warm-hold behavior is the proven IntakeCaptureScreen
- * contract, extracted generically.
+ * WHAT THIS FILE IS ALLOWED TO BE (C22): injection of values and identity
+ * only. The portable hard parts — aspect crop, gUM-error classification, the
+ * flip-cycling algorithm, the warm-mic quirk handling, the whole default
+ * engine — live in the package (`@ai-matrx/capture/react`, `src/engine/`).
+ * What remains here, each with its justification, is the coupling to THIS
+ * app's cross-feature media runtime, which spans the PDF scanner, `/camera`
+ * studio, voice notes and diagnostics and therefore stays host-side:
+ *
+ * - LEASE LIFECYCLE: `acquireCameraLease` (the app-wide refcounted camera
+ *   manager — combined-prompt policy, reconfigure events, recording pins).
+ * - DEVICE PERSISTENCE: the flip target is persisted via
+ *   `useAudioDevices().setCamera` so the same camera comes back next session.
+ * - MIC WARM HOLD: holds the APP's mic singleton (`features/audio/micStream`)
+ *   — the same warm stream voice notes and the recorder share; using the
+ *   package's own warm-mic manager here would create two competing mic
+ *   holders. The four iOS recovery branches live in that singleton (and,
+ *   for runtime-less hosts, verbatim in the package's `engine/warm-mic.ts`).
+ * - CAPTURE/RECORD PATHS: `capturePhotoFromVideo` + `startVideoRecording`
+ *   (the app's canonical recorder with chunk journal + diagnostics registry).
+ * - TOASTS: the app's notification sink for loud failures.
  */
 
 import {
@@ -47,59 +62,12 @@ import type {
   CaptureCameraEngine,
   CaptureCameraMode,
 } from "@ai-matrx/capture";
-
-const PHOTO_JPEG_QUALITY = 0.92;
-
-/** Center-crops a captured JPEG to the requested output aspect. The crop is
- *  applied to the FULL sensor frame (honest pixels, not a preview grab). */
-async function cropBlobToAspect(
-  blob: Blob,
-  aspect: CaptureAspect,
-): Promise<Blob> {
-  if (aspect === "full") return blob;
-  const [wRatio, hRatio] =
-    aspect === "1:1" ? [1, 1] : aspect === "4:3" ? [4, 3] : [16, 9];
-  const bitmap = await createImageBitmap(blob);
-  try {
-    const srcW = bitmap.width;
-    const srcH = bitmap.height;
-    // Orient the target ratio to the frame (portrait sensor → portrait crop).
-    const target =
-      srcW >= srcH ? wRatio / hRatio : hRatio / wRatio;
-    let cropW = srcW;
-    let cropH = Math.round(srcW / target);
-    if (cropH > srcH) {
-      cropH = srcH;
-      cropW = Math.round(srcH * target);
-    }
-    if (cropW === srcW && cropH === srcH) return blob;
-    const canvas = document.createElement("canvas");
-    canvas.width = cropW;
-    canvas.height = cropH;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return blob;
-    ctx.drawImage(
-      bitmap,
-      Math.round((srcW - cropW) / 2),
-      Math.round((srcH - cropH) / 2),
-      cropW,
-      cropH,
-      0,
-      0,
-      cropW,
-      cropH,
-    );
-    return await new Promise<Blob>((resolve) =>
-      canvas.toBlob(
-        (out) => resolve(out ?? blob),
-        "image/jpeg",
-        PHOTO_JPEG_QUALITY,
-      ),
-    );
-  } finally {
-    bitmap.close();
-  }
-}
+import {
+  classifyCameraBlockReason,
+  cropBlobToAspect,
+  nextCameraDevice,
+  PHOTO_JPEG_QUALITY,
+} from "@ai-matrx/capture/react";
 
 export interface CameraCaptureHostOptions {
   /** Filename prefix for shutter captures (host feature vocabulary). */
@@ -163,7 +131,9 @@ export function useCameraCaptureHost(
   );
   const numberOfCameras = devices.cameras.length;
 
-  // ── Lease lifecycle (the proven scanner/intake contract) ────────────────
+  // ── Lease lifecycle — KEPT (C22): binds the chrome to the app's ONE camera
+  //    manager (refcounted leases, combined-prompt policy, reconfigure
+  //    events shared with the PDF scanner and /camera studio). ─────────────
   useEffect(() => {
     let cancelled = false;
     let myLease: CameraLease | null = null;
@@ -199,11 +169,8 @@ export function useCameraCaptureHost(
         void listDevices();
       } catch (err: unknown) {
         if (cancelled) return;
-        const name =
-          err && typeof err === "object" && "name" in err
-            ? String((err as { name: unknown }).name)
-            : "";
-        if (name === "NotAllowedError" || name === "SecurityError") {
+        // Classification is the PACKAGE's branch — never re-implemented here.
+        if (classifyCameraBlockReason(err) === "permission-denied") {
           setPermissionDenied(true);
         } else {
           setNotSupported(true);
@@ -224,7 +191,9 @@ export function useCameraCaptureHost(
 
   const cameraBlocked = notSupported || permissionDenied;
 
-  // ── Camera flip (persisted preferred camera) ────────────────────────────
+  // ── Camera flip — KEPT (C22) for the two host facts it injects: the app's
+  //    device snapshot and the persisted preferred camera (setCamera). The
+  //    cycling algorithm itself is the package's `nextCameraDevice`. ───────
   const { setCamera } = useAudioDevices();
   const switchCamera = useCallback(() => {
     // Flipping reacquires the lease and stops the current tracks — doing it
@@ -232,23 +201,21 @@ export function useCameraCaptureHost(
     // recording (engine.onFlipCamera goes null), and this guard backstops it.
     if (recordingRef.current) return;
     const cams = getMediaDevicesSnapshot().cameras;
-    if (cams.length < 2) return;
-    const currentIdx = deviceId
-      ? cams.findIndex((c) => c.deviceId === deviceId)
-      : cams.findIndex(
-          (c) =>
-            c.deviceId ===
-            leaseRef.current?.stream.getVideoTracks()[0]?.getSettings()
-              .deviceId,
-        );
-    const next = cams[(Math.max(currentIdx, 0) + 1) % cams.length];
+    const current =
+      deviceId ??
+      leaseRef.current?.stream.getVideoTracks()[0]?.getSettings().deviceId ??
+      null;
+    const next = nextCameraDevice(cams, current);
     if (next) {
       setDeviceId(next.deviceId);
       setCamera(next.deviceId, next.label);
     }
   }, [deviceId, setCamera]);
 
-  // ── Video-mode mic warm hold (one prompt per medium on iOS Safari) ──────
+  // ── Video-mode mic warm hold — KEPT (C22): this holds the APP's shared
+  //    mic singleton (voice notes + recorder share the same warm grant); a
+  //    second warm-mic manager here would fight it. The quirk branches live
+  //    in that singleton — and verbatim in the package for other hosts. ────
   useEffect(() => {
     if (mode !== "video" || cameraBlocked) return;
     if (getMediaDevicesSnapshot().permissionState === "denied") return;
@@ -271,7 +238,8 @@ export function useCameraCaptureHost(
     };
   }, [mode, cameraBlocked]);
 
-  // ── Recording clock ─────────────────────────────────────────────────────
+  // ── Recording clock — KEPT (C22): reads the HOST recorder handle's
+  //    pause-aware monotonic clock (`getElapsedMs`), which only exists here. ─
   useEffect(() => {
     if (!recording) return;
     const timer = setInterval(() => {
@@ -281,7 +249,9 @@ export function useCameraCaptureHost(
     return () => clearInterval(timer);
   }, [recording]);
 
-  // ── Capture paths ───────────────────────────────────────────────────────
+  // ── Capture paths — KEPT (C22): they call the app's canonical photo and
+  //    recorder pipelines (journal, diagnostics, lease pinning). The aspect
+  //    crop is the package's `cropBlobToAspect`. ───────────────────────────
   const captureBusyRef = useRef(false);
   const capturePhotoWith = useCallback(
     (opts: { fileNamePrefix: string; aspect?: CaptureAspect }) => {
