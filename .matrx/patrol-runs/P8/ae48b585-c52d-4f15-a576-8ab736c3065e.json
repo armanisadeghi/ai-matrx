@@ -35,6 +35,22 @@
       ],
       "previousEventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252",
       "eventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:25:17.716Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Candidate 18a0f0ce19 entered independent adversarial certification for the exact 15-file compact/control batch.",
+      "evidence": [
+        "pre-edit type-check PASS at 857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+        "post-edit type-check currently reports only concurrent non-P8 files: AdvancedMenu.coming-soon.test.tsx, UnwiredConsole.tsx, parse-messages-variables.ts",
+        "scoped bare Loading literal grep: zero",
+        "scoped ESLint: unchanged baseline rules only; no P8-delta rule introduced",
+        "candidate ref refs/heads/codex/p8-eradication-20260830-batch1"
+      ],
+      "previousEventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1",
+      "eventHash": "71a32cb5a682c3cbb3c3a3fd65397f6a206963dfd0da825f12e5887344b7b6a3"
     }
   ]
 }

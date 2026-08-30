@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:23:52.462Z",
-  "summary": "First compact/control wave repaired across 15 bounded files; exact candidate published for baseline-delta gates.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:25:17.716Z",
+  "summary": "Candidate 18a0f0ce19 entered independent adversarial certification for the exact 15-file compact/control batch.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1"
+  "eventHash": "71a32cb5a682c3cbb3c3a3fd65397f6a206963dfd0da825f12e5887344b7b6a3"
 }
