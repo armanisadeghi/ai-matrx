@@ -32,6 +32,7 @@ export default async function CloudFilesStarredPage({
   return (
     <PageShell
       section="starred"
+      promiseKey="files.starred-items"
       initialSidebarMode={sidebarMode}
       initialUiPatch={initialUiPatch}
       initialFileId={initialFileId}

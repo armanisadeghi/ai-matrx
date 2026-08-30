@@ -9,13 +9,15 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
+import { getComingSoon } from "@/lib/coming-soon/registry";
 import { cn } from "@/lib/utils";
 
 export interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   description?: string;
-  comingSoon?: boolean;
+  comingSoonId?: string;
   action?: React.ReactNode;
   className?: string;
 }
@@ -24,10 +26,23 @@ export function EmptyState({
   icon: Icon,
   title,
   description,
-  comingSoon,
+  comingSoonId,
   action,
   className,
 }: EmptyStateProps) {
+  const registeredPromise = comingSoonId
+    ? getComingSoon(comingSoonId)
+    : undefined;
+
+  if (comingSoonId && !registeredPromise) {
+    throw new Error(
+      `EmptyState: "${comingSoonId}" is missing from lib/coming-soon/registry.ts.`,
+    );
+  }
+
+  const displayedTitle = registeredPromise?.label ?? title;
+  const displayedDescription = registeredPromise?.promise ?? description;
+
   return (
     <div
       className={cn(
@@ -40,16 +55,17 @@ export function EmptyState({
       </div>
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-foreground">
-          {title}
-          {comingSoon ? (
-            <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Coming soon
-            </span>
+          {displayedTitle}
+          {registeredPromise ? (
+            <ComingSoonBadge
+              label={registeredPromise.stage}
+              className="ml-2 uppercase tracking-wide"
+            />
           ) : null}
         </h2>
-        {description ? (
+        {displayedDescription ? (
           <p className="max-w-sm text-sm text-muted-foreground">
-            {description}
+            {displayedDescription}
           </p>
         ) : null}
       </div>

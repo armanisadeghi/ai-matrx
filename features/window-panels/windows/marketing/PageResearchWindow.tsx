@@ -239,8 +239,132 @@ function PageResearchWindowInner({
     [nodeId, siteId, pageLabel, primaryKeyword, orgId],
   );
 
-  const topicId = phase.status === "form" || phase.status === "starting" ? null : phase.topicId;
+  const topicId =
+    phase.status === "form" || phase.status === "starting"
+      ? null
+      : phase.topicId;
   const latest = stream.messages.at(-1)?.message ?? null;
+
+  const organizationSource: PageResearchOrganizationSource = orgId
+    ? "page"
+    : activeOrgId
+      ? "active"
+      : "missing";
+  const pageContext: PageResearchPageContext = {
+    node_id: nodeId,
+    site_id: siteId ?? "",
+    page_label: pageLabel ?? "",
+    primary_keyword: primaryKeyword ?? "",
+    page_organization_id: orgId ?? "",
+    active_organization_id: activeOrgId ?? "",
+    organization_id: organizationId ?? "",
+    organization_source: organizationSource,
+  };
+  const draftSummary: PageResearchDraftSummary = {
+    topic_name: name,
+    keywords: [...keywords],
+    clean_keywords: [...cleanKeywords],
+    max_keywords: PAGE_RESEARCH_MAX_KEYWORDS,
+    can_start: canStart,
+  };
+  const runSummary: PageResearchRunSummary = {
+    research_phase: phase.status,
+    topic_id: topicId,
+    attachment_status: attachment.status,
+    attachment_error: attachment.error,
+    is_streaming: stream.isStreaming,
+    stream_request_id: stream.requestId ?? null,
+    latest_stream_message: latest,
+    stream_error: stream.error ?? null,
+  };
+
+  const buildScope = (
+    content: string = [name, ...cleanKeywords].join("\n"),
+    extraContext: Record<string, unknown> = {},
+  ) =>
+    createPageResearchScope({
+      ...pageContext,
+      page_context: pageContext,
+      ...draftSummary,
+      draft_summary: draftSummary,
+      research_phase: phase.status,
+      ...(topicId ? { topic_id: topicId } : {}),
+      attachment_status: attachment.status,
+      ...(attachment.error ? { attachment_error: attachment.error } : {}),
+      is_streaming: stream.isStreaming,
+      ...(stream.requestId ? { stream_request_id: stream.requestId } : {}),
+      ...(latest ? { latest_stream_message: latest } : {}),
+      ...(stream.error ? { stream_error: stream.error } : {}),
+      run_summary: runSummary,
+      content,
+      context: {
+        page_context: pageContext,
+        draft_summary: draftSummary,
+        run_summary: runSummary,
+        ...extraContext,
+      },
+    });
+
+  const getScope = () => buildScope();
+
+  const activeEditorContent = (): string => {
+    const editor = activeEditorRef.current;
+    return editor.kind === "topic_name"
+      ? name
+      : (keywords[editor.index] ?? "");
+  };
+
+  const getEditorScope = () => {
+    const editor = activeEditorRef.current;
+    return buildScope(activeEditorContent(), {
+      active_editor:
+        editor.kind === "topic_name"
+          ? { value: "topic_name" }
+          : { value: "keywords", index: editor.index },
+    });
+  };
+
+  const resolveEditorContext = (target: HTMLElement | null) => {
+    const field = target?.closest<HTMLElement>("[data-page-research-field]");
+    if (field?.dataset.pageResearchField === "keyword") {
+      const index = Number(field.dataset.keywordIndex);
+      if (Number.isInteger(index) && index >= 0 && index < keywords.length) {
+        activeEditorRef.current = { kind: "keyword", index };
+      }
+    } else {
+      activeEditorRef.current = { kind: "topic_name" };
+    }
+    const editor = activeEditorRef.current;
+    return {
+      content: activeEditorContent(),
+      context: {
+        page_context: pageContext,
+        draft_summary: draftSummary,
+        run_summary: runSummary,
+        active_editor:
+          editor.kind === "topic_name"
+            ? { value: "topic_name" }
+            : { value: "keywords", index: editor.index },
+      },
+    };
+  };
+
+  const replaceActiveEditorText = (value: string) => {
+    const editor = activeEditorRef.current;
+    if (editor.kind === "topic_name") {
+      setName(value);
+      return;
+    }
+    setKeywordAt(editor.index, value);
+  };
+
+  const assertDraftIsOpen = () => {
+    if (phase.status !== "form") {
+      throw new Error(
+        "The page-research draft is locked after Start research is pressed",
+      );
+    }
+  };
 
   return (
     <WindowPanel

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0",
-  "state": "discovered",
-  "updatedAt": "2026-08-30T14:26:47.470Z",
-  "summary": "P6 ERADICATION batch 3: 15-file feature-surface semantic glyph repair candidate reconstructed after shared integration race.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:27:20.283Z",
+  "summary": "Exact 15-file feature-surface candidate preserved remotely and awaiting independent adversarial certification.",
   "source": "a256b3eb-ee6c-4da4-b2e0-ea3bdf5a9cc0.json",
-  "eventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e"
+  "eventHash": "c41eb65f388d133a77f722f6f61f5494accd3f09905c735a98b848c46981eef0"
 }

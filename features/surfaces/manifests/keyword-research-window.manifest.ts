@@ -30,7 +30,7 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
 
-export const KEYWORD_RESEARCH_WINDOW_SURFACE =
+export const KEYWORD_RESEARCH_WINDOW_SURFACE_NAME =
   "matrx-user/keyword-research-window" as const;
 
 const groups: SurfaceValueGroup[] = [
@@ -424,7 +424,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 ];
 
 export const keywordResearchWindowManifest: SurfaceManifest = {
-  surfaceName: KEYWORD_RESEARCH_WINDOW_SURFACE,
+  surfaceName: KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
   label: "Keyword Research",
   overlayId: "keywordResearchWindow",
   readiness: "partial",
@@ -515,7 +515,10 @@ function markdownContent(args: {
   if (visibleKeywords.length === 0) {
     lines.push("No keyword rows are currently visible.");
   } else {
-    lines.push("| Keyword | Volume | CPC | Competition | Intent |", "| --- | ---: | ---: | --- | --- |");
+    lines.push(
+      "| Keyword | Volume | CPC | Competition | Intent |",
+      "| --- | ---: | ---: | --- | --- |",
+    );
     for (const row of visibleKeywords) {
       lines.push(
         `| ${row.phrase.replaceAll("|", "\\|")} | ${row.search_volume ?? "—"} | ${row.cpc ?? "—"} | ${row.competition ?? "—"} | ${row.intent_class ?? "—"} |`,

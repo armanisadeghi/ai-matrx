@@ -32,6 +32,7 @@ export default async function CloudFilesActivityPage({
   return (
     <PageShell
       section="activity"
+      promiseKey="files.activity-feed"
       initialSidebarMode={sidebarMode}
       initialUiPatch={initialUiPatch}
       initialFileId={initialFileId}

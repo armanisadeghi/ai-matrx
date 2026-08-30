@@ -14,6 +14,32 @@
 import type { ComingSoonEntry } from "./types";
 
 export const COMING_SOON: Record<string, ComingSoonEntry> = {
+  "files.activity-feed": {
+    id: "files.activity-feed",
+    label: "File Activity Feed",
+    owner: "files",
+    promise:
+      "See a live feed of uploads, shares, and edits across your files.",
+    stage: "planned",
+    surfaces: ["/files/activity"],
+  },
+  "files.file-requests": {
+    id: "files.file-requests",
+    label: "File Requests",
+    owner: "files",
+    promise:
+      "Collect files from anyone through a shareable request link and track every incoming submission here.",
+    stage: "planned",
+    surfaces: ["/files/requests", "Files sidebar — File requests"],
+  },
+  "files.starred-items": {
+    id: "files.starred-items",
+    label: "Starred Files and Folders",
+    owner: "files",
+    promise: "Star files and folders to pin them here for quick access.",
+    stage: "planned",
+    surfaces: ["/files/starred"],
+  },
   "presentations.google-slides-export": {
     id: "presentations.google-slides-export",
     label: "Create Google Slides",

@@ -11,10 +11,19 @@
  * — this file owns the frame and the persisted question, nothing else.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { QuickAnswers } from "@/features/marketing/seo/value-system/workbench/session/QuickAnswers";
+import {
+  QuickAnswers,
+  type QuickAnswersSurfaceHandle,
+} from "@/features/marketing/seo/value-system/workbench/session/QuickAnswers";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
+  createKeywordQuickAnswersScope,
+} from "@/features/surfaces/manifests/keyword-quick-answers.manifest";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 interface KeywordQuickAnswersWindowProps {
   isOpen: boolean;
@@ -55,6 +64,10 @@ function KeywordQuickAnswersWindowInner({
   dimensionSlug: string | null;
 }) {
   const [slug, setSlug] = useState<string | null>(dimensionSlug);
+  const surfaceHandleRef = useRef<QuickAnswersSurfaceHandle | null>(null);
+  const surfaceLabel = getSurfaceDisplayLabel(
+    KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
+  );
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({
@@ -65,25 +78,89 @@ function KeywordQuickAnswersWindowInner({
     [siteId, siteLabel, slug],
   );
 
+  const getScope = () =>
+    surfaceHandleRef.current?.getScope() ??
+    createKeywordQuickAnswersScope({
+      site_summary: { id: siteId, label: siteLabel },
+      site_id: siteId,
+      site_label: siteLabel ?? undefined,
+      dimension_catalog: [],
+      active_dimension_slug: slug ?? undefined,
+      active_dimension_choices: [],
+      current_keywords: [],
+      outstanding_keywords: [],
+      answered_results: {},
+      reason_draft: "",
+      answered_this_session: 0,
+      seen_keyword_ids: [],
+      all_done: false,
+      is_loading: true,
+      is_saving: false,
+      session_progress: {
+        answered: 0,
+        seen: 0,
+        visible: 0,
+        outstanding: 0,
+        all_done: false,
+        loading: true,
+        saving: false,
+      },
+      content: "",
+      context: {
+        site: { id: siteId, label: siteLabel },
+        active_question: { slug, label: null, why: null, choices: [] },
+        current_keywords: [],
+        outstanding_keyword_ids: [],
+        answered_results: {},
+      },
+    });
+
+  const getWriteHandlers = () => ({
+    reason_draft: (value: unknown) => {
+      const handle = surfaceHandleRef.current;
+      if (!handle) throw new Error("Quick Answers is not ready to edit yet.");
+      handle.setReasonDraft(value);
+    },
+    active_dimension_slug: (value: unknown) => {
+      const handle = surfaceHandleRef.current;
+      if (!handle) throw new Error("Quick Answers is not ready to move yet.");
+      handle.setActiveDimensionSlug(value);
+    },
+  });
+
   return (
-    <WindowPanel
-      title={siteLabel ? `Quick Answers — ${siteLabel}` : "Quick Answers"}
-      id="keyword-quick-answers-window"
-      overlayId="keywordQuickAnswersWindow"
-      minWidth={620}
-      minHeight={620}
-      width={760}
-      height={760}
-      position="center"
-      onClose={onClose}
-      onCollectData={collectData}
+    <SurfaceRuntimeProvider
+      surfaceName={KEYWORD_QUICK_ANSWERS_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
-      <QuickAnswers
-        siteId={siteId}
-        siteLabel={siteLabel}
-        dimensionSlug={slug}
-        onDimensionChange={setSlug}
-      />
-    </WindowPanel>
+      <WindowPanel
+        titleNode={
+          <span data-surface-value="site_summary">
+            {surfaceLabel}
+            {siteLabel ? (
+              <span data-surface-value="site_label"> — {siteLabel}</span>
+            ) : null}
+          </span>
+        }
+        id="keyword-quick-answers-window"
+        overlayId="keywordQuickAnswersWindow"
+        minWidth={620}
+        minHeight={620}
+        width={760}
+        height={760}
+        position="center"
+        onClose={onClose}
+        onCollectData={collectData}
+      >
+        <QuickAnswers
+          siteId={siteId}
+          siteLabel={siteLabel}
+          dimensionSlug={slug}
+          onDimensionChange={setSlug}
+          surfaceHandleRef={surfaceHandleRef}
+        />
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }
