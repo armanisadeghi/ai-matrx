@@ -21,6 +21,7 @@ import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
 import KeywordResearchLauncher from "@/features/marketing/seo/keyword-research/components/KeywordResearchLauncher";
 import { parseLibrarySearchWrite } from "@/features/marketing/seo/keyword-research/keyword-research-write";
+import { useSavedKeywordResearch } from "@/features/marketing/seo/keyword-research/useSavedKeywordResearch";
 import {
   KeywordCompetitionBadge,
   KeywordIntentChip,
@@ -176,6 +177,10 @@ function KeywordResearchWindowInner({
   const [persistedKeyword, setPersistedKeyword] = useState(
     initialKeyword ?? "",
   );
+  const savedResearch = useSavedKeywordResearch(
+    persistedKeyword,
+    selectedSiteId,
+  );
   const stagedKeywordRef = useRef(initialKeyword ?? "");
   const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleKeywordChange = useCallback((keyword: string) => {
@@ -240,6 +245,13 @@ function KeywordResearchWindowInner({
       stagedKeyword: stagedKeywordRef.current,
       run,
       volumeStage,
+      savedResearch: savedResearch.data ?? null,
+      savedResearchLoading: savedResearch.isLoading,
+      savedResearchError: savedResearch.isError
+        ? savedResearch.error instanceof Error
+          ? savedResearch.error.message
+          : String(savedResearch.error)
+        : null,
     });
 
   /**
@@ -362,6 +374,9 @@ function KeywordResearchWindowInner({
               <SurfaceValueAnchorStack
                 names={[
                   "research_input_keyword",
+                  "saved_research_status",
+                  "saved_research_error",
+                  "saved_research",
                   "research_run",
                   "run_status",
                   "run_primary_keyword",

@@ -148,6 +148,9 @@ export function useCameraCaptureHost(
   const [notSupported, setNotSupported] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  // Which side the camera faces. Flip toggles THIS (never a deviceId cycle);
+  // exposed so screens can mirror the front-camera preview.
+  const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [flash, setFlash] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordElapsed, setRecordElapsed] = useState(0);

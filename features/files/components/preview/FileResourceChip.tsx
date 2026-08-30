@@ -108,28 +108,6 @@ export function FileResourceChip({
     visibility: "personal" as const,
   };
 
-  const chipContent = (
-    <>
-      {/* Thumb: real image for image/video, category icon otherwise.
-          Container forces a square so MediaThumbnail's aspect math is happy. */}
-      <MediaThumbnail
-        file={thumbnailFile}
-        iconSize={thumbSizePx}
-        className={cn("h-5 w-5", "shrink-0 rounded-sm")}
-        rounded="rounded-sm"
-      />
-
-      <span
-        className={cn(
-          "truncate",
-          size === "xs" ? "max-w-[120px]" : "max-w-[160px]",
-        )}
-      >
-        {fileName}
-      </span>
-    </>
-  );
-
   // The shell stays non-interactive. EntityRef owns the preview-aware file
   // door, while remove remains its sibling — never a button/link descendant.
   const chip = (
@@ -154,7 +132,22 @@ export function FileResourceChip({
             : "pl-1 pr-2 text-xs",
         )}
       >
-        {chipContent}
+        {/* Keep the named record inside EntityRef's AST subtree so the Door
+            Law detector can prove that the rendered filename owns the door. */}
+        <MediaThumbnail
+          file={thumbnailFile}
+          iconSize={thumbSizePx}
+          className={cn("h-5 w-5", "shrink-0 rounded-sm")}
+          rounded="rounded-sm"
+        />
+        <span
+          className={cn(
+            "truncate",
+            size === "xs" ? "max-w-[120px]" : "max-w-[160px]",
+          )}
+        >
+          {fileName}
+        </span>
       </EntityRef>
       {onRemove && (
         <button
