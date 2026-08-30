@@ -32,6 +32,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
 import { mediaClient, mediaFilesClient } from "./client";
 import { MediaSharePopoverSlot } from "./share-slot";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 
 function HostImage({
@@ -153,9 +154,47 @@ const actions: MediaHostPorts["actions"] = {
   SharePopover: MediaSharePopoverSlot,
 };
 
+/**
+ * The `@ai-matrx/media` 0.3.0 diagnostics binding — the port whose ABSENCE
+ * made the 2026-08-30 private-image outage invisible to the Error Inspector.
+ * The payload's structural type is mirrored locally so this module
+ * type-checks against the currently-installed package even before the 0.3.0
+ * `MediaHostPorts.diagnostics` declaration lands here; the shape is the
+ * package's `MediaFailureInfo` (mediaRef is durable identity, never a signed
+ * URL). Per C22 this is a pure sink binding — zero interpretation.
+ */
+interface MediaFailureCapture {
+  source: "media";
+  phase: "resolve" | "session" | "blob" | "element-load" | "recovery";
+  mediaRef: string;
+  status?: number | undefined;
+  retryOutcome?: string | undefined;
+  terminal: boolean;
+  message: string;
+}
+
+const diagnostics = {
+  capture(info: MediaFailureCapture): void {
+    captureError({
+      source: "media",
+      relation: info.mediaRef,
+      message: info.message,
+      details: `phase=${info.phase}${
+        info.retryOutcome ? ` retry=${info.retryOutcome}` : ""
+      }${info.terminal ? "" : " (warning)"}`,
+      recoverable: !info.terminal,
+      raw: info,
+      ...(info.status !== undefined ? { status: info.status } : {}),
+    });
+  },
+};
+
 /** Referentially stable for the app lifetime — required by the port contract. */
-export const mediaHostPorts: MediaHostPorts = {
+export const mediaHostPorts: MediaHostPorts & {
+  diagnostics?: typeof diagnostics;
+} = {
   ImageComponent: HostImage,
   playbackSession,
   actions,
+  diagnostics,
 };

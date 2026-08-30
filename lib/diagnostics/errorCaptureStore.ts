@@ -93,6 +93,16 @@ export type CapturedErrorSource =
   /** An expiring/private media URL reached a render/store path (durability defect). */
   | "media-durability"
   /**
+   * `@ai-matrx/media`'s diagnostics port fired — a terminal media failure
+   * (refused resolve, failed private-pixel bytes, a load error the ONE
+   * recovery retry couldn't fix, a failed session mint) or the
+   * ephemeral-cookie-secret warning. The package latches one capture per
+   * media identity and its payload never carries a signed URL. Bound once in
+   * `features/files/media-client/ports.tsx`. This is the port whose ABSENCE
+   * made the 2026-08-30 private-image outage invisible to this inspector.
+   */
+  | "media"
+  /**
    * The model's chain-of-thought (`<thinking>`/`<reasoning>`) leaked into the
    * ANSWER text — i.e. it survived the render-block type-split and reached the
    * canonical JSON-extraction / answer-text path. This firing means the stream

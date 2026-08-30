@@ -134,6 +134,14 @@ Then confirm the service is up: `curl https://files.matrxserver.com/files-servic
 
 ## Change log
 
+- **2026-08-30** — **`@ai-matrx/media` 0.3.0 diagnostics port bound to the Error
+  Inspector.** The package now captures every terminal media failure itself (the
+  2026-08-30 private-image outage class: honest panel, zero error rows); the host
+  binding is a pure sink in `media-client/ports.tsx` (`diagnostics.capture` →
+  `captureError` with the new `"media"` source, structurally typed so it compiles
+  against the installed version pre-publish). Loud console.error default applies
+  until the port is live at the 0.3.0 install.
+
 - **2026-08-30** — **C9 collapse: the media-client rides `@ai-matrx/data/files` 0.4.1.**
   `handler/session.ts` (+ test) DELETED — the `mx_files_session` tracker is package policy;
   the ONE door is `mediaFilesClient.ensureSession()` (consumers repointed:
