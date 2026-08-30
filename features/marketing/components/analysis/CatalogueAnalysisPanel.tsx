@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   analysisKeys,
   useSiteAnalysisOverview,
@@ -50,10 +51,14 @@ function scoreTone(score: number | null): "default" | "good" | "warning" | "bad"
   return "bad";
 }
 
-function itemFindingsHref(basePath: string, item: AnalysisItemRollup) {
+function itemFindingsHref(
+  brandId: string | null,
+  siteId: string,
+  item: AnalysisItemRollup,
+) {
   const params = new URLSearchParams();
   params.set("f_item_key", `text:${item.itemKey}`);
-  return `${basePath}/findings?${params.toString()}`;
+  return marketingRoutes.site(brandId, siteId, `/findings?${params.toString()}`);
 }
 
 /**
@@ -66,7 +71,7 @@ function itemFindingsHref(basePath: string, item: AnalysisItemRollup) {
 export function CatalogueAnalysisPanel() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const queryClient = useQueryClient();
   const overview = useSiteAnalysisOverview(site.id);
   // Analysis is a multi-minute pass over every stored page. It streams its own
@@ -214,7 +219,7 @@ export function CatalogueAnalysisPanel() {
               label="Open findings"
               value={data.openFindingsTotal}
               tone={data.openFindingsTotal ? "warning" : "good"}
-              href={`${sitePath}/findings`}
+              href={marketingRoutes.site(brandId, site.id, "/findings")}
             />
             <MetricCell
               label="High / critical"
@@ -229,7 +234,7 @@ export function CatalogueAnalysisPanel() {
                   ? "bad"
                   : "good"
               }
-              href={`${sitePath}/analysis`}
+              href={marketingRoutes.site(brandId, site.id, "/analysis")}
             />
             <MetricCell
               label="Computed"
@@ -264,7 +269,7 @@ export function CatalogueAnalysisPanel() {
                         type="button"
                         className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-muted/50"
                         onClick={() =>
-                          navigate(itemFindingsHref(sitePath, item))
+                          navigate(itemFindingsHref(brandId, site.id, item))
                         }
                       >
                         <span className="min-w-0">
@@ -312,7 +317,7 @@ export function CatalogueAnalysisPanel() {
                         type="button"
                         className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-2 text-left hover:bg-muted/50"
                         onClick={() =>
-                          navigate(`${sitePath}/pages/${page.pageId}`)
+                          navigate(marketingRoutes.sitePage(brandId, site.id, page.pageId))
                         }
                       >
                         <span className="min-w-0">

@@ -91,10 +91,12 @@ function scoreCell(row: LinkGapDomainRow) {
 /** The evidence: which competitors this site already links to, with the URLs. */
 function ProspectEvidence({
   row,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   row: LinkGapDomainRow;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   const matches = useQuery({
     queryKey: [
@@ -173,7 +175,11 @@ function ProspectEvidence({
               ) : null}
               {match.page_id ? (
                 <Link
-                  href={`${sitePath}/pages/${match.page_id}`}
+                  href={marketingRoutes.sitePage(
+                    brandId,
+                    siteId,
+                    match.page_id,
+                  )}
                   className="text-[11px] text-primary "
                 >
                   Open the page of yours this competes with
@@ -189,11 +195,13 @@ function ProspectEvidence({
 
 function ProspectDetail({
   row,
-  sitePath,
+  brandId,
+  siteId,
   partyId,
 }: {
   row: LinkGapDomainRow;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   partyId: string | undefined;
 }) {
   return (
@@ -233,7 +241,7 @@ function ProspectDetail({
         reason={row.priority_reason}
         metadata={row.metadata}
       />
-      <ProspectEvidence row={row} sitePath={sitePath} />
+      <ProspectEvidence row={row} brandId={brandId} siteId={siteId} />
     </div>
   );
 }
@@ -325,11 +333,13 @@ function SeedCard({ prospects }: { prospects: LinkGapProspects }) {
 
 export function BacklinkProspectsTab({
   prospects,
-  sitePath,
+  brandId,
+  siteId,
   siteDomain,
 }: {
   prospects: LinkGapProspects;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   siteDomain: string;
 }) {
   const [enrolling, setEnrolling] = useState(false);
@@ -488,7 +498,11 @@ export function BacklinkProspectsTab({
                 {run.stage ?? "Working"}
                 {run.runId ? (
                   <Link
-                    href={`${sitePath}/backlinks?view=prospects&runId=${run.runId}`}
+                    href={marketingRoutes.site(
+                      brandId,
+                      siteId,
+                      `/backlinks?view=prospects&runId=${run.runId}`,
+                    )}
                     className="text-[11px] text-primary "
                     title="This run's id"
                   >
@@ -701,7 +715,8 @@ export function BacklinkProspectsTab({
               render: (row) => (
                 <ProspectDetail
                   row={row}
-                  sitePath={sitePath}
+                  brandId={brandId}
+                  siteId={siteId}
                   partyId={prospects.partyByDomainId[row.id]}
                 />
               ),
@@ -711,7 +726,8 @@ export function BacklinkProspectsTab({
               renderView: (row) => (
                 <ProspectDetail
                   row={row}
-                  sitePath={sitePath}
+                  brandId={brandId}
+                  siteId={siteId}
                   partyId={prospects.partyByDomainId[row.id]}
                 />
               ),

@@ -15,7 +15,7 @@ import type {
 import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
-import { marketingSiteSettingsHref } from "@/features/marketing/lib/routes";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
@@ -138,7 +138,7 @@ function CoverageTile({
 }
 
 export function CoverageWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const matrix = useCoverageMatrix(site.id);
 
@@ -151,7 +151,11 @@ export function CoverageWorkspace() {
   const data = matrix.data ?? null;
 
   const pagesHref = (coverage?: PageCoverageFilter) =>
-    coverage ? `${sitePath}/pages?coverage=${coverage}` : `${sitePath}/pages`;
+    marketingRoutes.site(
+      brandId,
+      site.id,
+      coverage ? `/pages?coverage=${coverage}` : "/pages",
+    );
 
   const matrixCopy = webCopy({
     kind: "web-coverage-matrix",
@@ -324,7 +328,7 @@ export function CoverageWorkspace() {
                 label="Non-HTML resources"
                 description="Observed JSON, XML, images, PDFs, and other assets"
                 value={data?.resourceUrls ?? null}
-                href={`${sitePath}/pages?scope=resources`}
+                href={marketingRoutes.site(brandId, site.id, "/pages?scope=resources")}
                 anchor="resource_urls"
                 siteDomain={site.domain}
                 location={pageLocation}
@@ -405,7 +409,11 @@ export function CoverageWorkspace() {
                   label={PROVENANCE_COPY[provenance].label}
                   description={PROVENANCE_COPY[provenance].description}
                   value={data?.byProvenance[provenance] ?? null}
-                  href={`${sitePath}/pages?f_provenance=select:${provenance}`}
+                  href={marketingRoutes.site(
+                    brandId,
+                    site.id,
+                    `/pages?f_provenance=select:${provenance}`,
+                  )}
                   siteDomain={site.domain}
                   location={pageLocation}
                 />
@@ -469,7 +477,11 @@ export function CoverageWorkspace() {
                     pages Google never reports.
                   </p>
                   <Link
-                    href={marketingSiteSettingsHref(sitePath, "integrations")}
+                    href={marketingRoutes.siteSettings(
+                      brandId,
+                      site.id,
+                      "integrations",
+                    )}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary"
                   >
                     Open Integrations

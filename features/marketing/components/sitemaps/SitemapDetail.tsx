@@ -12,6 +12,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingSitemapsScope } from "@/features/surfaces/manifests/marketing-sitemaps.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSitemap, useSitemapPages } from "@/features/marketing/data/hooks";
 import type { SitemapPagesFilter } from "@/features/marketing/data/service";
@@ -36,7 +37,7 @@ const FILTERS: Array<{ value: SitemapPagesFilter; label: string }> = [
 ];
 
 export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
   const sitemap = useSitemap(site.id, sitemapId);
@@ -54,7 +55,7 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
       filter: false,
       // THE DOOR LAW: every row here names a canonical page that has a route.
       // Same destination as `onRowOpen`; this makes it a real anchor.
-      href: (row) => `${sitePath}/pages/${row.page_id}`,
+      href: (row) => marketingRoutes.sitePage(brandId, site.id, row.page_id),
       cell: (row) => (
         <div className="min-w-64 max-w-2xl">
           <p className="truncate font-mono text-xs font-medium text-foreground">
@@ -135,7 +136,7 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
         id={sitemapId}
         error={sitemap.error}
         onRetry={() => void sitemap.refetch()}
-        fallbackHref={`${sitePath}/sitemaps`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/sitemaps")}
         fallbackLabel="All sitemaps"
       />
     );
@@ -211,7 +212,9 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
           size="sm"
           variant="ghost"
           className="h-8 gap-1"
-          onClick={() => router.push(`${sitePath}/sitemaps`)}
+          onClick={() =>
+            router.push(marketingRoutes.site(brandId, site.id, "/sitemaps"))
+          }
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           All sitemaps
@@ -304,7 +307,9 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
             }),
           }}
           detail={{ enabled: false }}
-          onRowOpen={(row) => router.push(`${sitePath}/pages/${row.page_id}`)}
+          onRowOpen={(row) =>
+            router.push(marketingRoutes.sitePage(brandId, site.id, row.page_id))
+          }
           emptyState={{
             icon: <FileQuestion className="h-8 w-8 text-muted-foreground" />,
             title:

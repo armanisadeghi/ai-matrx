@@ -86,7 +86,7 @@ export function useSiteCommandRun(
   const { siteId, mode, run } = options;
   const target = options.target ?? null;
   const key = siteCommandKey(siteId, mode, target);
-  const { crawlActivity, sitePath } = useMarketingSite();
+  const { crawlActivity, brandId } = useMarketingSite();
   const queryClient = useQueryClient();
   const openWindow = useOpenSiteCommandRunWindow();
 
@@ -151,8 +151,8 @@ export function useSiteCommandRun(
       sessionId: remoteSessionId,
       startedAt: (remoteStartedIso ? Date.parse(remoteStartedIso) : 0) || Date.now(),
     });
-    openWindowRef.current({ siteId, mode, target, sitePath });
-  }, [remoteSessionId, remoteStartedIso, key, siteId, mode, target, sitePath]);
+    openWindowRef.current({ siteId, mode, target, brandId });
+  }, [remoteSessionId, remoteStartedIso, key, siteId, mode, target, brandId]);
 
   // A rejoined run has durable events only when the command writes them (a
   // page fetch runs the crawl pipeline and does). Empty for the rest, which
@@ -244,7 +244,7 @@ export function useSiteCommandRun(
   const launch = useCallback(async () => {
     // A finished run's feed belongs to the previous click.
     clearSiteCommandRun(key);
-    openWindowRef.current({ siteId, mode, target, sitePath });
+    openWindowRef.current({ siteId, mode, target, brandId });
     try {
       const result = await startSiteCommandRun({
         siteId,
@@ -271,11 +271,11 @@ export function useSiteCommandRun(
       crawlActivity.refresh();
       throw error;
     }
-  }, [key, siteId, mode, target, sitePath, crawlActivity, queryClient]);
+  }, [key, siteId, mode, target, brandId, crawlActivity, queryClient]);
 
   const reopen = useCallback(
-    () => openWindowRef.current({ siteId, mode, target, sitePath }),
-    [siteId, mode, target, sitePath],
+    () => openWindowRef.current({ siteId, mode, target, brandId }),
+    [siteId, mode, target, brandId],
   );
 
   return { state, isActive, launch, openWindow: reopen };

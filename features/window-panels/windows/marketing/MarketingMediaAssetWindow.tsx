@@ -185,15 +185,11 @@ function MarketingMediaAssetWindowContent({
   const error = site.error ?? media.error;
   const siteRow = site.data ?? null;
   const standards = siteRow ? parseSiteMediaStandards(siteRow.settings) : null;
-  const sitePath = siteRow
-    ? marketingRoutes.site(siteRow.brand_id, siteRow.id)
-    : null;
-
   const inspector =
-    asset && siteRow && standards && sitePath ? (
+    asset && siteRow && standards ? (
       <AssetInspector
         asset={asset}
-        sitePath={sitePath}
+        siteId={siteRow.id}
         brandId={siteRow.brand_id}
         organizationId={siteRow.organization_id}
         standards={standards}
@@ -234,7 +230,7 @@ function MarketingMediaAssetWindowContent({
             void media.refetch();
           }}
         />
-      ) : !siteRow || !sitePath ? (
+      ) : !siteRow ? (
         <MissingAssetState
           message="This site's details are no longer available."
           onRetry={() => void site.refetch()}
@@ -293,7 +289,7 @@ function MissingAssetState({
 
 function AssetInspector({
   asset,
-  sitePath,
+  siteId,
   brandId,
   organizationId,
   standards,
@@ -302,7 +298,7 @@ function AssetInspector({
   onClose,
 }: {
   asset: SnapshotMediaAsset;
-  sitePath: string;
+  siteId: string;
   brandId: string | null;
   organizationId: string;
   standards: SiteMediaStandards;
@@ -481,7 +477,7 @@ function AssetInspector({
                 token="web_page"
                 id={page.pageId}
                 name={page.path ?? page.url}
-                href={`${sitePath}/pages/${page.pageId}`}
+                href={marketingRoutes.sitePage(brandId, siteId, page.pageId)}
                 openInNewTab
                 fill
                 alwaysShowActions

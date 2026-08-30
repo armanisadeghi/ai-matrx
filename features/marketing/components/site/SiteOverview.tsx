@@ -86,10 +86,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketing-site.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { buildSiteContextXml } from "@/features/marketing/lib/surface-context";
-import {
-  marketingRoutes,
-  marketingSiteSettingsHref,
-} from "@/features/marketing/lib/routes";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   parseInitialization,
   siteConnectionStatuses,
@@ -113,7 +110,7 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 };
 
 export function SiteOverview() {
-  const { site, sitePath, brandId } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const overview = useSiteOverview(site.id);
   // access-errors: ok — decorative hero screenshot; a failed read leaves the placeholder frame, and the site primary is gated by the layout above
   const hero = useSiteHeroScreenshot(
@@ -445,7 +442,7 @@ export function SiteOverview() {
           <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3.5 px-3 pb-24 pt-3 sm:gap-4 sm:px-5 sm:pb-32 sm:pt-4">
             <SiteHero
               site={site}
-              sitePath={sitePath}
+              brandId={brandId}
               heroFileId={hero.data?.file_id ?? null}
               heroLoading={hero.isLoading || initBusy}
               onRecapture={() => void runInitialize()}
@@ -558,7 +555,8 @@ export function SiteOverview() {
             <KpiGrid
               metrics={metrics}
               pendingDiscovered={pendingDiscovered.data ?? 0}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={site.id}
               discoveryHref={marketingRoutes.brandDiscovery(brandId)}
               gscConnected={gscConnected}
             />
@@ -578,12 +576,13 @@ export function SiteOverview() {
                 metrics={metrics}
                 pendingDiscovered={pendingDiscovered.data ?? 0}
                 statuses={statuses}
-                sitePath={sitePath}
+                brandId={brandId}
+                siteId={site.id}
                 discoveryHref={marketingRoutes.brandDiscovery(brandId)}
                 domain={site.domain}
               />
               <QuickWorkCard
-                sitePath={sitePath}
+                brandId={brandId}
                 webSiteId={site.id}
                 siteSettings={site.settings}
               />
@@ -591,13 +590,14 @@ export function SiteOverview() {
 
             <WorkspaceDirectory
               metrics={metrics}
-              sitePath={sitePath}
+              brandId={brandId}
               siteId={site.id}
             />
 
             <ConnectionsStrip
               statuses={statuses}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={site.id}
               initializedAt={site.initialized_at}
               copy={<CopyButtons size="icon" {...connectionsCopy} />}
               onReinitialize={
@@ -614,7 +614,7 @@ export function SiteOverview() {
 
 function SiteHero({
   site,
-  sitePath,
+  brandId,
   heroFileId,
   heroLoading,
   onRecapture,
@@ -627,7 +627,7 @@ function SiteHero({
   getSiteScope,
 }: {
   site: MarketingSite;
-  sitePath: string;
+  brandId: string | null;
   heroFileId: string | null;
   heroLoading: boolean;
   onRecapture: () => void;
@@ -753,7 +753,7 @@ function SiteHero({
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <Link
-                  href={`${sitePath}/crawls`}
+                  href={marketingRoutes.site(brandId, site.id, "/crawls")}
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
                 >
                   <Activity className="h-3.5 w-3.5" />
@@ -775,10 +775,14 @@ function SiteHero({
                 </Link>
                 <CrawlScheduleSummary
                   siteId={site.id}
-                  href={`${sitePath}/crawls/new`}
+                  href={marketingRoutes.site(brandId, site.id, "/crawls/new")}
                 />
                 <Link
-                  href={marketingSiteSettingsHref(sitePath, "integrations")}
+                  href={marketingRoutes.siteSettings(
+                    brandId,
+                    site.id,
+                    "integrations",
+                  )}
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
                 >
                   <Plug className="h-3.5 w-3.5" />
@@ -813,13 +817,15 @@ function SiteHero({
 function KpiGrid({
   metrics,
   pendingDiscovered,
-  sitePath,
+  brandId,
+  siteId,
   discoveryHref,
   gscConnected,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   discoveryHref: string;
   gscConnected: boolean;
 }) {
@@ -844,7 +850,7 @@ function KpiGrid({
                 ? "warning"
                 : "bad"
         }
-        href={`${sitePath}/audit`}
+        href={marketingRoutes.site(brandId, siteId, "/audit")}
       />
       <MetricCell
         variant="card"
@@ -856,7 +862,7 @@ function KpiGrid({
             ? `${metrics.unconfirmedCandidates.toLocaleString()} unconfirmed excluded`
             : `${metrics.snapshots.toLocaleString()} saved captures`
         }
-        href={`${sitePath}/coverage`}
+        href={marketingRoutes.site(brandId, siteId, "/coverage")}
       />
       <MetricCell
         variant="card"
@@ -865,7 +871,7 @@ function KpiGrid({
         value={metrics.openFindings.toLocaleString()}
         detail={metrics.openFindings ? "Needs attention" : "No open issues"}
         tone={metrics.openFindings ? "warning" : "good"}
-        href={`${sitePath}/findings`}
+        href={marketingRoutes.site(brandId, siteId, "/findings")}
       />
       <MetricCell
         variant="card"
@@ -891,7 +897,7 @@ function KpiGrid({
                 ? "warning"
                 : "default"
         }
-        href={`${sitePath}/pages`}
+        href={marketingRoutes.site(brandId, siteId, "/pages")}
       />
       {gscConnected ? (
         <MetricCell
@@ -900,7 +906,7 @@ function KpiGrid({
           label="In Google"
           value={metrics.pagesInGsc.toLocaleString()}
           detail="pages with search impressions"
-          href={`${sitePath}/pages?coverage=in_gsc`}
+          href={marketingRoutes.site(brandId, siteId, "/pages?coverage=in_gsc")}
         />
       ) : (
         // A dead "0" without Search Console connected reads as "invisible on
@@ -911,7 +917,7 @@ function KpiGrid({
           label="In Google"
           value="—"
           detail="Connect Search Console"
-          href={marketingSiteSettingsHref(sitePath, "integrations")}
+          href={marketingRoutes.siteSettings(brandId, siteId, "integrations")}
         />
       )}
     </section>
@@ -930,14 +936,16 @@ function AttentionCard({
   metrics,
   pendingDiscovered,
   statuses,
-  sitePath,
+  brandId,
+  siteId,
   discoveryHref,
   domain,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
   statuses: SiteConnectionStatus[];
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   discoveryHref: string;
   domain: string;
 }) {
@@ -965,7 +973,7 @@ function AttentionCard({
             key: "findings",
             count: metrics.openFindings,
             label: `open ${plural(metrics.openFindings, "finding needs", "findings need")} triage`,
-            href: `${sitePath}/findings`,
+            href: marketingRoutes.site(brandId, siteId, "/findings"),
             icon: <CircleAlert className="h-3.5 w-3.5" />,
           },
         ]
@@ -976,7 +984,7 @@ function AttentionCard({
             key: "blocked",
             count: metrics.blockedPages,
             label: `${plural(metrics.blockedPages, "page", "pages")} blocked from indexing`,
-            href: `${sitePath}/audit`,
+            href: marketingRoutes.site(brandId, siteId, "/audit"),
             icon: <TriangleAlert className="h-3.5 w-3.5" />,
           },
         ]
@@ -987,7 +995,7 @@ function AttentionCard({
             key: "serp",
             count: metrics.serpIssues,
             label: `${plural(metrics.serpIssues, "page", "pages")} failing SERP metadata checks`,
-            href: `${sitePath}/audit`,
+            href: marketingRoutes.site(brandId, siteId, "/audit"),
             icon: <Search className="h-3.5 w-3.5" />,
           },
         ]
@@ -998,7 +1006,7 @@ function AttentionCard({
             key: "keywords",
             count: pagesWithoutKeyword,
             label: `${plural(pagesWithoutKeyword, "page", "pages")} missing a target keyword`,
-            href: `${sitePath}/pages`,
+            href: marketingRoutes.site(brandId, siteId, "/pages"),
             icon: <KeyRound className="h-3.5 w-3.5" />,
           },
         ]
@@ -1011,8 +1019,8 @@ function AttentionCard({
         label: `${status.name}: ${status.detail}`,
         href:
           status.key === "initialized"
-            ? sitePath
-            : marketingSiteSettingsHref(sitePath, "integrations"),
+            ? marketingRoutes.site(brandId, siteId)
+            : marketingRoutes.siteSettings(brandId, siteId, "integrations"),
         icon: <Plug className="h-3.5 w-3.5" />,
       })),
   ];
@@ -1088,11 +1096,11 @@ function readCmsPairing(
 }
 
 function QuickWorkCard({
-  sitePath,
+  brandId,
   webSiteId,
   siteSettings,
 }: {
-  sitePath: string;
+  brandId: string | null;
   webSiteId: string;
   siteSettings: unknown;
 }) {
@@ -1101,25 +1109,31 @@ function QuickWorkCard({
     <SectionCard title="Quick work">
       <div className="grid gap-2 p-3 sm:grid-cols-2">
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
-          <Link href={`${sitePath}/crawls/new`}>
+          <Link href={marketingRoutes.site(brandId, webSiteId, "/crawls/new")}>
             <Play className="h-4 w-4" />
             Start a crawl
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
-          <Link href={`${sitePath}/pages`}>
+          <Link href={marketingRoutes.site(brandId, webSiteId, "/pages")}>
             <FileText className="h-4 w-4" />
             Review canonical pages
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
-          <Link href={`${sitePath}/coverage`}>
+          <Link href={marketingRoutes.site(brandId, webSiteId, "/coverage")}>
             <ScanSearch className="h-4 w-4" />
             Coverage matrix
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
-          <Link href={marketingSiteSettingsHref(sitePath, "integrations")}>
+          <Link
+            href={marketingRoutes.siteSettings(
+              brandId,
+              webSiteId,
+              "integrations",
+            )}
+          >
             <Plug className="h-4 w-4" />
             Manage integrations
           </Link>
@@ -1159,11 +1173,11 @@ interface DirectoryEntry {
 
 function WorkspaceDirectory({
   metrics,
-  sitePath,
+  brandId,
   siteId,
 }: {
   metrics: SiteOverviewMetrics;
-  sitePath: string;
+  brandId: string | null;
   siteId: string;
 }) {
   const entries: DirectoryEntry[] = [
@@ -1179,73 +1193,73 @@ function WorkspaceDirectory({
         metrics.siteScore === null
           ? "Site-wide technical audit"
           : `Score ${Math.round(metrics.siteScore)} · top issues & worst pages`,
-      href: `${sitePath}/audit`,
+      href: marketingRoutes.site(brandId, siteId, "/audit"),
       icon: <ClipboardCheck className="h-4 w-4" />,
     },
     {
       name: "Crawls",
       detail: `${metrics.crawlSessions.toLocaleString()} session${metrics.crawlSessions === 1 ? "" : "s"} recorded`,
-      href: `${sitePath}/crawls`,
+      href: marketingRoutes.site(brandId, siteId, "/crawls"),
       icon: <ScanSearch className="h-4 w-4" />,
     },
     {
       name: "Analysis",
       detail: "Prioritized issue queue",
-      href: `${sitePath}/analysis`,
+      href: marketingRoutes.site(brandId, siteId, "/analysis"),
       icon: <Activity className="h-4 w-4" />,
     },
     {
       name: "Sitemaps",
       detail: `${metrics.sitemaps.toLocaleString()} document${metrics.sitemaps === 1 ? "" : "s"} discovered`,
-      href: `${sitePath}/sitemaps`,
+      href: marketingRoutes.site(brandId, siteId, "/sitemaps"),
       icon: <Map className="h-4 w-4" />,
     },
     {
       name: "Coverage",
       detail: "Where each source disagrees",
-      href: `${sitePath}/coverage`,
+      href: marketingRoutes.site(brandId, siteId, "/coverage"),
       icon: <Grid3x3 className="h-4 w-4" />,
     },
     {
       name: "Links",
       detail: "Site link graph & outbound links",
-      href: `${sitePath}/links`,
+      href: marketingRoutes.site(brandId, siteId, "/links"),
       icon: <Link2 className="h-4 w-4" />,
     },
     {
       name: "Backlinks",
       detail: "Referring domains & anchors",
-      href: `${sitePath}/backlinks`,
+      href: marketingRoutes.site(brandId, siteId, "/backlinks"),
       icon: <BadgeCheck className="h-4 w-4" />,
     },
     {
       name: "Digital PR & Reputation",
       detail: "Publication opportunities & response decisions",
-      href: `${sitePath}/reputation`,
+      href: marketingRoutes.site(brandId, siteId, "/reputation"),
       icon: <Newspaper className="h-4 w-4" />,
     },
     {
       name: "Keywords",
       detail: "Search Console keyword performance",
-      href: `${sitePath}/keywords`,
+      href: marketingRoutes.site(brandId, siteId, "/keywords"),
       icon: <KeyRound className="h-4 w-4" />,
     },
     {
       name: "Ranks",
       detail: "Rank tracking portfolio",
-      href: `${sitePath}/ranks`,
+      href: marketingRoutes.site(brandId, siteId, "/ranks"),
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
       name: "Access",
       detail: "Sharing & permissions",
-      href: marketingSiteSettingsHref(sitePath, "access-users"),
+      href: marketingRoutes.siteSettings(brandId, siteId, "access-users"),
       icon: <ShieldCheck className="h-4 w-4" />,
     },
     {
       name: "Settings",
       detail: "Crawl policy & site configuration",
-      href: marketingSiteSettingsHref(sitePath),
+      href: marketingRoutes.siteSettings(brandId, siteId),
       icon: <Settings className="h-4 w-4" />,
     },
   ];
@@ -1280,14 +1294,16 @@ function WorkspaceDirectory({
 
 function ConnectionsStrip({
   statuses,
-  sitePath,
+  brandId,
+  siteId,
   initializedAt,
   copy,
   onReinitialize,
   reinitializeBusy,
 }: {
   statuses: SiteConnectionStatus[];
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   initializedAt: string | null;
   copy?: React.ReactNode;
   onReinitialize?: () => void;
@@ -1319,7 +1335,7 @@ function ConnectionsStrip({
       }
       action={{
         label: "Manage",
-        href: marketingSiteSettingsHref(sitePath, "integrations"),
+        href: marketingRoutes.siteSettings(brandId, siteId, "integrations"),
       }}
     >
       <div className="flex flex-wrap gap-2 p-3">
@@ -1354,7 +1370,7 @@ function ConnectionsStrip({
           return (
             <Link
               key={status.key}
-              href={marketingSiteSettingsHref(sitePath, "integrations")}
+              href={marketingRoutes.siteSettings(brandId, siteId, "integrations")}
               className="inline-flex items-center gap-2 rounded-md border border-border/70 px-2.5 py-1.5 text-xs transition-colors hover:border-primary/50 hover:bg-muted/40"
               title={status.detail}
             >

@@ -94,7 +94,7 @@ function performanceRowId(row: SiteKeywordPerformanceRow): string {
 }
 
 export function SiteKeywordPerformanceWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const dispatch = useAppDispatch();
   const openKeywordWindow = useOpenKeywordWindow();
   const table = useMarketingTableState({
@@ -422,7 +422,7 @@ export function SiteKeywordPerformanceWorkspace() {
       cell: (row) =>
         row.top_page_id ? (
           <Link
-            href={`${sitePath}/pages/${row.top_page_id}`}
+            href={marketingRoutes.sitePage(brandId, site.id, row.top_page_id)}
             className="inline-flex max-w-64 items-center gap-1 text-primary hover:underline"
           >
             <span className="truncate">

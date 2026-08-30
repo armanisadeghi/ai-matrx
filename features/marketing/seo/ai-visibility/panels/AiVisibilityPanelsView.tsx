@@ -36,6 +36,7 @@ import {
   formatCompactDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   buildPanelTrend,
   fetchPanelAnswers,
@@ -73,10 +74,12 @@ function healthLabel(row: AiVisibilityPanelRow): string {
 
 function PromptRow({
   standing,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   standing: PanelTrend["prompts"][number];
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   const asked = standing.enginesMentioning.length + standing.enginesAbsent.length;
   return (
@@ -104,7 +107,11 @@ function PromptRow({
       </p>
       {standing.responseIds.length > 0 ? (
         <Link
-          href={`${sitePath}/ai-visibility/history`}
+          href={marketingRoutes.site(
+            brandId,
+            siteId,
+            "/ai-visibility/history",
+          )}
           className="mt-1 inline-flex text-[11px] text-primary hover:underline"
         >
           Read the {standing.responseIds.length} saved answer(s)
@@ -148,10 +155,12 @@ function TrendBars({ trend }: { trend: PanelTrend }) {
 
 function PanelCard({
   panel,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   panel: LoadedPanel;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   const { row, trend } = panel;
   const prompts = panelPrompts(row);
@@ -228,7 +237,12 @@ function PanelCard({
         </p>
         <div className="flex flex-col divide-y divide-border/60">
           {trend.prompts.map((standing) => (
-            <PromptRow key={standing.key} standing={standing} sitePath={sitePath} />
+            <PromptRow
+              key={standing.key}
+              standing={standing}
+              brandId={brandId}
+              siteId={siteId}
+            />
           ))}
         </div>
       </div>
@@ -266,10 +280,10 @@ function PanelCard({
 
 export function AiVisibilityPanelsView({
   siteId,
-  sitePath,
+  brandId,
 }: {
   siteId: string;
-  sitePath: string;
+  brandId: string | null;
 }) {
   const [panels, setPanels] = useState<LoadedPanel[] | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -344,7 +358,7 @@ export function AiVisibilityPanelsView({
               service (each run is priced before it spends and capped per pass).
               In the meantime, the{" "}
               <Link
-                href={`${sitePath}/ai-visibility`}
+                href={marketingRoutes.site(brandId, siteId, "/ai-visibility")}
                 className="text-primary hover:underline"
               >
                 one-off analyzer
@@ -356,7 +370,12 @@ export function AiVisibilityPanelsView({
       ) : null}
 
       {panels?.map((panel) => (
-        <PanelCard key={panel.row.id} panel={panel} sitePath={sitePath} />
+        <PanelCard
+          key={panel.row.id}
+          panel={panel}
+          brandId={brandId}
+          siteId={siteId}
+        />
       ))}
     </main>
   );

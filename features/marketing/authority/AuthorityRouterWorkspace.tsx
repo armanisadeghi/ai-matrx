@@ -25,6 +25,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { createMarketingAuthorityScope } from "@/features/surfaces/manifests/marketing-authority.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -51,7 +52,7 @@ import { useAuthorityRouter } from "./useAuthorityRouter";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function AuthorityRouterWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const authority = useAuthorityRouter(site.id);
   const [guidance, setGuidance] = useState("");
@@ -312,7 +313,8 @@ export function AuthorityRouterWorkspace() {
                     key={recommendation.candidate_key}
                     recommendation={recommendation}
                     rank={index + 1}
-                    sitePath={sitePath}
+                    brandId={brandId}
+                    siteId={site.id}
                     approved={approved.has(recommendation.candidate_key)}
                     working={working === recommendation.candidate_key}
                     onApprove={() => void approve(recommendation)}
@@ -322,7 +324,11 @@ export function AuthorityRouterWorkspace() {
               </div>
             ) : null}
             {view === "evidence" ? (
-              <EvidenceTable result={result} sitePath={sitePath} />
+              <EvidenceTable
+                result={result}
+                brandId={brandId}
+                siteId={site.id}
+              />
             ) : null}
           </>
         ) : authority.latest.isError ? (
@@ -403,7 +409,8 @@ function verdictClass(verdict: AuthorityRouterResult["overall_verdict"]) {
 function RecommendationCard({
   recommendation,
   rank,
-  sitePath,
+  brandId,
+  siteId,
   approved,
   working,
   onApprove,
@@ -411,7 +418,8 @@ function RecommendationCard({
 }: {
   recommendation: AuthorityRecommendation;
   rank: number;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   approved: boolean;
   working: boolean;
   onApprove: () => void;
@@ -428,14 +436,22 @@ function RecommendationCard({
             <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
               <Link
                 className="truncate hover:text-primary"
-                href={`${sitePath}/pages/${recommendation.source_page_id}`}
+                href={marketingRoutes.sitePage(
+                  brandId,
+                  siteId,
+                  recommendation.source_page_id,
+                )}
               >
                 {pathOf(recommendation.source_url)}
               </Link>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
               <Link
                 className="truncate hover:text-primary"
-                href={`${sitePath}/pages/${recommendation.target_page_id}`}
+                href={marketingRoutes.sitePage(
+                  brandId,
+                  siteId,
+                  recommendation.target_page_id,
+                )}
               >
                 {pathOf(recommendation.target_url)}
               </Link>
@@ -537,10 +553,12 @@ function pathOf(url: string) {
 
 function EvidenceTable({
   result,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   result: AuthorityRouterResult;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   const rows = [...result.pages].sort(
     (a, b) =>
@@ -556,7 +574,7 @@ function EvidenceTable({
       filter: "text",
       cellKind: "text",
       entityToken: "web_page",
-      href: (page) => `${sitePath}/pages/${page.page_id}`,
+      href: (page) => marketingRoutes.sitePage(brandId, siteId, page.page_id),
       cell: (page) => (
         <div className="flex min-w-48 items-center gap-1.5">
           <span className="truncate font-mono font-medium">

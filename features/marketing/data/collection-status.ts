@@ -148,10 +148,10 @@ function buildRows(
   runHistory: Record<string, ProviderRunHistory>,
   trackedTargets: number,
   site: MarketingSite,
-  sitePath: string,
+  brandId: string | null,
 ): CollectionStatusRow[] {
   const integrations = parseSiteIntegrations(site.integrations);
-  const doorContext = { siteId: site.id, sitePath };
+  const doorContext = { siteId: site.id, brandId };
 
   return providers.map((provider) => {
     const spec = collectionProviderSpec(provider.provider);
@@ -279,7 +279,10 @@ function describeSchedule(
  * ONE query for the site's collection status. The panel renders it and the
  * settings surface exposes it to agents — same cache entry, one request.
  */
-export function useCollectionStatus(site: MarketingSite, sitePath: string) {
+export function useCollectionStatus(
+  site: MarketingSite,
+  brandId: string | null,
+) {
   const dispatch = useAppDispatch();
   return useQuery({
     queryKey: [...marketingKeys.site(site.id), "collection-status"] as const,
@@ -303,7 +306,7 @@ export function useCollectionStatus(site: MarketingSite, sitePath: string) {
         runHistory,
         trackedTargets,
         site,
-        sitePath,
+        brandId,
       );
     },
     staleTime: 30_000,

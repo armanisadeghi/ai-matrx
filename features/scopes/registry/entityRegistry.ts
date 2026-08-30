@@ -518,7 +518,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Crawls",
     // No flat resolver route: a crawl is only meaningful inside its site, and
     // the surfaces that name one are already standing in that site. They pass
-    // `href={`${sitePath}/crawls/${id}`}` — see `MarketingRefs.CrawlSessionRef`.
+    // `href={marketingRoutes.site(brandId, siteId, `/crawls/${id}`)}` — see
+    // `MarketingRefs.CrawlSessionRef`.
   },
   web_screenshot: {
     Icon: Frame,

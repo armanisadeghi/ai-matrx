@@ -31,6 +31,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   buildSiteLinkComplianceReport,
   useSiteLinkPlanEdges,
@@ -73,12 +74,14 @@ function StatChip({
 
 function PlanScoreList({
   rows,
-  sitePath,
+  brandId,
+  siteId,
   rootUrl,
   direction,
 }: {
   rows: SitePlannedLinkRow[];
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   rootUrl: string;
   direction: "inbound" | "outbound";
 }) {
@@ -111,7 +114,7 @@ function PlanScoreList({
           )}
           {partnerPageId ? (
             <Link
-              href={`${sitePath}/pages/${partnerPageId}`}
+              href={marketingRoutes.sitePage(brandId, siteId, partnerPageId)}
               className="min-w-0 truncate font-mono text-foreground hover:text-primary"
               title={score.entry.url}
             >
@@ -151,13 +154,15 @@ function TargetRow({
   target,
   expanded,
   onToggle,
-  sitePath,
+  brandId,
+  siteId,
   rootUrl,
 }: {
   target: TargetPageCompliance;
   expanded: boolean;
   onToggle: () => void;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   rootUrl: string;
 }) {
   const Chevron = expanded ? ChevronDown : ChevronRight;
@@ -217,7 +222,7 @@ function TargetRow({
         <div className="grid gap-2 border-t border-border/50 bg-background/45 px-3 py-2 pl-9">
           <p className="text-[11px] text-muted-foreground">
             <Link
-              href={`${sitePath}/pages/${target.pageId}`}
+              href={marketingRoutes.sitePage(brandId, siteId, target.pageId)}
               className="font-medium text-primary hover:underline"
             >
               Open page workspace
@@ -241,7 +246,11 @@ function TargetRow({
                   >
                     {offender.sourcePageId ? (
                       <Link
-                        href={`${sitePath}/pages/${offender.sourcePageId}`}
+                        href={marketingRoutes.sitePage(
+                          brandId,
+                          siteId,
+                          offender.sourcePageId,
+                        )}
                         className="min-w-0 truncate font-mono text-foreground hover:text-primary"
                         title={offender.sourceUrl}
                       >
@@ -279,7 +288,8 @@ function TargetRow({
               <div className="mt-1">
                 <PlanScoreList
                   rows={target.planScores}
-                  sitePath={sitePath}
+                  brandId={brandId}
+                  siteId={siteId}
                   rootUrl={rootUrl}
                   direction="inbound"
                 />
@@ -296,13 +306,15 @@ function SourceRow({
   source,
   expanded,
   onToggle,
-  sitePath,
+  brandId,
+  siteId,
   rootUrl,
 }: {
   source: SourcePageOutboundCompliance;
   expanded: boolean;
   onToggle: () => void;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   rootUrl: string;
 }) {
   const Chevron = expanded ? ChevronDown : ChevronRight;
@@ -358,7 +370,7 @@ function SourceRow({
         <div className="grid gap-2 border-t border-border/50 bg-background/45 px-3 py-2 pl-9">
           <p className="text-[11px] text-muted-foreground">
             <Link
-              href={`${sitePath}/pages/${source.pageId}`}
+              href={marketingRoutes.sitePage(brandId, siteId, source.pageId)}
               className="font-medium text-primary hover:underline"
             >
               Open page workspace
@@ -366,7 +378,8 @@ function SourceRow({
           </p>
           <PlanScoreList
             rows={source.planScores}
-            sitePath={sitePath}
+            brandId={brandId}
+            siteId={siteId}
             rootUrl={rootUrl}
             direction="outbound"
           />
@@ -377,7 +390,7 @@ function SourceRow({
 }
 
 export function SiteLinkComplianceView() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const pages = useSitePagePlanRows(site.id);
   const edges = useSiteLinkPlanEdges(site.id);
   const [expandedTargets, setExpandedTargets] = useState<Set<string>>(
@@ -527,7 +540,8 @@ export function SiteLinkComplianceView() {
                     onToggle={() =>
                       toggle(expandedTargets, setExpandedTargets, target.pageId)
                     }
-                    sitePath={sitePath}
+                    brandId={brandId}
+                    siteId={site.id}
                     rootUrl={site.root_url}
                   />
                 ))}
@@ -550,7 +564,8 @@ export function SiteLinkComplianceView() {
                     onToggle={() =>
                       toggle(expandedSources, setExpandedSources, source.pageId)
                     }
-                    sitePath={sitePath}
+                    brandId={brandId}
+                    siteId={site.id}
                     rootUrl={site.root_url}
                   />
                 ))}

@@ -33,6 +33,7 @@ import {
   getAnalysisProvider,
   getCrawlSessionRef,
 } from "@/features/marketing/data/service";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 
 const SUBJECT_TOKENS: Record<string, string> = {
@@ -161,12 +162,14 @@ export function AnalysisProviderRef({
 }
 
 export function CrawlSessionRef({
-  sitePath,
+  brandId,
+  siteId,
   sessionId,
   label,
   className,
 }: {
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   sessionId: string;
   label?: string | null;
   className?: string;
@@ -176,7 +179,7 @@ export function CrawlSessionRef({
       token="web_crawl_session"
       id={sessionId}
       name={label ?? `Crawl ${sessionId.slice(0, 8)}`}
-      href={`${sitePath}/crawls/${sessionId}`}
+      href={marketingRoutes.site(brandId, siteId, `/crawls/${sessionId}`)}
       wrap
       className={className}
     />
@@ -184,13 +187,13 @@ export function CrawlSessionRef({
 }
 
 export function AnalysisRunRef({
+  brandId,
   siteId,
-  sitePath,
   runId,
   className,
 }: {
+  brandId: string | null;
   siteId: string;
-  sitePath: string;
   runId: string;
   className?: string;
 }) {
@@ -205,7 +208,8 @@ export function AnalysisRunRef({
   if (crawl.data) {
     return (
       <CrawlSessionRef
-        sitePath={sitePath}
+        brandId={brandId}
+        siteId={siteId}
         sessionId={runId}
         label={`Crawl ${crawl.data.trigger} · ${crawl.data.status}`}
         className={className}

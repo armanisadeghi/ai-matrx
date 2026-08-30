@@ -36,6 +36,7 @@ import {
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { FindingsAssistStrip } from "@/features/marketing/components/analysis/FindingsAssistStrip";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -99,7 +100,7 @@ function projectFindingRow(row: FindingListRow) {
 export function FindingsTable() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "last_detected_at", direction: "desc" },
@@ -115,7 +116,7 @@ export function FindingsTable() {
       // A real link (D112): keyboard-reachable, announced as a link, and
       // cmd/middle-clickable into a new tab so opening a finding never costs
       // the user this filtered list.
-      href: (row) => `${sitePath}/findings/${row.id}`,
+      href: (row) => marketingRoutes.site(brandId, site.id, `/findings/${row.id}`),
       // The catalogue label leads; the raw key stays visible underneath (it's
       // what the filter and the server speak). A key with no catalogue row —
       // a check the server added since — humanizes instead of blanking.
@@ -196,7 +197,9 @@ export function FindingsTable() {
               title="Open the page workspace"
               onClick={(event) => {
                 event.stopPropagation();
-                navigate(`${sitePath}/pages/${row.page_id}`);
+                navigate(
+                  marketingRoutes.sitePage(brandId, site.id, row.page_id ?? ""),
+                );
               }}
             >
               <p className="truncate font-mono text-[11px]">
@@ -405,7 +408,7 @@ export function FindingsTable() {
               <Button
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={() => navigate(`${sitePath}/analysis`)}
+                onClick={() => navigate(marketingRoutes.site(brandId, site.id, "/analysis"))}
                 disabled={isNavigating}
               >
                 {isNavigating ? (
@@ -459,7 +462,7 @@ export function FindingsTable() {
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>
-          navigate(`${sitePath}/findings/${row.id}`)
+          navigate(marketingRoutes.site(brandId, site.id, `/findings/${row.id}`))
         }
         emptyState={{
           icon: <ListChecks className="h-8 w-8 text-muted-foreground" />,

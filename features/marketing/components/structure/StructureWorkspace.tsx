@@ -13,6 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useSiteStructure } from "@/features/marketing/data/hooks";
 import {
@@ -403,7 +404,7 @@ function ColumnsView({
 }
 
 export function StructureWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const structure = useSiteStructure(site.id);
 
   const view = useMarketingSubView("structure");
@@ -434,7 +435,9 @@ export function StructureWorkspace() {
     // keep root_url as-is
   }
   const pageHref = (node: RouteTreeNode) =>
-    node.pages[0] ? `${sitePath}/pages/${node.pages[0].pageId}` : null;
+    node.pages[0]
+      ? marketingRoutes.sitePage(brandId, site.id, node.pages[0].pageId)
+      : null;
   const liveHref = (node: RouteTreeNode) =>
     node.path === "/" ? origin : `${origin}${node.path}`;
 

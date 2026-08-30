@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCrawlsScope } from "@/features/surfaces/manifests/marketing-crawls.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -153,7 +154,7 @@ function stagedPatterns(
 }
 
 export function NewCrawlWorkspace() {
-  const { site, sitePath, crawlActivity } = useMarketingSite();
+  const { site, brandId, crawlActivity } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const [options, setOptions] = useState<CrawlStartOptions>(() =>
@@ -422,7 +423,7 @@ export function NewCrawlWorkspace() {
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm" className="h-7 px-2">
-                <Link href={`${sitePath}/crawls`}>
+                <Link href={marketingRoutes.site(brandId, site.id, "/crawls")}>
                   <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Sessions
                 </Link>
               </Button>

@@ -17,6 +17,7 @@ import {
   type DuplicateCluster,
   type FingerprintPageRow,
 } from "@/features/marketing/lib/duplicate-clusters";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { parseSnapshotFingerprint } from "@/features/marketing/lib/snapshot-content";
 
 /**
@@ -27,7 +28,7 @@ import { parseSnapshotFingerprint } from "@/features/marketing/lib/snapshot-cont
  * empty-state, never a silently empty report.
  */
 export function DuplicateClustersPanel({ crawlId }: { crawlId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const [similarity, setSimilarity] = useState<number>(
     DEFAULT_DUPLICATE_SIMILARITY,
   );
@@ -133,13 +134,15 @@ export function DuplicateClustersPanel({ crawlId }: { crawlId: string }) {
               title="Exact duplicates"
               description="Pages whose normalized text content is identical."
               clusters={report.exact}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={site.id}
             />
             <ClusterSection
               title={`Near duplicates (≥ ${similarity}% similar)`}
               description="Clusters of pages whose content fingerprints agree above the threshold. Exact-duplicate groups count as one member."
               clusters={report.near}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={site.id}
             />
           </>
         )}
@@ -152,12 +155,14 @@ function ClusterSection({
   title,
   description,
   clusters,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   title: string;
   description: string;
   clusters: DuplicateCluster[];
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   return (
     <section>
@@ -180,7 +185,8 @@ function ClusterSection({
             <ClusterCard
               key={cluster.key}
               cluster={cluster}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={siteId}
             />
           ))}
         </div>
@@ -191,10 +197,12 @@ function ClusterSection({
 
 function ClusterCard({
   cluster,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   cluster: DuplicateCluster;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -222,7 +230,7 @@ function ClusterCard({
             className="flex items-center gap-2 px-3 py-1"
           >
             <Link
-              href={`${sitePath}/pages/${page.pageId}`}
+              href={marketingRoutes.sitePage(brandId, siteId, page.pageId)}
               className="min-w-0 flex-1 truncate font-mono text-xs text-primary"
               title={page.url}
             >

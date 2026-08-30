@@ -34,6 +34,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   inspectionKeys,
   useLinkGraphEdges,
@@ -96,13 +97,15 @@ function DomainRow({
   domain,
   expanded,
   onToggle,
-  sitePath,
+  brandId,
+  siteId,
   rootUrl,
 }: {
   domain: ExternalDomainRollup;
   expanded: boolean;
   onToggle: () => void;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   rootUrl: string;
 }) {
   const Chevron = expanded ? ChevronDown : ChevronRight;
@@ -191,7 +194,11 @@ function DomainRow({
                   {target.sourceSamples.map((sample) => (
                     <Link
                       key={sample.pageId}
-                      href={`${sitePath}/pages/${sample.pageId}`}
+                      href={marketingRoutes.sitePage(
+                        brandId,
+                        siteId,
+                        sample.pageId,
+                      )}
                       className="truncate font-mono text-primary"
                       title={sample.url}
                     >
@@ -214,7 +221,7 @@ function DomainRow({
 }
 
 export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const queryClient = useQueryClient();
   const query = useLinkGraphEdges(site.id, crawlId ?? null);
   const [search, setSearch] = useState("");
@@ -409,7 +416,8 @@ export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
                 return next;
               })
             }
-            sitePath={sitePath}
+            brandId={brandId}
+            siteId={site.id}
             rootUrl={site.root_url}
           />
         ))}

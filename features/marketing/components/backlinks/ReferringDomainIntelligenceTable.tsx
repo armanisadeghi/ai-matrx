@@ -34,6 +34,7 @@ import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   humanLines,
   webLocation,
@@ -140,12 +141,14 @@ function StartOutreachOnDomain({
 
 function DomainDetail({
   row,
+  siteId,
   onSaved,
 }: {
   row: ReferringDomainProfileRow;
+  siteId: string;
   onSaved: () => void;
 }) {
-  const { sitePath } = useMarketingSite();
+  const { brandId } = useMarketingSite();
   const existing = jsonRecord(row.human_ruling);
   const [verdict, setVerdict] = useState(
     typeof existing.verdict === "string"
@@ -186,7 +189,7 @@ function DomainDetail({
           Open site <ExternalLink className="h-3.5 w-3.5" />
         </a>
         <Link
-          href={`${sitePath}/reputation?tab=publications`}
+          href={`${marketingRoutes.brandReputation(brandId, siteId)}?tab=publications`}
           className="inline-flex items-center gap-1 text-sm font-medium text-primary "
         >
           See press opportunities <Newspaper className="h-3.5 w-3.5" />
@@ -265,7 +268,7 @@ export function ReferringDomainIntelligenceTable({
 }: {
   siteId: string;
 }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "opinion_score", direction: "desc" },
     defaultPageSize: 50,
@@ -311,7 +314,11 @@ export function ReferringDomainIntelligenceTable({
       // search matches `source_domain`), so it lands on exactly these rows.
       cell: (row) => (
         <Link
-          href={`${sitePath}/backlinks?view=links&q=${encodeURIComponent(row.display_domain)}`}
+          href={marketingRoutes.site(
+            brandId,
+            siteId,
+            `/backlinks?view=links&q=${encodeURIComponent(row.display_domain)}`,
+          )}
           onClick={(event) => event.stopPropagation()}
           className="tabular-nums text-primary "
           title={`Open the stored links from ${row.display_domain}`}
@@ -429,7 +436,11 @@ export function ReferringDomainIntelligenceTable({
         title: (row) => row.display_domain,
         description: (row) => row.opinion_summary || "What we know about this site",
         render: (row) => (
-          <DomainDetail row={row} onSaved={() => void profiles.refetch()} />
+          <DomainDetail
+            row={row}
+            siteId={siteId}
+            onSaved={() => void profiles.refetch()}
+          />
         ),
       }}
       pageSize={50}

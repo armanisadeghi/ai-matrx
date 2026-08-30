@@ -25,6 +25,7 @@ import { createMarketingSitePagesScope } from "@/features/surfaces/manifests/mar
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { startSiteCommandRun } from "@/features/marketing/crawler/command-run-store";
@@ -247,7 +248,7 @@ function CoverageChips() {
 export function PagesTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const openCommandWindow = useOpenSiteCommandRunWindow();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const coverageRaw = searchParams.get("coverage");
@@ -291,7 +292,7 @@ export function PagesTable() {
       // THE DOOR LAW: the whole-row click is a mouse convenience; the title/path
       // cell is the real anchor (keyboard, screen reader, cmd/middle-click).
       // Same destination as `onRowOpen` — the nested page workspace.
-      href: (row) => `${sitePath}/pages/${row.id}`,
+      href: (row) => marketingRoutes.sitePage(brandId, site.id, row.id),
       cell: (row) => (
         <div className="min-w-64 max-w-xl">
           <div className="flex items-center gap-1.5">
@@ -571,7 +572,9 @@ export function PagesTable() {
             }),
           }}
           detail={{ enabled: false }}
-          onRowOpen={(row) => router.push(`${sitePath}/pages/${row.id}`)}
+          onRowOpen={(row) =>
+            router.push(marketingRoutes.sitePage(brandId, site.id, row.id))
+          }
           rowActions={(row) => (
             <>
               <FetchPageButton
@@ -649,7 +652,7 @@ export function PagesTable() {
               siteId: site.id,
               mode: "page_fetch",
               target: captureUrl,
-              sitePath,
+              brandId,
             });
             void startSiteCommandRun({
               siteId: site.id,

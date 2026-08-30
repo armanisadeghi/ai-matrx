@@ -4,6 +4,7 @@ import { Link2Off } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
@@ -53,7 +54,7 @@ const DISCOVERY_SOURCE_OPTIONS = [
 ];
 
 export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "sequence", direction: "asc" },
     defaultPageSize: 50,
@@ -84,7 +85,9 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
       // is knowable and must be reachable. Rows that resolved to nothing
       // (excluded, external, invalid) stay plain text rather than link nowhere.
       href: (row) =>
-        row.page_id ? `${sitePath}/pages/${row.page_id}` : undefined,
+        row.page_id
+          ? marketingRoutes.sitePage(brandId, site.id, row.page_id)
+          : undefined,
       cell: (row) => (
         <div className="min-w-80 max-w-3xl">
           <p className="truncate font-mono text-xs text-foreground">
@@ -168,7 +171,7 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );

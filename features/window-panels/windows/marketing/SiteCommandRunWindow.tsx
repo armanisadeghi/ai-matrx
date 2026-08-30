@@ -29,6 +29,7 @@ import {
   isSiteCommandMode,
   siteCommandKey,
 } from "@/features/marketing/crawler/site-commands";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /**
  * Narrower than the chat reading column on purpose: this body is a progress
@@ -49,8 +50,8 @@ export interface SiteCommandRunWindowProps {
    */
   mode: string;
   target?: string | null;
-  /** Brand-first base path for the site, so the session id stays a door. */
-  sitePath?: string | null;
+  /** The brand that owns the site, so the session id stays a door. */
+  brandId?: string | null;
 }
 
 export default function SiteCommandRunWindow({
@@ -59,7 +60,7 @@ export default function SiteCommandRunWindow({
   siteId,
   mode,
   target = null,
-  sitePath = null,
+  brandId = null,
 }: SiteCommandRunWindowProps) {
   const valid = isSiteCommandMode(mode);
   const key = valid ? siteCommandKey(siteId, mode, target) : "";
@@ -99,8 +100,12 @@ export default function SiteCommandRunWindow({
           <SiteCommandFeed
             run={run}
             sessionHref={
-              sitePath && run.sessionId
-                ? `${sitePath}/crawls/${run.sessionId}`
+              run.sessionId
+                ? marketingRoutes.site(
+                    brandId,
+                    siteId,
+                    `/crawls/${run.sessionId}`,
+                  )
                 : null
             }
             className="h-full"

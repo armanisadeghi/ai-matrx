@@ -12,6 +12,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useCrawlSnapshots } from "@/features/marketing/data/inspection-hooks";
 import type { InspectionSnapshotRow } from "@/features/marketing/data/inspection-types";
 import { useCrawl } from "@/features/marketing/data/hooks";
@@ -32,7 +33,7 @@ export function CrawlSnapshotsInspectionTable({
 }: {
   crawlId: string;
 }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
     defaultPageSize: 50,
@@ -49,7 +50,7 @@ export function CrawlSnapshotsInspectionTable({
       cellKind: "text",
       cell: (row) => (
         <Link
-          href={`${sitePath}/pages/${row.page_id}`}
+          href={marketingRoutes.sitePage(brandId, site.id, row.page_id)}
           className="block min-w-72 max-w-2xl truncate font-mono text-xs text-primary"
           title={pageUrl(row)}
         >
@@ -148,7 +149,11 @@ export function CrawlSnapshotsInspectionTable({
       cellKind: "uuid",
       fk: {
         href: (id, row) =>
-          `${sitePath}/pages/${row.page_id}/snapshots/${id}`,
+          marketingRoutes.site(
+            brandId,
+            site.id,
+            `/pages/${row.page_id}/snapshots/${id}`,
+          ),
       },
     },
   ];
@@ -161,7 +166,7 @@ export function CrawlSnapshotsInspectionTable({
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );

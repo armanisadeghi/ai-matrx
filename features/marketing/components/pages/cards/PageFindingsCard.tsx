@@ -7,6 +7,7 @@ import {
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   formatCompactDate,
   QueryError,
@@ -24,7 +25,7 @@ const LIST_LIMIT = 10;
  * linking into the findings register's detail page.
  */
 export function PageFindingsCard({ page }: { page: MarketingPage }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const findings = usePageOpenFindings(site.id, page.id, LIST_LIMIT);
   const rows = findings.data?.rows ?? [];
   const total = findings.data?.total ?? 0;
@@ -36,7 +37,11 @@ export function PageFindingsCard({ page }: { page: MarketingPage }) {
     f_page_id: `text:${page.id}`,
     f_suppressed: "boolean:false",
   });
-  const registerHref = `${sitePath}/findings?${registerParams.toString()}`;
+  const registerHref = marketingRoutes.site(
+    brandId,
+    site.id,
+    `/findings?${registerParams.toString()}`,
+  );
 
   const copy = webCopy({
     kind: "web-page-findings",
@@ -93,7 +98,7 @@ export function PageFindingsCard({ page }: { page: MarketingPage }) {
           {rows.map((row) => (
             <li key={row.id}>
               <Link
-                href={`${sitePath}/findings/${row.id}`}
+                href={marketingRoutes.site(brandId, site.id, `/findings/${row.id}`)}
                 className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-muted/50"
               >
                 <SeverityBadge value={row.severity} />

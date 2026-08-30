@@ -5233,7 +5233,7 @@ export default function OverlayController() {
             siteId={siteId}
             mode={modeRaw}
             target={typeof data?.target === "string" ? data.target : null}
-            sitePath={typeof data?.sitePath === "string" ? data.sitePath : null}
+            brandId={typeof data?.brandId === "string" ? data.brandId : null}
           />
         );
       })}

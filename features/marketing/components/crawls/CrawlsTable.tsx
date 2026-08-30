@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCrawlsScope } from "@/features/surfaces/manifests/marketing-crawls.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -59,7 +60,7 @@ const ACTIVE_STATUSES = new Set(["queued", "running"]);
 
 export function CrawlsTable() {
   const router = useRouter();
-  const { site, sitePath, crawlActivity } = useMarketingSite();
+  const { site, brandId, crawlActivity } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "started_at", direction: "desc" },
@@ -140,7 +141,7 @@ export function CrawlsTable() {
       // its id), so it is the real anchor — keyboard, screen reader,
       // cmd/middle-click. Same destination as `onRowOpen`, which stays a mouse
       // convenience.
-      href: (row) => `${sitePath}/crawls/${row.id}`,
+      href: (row) => marketingRoutes.site(brandId, site.id, `/crawls/${row.id}`),
       cell: (row) => (
         <div className="whitespace-nowrap">
           <p className="text-xs font-medium">
@@ -412,7 +413,7 @@ export function CrawlsTable() {
                   size="sm"
                   variant="outline"
                   className="h-8 gap-1.5 border-primary/40 text-primary"
-                  onClick={() => router.push(`${sitePath}/crawls/new`)}
+                  onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
                 >
                   <Radio className="h-3.5 w-3.5 animate-pulse" /> Open live
                   crawl
@@ -421,7 +422,7 @@ export function CrawlsTable() {
                 <Button
                   size="sm"
                   className="h-8 gap-1.5"
-                  onClick={() => router.push(`${sitePath}/crawls/new`)}
+                  onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
                 >
                   <Play className="h-3.5 w-3.5" /> Start crawl
                 </Button>
@@ -463,7 +464,7 @@ export function CrawlsTable() {
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>
-          router.push(`${sitePath}/crawls/${row.id}`)
+          router.push(marketingRoutes.site(brandId, site.id, `/crawls/${row.id}`))
         }
         rowActions={(row) => (
           <div className="flex items-center gap-0.5">

@@ -4,17 +4,21 @@ import Link from "next/link";
 import { ArrowRight, Route } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 
 export function AuthorityRouterDoor({
-  sitePath,
+  brandId,
+  siteId,
   compact = false,
   className,
 }: {
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   compact?: boolean;
   className?: string;
 }) {
+  const href = marketingRoutes.siteAuthority(brandId, siteId);
   if (compact) {
     return (
       <Button
@@ -23,7 +27,7 @@ export function AuthorityRouterDoor({
         variant="outline"
         className={cn("gap-1.5", className)}
       >
-        <Link href={`${sitePath}/authority`}>
+        <Link href={href}>
           <Route className="h-3.5 w-3.5" />
           Route authority
         </Link>
@@ -33,7 +37,7 @@ export function AuthorityRouterDoor({
 
   return (
     <Link
-      href={`${sitePath}/authority`}
+      href={href}
       className={cn(
         "group flex items-center justify-between gap-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5 transition-colors hover:bg-emerald-500/10",
         className,

@@ -26,6 +26,7 @@ import {
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { FindingsAssistStrip } from "@/features/marketing/components/analysis/FindingsAssistStrip";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAnalysisScope } from "@/features/surfaces/manifests/marketing-analysis.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -71,19 +72,27 @@ function projectPriorityRow(row: PriorityQueueRow) {
   };
 }
 
-function filteredFindingsHref(basePath: string, row: PriorityQueueRow) {
+function filteredFindingsHref(
+  brandId: string | null,
+  siteId: string,
+  row: PriorityQueueRow,
+) {
   const params = new URLSearchParams();
   if (row.item_key) params.set("f_item_key", `text:${row.item_key}`);
   if (row.item_id) params.set("f_item_id", `text:${row.item_id}`);
   if (row.page_id) params.set("f_page_id", `text:${row.page_id}`);
   const query = params.toString();
-  return `${basePath}/findings${query ? `?${query}` : ""}`;
+  return marketingRoutes.site(
+    brandId,
+    siteId,
+    `/findings${query ? `?${query}` : ""}`,
+  );
 }
 
 export function SiteAnalysisTable() {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "priority", direction: "desc" },
@@ -171,7 +180,9 @@ export function SiteAnalysisTable() {
                 title="Open the page workspace"
                 onClick={(event) => {
                   event.stopPropagation();
-                  navigate(`${sitePath}/pages/${row.page_id}`);
+                  navigate(
+                  marketingRoutes.sitePage(brandId, site.id, row.page_id ?? ""),
+                );
                 }}
               >
                 {row.page_path || row.page_id.slice(0, 12)}
@@ -380,7 +391,7 @@ export function SiteAnalysisTable() {
               <Button
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={() => navigate(`${sitePath}/findings`)}
+                onClick={() => navigate(marketingRoutes.site(brandId, site.id, "/findings"))}
                 disabled={isNavigating}
               >
                 {isNavigating ? (
@@ -433,7 +444,9 @@ export function SiteAnalysisTable() {
           ],
         }}
         detail={{ enabled: false }}
-        onRowOpen={(row) => navigate(filteredFindingsHref(sitePath, row))}
+        onRowOpen={(row) =>
+          navigate(filteredFindingsHref(brandId, site.id, row))
+        }
         emptyState={{
           icon: <CircleGauge className="h-8 w-8 text-muted-foreground" />,
           title: "No prioritized findings",

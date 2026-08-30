@@ -42,6 +42,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useLinkGraphEdges } from "@/features/marketing/data/inspection-hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 
@@ -181,13 +182,15 @@ function NodePanel({
   node,
   model,
   rootUrl,
-  sitePath,
+  brandId,
+  siteId,
   onClose,
 }: {
   node: LinkGraphNode;
   model: LinkGraphModel;
   rootUrl: string;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   onClose: () => void;
 }) {
   const isMobile = useIsMobile();
@@ -317,7 +320,7 @@ function NodePanel({
         ) : null}
         {node.pageId ? (
           <Link
-            href={`${sitePath}/pages/${node.pageId}`}
+            href={marketingRoutes.sitePage(brandId, siteId, node.pageId)}
             className="inline-flex items-center gap-1 text-xs font-medium text-primary"
           >
             Open page workspace
@@ -336,12 +339,14 @@ function NodePanel({
 /** Drill-down panel for one aggregated section. */
 function SectionPanel({
   node,
-  sitePath,
+  brandId,
+  siteId,
   onDrillIn,
   onClose,
 }: {
   node: SectionGraphNode;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   onDrillIn: () => void;
   onClose: () => void;
 }) {
@@ -407,7 +412,7 @@ function SectionPanel({
         ) : null}
         {node.pageId ? (
           <Link
-            href={`${sitePath}/pages/${node.pageId}`}
+            href={marketingRoutes.sitePage(brandId, siteId, node.pageId)}
             className="block truncate text-primary"
           >
             Open page record
@@ -436,7 +441,7 @@ export function LinkGraphView({
   /** Jump to the outbound-links view (the External tab on the links page). */
   onShowExternal?: () => void;
 }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const query = useLinkGraphEdges(site.id, crawlId ?? null);
 
   const [layoutId, setLayoutId] = useState<LinkLayoutId>("fcose");
@@ -879,13 +884,15 @@ export function LinkGraphView({
             node={selected}
             model={model}
             rootUrl={site.root_url}
-            sitePath={sitePath}
+            brandId={brandId}
+            siteId={site.id}
             onClose={() => setSelectedId(null)}
           />
         ) : selectedSection ? (
           <SectionPanel
             node={selectedSection}
-            sitePath={sitePath}
+            brandId={brandId}
+            siteId={site.id}
             onDrillIn={() => {
               setFocusPath(selectedSection.path);
               setSelectedId(null);

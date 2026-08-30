@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import {
@@ -35,7 +36,7 @@ import {
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export function CrawlSummary({ crawlId }: { crawlId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const crawl = useCrawl(site.id, crawlId);
   const [canceling, setCanceling] = useState(false);
   // Live refresh comes from useCrawl itself (3s refetchInterval while
@@ -68,7 +69,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );
@@ -189,7 +190,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
               variant="outline"
               className="h-7 gap-1.5 border-primary/40 px-2 text-primary"
             >
-              <Link href={`${sitePath}/crawls/new`}>
+              <Link href={marketingRoutes.site(brandId, site.id, "/crawls/new")}>
                 <Radio className="h-3.5 w-3.5 animate-pulse" /> Watch live
               </Link>
             </Button>

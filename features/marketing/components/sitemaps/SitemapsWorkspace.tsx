@@ -31,6 +31,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingSitemapsScope } from "@/features/surfaces/manifests/marketing-sitemaps.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   marketingKeys,
   useDismissSitemap,
@@ -56,7 +57,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 
 export function SitemapsWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
   const pathname = usePathname();
@@ -463,7 +464,11 @@ export function SitemapsWorkspace() {
                   href={
                     sitemap.kind === "sitemapindex"
                       ? null
-                      : `${sitePath}/sitemaps/${sitemap.id}`
+                      : marketingRoutes.site(
+                          brandId,
+                          site.id,
+                          `/sitemaps/${sitemap.id}`,
+                        )
                   }
                   onToggleActive={() => void toggleActive(sitemap)}
                   onDismiss={() => setDismissing(sitemap)}

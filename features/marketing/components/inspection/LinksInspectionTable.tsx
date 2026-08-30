@@ -36,6 +36,7 @@ import {
   tableViewState,
 } from "@/features/marketing/lib/scopes/table-view-values";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   useCrawlLinks,
   useLinkGraphEdges,
@@ -180,7 +181,7 @@ function buildExternalDomainsTop(
 }
 
 export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
   const pathname = usePathname();
@@ -255,7 +256,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       cellKind: "text",
       cell: (row) => (
         <Link
-          href={`${sitePath}/pages/${row.source_page_id}`}
+          href={marketingRoutes.sitePage(brandId, site.id, row.source_page_id)}
           className="block min-w-48 max-w-xl truncate font-mono text-xs text-primary"
           title={sourceUrl(row)}
         >
@@ -364,7 +365,11 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       cellKind: "uuid",
       fk: {
         href: (id, row) =>
-          `${sitePath}/pages/${row.source_page_id}/snapshots/${id}`,
+          marketingRoutes.site(
+            brandId,
+            site.id,
+            `/pages/${row.source_page_id}/snapshots/${id}`,
+          ),
       },
     },
   ];
@@ -378,7 +383,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );
@@ -556,7 +561,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       </section>
       {!crawlId ? (
         <div className="shrink-0 border-b border-border px-3 py-2 sm:px-4">
-          <AuthorityRouterDoor sitePath={sitePath} />
+          <AuthorityRouterDoor brandId={brandId} siteId={site.id} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

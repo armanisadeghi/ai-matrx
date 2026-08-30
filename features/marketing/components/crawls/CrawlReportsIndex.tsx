@@ -51,7 +51,7 @@ const CATEGORIES = [
 ] as const;
 
 export function CrawlReportsIndex({ crawlId }: { crawlId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const crawl = useCrawl(site.id, crawlId);
 
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl reports…" />;
@@ -62,7 +62,7 @@ export function CrawlReportsIndex({ crawlId }: { crawlId: string }) {
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );

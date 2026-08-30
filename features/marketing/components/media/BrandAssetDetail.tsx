@@ -43,6 +43,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrand } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { type BrandAsset } from "@/features/marketing/types";
 import { readVideoMetadata } from "@/features/marketing/lib/video-metadata";
 import type { Json } from "@/types/database.types";
@@ -56,14 +57,16 @@ export interface AssetPageRef {
 
 export function BrandAssetDetail({
   asset,
-  sitePath,
+  brandId,
+  siteId,
   /** Canonical pages this asset was crawled on, when the caller knows them. */
   pages,
   posterUrl,
   onEdit,
 }: {
   asset: BrandAsset;
-  sitePath?: string;
+  brandId?: string | null;
+  siteId?: string | null;
   pages?: readonly AssetPageRef[];
   posterUrl?: string | null;
   onEdit?: () => void;
@@ -328,7 +331,15 @@ export function BrandAssetDetail({
                   token="web_page"
                   id={page.pageId}
                   name={page.path || page.url}
-                  href={sitePath ? `${sitePath}/pages/${page.pageId}` : undefined}
+                  href={
+                    siteId
+                      ? marketingRoutes.sitePage(
+                          brandId ?? null,
+                          siteId,
+                          page.pageId,
+                        )
+                      : undefined
+                  }
                   wrap
                 />
               </li>
@@ -392,7 +403,8 @@ export function BrandAssetDetailDialog({
   asset,
   open,
   onOpenChange,
-  sitePath,
+  brandId,
+  siteId,
   pages,
   posterUrl,
   onEdit,
@@ -400,7 +412,8 @@ export function BrandAssetDetailDialog({
   asset: BrandAsset | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sitePath?: string;
+  brandId?: string | null;
+  siteId?: string | null;
   pages?: readonly AssetPageRef[];
   posterUrl?: string | null;
   onEdit?: () => void;
@@ -421,7 +434,8 @@ export function BrandAssetDetailDialog({
             </DialogHeader>
             <BrandAssetDetail
               asset={asset}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={siteId}
               pages={pages}
               posterUrl={posterUrl}
               onEdit={onEdit}

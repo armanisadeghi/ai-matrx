@@ -1,8 +1,7 @@
 import { siteSeoCapabilities } from "./capabilities";
 
 describe("siteSeoCapabilities", () => {
-  const sitePath = "/marketing/brands/brand-1/sites/site-1";
-  const capabilities = siteSeoCapabilities(sitePath);
+  const capabilities = siteSeoCapabilities("brand-1", "site-1");
 
   it("keeps every advertised capability actionable", () => {
     expect(capabilities).not.toHaveLength(0);
@@ -18,12 +17,16 @@ describe("siteSeoCapabilities", () => {
     );
   });
 
-  it("routes site-scoped destinations through the supplied site path", () => {
+  it("routes site-scoped destinations into the brand's site tree", () => {
     const siteScoped = capabilities.filter(
       (item) => item.key !== "search-console",
     );
     expect(
-      siteScoped.every((item) => item.destination.startsWith(sitePath)),
+      siteScoped.every((item) =>
+        /^\/marketing\/brand-1\/(websites|seo)\/site-1(\/|\?|$)/.test(
+          item.destination,
+        ),
+      ),
     ).toBe(true);
   });
 });

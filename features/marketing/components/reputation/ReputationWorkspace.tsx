@@ -38,6 +38,7 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CrmFoldControl } from "@/features/crm/components/outreach-start/CrmFoldControl";
 import { StartOutreachDialog } from "@/features/crm/components/outreach-start/StartOutreachDialog";
 import { isReputationOutreachVerdict } from "@/features/crm/outreach-start/service";
@@ -173,13 +174,13 @@ function EvidenceReferenceCard({ reference }: { reference: ReputationEvidenceRef
  */
 function CaseVerdictAction({
   row,
-  sitePath,
+  brandId,
   siteId,
   organizationId,
   onRecheck,
 }: {
   row: ReputationCaseRow;
-  sitePath: string;
+  brandId: string | null;
   siteId: string;
   organizationId: string;
   onRecheck: () => void;
@@ -234,7 +235,9 @@ function CaseVerdictAction({
   if (row.verdict === "strengthen") {
     // "Strengthen" is a verdict about OUR OWN asset, not about an outlet —
     // the action is the page workspace, never an email.
-    const href = row.page_id ? `${sitePath}/pages/${row.page_id}` : `${sitePath}/pages`;
+    const href = row.page_id
+      ? marketingRoutes.sitePage(brandId, siteId, row.page_id)
+      : marketingRoutes.site(brandId, siteId, "/pages");
     return (
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
@@ -253,7 +256,13 @@ function CaseVerdictAction({
     return (
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
-          <Link href={`${sitePath}/reputation?view=narratives`}>
+          <Link
+            href={marketingRoutes.site(
+              brandId,
+              siteId,
+              "/reputation?view=narratives",
+            )}
+          >
             <ShieldCheck className="h-3.5 w-3.5" /> See the narratives this supports
           </Link>
         </Button>
@@ -296,7 +305,7 @@ function CaseVerdictAction({
 
 function CaseCard({
   row,
-  sitePath,
+  brandId,
   siteId,
   organizationId,
   onStatus,
@@ -304,7 +313,7 @@ function CaseCard({
   updating,
 }: {
   row: ReputationCaseRow;
-  sitePath: string;
+  brandId: string | null;
   siteId: string;
   organizationId: string;
   onStatus: (status: ReputationCaseStatus) => void;
@@ -316,9 +325,15 @@ function CaseCard({
   const refs = evidenceRefs(row.evidence_refs);
   const missing = jsonStrings(row.missing_evidence);
   const backlinkHref = row.backlink_id
-    ? `${sitePath}/backlinks?tab=backlinks&search=${encodeURIComponent(row.source_url ?? row.backlink_id)}`
+    ? marketingRoutes.site(
+        brandId,
+        siteId,
+        `/backlinks?tab=backlinks&search=${encodeURIComponent(row.source_url ?? row.backlink_id)}`,
+      )
     : null;
-  const pageHref = row.page_id ? `${sitePath}/pages/${row.page_id}` : null;
+  const pageHref = row.page_id
+    ? marketingRoutes.sitePage(brandId, siteId, row.page_id)
+    : null;
   return (
     <article className="rounded-xl border bg-card shadow-sm">
       <div className="p-4">
@@ -351,7 +366,7 @@ function CaseCard({
               </p>
               <CaseVerdictAction
                 row={row}
-                sitePath={sitePath}
+                brandId={brandId}
                 siteId={siteId}
                 organizationId={organizationId}
                 onRecheck={onRecheck}
@@ -543,7 +558,7 @@ function KpiBand({ data }: { data: ReputationWorkspaceData }) {
 }
 
 export function ReputationWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const params = useParams<{ brandId: string }>();
   const pathname = usePathname();
@@ -771,7 +786,7 @@ export function ReputationWorkspace() {
                           <CaseCard
                             key={row.id}
                             row={row}
-                            sitePath={sitePath}
+                            brandId={brandId}
                             siteId={site.id}
                             organizationId={site.organization_id}
                             updating={updateCase.isPending && updateCase.variables?.caseId === row.id}
@@ -839,7 +854,7 @@ export function ReputationWorkspace() {
                   <CaseCard
                     key={row.id}
                     row={row}
-                    sitePath={sitePath}
+                    brandId={brandId}
                     siteId={site.id}
                     organizationId={site.organization_id}
                     updating={updateCase.isPending && updateCase.variables?.caseId === row.id}
@@ -905,7 +920,9 @@ export function ReputationWorkspace() {
                   </div>
                   <div className="flex flex-wrap gap-2 border-t p-3">
                     <Button asChild size="sm" variant="outline" className="h-7">
-                      <Link href={`${sitePath}/backlinks`}>Open backlink evidence</Link>
+                      <Link href={marketingRoutes.site(brandId, site.id, "/backlinks")}>
+                        Open backlink evidence
+                      </Link>
                     </Button>
                     <Button asChild size="sm" variant="outline" className="h-7">
                       <Link href={`/marketing/brands/${params.brandId}`}>Open brand facts & assets</Link>

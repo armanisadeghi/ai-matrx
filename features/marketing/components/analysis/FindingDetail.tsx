@@ -33,6 +33,7 @@ import {
   SeverityBadge,
 } from "@/features/marketing/components/analysis/AnalysisBadges";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingFindingsScope } from "@/features/surfaces/manifests/marketing-findings.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -129,14 +130,14 @@ function ResultDoor({
   label,
   result,
   id,
-  sitePath,
+  brandId,
   pageUrl,
   siteName,
 }: {
   label: string;
   result: MarketingAnalysisResult | null;
   id: string | null;
-  sitePath: string;
+  brandId: string | null;
   pageUrl: string | null;
   siteName: string;
 }) {
@@ -181,7 +182,7 @@ function ResultDoor({
           </DialogHeader>
           <AnalysisResultInspector
             result={result}
-            sitePath={sitePath}
+            brandId={brandId}
             pageUrl={pageUrl}
             siteName={siteName}
           />
@@ -194,7 +195,7 @@ function ResultDoor({
 export function FindingDetail({ findingId }: { findingId: string }) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const table = useMarketingTableState({
@@ -456,7 +457,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                 variant="ghost"
                 size="sm"
                 className="h-7 gap-1 px-2"
-                onClick={() => navigate(`${sitePath}/findings`)}
+                onClick={() => navigate(marketingRoutes.site(brandId, site.id, "/findings"))}
                 disabled={isNavigating}
               >
                 {isNavigating ? (
@@ -541,7 +542,13 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                   size="sm"
                   className="h-8 shrink-0"
                   onClick={() =>
-                    navigate(`${sitePath}/pages/${data.page?.id}`)
+                    navigate(
+                      marketingRoutes.sitePage(
+                        brandId,
+                        site.id,
+                        data.page?.id ?? "",
+                      ),
+                    )
                   }
                 >
                   Page workspace
@@ -613,7 +620,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             label="First result"
             result={data.firstResult}
             id={finding.first_result_id}
-            sitePath={sitePath}
+            brandId={brandId}
             pageUrl={data.page?.url ?? null}
             siteName={site.name}
           />
@@ -621,7 +628,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             label="Latest result"
             result={data.lastResult}
             id={finding.last_result_id}
-            sitePath={sitePath}
+            brandId={brandId}
             pageUrl={data.page?.url ?? null}
             siteName={site.name}
           />
@@ -658,7 +665,9 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         site={site}
         pageId={data.page?.id ?? null}
         pageWorkspaceHref={
-          data.page ? `${sitePath}/pages/${data.page.id}` : null
+          data.page
+            ? marketingRoutes.sitePage(brandId, site.id, data.page.id)
+            : null
         }
       />
 
@@ -668,7 +677,9 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         context={remedyContext}
         surfaceName="matrx-user/marketing-findings"
         pageWorkspaceHref={
-          data.page ? `${sitePath}/pages/${data.page.id}` : null
+          data.page
+            ? marketingRoutes.sitePage(brandId, site.id, data.page.id)
+            : null
         }
         suppressed={finding.suppressed}
         onSuppress={async (reason) => {
@@ -769,7 +780,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               render: (row) => (
                 <AnalysisResultInspector
                   result={row}
-                  sitePath={sitePath}
+                  brandId={brandId}
                   pageUrl={data.page?.url ?? null}
                   siteName={site.name}
                 />
@@ -780,7 +791,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               renderView: (row) => (
                 <AnalysisResultInspector
                   result={row}
-                  sitePath={sitePath}
+                  brandId={brandId}
                   pageUrl={data.page?.url ?? null}
                   siteName={site.name}
                 />

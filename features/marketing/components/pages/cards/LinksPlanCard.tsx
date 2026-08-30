@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
@@ -137,7 +138,8 @@ function PlannedLinkListEditor({
   scoreByEntryId,
   pending,
   datalistId,
-  sitePath,
+  brandId,
+  siteId,
   urlPlaceholder,
   anchorPlaceholder,
 }: {
@@ -146,7 +148,8 @@ function PlannedLinkListEditor({
   scoreByEntryId: Map<string, PlannedLinkScore>;
   pending: boolean;
   datalistId: string;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   urlPlaceholder: string;
   anchorPlaceholder: string;
 }) {
@@ -235,7 +238,11 @@ function PlannedLinkListEditor({
               />
               {score?.partnerPageId ? (
                 <Link
-                  href={`${sitePath}/pages/${score.partnerPageId}`}
+                  href={marketingRoutes.sitePage(
+                    brandId,
+                    siteId,
+                    score.partnerPageId,
+                  )}
                   className="shrink-0 text-[11px] text-muted-foreground hover:text-primary"
                 >
                   Open page
@@ -310,7 +317,7 @@ function PlannedLinkListEditor({
 }
 
 export function LinksPlan({ page }: { page: MarketingPage }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const datalistId = useId();
   const anchors = useDesiredValueSlice(page, "accepted_anchor_texts");
   const inboundPlan = useDesiredValueSlice(page, "inbound_links");
@@ -454,7 +461,8 @@ export function LinksPlan({ page }: { page: MarketingPage }) {
           scoreByEntryId={inboundScoreById}
           pending={inboundPending}
           datalistId={datalistId}
-          sitePath={sitePath}
+          brandId={brandId}
+          siteId={site.id}
           urlPlaceholder="Source page URL that should link here"
           anchorPlaceholder="Preferred anchor (empty = any accepted anchor)"
         />
@@ -480,7 +488,8 @@ export function LinksPlan({ page }: { page: MarketingPage }) {
           scoreByEntryId={outboundScoreById}
           pending={outboundPending}
           datalistId={datalistId}
-          sitePath={sitePath}
+          brandId={brandId}
+          siteId={site.id}
           urlPlaceholder="Target page URL this page should link to"
           anchorPlaceholder="Planned anchor (empty = target's accepted anchors)"
         />

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import Link from "next/link";
 import {
   Activity,
@@ -61,7 +62,7 @@ export function LiveCrawlFeed({
   realtimeStatus?: CrawlRealtimeStatus;
   className?: string;
 }) {
-  const { sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const counters = useMemo(() => summarizeLiveCrawlEvents(events), [events]);
   // The crawl rate is no longer the number the user typed: it is detected,
   // ramped and clamped per host. Vision point 8 — a silently-clamped setting is
@@ -251,7 +252,7 @@ export function LiveCrawlFeed({
       {sessionId && siteId ? (
         <div className="flex shrink-0 justify-end border-t border-border px-3 py-2">
           <Button asChild variant="outline" size="sm" className="h-8">
-            <Link href={`${sitePath}/crawls/${sessionId}`}>
+            <Link href={marketingRoutes.site(brandId, site.id, `/crawls/${sessionId}`)}>
               Open durable session
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>

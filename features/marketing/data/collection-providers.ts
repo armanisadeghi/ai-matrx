@@ -22,10 +22,7 @@ import {
   SearchCheck,
 } from "lucide-react";
 
-import {
-  marketingRoutes,
-  marketingSiteSettingsHref,
-} from "@/features/marketing/lib/routes";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   BING_PROVIDER,
   GOOGLE_SEARCH_CONSOLE_PROVIDER,
@@ -73,8 +70,8 @@ export interface CollectionProviderSpec {
 
 export interface CollectionDoorContext {
   siteId: string;
-  /** Canonical brand-first base path for the site, no trailing slash. */
-  sitePath: string;
+  /** The brand that owns the site — every door is built by `marketingRoutes`. */
+  brandId: string | null;
 }
 
 export interface CollectionDoor {
@@ -91,9 +88,9 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     rowUnit: "stored search rows",
     cadence: "scheduled",
     runnable: true,
-    fix: ({ sitePath }) => ({
+    fix: ({ brandId, siteId }) => ({
       label: "Connect Search Console",
-      href: marketingSiteSettingsHref(sitePath, "integrations"),
+      href: marketingRoutes.siteSettings(brandId, siteId, "integrations"),
     }),
     data: ({ siteId }) => ({
       label: "Open search data",
@@ -127,9 +124,9 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     rowUnit: "stored visit days",
     cadence: "scheduled",
     runnable: true,
-    fix: ({ sitePath }) => ({
+    fix: ({ brandId, siteId }) => ({
       label: "Connect Analytics",
-      href: marketingSiteSettingsHref(sitePath, "integrations"),
+      href: marketingRoutes.siteSettings(brandId, siteId, "integrations"),
     }),
     data: () => null,
   },
@@ -141,13 +138,13 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     rowUnit: "measured pages",
     cadence: "on_demand",
     runnable: false,
-    fix: ({ sitePath }) => ({
+    fix: ({ brandId, siteId }) => ({
       label: "Connect page speed",
-      href: marketingSiteSettingsHref(sitePath, "integrations"),
+      href: marketingRoutes.siteSettings(brandId, siteId, "integrations"),
     }),
-    data: ({ sitePath }) => ({
+    data: ({ brandId, siteId }) => ({
       label: "Open speed report",
-      href: `${sitePath}/performance`,
+      href: marketingRoutes.site(brandId, siteId, "/performance"),
     }),
   },
   {
@@ -158,13 +155,13 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     rowUnit: "stored backlink snapshots",
     cadence: "scheduled",
     runnable: false,
-    fix: ({ sitePath }) => ({
+    fix: ({ brandId, siteId }) => ({
       label: "Set up backlink refresh",
-      href: marketingSiteSettingsHref(sitePath, "integrations"),
+      href: marketingRoutes.siteSettings(brandId, siteId, "integrations"),
     }),
-    data: ({ sitePath }) => ({
+    data: ({ brandId, siteId }) => ({
       label: "Open backlinks",
-      href: `${sitePath}/backlinks`,
+      href: marketingRoutes.site(brandId, siteId, "/backlinks"),
     }),
   },
   {
@@ -175,13 +172,13 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     rowUnit: "rank checks",
     cadence: "on_demand",
     runnable: false,
-    fix: ({ sitePath }) => ({
+    fix: ({ brandId, siteId }) => ({
       label: "Set up rank tracking",
-      href: `${sitePath}/ranks`,
+      href: marketingRoutes.site(brandId, siteId, "/ranks"),
     }),
-    data: ({ sitePath }) => ({
+    data: ({ brandId, siteId }) => ({
       label: "Open rank portfolio",
-      href: `${sitePath}/ranks`,
+      href: marketingRoutes.site(brandId, siteId, "/ranks"),
     }),
   },
   {
@@ -192,13 +189,13 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     rowUnit: "rank checks",
     cadence: "on_demand",
     runnable: false,
-    fix: ({ sitePath }) => ({
+    fix: ({ brandId, siteId }) => ({
       label: "Set up rank tracking",
-      href: `${sitePath}/ranks`,
+      href: marketingRoutes.site(brandId, siteId, "/ranks"),
     }),
-    data: ({ sitePath }) => ({
+    data: ({ brandId, siteId }) => ({
       label: "Open rank portfolio",
-      href: `${sitePath}/ranks`,
+      href: marketingRoutes.site(brandId, siteId, "/ranks"),
     }),
   },
 ];

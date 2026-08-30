@@ -8,6 +8,7 @@
  */
 
 import { MetricCell } from "@/features/marketing/components/shared/MarketingUi";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { parseSummaryExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
@@ -41,17 +42,23 @@ interface KpiTile {
 export function BacklinkKpiBand({
   summary,
   siteDomain,
-  sitePath,
+  brandId,
+  siteId,
   location,
 }: {
   summary: BacklinkSnapshotRow | null | undefined;
   siteDomain: string;
-  /** `/marketing/brands/x/sites/y` — the base for every in-app destination. */
-  sitePath: string;
+  /** The site's owning brand + the site itself — every in-app destination. */
+  brandId: string | null;
+  siteId: string;
   location: string;
 }) {
   const lensHref = (insight: string) =>
-    `${sitePath}/backlinks?view=insights&insight=${insight}`;
+    marketingRoutes.site(
+      brandId,
+      siteId,
+      `/backlinks?view=insights&insight=${insight}`,
+    );
   if (!summary) {
     return (
       <div className="rounded-md border border-dashed border-border bg-card/60 p-4">

@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingAuditScope } from "@/features/surfaces/manifests/marketing-audit.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -369,18 +370,19 @@ function GonePageRow({
 
 function AuditBody({
   rollup,
-  sitePath,
+  brandId,
   trendPoints,
   siteDomain,
   siteId,
 }: {
   rollup: SiteAuditRollup;
-  sitePath: string;
+  brandId: string | null;
   trendPoints: AuditTrendPoint[];
   siteDomain: string;
   siteId: string;
 }) {
-  const pagePath = (pageId: string) => `${sitePath}/pages/${pageId}`;
+  const pagePath = (pageId: string) =>
+    marketingRoutes.sitePage(brandId, siteId, pageId);
   const pageLocation = webLocation(`Site audit — ${siteDomain}`);
   const pageKpis = auditPageKpis(rollup);
   const [showAllIssues, setShowAllIssues] = useState(false);
@@ -392,7 +394,11 @@ function AuditBody({
   // THE COUNT IS A DOOR: `?coverage=gone` is the same URL-owned filter the
   // coverage matrix tiles use, so every gone page is reachable in the pages
   // table with its full toolset (sort, export, dismiss, open).
-  const gonePagesHref = `${sitePath}/pages?coverage=gone`;
+  const gonePagesHref = marketingRoutes.site(
+    brandId,
+    siteId,
+    "/pages?coverage=gone",
+  );
   const visibleIssues = showAllIssues
     ? rollup.topIssues
     : rollup.topIssues.slice(0, TOP_ISSUE_PREVIEW);
@@ -1016,7 +1022,7 @@ function AuditBody({
 }
 
 export function AuditWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const rollup = useSiteAuditRollup(site.id);
   // access-errors: ok — decorative score-trend series; the rollup read below is the gated primary and the trend chart simply stays empty
@@ -1056,7 +1062,7 @@ export function AuditWorkspace() {
     >
       <AuditBody
         rollup={data}
-        sitePath={sitePath}
+        brandId={brandId}
         trendPoints={trend.data ?? []}
         siteDomain={site.domain}
         siteId={site.id}

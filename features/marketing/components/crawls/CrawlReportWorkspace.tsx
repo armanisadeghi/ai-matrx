@@ -203,7 +203,8 @@ function chainPathCell(path: string[]) {
 }
 
 function baseSnapshotColumns(
-  sitePath: string,
+  brandId: string | null,
+  siteId: string,
 ): MatrxColumnDef<CrawlSnapshotReportRow>[] {
   return [
     {
@@ -213,7 +214,8 @@ function baseSnapshotColumns(
       sortable: false,
       filter: false,
       cellKind: "text",
-      cell: (row) => urlCell(row.url, `${sitePath}/pages/${row.pageId}`),
+      cell: (row) =>
+        urlCell(row.url, marketingRoutes.sitePage(brandId, siteId, row.pageId)),
     },
     {
       id: "http_status",
@@ -232,10 +234,11 @@ function baseSnapshotColumns(
 
 function snapshotReportColumns(
   reportKey: CrawlReportKey,
-  sitePath: string,
+  brandId: string | null,
+  siteId: string,
   canonicalLookup: CanonicalLookup | null,
 ): MatrxColumnDef<CrawlSnapshotReportRow>[] {
-  const base = baseSnapshotColumns(sitePath);
+  const base = baseSnapshotColumns(brandId, siteId);
   const derived = (
     columns: MatrxColumnDef<CrawlSnapshotReportRow>[],
   ): MatrxColumnDef<CrawlSnapshotReportRow>[] => [
@@ -691,7 +694,10 @@ function snapshotReportColumns(
   }
 }
 
-function responseColumns(sitePath: string): MatrxColumnDef<CrawlUrl>[] {
+function responseColumns(
+  brandId: string | null,
+  siteId: string,
+): MatrxColumnDef<CrawlUrl>[] {
   return [
     {
       id: "sequence",
@@ -711,7 +717,9 @@ function responseColumns(sitePath: string): MatrxColumnDef<CrawlUrl>[] {
       cell: (row) =>
         urlCell(
           row.raw_url,
-          row.page_id ? `${sitePath}/pages/${row.page_id}` : undefined,
+          row.page_id
+            ? marketingRoutes.sitePage(brandId, siteId, row.page_id)
+            : undefined,
         ),
     },
     {
@@ -953,7 +961,7 @@ export function CrawlReportWorkspace({
   crawlId: string;
   reportKey: CrawlReportKey;
 }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const router = useRouter();
   const report = getCrawlReport(reportKey);
   // The content report has two views: the per-page table and the
@@ -1027,7 +1035,7 @@ export function CrawlReportWorkspace({
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );
@@ -1212,7 +1220,7 @@ export function CrawlReportWorkspace({
           ) : isResponseReport ? (
             <MatrxDataTable<CrawlUrl>
               data={urls.data?.rows ?? []}
-              columns={responseColumns(sitePath)}
+              columns={responseColumns(brandId, site.id)}
               getRowId={(row) => row.id}
               isLoading={urls.isLoading}
               isFetching={urls.isFetching}
@@ -1365,7 +1373,8 @@ export function CrawlReportWorkspace({
               data={snapshotRows}
               columns={snapshotReportColumns(
                 reportKey,
-                sitePath,
+                brandId,
+                site.id,
                 canonicalLookup,
               )}
               getRowId={(row) => row.id}

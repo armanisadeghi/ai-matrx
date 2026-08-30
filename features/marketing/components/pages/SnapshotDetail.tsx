@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useSnapshot } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { Json } from "@/types/database.types";
@@ -35,7 +36,7 @@ export function SnapshotDetail({
   pageId: string;
   snapshotId: string;
 }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const snapshot = useSnapshot(site.id, pageId, snapshotId);
   // Hooks run before the guards — the doors below need them either way.
   const resolveActor = useRecordActors(snapshot.data?.organization_id, [
@@ -52,7 +53,7 @@ export function SnapshotDetail({
         id={snapshotId}
         error={snapshot.error}
         onRetry={() => void snapshot.refetch()}
-        fallbackHref={`${sitePath}/pages/${pageId}`}
+        fallbackHref={marketingRoutes.sitePage(brandId, site.id, pageId)}
         fallbackLabel="Back to the page"
       />
     );
@@ -128,7 +129,11 @@ export function SnapshotDetail({
             <CopyButtons size="icon" {...snapshotCopy} />
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link
-                href={`${sitePath}/pages/${pageId}/snapshots`}
+                href={marketingRoutes.site(
+                  brandId,
+                  site.id,
+                  `/pages/${pageId}/snapshots`,
+                )}
               >
                 <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                 Timeline
@@ -181,7 +186,7 @@ export function SnapshotDetail({
                     token="web_page"
                     id={pageId}
                     name={row.final_url ?? undefined}
-                    href={`${sitePath}/pages/${pageId}`}
+                    href={marketingRoutes.sitePage(brandId, site.id, pageId)}
                     wrap
                   />
                 ),
@@ -191,7 +196,8 @@ export function SnapshotDetail({
                 label: "Crawl session",
                 value: (
                   <CrawlSessionRef
-                    sitePath={sitePath}
+                    brandId={brandId}
+                    siteId={site.id}
                     sessionId={row.session_id}
                     label={
                       crawl.data

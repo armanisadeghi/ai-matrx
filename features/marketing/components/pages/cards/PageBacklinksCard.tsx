@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   CondensedFieldGrid,
   QueryError,
@@ -64,7 +65,7 @@ function maxDate(values: Array<string | null>): string | null {
 }
 
 export function PageBacklinksCard({ page }: { page: MarketingPage }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, sitePath, brandId } = useMarketingSite();
   const backlinks = usePageBacklinks(site.id, page.id);
   const pageGap = usePageLinkGap(site.id, page.id);
   const serviceTargets = useAppSelector(selectApiServiceTargets);
@@ -105,7 +106,11 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
     .trim()
     .replace(/^https?:\/\/(?:www\.)?/i, "")
     .replace(/\/+$/, "");
-  const pageBacklinksHref = `${sitePath}/backlinks?tab=links&q=${encodeURIComponent(targetPageSearch)}`;
+  const pageBacklinksHref = marketingRoutes.site(
+    brandId,
+    site.id,
+    `/backlinks?tab=links&q=${encodeURIComponent(targetPageSearch)}`,
+  );
   const visibleObservations = showAllRecords
     ? observations
     : observations.slice(0, 10);
@@ -415,7 +420,11 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
       anchor="page_backlinks"
       action={{ label: "View all", href: pageBacklinksHref }}
     >
-      <AuthorityRouterDoor sitePath={sitePath} className="mb-3" />
+      <AuthorityRouterDoor
+        brandId={brandId}
+        siteId={site.id}
+        className="mb-3"
+      />
       <div className="mb-3 rounded-lg border border-border bg-card p-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -521,7 +530,8 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
           viewContent={
             <BacklinkEnrichmentDetail
               row={selectedRow}
-              sitePath={sitePath}
+              brandId={brandId}
+              siteId={site.id}
               onSaved={() => void refreshBacklinkReads()}
               onAnalyze={() => void analyzeBacklink(selectedRow)}
               running={analysisRuns[selectedRow.id]?.status === "running"}

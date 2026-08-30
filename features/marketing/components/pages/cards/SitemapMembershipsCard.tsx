@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { usePageSitemapMemberships } from "@/features/marketing/data/hooks";
 import type { MarketingPage } from "@/features/marketing/types";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -18,7 +19,7 @@ import {
 const L = surfaceValueLabels(marketingPageManifest);
 
 export function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const memberships = usePageSitemapMemberships(site.id, page.id);
   const rows = memberships.data ?? [];
   const copy = webCopy({
@@ -65,7 +66,11 @@ export function SitemapMembershipsCard({ page }: { page: MarketingPage }) {
             className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
           >
             <Link
-              href={`${sitePath}/sitemaps/${membership.sitemap.id}`}
+              href={marketingRoutes.site(
+                brandId,
+                site.id,
+                `/sitemaps/${membership.sitemap.id}`,
+              )}
               className="min-w-0 flex-1 basis-56 truncate font-mono text-xs text-foreground hover:text-primary"
             >
               {membership.sitemap.url}

@@ -47,7 +47,7 @@ import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media
  */
 
 export function SiteMediaWorkspace() {
-  const { site, sitePath, crawlActivity } = useMarketingSite();
+  const { site, crawlActivity } = useMarketingSite();
   const params = useParams<{ brandId: string }>();
   const brandId = params.brandId;
   const { getBaseValues } = useMarketingSiteSurfaceBase();
@@ -126,7 +126,7 @@ export function SiteMediaWorkspace() {
                     : "h-11 flex-1 gap-1.5 lg:h-8 lg:flex-none"
                 }
               >
-                <Link href={`${sitePath}/crawls/new`}>
+                <Link href={marketingRoutes.site(brandId, site.id, "/crawls/new")}>
                   {crawlActivity.activeCrawl ? (
                     <Radio className="h-3.5 w-3.5 animate-pulse" />
                   ) : (

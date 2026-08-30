@@ -60,17 +60,17 @@ import {
 
 export function CollectionStatusPanel({
   site,
-  sitePath,
+  brandId,
 }: {
   site: MarketingSite;
-  sitePath: string;
+  brandId: string | null;
 }) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const [running, setRunning] = useState<string | null>(null);
 
-  const status = useCollectionStatus(site, sitePath);
+  const status = useCollectionStatus(site, brandId);
 
   const rows = useMemo(() => status.data ?? [], [status.data]);
   const analyticsCampaignActive = canUseGoogleAnalytics(isSuperAdmin);

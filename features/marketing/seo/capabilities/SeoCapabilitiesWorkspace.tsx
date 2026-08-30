@@ -91,8 +91,7 @@ export function SeoCapabilitiesWorkspace() {
       </main>
     );
   }
-  const sitePath = marketingRoutes.site(site.brand_id, site.id);
-  const capabilities = siteSeoCapabilities(sitePath);
+  const capabilities = siteSeoCapabilities(site.brand_id, site.id);
 
   return (
     <div className="flex w-full flex-col gap-5 p-4 lg:p-6">

@@ -44,6 +44,7 @@ import { resultReasoning } from "@/features/marketing/data/analysis-service";
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 export function confidenceLabel(value: number | null): string {
   return value === null ? "—" : `${Math.round(Number(value) * 100)}%`;
@@ -51,14 +52,14 @@ export function confidenceLabel(value: number | null): string {
 
 export function AnalysisResultInspector({
   result,
-  sitePath,
+  brandId,
   /** The subject's page reference when the caller already resolved it. */
   pageUrl,
   /** The site's display name — without it the site door reads as a bare id. */
   siteName,
 }: {
   result: MarketingAnalysisResult;
-  sitePath: string;
+  brandId: string | null;
   pageUrl?: string | null;
   siteName?: string | null;
 }) {
@@ -181,7 +182,7 @@ export function AnalysisResultInspector({
                   token="web_page"
                   id={result.page_id}
                   name={pageUrl ?? undefined}
-                  href={`${sitePath}/pages/${result.page_id}`}
+                  href={marketingRoutes.sitePage(brandId, result.site_id, result.page_id)}
                   wrap
                 />
               ) : (
@@ -215,8 +216,8 @@ export function AnalysisResultInspector({
               label: "Analysis run",
               value: result.run_id ? (
                 <AnalysisRunRef
+                  brandId={brandId}
                   siteId={result.site_id}
-                  sitePath={sitePath}
                   runId={result.run_id}
                 />
               ) : (

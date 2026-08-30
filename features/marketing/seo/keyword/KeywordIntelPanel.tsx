@@ -1049,13 +1049,11 @@ function BoundSiteTab({
       />
     );
   }
-  const sitePath = marketingRoutes.site(brandId, siteId);
   return (
     <div className="grid gap-4">
-      <CollectionStatusPanel site={site.data} sitePath={sitePath} />
+      <CollectionStatusPanel site={site.data} brandId={brandId} />
       <KeywordProviderEvidence
         site={site.data}
-        sitePath={sitePath}
         siteId={siteId}
         brandId={brandId}
         keywordId={keywordId}
@@ -1067,20 +1065,18 @@ function BoundSiteTab({
 
 function KeywordProviderEvidence({
   site,
-  sitePath,
   siteId,
   brandId,
   keywordId,
   known,
 }: {
   site: Parameters<typeof useCollectionStatus>[0];
-  sitePath: string;
   siteId: string;
   brandId: string | null;
   keywordId: string | null;
   known: boolean;
 }) {
-  const status = useCollectionStatus(site, sitePath);
+  const status = useCollectionStatus(site, brandId);
   const performance = useKeywordSitePerformance(siteId, keywordId);
   if (!known) {
     return (

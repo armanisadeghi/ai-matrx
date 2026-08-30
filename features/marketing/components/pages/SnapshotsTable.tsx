@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useSnapshots } from "@/features/marketing/data/hooks";
 import {
@@ -23,7 +24,7 @@ import {
 
 export function SnapshotsTable({ pageId }: { pageId: string }) {
   const router = useRouter();
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
   });
@@ -70,7 +71,12 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
       // THE DOOR LAW: a snapshot's capture time is how the user names it, so
       // that cell is the real anchor to the snapshot record. Same destination
       // as `onRowOpen`; the row click stays a mouse convenience.
-      href: (row) => `${sitePath}/pages/${pageId}/snapshots/${row.id}`,
+      href: (row) =>
+        marketingRoutes.site(
+          brandId,
+          site.id,
+          `/pages/${pageId}/snapshots/${row.id}`,
+        ),
       cell: (row) => (
         <span className="whitespace-nowrap text-xs">
           {formatCompactDate(row.captured_at)}
@@ -132,7 +138,9 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
       filter: false,
       sortable: false,
       cellKind: "uuid",
-      fk: { href: (id) => `${sitePath}/crawls/${id}` },
+      fk: {
+        href: (id) => marketingRoutes.site(brandId, site.id, `/crawls/${id}`),
+      },
     },
   ];
   if (snapshots.isError)
@@ -221,7 +229,11 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         detail={{ enabled: false }}
         onRowOpen={(row) =>
           router.push(
-            `${sitePath}/pages/${pageId}/snapshots/${row.id}`,
+            marketingRoutes.site(
+              brandId,
+              site.id,
+              `/pages/${pageId}/snapshots/${row.id}`,
+            ),
           )
         }
         emptyState={{

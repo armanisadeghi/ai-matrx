@@ -63,6 +63,7 @@ import {
 } from "@/features/marketing/data/query-state";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 
 /** `?changeKind=` — set by the server assist chips, and by the KPI tiles. */
@@ -224,7 +225,7 @@ function ChangeDetail({
 }
 
 export function BacklinkChangesTable({ siteId }: { siteId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -278,7 +279,11 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
   /** The Links tab searched by this exact page — its server search matches
    *  `source_url`, so it lands on the backlink this change is about. */
   const linkRecordHref = (row: BacklinkChangeEventRow) =>
-    `${sitePath}/backlinks?view=links&q=${encodeURIComponent(row.source_url)}`;
+    marketingRoutes.site(
+      brandId,
+      siteId,
+      `/backlinks?view=links&q=${encodeURIComponent(row.source_url)}`,
+    );
 
   // Bring the assist-chip's row into view once, after its page has rendered.
   useEffect(() => {

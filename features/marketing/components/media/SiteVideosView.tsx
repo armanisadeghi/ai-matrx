@@ -39,6 +39,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { MediaEmptyState } from "@/features/marketing/components/media/SnapshotMediaGallery";
 import {
   LoadingSurface,
@@ -109,7 +110,7 @@ export function SiteVideosView({
   standards: SiteMediaStandards;
 }) {
   const dispatch = useAppDispatch();
-  const { site, sitePath } = useMarketingSite();
+  const { site } = useMarketingSite();
   /** The library asset whose FULL record is open (D150 P0 — the paid-for
    *  title/description/keywords/schema.org had no surface at all). */
   const [detailAssetId, setDetailAssetId] = useState<string | null>(null);
@@ -545,7 +546,11 @@ export function SiteVideosView({
                           token="web_page"
                           id={page.pageId}
                           name={page.path || page.url}
-                          href={`${sitePath}/pages/${page.pageId}`}
+                          href={marketingRoutes.sitePage(
+                            brandId,
+                            site.id,
+                            page.pageId,
+                          )}
                           showIcon={false}
                           labelClassName="text-[9px]"
                           className="min-w-0"
@@ -617,7 +622,8 @@ export function SiteVideosView({
         onOpenChange={(next) => {
           if (!next) setDetailAssetId(null);
         }}
-        sitePath={sitePath}
+        brandId={brandId}
+        siteId={site.id}
         pages={assetPagesFor(
           detailAsset
             ? crawled.find((video) => video.url === detailAsset.source_url)

@@ -39,6 +39,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -115,7 +116,8 @@ function yesNo(value: boolean | null): string {
 
 export function BacklinkEnrichmentDetail({
   row: initialRow,
-  sitePath,
+  brandId,
+  siteId,
   onSaved,
   onAnalyze,
   running = false,
@@ -124,7 +126,8 @@ export function BacklinkEnrichmentDetail({
   onDismissAnalysisRun,
 }: {
   row: BacklinkObservationRow;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   onSaved: () => void;
   onAnalyze?: () => void;
   running?: boolean;
@@ -186,7 +189,11 @@ export function BacklinkEnrichmentDetail({
     : null;
   const lastErrorMessage = jsonText(lastError.message);
   const referringDomainHref = row.source_domain
-    ? `${sitePath}/backlinks?view=domains&search=${encodeURIComponent(row.source_domain)}`
+    ? marketingRoutes.site(
+        brandId,
+        siteId,
+        `/backlinks?view=domains&search=${encodeURIComponent(row.source_domain)}`,
+      )
     : null;
   const recordSurface = `Backlink from ${row.source_domain ?? sourceOrigin(row.source_url)}`;
   const displayRow: BacklinkObservationRow = {
@@ -462,7 +469,11 @@ export function BacklinkEnrichmentDetail({
             </Button>
             <Button asChild type="button" size="sm" variant="outline">
               <Link
-                href={`${sitePath}/reputation`}
+                href={
+                  brandId
+                    ? marketingRoutes.brandReputation(brandId, siteId)
+                    : marketingRoutes.site(brandId, siteId, "/reputation")
+                }
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -543,7 +554,7 @@ export function BacklinkEnrichmentDetail({
                     token="web_page"
                     id={row.page_id}
                     name="View this page in AI Matrx"
-                    href={`${sitePath}/pages/${row.page_id}`}
+                    href={marketingRoutes.sitePage(brandId, siteId, row.page_id)}
                     showIcon={false}
                     openInNewTab
                     wrap

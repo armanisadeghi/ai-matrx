@@ -31,8 +31,8 @@ export interface OpenSiteCommandRunWindowOptions {
   mode: SiteCommandMode;
   /** The page URL for `page_fetch`; omitted for site-wide commands. */
   target?: string | null;
-  /** Brand-first site base path — makes the run's session id openable. */
-  sitePath?: string | null;
+  /** The brand that owns the site — makes the run's session id openable. */
+  brandId?: string | null;
 }
 
 export interface SiteCommandRunWindowHandle {
@@ -57,7 +57,7 @@ export function useOpenSiteCommandRunWindow() {
             siteId: opts.siteId,
             mode: opts.mode,
             target,
-            sitePath: opts.sitePath ?? null,
+            brandId: opts.brandId ?? null,
           },
         }),
       );

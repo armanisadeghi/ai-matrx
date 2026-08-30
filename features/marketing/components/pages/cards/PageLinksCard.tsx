@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { SegmentedControl } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   QueryError,
   SectionCard,
@@ -81,12 +82,14 @@ function ComplianceBadge({
 function LinkPartnerList({
   groups,
   compliance,
-  sitePath,
+  brandId,
+  siteId,
   emptyMessage,
 }: {
   groups: LinkPartnerRollup[];
   compliance: Map<string, AnchorPartnerRollup>;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   emptyMessage: string;
 }) {
   if (groups.length === 0) {
@@ -110,7 +113,7 @@ function LinkPartnerList({
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               {group.isInternal && group.pageId ? (
                 <Link
-                  href={`${sitePath}/pages/${group.pageId}`}
+                  href={marketingRoutes.sitePage(brandId, siteId, group.pageId)}
                   className="min-w-0 flex-1 basis-52 truncate font-mono text-xs text-foreground hover:text-primary"
                 >
                   {group.url}
@@ -176,11 +179,13 @@ function LinkPartnerList({
 
 function AnchorTextTree({
   report,
-  sitePath,
+  brandId,
+  siteId,
   emptyMessage,
 }: {
   report: AnchorTextReport;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
   emptyMessage: string;
 }) {
   if (report.groups.length === 0) {
@@ -236,7 +241,11 @@ function AnchorTextTree({
                   <div className="flex min-w-0 items-center gap-2">
                     {partner.pageId ? (
                       <Link
-                        href={`${sitePath}/pages/${partner.pageId}`}
+                        href={marketingRoutes.sitePage(
+                          brandId,
+                          siteId,
+                          partner.pageId,
+                        )}
                         className="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground hover:text-primary"
                       >
                         {partner.url}
@@ -282,7 +291,7 @@ function AnchorTextTree({
 }
 
 export function PageLinksCard({ page }: { page: MarketingPage }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const [view, setView] = useState<"url" | "anchor">("url");
   const savedAcceptedAnchors = acceptedAnchorTextsFromDesiredValues(
     page.desired_values,
@@ -550,13 +559,15 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
               <LinkPartnerList
                 groups={inboundGroups}
                 compliance={inboundCompliance}
-                sitePath={sitePath}
+                brandId={brandId}
+                siteId={site.id}
                 emptyMessage="No current inbound links — other pages may not link here, or link resolution has not run for this site yet."
               />
             ) : (
               <AnchorTextTree
                 report={inboundReport}
-                sitePath={sitePath}
+                brandId={brandId}
+                siteId={site.id}
                 emptyMessage="No current inbound anchor text is available."
               />
             )}
@@ -571,13 +582,15 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
               <LinkPartnerList
                 groups={outboundGroups}
                 compliance={outboundCompliance}
-                sitePath={sitePath}
+                brandId={brandId}
+                siteId={site.id}
                 emptyMessage="No current outbound links are recorded for this page."
               />
             ) : (
               <AnchorTextTree
                 report={outboundReport}
-                sitePath={sitePath}
+                brandId={brandId}
+                siteId={site.id}
                 emptyMessage="No current outbound anchor text is available."
               />
             )}
@@ -601,7 +614,11 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
       collapsible
       anchor="page_links"
     >
-      <AuthorityRouterDoor sitePath={sitePath} className="mb-3" />
+      <AuthorityRouterDoor
+        brandId={brandId}
+        siteId={site.id}
+        className="mb-3"
+      />
       {body}
     </SectionCard>
   );

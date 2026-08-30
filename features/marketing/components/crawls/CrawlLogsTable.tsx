@@ -5,6 +5,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { useCrawl, useCrawlEvents } from "@/features/marketing/data/hooks";
@@ -29,7 +30,7 @@ const LEVEL_OPTIONS = [
 ];
 
 export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "sequence", direction: "asc" },
     defaultPageSize: 50,
@@ -110,7 +111,7 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
         id={crawlId}
         error={crawl.error}
         onRetry={() => void crawl.refetch()}
-        fallbackHref={`${sitePath}/crawls`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/crawls")}
         fallbackLabel="All crawls"
       />
     );

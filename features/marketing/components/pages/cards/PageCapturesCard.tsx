@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { CaptureAttachments } from "@/features/marketing/components/pages/CaptureAttachments";
 import { CaptureObservations } from "@/features/marketing/components/pages/CaptureObservations";
@@ -46,7 +47,7 @@ const L = surfaceValueLabels(marketingPageManifest);
 
 /** Current capture per kind + per-page capture history, canonical file viewer on click. */
 export function PageCapturesCard({ page }: { page: MarketingPage }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const pageId = page.id;
   const screenshots = usePageScreenshots(site.id, pageId);
   const deleteMutation = useDeleteScreenshot(site.id);
@@ -212,7 +213,11 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
                         <span className="flex shrink-0 items-center gap-1.5">
                           {capture.snapshot_id ? (
                             <Link
-                              href={`${sitePath}/pages/${pageId}/snapshots/${capture.snapshot_id}`}
+                              href={marketingRoutes.site(
+                                brandId,
+                                site.id,
+                                `/pages/${pageId}/snapshots/${capture.snapshot_id}`,
+                              )}
                               className="text-muted-foreground hover:text-primary"
                             >
                               Snapshot

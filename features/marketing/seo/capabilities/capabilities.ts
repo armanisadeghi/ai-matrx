@@ -1,3 +1,5 @@
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+
 export type SeoCapabilityGroup = "snapshot" | "catalogue" | "provider";
 
 export interface SeoCapability {
@@ -14,8 +16,15 @@ export interface SeoCapability {
  * testable catalogue behind the capabilities page; execution and reads remain
  * owned by their existing workspaces.
  */
-export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
-  const settingsPath = `${sitePath}/settings?view=integrations`;
+export function siteSeoCapabilities(
+  brandId: string | null,
+  siteId: string,
+): SeoCapability[] {
+  const settingsPath = marketingRoutes.siteSettings(
+    brandId,
+    siteId,
+    "integrations",
+  );
   return [
     {
       key: "snapshot-audit",
@@ -23,7 +32,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "Fast, deterministic checks stamped onto each page capture: indexability, search snippets, social metadata, headings, and URL quality.",
       group: "snapshot",
-      destination: `${sitePath}/audit`,
+      destination: marketingRoutes.site(brandId, siteId, "/audit"),
       evidenceLabel: "Open audit results",
     },
     {
@@ -32,7 +41,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "The deeper check catalogue turns stored crawl evidence into scored analysis results and a durable findings register.",
       group: "catalogue",
-      destination: `${sitePath}/analysis`,
+      destination: marketingRoutes.site(brandId, siteId, "/analysis"),
       evidenceLabel: "Open prioritized results",
     },
     {
@@ -41,7 +50,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "Every unresolved catalogue finding, with affected pages, evidence, status, and remediation guidance.",
       group: "catalogue",
-      destination: `${sitePath}/findings`,
+      destination: marketingRoutes.site(brandId, siteId, "/findings"),
       evidenceLabel: "Open all findings",
     },
     {
@@ -59,7 +68,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "Field and lab performance coverage, score distributions, regressions, and traffic-qualified repair priorities.",
       group: "provider",
-      destination: `${sitePath}/performance`,
+      destination: marketingRoutes.site(brandId, siteId, "/performance"),
       evidenceLabel: "Open performance",
     },
     {
@@ -68,7 +77,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "Referring domains, anchors, target pages, link changes, and first-party quality assessments.",
       group: "provider",
-      destination: `${sitePath}/backlinks`,
+      destination: marketingRoutes.site(brandId, siteId, "/backlinks"),
       evidenceLabel: "Open backlink intelligence",
     },
     {
@@ -77,7 +86,7 @@ export function siteSeoCapabilities(sitePath: string): SeoCapability[] {
       description:
         "Tracked keyword positions and movement for the site, separate from Search Console's observed query data.",
       group: "provider",
-      destination: `${sitePath}/ranks`,
+      destination: marketingRoutes.site(brandId, siteId, "/ranks"),
       evidenceLabel: "Open rank tracking",
     },
     {

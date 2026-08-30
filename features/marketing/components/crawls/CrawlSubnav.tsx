@@ -20,6 +20,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   MARKETING_CRAWL_SECTIONS,
   listMarketingCrawlModes,
@@ -40,8 +41,8 @@ const CRAWL_MODE_ICONS: Record<
 
 export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
   const pathname = usePathname();
-  const { site, sitePath } = useMarketingSite();
-  const root = `${sitePath}/crawls/${crawl.id}`;
+  const { site, brandId } = useMarketingSite();
+  const root = marketingRoutes.site(brandId, site.id, `/crawls/${crawl.id}`);
   const sessionCopy = webCopy({
     kind: "web-crawl-session",
     label: `Crawl session ${crawl.id}`,

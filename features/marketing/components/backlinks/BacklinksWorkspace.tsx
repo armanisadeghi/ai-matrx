@@ -49,6 +49,7 @@ import {
 } from "@/features/marketing/components/backlinks/format";
 import { Button } from "@/components/ui/button";
 import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
@@ -216,7 +217,8 @@ function TopTenCard({
   location,
   siteDomain,
   showIntersections = false,
-  ourPagesPath = null,
+  ourPagesBrandId = null,
+  ourPagesSiteId = null,
   domainNames = false,
 }: {
   title: string;
@@ -232,11 +234,12 @@ function TopTenCard({
   domainNames?: boolean;
   /**
    * Set for the "Top pages" card only: these rows are OUR pages, so the name
-   * opens the page inside AI Matrx (`{sitePath}/pages` searched by URL —
+   * opens the page inside AI Matrx (the site's `/pages` list searched by URL —
    * dimension snapshot rows carry no `page_id`), with the live URL kept as a
    * separate new-tab affordance.
    */
-  ourPagesPath?: string | null;
+  ourPagesBrandId?: string | null;
+  ourPagesSiteId?: string | null;
 }) {
   const visible = rows.slice(0, 10);
   return (
@@ -267,8 +270,12 @@ function TopTenCard({
             : null;
           const ourPageUrl = row.url ?? row.dimension_key;
           const internalHref =
-            ourPagesPath && ourPageUrl
-              ? `${ourPagesPath}/pages?q=${encodeURIComponent(ourPageUrl)}`
+            ourPagesSiteId && ourPageUrl
+              ? marketingRoutes.site(
+                  ourPagesBrandId,
+                  ourPagesSiteId,
+                  `/pages?q=${encodeURIComponent(ourPageUrl)}`,
+                )
               : null;
           return (
             <div
@@ -436,7 +443,7 @@ export function parseBacklinkScheduleWrite(
 }
 
 export function BacklinksWorkspace() {
-  const { site, sitePath } = useMarketingSite();
+  const { site, sitePath, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -747,11 +754,15 @@ export function BacklinksWorkspace() {
    * promises (the Links tab honors `f_enrichment_status` server-side).
    */
   const linksStatusHref = (statuses?: string[]) =>
-    `${sitePath}/backlinks?view=links${
-      statuses
-        ? `&f_enrichment_status=${encodeURIComponent(`select:${statuses.join("|")}`)}`
-        : ""
-    }`;
+    marketingRoutes.site(
+      brandId,
+      site.id,
+      `/backlinks?view=links${
+        statuses
+          ? `&f_enrichment_status=${encodeURIComponent(`select:${statuses.join("|")}`)}`
+          : ""
+      }`,
+    );
   const enrichmentTiles: Array<{
     label: string;
     value: number;
@@ -783,12 +794,20 @@ export function BacklinksWorkspace() {
     {
       label: "Needs your attention",
       value: data?.enrichment.highPriority ?? 0,
-      href: `${sitePath}/backlinks?view=insights&insight=actionable`,
+      href: marketingRoutes.site(
+        brandId,
+        site.id,
+        "/backlinks?view=insights&insight=actionable",
+      ),
     },
     {
       label: "You can probably edit",
       value: data?.enrichment.controllable ?? 0,
-      href: `${sitePath}/backlinks?view=insights&insight=controllable`,
+      href: marketingRoutes.site(
+        brandId,
+        site.id,
+        "/backlinks?view=insights&insight=controllable",
+      ),
     },
   ];
 
@@ -1197,14 +1216,14 @@ export function BacklinksWorkspace() {
         {/* One slim top row. The view switcher lives in the SITE HEADER. */}
         <div className="scrollbar-hide flex shrink-0 items-center overflow-x-auto border-b border-border px-2 py-1 sm:flex-wrap sm:overflow-visible sm:px-4 sm:py-1.5">
           <div className="flex w-max flex-nowrap items-center gap-1.5 sm:ml-auto sm:w-auto sm:flex-wrap">
-            <AuthorityRouterDoor sitePath={sitePath} compact />
+            <AuthorityRouterDoor brandId={brandId} siteId={site.id} compact />
             <Button
               asChild
               size="sm"
               variant="outline"
               className="h-10 shrink-0 gap-1.5 sm:h-8"
             >
-              <Link href={`${sitePath}/reputation`}>
+              <Link href={marketingRoutes.brandReputation(brandId, site.id)}>
                 <Newspaper className="h-3.5 w-3.5" />
                 Reputation
               </Link>
@@ -1466,7 +1485,8 @@ export function BacklinksWorkspace() {
               <BacklinkKpiBand
                 summary={summary ?? null}
                 siteDomain={site.domain}
-                sitePath={sitePath}
+                brandId={brandId}
+                siteId={site.id}
                 location={pageLocation}
               />
               <SectionCard
@@ -1540,8 +1560,9 @@ export function BacklinksWorkspace() {
                       group.id === "referring_domains" ||
                       group.id === "competitors"
                     }
-                    ourPagesPath={
-                      group.id === "target_pages" ? sitePath : null
+                    ourPagesBrandId={brandId}
+                    ourPagesSiteId={
+                      group.id === "target_pages" ? site.id : null
                     }
                   />
                 ))}
@@ -1625,7 +1646,8 @@ export function BacklinksWorkspace() {
               ) : (
                 <BacklinkProspectsTab
                   prospects={prospects}
-                  sitePath={sitePath}
+                  brandId={brandId}
+                  siteId={site.id}
                   siteDomain={site.domain}
                 />
               )}

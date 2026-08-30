@@ -44,6 +44,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   keywordEntityRef,
   useKeywordAssignSurfaces,
@@ -89,7 +90,7 @@ const SURFACE: KeywordTableSurface = {
 };
 
 export function KeywordWorkbench() {
-  const { site, brandId, sitePath } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const router = useRouter();
   const params = useSearchParams();
   const queryClient = useQueryClient();
@@ -183,7 +184,10 @@ export function KeywordWorkbench() {
       liveSearchParams(params),
       next,
     ).toString();
-    router.push(`${sitePath}/keywords${qs ? `?${qs}` : ""}`, { scroll: false });
+    router.push(
+      marketingRoutes.site(brandId, site.id, `/keywords${qs ? `?${qs}` : ""}`),
+      { scroll: false },
+    );
   };
 
   const runViewWrite = async (fn: () => Promise<unknown>, done: string) => {
@@ -531,9 +535,14 @@ export function KeywordWorkbench() {
                 ...current,
                 viewId: created.id,
               }).toString();
-              router.push(`${sitePath}/keywords${qs ? `?${qs}` : ""}`, {
-                scroll: false,
-              });
+              router.push(
+                marketingRoutes.site(
+                  brandId,
+                  site.id,
+                  `/keywords${qs ? `?${qs}` : ""}`,
+                ),
+                { scroll: false },
+              );
             }, `“${name}” saved.`);
           }}
         />

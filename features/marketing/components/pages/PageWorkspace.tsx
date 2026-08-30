@@ -29,6 +29,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   usePageContent,
   usePagePerformance,
@@ -300,7 +301,7 @@ function Pair({
 }
 
 export function PageWorkspace({ pageId }: { pageId: string }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site } = useMarketingSite();
   const { brandId, getBaseValues } = useMarketingSiteSurfaceBase();
   const workspace = usePageWorkspace(site.id, pageId);
   // Everything the page loads is emitted as a surface value (completeness
@@ -388,7 +389,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         id={pageId}
         error={workspace.error}
         onRetry={() => void workspace.refetch()}
-        fallbackHref={`${sitePath}/pages`}
+        fallbackHref={marketingRoutes.site(brandId, site.id, "/pages")}
         fallbackLabel="All pages"
       />
     );
@@ -1280,7 +1281,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 </Button>
               ) : null}
               <Button asChild variant="outline" size="sm" className="h-8">
-                <Link href={`${sitePath}/pages/${page.id}/snapshots`}>
+                <Link
+                  href={marketingRoutes.site(
+                    brandId,
+                    site.id,
+                    `/pages/${page.id}/snapshots`,
+                  )}
+                >
                   <History className="mr-1.5 h-3.5 w-3.5" />
                   Snapshot history
                 </Link>

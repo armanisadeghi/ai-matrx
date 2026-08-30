@@ -82,6 +82,7 @@ import type { BacklinkEnrichmentRunState } from "@/features/marketing/components
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 
 /**
@@ -115,7 +116,7 @@ export function BacklinkObservationTable({
   onDismissAnalysisRun?: (backlinkId: string) => void;
   analysisDisabled?: boolean;
 }) {
-  const { sitePath } = useMarketingSite();
+  const { brandId } = useMarketingSite();
   const openFilePreview = useOpenFilePreviewWindow();
   const lensFallback = lens ? LENS_DEFAULT_SORT[lens] : null;
   const table = useMarketingTableState({
@@ -141,7 +142,8 @@ export function BacklinkObservationTable({
     <BacklinkEnrichmentDetail
       key={row.id}
       row={row}
-      sitePath={sitePath}
+      brandId={brandId}
+      siteId={siteId}
       onSaved={() => void backlinks.refetch()}
       onAnalyze={onAnalyzeFromRecord}
       running={analysisRuns[row.id]?.status === "running"}
@@ -271,7 +273,7 @@ export function BacklinkObservationTable({
       cellKind: "text",
       cell: (row) => {
         const href = row.page_id
-          ? `${sitePath}/pages/${row.page_id}`
+          ? marketingRoutes.sitePage(brandId, siteId, row.page_id)
           : row.target_url;
         return (
           <a

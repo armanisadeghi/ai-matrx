@@ -42,6 +42,7 @@ import type { BacklinkDimensionRow } from "@/features/marketing/data/backlinks-t
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const INTERSECTIONS_EXPLAINER =
   "Websites that link to both you and this competitor. They already know your space, so they are the easiest places to ask for a link.";
@@ -109,24 +110,49 @@ const EMPTY_ICON: Record<BacklinkDimensionKind, typeof Globe> = {
 };
 
 /** Links tab, searched by this dimension's domain — the rows it stands for. */
-function domainLinksHref(sitePath: string, label: string): string {
-  return `${sitePath}/backlinks?view=links&q=${encodeURIComponent(label)}`;
+function domainLinksHref(
+  brandId: string | null,
+  siteId: string,
+  label: string,
+): string {
+  return marketingRoutes.site(
+    brandId,
+    siteId,
+    `/backlinks?view=links&q=${encodeURIComponent(label)}`,
+  );
 }
 
 /** Broken links FROM this domain: the broken lens, narrowed to that domain. */
-function domainBrokenHref(sitePath: string, label: string): string {
-  return `${sitePath}/backlinks?view=insights&insight=broken&q=${encodeURIComponent(label)}`;
+function domainBrokenHref(
+  brandId: string | null,
+  siteId: string,
+  label: string,
+): string {
+  return marketingRoutes.site(
+    brandId,
+    siteId,
+    `/backlinks?view=insights&insight=broken&q=${encodeURIComponent(label)}`,
+  );
 }
 
 /** Our own page, opened in AI Matrx (dimension rows carry no `page_id`). */
-function ourPageHref(sitePath: string, url: string): string {
-  return `${sitePath}/pages?q=${encodeURIComponent(url)}`;
+function ourPageHref(
+  brandId: string | null,
+  siteId: string,
+  url: string,
+): string {
+  return marketingRoutes.site(
+    brandId,
+    siteId,
+    `/pages?q=${encodeURIComponent(url)}`,
+  );
 }
 
 function nameCell(
   kind: BacklinkDimensionKind,
   row: BacklinkDimensionRow,
-  sitePath: string,
+  brandId: string | null,
+  siteId: string,
 ) {
   const label = row.label ?? row.dimension_key;
   const extras = parseDimensionExtras(row.extras);
@@ -152,7 +178,7 @@ function nameCell(
           {/* Our own page opens in OUR system first; the live URL stays as a
               separate new-tab affordance. */}
           <Link
-            href={ourPageHref(sitePath, fullUrl)}
+            href={ourPageHref(brandId, siteId, fullUrl)}
             title={`Open ${fullUrl} in AI Matrx`}
             onClick={(event) => event.stopPropagation()}
             className="truncate font-mono text-[11px] text-primary "
@@ -230,11 +256,13 @@ function histogramLine(
 function DimensionDetail({
   kind,
   row,
-  sitePath,
+  brandId,
+  siteId,
 }: {
   kind: BacklinkDimensionKind;
   row: BacklinkDimensionRow;
-  sitePath: string;
+  brandId: string | null;
+  siteId: string;
 }) {
   const label = row.label ?? row.dimension_key;
   const extras = parseDimensionExtras(row.extras);
@@ -244,7 +272,7 @@ function DimensionDetail({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {kind === "target_page" ? (
           <Link
-            href={ourPageHref(sitePath, row.url ?? row.dimension_key)}
+            href={ourPageHref(brandId, siteId, row.url ?? row.dimension_key)}
             className="text-xs font-medium text-primary "
           >
             Open this page in AI Matrx
@@ -252,7 +280,7 @@ function DimensionDetail({
         ) : null}
         {isDomain ? (
           <Link
-            href={domainLinksHref(sitePath, label)}
+            href={domainLinksHref(brandId, siteId, label)}
             className="text-xs font-medium text-primary "
           >
             View this domain&apos;s links
@@ -286,7 +314,7 @@ function DimensionDetail({
           value={
             extras.brokenBacklinks && extras.brokenBacklinks > 0 && isDomain ? (
               <Link
-                href={domainBrokenHref(sitePath, label)}
+                href={domainBrokenHref(brandId, siteId, label)}
                 className="font-medium text-destructive "
               >
                 {formatCount(extras.brokenBacklinks)}
@@ -334,7 +362,7 @@ export function BacklinkDimensionTable({
   kind: BacklinkDimensionKind;
 }) {
   const config = KIND_CONFIG[kind];
-  const { sitePath } = useMarketingSite();
+  const { brandId } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "backlinks", direction: "desc" },
     defaultPageSize: 50,
@@ -351,7 +379,7 @@ export function BacklinkDimensionTable({
       header: config.nameHeader,
       filter: false,
       cellKind: "text",
-      cell: (row) => nameCell(kind, row, sitePath),
+      cell: (row) => nameCell(kind, row, brandId, siteId),
     },
     {
       id: "backlinks",
@@ -363,7 +391,7 @@ export function BacklinkDimensionTable({
         const label = row.label ?? row.dimension_key;
         return kind === "referring_domain" ? (
           <Link
-            href={domainLinksHref(sitePath, label)}
+            href={domainLinksHref(brandId, siteId, label)}
             onClick={(event) => event.stopPropagation()}
             className="text-xs font-medium tabular-nums text-primary"
             title={`Open all ${formatCount(row.backlinks)} backlinks from ${label}`}
@@ -407,7 +435,7 @@ export function BacklinkDimensionTable({
               const count = parseDimensionExtras(row.extras).referringPages;
               return (
                 <Link
-                  href={domainLinksHref(sitePath, label)}
+                  href={domainLinksHref(brandId, siteId, label)}
                   onClick={(event) => event.stopPropagation()}
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary"
                   title={`Open the actual pages on ${label} that link to you`}
@@ -465,7 +493,7 @@ export function BacklinkDimensionTable({
               return broken && broken > 0 ? (
                 // A count is a door: the broken lens narrowed to this domain.
                 <Link
-                  href={domainBrokenHref(sitePath, label)}
+                  href={domainBrokenHref(brandId, siteId, label)}
                   onClick={(event) => event.stopPropagation()}
                   className="text-xs font-medium tabular-nums text-destructive "
                   title={`Open the ${formatCount(broken)} broken backlinks from ${label}`}
@@ -614,7 +642,12 @@ export function BacklinkDimensionTable({
             description: (row) =>
               `${formatCount(row.backlinks)} backlinks as of our last check`,
             render: (row) => (
-              <DimensionDetail kind={kind} row={row} sitePath={sitePath} />
+              <DimensionDetail
+                kind={kind}
+                row={row}
+                brandId={brandId}
+                siteId={siteId}
+              />
             ),
           }}
           window={{ enabled: false }}
