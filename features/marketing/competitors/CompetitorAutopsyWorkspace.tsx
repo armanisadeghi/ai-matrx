@@ -230,7 +230,13 @@ function OpportunityDetail({ row }: { row: CompetitorOpportunityRow }) {
   );
 }
 
-export default function CompetitorAutopsyWorkspace() {
+export default function CompetitorAutopsyWorkspace({
+  brandId,
+}: {
+  /** Brand scope. Supplied by the brand route so the workspace can never fall
+   * back to another client's site — see useCompetitorAutopsy's brandId note. */
+  brandId?: string | null;
+} = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const requestedSiteId = searchParams.get("siteId");
@@ -241,8 +247,8 @@ export default function CompetitorAutopsyWorkspace() {
   const [forceRefresh, setForceRefresh] = useState(false);
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
-  const { sites, workspace, run, start, resolvedSiteId } =
-    useCompetitorAutopsy(requestedSiteId);
+  const { sites, scopedSites, workspace, run, start, resolvedSiteId } =
+    useCompetitorAutopsy(requestedSiteId, brandId);
 
   const data = workspace.data;
   const completedRun = data?.runs.find((item) => item.status === "completed");
@@ -256,7 +262,7 @@ export default function CompetitorAutopsyWorkspace() {
     () => data?.competitors.filter((item) => item.classification_status === "proposed") ?? [],
     [data?.competitors],
   );
-  const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
+  const selectedSite = scopedSites.find((site) => site.id === resolvedSiteId) ?? null;
   const [discovering, setDiscovering] = useState(false);
   const [localKeyword, setLocalKeyword] = useState("");
   const [localArea, setLocalArea] = useState("");
@@ -761,7 +767,7 @@ export default function CompetitorAutopsyWorkspace() {
     [],
   );
 
-  const availableSites = sites.data ?? [];
+  const availableSites = scopedSites;
   const brandSiteCounts = new Map<string, number>();
   for (const site of availableSites) {
     const label = siteBrandLabel(site);
@@ -790,7 +796,7 @@ export default function CompetitorAutopsyWorkspace() {
       getScope={() =>
         createMarketingCompetitorsScope({
           site_id: resolvedSiteId ?? undefined,
-          site: sites.data?.find((site) => site.id === resolvedSiteId) as
+          site: scopedSites.find((site) => site.id === resolvedSiteId) as
             Record<string, unknown> | undefined,
           competitors: data?.competitors as
             Array<Record<string, unknown>> | undefined,
