@@ -131,7 +131,7 @@ export function RequestModColumnHeader({ column, onToggleCollapse }: Props) {
               setLabelDraft(column.label);
               setEditingLabel(true);
             }}
-            className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+            className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
             title="Rename"
           >
             <Pencil className="w-3 h-3" />

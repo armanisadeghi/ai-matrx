@@ -512,7 +512,7 @@ export const EnhancedSQLEditor = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                              className="h-6 w-6 p-0 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(item.query);

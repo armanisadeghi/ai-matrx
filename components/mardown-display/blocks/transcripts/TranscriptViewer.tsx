@@ -471,7 +471,7 @@ const TranscriptViewer = ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-7 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                      className="h-7 w-7 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                       onClick={() => handleCopySegment(segment.text, segment.id)}
                       aria-label="Copy segment"
                     >

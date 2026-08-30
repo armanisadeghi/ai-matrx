@@ -100,7 +100,19 @@ interface PlanSiteRow {
   id: string;
 }
 
-export function PlanSitesList() {
+export function PlanSitesList({
+  brandId,
+}: {
+  /**
+   * 🚨 BRAND SCOPE (2026-08-30). `/marketing/<brand>/content/plan` mounted
+   * this list with nothing, so it showed every site the viewer can plan
+   * across every org and every client — one client's workspace listing
+   * another client's websites and their plan coverage. The dropdown is
+   * deliberately cross-org (a plan applied under another org must stay
+   * reachable); the LIST on a brand route is not.
+   */
+  brandId?: string | null;
+} = {}) {
   const router = useRouter();
   const { sites, orgSites } = useContentPlanSites();
   const stats = usePlanSiteStats();
@@ -162,12 +174,17 @@ export function PlanSitesList() {
 
   const rows = useMemo<PlanSiteRow[]>(() => {
     const bySite = stats.data ?? new Map<string, PlanSiteStats>();
-    return orgSites.map((site) => ({
+    // Inside a brand, the list is that brand's websites — never the whole
+    // cross-org roster (see the brandId note on this component).
+    const listed = brandId
+      ? orgSites.filter((site) => site.brand_id === brandId)
+      : orgSites;
+    return listed.map((site) => ({
       id: site.id,
       site,
       stats: bySite.get(site.id) ?? null,
     }));
-  }, [orgSites, stats.data]);
+  }, [brandId, orgSites, stats.data]);
 
   const publishedCount = useMemo(
     () => (row: PlanSiteRow) => {

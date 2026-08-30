@@ -208,7 +208,7 @@ const AppSuggestionsDisplay = ({ data, handleGenerate, handleSelect, imageUrls =
                                                         rel="noopener noreferrer"
                                                         data-tap-target
                                                         aria-label="Open generated image in a new tab"
-                                                        className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-slate-800/80 rounded-full opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                                                        className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-slate-800/80 rounded-full opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <ExternalLink size={14} className="text-indigo-500" />

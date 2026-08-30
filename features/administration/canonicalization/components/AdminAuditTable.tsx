@@ -215,7 +215,7 @@ function Cell<T>({ col, row }: { col: AuditColumnDef<T>; row: T }) {
       {col.copyable && display !== "—" ? (
         <button
           type="button"
-          className="shrink-0 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-40 [@media(hover:hover)]:hover:opacity-100 focus-visible:opacity-100"
+          className="shrink-0 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-40 sm:[@media(hover:hover)]:hover:opacity-100 focus-visible:opacity-100"
           title="Copy"
           onClick={(e) => {
             e.stopPropagation();
