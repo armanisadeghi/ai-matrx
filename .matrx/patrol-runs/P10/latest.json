@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:16:32.062Z",
-  "summary": "Claimed disjoint parser modules and upstream snapshot boundary for parallel implementation.",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:28:47.668Z",
+  "summary": "Candidate reached origin/main through shared-checkout integration before independent certification could start.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41"
+  "eventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2"
 }
