@@ -32,7 +32,7 @@ export default function MarketingAutomationsPage() {
           </h1>
         </div>
       </PageHeader>
-      <div className="h-full overflow-hidden">
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <OrganizationRunConsoleMount />
       </div>
     </>

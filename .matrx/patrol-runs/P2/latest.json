@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T152907Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T15:29:08.855Z",
-  "summary": "Adapting PlanSitesList to the shared site-action authority while retaining plan-specific navigation and plan copy payloads.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T15:37:12.090Z",
+  "summary": "Exact candidate 478fc4a234136bdf2c5d938bf90b704335c6cf96 is preserved and under independent adversarial review.",
   "source": "20260830T152907Z.json",
-  "eventHash": "30e411d49c412e6f27d44bcc6bcd31191f615b27daf6fed466d7e72c9d5ef655"
+  "eventHash": "5e0b59d64abdf7e53d09cebe55e00c65ad9d288c8aec4a602d39557b2a516c73"
 }

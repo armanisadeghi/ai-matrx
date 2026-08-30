@@ -27,9 +27,11 @@ export default function OperationsCapabilitiesPage() {
           SEO Capabilities
         </h1>
       </PageHeader>
-      <Suspense fallback={<LoadingSurface label="Loading SEO capabilities…" />}>
-        <SeoCapabilitiesWorkspace />
-      </Suspense>
+      <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+        <Suspense fallback={<LoadingSurface label="Loading SEO capabilities…" />}>
+          <SeoCapabilitiesWorkspace />
+        </Suspense>
+      </div>
     </>
   );
 }

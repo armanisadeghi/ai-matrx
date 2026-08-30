@@ -21,6 +21,7 @@ export default async function SeoBranchSectionMapper({
     if (typeof value === "string") query.set(key, value);
     else if (Array.isArray(value)) value.forEach((v) => query.append(key, v));
   }
+  console.log("[seo-rest] hit", rest.join("/"));
   const target = mapLegacySiteRest(brandId, siteId, rest, query);
   const incoming = `/marketing/${brandId}/seo/${siteId}/${rest.join("/")}`;
   if (target.split("?")[0] === incoming) notFound();

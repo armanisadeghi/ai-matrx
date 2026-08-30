@@ -7,10 +7,20 @@
 // this repo — do not reintroduce it (ESLint will block it).
 // Docs: https://supabase.com/docs/guides/getting-started/api-keys
 
-import { createServerClient } from "@supabase/ssr";
+import {
+  clearAuthCookiesAtScopes,
+  createServerClient,
+  DEFAULT_COOKIE_OPTIONS,
+  type SetAllCookies,
+} from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireEnv } from "@/utils/supabase/env";
-import { authCookieOptions } from "@/utils/supabase/authCookie";
+import {
+  LEGACY_AUTH_COOKIE_NAME,
+  authCookieOptions,
+  isCurrentAuthCookie,
+  legacyAuthCookieMigration,
+} from "@/utils/supabase/authCookie";
 import {
   captureAuthDestination,
   loginHref,
@@ -55,6 +65,39 @@ export async function updateSession(
     request,
   });
 
+  const hostCookieOptions = authCookieOptions(request.headers.get("host"));
+  const legacyMigration = legacyAuthCookieMigration(request.cookies.getAll());
+  legacyMigration.forEach(({ name, value }) =>
+    request.cookies.set(name, value),
+  );
+
+  const applyCookies: SetAllCookies = (cookiesToSet, headers) => {
+    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+    const nextResponse = NextResponse.next({ request });
+    supabaseResponse.cookies
+      .getAll()
+      .forEach((cookie) => nextResponse.cookies.set(cookie));
+    cookiesToSet.forEach(({ name, value, options }) =>
+      nextResponse.cookies.set(name, value, options),
+    );
+    Object.entries(headers).forEach(([name, value]) =>
+      nextResponse.headers.set(name, value),
+    );
+    supabaseResponse = nextResponse;
+  };
+
+  const redirectWithSessionCookies = (url: URL) => {
+    const redirect = NextResponse.redirect(url);
+    supabaseResponse.cookies
+      .getAll()
+      .forEach((cookie) => redirect.cookies.set(cookie));
+    ["cache-control", "expires", "pragma"].forEach((name) => {
+      const value = supabaseResponse.headers.get(name);
+      if (value) redirect.headers.set(name, value);
+    });
+    return redirect;
+  };
+
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
@@ -68,21 +111,13 @@ export async function updateSession(
     ),
     {
       // Shared cross-subdomain auth cookie — see utils/supabase/authCookie.ts.
-      cookieOptions: authCookieOptions(request.headers.get("host")),
+      cookieOptions: hostCookieOptions,
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+        setAll(cookiesToSet, headers) {
+          applyCookies(cookiesToSet, headers);
         },
       },
     },
@@ -100,6 +135,38 @@ export async function updateSession(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // A valid East session that arrived under the pre-cutover storage key is
+  // persisted once under the new authority-specific key. A West-only token
+  // fails getUser(), is never persisted, and is cleared below.
+  if (user && legacyMigration.length > 0) {
+    const { name: _name, ...cookieOptions } = hostCookieOptions;
+    applyCookies(
+      request.cookies
+        .getAll()
+        .filter(
+          ({ name, value }) => isCurrentAuthCookie(name) && value.length > 0,
+        )
+        .map(({ name, value }) => ({
+          name,
+          value,
+          options: { ...DEFAULT_COOKIE_OPTIONS, ...cookieOptions },
+        })),
+      {},
+    );
+  }
+
+  // Delete the superseded storage key at the scope where this host issued it.
+  // Old West tabs may keep writing it, but no East client reads it after this
+  // cut.
+  await clearAuthCookiesAtScopes({
+    getAll: () => request.cookies.getAll(),
+    setAll: (cookiesToSet, headers) => applyCookies(cookiesToSet, headers),
+    storageKey: LEGACY_AUTH_COOKIE_NAME,
+    scopes: hostCookieOptions.domain
+      ? [{ domain: hostCookieOptions.domain }]
+      : [{}],
+  });
 
   // An authenticated user sitting on an auth page or a generic landing page
   // while still carrying a destination gets forwarded straight there. This is
@@ -123,7 +190,7 @@ export async function updateSession(
     if (isBounceablePage) {
       const destination = readAuthDestination(request.nextUrl.searchParams);
       if (destination && destination !== pathname + request.nextUrl.search) {
-        return NextResponse.redirect(
+        return redirectWithSessionCookies(
           new URL(destination, request.nextUrl.origin),
         );
       }
@@ -139,7 +206,7 @@ export async function updateSession(
   ) {
     const url = request.nextUrl.clone();
     url.pathname = landing;
-    return NextResponse.redirect(url);
+    return redirectWithSessionCookies(url);
   }
 
   // Handle unauthenticated users trying to access routes that require a valid session.
@@ -155,7 +222,7 @@ export async function updateSession(
       pathname,
       request.nextUrl.search,
     );
-    return NextResponse.redirect(
+    return redirectWithSessionCookies(
       new URL(loginHref(destination), request.nextUrl.origin),
     );
   }

@@ -19,7 +19,7 @@ export default function PodcastStudioPage() {
           </>
         }
       />
-      <div className="h-full w-full overflow-hidden bg-textured">
+      <div className="h-full w-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <div className="h-full overflow-y-auto overscroll-contain">
           <StudioDashboard />
         </div>

@@ -30,7 +30,9 @@ export default async function AgentRunRoute({
           currentPath={currentPath}
         />
       </PageHeader>
-      <AgentRunnerPage agentId={id} />
+      <div className="h-full pt-[var(--shell-header-h)]">
+        <AgentRunnerPage agentId={id} />
+      </div>
     </>
   );
 }

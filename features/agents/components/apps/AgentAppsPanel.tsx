@@ -36,9 +36,9 @@ export function AgentAppsPanel({
   const featuredCount = apps.filter((a) => a.is_featured).length;
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 space-y-6">
-        <header className="flex items-start justify-between gap-3 pt-10">
+        <header className="flex items-start justify-between gap-3">
           <div className="space-y-1 min-w-0 flex-1">
             <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
               Apps

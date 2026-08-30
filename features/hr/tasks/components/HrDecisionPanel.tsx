@@ -26,7 +26,10 @@ import {
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { hrTasksHref } from "@/features/hr/routes";
 import { HrAccessDenied } from "@/features/hr/shared/HrAccessDenied";
-import { HrEmployerSubstitutionNotice } from "@/features/hr/shared/HrStates";
+import {
+    HrEmployerSubstitutionNotice,
+    useHrRescueRefusal,
+} from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
@@ -108,6 +111,9 @@ export function HrDecisionPanel({
       defect that becomes a live one the day that lane scopes, and a visibly wrong URL either way.
     */
     const { orgRef } = useHrContext();
+    // 🚨 The route every HR notification deep-links to, with no `HrShell` above
+    // it. See `useHrRescueRefusal`: null in every ordinary case.
+    const rescueRefusal = useHrRescueRefusal();
 
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
@@ -292,6 +298,12 @@ export function HrDecisionPanel({
             setBusy(false);
         }
     }
+
+    // 🚨 BEFORE ANYTHING ELSE: a deep link that named an employer this person has
+    // no HR standing in gets the canonical refusal about THAT employer, not a
+    // panel about a different one. `embedded` keeps its host's chrome, so the
+    // refusal replaces the panel body there too.
+    if (rescueRefusal) return rescueRefusal;
 
     if (error) {
         return (

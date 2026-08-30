@@ -58,7 +58,12 @@ import {
   hrSwitchEmployerHref,
 } from "../routes";
 import { isHrDenied, isHrFailed, type HrResult } from "../types";
-import { isHrModuleOff, needsHrActivation, useHrContext } from "./useHrContext";
+import {
+  isHrModuleOff,
+  needsHrActivation,
+  useHrContext,
+  type HrContextValue,
+} from "./useHrContext";
 import { isOrgSteward } from "./useHrPersona";
 
 // ── 1. Loading ──────────────────────────────────────────────────────────────
@@ -539,11 +544,70 @@ export function useHrDisclosureClaimed(): boolean {
  * NOT a modal, NOT a toast, and NOT dismissible: it is a statement of which employer
  * this page is showing, and it must still be true the moment somebody looks up.
  */
+/**
+ * The rescue landed nowhere: `?org=` named an employer this person cannot do HR
+ * in, and the employer they were rescued into has HR off or unfinished — so the
+ * substitution bought them nothing and `HrPageState` refuses about the ASKED-FOR
+ * employer instead, through the canonical access-denied primitive.
+ *
+ * ONE predicate, consulted by the state machine that renders the refusal AND by
+ * the substitution notice that must stand down for it. Two copies of this
+ * condition would drift into a page that says both things or neither.
+ */
+export function hrRescueLandedNowhere(context: HrContextValue): boolean {
+  return (
+    context.substitution?.reason === "unavailable" &&
+    Boolean(context.active) &&
+    (isHrModuleOff(context) || needsHrActivation(context))
+  );
+}
+
+/**
+ * The rescue-landed-nowhere refusal, for the surfaces that do NOT run
+ * `HrPageState` — `/hr/tasks` and `/hr/tasks/[instanceId]`, the exact routes
+ * every HR notification and SMS deep-links to, and the ones with no `HrShell`
+ * above them.
+ *
+ * 🚨 THIS IS NOT OPTIONAL ON THOSE ROUTES. `HrEmployerSubstitutionNotice` stands
+ * down when the rescue landed nowhere because THIS refusal says it better; a
+ * surface that suppresses the notice and renders neither shows an empty inbox
+ * for an employer the person never asked about, which reads as "nothing is
+ * waiting on you" — the one lie an approval inbox must never tell.
+ *
+ * Returns null in every ordinary case, so it costs nothing.
+ */
+export function useHrRescueRefusal(personaHomeHref?: string): ReactNode {
+  const context = useHrContext();
+  const askedEmployerRef =
+    useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
+
+  if (!hrRescueLandedNowhere(context) || !askedEmployerRef) return null;
+
+  return (
+    <HrNoAccess
+      personaHomeHref={personaHomeHref}
+      sentence="You don't work here as far as HR is concerned, so there's nothing in this employer's HR for you to open."
+      employerRef={askedEmployerRef}
+    />
+  );
+}
+
 export function HrEmployerSubstitutionNotice({
   className,
 }: { className?: string } = {}) {
-  const { substitution } = useHrContext();
+  const context = useHrContext();
+  const { substitution } = context;
   if (!substitution) return null;
+
+  /*
+    🚨 LAW B IS NOT BROKEN HERE — IT IS SATISFIED HARDER.
+    The law is that no employer is ever substituted in SILENCE. When the rescue
+    landed nowhere, nothing is substituted at all: the page below is the
+    canonical refusal, and it names the asked-for employer out loud. Saying "so
+    this is your Workspace" above a page that refuses about Castellano & Reyes
+    would be two different answers to one question, and the banner's is false.
+  */
+  if (hrRescueLandedNowhere(context)) return null;
 
   const { askedName, askedRef, reason, openedName } = substitution;
 
@@ -752,6 +816,36 @@ export function HrPageState({
   }
 
   if (requireEmployer && !context.active) return <HrEmployerPicker />;
+
+  /*
+    🚨 THE SMS-DEEP-LINK LANDING (owner, on his phone, 2026-08-30).
+
+    `?org=` named an employer this person cannot do HR in, so
+    `useHrContextResolver` rescued them into an employer they CAN use — and the
+    rescue landed on one with HR switched off or never set up. The result was a
+    page about the WRONG ORGANIZATION offering to turn HR on there, which
+    answers a question nobody asked, and gives the person no way at all to reach
+    the employer the link was actually about.
+
+    That is landing on a page you have no authority for, so it gets the
+    platform's one refusal surface: the asked-for employer named honestly, and
+    the canonical Request-access click through to that organization's owners and
+    admins.
+
+    NARROW ON PURPOSE. The rescue is a real kindness for a multi-employer person
+    whose active org happens to be personal — she still gets her HR plus the
+    substitution notice (law B). This fires only where the rescue produced
+    NOTHING USABLE, which is the case where the notice was the whole page.
+  */
+  if (hrRescueLandedNowhere(context) && askedEmployerRef) {
+    return (
+      <HrNoAccess
+        personaHomeHref={personaHomeHref}
+        sentence="You don't work here as far as HR is concerned, so there's nothing in this employer's HR for you to open."
+        employerRef={askedEmployerRef}
+      />
+    );
+  }
 
   if (context.active && isHrModuleOff(context)) {
     return (

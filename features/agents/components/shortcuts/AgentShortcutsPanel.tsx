@@ -188,7 +188,7 @@ export function AgentShortcutsPanel({
   });
 
   return (
-    <div className="h-full overflow-y-auto pt-12">
+    <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 py-6 space-y-6">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
