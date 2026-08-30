@@ -25,6 +25,7 @@ import {
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ApiTestConfigPanel } from "@/components/api-test-config/ApiTestConfigPanel";
@@ -611,7 +612,7 @@ export default function AgentTestClient() {
                 <Label className="text-[10px] text-muted-foreground">
                   User Input
                 </Label>
-                <textarea
+                <ProTextarea
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   rows={3}
@@ -665,7 +666,7 @@ export default function AgentTestClient() {
                 <Label className="text-[10px] text-muted-foreground">
                   Follow-up Message
                 </Label>
-                <textarea
+                <ProTextarea
                   value={continueInput}
                   onChange={(e) => setContinueInput(e.target.value)}
                   rows={2}

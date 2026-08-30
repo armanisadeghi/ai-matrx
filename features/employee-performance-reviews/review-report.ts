@@ -2,7 +2,7 @@ import {
   buildPrintDocument,
   escapeHtml,
   openPrintWindow,
-} from "@/lib/block-print/block-print-utils";
+} from "@ai-matrx/print/core";
 import {
   OVERALL_OPTIONS,
   RATING_SCHEMA,

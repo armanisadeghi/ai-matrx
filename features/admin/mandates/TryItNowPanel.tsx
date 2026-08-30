@@ -39,7 +39,6 @@ import { FlaskConical, Loader2, Play, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -63,6 +62,7 @@ import {
   saveAdHocResultAsExemplar,
   type MandateDefinitionRow,
 } from "./service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** One scaffolded field: a mandate-declared variable, an agent-declared one, or
  * both (the common case — the union is deliberate, because either side alone
@@ -382,7 +382,7 @@ export function TryItNowPanel({
       )}
 
       {showsUserInput && (
-        <Textarea
+        <ProTextarea
           value={userInput}
           onChange={(event) => setUserInput(event.target.value)}
           placeholder={

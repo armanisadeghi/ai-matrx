@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -51,6 +50,7 @@ import {
 } from "lucide-react";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AgentExecutionTestModalProps {
   surfaceKey: string;
@@ -326,7 +326,7 @@ function InlineTestMode({
         Simulated editor with selection: &ldquo;{selectedText}&rdquo;
       </div>
 
-      <Textarea
+      <ProTextarea
         value={editorText}
         onChange={(e) => setEditorText(e.target.value)}
         rows={6}

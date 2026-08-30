@@ -21,10 +21,11 @@
  * scroll of the page body.
  */
 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import { hrTasksHref } from "@/features/hr/routes";
+import { hrMeTimesheetHref, hrTasksHref } from "@/features/hr/routes";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getTimesheet } from "../api/service";
@@ -43,6 +44,9 @@ export function MyTimesheet({
   employmentId,
   payPeriodId,
   periodNote = null,
+  focusNote = null,
+  focusPunchId = null,
+  focusLocalWorkDate = null,
 }: {
   employmentId: string;
   payPeriodId: string;
@@ -52,6 +56,17 @@ export function MyTimesheet({
    * showing a closed period silently as "your timesheet" is a lie of omission.
    */
   periodNote?: string | null;
+  /**
+   * The other half of the same honesty: `hr.my_timesheet_context` resolved a `?punch=` deep link
+   * and this is what the reader must be told about it — which period they are looking at and why,
+   * or that the punch could not be found. SAME CLASS OF SENTENCE AS `periodNote`, so it gets the
+   * same treatment and not a second visual language.
+   */
+  focusNote?: string | null;
+  /** The corrected punch, marked in the raw chain. Never printed — it is a uuid. */
+  focusPunchId?: string | null;
+  /** The day that opens itself, scrolls into view and carries the accent. */
+  focusLocalWorkDate?: string | null;
 }) {
   const mockCase = useHrMockCase();
 
@@ -70,6 +85,9 @@ export function MyTimesheet({
             <MyTimesheetBody
               timesheet={query.data}
               periodNote={periodNote}
+              focusNote={focusNote}
+              focusPunchId={focusPunchId}
+              focusLocalWorkDate={focusLocalWorkDate}
               mockCase={mockCase}
               onRefetch={query.refetch}
             />
@@ -83,15 +101,38 @@ export function MyTimesheet({
 function MyTimesheetBody({
   timesheet,
   periodNote,
+  focusNote,
+  focusPunchId,
+  focusLocalWorkDate,
   mockCase,
   onRefetch,
 }: {
   timesheet: Timesheet;
   periodNote: string | null;
+  focusNote: string | null;
+  focusPunchId: string | null;
+  focusLocalWorkDate: string | null;
   mockCase: ReturnType<typeof useHrMockCase>;
   onRefetch: () => void;
 }) {
   const { orgRef } = useHrContext();
+  const router = useRouter();
+
+  /*
+   * 🚨 THE VOIDING-PUNCH DOOR IS NOW A DOOR ON THIS ROUTE TOO. `PunchChain` renders every void
+   * struck through with "Open the punch that replaced it" (§2.5: *"a hidden void is a destroyed
+   * record"*), and route 5 simply never passed `onOpenPunch` — so an EMPLOYEE, the one person who
+   * cannot open the raw punch register, fell through to a link into a manager surface.
+   *
+   * The in-place opener is the deep link this route already understands: re-ask with `?punch=`,
+   * and `hr_my_timesheet_context` resolves the period that punch belongs to and the day to focus.
+   * It deliberately carries neither `?employment=` nor `?period=` — pinning the old period would
+   * defeat the resolution, and a replacement punch can legitimately land in a different one.
+   * `replace`, not `push`: this is the same reading, re-aimed, not a new place to go back from.
+   */
+  const openPunch = (punchId: string) => {
+    router.replace(hrMeTimesheetHref(orgRef, { punch: punchId }));
+  };
 
   // §2.2's `no-timesheet` state. It comes FIRST: everything below assumes there are hours.
   if (timesheet.noTimesheetReason) {
@@ -144,6 +185,21 @@ function MyTimesheetBody({
         </p>
       ) : null}
 
+      {/*
+        🚨 WHAT THE LINK YOU FOLLOWED WAS ABOUT (SPEC-TIME §4.1). A punch-correction notice sends
+        the employee here with `?punch=`; the route used to ignore it entirely and land on the most
+        recent open period saying nothing, so a person told their punch had been changed arrived at
+        a screen with no mention of it. `focusNote` is the server's sentence about that link —
+        which period this is and why, or that the punch could not be found — and it is the SAME
+        class of honest sentence as `periodNote` above, so it gets the same treatment. Two visual
+        languages for one kind of fact is how a reader learns to skip both.
+      */}
+      {focusNote ? (
+        <p className="rounded-lg border border-border bg-card p-3 text-sm text-foreground">
+          {focusNote}
+        </p>
+      ) : null}
+
       <header className="space-y-1">
         <p className="text-xs text-muted-foreground">
           Every figure here was calculated by the payroll engine, not by this page. Open any
@@ -168,7 +224,13 @@ function MyTimesheetBody({
 
       <AttestationBar timesheet={timesheet} mockCase={mockCase} onDecided={onRefetch} />
 
-      <TimesheetWeeks timesheet={timesheet} viewer="employee" />
+      <TimesheetWeeks
+        timesheet={timesheet}
+        viewer="employee"
+        onOpenPunch={openPunch}
+        focusPunchId={focusPunchId}
+        focusLocalWorkDate={focusLocalWorkDate}
+      />
 
       {timesheet.openExceptions.length > 0 ? (
         <section className="rounded-lg border border-border bg-card p-4">

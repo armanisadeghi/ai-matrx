@@ -23,10 +23,10 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface FactCheckerHookedProps {
   variables: Record<string, unknown>;
@@ -95,7 +95,7 @@ export default function FactCheckerHooked({
 
       {showFullForm && (
         <div className="space-y-3">
-          <Textarea
+          <ProTextarea
             value={claim}
             onChange={(e) => setVariable("claim", e.target.value)}
             onKeyDown={handleKeyDown}

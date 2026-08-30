@@ -1,7 +1,7 @@
 // app/(core)/commerce/labels/[batchId]/page.tsx
 //
 // One label batch (print run): print / preview / PDF / calibration through
-// the lib/label-print seam, reprint ranges, void codes, per-code doors.
+// the @ai-matrx/print seam, reprint ranges, void codes, per-code doors.
 
 import { redirect } from "next/navigation";
 

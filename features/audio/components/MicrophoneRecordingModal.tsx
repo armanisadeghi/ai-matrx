@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AudioLevelIndicator } from './AudioLevelIndicator';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface MicrophoneRecordingModalProps {
   isOpen: boolean;
@@ -320,7 +321,7 @@ export function MicrophoneRecordingModal({
                 Transcription{' '}
                 <span className="font-normal opacity-60">(tap to edit)</span>
               </label>
-              <textarea
+              <ProTextarea
                 ref={textareaRef}
                 value={editedText}
                 onChange={e => setEditedText(e.target.value)}

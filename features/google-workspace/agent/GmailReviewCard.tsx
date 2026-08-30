@@ -17,7 +17,6 @@ import { useState } from "react";
 import { Send, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
@@ -40,6 +39,7 @@ import {
   preferredGoogleConnectionId,
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface GmailReviewCardProps {
   ask: PendingAsk;
@@ -235,7 +235,7 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor={`gmail-body-${ask.callId}`}>Message</Label>
-          <Textarea
+          <ProTextarea
             id={`gmail-body-${ask.callId}`}
             value={body}
             onChange={(event) => setBody(event.target.value)}

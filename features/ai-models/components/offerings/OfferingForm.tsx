@@ -22,6 +22,7 @@ import type {
   AiModel,
   AiOfferingFormData,
 } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface OfferingFormProps {
   data: AiOfferingFormData;
@@ -248,7 +249,7 @@ export default function OfferingForm({
       </div>
 
       <FormField label="Notes">
-        <textarea
+        <ProTextarea
           value={data.notes}
           onChange={set("notes")}
           rows={3}

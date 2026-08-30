@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Recipient {
   id: string;
@@ -172,7 +173,7 @@ export function EmailComposeSheet({
 
         <div>
           <label className="block text-sm font-medium mb-1.5">Message</label>
-          <textarea
+          <ProTextarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Enter your message..."

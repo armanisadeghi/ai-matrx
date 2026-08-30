@@ -43,7 +43,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -100,6 +99,7 @@ import {
   isFloatingBinding,
 } from "@/lib/supabase/mandateStorage";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export type WorkspacePrincipal =
   | { kind: "user" }
@@ -1169,7 +1169,8 @@ function MappingRows({
                   <option value="fail">Fail the run</option>
                 </select>
                 {entry.when_absent === "use_default" ? (
-                  <Textarea
+                  <ProTextarea
+                    wrapperClassName="h-8 min-w-0 flex-1"
                     value={typeof entry.default === "string" ? entry.default : ""}
                     disabled={disabled}
                     onChange={(e) => patchRow(target.name, { default: e.target.value })}

@@ -99,7 +99,7 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       url: "/commerce/labels/[batchId]",
       label: "Label batch detail",
       description:
-        "One print run: print/preview/PDF/calibration via the lib/label-print seam, reprint ranges, void remaining codes, per-code doors to owning assets. Batch state auto-derived.",
+        "One print run: print/preview/PDF/calibration via the @ai-matrx/print seam, reprint ranges, void remaining codes, per-code doors to owning assets. Batch state auto-derived.",
       filePath: "app/(core)/commerce/labels/[batchId]/page.tsx",
       status: "Live",
     },

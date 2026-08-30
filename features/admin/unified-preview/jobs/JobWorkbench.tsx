@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
@@ -52,6 +51,7 @@ import {
   PreviewSection,
   previewToast,
 } from "./preview-ui";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const INPUT_SOURCE_LABEL: Record<PreviewJob["input_source"], string> = {
   provision: "Provision — the code position's frozen manifest",
@@ -200,7 +200,7 @@ export function JobWorkbench({
         }
       >
         {editingGoal ? (
-          <Textarea
+          <ProTextarea
             value={goalDraft}
             onChange={(e) => setGoalDraft(e.target.value)}
             rows={3}

@@ -30,7 +30,6 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -39,6 +38,7 @@ import { toast } from "@/lib/toast";
 import type { DraftItem, ReviewVerdict } from "../types";
 import { listDraftQueue, reviewDraft } from "../service";
 import { ConfidenceChip, confidenceBand } from "./ConfidenceChip";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function DraftReviewQueue() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
@@ -259,7 +259,7 @@ export function DraftReviewQueue() {
                       {edited && <Pencil className="h-3 w-3" />}
                     </div>
                     {field.multiline ? (
-                      <Textarea
+                      <ProTextarea
                         {...shared}
                         rows={band === "high" ? 3 : 6}
                         ref={i === 0 ? (el) => void (firstFieldRef.current = el) : undefined}

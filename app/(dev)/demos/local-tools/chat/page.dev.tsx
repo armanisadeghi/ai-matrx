@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2, MessageSquare, Play, RefreshCw } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
@@ -221,7 +222,7 @@ export default function LocalChatTestPage() {
               className="w-full h-8 rounded border bg-background px-2 text-xs font-mono"
               spellCheck={false}
             />
-            <textarea
+            <ProTextarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               className="w-full h-24 rounded border bg-background p-2 text-xs"

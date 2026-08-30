@@ -227,6 +227,30 @@ jobs:
         # story: self-referencing usage comment, no caller.
         run: pnpm hr:exports-cases
 
+      - name: HR RPC conformance — every door call matches the door it calls
+        if: always()
+        # pnpm hr:rpc-conformance (scripts/hr/hrb026_rpc_conformance.ts). The HR
+        # client↔Postgres seam is untyped in BOTH directions that matter: the
+        # argument names and the jsonb payload KEYS. Every call site casts
+        # (`fn as never`, `args as never`) because the generated types cannot
+        # express these doors, so TypeScript checks nothing here. A misnamed
+        # argument 400s and gets swallowed by the "a refusal is DATA" transport;
+        # a misnamed payload key is a completely SILENT no-op that returns
+        # ok:true and drops the field. That has now shipped at least five times
+        # (verification letters, separations, corrective actions twice, the
+        # corrective-action outcome args), which is the definition of a defect
+        # class that needs a mechanism rather than another careful reviewer.
+        #
+        # STATIC, like every step above it: it diffs call sites against
+        # scripts/hr/hr-door-snapshot.json, a committed pull of live pg_proc
+        # (refresh: pnpm hr:door-snapshot). No database, no secrets, so it runs
+        # on every push and can never report UNMEASURED — the same doctrine as
+        # scripts/schema-check's committed snapshot.
+        #
+        # It prints an UNANALYZABLE list on every run naming each call site it
+        # could not fully resolve and why. Those are NOT passes; read them.
+        run: pnpm hr:rpc-conformance
+
   # ---------------------------------------------------------------------------
   # migration-slot-guard — liveness for the BEFORE INSERT ROW trigger on
   # public._schema_migrations (migrations/migration_slot_guard.sql), installed

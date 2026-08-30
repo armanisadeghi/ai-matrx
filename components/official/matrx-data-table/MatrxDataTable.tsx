@@ -1665,12 +1665,19 @@ function MatrxDataTableCore<T>({
                               className="px-2 py-1.5 align-middle lg:py-0.5"
                               onClick={(e) => e.stopPropagation()}
                             >
+                              {/*
+                                🚨 An unselectable row gets NO CONTROL AT ALL — not a
+                                greyed one. `isRowSelectable` returning false means the
+                                surface beneath will refuse this row, and a checkbox
+                                that renders (even faded) still says "this is a thing
+                                you pick"; the cell stays for column alignment, the
+                                control does not exist. Absent, not disabled, not
+                                hidden — nothing in the DOM to find or tick.
+                              */}
+                              {(selection.isRowSelectable?.(row) ?? true) ? (
                               <Checkbox
                                 className={CHECKBOX_TAP_AREA}
                                 checked={isChecked}
-                                disabled={
-                                  !(selection.isRowSelectable?.(row) ?? true)
-                                }
                                 aria-label={`Select this ${selectionNoun}`}
                                 // Radix hands the checkbox's own click through here;
                                 // shift-range needs the native event's modifier, so
@@ -1679,6 +1686,7 @@ function MatrxDataTableCore<T>({
                                   toggleRowSelected(index, e.shiftKey)
                                 }
                               />
+                              ) : null}
                             </td>
                           ) : null}
                           {visibleColumns.map((col, colIdx) => {

@@ -39,7 +39,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -88,6 +87,7 @@ import {
   type SeoPageOption,
   type UntrackedSnapshotChange,
 } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const STATUS_OPTIONS = [
   "planned",
@@ -400,7 +400,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="What is changing?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.summary}
                 onChange={(event) => set("summary", event.target.value)}
                 className="min-h-20"
@@ -408,7 +408,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Why make this change?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.rationale}
                 onChange={(event) => set("rationale", event.target.value)}
                 className="min-h-20"
@@ -447,7 +447,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="If we do this, what should happen?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.hypothesis}
                 onChange={(event) => set("hypothesis", event.target.value)}
                 className="min-h-20"
@@ -455,7 +455,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Why should it happen?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.mechanism}
                 onChange={(event) => set("mechanism", event.target.value)}
                 className="min-h-20"
@@ -463,7 +463,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="How does this create business value?" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.businessLink}
                 onChange={(event) => set("businessLink", event.target.value)}
                 className="min-h-20"
@@ -471,7 +471,7 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Business outcome" wide>
-              <Textarea
+              <ProTextarea
                 value={draft.businessOutcome}
                 onChange={(event) => set("businessOutcome", event.target.value)}
                 className="min-h-20"

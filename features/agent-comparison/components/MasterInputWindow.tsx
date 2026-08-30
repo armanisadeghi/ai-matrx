@@ -34,6 +34,7 @@ import { applyMasterFieldsToColumns } from "../redux/thunks";
 import { selectBattleColumns, selectMasterFields } from "../redux/selectors";
 import { MASTER_INPUT_TARGET } from "../types";
 import type { BattleColumn, MasterField } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   id: string;
@@ -203,7 +204,7 @@ function MasterFieldRow({
       </div>
 
       <div className="p-2 space-y-2">
-        <textarea
+        <ProTextarea
           value={field.value}
           onChange={(e) =>
             dispatch(

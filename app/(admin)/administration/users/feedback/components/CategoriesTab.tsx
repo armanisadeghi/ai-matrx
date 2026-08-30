@@ -6,6 +6,7 @@ import { CopyButtons } from '@/components/agent-copy/CopyButtons';
 import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
 import { categorySummary, feedbackBrief, feedbackRowSummary } from '../format';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const LOCATION =
     'AI Matrx Admin — Feedback Management · Categories (/administration/users/feedback?tab=categories)';
@@ -22,7 +23,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -786,7 +786,7 @@ function CategoryForm({
                 </div>
                 <div>
                     <label className="text-xs font-medium mb-1 block">Description</label>
-                    <Textarea
+                    <ProTextarea
                         value={editing.description}
                         onChange={(e) => onChange({ ...editing, description: e.target.value })}
                         placeholder="Optional description..."

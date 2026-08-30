@@ -111,7 +111,7 @@ import {
 import {
   PrintOptionsDialog,
   usePrintOptions,
-} from "@/lib/block-print/PrintOptionsDialog";
+} from "@ai-matrx/print/react";
 import { createDiagramPrinter } from "./diagram-printer";
 import {
   DropdownMenu,

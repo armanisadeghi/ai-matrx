@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mail, Send, Loader2, CheckCircle } from "lucide-react";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -155,7 +156,7 @@ export default function ContactPage() {
               <label htmlFor="message" className="block text-sm font-medium mb-2">
                 Message <span className="text-destructive">*</span>
               </label>
-              <textarea
+              <ProTextarea enableVoice={false} enableCleanup={false}
                 id="message"
                 name="message"
                 value={formData.message}

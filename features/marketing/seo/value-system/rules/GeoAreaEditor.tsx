@@ -48,7 +48,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -87,6 +86,7 @@ import {
   type GeoAreaFormState,
   type GeoPlace,
 } from "./types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function areaToForm(area: SiteGeoArea): GeoAreaFormState {
   return {
@@ -432,7 +432,7 @@ export function GeoAreaEditor({
               label={`Other place names${tokenCount > 0 ? ` (${tokenCount})` : ""}`}
               hint="For anywhere the gazetteer does not have — a neighbourhood, an industrial park, a local nickname. One per line or comma-separated, each matched as a whole word inside the search: “newark” matches “data destruction newark”, not “newarkshire”."
             >
-              <Textarea
+              <ProTextarea
                 value={form.tokensText}
                 onChange={(e) => set("tokensText", e.target.value)}
                 rows={3}
@@ -442,7 +442,7 @@ export function GeoAreaEditor({
             </Field>
 
             <Field label="Why (optional)">
-              <Textarea
+              <ProTextarea
                 value={form.notes}
                 onChange={(e) => set("notes", e.target.value)}
                 rows={2}

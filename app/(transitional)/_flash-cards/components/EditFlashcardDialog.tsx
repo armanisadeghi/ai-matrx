@@ -3,10 +3,10 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {Flashcard, FlashcardData} from "@/types/flashcards.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface EditFlashcardDialogProps {
     editingCard: Flashcard | null;
@@ -43,7 +43,7 @@ const EditFlashcardDialog: React.FC<EditFlashcardDialogProps> = ({ editingCard, 
                     <div className="space-y-4">
                         <div>
                             <Label htmlFor="front">Front of card</Label>
-                            <Textarea
+                            <ProTextarea
                                 id="front"
                                 value={updatedCard.front}
                                 onChange={(e) => handleInputChange('front', e.target.value)}
@@ -52,7 +52,7 @@ const EditFlashcardDialog: React.FC<EditFlashcardDialogProps> = ({ editingCard, 
                         </div>
                         <div>
                             <Label htmlFor="back">Back of card</Label>
-                            <Textarea
+                            <ProTextarea
                                 id="back"
                                 value={updatedCard.back}
                                 onChange={(e) => handleInputChange('back', e.target.value)}
@@ -61,7 +61,7 @@ const EditFlashcardDialog: React.FC<EditFlashcardDialogProps> = ({ editingCard, 
                         </div>
                         <div>
                             <Label htmlFor="example">Example</Label>
-                            <Textarea
+                            <ProTextarea
                                 id="example"
                                 value={updatedCard.example}
                                 onChange={(e) => handleInputChange('example', e.target.value)}
@@ -93,7 +93,7 @@ const EditFlashcardDialog: React.FC<EditFlashcardDialogProps> = ({ editingCard, 
                         {updatedCard.detailedExplanation && (
                             <div>
                                 <Label htmlFor="detailedExplanation">Detailed Explanation</Label>
-                                <Textarea
+                                <ProTextarea
                                     id="detailedExplanation"
                                     value={updatedCard.detailedExplanation}
                                     onChange={(e) => handleInputChange('detailedExplanation', e.target.value)}
@@ -114,7 +114,7 @@ const EditFlashcardDialog: React.FC<EditFlashcardDialogProps> = ({ editingCard, 
                         )}
                         <div>
                             <Label htmlFor="personalNotes">Personal Notes</Label>
-                            <Textarea
+                            <ProTextarea
                                 id="personalNotes"
                                 value={updatedCard.personalNotes || ''}
                                 onChange={(e) => handleInputChange('personalNotes', e.target.value)}

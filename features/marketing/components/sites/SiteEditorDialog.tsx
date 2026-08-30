@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -30,6 +29,7 @@ import {
 import type { MarketingSite } from "@/features/marketing/types";
 import type { SiteDraftPatch } from "@/features/marketing/lib/site-write-targets";
 import { extractErrorMessage } from "@/utils/errors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const STATUS_OPTIONS: Array<{ value: MarketingSite["status"]; label: string }> =
   [
@@ -273,7 +273,7 @@ function SiteEditorDialogBody({
             <Label htmlFor="site-description" className="text-xs">
               Description
             </Label>
-            <Textarea
+            <ProTextarea
               id="site-description"
               value={draft.description}
               onChange={(event) => set("description")(event.target.value)}

@@ -92,6 +92,7 @@ import type {
   MandateTestCandidate,
   MandateTestResponse,
 } from "@/features/agents/mandates/test-run";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -291,7 +292,7 @@ function ResultRow({
         )}
 
         <div className="space-y-1">
-          <Textarea
+          <ProTextarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="Your verdict: better, worse, or still uncertain?"
@@ -1001,7 +1002,7 @@ export function MandateTestBench({
             placeholder='Variables JSON, e.g. {"image_description": "…"}'
             className="min-h-20 font-mono text-xs"
           />
-          <Textarea
+          <ProTextarea
             value={newUserInput}
             onChange={(event) => setNewUserInput(event.target.value)}
             placeholder="User message (optional)"

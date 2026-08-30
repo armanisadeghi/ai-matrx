@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type {
   EduFaqItem,
   EduFeatureItem,
@@ -24,6 +23,7 @@ import type {
 } from "../../types";
 import { EDU_STATUSES } from "../../types";
 import { EDU_SECTION_KINDS } from "../validate";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SECTION_LABELS: Record<EduSection["kind"], string> = {
   prose: "Article text",
@@ -165,7 +165,7 @@ function FeatureItems({
           />
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Description</Label>
-            <Textarea
+            <ProTextarea
               value={item.description}
               onChange={(event) =>
                 onChange(
@@ -246,7 +246,7 @@ function StepItems({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Description</Label>
-            <Textarea
+            <ProTextarea
               value={step.description}
               onChange={(event) =>
                 onChange(
@@ -309,7 +309,7 @@ function FaqItems({
           />
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Answer</Label>
-            <Textarea
+            <ProTextarea
               value={item.a}
               onChange={(event) =>
                 onChange(
@@ -438,7 +438,7 @@ function StatusCardItems({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Description</Label>
-            <Textarea
+            <ProTextarea
               value={card.description ?? ""}
               onChange={(event) =>
                 replace(index, { description: event.target.value || undefined })
@@ -455,7 +455,7 @@ function StatusCardItems({
             <Label className="text-xs text-muted-foreground">
               Bullets (one per line)
             </Label>
-            <Textarea
+            <ProTextarea
               value={(card.bullets ?? []).join("\n")}
               onChange={(event) =>
                 replace(index, {
@@ -530,7 +530,7 @@ function SectionFields({
             <Label className="text-xs text-muted-foreground">
               Article text
             </Label>
-            <Textarea
+            <ProTextarea
               value={section.body}
               onChange={(event) =>
                 onChange({ ...section, body: event.target.value })
@@ -661,7 +661,7 @@ function SectionFields({
             <Label className="text-xs text-muted-foreground">
               Supporting text (optional)
             </Label>
-            <Textarea
+            <ProTextarea
               value={section.body ?? ""}
               onChange={(event) =>
                 onChange({ ...section, body: event.target.value || undefined })

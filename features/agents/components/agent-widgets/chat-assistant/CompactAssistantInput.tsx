@@ -47,6 +47,7 @@ import { SmartInputFileDropTarget } from "../../inputs/smart-input/SmartInputFil
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
 import { toast } from "@/lib/toast";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CompactAssistantInputProps {
   conversationId: string;
@@ -162,7 +163,7 @@ export function CompactAssistantInput({
 
       {/* Textarea */}
       <div className="px-2 pt-1">
-        <textarea
+        <ProTextarea
           ref={textareaRef}
           value={visibleText}
           onChange={(e) =>

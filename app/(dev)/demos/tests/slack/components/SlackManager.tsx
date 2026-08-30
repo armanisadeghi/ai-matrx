@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import {SlackChannel, SlackClient, SlackMessage} from '../slackClientUtils';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SlackManager: React.FC = () => {
   const [token, setToken] = useState('');
@@ -255,7 +256,7 @@ const SlackManager: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4">Send a Message</h2>
             <div className="mb-4">
               <label className="block mb-2">Message:</label>
-              <textarea
+              <ProTextarea
                   value={message}
                   onChange={handleMessageChange}
                   placeholder="Type your message here..."

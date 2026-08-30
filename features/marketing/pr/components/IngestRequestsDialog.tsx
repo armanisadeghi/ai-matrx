@@ -38,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
 import {
@@ -46,6 +45,7 @@ import {
   type IngestRequestsResult,
 } from "@/features/marketing/pr/api";
 import { PLATFORM_LABELS } from "@/features/marketing/pr/types";
+import { Textarea } from "@/components/ui/textarea";
 
 /** The platforms whose digests users actually paste. */
 const PASTEABLE_PLATFORMS = [
@@ -130,7 +130,7 @@ export function IngestRequestsDialog({
         </DialogHeader>
 
         <div className="space-y-3">
-          <Textarea
+            <Textarea
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
             placeholder={

@@ -74,6 +74,7 @@ import { ResourcePicker } from "./ResourcePicker";
 import { BudgetMeter } from "./BudgetMeter";
 import { BundleBar } from "./BundleBar";
 import { VariablePreview } from "./VariablePreview";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** What the agent is asked to do when the user does not say otherwise. */
 /** The research surface, for agent-surface binding value mappings. */
@@ -738,7 +739,7 @@ function AgentRunnerBody({
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Instruction
           </span>
-          <textarea
+          <ProTextarea
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             rows={2}

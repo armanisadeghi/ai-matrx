@@ -28,7 +28,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -43,6 +42,7 @@ import {
   serviceLinesOf,
   type LandscapeBriefRow,
 } from "./landscapeBrief";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function ConfidenceDots({ score }: { score: number | null }) {
   if (!score) return null;
@@ -281,7 +281,7 @@ export function LandscapeBriefCard({
               <Label htmlFor="brief-correction">
                 Anything we got wrong? Say it however you like
               </Label>
-              <Textarea
+              <ProTextarea
                 id="brief-correction"
                 rows={3}
                 value={correction}

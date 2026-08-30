@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DirectoryStructureFormProps {
     onSubmit: (params: DirectoryStructureParams) => void;
@@ -75,7 +75,7 @@ export const DirectoryStructureForm = ({ onSubmit, loading }: DirectoryStructure
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">Common Configs (Optional)</label>
-                <Textarea
+          <Textarea
                     value={commonConfigs}
                     onChange={(e) => setCommonConfigs(e.target.value)}
                     placeholder="Enter common configurations (JSON or plain text)..."

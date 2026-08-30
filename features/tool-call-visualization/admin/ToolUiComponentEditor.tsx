@@ -46,6 +46,7 @@ import {
   getAllAvailableImports,
   getDefaultImportsForToolRenderer,
 } from "@/features/dynamic-react/toolRendererScope";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -729,7 +730,7 @@ export function ToolUiComponentEditor({
           {/* Notes */}
           <div>
             <Label htmlFor="notes">Developer Notes</Label>
-            <Textarea
+            <ProTextarea
               id="notes"
               value={formData.notes}
               onChange={(e) =>
@@ -1124,7 +1125,7 @@ export function ToolUiComponentEditor({
           {/* Notes */}
           <div>
             <Label htmlFor="notes">Developer Notes</Label>
-            <Textarea
+            <ProTextarea
               id="notes"
               value={formData.notes}
               onChange={(e) =>

@@ -72,6 +72,7 @@ import { AgentEditAccessControl } from "@/features/agents/components/context-pol
 import { AgentContextInjectionSwitch } from "@/features/agents/components/context-policies-management/AgentContextInjectionSwitch";
 import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@/features/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const CONTEXT_TYPES: ContextObjectType[] = [
   "text",
@@ -466,7 +467,7 @@ function PolicyEditorFields({
               (shown to the model — be specific)
             </span>
           </Label>
-          <Textarea
+          <ProTextarea
             id="policy-desc"
             value={form.description}
             onChange={(e) => onChange({ description: e.target.value })}

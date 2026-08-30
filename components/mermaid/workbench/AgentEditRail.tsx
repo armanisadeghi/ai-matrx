@@ -14,13 +14,13 @@ import { toast } from "@/lib/toast";
 
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 import { StandaloneMermaidView } from "../MermaidView";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useMermaidAgentEdit } from "../hooks/useMermaidAgentEdit";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AgentEditRailProps {
   /** Current diagram source. */
@@ -119,7 +119,7 @@ export function AgentEditRail({
           <label className="mb-1 block text-xs font-medium text-muted-foreground">
             What should change?
           </label>
-          <Textarea
+          <ProTextarea
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             placeholder="e.g. Make the happy path green and add a retry step after failure"

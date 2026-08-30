@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -46,6 +45,7 @@ import { ToolRendererPreview } from "@/features/tool-call-visualization/testing/
 import { useSaveSample } from "../hooks/useSaveSample";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { ToolStreamEvent, FinalPayload, ExecutionStatus } from "@/features/tool-call-visualization/testing/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Copy button ────────────────────────────────────────────────────────────
 
@@ -193,7 +193,7 @@ function SaveSamplePopover({
             <Label className="text-[11px] text-muted-foreground">
               Comments
             </Label>
-            <Textarea
+            <ProTextarea
               placeholder="Notes about this sample response…"
               value={adminComments}
               onChange={(e) => setAdminComments(e.target.value)}

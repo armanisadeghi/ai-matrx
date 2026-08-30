@@ -10,10 +10,10 @@
 import React, { useEffect, useState } from 'react';
 import { TabBase } from './TabBase';
 import { usePromptBuilder } from './PromptBuilderContext';
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface NewTabProps {
   updateContent?: (content: string) => void;
@@ -55,7 +55,7 @@ export const NewTab: React.FC<NewTabProps> = ({ updateContent }) => {
           <Label htmlFor="content" className="text-gray-700 dark:text-gray-300">
             Your Field Label
           </Label>
-          <Textarea
+          <ProTextarea
             id="content"
             placeholder="Enter content here..."
             value={content}

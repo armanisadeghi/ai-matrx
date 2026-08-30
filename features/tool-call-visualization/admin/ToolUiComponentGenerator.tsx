@@ -26,7 +26,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -56,6 +55,7 @@ import type {
 } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1350,7 +1350,7 @@ export function ToolUiComponentGenerator({
                 <Label className="text-xs text-muted-foreground">
                   Additional Instructions (Optional) …
                 </Label>
-                <Textarea
+                <ProTextarea
                   value={userInstructions}
                   onChange={(e) => setUserInstructions(e.target.value)}
                   placeholder="e.g., Use a card grid layout, emphasize the score field, add a copy button…"

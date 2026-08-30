@@ -27,11 +27,13 @@
 //                re-resolve identity and NEVER render their own identity header.
 
 import Link from "next/link";
+import { useState } from "react";
 import { FileWarning, Info, ShieldAlert, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { cn } from "@/lib/utils";
+import { NewCorrectiveActionDialog } from "@/features/hr/people/relations/components/NewCorrectiveActionDialog";
 
 import { EmployeeTimePanel } from "@/features/hr/time/people/EmployeeTimePanel";
 
@@ -117,6 +119,18 @@ export function DocumentsTab({ org }: { org: HrOrgRef }) {
 export function NotesTab({ profile }: { profile: HrEmployeeProfile }) {
   const isManager = profile.viewer === "manager";
 
+  // 🚨 THE ONE SENTENCE ON THIS PAGE THAT MATTERS POINTED AT A COMING-SOON TOAST.
+  // "Start a corrective action instead" is the whole reason the note-vs-action
+  // warning works: a manager who is told "not like that" and given no "like this"
+  // writes the note anyway. It called `announceComingSoon` while
+  // `NewCorrectiveActionDialog` — the real, shipped, two-door form — had been
+  // sitting one import away. The button now opens it, pre-bound to this person,
+  // on the FORMAL door: somebody who has just read "this belongs in a corrective
+  // action" is not reaching for the coaching rung.
+  const [issuing, setIssuing] = useState(false);
+  // Absent (not null) for a viewer without the reach to open the form at all.
+  const subjectEmploymentId = profile.header.employment_id ?? null;
+
   return (
     <TabShell title="Notes">
       <p className="max-w-prose text-sm text-muted-foreground">
@@ -145,11 +159,23 @@ export function NotesTab({ profile }: { profile: HrEmployeeProfile }) {
           size="sm"
           variant="outline"
           className="min-h-11 sm:min-h-9"
-          onClick={() => void announceComingSoon("hr.people.corrective-action")}
+          disabled={!subjectEmploymentId}
+          onClick={() => setIssuing(true)}
         >
           Start a corrective action instead
         </Button>
       </div>
+
+      {issuing && subjectEmploymentId ? (
+        <NewCorrectiveActionDialog
+          door="formal"
+          subjectEmploymentId={subjectEmploymentId}
+          onClose={() => setIssuing(false)}
+          // The dialog toasts its own success. There is no note list to refresh
+          // yet, and the action it created lives on the Relations tab.
+          onCreated={() => setIssuing(false)}
+        />
+      ) : null}
 
       <Waiting
         id="hr.people.notes"

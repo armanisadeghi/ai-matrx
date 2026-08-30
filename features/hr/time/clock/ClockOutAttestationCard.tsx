@@ -39,8 +39,8 @@ import {
   restBreaksOwed,
   restRuleResolved,
 } from "./clockStateView";
-import { Textarea } from "@/components/ui/textarea";
 import type { AttestationResponse, ClockState } from "@/features/hr/time/api/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface ClockOutAttestationCardProps {
   state: ClockState;
@@ -272,7 +272,7 @@ export function ClockOutAttestationCard({
           <label htmlFor="hr-attestation-disagreement" className="text-base text-foreground">
             Tell us what is wrong, in your own words.
           </label>
-          <Textarea
+          <ProTextarea
             id="hr-attestation-disagreement"
             value={disagreementNote}
             onChange={(event) => setDisagreementNote(event.target.value)}

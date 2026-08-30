@@ -177,11 +177,26 @@ export function RelationsCaseList() {
     >
       <div className="flex h-full min-h-0 flex-col gap-3 p-4 sm:p-6">
         {list?.partial ? (
-          // hr_admin holds corrective actions but NOT incidents (SPEC-ACCESS
-          // §3.2). Saying so beats a list that silently shows half the truth.
+          // 🚨 THIS BANNER ONCE MADE A COMPLETENESS CLAIM OVER A DOOR THAT HAD
+          // REFUSED. Verified on production v0.4.1474: the corrective-action side
+          // was 400ing (wrong-tier token), the failure was swallowed into
+          // log_client_error, `partial` went true, and the surface printed
+          // "Nothing is hidden inside what you can see." above a list of two
+          // incidents while two corrective actions for that same admin sat
+          // unlisted. The sentence was FALSE and the reader had no way to know.
+          //
+          // Two things changed. The seam is fixed (see relations/service.ts), so
+          // a partial list is now only ever a real access split — hr_admin holds
+          // corrective actions but NOT incidents, SPEC-ACCESS §3.2. And the
+          // banner NAMES WHICH SIDE it is showing instead of gesturing at "one of
+          // the two", because a person cannot check a claim they cannot read.
+          // It no longer promises anything about what it cannot see.
           <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            You hold one of the two relations records here, so this list shows
-            that one. Nothing is hidden inside what you can see.
+            You hold{" "}
+            {list.correctiveActionsGranted ? "corrective actions" : "incidents"}{" "}
+            here, not{" "}
+            {list.correctiveActionsGranted ? "incidents" : "corrective actions"},
+            so that is what this list shows.
           </p>
         ) : null}
 

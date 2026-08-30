@@ -18,7 +18,6 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, MessageSquarePlus, StickyNote, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -32,6 +31,7 @@ import {
   type MandateNote,
   type MandateNoteKind,
 } from "../notes";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */
@@ -133,7 +133,7 @@ export function MandateNotesPanel({
   return (
     <div className={cn("flex min-w-0 flex-col gap-2", className)}>
       <div className="flex min-w-0 flex-col gap-1.5">
-        <Textarea
+        <ProTextarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
           onKeyDown={(event) => {

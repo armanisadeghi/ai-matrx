@@ -18,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -27,6 +26,7 @@ import {
   createAccessRequest,
   createDeleteRequest,
 } from "@/features/access-gate/service/accessRequests";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type RequestChoice = "delete" | "full";
 
@@ -166,7 +166,7 @@ export function GovernedActionDialog({
                 onClick={() => setChoice("full")}
               />
             </div>
-            <Textarea
+            <ProTextarea
               className="min-h-20 text-base md:text-sm"
               value={note}
               maxLength={500}

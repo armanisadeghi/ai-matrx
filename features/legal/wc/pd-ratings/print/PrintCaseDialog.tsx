@@ -1,6 +1,6 @@
 "use client";
 
-import { PrintOptionsDialog } from "@/lib/block-print/PrintOptionsDialog";
+import { PrintOptionsDialog } from "@ai-matrx/print/react";
 import { pdReportPrinter, type PdReportData } from "./pd-report-printer";
 
 interface PrintCaseDialogProps {

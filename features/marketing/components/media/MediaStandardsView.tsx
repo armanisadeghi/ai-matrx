@@ -13,7 +13,6 @@ import { Loader2, Plus, Ruler, Save, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useSaveSiteMediaStandards } from "@/features/marketing/data/hooks";
@@ -27,6 +26,7 @@ import {
   type MediaStandardSlot,
   type SiteMediaStandards,
 } from "@/features/marketing/data/media-library";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function numberValue(value: string): number | null {
   const parsed = Number(value);
@@ -245,7 +245,7 @@ export function MediaStandardsView({
         <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-foreground/70">
           Site-wide media rules
         </h3>
-        <Textarea
+        <ProTextarea
           value={draft.notes}
           onChange={(event) => update({ ...draft, notes: event.target.value })}
           minHeight={64}

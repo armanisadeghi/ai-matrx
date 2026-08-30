@@ -35,6 +35,7 @@ import {
 } from "@/features/message-templates/services/message-templates-service";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -77,7 +78,7 @@ function AutoTextarea({
   }, [value]);
 
   return (
-    <textarea
+    <ProTextarea
       ref={ref}
       value={value}
       onChange={(e) => onChange(e.target.value)}

@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -62,6 +61,7 @@ import {
   sanitizeFieldName,
   validateFieldName,
 } from "@/utils/user-table-utls/field-name-sanitizer";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface TableField {
   id: string;
@@ -873,7 +873,7 @@ export default function TableConfigModal({
 
                 <div>
                   <Label htmlFor="table-description">Description</Label>
-                  <Textarea
+                  <ProTextarea
                     id="table-description"
                     value={tableInfo.description || ""}
                     onChange={(e) =>

@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -46,6 +45,7 @@ import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { useMandateRunner } from "../useMandateRunner";
 import { Section } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
@@ -326,7 +326,7 @@ export function TriadGoalSection({
       <div className="space-y-2.5 rounded-xl border border-primary/25 bg-card p-4">
         {editing ? (
           <div className="space-y-2">
-            <Textarea
+            <ProTextarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={Math.min(14, Math.max(5, draft.split("\n").length + 2))}

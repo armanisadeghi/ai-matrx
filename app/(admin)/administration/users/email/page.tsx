@@ -23,6 +23,8 @@ import {
 import { parseEmailDraftPatch } from "@/features/admin/shared/email-compose-draft";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { AdminUserSearchResponseSchema } from "@/features/user-search/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EmailTemplate {
   id: string;
@@ -298,7 +300,7 @@ export default function AdminEmailPage() {
                     <label className="block text-sm font-medium mb-1.5">
                       Email Addresses
                     </label>
-                    <textarea
+                    <Textarea
                       data-surface-value="custom_emails_raw"
                       value={customEmails}
                       onChange={(e) => setCustomEmails(e.target.value)}
@@ -435,7 +437,7 @@ export default function AdminEmailPage() {
                   <label className="block text-sm font-medium mb-1.5">
                     Message
                   </label>
-                  <textarea
+                  <ProTextarea
                     data-surface-value="message_body"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

@@ -25,6 +25,7 @@ import { cn } from "@/styles/themes/utils";
 import { MessageInputAttachMenu } from "./MessageInputAttachMenu";
 import type { SendMessageOptions } from "../hooks/useWhatsAppChat";
 import { formatDuration } from "../shared/relative-time";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // emoji-picker-react ships as default-export; load client-side only
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
@@ -304,7 +305,7 @@ export function MessageInputBar({
       </Popover>
 
       <div className="flex min-w-0 flex-1 items-end rounded-lg bg-card px-3 py-2">
-        <textarea
+        <ProTextarea
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}

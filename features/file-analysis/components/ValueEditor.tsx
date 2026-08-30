@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   Select,
   SelectContent,
@@ -159,8 +160,9 @@ export function ValueEditor({
 
   // text / code / identifier / unknown — single-line by default.
   if ((raw?.length ?? 0) > 80) {
+    const MultilineEditor = vt === "text" ? ProTextarea : Textarea;
     return (
-      <Textarea
+      <MultilineEditor
         value={raw}
         onChange={(e) => handleChange(e.target.value)}
         rows={3}

@@ -41,6 +41,7 @@ import {
   IMAGE_GENERATE_SURFACE_NAME,
   createImageGenerateScope,
 } from "@/features/surfaces/manifests/image-generate.manifest";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function GenerateShellClient() {
   const [prompt, setPrompt] = useState("");
@@ -200,7 +201,7 @@ export default function GenerateShellClient() {
       <aside className="flex flex-col gap-3 min-h-0">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium">Prompt</label>
-          <textarea
+          <ProTextarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="A cozy reading nook by a rainy window, warm lamp light, photorealistic"

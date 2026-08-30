@@ -16,7 +16,6 @@ import { ArrowLeft, Loader2, Network } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
@@ -37,6 +36,7 @@ import {
 } from "../../types";
 import { useGenerateMindMap } from "../useGenerateMindMap";
 import { linkDiagramToCards, type LinkableCard } from "../linkCards";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Presentation only — the VALUE vocabulary lives in features/education/media/
 // types.ts and is imported above, so this picker cannot drift from what the
@@ -346,7 +346,7 @@ export function MindMapNew() {
             ))}
           </select>
         ) : (
-          <Textarea
+          <ProTextarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. The water cycle"

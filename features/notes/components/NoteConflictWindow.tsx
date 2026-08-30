@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { DiffReview } from "@/components/diff/DiffReview";
 import type { DiffAnalysis } from "@/features/notes/utils/diffAnalysis";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -224,7 +225,8 @@ export function NoteConflictWindow({
           )}
 
           {activeTab === "local" && (
-            <textarea
+            <ProTextarea
+              wrapperClassName="h-full min-h-0"
               value={editableContent}
               onChange={(e) => setEditableContent(e.target.value)}
               className="w-full h-full min-h-[300px] resize-none bg-transparent text-sm font-mono leading-relaxed outline-none"

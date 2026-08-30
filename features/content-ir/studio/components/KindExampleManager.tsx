@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ProInput } from "@/components/official/ProInput";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -43,6 +42,7 @@ import {
   updateOwnedShapeExample,
   type ShapeAuthMode,
 } from "@/features/content-ir/studio/shape-authoring-service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // CodeMirror is heavy and only belongs in the bundle after someone opens the
 // editor. The canonical JsonInspector owns JSON parsing/lint.
@@ -330,7 +330,7 @@ export default function KindExampleManager({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="kind-example-description">Description</Label>
-              <Textarea
+              <ProTextarea
                 id="kind-example-description"
                 value={draft.description}
                 onChange={(event) =>

@@ -22,12 +22,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eraser, Loader2, Network } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { setKeywordService, type SetServiceResult } from "../data";
 import type { SiteServices } from "../hooks/useSiteServices";
 import { AssignTargetHeadline, type AssignTarget } from "./AssignPanel";
 import { OfferingPicker, OFFERING_UNPLACED } from "./OfferingPicker";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function OfferingAssignPanel({
   siteId,
@@ -122,7 +122,7 @@ export function OfferingAssignPanel({
             — optional, but this is what teaches the system
           </span>
         </label>
-        <Textarea
+        <ProTextarea
           id="offering-reason"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}

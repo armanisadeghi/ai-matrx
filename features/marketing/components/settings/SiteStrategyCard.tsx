@@ -17,9 +17,9 @@ import { useState } from "react";
 import { Compass, Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const STRATEGY_INTERVIEW_PATH = "/seo/sites/strategy-interview";
 
@@ -80,7 +80,7 @@ export function SiteStrategyCard({
           scoring use to decide what this site should (and shouldn&apos;t)
           pursue.
         </p>
-        <Textarea
+        <ProTextarea
           value={businessContext}
           onChange={(event) => setBusinessContext(event.target.value)}
           minHeight={120}

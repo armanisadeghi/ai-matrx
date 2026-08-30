@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { APPEND_MESSAGE_ENDPOINT, DEFAULT_APPEND_BODY } from "./constants";
 import { JsonViewer } from "./JsonViewer";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Role = "user" | "assistant" | "system";
 
@@ -178,7 +179,7 @@ export function AppendMessagePanel({
           <Label htmlFor="append-content" className="text-xs">
             Content
           </Label>
-          <Textarea
+          <ProTextarea
             id="append-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}

@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -41,6 +40,7 @@ import {
   saveCompetitorClassification,
 } from "./data";
 import { axesOf, buildRuling } from "./groundTruth";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const BUSINESS = ["direct", "adjacent", "none"] as const;
 const MARKET = ["same_market", "different_market", "market_agnostic"] as const;
@@ -497,7 +497,7 @@ export function CompetitorClassificationEditor({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor={`why-${row.id}`}>Why? (in your own words)</Label>
-        <Textarea
+        <ProTextarea
           id={`why-${row.id}`}
           value={why}
           onChange={(event) => setWhy(event.target.value)}

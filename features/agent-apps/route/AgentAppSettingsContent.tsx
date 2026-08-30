@@ -14,7 +14,6 @@ import { Copy, Loader2, Save, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -58,6 +57,7 @@ import {
   validateAppTags,
 } from "./agent-app-entity-writes";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AgentAppSettingsContentProps {
   appId: string;
@@ -449,7 +449,7 @@ export function AgentAppSettingsContent({
                 saveField("description", description.trim() || null)
               }
             >
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="text-[16px] min-h-24"

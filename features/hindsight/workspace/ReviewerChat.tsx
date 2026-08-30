@@ -27,13 +27,13 @@ import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 
 import { discussFinding, discussReview, getReviewThread } from "../api";
 import type { Finding, Review } from "../types";
 import { ThreadMessageRow } from "../components/ThreadMessageRow";
 import { fmtCost, fmtDate, fmtElapsed } from "../components/tokens";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function Elapsed({ startedAt }: { startedAt: number }) {
   const [elapsed, setElapsed] = useState(0);
@@ -241,7 +241,7 @@ export function ReviewerChat({
           </div>
         )}
 
-        <Textarea
+        <ProTextarea
           className="text-base md:text-sm"
           rows={3}
           value={draft}

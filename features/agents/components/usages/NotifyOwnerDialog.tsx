@@ -24,7 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -36,6 +35,7 @@ import {
   buildDriftMessage,
   type DriftMessageInput,
 } from "./driftMessageTemplate";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface NotifyTarget {
   recipientIds: string[];
@@ -167,7 +167,7 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Add a note (optional)
             </label>
-            <Textarea
+            <ProTextarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Anything you want to add before the standard message…"

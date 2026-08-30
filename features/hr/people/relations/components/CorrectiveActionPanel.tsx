@@ -86,10 +86,19 @@ export function CorrectiveActionPanel({
     const result = await acknowledgeHrCorrectiveAction({
       correctiveActionId: action.id,
       kind: ackKind,
+      // 🚨 THE WITNESS WAS COLLECTED AND THROWN AWAY. This control has always
+      // asked "who witnessed it" and the answer went into component state and
+      // nowhere else — `witnessEmploymentId: null` was hard-coded here, and the
+      // door it would have gone to did not exist anyway. It is a free-text NAME,
+      // not an employment: the person who witnessed a verbal warning is whoever
+      // was in the room, and there is no picker for that. It lands write-once on
+      // `hr.corrective_action.metadata.acknowledgement.witness_name`.
+      witnessName: ackKind === "verbal_witnessed" ? witness.trim() || null : null,
       witnessEmploymentId: null,
       signedFileId: null,
       // NEVER sent from this surface — the statement is the employee's, and
-      // this panel is the issuer's view of the record.
+      // this panel is the issuer's view of the record. The door refuses it from
+      // a non-subject by name (`statement_is_the_employees_own`).
       employeeStatement: null,
       refusalNote: ackKind === "refused" ? refusalNote.trim() || null : null,
     });
@@ -107,7 +116,11 @@ export function CorrectiveActionPanel({
     const result = await recordHrCorrectiveActionOutcome({
       correctiveActionId: action.id,
       outcome,
-      note: outcomeNote.trim() || null,
+      // 🚨 THIS WAS "note", AND THERE IS NO NOTE. The door reads exactly two
+      // payload keys and `hr.corrective_action` has no note column, so the field
+      // could not have saved under any spelling of the call. It is the FOLLOW-UP
+      // OUTCOME (§4.8 node H → I) and the label now says so.
+      followUpOutcome: outcomeNote.trim() || null,
     });
     setSaving(false);
     if (result.ok) {
@@ -336,7 +349,7 @@ export function CorrectiveActionPanel({
               ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="outcome-note">Note</Label>
+              <Label htmlFor="outcome-note">What happened at the follow-up</Label>
               <Input
                 id="outcome-note"
                 value={outcomeNote}

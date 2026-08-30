@@ -15810,6 +15810,94 @@
         }
       }
     },
+    "/musicbrainz/public/artist": {
+      "get": {
+        "tags": [
+          "MusicBrainz Integrations"
+        ],
+        "summary": "Public Artist",
+        "operationId": "public_artist_musicbrainz_public_artist_get",
+        "parameters": [
+          {
+            "name": "artist_mbid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36,
+              "title": "Artist Mbid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicBrainzPublicArtist"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crates-io/public/crate": {
+      "get": {
+        "tags": [
+          "crates.io Integrations"
+        ],
+        "summary": "Public Crate",
+        "operationId": "public_crate_crates_io_public_crate_get",
+        "parameters": [
+          {
+            "name": "crate_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Crate Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CratesIOPublicCrate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tvmaze/public/show": {
       "get": {
         "tags": [
@@ -16074,6 +16162,94 @@
         }
       }
     },
+    "/stack-exchange/public/question": {
+      "get": {
+        "tags": [
+          "Stack Exchange Integrations"
+        ],
+        "summary": "Public Question",
+        "operationId": "public_question_stack_exchange_public_question_get",
+        "parameters": [
+          {
+            "name": "question_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Question Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StackExchangePublicQuestion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gbif/public/occurrence": {
+      "get": {
+        "tags": [
+          "GBIF Integrations"
+        ],
+        "summary": "Public Occurrence",
+        "operationId": "public_occurrence_gbif_public_occurrence_get",
+        "parameters": [
+          {
+            "name": "gbif_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854776000,
+              "minimum": 1,
+              "title": "Gbif Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GbifPublicOccurrence"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/library-of-congress/public/item": {
       "get": {
         "tags": [
@@ -16101,6 +16277,94 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LibraryOfCongressPublicItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nasa-images/public/asset": {
+      "get": {
+        "tags": [
+          "NASA Images Integrations"
+        ],
+        "summary": "Public Asset",
+        "operationId": "public_asset_nasa_images_public_asset_get",
+        "parameters": [
+          {
+            "name": "nasa_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "title": "Nasa Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NasaImagesPublicAsset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wellcome-collection/public/work": {
+      "get": {
+        "tags": [
+          "Wellcome Collection Integrations"
+        ],
+        "summary": "Public Work",
+        "operationId": "public_work_wellcome_collection_public_work_get",
+        "parameters": [
+          {
+            "name": "work_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64,
+              "title": "Work Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WellcomePublicWork"
                 }
               }
             }
@@ -96701,6 +96965,86 @@
         ],
         "title": "CoverageFeed"
       },
+      "CratesIOPublicCrate": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "crates_io_public_crate",
+            "title": "Kind",
+            "default": "crates_io_public_crate"
+          },
+          "provider": {
+            "type": "string",
+            "const": "crates_io",
+            "title": "Provider",
+            "default": "crates_io"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_policy": {
+            "type": "string",
+            "const": "crates.io-data-access",
+            "title": "Source Policy",
+            "default": "crates.io-data-access"
+          },
+          "crate_name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Crate Name"
+          },
+          "crate_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Crate Url"
+          },
+          "max_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Max Version"
+          },
+          "newest_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Newest Version"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "total_downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total Downloads"
+          },
+          "recent_downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Recent Downloads"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crate_name",
+          "crate_url",
+          "max_version",
+          "newest_version",
+          "updated_at",
+          "total_downloads",
+          "recent_downloads"
+        ],
+        "title": "CratesIOPublicCrate",
+        "description": "Safe terms-bound projection of one public crates.io crate."
+      },
       "CreateAgentInput": {
         "properties": {
           "name": {
@@ -116606,6 +116950,149 @@
         ],
         "title": "FullTableBookmark"
       },
+      "GbifPublicOccurrence": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "gbif_public_occurrence",
+            "title": "Kind",
+            "default": "gbif_public_occurrence"
+          },
+          "provider": {
+            "type": "string",
+            "const": "gbif",
+            "title": "Provider",
+            "default": "gbif"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "gbif_id": {
+            "type": "integer",
+            "maximum": 9223372036854776000,
+            "minimum": 1,
+            "title": "Gbif Id"
+          },
+          "scientific_name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Scientific Name"
+          },
+          "canonical_name": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Canonical Name"
+          },
+          "species": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Species"
+          },
+          "kingdom": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Kingdom"
+          },
+          "phylum": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Phylum"
+          },
+          "class_name": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Class Name"
+          },
+          "order": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Order"
+          },
+          "family": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Family"
+          },
+          "genus": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Genus"
+          },
+          "country_code": {
+            "type": "string",
+            "maxLength": 2,
+            "title": "Country Code"
+          },
+          "event_date": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Event Date"
+          },
+          "basis_of_record": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Basis Of Record"
+          },
+          "dataset_key": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Key"
+          },
+          "dataset_title": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Dataset Title"
+          },
+          "license_url": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "License Url"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Issues"
+          },
+          "occurrence_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Occurrence Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "gbif_id",
+          "scientific_name",
+          "canonical_name",
+          "species",
+          "kingdom",
+          "phylum",
+          "class_name",
+          "order",
+          "family",
+          "genus",
+          "country_code",
+          "event_date",
+          "basis_of_record",
+          "dataset_key",
+          "dataset_title",
+          "license_url",
+          "issues",
+          "occurrence_page"
+        ],
+        "title": "GbifPublicOccurrence",
+        "description": "Safe bounded projection of one indexed biodiversity occurrence."
+      },
       "GenerateImageRequest": {
         "properties": {
           "organization_id": {
@@ -136417,6 +136904,139 @@
         "type": "object",
         "title": "MoveArgs"
       },
+      "MusicBrainzPublicArtist": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "musicbrainz_public_artist",
+            "title": "Kind",
+            "default": "musicbrainz_public_artist"
+          },
+          "provider": {
+            "type": "string",
+            "const": "musicbrainz",
+            "title": "Provider",
+            "default": "musicbrainz"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_license": {
+            "type": "string",
+            "const": "CC0-1.0",
+            "title": "Source License",
+            "default": "CC0-1.0"
+          },
+          "artist_mbid": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 36,
+            "title": "Artist Mbid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "sort_name": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Sort Name"
+          },
+          "artist_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist Type"
+          },
+          "country_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Code"
+          },
+          "area_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area Name"
+          },
+          "begin_area_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Begin Area Name"
+          },
+          "begin_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Begin Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "ended": {
+            "type": "boolean",
+            "title": "Ended"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "artist_mbid",
+          "name",
+          "sort_name",
+          "ended"
+        ],
+        "title": "MusicBrainzPublicArtist",
+        "description": "Safe CC0 core-data projection of one public MusicBrainz artist."
+      },
       "MuteListResponse": {
         "properties": {
           "muted": {
@@ -136651,6 +137271,83 @@
           "evidence_refs"
         ],
         "title": "Narrative"
+      },
+      "NasaImagesPublicAsset": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nasa_images_public_asset",
+            "title": "Kind",
+            "default": "nasa_images_public_asset"
+          },
+          "provider": {
+            "type": "string",
+            "const": "nasa_images",
+            "title": "Provider",
+            "default": "nasa_images"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "nasa_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Nasa Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "media_type": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Media Type"
+          },
+          "center": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Center"
+          },
+          "date_created": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Date Created"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Keywords"
+          },
+          "asset_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Asset Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nasa_id",
+          "title",
+          "media_type",
+          "center",
+          "date_created",
+          "keywords",
+          "asset_page"
+        ],
+        "title": "NasaImagesPublicAsset",
+        "description": "Safe bounded projection of one public NASA media-catalog asset."
       },
       "NavLink": {
         "properties": {
@@ -173460,6 +174157,137 @@
         "title": "SsnStoreResponse",
         "description": "The acknowledgement. Carries **last four digits only** — never the value.\n\n``created`` distinguishes a first collection from a correction. A correction replaces\nall four sealed columns and earns its own ``hr.access_audit`` row, so ``audit_id``\ndiffers on every submit even when nothing else does."
       },
+      "StackExchangePublicQuestion": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "stack_exchange_public_question",
+            "title": "Kind",
+            "default": "stack_exchange_public_question"
+          },
+          "provider": {
+            "type": "string",
+            "const": "stack_exchange",
+            "title": "Provider",
+            "default": "stack_exchange"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "site": {
+            "type": "string",
+            "const": "stackoverflow",
+            "title": "Site",
+            "default": "stackoverflow"
+          },
+          "question_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Question Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "link": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Link"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Tags"
+          },
+          "is_answered": {
+            "type": "boolean",
+            "title": "Is Answered"
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Answer Count"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "view_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "View Count"
+          },
+          "creation_date": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Creation Date"
+          },
+          "last_activity_date": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Last Activity Date"
+          },
+          "content_license": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content License"
+          },
+          "quota_remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Quota Remaining"
+          },
+          "quota_max": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Quota Max"
+          },
+          "backoff_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backoff Seconds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question_id",
+          "title",
+          "link",
+          "tags",
+          "is_answered",
+          "answer_count",
+          "score",
+          "view_count",
+          "creation_date",
+          "last_activity_date",
+          "content_license",
+          "quota_remaining",
+          "quota_max"
+        ],
+        "title": "StackExchangePublicQuestion",
+        "description": "Safe bounded projection of one public Stack Overflow question."
+      },
       "StagePipeConfig": {
         "properties": {
           "pipe": {
@@ -192006,6 +192834,62 @@
           "type"
         ],
         "title": "WebpageInputPart"
+      },
+      "WellcomePublicWork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wellcome_collection_public_work",
+            "title": "Kind",
+            "default": "wellcome_collection_public_work"
+          },
+          "provider": {
+            "type": "string",
+            "const": "wellcome_collection",
+            "title": "Provider",
+            "default": "wellcome_collection"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "work_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 2,
+            "title": "Work Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "work_type": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Work Type"
+          },
+          "record_page": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Record Page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "work_id",
+          "title",
+          "work_type",
+          "record_page"
+        ],
+        "title": "WellcomePublicWork",
+        "description": "Safe bounded projection of one public Wellcome catalogue work."
       },
       "WhoamiResponse": {
         "properties": {

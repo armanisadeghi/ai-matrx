@@ -117,7 +117,11 @@ async def main():
             "token_type": "bearer",
             "user": session["user"],
         }, separators=(",", ":"))
-        value = "base64-" + base64.b64encode(payload.encode()).decode()
+        # 🚨 URL-SAFE base64, UNPADDED. @supabase/ssr 0.12 decodes this cookie with
+        # stringFromBase64URL(), whose alphabet has no "+" or "/" — a STANDARD-base64
+        # value throws inside the parser and the session is dropped, which on screen looks
+        # exactly like a login redirect. "=" is ignored by the decoder; we strip it anyway.
+        value = "base64-" + base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
         name = "sb-matrx-auth"
         common = {"domain": "localhost", "path": "/", "httpOnly": False,
                   "secure": False, "sameSite": "Lax"}

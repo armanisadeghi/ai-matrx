@@ -31,7 +31,6 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +57,7 @@ import type {
   FeaturedResource,
   FeaturedYouTube,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const RESOURCE_LABEL: Record<string, string> = {
   fc_set: "Flashcards",
@@ -404,7 +404,7 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
         </div>
         <div>
           <Label htmlFor="bio">Bio</Label>
-          <Textarea id="bio" className="mt-1.5" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell visitors who you are." />
+          <ProTextarea id="bio" className="mt-1.5" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell visitors who you are." />
         </div>
         {/* Links */}
         <div>

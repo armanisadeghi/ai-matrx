@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { advanceHrIncident } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
@@ -33,6 +32,7 @@ import {
   type HrIncidentRow,
   type HrIncidentState,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** The server speaks `intake`; the UI vocabulary calls that state `open`. */
 function toUiState(raw: string): HrIncidentState {
@@ -127,7 +127,7 @@ export function IncidentStatePanel({
               <Label htmlFor="state-resolution">
                 What was concluded (required)
               </Label>
-              <Textarea
+              <ProTextarea
                 id="state-resolution"
                 value={resolutionSummary}
                 onChange={(e) => setResolutionSummary(e.target.value)}

@@ -15,7 +15,6 @@ import { Loader2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -52,6 +51,7 @@ import { HeartbeatForm } from "./triggers/HeartbeatForm";
 import { ContextMatchForm } from "./triggers/ContextMatchForm";
 import { VariablesEditor } from "./VariablesEditor";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface FormState {
   title: string;
@@ -400,7 +400,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
           />
         </Field>
         <Field label="Description" htmlFor="description" optional>
-          <Textarea
+          <ProTextarea
             id="description"
             value={form.description}
             onChange={(e) => patch("description", e.target.value)}
@@ -419,7 +419,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
           label={form.agentId ? undefined : "Select the agent"}
         />
         <Field label="Prompt" htmlFor="prompt" error={errors.prompt}>
-          <Textarea
+          <ProTextarea
             id="prompt"
             value={form.prompt}
             onChange={(e) => patch("prompt", e.target.value)}

@@ -19,7 +19,6 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
@@ -337,14 +336,15 @@ export function NoteEditorCore({
               )}
             />
           ) : (
-            <Textarea
+            <ProTextarea
               ref={textareaRef}
               value={content}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
               readOnly={readOnly}
+              wrapperClassName="absolute inset-0 w-full h-full"
               className={cn(
-                "absolute inset-0 w-full h-full resize-none border-0",
+                "w-full h-full resize-none border-0",
                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                 "text-sm leading-relaxed bg-transparent p-3",
                 bottomPad,

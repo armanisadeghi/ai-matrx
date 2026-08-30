@@ -16,7 +16,6 @@ import {
   Columns,
 } from "lucide-react";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,6 +32,7 @@ import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
 import { ContentManagerMenu } from "./ContentManagerMenu.lazy";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Dynamic import for TUI editor
 const TuiEditorContent = dynamic(
@@ -439,7 +439,7 @@ export function ContentEditor({
                 handleContentChange(`${localContent}${text}`)
               }
             >
-              <Textarea
+              <ProTextarea
                 ref={plainTextareaRef}
                 value={localContent}
                 onChange={(e) => handleContentChange(e.target.value)}

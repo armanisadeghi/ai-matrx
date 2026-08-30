@@ -24,6 +24,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 import type {
   MultiRunMode,
@@ -452,7 +453,7 @@ export function BuildPane({
                   {panel.source.kind === "static" ? (
                     <label className="block space-y-1">
                       <FieldLabel>Your words</FieldLabel>
-                      <textarea
+                      <ProTextarea
                         value={panel.source.markdown}
                         onChange={(e) =>
                           updatePanel(panel.id, {

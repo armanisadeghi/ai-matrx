@@ -9,6 +9,7 @@ import {
   type GoogleEmbeddingRequest,
   type GoogleEmbeddingResponse,
 } from "@/features/rag/api/google-embeddings";
+import { Textarea } from "@/components/ui/textarea";
 
 export function GoogleEmbeddingLab() {
   const [model, setModel] =
@@ -144,7 +145,7 @@ export function GoogleEmbeddingLab() {
               <span className="font-normal text-muted-foreground">
                 (one vector per line)
               </span>
-              <textarea
+        <Textarea
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 rows={7}

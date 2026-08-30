@@ -26,7 +26,6 @@ import { toast } from "@/lib/toast";
 import { Layers, Sparkles, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -49,6 +48,7 @@ import { FC_MANDATES } from "../../data/mandates";
 import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -361,7 +361,7 @@ export function CreateFromTopic() {
                   Focus or emphasis{" "}
                   <span className="text-muted-foreground">(optional)</span>
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="fc-focus"
                   value={userRequest}
                   onChange={(e) => setUserRequest(e.target.value)}

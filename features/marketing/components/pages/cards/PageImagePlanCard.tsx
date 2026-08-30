@@ -43,7 +43,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
@@ -63,6 +62,7 @@ import type {
   DesiredImagePlanEntry,
   MarketingPage,
 } from "@/features/marketing/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const IMAGE_PRODUCER_ROLE = "image_producer";
 
@@ -333,7 +333,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                   <div className="grid gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Description</Label>
-                      <Textarea
+                      <ProTextarea
                         value={entry.description}
                         onChange={(event) =>
                           updateEntry(entry.id, {

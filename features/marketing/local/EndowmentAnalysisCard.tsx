@@ -6,7 +6,6 @@ import { BrainCircuit, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { launchFailureMessage } from "@/features/agents/redux/execution-system/utils/launch-failure-message";
@@ -23,6 +22,7 @@ import {
   coerceEndowmentPortfolio,
   type EndowmentPortfolio,
 } from "@/features/marketing/local/endowment-portfolio";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * The Endowment Model, live (common-docs/systems/marketing/local-listings/ENDOWMENTS.md).
@@ -195,7 +195,7 @@ export function EndowmentAnalysisCard({
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">What you know (optional)</Label>
-          <Textarea
+          <ProTextarea
             rows={1}
             className="min-h-8 text-sm"
             value={notes}

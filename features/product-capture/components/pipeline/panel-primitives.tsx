@@ -11,8 +11,8 @@ import React, { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function PanelSection({
   title,
@@ -122,7 +122,7 @@ export function CommitTextArea({
     setDraft(value);
   }
   const area = (
-    <Textarea
+    <ProTextarea
       value={draft}
       rows={rows}
       onChange={(e) => setDraft(e.target.value)}

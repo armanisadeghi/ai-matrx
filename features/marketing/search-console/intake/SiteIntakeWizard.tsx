@@ -27,7 +27,6 @@ import { siteSetupChecklist } from "@/features/marketing/search-console/setup/si
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
@@ -50,6 +49,7 @@ import {
   type SiteIntakeApplyResult,
   type SiteIntakeRunResult,
 } from "@/features/marketing/search-console/intake/intake-service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const CLASS_META: Record<IntakeClass, { label: string; className: string }> = {
   money: {
@@ -438,7 +438,7 @@ export function SiteIntakeWizard() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {proposal.business_inference.evidence}
               </p>
-              <Textarea
+              <ProTextarea
                 className="mt-2 min-h-20 text-sm"
                 value={confirmedSummary}
                 onChange={(event) => setConfirmedSummary(event.target.value)}

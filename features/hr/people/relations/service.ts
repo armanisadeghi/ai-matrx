@@ -13,10 +13,10 @@
 // as the first.
 
 import {
+  fetchHrRelationsList,
   fetchHrRestricted,
-  fetchHrRestrictedList,
 } from "@/features/hr/service";
-import type { HrAuditedPage, HrResult } from "@/features/hr/types";
+import type { HrResult } from "@/features/hr/types";
 
 import {
   HR_CORRECTIVE_ACTION_LEVEL_LABELS,
@@ -38,50 +38,23 @@ export const HR_CORRECTIVE_ACTION_TOKEN = "hr_corrective_action";
 export const HR_INCIDENT_TOKEN = "hr_incident";
 
 /**
- * Why this list sweeps instead of paging server-side.
+ * Why the whole union comes back in one answer.
  *
- * Route 15 is a UNION of two independently-paged doors, so "page 2" has no
- * server-side meaning: rows 26–50 of the merged, date-sorted list can come from
- * either side in any proportion. The repo law is that a list paginates over the
- * FULL result set, so the honest implementation is to pull both sides complete
- * and page the union in the browser.
+ * Route 15 is a UNION of two record families, so "page 2" has no server-side
+ * meaning: rows 26–50 of the merged, date-sorted list can come from either side in
+ * any proportion. The repo law is that a list paginates over the FULL result set,
+ * so the honest implementation is to pull the union complete and page it in the
+ * browser. That is affordable here and nowhere else in HR — an employer's whole
+ * relations history is tens to low hundreds of rows, not the directory's thousands.
  *
- * That is affordable here and nowhere else in HR: an employer's whole relations
- * history is tens to low hundreds of rows, not the directory's thousands. The
- * sweep is bounded so a bad `total` can never spin.
+ * 🚨 THIS USED TO BE A CLIENT-SIDE SWEEP OVER TWO CALLS TO `hr_restricted_list`,
+ * AND IT COULD NEVER HAVE WORKED. See the header on `fetchHrRelationsCases`: one of
+ * the two tokens is not on that door's tier, so that half 400'd on every render and
+ * the failure was swallowed while the surface claimed completeness. The union is
+ * `public.hr_relations_list`'s job and it does it in one round trip.
  */
 const SWEEP_PAGE = 200;
 const SWEEP_MAX_PAGES = 25;
-
-async function sweep<T>(
-  token: string,
-  filter: Record<string, unknown>,
-  purpose: string,
-): Promise<HrResult<{ rows: T[]; total: number }>> {
-  const rows: T[] = [];
-  let cursor: string | null = null;
-
-  for (let page = 0; page < SWEEP_MAX_PAGES; page += 1) {
-    const result = await fetchHrRestrictedList<T>({
-      token,
-      filter,
-      limit: SWEEP_PAGE,
-      cursor,
-      purpose,
-    });
-    // A refusal ANYWHERE in the sweep is the answer for the whole list. Never
-    // return the pages that happened to succeed — a half-list is a lie.
-    if (!result.ok) return result;
-
-    const pageData: HrAuditedPage<T> = result.data;
-    rows.push(...pageData.rows);
-    cursor = pageData.nextCursor;
-
-    if (pageData.rows.length === 0 || cursor === null) break;
-  }
-
-  return { ok: true, data: { rows, total: rows.length } };
-}
 
 function labelIncidentKind(kind: string): string {
   return (
@@ -174,8 +147,15 @@ export type HrRelationsList = {
    * That is CORRECT and must never be "fixed" with a shared cache.
    */
   total: number;
-  /** True when one side of the union refused while the other answered. */
+  /**
+   * True when one side of the union REFUSED — a real access verdict — while the
+   * other answered. `hr_admin` holds corrective actions but not incidents
+   * (SPEC-ACCESS §3.2), so this is a normal, honest state.
+   */
   partial: boolean;
+  /** Which side, so the banner can name it instead of gesturing at "one of the two". */
+  correctiveActionsGranted: boolean;
+  incidentsGranted: boolean;
 };
 
 /**
@@ -210,11 +190,41 @@ export type HrRelationsList = {
  * The organization is now always passed explicitly. Both call sites already held
  * it and already guarded on it — they simply never sent it.
  */
+/**
+ * 🚨 THE UNION IS THE SERVER'S JOB, AND ASKING FOR IT CLIENT-SIDE WAS PRODUCING A
+ * LIST THAT LIED. This function used to call `hr_restricted_list` TWICE — once per
+ * token — and merge the answers here. Against `hr_corrective_action` that call can
+ * only ever fail: `hr._door_spec` returns **confidential** for that token and
+ * **restricted** for `hr_incident`, and the shared door RAISES `22023` on a tier
+ * mismatch by design, because asking the wrong family is a caller mistake and not a
+ * refusal.
+ *
+ * What that produced on production v0.4.1474, verified: a 400 on the
+ * corrective-action side, swallowed into `log_client_error` where nobody looks; the
+ * incident side answering normally; `partial: true`; and the queue rendering
+ * "1-2 of 2" incidents under a banner reading *"Nothing is hidden inside what you
+ * can see."* — while TWO corrective actions for that same admin sat unlisted. A
+ * completeness claim printed over a door that had just refused is the worst thing
+ * this surface can do, and it is a strictly worse failure than showing nothing.
+ *
+ * 🚨 SO THE FIX IS NOT A THIRD TOKEN GUESS. `public.hr_relations_list` is the
+ * purpose-built route-15 door and it already solves every part of this: it asks each
+ * side at ITS OWN registry tier (so the tier can be re-ruled without touching this
+ * file — see SPEC-EMPLOYEES §13 D-4, still open), it checks standing in the employer
+ * BEFORE consulting the door so a stranger gets `granted:false` rather than a polite
+ * empty list, and it returns `corrective_actions_granted` / `incidents_granted`
+ * separately so a partial answer can be described in words instead of gestured at.
+ *
+ * It is not cursor-paged and needs no sweep: it takes `p_limit` and answers the
+ * whole union at once, which is the same bounded-history assumption the sweep was
+ * built on. `sweep()` is gone with it.
+ */
 export async function fetchHrRelationsCases(
   organizationId: string,
   filter: HrRelationsFilter = {},
 ): Promise<HrResult<HrRelationsList>> {
-  const serverFilter: Record<string, unknown> = { organization_id: organizationId };
+  const serverFilter: Record<string, unknown> = {};
+  if (filter.caseKind) serverFilter.case_kind = filter.caseKind;
   if (filter.state) serverFilter.state = filter.state;
   if (filter.assigneeEmploymentId) {
     serverFilter.assignee_employment_id = filter.assigneeEmploymentId;
@@ -224,54 +234,42 @@ export async function fetchHrRelationsCases(
   }
   if (filter.from) serverFilter.from = filter.from;
   if (filter.to) serverFilter.to = filter.to;
-
-  const wantActions = filter.caseKind !== "incident";
-  const wantIncidents = filter.caseKind !== "corrective_action";
-
-  const incidentFilter =
-    filter.oshaRecordable === null || filter.oshaRecordable === undefined
-      ? serverFilter
-      : { ...serverFilter, osha_recordable: filter.oshaRecordable };
-
-  const [actions, incidents] = await Promise.all([
-    wantActions
-      ? sweep<HrCorrectiveActionRow>(
-          HR_CORRECTIVE_ACTION_TOKEN,
-          serverFilter,
-          "relations_case_list",
-        )
-      : null,
-    wantIncidents
-      ? sweep<HrIncidentRow>(HR_INCIDENT_TOKEN, incidentFilter, "relations_case_list")
-      : null,
-  ]);
-
-  const answered = [actions, incidents].filter((r) => r?.ok);
-  if (answered.length === 0) {
-    // Both refused (or both were skipped by the filter, which cannot happen —
-    // `caseKind` is one of two values). Hand the refusal straight back so the
-    // surface renders the no-access state, NOT an empty table.
-    return (actions ?? incidents) as HrResult<HrRelationsList>;
+  if (filter.oshaRecordable !== null && filter.oshaRecordable !== undefined) {
+    serverFilter.osha_recordable = filter.oshaRecordable;
   }
 
-  const cases: HrRelationsCase[] = [];
-  let total = 0;
+  const result = await fetchHrRelationsList({
+    organizationId,
+    filter: serverFilter,
+    // The whole bounded history in one answer; the table pages it in the browser.
+    limit: SWEEP_PAGE * SWEEP_MAX_PAGES,
+  });
+  // A refusal is handed straight back so the surface renders the no-access state.
+  // It is NEVER flattened into an empty list.
+  if (!result.ok) return result;
 
-  if (actions?.ok) {
-    cases.push(...actions.data.rows.map(correctiveActionToCase));
-    total += actions.data.total;
-  }
-  if (incidents?.ok) {
-    cases.push(...incidents.data.rows.map(incidentToCase));
-    total += incidents.data.total;
-  }
-
+  const raw = result.data;
+  const cases = raw.rows.map((row) =>
+    row.case_kind === "incident"
+      ? incidentToCase(row as unknown as HrIncidentRow)
+      : correctiveActionToCase(row as unknown as HrCorrectiveActionRow),
+  );
   cases.sort((a, b) => (b.occurredOn ?? "").localeCompare(a.occurredOn ?? ""));
 
-  const asked = [wantActions, wantIncidents].filter(Boolean).length;
+  const asked =
+    filter.caseKind === "incident" || filter.caseKind === "corrective_action" ? 1 : 2;
+  const answered =
+    (raw.correctiveActionsGranted ? 1 : 0) + (raw.incidentsGranted ? 1 : 0);
+
   return {
     ok: true,
-    data: { cases, total, partial: answered.length < asked },
+    data: {
+      cases,
+      total: raw.total,
+      partial: answered < asked,
+      correctiveActionsGranted: raw.correctiveActionsGranted,
+      incidentsGranted: raw.incidentsGranted,
+    },
   };
 }
 

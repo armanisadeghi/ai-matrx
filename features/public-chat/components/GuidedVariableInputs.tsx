@@ -2,13 +2,13 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ============================================================================
 // TYPES
@@ -157,7 +157,7 @@ function GuidedSelect({
         )}
       </div>
       {showOther && (
-        <Textarea
+        <ProTextarea
           value={otherText}
           onChange={(e) => {
             setOtherText(e.target.value);
@@ -270,7 +270,7 @@ function GuidedCheckbox({
         )}
       </div>
       {showOther && (
-        <Textarea
+        <ProTextarea
           value={otherText}
           onChange={(e) => {
             setOtherText(e.target.value);
@@ -427,7 +427,7 @@ function GuidedTextarea({
   variableName: string;
 }) {
   return (
-    <Textarea
+    <ProTextarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={`Type your ${variableName.toLowerCase()}...`}

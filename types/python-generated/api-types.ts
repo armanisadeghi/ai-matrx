@@ -6183,6 +6183,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/musicbrainz/public/artist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Artist */
+        get: operations["public_artist_musicbrainz_public_artist_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crates-io/public/crate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Crate */
+        get: operations["public_crate_crates_io_public_crate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tvmaze/public/show": {
         parameters: {
             query?: never;
@@ -6285,6 +6319,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stack-exchange/public/question": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Question */
+        get: operations["public_question_stack_exchange_public_question_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gbif/public/occurrence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Occurrence */
+        get: operations["public_occurrence_gbif_public_occurrence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library-of-congress/public/item": {
         parameters: {
             query?: never;
@@ -6294,6 +6362,40 @@ export interface paths {
         };
         /** Public Item */
         get: operations["public_item_library_of_congress_public_item_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nasa-images/public/asset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Asset */
+        get: operations["public_asset_nasa_images_public_asset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wellcome-collection/public/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Work */
+        get: operations["public_work_wellcome_collection_public_work_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -37314,6 +37416,53 @@ export interface components {
             }[];
         };
         /**
+         * CratesIOPublicCrate
+         * @description Safe terms-bound projection of one public crates.io crate.
+         */
+        CratesIOPublicCrate: {
+            /**
+             * Kind
+             * @default crates_io_public_crate
+             * @constant
+             */
+            __kind?: "crates_io_public_crate";
+            /**
+             * Provider
+             * @default crates_io
+             * @constant
+             */
+            provider?: "crates_io";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source Policy
+             * @default crates.io-data-access
+             * @constant
+             */
+            source_policy?: "crates.io-data-access";
+            /** Crate Name */
+            crate_name: string;
+            /** Crate Url */
+            crate_url: string;
+            /** Max Version */
+            max_version: string;
+            /** Newest Version */
+            newest_version: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Total Downloads */
+            total_downloads: number;
+            /** Recent Downloads */
+            recent_downloads: number;
+        };
+        /**
          * CreateAgentInput
          * @description Structured agent request. Goes through the trained agent-builder
          *     meta-agent — NOT a freeform agx_agent insert.
@@ -45041,6 +45190,69 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * GbifPublicOccurrence
+         * @description Safe bounded projection of one indexed biodiversity occurrence.
+         */
+        GbifPublicOccurrence: {
+            /**
+             * Kind
+             * @default gbif_public_occurrence
+             * @constant
+             */
+            __kind?: "gbif_public_occurrence";
+            /**
+             * Provider
+             * @default gbif
+             * @constant
+             */
+            provider?: "gbif";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Gbif Id */
+            gbif_id: number;
+            /** Scientific Name */
+            scientific_name: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Species */
+            species: string;
+            /** Kingdom */
+            kingdom: string;
+            /** Phylum */
+            phylum: string;
+            /** Class Name */
+            class_name: string;
+            /** Order */
+            order: string;
+            /** Family */
+            family: string;
+            /** Genus */
+            genus: string;
+            /** Country Code */
+            country_code: string;
+            /** Event Date */
+            event_date: string;
+            /** Basis Of Record */
+            basis_of_record: string;
+            /**
+             * Dataset Key
+             * Format: uuid
+             */
+            dataset_key: string;
+            /** Dataset Title */
+            dataset_title: string;
+            /** License Url */
+            license_url: string;
+            /** Issues */
+            issues: string[];
+            /** Occurrence Page */
+            occurrence_page: string;
+        };
+        /**
          * GenerateImageRequest
          * @description Wire shape of POST /images/generate (matches the FE client's
          *     ``GenerateImageBody``).
@@ -52726,6 +52938,56 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
+        /**
+         * MusicBrainzPublicArtist
+         * @description Safe CC0 core-data projection of one public MusicBrainz artist.
+         */
+        MusicBrainzPublicArtist: {
+            /**
+             * Kind
+             * @default musicbrainz_public_artist
+             * @constant
+             */
+            __kind?: "musicbrainz_public_artist";
+            /**
+             * Provider
+             * @default musicbrainz
+             * @constant
+             */
+            provider?: "musicbrainz";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source License
+             * @default CC0-1.0
+             * @constant
+             */
+            source_license?: "CC0-1.0";
+            /** Artist Mbid */
+            artist_mbid: string;
+            /** Name */
+            name: string;
+            /** Sort Name */
+            sort_name: string;
+            /** Artist Type */
+            artist_type?: string | null;
+            /** Country Code */
+            country_code?: string | null;
+            /** Area Name */
+            area_name?: string | null;
+            /** Begin Area Name */
+            begin_area_name?: string | null;
+            /** Begin Date */
+            begin_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Ended */
+            ended: boolean;
+        };
         /** MuteListResponse */
         MuteListResponse: {
             /** Muted */
@@ -52811,6 +53073,44 @@ export interface components {
             recommended_handling: string;
             /** Evidence Refs */
             evidence_refs: components["schemas"]["EvidenceReference"][];
+        };
+        /**
+         * NasaImagesPublicAsset
+         * @description Safe bounded projection of one public NASA media-catalog asset.
+         */
+        NasaImagesPublicAsset: {
+            /**
+             * Kind
+             * @default nasa_images_public_asset
+             * @constant
+             */
+            __kind?: "nasa_images_public_asset";
+            /**
+             * Provider
+             * @default nasa_images
+             * @constant
+             */
+            provider?: "nasa_images";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Nasa Id */
+            nasa_id: string;
+            /** Title */
+            title: string;
+            /** Media Type */
+            media_type: string;
+            /** Center */
+            center: string;
+            /** Date Created */
+            date_created: string;
+            /** Keywords */
+            keywords: string[];
+            /** Asset Page */
+            asset_page: string;
         };
         /** NavLink */
         NavLink: {
@@ -68072,6 +68372,64 @@ export interface components {
             audit_id: string;
         };
         /**
+         * StackExchangePublicQuestion
+         * @description Safe bounded projection of one public Stack Overflow question.
+         */
+        StackExchangePublicQuestion: {
+            /**
+             * Kind
+             * @default stack_exchange_public_question
+             * @constant
+             */
+            __kind?: "stack_exchange_public_question";
+            /**
+             * Provider
+             * @default stack_exchange
+             * @constant
+             */
+            provider?: "stack_exchange";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Site
+             * @default stackoverflow
+             * @constant
+             */
+            site?: "stackoverflow";
+            /** Question Id */
+            question_id: number;
+            /** Title */
+            title: string;
+            /** Link */
+            link: string;
+            /** Tags */
+            tags: string[];
+            /** Is Answered */
+            is_answered: boolean;
+            /** Answer Count */
+            answer_count: number;
+            /** Score */
+            score: number;
+            /** View Count */
+            view_count: number;
+            /** Creation Date */
+            creation_date: number;
+            /** Last Activity Date */
+            last_activity_date: number;
+            /** Content License */
+            content_license: string;
+            /** Quota Remaining */
+            quota_remaining: number;
+            /** Quota Max */
+            quota_max: number;
+            /** Backoff Seconds */
+            backoff_seconds?: number | null;
+        };
+        /**
          * StagePipeConfig
          * @description How one stage should be carried.
          */
@@ -75320,6 +75678,38 @@ export interface components {
             keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
+        };
+        /**
+         * WellcomePublicWork
+         * @description Safe bounded projection of one public Wellcome catalogue work.
+         */
+        WellcomePublicWork: {
+            /**
+             * Kind
+             * @default wellcome_collection_public_work
+             * @constant
+             */
+            __kind?: "wellcome_collection_public_work";
+            /**
+             * Provider
+             * @default wellcome_collection
+             * @constant
+             */
+            provider?: "wellcome_collection";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Work Id */
+            work_id: string;
+            /** Title */
+            title: string;
+            /** Work Type */
+            work_type: string;
+            /** Record Page */
+            record_page: string;
         };
         /** WhoamiResponse */
         WhoamiResponse: {
@@ -87913,6 +88303,68 @@ export interface operations {
             };
         };
     };
+    public_artist_musicbrainz_public_artist_get: {
+        parameters: {
+            query: {
+                artist_mbid: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MusicBrainzPublicArtist"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_crate_crates_io_public_crate_get: {
+        parameters: {
+            query: {
+                crate_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CratesIOPublicCrate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_show_tvmaze_public_show_get: {
         parameters: {
             query: {
@@ -88099,6 +88551,68 @@ export interface operations {
             };
         };
     };
+    public_question_stack_exchange_public_question_get: {
+        parameters: {
+            query: {
+                question_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StackExchangePublicQuestion"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_occurrence_gbif_public_occurrence_get: {
+        parameters: {
+            query: {
+                gbif_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GbifPublicOccurrence"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_item_library_of_congress_public_item_get: {
         parameters: {
             query: {
@@ -88117,6 +88631,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryOfCongressPublicItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_asset_nasa_images_public_asset_get: {
+        parameters: {
+            query: {
+                nasa_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NasaImagesPublicAsset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_work_wellcome_collection_public_work_get: {
+        parameters: {
+            query: {
+                work_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WellcomePublicWork"];
                 };
             };
             /** @description Validation Error */

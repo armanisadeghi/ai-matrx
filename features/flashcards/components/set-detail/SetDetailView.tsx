@@ -59,11 +59,8 @@ import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateTo
 import { fcService } from "../../data/fcService";
 import { getCardImages } from "../study/cardImages";
 import { buildDeckPrintData } from "../../utils/deckPrintData";
-import { flashcardsPrinter } from "@/components/mardown-display/blocks/flashcards/flashcards-printer";
-import {
-  PrintOptionsDialog,
-  usePrintOptions,
-} from "@/lib/block-print/PrintOptionsDialog";
+import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
 import {

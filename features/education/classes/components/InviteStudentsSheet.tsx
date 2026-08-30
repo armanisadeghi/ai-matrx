@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Copy,
   Link as LinkIcon,
@@ -36,6 +35,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useClassInvites, extractEmails } from "../hooks/useClassInvites";
 import { classJoinUrl, classInviteAcceptUrl } from "../service";
+import { Textarea } from "@/components/ui/textarea";
 
 async function copyText(value: string, what: string) {
   try {
@@ -196,7 +196,7 @@ export function InviteStudentsSheet({
               <Mail className="h-3.5 w-3.5" />
               Invite by email
             </h3>
-            <Textarea
+          <Textarea
               value={emailText}
               onChange={(e) => setEmailText(e.target.value)}
               placeholder={

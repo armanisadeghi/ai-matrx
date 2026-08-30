@@ -14,7 +14,6 @@ import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -469,7 +468,7 @@ export function SkillDetailEditor({
           </Field>
 
           <Field label="Description" required>
-            <Textarea
+            <ProTextarea
               value={draft.description}
               onChange={(e) => set("description", e.target.value)}
               placeholder="One-line summary that drives discovery."

@@ -25,6 +25,7 @@ import { CircleAlert, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { KIND_KEY } from "@ai-matrx/content-ir";
@@ -240,23 +241,26 @@ function ScaffoldForm({
               className="h-7 text-[11px]"
               style={{ fontSize: "13px" }}
             />
+          ) : value.kind === "markdown" ? (
+            <ProTextarea
+              value={drafts[value.name] ?? ""}
+              onChange={(e) =>
+                setDrafts((prev) => ({ ...prev, [value.name]: e.target.value }))
+              }
+              placeholder={value.description || value.name}
+              rows={3}
+              className="text-[11px]"
+              style={{ fontSize: "13px" }}
+            />
           ) : (
             <Textarea
               value={drafts[value.name] ?? ""}
               onChange={(e) =>
                 setDrafts((prev) => ({ ...prev, [value.name]: e.target.value }))
               }
-              placeholder={
-                SCALAR_VALUE_KINDS.has(value.kind)
-                  ? value.description || value.name
-                  : `JSON for ${value.kind}`
-              }
+              placeholder={`JSON for ${value.kind}`}
               rows={3}
-              className={
-                SCALAR_VALUE_KINDS.has(value.kind)
-                  ? "text-[11px]"
-                  : "font-mono text-[11px]"
-              }
+              className="font-mono text-[11px]"
               style={{ fontSize: "13px" }}
             />
           )}

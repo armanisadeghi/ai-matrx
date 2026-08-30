@@ -40,7 +40,6 @@ import {
   Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -80,6 +79,7 @@ import {
 import { ComposerSection } from "./ComposerSection";
 import { DestinationStep } from "./DestinationStep";
 import { HomeStep } from "./HomeStep";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Reasonable ceiling for the "did the conversation row land yet?" retry. */
 const HOME_ATTACH_ATTEMPTS = 4;
@@ -511,7 +511,7 @@ function ComposerBody({
         open={openStep === 2}
         onToggle={() => toggle(2)}
       >
-        <Textarea
+        <ProTextarea
           value={requestText}
           onChange={(event) => setRequestText(event.target.value)}
           rows={6}

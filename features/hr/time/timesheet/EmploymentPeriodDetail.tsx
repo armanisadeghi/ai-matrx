@@ -34,7 +34,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { toast } from "@/lib/toast";
 import {
@@ -69,6 +68,7 @@ import {
 } from "./decisionSource";
 import { RecomputedBanner } from "./RecomputedBanner";
 import { TimesheetWeeks } from "./WeekBlocks";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MIN_REASON_LENGTH = 2;
 
@@ -314,7 +314,7 @@ function DecisionBar({
           <label htmlFor="reject-reason" className="block text-sm font-medium">
             Why is this going back? A reason is required, and the employee sees it.
           </label>
-          <Textarea
+          <ProTextarea
             id="reject-reason"
             rows={3}
             value={reason}

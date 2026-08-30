@@ -19,7 +19,6 @@
 import React, { useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -465,7 +464,7 @@ export function AgentVariableEditor({
         ) : componentType === "textarea" &&
           !isPicklistBound &&
           !effective.randomAssignment ? (
-          <Textarea
+          <ProTextarea
             autoGrow
             value={defaultValueStr}
             onChange={(e) => handleDefaultValueChange(e.target.value)}

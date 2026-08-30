@@ -8,6 +8,7 @@ import { useServerBrokerSync } from "@/lib/redux/brokerSlice/hooks/useTempBroker
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SLACK_BROKER_IDS } from "./BrokerSlackClient";
 import { toast } from "@/lib/toast";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 
 interface BrokerFormConfig {
@@ -69,7 +70,7 @@ export function BrokerForm({ fields, onSubmit, brokerSync = true }: BrokerFormCo
                     <div key={index} className="space-y-1">
                         <label className="text-slate-800 dark:text-slate-200">{field.label}:</label>
                         {field.type === "textarea" ? (
-                            <textarea
+                            <ProTextarea
                                 value={typeof value === "string" ? value : String(value)}
                                 onChange={(e) =>
                                     dispatch(

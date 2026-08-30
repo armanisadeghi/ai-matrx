@@ -11,7 +11,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface HierarchyCreationWindowData {
   entityType?: "organization" | "project" | "task";
@@ -155,7 +155,7 @@ export default function HierarchyCreationWindow({
               <label className="text-xs font-medium mb-1.5 block">
                 Description
               </label>
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional details..."

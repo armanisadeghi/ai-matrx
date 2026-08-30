@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -55,6 +54,7 @@ import {
   replaceTable,
   type SaveToTableResult,
 } from "@/features/data-tables/save-to-table";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Public response shape — kept stable so parents (`SavedTableInfo` in
 // MarkdownTable / StreamingTableRenderer) and downstream consumers continue
@@ -585,7 +585,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
                 >
                   Description{!useExisting && "*"}
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="table-description"
                   value={tableDescription}
                   onChange={(e) => setTableDescription(e.target.value)}

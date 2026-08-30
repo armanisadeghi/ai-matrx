@@ -778,6 +778,69 @@ export async function fetchHrRestrictedList<T = Record<string, unknown>>(args: {
     : result;
 }
 
+/**
+ * ROUTE 15's OWN DOOR — the Employee Relations queue, both case kinds, one answer.
+ *
+ * 🚨 THIS EXISTS BECAUSE THE GENERIC LIST DOOR CANNOT SERVE THIS ROUTE. The two
+ * case kinds are not on the same registry tier — `hr._door_spec` says
+ * **confidential** for `hr_corrective_action` and **restricted** for `hr_incident`
+ * — and `hr_restricted_list` RAISES on a tier mismatch rather than refusing,
+ * because asking the wrong family is a caller mistake. `hr_relations_list` asks
+ * each side at its own tier, so the open D-4 ruling can land either way without a
+ * client change.
+ *
+ * 🚨 THE TWO GRANTS COME BACK SEPARATELY AND THE SURFACE MUST USE THEM. A viewer
+ * legitimately holds one side and not the other; a banner that says "nothing is
+ * hidden" over a side that refused is a false completeness claim, which is exactly
+ * the defect this door was repointed to fix.
+ *
+ * Verified against the live door 2026-08-29 — wire shape:
+ * `{ granted, rows[], total, total_is_viewer_scoped, corrective_actions_granted,
+ *    incidents_granted, export_available }`. Every row carries `case_kind` and
+ * `sort_at`. There is no cursor and no `row_count`: this door answers whole.
+ */
+export async function fetchHrRelationsList(args: {
+  organizationId: string;
+  filter?: Record<string, unknown>;
+  limit?: number;
+}): Promise<
+  HrResult<{
+    rows: Record<string, unknown>[];
+    total: number;
+    correctiveActionsGranted: boolean;
+    incidentsGranted: boolean;
+    /** §2.2 r15: a CSV of complaints is the artifact that must not exist by accident. */
+    exportAvailable: boolean;
+  }>
+> {
+  const result = await callHrRaw(
+    "hr_relations_list",
+    {
+      p_organization_id: args.organizationId,
+      p_filter: args.filter ?? {},
+      p_limit: args.limit ?? 500,
+    },
+    { envelope: true, whatFailed: "The employee relations list" },
+  );
+  if (!result.ok) return result;
+
+  const raw = result.data;
+  const rows = Array.isArray(raw.rows)
+    ? (raw.rows as Record<string, unknown>[])
+    : [];
+  return {
+    ok: true,
+    data: {
+      rows,
+      // Never allowed to disagree with what we actually hold.
+      total: typeof raw.total === "number" ? raw.total : rows.length,
+      correctiveActionsGranted: raw.corrective_actions_granted === true,
+      incidentsGranted: raw.incidents_granted === true,
+      exportAvailable: raw.export_available === true,
+    },
+  };
+}
+
 /** A Restricted-tier row. `justification` is REQUIRED and is shown in the subject's access log. */
 export async function fetchHrRestricted<T = Record<string, unknown>>(args: {
   token: string;
@@ -1185,24 +1248,48 @@ export function createHrVerificationRequest(args: {
 // the SAME transaction and the new respondent loses reach immediately —
 // including when the new respondent is the caller.
 
-/** Advance one incident: `intake → investigating → action_pending → resolved → closed`; `referred` from any state. */
+/**
+ * Advance one incident: `intake → investigating → action_pending → resolved → closed`;
+ * `referred` from any state.
+ *
+ * 🚨 THE SEAM CLASS, AGAIN. This posted `p_to_state`, `p_resolution_summary`,
+ * `p_resolved_at` and `p_referral_note` at a door whose signature is
+ * `(p_incident_id uuid, p_state text, p_payload jsonb)`. PostgREST matches an
+ * RPC by its argument NAMES, so every press of every state control was a
+ * PGRST202 and no incident has ever been advanced from this surface. Verified
+ * against `pg_proc` on 2026-08-30.
+ *
+ * Two of those four keys did not exist on the other side at all: the door has
+ * no `p_resolved_at` (it sets `resolved_at` itself the moment the state reaches
+ * `resolved` or `closed`, so a client-supplied one would be a second writer of
+ * the retention clock's trigger) and no `referral_note` column anywhere on
+ * `hr.incident`. They are gone rather than renamed — a key nobody reads is a
+ * promise to the caller that nothing keeps.
+ */
 export function advanceHrIncident(args: {
   incidentId: string;
   toState: string;
-  /** REQUIRED to reach `resolved`. The server refuses without it. */
+  /** REQUIRED to reach `resolved`. The server refuses without it, by name. */
   resolutionSummary?: string | null;
-  /** REQUIRED to reach `closed`. Starts the retention clock. */
-  resolvedAt?: string | null;
-  referralNote?: string | null;
+  /** The next check-in date the reporter is told about through `hr_incident_status`. */
+  followUpOn?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_incident_advance",
     {
       p_incident_id: args.incidentId,
-      p_to_state: args.toState,
-      p_resolution_summary: args.resolutionSummary ?? null,
-      p_resolved_at: args.resolvedAt ?? null,
-      p_referral_note: args.referralNote ?? null,
+      p_state: args.toState,
+      p_payload: {
+        ...(args.resolutionSummary
+          ? { resolution_summary: args.resolutionSummary }
+          : {}),
+        // sent only when the caller actually set one: the door writes
+        // `follow_up_on` on `p_payload ? 'follow_up_on'`, so an always-present
+        // null would silently CLEAR a date somebody else set.
+        ...(args.followUpOn !== undefined
+          ? { follow_up_on: args.followUpOn }
+          : {}),
+      },
     },
     { envelope: true, whatFailed: "Advancing this case" },
   );
@@ -1216,43 +1303,79 @@ export function advanceHrIncident(args: {
  * in the SAME transaction. If the caller is the person just accused, THIS CALL
  * SUCCEEDS AND THEIR NEXT READ REFUSES. The surface must handle that by
  * redirecting with a neutral message, never by explaining what happened.
+ *
+ * 🚨 THE SEAM CLASS — SIXTH OCCURRENCE. This posted five flat `p_*` arguments at
+ * a door whose only parameter is `p_payload jsonb`, so every "Add" was a
+ * PGRST202 and the veto's own re-materialisation path could never be reached
+ * from the UI. Verified against `pg_proc` on 2026-08-30.
+ *
+ * `note` is GONE, not renamed: `hr.incident_party` has no note column and never
+ * had one. What it does carry — `external_contact`, `interviewed_at`,
+ * `position` — is the investigator's follow-up record, and a free-text note
+ * about a person on an investigation file belongs in `hr.restricted_note`,
+ * behind its own owner lane, which is exactly where §2.2 route 16 puts it.
  */
 export function addHrIncidentParty(args: {
   incidentId: string;
   role: string;
   employmentId?: string | null;
   externalName?: string | null;
-  note?: string | null;
+  externalContact?: Record<string, unknown> | null;
+  interviewedAt?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_incident_party_add",
     {
-      p_incident_id: args.incidentId,
-      p_role: args.role,
-      p_employment_id: args.employmentId ?? null,
-      p_external_name: args.externalName ?? null,
-      p_note: args.note ?? null,
+      p_payload: {
+        incident_id: args.incidentId,
+        party_role: args.role,
+        employment_id: args.employmentId ?? null,
+        external_name: args.externalName ?? null,
+        ...(args.externalContact
+          ? { external_contact: args.externalContact }
+          : {}),
+        ...(args.interviewedAt ? { interviewed_at: args.interviewedAt } : {}),
+      },
     },
     { envelope: true, whatFailed: "Adding this party" },
   );
 }
 
-/** A restricted note. Reachable through its OWN owner lane only — no org admin can read one. */
+/**
+ * A restricted note. Reachable through its OWN owner lane only — no org admin
+ * can read one.
+ *
+ * 🚨 THE SEAM CLASS, AGAIN — and this one needed a key the caller never had.
+ * The door is `hr_restricted_note_add(p_payload jsonb)`; this posted five flat
+ * `p_*` names and got PGRST202 on every save. It also reads
+ * `p_payload.organization_id` to resolve the write gate, and the old flat shape
+ * carried no organization at all — so even a renamed version would have refused
+ * with `not_reachable`. The employer is now required by the TYPE, which is the
+ * only place a missing argument gets caught before production.
+ */
 export function addHrRestrictedNote(args: {
+  organizationId: string;
   targetToken: string;
   targetId: string;
   noteKind: string;
   body: string;
+  title?: string | null;
   redactedSummary?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_restricted_note_add",
     {
-      p_target_token: args.targetToken,
-      p_target_id: args.targetId,
-      p_note_kind: args.noteKind,
-      p_body: args.body,
-      p_redacted_summary: args.redactedSummary ?? null,
+      p_payload: {
+        organization_id: args.organizationId,
+        subject_token: args.targetToken,
+        subject_id: args.targetId,
+        note_kind: args.noteKind,
+        body: args.body,
+        ...(args.title ? { title: args.title } : {}),
+        ...(args.redactedSummary
+          ? { redacted_summary: args.redactedSummary }
+          : {}),
+      },
     },
     { envelope: true, whatFailed: "Saving this note" },
   );
@@ -1261,20 +1384,35 @@ export function addHrRestrictedNote(args: {
 /**
  * OSHA recordability. 🚨 A HUMAN DECISION WITH A RULES ASSIST, NEVER AUTO-SET.
  * `oshaPrivacyCase` suppresses the name in the 300-log rendering.
+ *
+ * 🚨 THERE IS NO `hr_incident_osha_set` DOOR AND THERE NEVER WAS — pg_proc holds
+ * no function matching `osha` in any schema (swept 2026-08-30). Every OSHA
+ * determination made on the case page was a PGRST202, so the one field OSHA
+ * actually requires a human to decide could not be recorded at all.
+ *
+ * The determination is NOT getting a door of its own: `hr_incident_advance`
+ * already writes both columns from its payload, and its comment says why —
+ * "§4.9b L3 / §2.2 r16: recordability is a HUMAN decision with a rules assist,
+ * NEVER auto-set", guarded by `p_payload ? 'osha_recordable'` so an untouched
+ * determination is never overwritten. A second writer of the same two columns is
+ * how the two of them start disagreeing. `currentState` is passed through
+ * unchanged because this call decides recordability, not workflow state.
  */
 export function setHrOshaDetermination(args: {
   incidentId: string;
+  currentState: string;
   recordable: boolean;
   privacyCase: boolean;
-  basis: string;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
-    "hr_incident_osha_set",
+    "hr_incident_advance",
     {
       p_incident_id: args.incidentId,
-      p_osha_recordable: args.recordable,
-      p_osha_privacy_case: args.privacyCase,
-      p_basis: args.basis,
+      p_state: args.currentState,
+      p_payload: {
+        osha_recordable: args.recordable,
+        osha_privacy_case: args.privacyCase,
+      },
     },
     { envelope: true, whatFailed: "Recording the OSHA determination" },
   );
@@ -1286,42 +1424,90 @@ export function setHrOshaDetermination(args: {
  * 🚨 A REFUSAL TO ACKNOWLEDGE IS A VALID OUTCOME, recorded as such, never a
  * stuck flow. And `employeeStatement` is THE EMPLOYEE'S OWN WORDS: the issuer
  * can never edit it, which is why it only ever travels on the subject's own
- * call and never on an issuer's patch.
+ * call and never on an issuer's patch. The door refuses it BY NAME from anybody
+ * else (`statement_is_the_employees_own`) and refuses a SECOND one even from the
+ * subject (`statement_already_recorded`); `hr.corrective_ack_wf_apply`'s
+ * `coalesce` is the structural backstop underneath both sentences.
+ *
+ * 🚨 THIS FUNCTION CALLED A DOOR THAT HAD NEVER EXISTED. pg_proc was swept:
+ * until `hr_l1_74` there was no `hr_corrective_action_acknowledge` in any schema,
+ * so every press of "Record it" was a PGRST202 — while the panel offered four
+ * kinds and the refusal branch said "the record says it was declined" about a
+ * write that could not happen. The arguments were wrong in the same breath: six
+ * flat `p_*` names, where the shipped door takes `(p_id uuid, p_payload jsonb)` —
+ * the SAME shape as `hr_corrective_action_outcome`, deliberately, so the two
+ * doors on one record do not speak two dialects. `scripts/hr/hrb026_rpc_conformance.ts`
+ * now compares every name here against pg_proc in CI so a fifth instance of this
+ * class cannot reach production.
+ *
+ * 🚨 THE ACKNOWLEDGMENT IS A WORKFLOW DECISION, not a direct write. This call
+ * lands on the subject's own `acknowledge` step of the `corrective_action_ack`
+ * instance, and the engine's apply hook does the writing. That is why nothing
+ * here needs — or is given — a step id: the door finds the open step from the
+ * record, because a person acknowledging a warning should never have to know
+ * what a workflow instance is.
  */
 export function acknowledgeHrCorrectiveAction(args: {
   correctiveActionId: string;
   kind: "esign" | "wet_signature" | "verbal_witnessed" | "refused";
+  /** Free text: there is no employment picker in the room where a verbal happens. */
+  witnessName?: string | null;
   witnessEmploymentId?: string | null;
   signedFileId?: string | null;
+  /** ONLY from the subject's own surface. See above. */
   employeeStatement?: string | null;
   refusalNote?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_corrective_action_acknowledge",
     {
-      p_corrective_action_id: args.correctiveActionId,
-      p_kind: args.kind,
-      p_witness_employment_id: args.witnessEmploymentId ?? null,
-      p_signed_file_id: args.signedFileId ?? null,
-      p_employee_statement: args.employeeStatement ?? null,
-      p_refusal_note: args.refusalNote ?? null,
+      p_id: args.correctiveActionId,
+      p_payload: {
+        kind: args.kind,
+        witness_name: args.witnessName ?? null,
+        witness_employment_id: args.witnessEmploymentId ?? null,
+        signed_file_id: args.signedFileId ?? null,
+        employee_statement: args.employeeStatement ?? null,
+        refusal_note: args.refusalNote ?? null,
+      },
     },
     { envelope: true, whatFailed: "Recording the acknowledgment" },
   );
 }
 
-/** Close the loop: `resolved | escalated | expired | rescinded | led_to_separation`. */
+/**
+ * Close the loop: `resolved | escalated | expired | rescinded | led_to_separation`.
+ *
+ * 🚨 TWO OF THE THREE ARGUMENT NAMES WERE WRONG. PostgREST resolves `rpc()` by
+ * argument NAMES, so `p_corrective_action_id` / `p_note` against a door declaring
+ * `(p_id uuid, p_outcome text, p_payload jsonb)` raised PGRST202 and this door was
+ * never once reached from the UI — the same silent class as the verification-letter
+ * and separation seams before it.
+ *
+ * 🚨 AND `note` HAD NOWHERE TO LAND IN ANY SPELLING. The door reads exactly two
+ * payload keys — `outcome_on` and `follow_up_outcome` — and `hr.corrective_action`
+ * carries no note column at all. So the panel's "Note" was a control that could
+ * never be saved. It is the FOLLOW-UP OUTCOME: §4.8's node H is the follow-up and
+ * what happened at it is what the person is actually typing. The label on the
+ * control now says that, rather than the field being quietly repurposed.
+ */
 export function recordHrCorrectiveActionOutcome(args: {
   correctiveActionId: string;
   outcome: string;
-  note?: string | null;
+  /** What happened at the follow-up. Lands on `hr.corrective_action.follow_up_outcome`. */
+  followUpOutcome?: string | null;
+  /** `YYYY-MM-DD`. The door defaults it to today. */
+  outcomeOn?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_corrective_action_outcome",
     {
-      p_corrective_action_id: args.correctiveActionId,
+      p_id: args.correctiveActionId,
       p_outcome: args.outcome,
-      p_note: args.note ?? null,
+      p_payload: {
+        follow_up_outcome: args.followUpOutcome ?? null,
+        outcome_on: args.outcomeOn ?? null,
+      },
     },
     { envelope: true, whatFailed: "Recording this outcome" },
   );

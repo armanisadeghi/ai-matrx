@@ -52,7 +52,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import { upsertHrStructure } from "../../service";
@@ -68,6 +67,8 @@ import type {
   HrEmployerProfileRead,
   HrEstablishment,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 
 // ── Applicability derivation ────────────────────────────────────────────────
 
@@ -584,7 +585,7 @@ function ApplicabilityRow({
           <Label htmlFor={`declare-${flag.key}`} className="text-sm font-medium">
             Why are you overriding the derived answer?
           </Label>
-          <Textarea
+          <ProTextarea
             id={`declare-${flag.key}`}
             value={reason}
             rows={2}

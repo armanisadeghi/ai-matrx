@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { CrmFoldControl } from "@/features/crm/components/outreach-start/CrmFoldControl";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
@@ -54,6 +53,7 @@ import {
   useCollectionStatus,
 } from "@/features/marketing/data/collection-status";
 import { buildCrawlPolicyWriteHandlers } from "@/features/marketing/components/settings/crawl-policy-writes";
+import { Textarea } from "@/components/ui/textarea";
 
 // crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 

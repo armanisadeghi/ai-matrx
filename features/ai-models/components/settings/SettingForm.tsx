@@ -3,7 +3,6 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import {
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
 import { Lock, Trash2 } from "lucide-react";
 import type { AiSettingFormData } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const VISIBILITY_OPTIONS: Array<{
   value: AiSettingFormData["visibility"];
@@ -268,7 +268,7 @@ export default function SettingForm({
       </div>
 
       <FormField label="Description">
-        <Textarea
+        <ProTextarea
           value={data.description}
           onChange={set("description")}
           placeholder="What this setting controls…"

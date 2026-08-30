@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   AlertTriangle,
   Check,
@@ -963,7 +964,7 @@ export default function DocumentsPage() {
                       className="h-7 w-full text-xs font-medium rounded border px-2 bg-background"
                       placeholder="Note title"
                     />
-                    <textarea
+                    <ProTextarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       className="w-full h-[40dvh] text-xs font-mono rounded border p-2 bg-background resize-y"
@@ -986,7 +987,7 @@ export default function DocumentsPage() {
                       autoFocus
                       onKeyDown={(e) => e.key === "Enter" && createNote()}
                     />
-                    <textarea
+                    <ProTextarea
                       value={newNoteContent}
                       onChange={(e) => setNewNoteContent(e.target.value)}
                       className="w-full h-40 text-xs font-mono rounded border p-2 bg-background resize-y"

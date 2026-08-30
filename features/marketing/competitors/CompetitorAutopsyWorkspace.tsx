@@ -35,7 +35,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
@@ -84,6 +83,7 @@ import {
   discoverLocalCompetitors,
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Artifact = {
   executive_verdict?: string;
@@ -917,7 +917,7 @@ export default function CompetitorAutopsyWorkspace() {
                           (optional)
                         </span>
                       </Label>
-                      <Textarea
+                      <ProTextarea
                         id="competitor-domains"
                         value={domains}
                         onChange={(event) => setDomains(event.target.value)}

@@ -26,7 +26,6 @@ import { useState } from "react";
 import { CheckCircle2, FileWarning, Lock, PencilLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -38,6 +37,7 @@ import { RefusalNotice } from "../shared/RefusalNotice";
 import { attestTimecard } from "../shared/workflowApi";
 import { RowStateChip } from "../shared/badges";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** A reason of one character is not a reason (§4.1's validation, applied to the dispute note). */
 const MIN_REASON_LENGTH = 2;
@@ -163,7 +163,7 @@ export function AttestationBar({
             This is kept exactly as you write it. Nobody — not your manager, not HR — can edit or
             delete it, and it stays on the record after this timesheet is approved.
           </p>
-          <Textarea
+          <ProTextarea
             id="hr-attest-exception"
             value={note}
             onChange={(event) => setNote(event.target.value)}

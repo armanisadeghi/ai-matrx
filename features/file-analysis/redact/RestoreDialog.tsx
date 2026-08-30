@@ -44,6 +44,7 @@ import {
   recoverSessionKey,
   type EscrowedSessionSummary,
 } from "./escrow";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface RestoreDialogProps {
   fileId: string;
@@ -229,7 +230,7 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
 
           <div className="space-y-1">
             <span className="text-xs font-medium">Masked text</span>
-            <Textarea
+            <ProTextarea
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={5}

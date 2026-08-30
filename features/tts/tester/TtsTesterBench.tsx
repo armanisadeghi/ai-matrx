@@ -19,6 +19,7 @@ import {
 } from "@/lib/cartesia/config";
 import { DEFAULT_TEST_CONFIG, type TtsTestConfig } from "./cartesiaTestEngine";
 import { TtsTesterPanel } from "./TtsTesterPanel";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const PRESETS: ReadonlyArray<{ label: string; text: string }> = [
   {
@@ -84,7 +85,7 @@ export function TtsTesterBench() {
               </button>
             ))}
           </div>
-          <textarea
+          <ProTextarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={4}

@@ -10,7 +10,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
-import { getLabelTemplate } from "@/lib/label-print/label-templates";
+import { getLabelTemplate } from "@ai-matrx/print/labels";
 import { labelBatchHref, type LabelBatchListRow } from "./types";
 
 export const BATCH_STATES = ["open", "printed", "exhausted", "void"] as const;

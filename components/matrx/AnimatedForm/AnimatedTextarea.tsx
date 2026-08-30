@@ -5,11 +5,11 @@
 import React from "react";
 import { motion } from "motion/react";
 import {cn} from "@/styles/themes/utils";
-import {Textarea} from "@/components/ui/textarea";
 import {Label} from "@/components/ui/label";
 import { FormField } from "@/types/AnimatedFormTypes";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
-interface AnimatedTextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
+interface AnimatedTextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | 'onSubmit'> {
     field: FormField;
     value: string;
     onChange: (value: string) => void;
@@ -46,7 +46,7 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = (
             >
                 {field.label}
             </Label>
-            <Textarea
+            <ProTextarea
                 id={field.name}
                 value={value}
                 onChange={handleChange}

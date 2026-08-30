@@ -6,11 +6,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, AlertCircle, Loader2, Lightbulb, Phone, Brain, Radio } from 'lucide-react';
 import { submitInvitationRequestStep1, submitInvitationRequestStep2 } from '../actions';
 import { InvitationRequestStep1, InvitationRequestStep2, USER_TYPE_OPTIONS } from '../types';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface RequestAccessModalProps {
   open: boolean;
@@ -329,7 +329,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               <Label htmlFor="use_case" className="text-sm font-medium">
                 What will you build or accomplish with this system? <span className="text-destructive">*</span>
               </Label>
-              <Textarea
+              <ProTextarea
                 id="use_case"
                 value={step1Data.use_case}
                 onChange={(e) => setStep1Data({ ...step1Data, use_case: e.target.value })}
@@ -418,7 +418,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 <Label htmlFor="biggest_obstacle" className="text-sm font-medium">
                   Biggest AI obstacle?
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="biggest_obstacle"
                   value={step2Data.biggest_obstacle}
                   onChange={(e) => setStep2Data({ ...step2Data, biggest_obstacle: e.target.value })}
@@ -433,7 +433,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
                 <Label htmlFor="current_ai_systems" className="text-sm font-medium">
                   Current AI tools you use?
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="current_ai_systems"
                   value={step2Data.current_ai_systems}
                   onChange={(e) => setStep2Data({ ...step2Data, current_ai_systems: e.target.value })}
@@ -451,7 +451,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               <Label htmlFor="recent_project" className="text-sm font-medium">
                 Tell us about a recent AI project or experiment
               </Label>
-              <Textarea
+              <ProTextarea
                 id="recent_project"
                 value={step2Data.recent_project}
                 onChange={(e) => setStep2Data({ ...step2Data, recent_project: e.target.value })}

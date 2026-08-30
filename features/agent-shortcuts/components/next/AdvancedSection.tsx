@@ -15,6 +15,7 @@ import {
 import { cn } from "@/styles/themes/utils";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * Bottom-of-page Advanced fold. Covers every `agx_shortcut` column
@@ -97,7 +98,7 @@ export function AdvancedSection({
             title="Internal description"
             hint="Notes for admins. Not shown to end users."
           >
-            <Textarea
+            <ProTextarea
               value={value.description ?? ""}
               onChange={(e) => onChange("description", e.target.value || null)}
               rows={2}
@@ -151,7 +152,7 @@ export function AdvancedSection({
             title="Default user input"
             hint="Pre-fills the user message box on launch."
           >
-            <Textarea
+            <ProTextarea
               value={value.defaultUserInput ?? ""}
               onChange={(e) =>
                 onChange("defaultUserInput", e.target.value || null)

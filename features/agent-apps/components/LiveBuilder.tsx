@@ -32,7 +32,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { toast } from "@/lib/toast-service";
@@ -68,6 +67,7 @@ import type {
   AgentAppShellKind,
   PublicAgentApp,
 } from "@/features/agent-apps/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface LiveBuilderProps {
   agentId: string;
@@ -548,7 +548,7 @@ export function LiveBuilder({
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                 Description
               </Label>
-              <Textarea
+              <ProTextarea
                 value={description}
                 onChange={(e) => {
                   setDescTouched(true);

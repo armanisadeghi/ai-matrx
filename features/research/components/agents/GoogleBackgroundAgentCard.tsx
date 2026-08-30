@@ -18,6 +18,7 @@ import {
   type GoogleBackgroundInteractionView,
   type GoogleBackgroundModel,
 } from "../../service/google-background";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const TERMINAL = new Set(["completed", "failed", "cancelled"]);
 
@@ -186,7 +187,7 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
           </label>
           <label className="space-y-1 text-xs font-medium">
             Task
-            <textarea
+            <ProTextarea
               value={input}
               onChange={(event) => setInput(event.target.value)}
               rows={3}

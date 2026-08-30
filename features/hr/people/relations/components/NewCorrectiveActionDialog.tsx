@@ -42,7 +42,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { issueHrCorrectiveAction } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
@@ -55,6 +54,7 @@ import {
   type HrCorrectiveActionLevel,
 } from "../types";
 import { EmploymentPicker } from "./EmploymentPicker";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** The formal door starts at `verbal`; `coaching` is the warm door's whole point. */
 const FORMAL_LEVELS = HR_CORRECTIVE_ACTION_LEVELS.filter((l) => l !== "coaching");
@@ -118,8 +118,17 @@ export function NewCorrectiveActionDialog({
     if (!canSave || !active) return;
     setSaving(true);
     const result = await issueHrCorrectiveAction({
-      organization_id: active.organization_id,
-      subject_employment_id: subject,
+      // 🚨 `employment_id`, NOT `subject_employment_id` — AND THAT ONE WORD MEANT
+      // NO CORRECTIVE ACTION HAS EVER BEEN ISSUED FROM THIS FORM. The door reads
+      // `p_payload ->> 'employment_id'` to resolve the employer; the wrong key
+      // left `v_employment` null, so `v_org` was null and the door answered
+      // `not_reachable` on every single press. Nothing errored at compile time,
+      // because an untyped payload at an RPC seam is a cast wearing a different
+      // hat. This is the FOURTH time this exact class has shipped (verification
+      // letters, separations, this key, and the outcome door's argument names) —
+      // `scripts/hr/hrb026_rpc_conformance.ts` is the CI check that ends it, and
+      // it fails on any key here the door does not actually read.
+      employment_id: subject,
       level,
       summary: summary.trim(),
       issued_on: issuedOn || null,
@@ -209,7 +218,7 @@ export function NewCorrectiveActionDialog({
             <Label htmlFor="ca-summary">
               {coaching ? "What you talked about" : "What happened"}
             </Label>
-            <Textarea
+            <ProTextarea
               id="ca-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
@@ -279,7 +288,7 @@ export function NewCorrectiveActionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="ca-improve">Expected improvement</Label>
-                <Textarea
+                <ProTextarea
                   id="ca-improve"
                   value={expectedImprovement}
                   onChange={(e) => setExpectedImprovement(e.target.value)}
@@ -288,7 +297,7 @@ export function NewCorrectiveActionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="ca-consequence">Consequence if unmet</Label>
-                <Textarea
+                <ProTextarea
                   id="ca-consequence"
                   value={consequence}
                   onChange={(e) => setConsequence(e.target.value)}

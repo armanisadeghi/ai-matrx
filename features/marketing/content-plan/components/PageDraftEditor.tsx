@@ -58,7 +58,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StepEmptyState } from "./StepEmptyState";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -89,6 +88,7 @@ import {
   type PageDraft,
   type PageDraftSection,
 } from "../lib/page-draft";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * The guided AI actions offered over content that already exists. Each runs the
@@ -232,7 +232,7 @@ function SectionCard({
         className="mt-1 h-7 border-transparent bg-transparent px-1 text-[11px] italic text-muted-foreground hover:border-border focus-visible:border-border"
       />
 
-      <Textarea
+      <ProTextarea
         value={section.body}
         autoGrow
         minHeight={72}
@@ -246,7 +246,7 @@ function SectionCard({
         <p className="mb-0.5 text-[11px] text-muted-foreground">
           Bullet points — one per line
         </p>
-        <Textarea
+        <ProTextarea
           value={bulletsText}
           autoGrow
           minHeight={44}
@@ -308,7 +308,7 @@ function MetaField({
         </span>
       </div>
       {multiline ? (
-        <Textarea
+        <ProTextarea
           id={describedBy}
           value={value}
           autoGrow
@@ -644,7 +644,7 @@ export function PageDraftEditor({
             >
               Opening
             </label>
-            <Textarea
+            <ProTextarea
               id={`draft-intro-${nodeId}`}
               value={value.intro}
               autoGrow
@@ -692,7 +692,7 @@ export function PageDraftEditor({
             >
               What you want the reader to do
             </label>
-            <Textarea
+            <ProTextarea
               id={`draft-cta-${nodeId}`}
               value={value.call_to_action}
               autoGrow

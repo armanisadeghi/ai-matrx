@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SelectInputProps {
   value: string;
@@ -141,7 +141,7 @@ export function SelectInput({
         {/* Custom text input when "Other" is selected */}
         {selectedOption === 'Other' && (
           <div className={compact ? "pt-1" : "pt-2"}>
-            <Textarea
+            <ProTextarea
               value={customText}
               onChange={(e) => handleCustomTextChange(e.target.value)}
               placeholder="Enter custom value..."

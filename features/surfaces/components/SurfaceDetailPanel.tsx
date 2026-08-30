@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -39,6 +38,7 @@ import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { ProTextarea } from "@/components/official/ProTextarea";
 interface Props {
   surface: SurfaceWithStats;
   onClose: () => void;
@@ -281,7 +281,7 @@ export function SurfaceDetailPanel({
               </div>
             ) : (
               <div className="flex items-start gap-1.5">
-                <Textarea
+                <ProTextarea
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   rows={3}

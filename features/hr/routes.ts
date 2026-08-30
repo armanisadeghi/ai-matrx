@@ -108,9 +108,18 @@ export function hrMePayHref(org: HrOrgRef): string {
 export function hrMeDocumentsHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/documents", org);
 }
-/** Route 5 */
-export function hrMeTimesheetHref(org: HrOrgRef): string {
-  return hrUrl("/hr/me/timesheet", org);
+/**
+ * Route 5.
+ *
+ * `punch` is the deep link a punch-correction notice carries: the resolver picks the period that
+ * covers that punch's work date and the page focuses the day. It is NOT a period selector — pass
+ * a punch id and let the server say which period that is (`hr_my_timesheet_context`).
+ */
+export function hrMeTimesheetHref(
+  org: HrOrgRef,
+  options: { punch?: string | null } = {},
+): string {
+  return hrUrl("/hr/me/timesheet", org, { punch: options.punch });
 }
 /** Route 6 */
 export function hrMeClockHref(org: HrOrgRef): string {

@@ -36,7 +36,6 @@ import {
 
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { toast } from "@/lib/toast";
@@ -46,6 +45,7 @@ import { formatCount } from "@/features/marketing/search-console/types";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { getBatchQuestion, type BatchKeyword } from "./batch";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function QuickAnswers({
   siteId,
@@ -264,7 +264,7 @@ export function QuickAnswers({
 
       {/* ── the reason, and the way on ── */}
       <div className="shrink-0 space-y-2 border-t border-border px-3 py-2">
-        <Textarea
+        <ProTextarea
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           placeholder="Add a reason (optional)"

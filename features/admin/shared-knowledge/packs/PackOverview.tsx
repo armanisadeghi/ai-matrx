@@ -14,7 +14,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import { useIndustries } from "@/features/industries/hooks";
 import { useLibraryGrants } from "@/features/rag/hooks/useLibraryGrants";
 import type { SharedKnowledgeDirectory } from "../types";
 import { GEO_MODELS, savePack, type AdminPackDetail } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NONE = "__none__";
 
@@ -190,7 +190,7 @@ export function PackOverview({
           />
         </Field>
         <Field label="Summary">
-          <Textarea
+          <ProTextarea
             value={form.summary}
             disabled={!canAuthor}
             onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
@@ -198,7 +198,7 @@ export function PackOverview({
           />
         </Field>
         <Field label="Description — what adopting it does">
-          <Textarea
+          <ProTextarea
             value={form.description}
             disabled={!canAuthor}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -206,7 +206,7 @@ export function PackOverview({
           />
         </Field>
         <Field label="Demand reading / source notes (the proposer's evidence, editable)">
-          <Textarea
+          <ProTextarea
             value={form.source_notes}
             disabled={!canAuthor}
             onChange={(e) => setForm((f) => ({ ...f, source_notes: e.target.value }))}

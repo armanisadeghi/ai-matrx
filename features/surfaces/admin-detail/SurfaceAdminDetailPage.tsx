@@ -106,6 +106,7 @@ import {
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const NONE = "__none__";
 
@@ -789,7 +790,7 @@ function IdentitySection({
       <div className="space-y-3 rounded-md border border-border bg-card p-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Description</Label>
-          <Textarea
+          <ProTextarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
             rows={3}

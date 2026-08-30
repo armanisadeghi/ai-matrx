@@ -8,6 +8,7 @@ import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -355,7 +356,7 @@ export default function BlockProcessingClient() {
             <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
               Content to process
             </Label>
-            <textarea
+            <ProTextarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={20}

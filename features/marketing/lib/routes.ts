@@ -109,11 +109,28 @@ export const MARKETING_SITE_SECTION_HOMES: Record<
   automations: { branch: "seo", slug: "automations" },
 };
 
+/**
+ * Business-knowledge screens moved OUT of the keyword-value ladder and into
+ * the brand home (identity owns business truth; valuation consumes it).
+ * Old `value/<x>` → `identity/<y>` on the brand, carrying `?site=` selection.
+ */
+const VALUE_TO_IDENTITY: Record<string, string> = {
+  discovery: "knowledge",
+  offerings: "offerings",
+  topics: "offerings",
+  guidelines: "guidelines",
+};
+
 /** Split "/keywords/value/rules?x=1" → old section slug + remainder + query. */
 function mapLegacySiteSub(brandSeg: string, siteSeg: string, sub: string): string {
   const [path, query = ""] = sub.split("?");
   const segments = path.split("/").filter(Boolean);
   const first = segments[0] ?? "";
+  if (first === "value" && segments[1] && VALUE_TO_IDENTITY[segments[1]]) {
+    const params = new URLSearchParams(query);
+    params.set("site", siteSeg);
+    return `/marketing/${brandSeg}/identity/${VALUE_TO_IDENTITY[segments[1]]}?${params.toString()}`;
+  }
   // "value/rules" maps via the section table; everything after rides along.
   const home = MARKETING_SITE_SECTION_HOMES[first];
   const rest = segments.slice(1).join("/");

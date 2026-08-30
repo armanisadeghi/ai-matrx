@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -39,6 +38,7 @@ import {
   parseBrandProfile,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -323,7 +323,7 @@ function BrandEditorDialogBody({
             <Label htmlFor="brand-description" className="text-xs">
               Description
             </Label>
-            <Textarea
+            <ProTextarea
               id="brand-description"
               value={draft.description}
               onChange={(event) => set("description")(event.target.value)}
@@ -444,7 +444,7 @@ function BrandEditorDialogBody({
             <Label htmlFor="brand-notes" className="text-xs">
               Notes
             </Label>
-            <Textarea
+            <ProTextarea
               id="brand-notes"
               value={draft.notes}
               onChange={(event) => set("notes")(event.target.value)}
@@ -494,7 +494,7 @@ function BrandEditorDialogBody({
                 <Label htmlFor="brand-profile-positioning" className="text-xs">
                   Positioning
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="brand-profile-positioning"
                   value={draft.profilePositioning}
                   onChange={(event) => set("profilePositioning")(event.target.value)}
@@ -509,7 +509,7 @@ function BrandEditorDialogBody({
                   <Label htmlFor="brand-profile-value-props" className="text-xs">
                     Value props (one per line)
                   </Label>
-                  <Textarea
+                  <ProTextarea
                     id="brand-profile-value-props"
                     value={draft.profileValueProps}
                     onChange={(event) => set("profileValueProps")(event.target.value)}
@@ -522,7 +522,7 @@ function BrandEditorDialogBody({
                   <Label htmlFor="brand-profile-offerings" className="text-xs">
                     Offerings (one per line)
                   </Label>
-                  <Textarea
+                  <ProTextarea
                     id="brand-profile-offerings"
                     value={draft.profileOfferings}
                     onChange={(event) => set("profileOfferings")(event.target.value)}
@@ -535,7 +535,7 @@ function BrandEditorDialogBody({
                   <Label htmlFor="brand-profile-competitors" className="text-xs">
                     Competitors (one per line)
                   </Label>
-                  <Textarea
+                  <ProTextarea
                     id="brand-profile-competitors"
                     value={draft.profileCompetitors}
                     onChange={(event) => set("profileCompetitors")(event.target.value)}
@@ -548,7 +548,7 @@ function BrandEditorDialogBody({
                   <Label htmlFor="brand-profile-keywords" className="text-xs">
                     Target keywords (one per line)
                   </Label>
-                  <Textarea
+                  <ProTextarea
                     id="brand-profile-keywords"
                     value={draft.profileTargetKeywords}
                     onChange={(event) => set("profileTargetKeywords")(event.target.value)}
@@ -575,7 +575,7 @@ function BrandEditorDialogBody({
                 <Label htmlFor="brand-profile-guidelines" className="text-xs">
                   Content guidelines
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="brand-profile-guidelines"
                   value={draft.profileContentGuidelines}
                   onChange={(event) =>
@@ -591,7 +591,7 @@ function BrandEditorDialogBody({
                 <Label htmlFor="brand-profile-notes" className="text-xs">
                   Profile notes
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="brand-profile-notes"
                   value={draft.profileNotes}
                   onChange={(event) => set("profileNotes")(event.target.value)}

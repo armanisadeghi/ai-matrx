@@ -2,7 +2,7 @@
 
 /**
  * QR Label Generator demo — exercises the reusable label-print core
- * (lib/label-print/): template registry, sheet preview, calibration page,
+ * (@ai-matrx/print): template registry, sheet preview, calibration page,
  * print window (qrLabelsPrinter) and PDF download (downloadLabelsPdf).
  */
 
@@ -15,15 +15,19 @@ import { Label } from '@/components/ui/label';
 import { Printer, FileDown, Crosshair, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
 import { toast } from '@/lib/toast';
-import { LABEL_TEMPLATES, getLabelTemplate } from '@/lib/label-print/label-templates';
 import {
+  LABEL_TEMPLATES,
+  getLabelTemplate,
   qrLabelsPrinter,
   printCalibrationSheet,
   type QrLabel,
   type QrLabelPrintData,
-} from '@/lib/label-print/qr-labels-printer';
-import { LabelSheetPreview } from '@/lib/label-print/LabelSheetPreview';
-import { PrintOptionsDialog, usePrintOptions } from '@/lib/block-print/PrintOptionsDialog';
+} from '@ai-matrx/print/labels';
+import {
+  LabelSheetPreview,
+  PrintOptionsDialog,
+  usePrintOptions,
+} from '@ai-matrx/print/react';
 
 const QRLabelsPage = () => {
   const [labels, setLabels] = useState<QrLabel[]>([]);
@@ -81,7 +85,7 @@ const QRLabelsPage = () => {
     if (!labels.length || isDownloading) return;
     setIsDownloading(true);
     try {
-      const { downloadLabelsPdf } = await import('@/lib/label-print/qr-labels-pdf');
+      const { downloadLabelsPdf } = await import('@ai-matrx/print/labels');
       await downloadLabelsPdf(printData, templateId);
     } catch (err) {
       console.error('[qr-label-generator] PDF download failed:', err);
@@ -97,7 +101,7 @@ const QRLabelsPage = () => {
         <CardHeader>
           <CardTitle>QR Label Generator</CardTitle>
           <CardDescription>
-            Warehouse-grade QR labels on standard label sheets — powered by lib/label-print
+            Warehouse-grade QR labels on standard label sheets — powered by @ai-matrx/print
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-2">

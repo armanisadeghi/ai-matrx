@@ -1,6 +1,7 @@
 "use client";
 import VoiceConfigSelects from "@/components/audio/VoiceConfigSelects";
 import { Button } from "@/components/ui/button";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import useSimpleCartesia from "@/hooks/tts/simple/useSimpleCartesia";
 
 export default function SimpleTtsPlayer() {
@@ -29,7 +30,7 @@ export default function SimpleTtsPlayer() {
                 </div>
             </div>
             <div className="w-full">
-                <textarea
+                <ProTextarea
                     className="w-full bg-zinc-100 dark:bg-zinc-800 border-1 border-gray-400 dark:border-gray-600 rounded-md p-2"
                     value={script}
                     onChange={(e) => handleScriptChange(e.target.value)}

@@ -25,11 +25,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { ResearchTopicSelect } from "../../components/ResearchTopicSelect";
 import { DEFAULT_SETUP_GUIDANCE, type SetupGuidance } from "../ai";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface BuildLogEntry {
   text: string;
@@ -277,7 +277,7 @@ export function BuildWithAiDialog({
               <p className="mb-1.5 text-xs font-medium text-foreground">
                 Anything to emphasize, avoid, or that the AI should know?
               </p>
-              <Textarea
+              <ProTextarea
                 value={guidance.notes}
                 disabled={busy}
                 rows={3}

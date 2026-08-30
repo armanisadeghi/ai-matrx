@@ -7,10 +7,10 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
 import type { AgentAppComponentProps } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function FactCheckerApp({
   onExecute,
@@ -72,7 +72,7 @@ export default function FactCheckerApp({
       {/* ── Input form — no card, whitespace carries the structure ── */}
       {showFullForm && (
         <div className="space-y-3">
-          <Textarea
+          <ProTextarea
             id="claim"
             value={claim}
             onChange={(e) => setClaim(e.target.value)}

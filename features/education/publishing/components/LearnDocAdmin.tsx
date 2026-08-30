@@ -84,6 +84,7 @@ import type {
   LearnDocStatus,
 } from "../types";
 import type { EduSection } from "../../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
   initialDocs: LearnDocRecord[];
@@ -831,7 +832,7 @@ function LearnDocEditor({
             anchor="draft_summary"
             hint="Meta description + hero lede."
           >
-            <Textarea
+            <ProTextarea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               rows={3}

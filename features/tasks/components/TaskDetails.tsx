@@ -7,7 +7,6 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useDebounce } from "../hooks/useDebounce";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import type { TaskWithProject } from "@/features/tasks/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function TaskDetails({ task }: { task: TaskWithProject }) {
   const dispatch = useAppDispatch();
@@ -104,7 +104,7 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
         <div
           className={`${fullScreenMode ? "max-h-96" : "max-h-48"} overflow-y-auto`}
         >
-          <Textarea
+          <ProTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add details about this task..."

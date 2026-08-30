@@ -15,11 +15,11 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { VOICE_INTRO_MANDATE_KEY } from "../../constants";
 import { useMandateAgentInstructions } from "../../agentInstructions";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import { selectVoiceInstructions } from "../../state/selectors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface InstructionsEditorProps {
   instanceId: string;
@@ -70,7 +70,7 @@ export function InstructionsEditor({
           Reset
         </Button>
       </div>
-      <Textarea
+      <ProTextarea
         id="instructions"
         value={value}
         onChange={(e) =>

@@ -30,7 +30,7 @@ import { quizPrinter } from "./quiz-printer";
 import {
   PrintOptionsDialog,
   usePrintOptions,
-} from "@/lib/block-print/PrintOptionsDialog";
+} from "@ai-matrx/print/react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";

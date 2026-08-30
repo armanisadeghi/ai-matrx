@@ -25,7 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +39,7 @@ import type { CmsPageMapEntry } from "../setup/bridge";
 import type { CmsLink } from "../setup/readiness";
 import { AgentPayloadButton } from "./AgentPayloadSheet";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** A small icon button whose disabled state IS information. */
 function StatusActionButton({
@@ -380,7 +380,7 @@ export function PlanToolbar({
                 <Label className="mb-1 block text-xs font-medium">
                   Guidance (optional)
                 </Label>
-                <Textarea
+                <ProTextarea
                   value={guidance}
                   onChange={(event) => setGuidance(event.target.value)}
                   placeholder="Anything the research agents should know — focus areas, services to emphasize, pages to avoid…"

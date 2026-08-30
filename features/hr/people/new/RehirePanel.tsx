@@ -30,10 +30,10 @@ import { AlertTriangle, History, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 import { hrEmployeeHref } from "../../routes";
 import { formatFullDate } from "../shared/HrStatusChip";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export type HrPriorEmployment = {
   employment_id: string;
@@ -169,7 +169,7 @@ export function RehirePanel({
               <Label htmlFor="hr-rehire-override" className="text-xs font-medium">
                 Why are you rehiring them anyway? This is recorded.
               </Label>
-              <Textarea
+              <ProTextarea
                 id="hr-rehire-override"
                 value={overrideReason}
                 onChange={(event) => onOverrideReason(event.target.value)}

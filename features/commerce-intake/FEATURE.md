@@ -77,7 +77,7 @@ independently.
 ## The label pool (2026-08-29 — `labels/` module)
 
 `commerce.label_batch` (a print run) + `commerce.label_code` (one pooled code) over the
-`lib/label-print` seam. Codes are MINTED rows first (state `available`, no asset) —
+`@ai-matrx/print/labels` seam (the extracted npm package; was `lib/label-print`). Codes are MINTED rows first (state `available`, no asset) —
 14 chars from a confusable-free alphabet (no 0/O/1/I/L, ≈69 bits entropy, `labels/codes.ts`);
 the printed QR payload is the resolver URL **`https://aimatrx.com/l/<code>`**; a scan accepts
 BOTH the URL and the bare code (`normalizeScannedCode`). Uniqueness is DB-enforced:
@@ -242,7 +242,7 @@ On a phone, logged into an org:
   index on live `asset_identifier (org, kind, value)` (precheck found zero duplicates) and
   unique `label_code (org, value)`; records `migrations/commerce_label_pool_2026_08_29.sql` +
   `commerce_labels_knobs_2026_08_29.sql`, ledgered. Code: `labels/` module (mint / claim /
-  resolve / import / print through the lib/label-print seam), `/commerce/labels` routes,
+  resolve / import / print through the @ai-matrx/print/labels seam), `/commerce/labels` routes,
   `/l/[code]` resolver, claim-on-scan decision table in `useIntakeSession.processQrCode`
   (serialization plumbing untouched), `replaceIdentifier` lifecycle write, AssetDetail
   Print-label + Retire, `commerce.labels` knobs (default_template / qr_ec_level /

@@ -18,7 +18,6 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import {
   IDENTITY_PATTERN,
@@ -26,6 +25,7 @@ import {
   type DimensionCardinality,
   type DimensionNature,
 } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface DimensionFormValue {
   slug: string;
@@ -191,7 +191,7 @@ export function DimensionForm({
         >
           Why it matters to your business
         </label>
-        <Textarea
+        <ProTextarea
           id="dimension-description"
           value={description}
           onChange={(event) => setDescription(event.target.value)}

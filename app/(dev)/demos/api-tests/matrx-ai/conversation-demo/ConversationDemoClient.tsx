@@ -35,6 +35,7 @@ import { toast } from "@/lib/toast";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -557,7 +558,8 @@ export default function ConversationDemoClient() {
                 <Label className="text-xs font-semibold flex-shrink-0">
                   User Input
                 </Label>
-                <Textarea
+                <ProTextarea
+                  wrapperClassName="flex-1 min-h-0"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   placeholder="Your message to continue the conversation…"

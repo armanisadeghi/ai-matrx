@@ -31,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { addHrRestrictedNote } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
@@ -42,6 +41,7 @@ import {
   type HrRestrictedNote,
   type HrRestrictedNoteKind,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function formatWhen(value: string | null | undefined): string {
   if (!value) return "";
@@ -142,7 +142,7 @@ export function RestrictedNotesPanel({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="note-body">Note</Label>
-            <Textarea
+            <ProTextarea
               id="note-body"
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -153,7 +153,7 @@ export function RestrictedNotesPanel({
             <Label htmlFor="note-redacted">
               One line others on the case may see
             </Label>
-            <Textarea
+            <ProTextarea
               id="note-redacted"
               value={redacted}
               onChange={(e) => setRedacted(e.target.value)}

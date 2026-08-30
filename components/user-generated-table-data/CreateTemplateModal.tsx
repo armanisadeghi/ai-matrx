@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash, MoveUp, MoveDown } from "lucide-react";
 import {
@@ -27,6 +26,7 @@ import { createSchemaTemplate } from '@/utils/user-table-utls/template-utils';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -265,7 +265,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
               
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea
+                <ProTextarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

@@ -31,7 +31,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -51,6 +50,7 @@ import {
   SeedTaskChip,
   formatDateRange,
 } from "./rule-chrome";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 function Section({
   title,
@@ -571,7 +571,7 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
               <span className="text-xs font-medium text-muted-foreground">
                 Sign-off note{promoting ? " (required)" : ""}
               </span>
-              <Textarea
+              <ProTextarea
                 value={signOff}
                 onChange={(event) => setSignOff(event.target.value)}
                 rows={3}

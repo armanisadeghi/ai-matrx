@@ -70,6 +70,7 @@ import { selectViewedJobForFile } from "@/features/page-extraction/redux/selecto
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
 import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // Shared renderer used by PdfCldFileViewer below.
 // react-pdf + pdfjs-dist is ~400KB; defer until the viewer mounts.
@@ -1754,7 +1755,7 @@ function PageBlock({
 
       {/* Body */}
       {editing ? (
-        <textarea
+        <ProTextarea
           autoFocus
           value={editText}
           onChange={(e) => onDraftChange(page.id, e.target.value)}

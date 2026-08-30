@@ -68,8 +68,6 @@ import { extractErrorMessage } from "@/utils/errors";
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { BrainCircuit } from "lucide-react";
-
-import { Textarea } from "@/components/ui/textarea";
 import { AdminDocHint } from "@/features/admin/components/AdminDocHint";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 
@@ -127,6 +125,7 @@ import {
 } from "../../hooks/useRunStage";
 import type { CmsFacts } from "../readiness";
 import { SetupSection } from "./SetupSection";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type BridgeAction =
   | "link"
@@ -908,7 +907,7 @@ export function SetupBridgeSection({
             >
               Design direction for every page
             </label>
-            <Textarea
+            <ProTextarea
               id={`design-guidance-${site.id}`}
               value={designGuidance}
               rows={2}

@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw, Plus, X } from "lucide-react";
@@ -14,6 +13,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectStructuredInstruction } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type { SystemInstruction } from "@/features/agents/types/agent-api-types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface SystemInstructionEditorProps {
   conversationId: string;
@@ -200,7 +200,7 @@ function FieldTextarea({
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
       <p className="text-xs text-muted-foreground">{description}</p>
-      <Textarea
+      <ProTextarea
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         className="min-h-[60px] text-sm"

@@ -21,7 +21,6 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -43,6 +42,7 @@ import {
   type AdminPackDetail,
   type PackItemKind,
 } from "./data";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type BandKind = "value_band" | "geo_band";
 
@@ -109,7 +109,7 @@ function BandEditor({
         <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" className="h-8 text-sm tabular-nums" />
       </div>
       <Input value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} placeholder="What lands here, in plain words" className="h-8 text-sm" />
-      <Textarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Why this industry reads the band this way" className="min-h-12 text-sm" />
+      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Why this industry reads the band this way" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
           Cancel
@@ -206,7 +206,7 @@ function AreaEditor({
         )}
         <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" className="h-8 text-sm tabular-nums" />
       </div>
-      <Textarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="What this archetype stands for — the adopter fills in their own places" className="min-h-12 text-sm" />
+      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="What this archetype stands for — the adopter fills in their own places" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
           Cancel

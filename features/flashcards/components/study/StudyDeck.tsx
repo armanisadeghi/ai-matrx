@@ -39,7 +39,6 @@ import {
   Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
@@ -113,6 +112,7 @@ import {
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { MemoryAidButton } from "@/features/education/memory/components/MemoryAidButton";
 import { CardDetailLayers } from "./CardDetailLayers";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // One-at-a-time on user action — the enhance dialog (its agents, preview flow,
 // entitlement chrome) loads only when the learner actually asks to improve a
@@ -1447,7 +1447,7 @@ function AskAiPanel({
 
       {open && (
         <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
-          <Textarea
+          <ProTextarea
             value={question}
             onChange={(e) => onQuestionChange(e.target.value)}
             placeholder="Optional: what specifically is confusing? (Leave blank for a general hint.)"

@@ -29,7 +29,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { AccessModeField } from "./AccessModeField";
 import { DEFAULT_ACCESS_MODE } from "../constants";
 import type {
@@ -38,6 +37,7 @@ import type {
   ClassSettings,
   StudyClass,
 } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface ClassFormValue {
   name: string;
@@ -185,7 +185,7 @@ export function ClassFormDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="class-desc">Description</Label>
-            <Textarea
+            <ProTextarea
               id="class-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}

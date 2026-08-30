@@ -47,7 +47,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import type { CompetitorRow } from "./data";
@@ -57,6 +56,7 @@ import {
   CompetitorClassificationEditor,
   derivedCompetitorLabel,
 } from "./CompetitorIdentification";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const SOURCE = "ground_truth_queue";
 
@@ -187,7 +187,7 @@ function AgreeAction({
         >
           Optional, and the most valuable thing here: why?
         </Label>
-        <Textarea
+        <ProTextarea
           id={`gt-why-${row.id}`}
           rows={2}
           value={why}

@@ -47,7 +47,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { createHrIncident } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
@@ -61,6 +60,7 @@ import {
   type HrIncidentKind,
 } from "../types";
 import { EmploymentPicker } from "./EmploymentPicker";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * The OSHA 300/301 capture set, verbatim from §4.9b C1. Every one of these is a
@@ -197,7 +197,7 @@ export function NewIncidentDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="in-summary">What happened</Label>
-            <Textarea
+            <ProTextarea
               id="in-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}

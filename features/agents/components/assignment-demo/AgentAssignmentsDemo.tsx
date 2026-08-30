@@ -30,10 +30,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const MODES: Array<{
   value: AssignmentDemoMode;
@@ -150,7 +150,7 @@ export function AgentAssignmentsDemo() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="assignment-user-input">User input</Label>
-                  <Textarea
+                  <ProTextarea
                     id="assignment-user-input"
                     value={state.userInput}
                     onChange={(event) =>
@@ -440,7 +440,7 @@ function OptionVariablesEditor({
               <Label htmlFor={`variable-options-${variable.id}`}>
                 Options, one per line
               </Label>
-              <Textarea
+              <ProTextarea
                 id={`variable-options-${variable.id}`}
                 value={variable.options}
                 onChange={(event) =>

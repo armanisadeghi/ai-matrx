@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { KeywordPicker } from "@/features/marketing/content-plan/components/KeywordPicker";
 import { useKeywordLabels } from "@/features/marketing/content-plan/data/hooks";
 import { MetaRecommendations } from "@/features/marketing/seo/serp/MetaRecommendations";
@@ -37,6 +36,7 @@ import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import type { PlannedLinkEntry } from "@/features/marketing/types";
 
 import { PAGE_ROLES, PAGE_ROLE_LABELS, type PageRole } from "./plan-model";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // THE NAMING LAW: the desired-metadata fields render the declared labels of
 // the `web.page` surface byte-identically, in every host.
@@ -237,7 +237,7 @@ export function SeoPlanRoleFields({
         <Label htmlFor="seo-plan-reason" className="text-xs">
           Why this assignment
         </Label>
-        <Textarea
+        <ProTextarea
           id="seo-plan-reason"
           value={reason}
           onChange={(event) => onReasonChange(event.target.value)}
@@ -316,7 +316,7 @@ export function SeoPlanMetaFields({
             </span>
           )}
         </div>
-        <Textarea
+        <ProTextarea
           id={`${idPrefix}-desired-description`}
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}

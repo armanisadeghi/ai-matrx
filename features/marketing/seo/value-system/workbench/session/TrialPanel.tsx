@@ -49,7 +49,6 @@ import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
@@ -92,6 +91,7 @@ import {
   type TrialScore,
   type TrialVerdict,
 } from "./trial";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Phase = "gathering" | "review" | "teaching" | "rules";
 
@@ -914,7 +914,7 @@ function VerdictCard({
             }}
             lockedDimensionSlug={dimension.slug}
           />
-          <Textarea
+          <ProTextarea
             value={verdict.correctionReason ?? ""}
             onChange={(event) => onReason(event.target.value)}
             rows={2}

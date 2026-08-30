@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps } from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export type SettingsTextareaProps = SettingsCommonProps & {
   value: string;
@@ -44,7 +45,7 @@ export function SettingsTextarea({
   return (
     <SettingsRow {...rowProps} id={id} variant="stacked" last={last}>
       <div className="relative">
-        <textarea
+        <ProTextarea
           id={id}
           rows={rows}
           value={effective}

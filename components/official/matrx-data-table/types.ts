@@ -560,7 +560,11 @@ export interface MatrxDataTableSelectionConfig<T> {
    * action only needs ids.
    */
   actions?: (selected: T[], selectedIds: string[]) => ReactNode;
-  /** Rows that cannot be acted on in bulk render a disabled checkbox. */
+  /**
+   * Rows that cannot be acted on in bulk render NO checkbox at all — the cell
+   * stays for alignment, the control is absent from the DOM. A greyed control
+   * still advertises a choice the surface underneath would refuse.
+   */
   isRowSelectable?: (row: T) => boolean;
   /** Singular noun for the bar's count ("finding" → "3 findings selected"). */
   noun?: string;

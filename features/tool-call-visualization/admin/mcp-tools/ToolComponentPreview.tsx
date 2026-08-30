@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -46,6 +45,7 @@ import type {
 } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -612,7 +612,7 @@ export function ToolComponentPreview({
           </h2>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
-          <Textarea
+          <ProTextarea
             value={revisionInstructions}
             onChange={(e) => setRevisionInstructions(e.target.value)}
             placeholder="Describe what you want changed. e.g., 'Show results in a card grid with thumbnails instead of a list. Add a copy button for each item. Use green color for success states.'"

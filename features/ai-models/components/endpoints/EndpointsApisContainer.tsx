@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -52,6 +51,7 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
 
@@ -252,7 +252,7 @@ function EndpointFormFields({
         </Label>
       </div>
       <FormField label="Notes">
-        <Textarea
+        <ProTextarea
           value={data.notes}
           onChange={set("notes")}
           className="text-sm min-h-[72px] resize-none"
@@ -394,7 +394,7 @@ function ApiFormFields({
         />
       </FormField>
       <FormField label="Description">
-        <Textarea
+        <ProTextarea
           value={data.description}
           onChange={set("description")}
           className="text-sm min-h-[72px] resize-none"

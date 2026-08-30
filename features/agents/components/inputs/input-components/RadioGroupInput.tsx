@@ -1,7 +1,7 @@
 import React from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
 import { calcCols } from "./useContainerColumns";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface RadioGroupInputProps {
   value: string;
@@ -114,7 +114,7 @@ export function RadioGroupInput({
 
               {selectedOption === "Other" && (
                 <div className="pt-1">
-                  <Textarea
+                  <ProTextarea
                     value={customText}
                     onChange={(e) => handleCustomTextChange(e.target.value)}
                     placeholder="Enter any text, markdown, or custom value..."

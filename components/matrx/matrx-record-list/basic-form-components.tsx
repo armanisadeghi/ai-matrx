@@ -3,6 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { ComponentSize } from '@/types/componentConfigTypes';
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface BaseInputProps {
     value: string;
@@ -35,7 +36,7 @@ export function MatrxBasicInput({ value, onChange, size = 'xs', className, disab
 
 export function MatrxBasicTextarea({ value, onChange, size = 'xs', className, disabled }: BaseInputProps) {
     return (
-        <textarea
+        <ProTextarea
             value={value}
             onChange={e => onChange?.(e.target.value)}
             disabled={disabled}

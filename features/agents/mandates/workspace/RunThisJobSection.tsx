@@ -62,6 +62,7 @@ import {
   type MandateTestResponse,
 } from "../test-run";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** One fillable input. `offered` is the Provision's declaration when there is
  * one; a legacy contract-only mandate supplies the name alone. */
@@ -305,7 +306,7 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
       )}
 
       {/* Free text ONLY — what a person would say. Never a channel for values. */}
-      <Textarea
+      <ProTextarea
         value={userInput}
         onChange={(event) => setUserInput(event.target.value)}
         placeholder="Anything you'd say to whoever does this job (optional)"

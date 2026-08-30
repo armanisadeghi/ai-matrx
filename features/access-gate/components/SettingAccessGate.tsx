@@ -9,13 +9,13 @@
 import { useState } from "react";
 import { Check, Loader2, Lock, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
 import { createSettingAccessRequest } from "@/features/access-gate/service/accessRequests";
 import type { JsonObject } from "@/types/json";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function SettingAccessGate({
   canManage,
@@ -112,7 +112,7 @@ export function SettingAccessGate({
 
       {!pending ? (
         <div className="mt-3 space-y-2">
-          <Textarea
+          <ProTextarea
             value={message}
             onChange={(event) => setCustomMessage(event.target.value)}
             rows={3}

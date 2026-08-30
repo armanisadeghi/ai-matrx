@@ -21,7 +21,6 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -46,6 +45,7 @@ import {
   type SeoSiteOption,
   type SeoTaskRow,
 } from "./service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 // ── Automations panel ───────────────────────────────────────────────────────
 
@@ -404,7 +404,7 @@ function WorkbenchPanel() {
 
         <div className="space-y-1.5">
           <div className="text-sm font-medium">The question</div>
-          <Textarea
+          <ProTextarea
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             rows={3}

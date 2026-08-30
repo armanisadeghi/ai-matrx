@@ -14,7 +14,6 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Section } from "../workspace/Section";
@@ -22,6 +21,7 @@ import { TriadFlowMark } from "../workspace/TriadSections";
 import { DraftInputsEditor } from "./DraftInputsEditor";
 import { OutputKindPicker } from "./OutputKindPicker";
 import { createMandate, type DraftInput } from "./service";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function NewMandatePage() {
   const dispatch = useAppDispatch();
@@ -107,7 +107,7 @@ export function NewMandatePage() {
 
         <Section title="Goal" hint="lives only here — give it your best words">
           <div className="rounded-xl border border-primary/25 bg-card p-4">
-            <Textarea
+            <ProTextarea
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="Exactly what done-well means. Tight, opinionated, no fluff — intelligent agents will turn this into a system prompt and a grading rubric."

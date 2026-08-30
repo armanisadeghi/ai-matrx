@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -28,6 +27,7 @@ import {
 import { useSlugAvailability } from "../hooks";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface CreateOrgModalProps {
   isOpen: boolean;
@@ -362,7 +362,7 @@ export function CreateOrgModal({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor={`${fieldId}-description`}>Description</Label>
-            <Textarea
+            <ProTextarea
               id={`${fieldId}-description`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}

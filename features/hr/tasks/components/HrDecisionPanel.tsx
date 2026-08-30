@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
 import { HrActionDialog } from "@/features/hr/tasks/components/HrActionDialog";
+import { HrCorrectiveAckPanel } from "@/features/hr/tasks/components/HrCorrectiveAckPanel";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
@@ -37,6 +37,7 @@ import {
     HR_DECISION_VERB,
     isRefusal,
 } from "@/features/hr/tasks/types";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 type Row = Record<string, unknown>;
 
@@ -230,6 +231,23 @@ export function HrDecisionPanel({
       from the login on the subject's employment.
     */
     const viewerIsSubject = bool(shownStep, "viewer_is_subject");
+
+    /*
+      🚨 THE ONE FLOW WHOSE SELF-STEP IS THE POINT. `corrective_action_ack`'s
+      `acknowledge` step resolves to the SUBJECT (`resolver_kind: fixed_user`,
+      `employment_source: subject`, `allows_self: true`) — so the subject is the
+      decider and both of the branches below are wrong for them. Keyed on the flow
+      key and the step key, never on "the viewer is the subject", because plenty of
+      other flows have a subject looking at their own request who genuinely may not
+      decide it. `target_id` IS the corrective action's id: the instance targets the
+      record, and the acknowledge door finds the open step from it, so nothing here
+      has to teach a person what a workflow instance is.
+    */
+    const isCorrectiveAck =
+        str(instance, "flow_key") === "corrective_action_ack" &&
+        str(activeStep, "step_key") === "acknowledge" &&
+        viewerIsSubject;
+    const correctiveActionId = isCorrectiveAck ? str(instance, "target_id") : null;
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
@@ -449,7 +467,28 @@ export function HrDecisionPanel({
                                         </span>
                                     ) : null}
                                 </div>
-                                {viewerIsSubject ? (
+                                {/* 🚨 A SELF-STEP IS NOT A SELF-APPROVAL, AND THE TWO MUST NOT
+                                    SHARE A BRANCH. `corrective_action_ack`'s `acknowledge` step
+                                    is `allows_self` BY DESIGN — the subject is the decider,
+                                    because the whole point is that the person being warned reads
+                                    it and responds. Falling into `viewerIsSubject` would tell
+                                    them "it is not yours to decide" and render NO controls, which
+                                    is the acknowledgment being blocked by a sentence about
+                                    somebody else's approval. And falling into the generic branch
+                                    would offer them Approve / Reject / Return / Escalate on a
+                                    warning about themselves — inviting the reading that signing
+                                    means agreeing, which §4.8's preserved-disagreement rule
+                                    exists to prevent. So this flow gets its own panel, before
+                                    both. */}
+                                {isCorrectiveAck && correctiveActionId ? (
+                                    <HrCorrectiveAckPanel
+                                        correctiveActionId={correctiveActionId}
+                                        onDone={() => {
+                                            void load();
+                                            onDecided?.();
+                                        }}
+                                    />
+                                ) : viewerIsSubject ? (
                                     <p className="text-sm text-muted-foreground">
                                         This is your own request, so it is not yours to
                                         decide — somebody else approves it. You can see
@@ -457,7 +496,7 @@ export function HrDecisionPanel({
                                     </p>
                                 ) : (
                                   <>
-                                <Textarea
+                                <ProTextarea
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     placeholder={

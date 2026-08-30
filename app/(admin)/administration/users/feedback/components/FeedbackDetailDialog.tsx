@@ -44,7 +44,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -112,6 +111,7 @@ import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRe
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
 import { feedbackHref } from "../doors";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;
@@ -1538,7 +1538,7 @@ export default function FeedbackDetailDialog({
                   <label className="text-sm font-medium mb-1.5 block">
                     Direction for Agent
                   </label>
-                  <Textarea
+                  <ProTextarea
                     value={direction}
                     onChange={(e) => setDirection(e.target.value)}
                     placeholder="Specific instructions for the AI agent before it starts working on this..."
@@ -1551,7 +1551,7 @@ export default function FeedbackDetailDialog({
                   <label className="text-sm font-medium mb-1.5 block">
                     Admin Notes
                   </label>
-                  <Textarea
+                  <ProTextarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder="Internal notes about this feedback..."
@@ -2142,7 +2142,7 @@ export default function FeedbackDetailDialog({
 
                 {/* Comment Input */}
                 <div className="relative pt-3 border-t mt-auto">
-                  <Textarea
+                  <ProTextarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Add a comment..."
@@ -2440,7 +2440,7 @@ export default function FeedbackDetailDialog({
                                 : "What still needs work? Describe the remaining issues."}
                             </span>
                           </div>
-                          <Textarea
+                          <ProTextarea
                             value={testFeedbackText}
                             onChange={(e) =>
                               setTestFeedbackText(e.target.value)
@@ -2510,7 +2510,7 @@ export default function FeedbackDetailDialog({
                             email. The item will move to the User Review stage
                             until they respond.
                           </p>
-                          <Textarea
+                          <ProTextarea
                             ref={composeTextareaRef}
                             value={userReviewMessage}
                             onChange={(e) =>
@@ -2817,7 +2817,7 @@ export default function FeedbackDetailDialog({
                     </div>
                   )}
                   <div className="relative">
-                    <Textarea
+                    <ProTextarea
                       ref={replyTextareaRef}
                       value={userReplyText}
                       onChange={(e) => setUserReplyText(e.target.value)}

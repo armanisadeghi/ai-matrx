@@ -2,7 +2,6 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type {
   MarketingPage,
   PageSnapshot,
@@ -16,6 +15,7 @@ import {
 } from "@/features/marketing/seo/social/SocialCard";
 import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 /**
  * Social share preview — canonical platform-faithful cards (features/marketing/seo/
@@ -110,7 +110,7 @@ export function SocialCardPlan({
         <Label htmlFor="desired-og-description" className="text-xs">
           Desired share description
         </Label>
-        <Textarea
+        <ProTextarea
           id="desired-og-description"
           value={draft.og_description ?? ""}
           onChange={(event) =>

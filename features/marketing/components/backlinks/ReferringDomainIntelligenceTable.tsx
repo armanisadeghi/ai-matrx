@@ -18,7 +18,6 @@ import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   humanizeAssessmentValue,
   jsonRecord,
@@ -39,6 +38,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 const VERDICTS = [
   "valuable",
@@ -236,7 +236,7 @@ function DomainDetail({
             </option>
           ))}
         </select>
-        <Textarea
+        <ProTextarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Anything only you know — who they are to you, whether you paid, who owns it…"

@@ -3,11 +3,11 @@
 import React, {TextareaHTMLAttributes, useMemo, useState} from "react";
 import {cn} from "@/styles/themes/utils";
 import {Label} from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 
 
 
-interface FloatingLabelTextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface FloatingLabelTextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onSubmit'> {
     label: string;
     value?: string;
     onChange?: React.ChangeEventHandler<HTMLTextAreaElement>;
@@ -69,7 +69,7 @@ export const FloatingLabelTextArea: React.FC<FloatingLabelTextAreaProps> = ({
             >
                 {label}
             </Label>
-            <Textarea
+            <ProTextarea
                 id={id}
                 value={value}
                 onChange={handleChange}
@@ -89,7 +89,7 @@ export const FloatingLabelTextArea: React.FC<FloatingLabelTextAreaProps> = ({
 
     const floatingLabelLayout = (
         <div className="relative mt-2">
-            <Textarea
+            <ProTextarea
                 id={id}
                 value={value}
                 onChange={handleChange}
