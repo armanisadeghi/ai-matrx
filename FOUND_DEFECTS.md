@@ -2670,3 +2670,14 @@ alone here because changing what a guard asserts is not a change to make inside 
 `features/marketing/analytics/campaign-pause.test.ts` › "refuses a stale manual caller before dispatch" fails with
 `Cannot read properties of undefined (reading 'error')` inside the GA4 sync path (`features/marketing/analytics/data.ts` / `syncSiteAnalytics`).
 None of these files changed in the agency-model restructure commits; last touched by `d13ebb0a3b fix(org): bind GA4 stream to site tenant` (2026-08-24). Owner of the GA4 stream/tenant work should re-run the suite.
+
+## 2026-08-30 — resource-family-policy test encodes an unimplemented knowledge→rag alias (Arman's wip)
+`features/agents/components/inputs/resources/resource-family-policy.test.ts` › "keeps promotions and
+exclusions internally consistent" fails: got `["knowledge","rag","raw"]`, expected `["rag","raw"]`.
+Cause: `f4668b6d01` (`wip: consolidate knowledge and RAG surfaces`, Arman's tree, 2026-08-18) changed
+the test input from `"RAG"` to `"Knowledge"` — encoding an intent that `knowledge` normalizes into the
+`rag` representation — but the matching alias logic was never added to
+`resource-family-policy.ts` (`uniqueNormalized` has no alias map). This is half-finished consolidation
+work, not drift from a package lane; per the unfinished-work-alarm policy nothing here was "fixed".
+Whoever resumes the knowledge/RAG consolidation should add the alias in `normalizeResourceFamilyPolicy`
+(and decide the canonical direction) or revert the test input.
