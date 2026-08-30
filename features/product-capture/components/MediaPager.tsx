@@ -18,7 +18,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { cn } from "@/lib/utils";
 
 export interface PagerMedia {
