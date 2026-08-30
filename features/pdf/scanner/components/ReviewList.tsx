@@ -36,7 +36,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
 import type { ScanItem } from "../types";
 
@@ -120,11 +120,12 @@ function SortableTile({
   } = useSortable({ id: item.itemId });
 
   // Resumed sessions have no local preview — hydrate from the uploaded file.
-  const remoteSrc = useFileSrc(
-    !item.previewUrl && item.fileId && item.kind === "image"
-      ? { kind: "file_id", fileId: item.fileId }
-      : null,
-  );
+  const remoteSrc =
+    useMediaResolution(
+      !item.previewUrl && item.fileId && item.kind === "image"
+        ? item.fileId
+        : null,
+    ).resolution?.src ?? null;
   const previewSrc = item.previewUrl ?? remoteSrc;
 
   return (

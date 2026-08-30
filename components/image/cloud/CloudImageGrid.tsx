@@ -4,7 +4,7 @@ import React from "react";
 import { Check, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import type { CloudFileRecord } from "@/features/files/types";
 
 export type CloudImageViewMode = "cozy" | "compact";
@@ -80,7 +80,10 @@ export function CloudImageGrid({
               }
             >
               <MediaThumbnail
-                file={file}
+                mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+                fileName={file.fileName}
+                mimeType={file.mimeType}
+                thumbnailUrl={file.thumbnailUrl}
                 iconSize={iconSize}
                 className="absolute inset-0"
               />

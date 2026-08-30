@@ -32,8 +32,8 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { FileIcon } from "@ai-matrx/media/react";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { ShareLinkDialog, ShareLinkDialogBody } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
@@ -484,7 +484,7 @@ function MobileFileRow({
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/40">
             {showThumb ? (
-              <MediaThumbnail file={file} iconSize={18} className="h-full w-full" />
+              <MediaThumbnail mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }} fileName={file.fileName} mimeType={file.mimeType} thumbnailUrl={file.thumbnailUrl} iconSize={18} className="h-full w-full" />
             ) : (
               <FileIcon fileName={file.fileName} size={18} />
             )}
@@ -685,7 +685,7 @@ function CloudFileBrowserRow({
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/40">
             {showThumb ? (
-              <MediaThumbnail file={file} iconSize={18} className="h-full w-full" />
+              <MediaThumbnail mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }} fileName={file.fileName} mimeType={file.mimeType} thumbnailUrl={file.thumbnailUrl} iconSize={18} className="h-full w-full" />
             ) : (
               <FileIcon fileName={file.fileName} size={18} />
             )}

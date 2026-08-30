@@ -44,8 +44,8 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/features/files/utils/format";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { FileIcon } from "@ai-matrx/media/react";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { CloudFile } from "@/features/files/types";
 import type { DuplicateMatch } from "@/features/files/utils/upload-duplicate-detect";
 

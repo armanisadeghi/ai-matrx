@@ -10,7 +10,7 @@ import { memo } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FolderContextMenu } from "@/features/files/components/core/FolderContextMenu/FolderContextMenu";
 import {

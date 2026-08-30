@@ -33,7 +33,7 @@ import type { ModeShellProps } from "../shared/types";
 import { detectFaces } from "../../api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 
 const ANNOTATE_FOLDER = CloudFolders.IMAGES_ANNOTATED;
 

@@ -18,7 +18,7 @@ import React from "react";
 import { Copy } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { formatAbsoluteDate, formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
 import type { CloudFileRecord } from "@/features/files/types";
 import { toast } from "@/lib/toast";
@@ -75,7 +75,10 @@ export function CloudFileMetadataSheet({
 
           <div className="mt-4 aspect-square w-full overflow-hidden rounded-md bg-muted">
             <MediaThumbnail
-              file={file}
+              mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+              fileName={file.fileName}
+              mimeType={file.mimeType}
+              thumbnailUrl={file.thumbnailUrl}
               iconSize={48}
               className="h-full w-full"
             />

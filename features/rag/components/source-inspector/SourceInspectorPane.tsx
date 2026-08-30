@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFileNode } from "@/features/files/hooks/useFileNode";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";

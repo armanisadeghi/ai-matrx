@@ -54,7 +54,7 @@ whole page · **SKIP** non-record tool.
 | `surfaces/FileShareTab.tsx` | sharing config | **R / field group** | none | **reclassified**: not a list — it renders `Section`/`Row` field groups (Status, link config, Organization), no `.map()` over share links. Needs a record header pair built from LIVE form state, not list copy + ExportMenu. |
 | `core/PermissionsDialog` | permission grants | L | none | list copy + per-row `xs` |
 | `core/FilePreview/previewers/*` (12) | viewers | SKIP | — | no copyable record |
-| `core/FileUploadDropzone`, `UploadProgressList` | transient progress | SKIP | — | — |
+| `FileUploadDropzone`/`UploadProgressList` (now `@ai-matrx/media/react`) | transient progress | SKIP | — | — |
 
 ### `features/image-manager`
 

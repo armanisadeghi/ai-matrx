@@ -24,7 +24,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
 import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import type { CloudFileRecord } from "@/features/files/types";
 
 export interface CloudLibrarySheetProps {
@@ -166,7 +166,10 @@ export function CloudLibrarySheet({
                   className="relative aspect-square overflow-hidden bg-white/5 transition-opacity active:opacity-70"
                 >
                   <MediaThumbnail
-                    file={file}
+                    mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+                    fileName={file.fileName}
+                    mimeType={file.mimeType}
+                    thumbnailUrl={file.thumbnailUrl}
                     iconSize={28}
                     className="h-full w-full object-cover"
                   />

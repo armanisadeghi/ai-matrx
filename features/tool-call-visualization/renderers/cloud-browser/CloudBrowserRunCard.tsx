@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { InlineMediaRef } from "@ai-matrx/media/react";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@/features/files/handler/types";
 import type { MediaRef } from "@/features/files/types";
 import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
@@ -55,8 +55,7 @@ function ScreenshotPreview({
   index: number;
 }) {
   const openImageViewer = useOpenImageViewerWindow();
-  const source = mediaSource(media);
-  const resolvedUrl = useFileSrc(source);
+  const resolvedUrl = useMediaResolution(media).resolution?.src ?? null;
   const label = `Cloud Browser screenshot ${index + 1}`;
 
   return (

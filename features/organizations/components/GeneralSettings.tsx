@@ -14,7 +14,7 @@ import {
   type Organization,
   type OrgRole,
 } from "../types";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";

@@ -29,7 +29,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { MediaEmptyState } from "@/features/marketing/components/media/SnapshotMediaGallery";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import {
   fileIdToMediaRef,
   urlToMediaRef,

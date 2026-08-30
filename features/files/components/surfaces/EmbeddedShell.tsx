@@ -20,8 +20,9 @@ import {
   selectAllFoldersMap,
 } from "@/features/files/redux/selectors";
 import { FileList } from "@/features/files/components/core/FileList/FileList";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileUploadDropzone } from "@ai-matrx/media/react";
+import { DropzoneAcquisitionActions } from "@/features/files/components/core/FileAcquisition/DropzoneAcquisitionActions";
+import { FileIcon } from "@ai-matrx/media/react";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 
 export interface EmbeddedShellProps {
@@ -75,9 +76,12 @@ export function EmbeddedShell({
       >
         {showDropzone ? (
           <FileUploadDropzone
-            parentFolderId={parentFolderId}
+            uploadOptions={{ parentFolderId }}
             mode="inline"
             className="m-2"
+            actions={
+              <DropzoneAcquisitionActions uploadOptions={{ parentFolderId }} />
+            }
           />
         ) : null}
         <FileList

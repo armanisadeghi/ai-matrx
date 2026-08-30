@@ -23,8 +23,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { useMediaResolution } from "@ai-matrx/media/core";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { pickGridLayout } from "./grid-layout";
 import type { CloudFile } from "@/features/files/types";
 
@@ -37,31 +37,6 @@ export interface ViewerFile {
   publicUrl: string | null;
   metadata: Record<string, unknown> | null;
   visibility: CloudFile["visibility"];
-}
-
-function toMediaThumbnailFile(
-  file: ViewerFile,
-): Pick<
-  CloudFile,
-  | "id"
-  | "fileName"
-  | "mimeType"
-  | "fileSize"
-  | "metadata"
-  | "publicUrl"
-  | "thumbnailUrl"
-  | "visibility"
-> {
-  return {
-    id: file.id,
-    fileName: file.fileName,
-    mimeType: file.mimeType,
-    fileSize: file.fileSize,
-    metadata: file.metadata === null ? {} : file.metadata,
-    publicUrl: file.publicUrl,
-    thumbnailUrl: file.thumbnailUrl,
-    visibility: file.visibility,
-  };
 }
 
 interface Props {
@@ -225,7 +200,10 @@ function GridTile({
       )}
     >
       <MediaThumbnail
-        file={toMediaThumbnailFile(file)}
+        mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+        fileName={file.fileName}
+        mimeType={file.mimeType}
+        thumbnailUrl={file.thumbnailUrl}
         className="absolute inset-0 h-full w-full"
       />
     </button>
@@ -247,7 +225,8 @@ function FocusView({
 }) {
   const file = files[index];
   const isImage = file.mimeType.startsWith("image/");
-  const url = useFileSrc(isImage ? { kind: "file_id", fileId: file.id } : null);
+  const url =
+    useMediaResolution(isImage ? file.id : null).resolution?.src ?? null;
 
   return (
     <div className="relative flex-1 flex items-center justify-center bg-background">
@@ -264,7 +243,10 @@ function FocusView({
         )
       ) : (
         <MediaThumbnail
-          file={toMediaThumbnailFile(file)}
+          mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+          fileName={file.fileName}
+          mimeType={file.mimeType}
+          thumbnailUrl={file.thumbnailUrl}
           className="h-full max-h-[80dvh] aspect-square"
         />
       )}

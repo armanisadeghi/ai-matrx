@@ -38,7 +38,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { FileIcon } from "@ai-matrx/media/react";
 
 // ---------------------------------------------------------------------------
 // Declarative component

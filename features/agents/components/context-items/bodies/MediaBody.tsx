@@ -8,8 +8,8 @@
  */
 
 import { ExternalLink } from "lucide-react";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { InlineMediaRef } from "@ai-matrx/media/react";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@/features/files/handler/types";
 import {
   Tooltip,
@@ -39,7 +39,7 @@ function toFileSource(
 export function MediaBody({ item }: ContextItemBodyProps) {
   const { fileId, fileUrl } = item.refs;
   const ref = fileId ?? fileUrl ?? null;
-  const resolvedSrc = useFileSrc(toFileSource(fileId, fileUrl));
+  const resolvedSrc = useMediaResolution(ref).resolution?.src ?? null;
 
   if (item.blockType === "youtube_video" && fileUrl) {
     const id = youtubeId(fileUrl);
@@ -103,7 +103,8 @@ export function MediaBody({ item }: ContextItemBodyProps) {
 
 export function MediaFooter({ item }: ContextItemBodyProps) {
   const { fileId, fileUrl } = item.refs;
-  const src = useFileSrc(toFileSource(fileId, fileUrl));
+  const src =
+    useMediaResolution(fileId ?? fileUrl ?? null).resolution?.src ?? null;
   const href = fileUrl ?? src;
   if (!href) return null;
   return (

@@ -24,7 +24,7 @@ import {
   Zap,
 } from "lucide-react";
 import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
-import type { FileUploadDropzoneActions } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import type { FileUploadDropzoneActions } from "@ai-matrx/media/react";
 
 export interface OnboardingEmptyStateProps {
   acquisition: FileUploadDropzoneActions;

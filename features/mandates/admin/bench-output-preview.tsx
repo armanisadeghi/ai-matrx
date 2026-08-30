@@ -10,7 +10,7 @@
  * be dumped into the DOM.
  */
 
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 
 const MAX_PREVIEW_CHARS = 3200;

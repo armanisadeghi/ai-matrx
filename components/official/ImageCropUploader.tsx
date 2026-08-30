@@ -42,7 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Asset, AssetPreset, Visibility } from "@/features/files/types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { getAssetForFile } from "@/features/files/api/assets";
 import { extractErrorMessage } from "@/utils/errors";

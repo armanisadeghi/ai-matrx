@@ -9,7 +9,7 @@ import type { PodcastAudioPlayerHandle } from './PodcastAudioPlayer';
 import { PodcastAudioPlayer } from './PodcastAudioPlayer';
 import { EpisodeShowNotes } from './EpisodeShowNotes';
 import { useShare } from "@/features/sharing/hooks/useShare";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ComingSoonBadge } from '@/components/coming-soon/ComingSoonBadge';
 
 interface PodcastEpisodePageProps {

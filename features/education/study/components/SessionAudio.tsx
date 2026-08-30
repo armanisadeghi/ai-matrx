@@ -8,7 +8,7 @@
 // mounted with native controls so iOS plays on the user's tap (no off-gesture
 // .play()). Mode-agnostic — used by any study mode's session views.
 
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
 export function SessionAudio({
   fileId,
@@ -17,7 +17,7 @@ export function SessionAudio({
   fileId: string | null | undefined;
   className?: string;
 }) {
-  const src = useFileSrc(fileId ? { kind: "file_id", fileId } : null);
+  const src = useMediaResolution(fileId ?? null).resolution?.src ?? null;
   if (!fileId) return null;
   return (
     <audio

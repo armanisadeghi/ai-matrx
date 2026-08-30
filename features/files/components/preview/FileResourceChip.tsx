@@ -11,7 +11,7 @@
  *
  * Behaviour:
  *   - Renders the file's representative icon / thumbnail via the central
- *     [`MediaThumbnail`](../core/MediaThumbnail/MediaThumbnail.tsx) — so
+ *     `MediaThumbnail` (`@ai-matrx/media/react`) — so
  *     image / video files get a real first-frame thumb, everything else
  *     gets the registry's category icon.
  *   - On hover (desktop only, via Radix `HoverCard`), peeks the file:
@@ -35,7 +35,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
-import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
+import { MediaThumbnail } from "@ai-matrx/media/react";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import {
   HoverCard,
@@ -112,7 +112,10 @@ export function FileResourceChip({
       {/* Thumb: real image for image/video, category icon otherwise.
           Container forces a square so MediaThumbnail's aspect math is happy. */}
       <MediaThumbnail
-        file={thumbnailFile}
+        mediaRef={{ file_id: thumbnailFile.id, mime_type: thumbnailFile.mimeType ?? undefined }}
+        fileName={thumbnailFile.fileName}
+        mimeType={thumbnailFile.mimeType}
+        thumbnailUrl={thumbnailFile.thumbnailUrl}
         iconSize={thumbSizePx}
         className={cn("h-5 w-5", "shrink-0 rounded-sm")}
         rounded="rounded-sm"
@@ -191,7 +194,10 @@ export function FileResourceChip({
               displayName={details.displayName}
               thumb={
                 <MediaThumbnail
-                  file={thumbnailFile}
+                  mediaRef={{ file_id: thumbnailFile.id, mime_type: thumbnailFile.mimeType ?? undefined }}
+                  fileName={thumbnailFile.fileName}
+                  mimeType={thumbnailFile.mimeType}
+                  thumbnailUrl={thumbnailFile.thumbnailUrl}
                   iconSize={56}
                   className="aspect-[4/3] w-full"
                   rounded="rounded-md"

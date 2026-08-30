@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { OrganizationWithRole } from "../types";
 import { cn } from "@/lib/utils";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {

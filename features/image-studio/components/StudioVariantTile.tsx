@@ -21,7 +21,7 @@ import type { ImageFit, ImagePosition, ProcessedVariant } from "../types";
 import { getPresetById } from "../presets";
 import { formatBytes, formatDimensions } from "../utils/format-bytes";
 import { downloadSingleVariant } from "../utils/download-bundle";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 
 function fitIcon(fit: ImageFit): React.ReactNode {

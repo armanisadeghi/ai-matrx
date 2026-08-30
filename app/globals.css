@@ -3,6 +3,7 @@
 @import "tailwindcss";
 @source "../node_modules/@ai-matrx/design-system/dist";
 @source "../node_modules/@ai-matrx/capture/dist";
+@source "../node_modules/@ai-matrx/media/dist";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
