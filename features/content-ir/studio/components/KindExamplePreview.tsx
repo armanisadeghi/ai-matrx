@@ -2,11 +2,24 @@
 
 /**
  * KindExamplePreview — the shared example-preview engine: cycle a kind's
- * `kind_example` rows and render the current one through the REAL production
- * path via `KindInstanceRender`. Extracted from the admin KindPreviewTab so
- * the user studio and the admin detail page consume ONE engine; callers own
- * only the empty-state copy (admin speaks R4/kind_example, the studio speaks
- * user language).
+ * `kind_example` rows and render the current one through EVERY real render
+ * path (`KindRenderPaths`). One engine for the user studio and the admin
+ * detail page; callers own only the empty-state copy.
+ *
+ * 🚨 IT USED TO CHEAT (fixed 2026-08-29). This component handed the stored
+ * example straight to `KindInstanceRender` as a JavaScript object: no text was
+ * produced, nothing had to recognize the shape, and no routing decision was
+ * made. It was therefore structurally incapable of failing the way production
+ * fails — and on 2026-08-29 it showed a flawless
+ * `electronics_intake_analysis` while that same kind rendered as a key/value
+ * dump in every chat. A preview that cannot fail is not a preview.
+ *
+ * The direct-object render is still HERE, because panels and instance pages
+ * genuinely use it — but as one honestly-labelled path among the streaming
+ * ones, never as "the preview".
+ *
+ * The render TEMPLATE moved out (Arman: it does not belong under Preview). It
+ * lives on its own tab beside the schema.
  */
 
 import { useState, type ReactNode } from "react";
@@ -19,9 +32,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import KindInstanceRender, {
-  kindIsRoutable,
-} from "@/features/content-ir/studio/components/KindInstanceRender";
+import KindRenderPaths from "@/features/content-ir/render-paths/KindRenderPaths";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import {
@@ -141,66 +152,12 @@ export default function KindExamplePreview({
         </span>
       </div>
 
-      {/* The real render path */}
-      <KindInstanceRender kind={kind} value={current.data} />
+      {/* Every real render path, one mode each. */}
+      <KindRenderPaths
+        kind={kind}
+        value={current.data as Record<string, unknown>}
+      />
 
-      {/* The render template — one-click copyable. Stored examples now CARRY
-          their `__kind` (KINDS_EVERYWHERE_PLAN §4.2), so for a well-formed row
-          this is the row itself, guaranteed marker-first; it still repairs a
-          legacy value that lacks one. Paste it into an agent prompt or a chat
-          to see the component render. */}
-      <div className="rounded-md border border-border bg-card">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-          <span className="text-xs font-medium text-foreground">
-            Render template
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            the emit shape — leads with{" "}
-            <code className="rounded bg-muted px-1 py-0.5">&quot;__kind&quot;</code>
-          </span>
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => copy(kind, current.data, "json")}
-              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              {copied === "json" ? (
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              Copy JSON
-            </button>
-            <button
-              type="button"
-              onClick={() => copy(kind, current.data, "fence")}
-              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              {copied === "fence" ? (
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              Copy as ```json block
-            </button>
-          </div>
-        </div>
-        <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground">
-          {emitPayloadJson(kind, current.data)}
-        </pre>
-      </div>
-
-      {showPathFootnote && (
-        <p className="text-[11px] text-muted-foreground">
-          Rendered through the production path: complete envelope
-          (envelopeFromCompleteValue) on metadata.__ir → BlockRenderer →
-          applyIrKindRoute
-          {routable && definition?.legacyBlockType
-            ? ` → "${definition.legacyBlockType}"`
-            : ""}
-          .
-        </p>
-      )}
     </div>
   );
 }

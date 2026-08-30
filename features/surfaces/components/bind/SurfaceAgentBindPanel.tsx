@@ -13,11 +13,12 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, Link2 } from "lucide-react";
+import { ArrowLeft, Loader2, Link2, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   AGENT_SCOPES,
@@ -36,6 +37,7 @@ import { BindingSuggestionsTab } from "@/features/surfaces/components/bind/Bindi
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
 import {
@@ -114,6 +116,8 @@ export function SurfaceAgentBindPanel({
     currentUserId ?? undefined,
   );
   const [mappings, setMappings] = useState<ValueMappingMap>({});
+  // THE AUTO-RUN INVERSION (surface_binding payload v3, THE-MODEL law 7).
+  const [autoRun, setAutoRun] = useState(false);
   // Write-policy overrides accepted from the AI proposal. Null = untouched,
   // so a plain manual bind keeps carrying the prior tier's stored policies.
   const [acceptedPolicies, setAcceptedPolicies] =
@@ -209,6 +213,7 @@ export function SurfaceAgentBindPanel({
       null;
     if (existing) {
       setMappings(cloneMappings(existing.valueMappings));
+      setAutoRun(existing.autoRun);
       // Editing an existing binding — open on the editor, not the suggester.
       setMapTab("manual");
       setSeededForAgent(agentId);
@@ -220,8 +225,10 @@ export function SurfaceAgentBindPanel({
     );
     if (defaultBinding?.valueMappings) {
       setMappings(cloneMappings(defaultBinding.valueMappings));
+      setAutoRun(defaultBinding.autoRun);
     } else {
       setMappings({});
+      setAutoRun(false);
     }
     setSeededForAgent(agentId);
   }, [
@@ -247,12 +254,29 @@ export function SurfaceAgentBindPanel({
     return buildBindingTargets(agent);
   }, [agent]);
 
+  // THE AUTO-RUN INVERSION. Auto-run is only OFFERABLE when the binding is
+  // fully mapped — law 7's "nothing to ask" is a fact about the mapping, not a
+  // preference, so the control follows the mapping live as the user edits it.
+  const autoRunEligibility = useMemo(
+    () => evaluateBindingAutoRun(targets, mappings),
+    [targets, mappings],
+  );
+  const autoRunOn = autoRun && autoRunEligibility.eligible;
+  const autoRunSentence = autoRunEligibility.eligible
+    ? autoRunOn
+      ? "Runs instantly — every input is mapped, nothing to ask"
+      : "Waits for you to press Run"
+    : autoRunEligibility.reason === "prompts_user"
+      ? `Waits for you to press Run — this mapping asks for ${autoRunEligibility.blockers.join(", ")}`
+      : `Waits for you to press Run — ${autoRunEligibility.blockers.join(", ")} ${autoRunEligibility.blockers.length === 1 ? "is" : "are"} not mapped yet`;
+
   const displaySurface = getSurfaceDisplayLabel(surfaceName);
 
   const handleSelectAgent = (id: string) => {
     setAgentId(id);
     setSeededForAgent(null);
     setMappings({});
+    setAutoRun(false);
     setAcceptedPolicies(null);
     setMapTab("suggest");
   };
@@ -261,6 +285,7 @@ export function SurfaceAgentBindPanel({
     setAgentId(null);
     setSeededForAgent(null);
     setMappings({});
+    setAutoRun(false);
     setAcceptedPolicies(null);
     setMapTab("suggest");
   };
@@ -324,6 +349,10 @@ export function SurfaceAgentBindPanel({
         writePolicies: acceptedPolicies
           ? { ...priorAtTier?.writePolicies, ...acceptedPolicies }
           : priorAtTier?.writePolicies,
+        // Only ever stored when the mapping is complete. An incomplete
+        // binding cannot promise "nothing to ask", so it must not carry the
+        // promise — a stale true would be silently refused at launch.
+        autoRun: autoRunEligibility.eligible && autoRun,
         accessOrgId,
       });
       toast.success(`Bound to ${displaySurface}`);
@@ -509,6 +538,32 @@ export function SurfaceAgentBindPanel({
               />
             </>
           )}
+        </div>
+
+        <div
+          className={cn(
+            "flex items-start gap-3 rounded-md border border-border px-3 py-2.5",
+            !autoRunEligibility.eligible && "opacity-60",
+          )}
+        >
+          <Zap
+            className={cn(
+              "mt-0.5 h-3.5 w-3.5 shrink-0",
+              autoRunOn ? "text-primary" : "text-muted-foreground",
+            )}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-foreground">Run instantly</p>
+            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+              {autoRunSentence}
+            </p>
+          </div>
+          <Switch
+            checked={autoRunOn}
+            onCheckedChange={setAutoRun}
+            disabled={busy || !agentReady || !autoRunEligibility.eligible}
+            aria-label="Run instantly"
+          />
         </div>
       </div>
 
