@@ -189,6 +189,82 @@
       },
       "previousEventHash": "49db71a292e21b6d6c88ae334e32493429b7735532318793e9f99f91a206191e",
       "eventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679"
+    },
+    {
+      "sequence": 13,
+      "state": "certifying",
+      "at": "2026-08-30T14:39:39.616Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Resumed corrected candidate after canonical in-app Browser proof completed",
+      "evidence": [
+        "All 18 screenshots exist under /tmp/p11-visual-proof.pxwvuC for Marketing redirect, Workflow Bake-off, and Scanner at 1280x800, 800x800, and 375x812 in light and dark",
+        "Fresh per-route tabs after canonical preview recovery reported zero console errors",
+        "Marketing /marketing/pr now redirects to /marketing/brands due a post-candidate route change; Bake-off and Scanner paths remain unchanged from the candidate"
+      ],
+      "previousEventHash": "9060bb25c28bc21c59e7ac261df0925edc74c79d86d6ea82a6e8bbd60e108679",
+      "eventHash": "43cd0186b1a3ef5084a7556efbd0840937504300b946f4cb338cfce3151d0f7c"
+    },
+    {
+      "sequence": 14,
+      "state": "certified",
+      "at": "2026-08-30T14:39:40.239Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "CERTIFIED corrected candidate after independent inspection of the complete 18-state visual matrix",
+      "evidence": [
+        "No concrete candidate-caused visual defect found across Marketing, Workflow Bake-off, or Scanner",
+        "Preview recovery cleared a 107 GB persistent cache after 72.3 GB RSS unresponsiveness; this was infrastructure evidence and no valid work was reverted"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "4b06080808465764e280fbfef3cd895abb093c24",
+        "certifierTaskId": "/root/p11_certifier_4b060808",
+        "checks": [
+          "All 18 distinct screenshots have the declared desktop, intermediate, or mobile dimensions and cover both light and dark",
+          "One shell-owned header, bounded center content, full-height body, correct top clearance, and no header/body or avatar/action collision on every surface",
+          "No page-level horizontal overflow; Marketing narrow-table overflow remains contained within its table surface",
+          "Scanner Camera, Photos, Files, and Save remain visible and reachable at every width",
+          "Fresh per-route tabs reported zero console errors on all three routes",
+          "Static exact-candidate checks previously passed type-check, strict header detector, strict scroll-chain, doctrine, and diff-check"
+        ]
+      },
+      "previousEventHash": "43cd0186b1a3ef5084a7556efbd0840937504300b946f4cb338cfce3151d0f7c",
+      "eventHash": "852472e8cdf491a97a27250dc05f1cdb1755a652514f7324066137d32fc4b3ca"
+    },
+    {
+      "sequence": 15,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:40:23.807Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified corrected candidate queued for historical delivery reconciliation",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P11/2026-08-29T161426Z"
+      ],
+      "delivery": {
+        "candidateSha": "4b06080808465764e280fbfef3cd895abb093c24",
+        "preservedRef": "refs/heads/patrol-runs/P11/2026-08-29T161426Z"
+      },
+      "previousEventHash": "852472e8cdf491a97a27250dc05f1cdb1755a652514f7324066137d32fc4b3ca",
+      "eventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb"
+    },
+    {
+      "sequence": 16,
+      "state": "delivered",
+      "at": "2026-08-30T14:40:32.214Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Reconciled certified corrected candidate with its existing main integration and first containing release",
+      "evidence": [
+        "Candidate is an ancestor of integration merge a6e0cc9b34 and current origin/main",
+        "v0.4.1449 is the first release containing corrected candidate 4b060808",
+        "Historical release-before-certification escape remains preserved in append-only events and was not rewritten"
+      ],
+      "delivery": {
+        "candidateSha": "4b06080808465764e280fbfef3cd895abb093c24",
+        "preservedRef": "refs/heads/patrol-runs/P11/2026-08-29T161426Z",
+        "integratedSha": "a6e0cc9b340cb7e8ccb742235d78625c0aeb8e56",
+        "release": "v0.4.1449"
+      },
+      "previousEventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb",
+      "eventHash": "60a489c6aa36279a68db02c179f9f6359bca864163749271d02ffb70574ca015"
     }
   ]
 }

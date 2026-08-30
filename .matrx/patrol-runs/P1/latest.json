@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260830T141853Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T14:37:27.869Z",
-  "summary": "Certified P1 wave integrated to origin/main; serialized fleet release remains queued.",
+  "state": "closed",
+  "updatedAt": "2026-08-30T14:40:15.256Z",
+  "summary": "Closed certified HIGH repair wave after origin/main integration; next repair wave remains queued from 54-item scoreboard.",
   "source": "20260830T141853Z.json",
-  "eventHash": "17c2d75a552a64c8cd5cb557ac54e475866db47b072021f074172de14b128213"
+  "eventHash": "38ff66ab86f27fe4b6db748d73e376488db11eeee6896b9ee77c6f451f40ff65"
 }
