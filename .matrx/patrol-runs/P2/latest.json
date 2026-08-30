@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T142407Z",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:56:30.086Z",
-  "summary": "CERTIFIED replacement: restored sites adoption is byte-identical to the previously certified owned batch.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:57:16.663Z",
+  "summary": "Recertified replacement is integrated on origin/main and queued for the serialized release lane.",
   "source": "20260830T142407Z.json",
-  "eventHash": "e09f8675df347ca4bba825a890e1c7bc65b1abe28367ba32cb398be86735237f"
+  "eventHash": "1478f6aea9a0b671a532fd47d55d112948e2717b4113a5b3050dda8de4e2f591"
 }
