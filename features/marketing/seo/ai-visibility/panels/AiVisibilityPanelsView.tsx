@@ -17,6 +17,7 @@
 // panel's health opens its own run history.
 
 import { useCallback, useEffect, useState } from "react";
+import { humanizeBackendError } from "@/utils/errors";
 import Link from "next/link";
 import {
   Activity,
