@@ -14,19 +14,22 @@ the call by the stated rule and logs it; never asks. **ARMAN** = the only
 class that goes to him (product semantics) — logged as a chip/review row, the
 rest of the check continues.
 
-**Verdicts** per section: `pass` · `fixed` · `na` (+ why) · `deferred-visual`
-(code is done and statically checked; the eyes-on step could not run — say
-exactly what to look at) · `arman` (+ chip id) · `blocked` (+ what blocks).
-A headless agent uses `deferred-visual` and keeps going; it never fakes an
-eyes-on verdict and never skips the section silently. The ledger records
-`verificationDepth: "static" | "live"` per run so "green" never overstates.
+**Worker verdicts** per section: `pass` · `fixed` · `na` (+ why) ·
+`deferred-visual` (code is done and statically checked; name the missing
+eyes-on step) · `arman` (+ chip id) · `blocked` (+ what blocks). A headless
+worker uses `deferred-visual` and keeps going, then returns `retry`; it never
+completes or writes a green ledger row. **Certification requires an independent
+verifier, fresh desktop/mobile x light/dark proof, and only
+`pass`/`fixed`/`na`.** Static or deferred evidence is never certification.
 
 **Overlay surfaces** (a manifest with `overlayId`, not `urlPattern`) are
 first-class: S8 and S14 take their overlay branch, everything else applies
 unchanged. The route wording is the default, not the assumption.
 
-`CHECKLIST_VERSION = 2` (bump when a section is added/removed; the ledger
-stores which version a surface passed).
+`CHECKLIST_VERSION = 2` (bump when a section is added/removed; every candidate
+and certification stores it). Material acceptance-rule changes also bump
+`SURFACE_CERTIFICATION_RULE_VERSION` in `../surface-certification-loop/SKILL.md`
+and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 
 ---
 
@@ -194,7 +197,10 @@ stores which version a surface passed).
 ## S18 · Docs, review, ledger — `context-docs` + `agent-review-queue` + this skill
 
 - MUST: the feature's `FEATURE.md` + Change Log updated in the same commit; admin map (`/[feature]/admin`) lists every new route/panel; anything Arman must see registered via `agent-review-queue`; tangential finds → `spawn_task` chips; unrelated defects → `FOUND_DEFECTS.md`; patrol sightings logged.
-- MUST: the check is LOGGED on the surface row (`ui.ui_surface.last_checked_at / last_checked_by / last_check`) with per-section results, `CHECKLIST_VERSION`, commit sha — see the skill's "Log it" step.
+- MUST: the worker submits a durable candidate with every S1–S18 result,
+  evidence refs, checklist/rule versions, commit, and fresh live proof. Only an
+  independent verifier logs final `ui.ui_surface.last_checked_at /
+  last_checked_by / last_check` — see the skill's submission step.
 - MUST: commit as you go, push, tree clean; `pnpm type-check` clean for your files.
 
 ---
