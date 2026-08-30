@@ -34,6 +34,7 @@ import {
   unsuppressFinding,
 } from "@/features/marketing/data/finding-mutations";
 import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /** The slice of a finding every action surface already has in hand. */
 export type FindingActionRow = Pick<
@@ -46,8 +47,8 @@ export type FindingActionRow = Pick<
 
 export interface FindingActionContext {
   siteId: string;
-  /** `/marketing/brands/[brandId]/sites/[siteId]` — every door hangs off it. */
-  sitePath: string;
+  /** The brand that owns the site — every door is built by `marketingRoutes`. */
+  brandId: string | null;
   /** Re-read after a write lands. */
   onDone: () => void | Promise<void>;
   /** Opens the reason dialog for THIS finding (a reason is mandatory). */
@@ -84,14 +85,14 @@ export function buildFindingMenu(
             id: "open",
             label: "Open finding",
             icon: FileText,
-            href: `${ctx.sitePath}/findings/${row.id}`,
+            href: marketingRoutes.site(ctx.brandId, ctx.siteId, `/findings/${row.id}`),
           },
           {
             kind: "link",
             id: "open-new-tab",
             label: "Open in new tab",
             icon: ExternalLink,
-            href: `${ctx.sitePath}/findings/${row.id}`,
+            href: marketingRoutes.site(ctx.brandId, ctx.siteId, `/findings/${row.id}`),
             target: "_blank",
           },
           {
@@ -99,7 +100,7 @@ export function buildFindingMenu(
             id: "page-workspace",
             label: "Page workspace",
             icon: ListChecks,
-            href: `${ctx.sitePath}/pages/${row.page_id}`,
+            href: marketingRoutes.sitePage(ctx.brandId, ctx.siteId, row.page_id ?? ""),
             hidden: !row.page_id,
           },
           {
