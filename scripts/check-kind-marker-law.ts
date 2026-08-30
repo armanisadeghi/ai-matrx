@@ -146,6 +146,7 @@ function scan(): string[] {
       ROOT,
       rel.replace(/^app\/\(([^)]+)\)\//, "app/_$1_build_excluded/"),
     );
+    if (!existsSync(livePath) && !existsSync(parkedPath)) continue;
     const sourcePath = existsSync(livePath) ? livePath : parkedPath;
     const source = readFileSync(sourcePath, "utf8");
     if (!source.includes("__kind") && !source.includes("KIND_KEY")) continue;

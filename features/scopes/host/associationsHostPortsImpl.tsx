@@ -3,22 +3,32 @@
 // The HEAVY half of the `@ai-matrx/associations` UI-port bindings — everything
 // here parses `WindowPanel`, which must NEVER sit in a route/boot bundle
 // (features/window-panels FEATURE.md → Bundle invariant). `AssociationsHost`
-// reaches this module through ONE `next/dynamic({ ssr: false })` edge per
-// exported component; the chunk loads only when an association window or the
-// file picker override actually renders.
+// reaches this module through the PACKAGE's own lazy seam
+// (`lazyWindowShell` / `lazyPickerOverride`, @ai-matrx/associations 0.6.0);
+// the chunk loads only when an association window or the file picker override
+// actually renders. There is no hand-written `next/dynamic` glue here or
+// there any more — the split is the package's job.
 
 "use client";
 
 import { useId, type ReactNode } from "react";
-import type { AssociationPickerProps } from "@ai-matrx/associations";
+import {
+  useAssociationPickerBridge,
+  type AssociationPickerProps,
+} from "@ai-matrx/associations/react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { FilePickerWindow } from "@/features/resource-manager/resource-picker/FilePickerWindow";
-import { toast } from "@/lib/toast";
 
 /**
- * The `windowShell.Window` binding — the exact non-blocking shell the
- * pre-extraction `AssociationWindow` mounted: draggable/resizable WindowPanel
- * on desktop, non-modal card on mobile, page behind stays interactive.
+ * The `windowShell.Window` binding.
+ *
+ * C22 note — why this port is bound at all when the package ships a real
+ * draggable window (`DefaultWindowShell`, 0.6.0): `WindowPanel` is this app's
+ * WINDOW MANAGER, not merely a window. It docks to the tray, persists across
+ * reloads through the workspace store, and shares one z-order with every
+ * other panel the user has open. That is app identity the package cannot own.
+ * Everything else about the surface — chrome, drag, resize, clamping — the
+ * package would happily provide; only the manager integration is ours.
  */
 export function AssociationsWindowShellImpl({
   id,
@@ -59,11 +69,24 @@ export function AssociationsWindowShellImpl({
 /**
  * The per-token picker override for `file` — files never open the generic
  * candidate sheet: the ONE canonical file picker in a non-blocking draggable
- * window (upload + pick, toggling attach/detach). Registered via the
- * package's `pickerOverrides` port; behavior lifted verbatim from the
- * pre-extraction `AssociationPicker` file branch.
+ * window (upload + pick, toggling attach/detach).
+ *
+ * C22 note: this binding injects the canonical picker COMPONENT and nothing
+ * else. Every failure semantic — partial batches, refused attaches, the
+ * created-but-unattached report and where the file actually lives, the
+ * errorSink routing — lives in the package's `useAssociationPickerBridge`
+ * (0.6.0). It used to be ~50 lines of hand-written loops and toast copy here,
+ * which is exactly the massaging C22 bans.
  */
 export function FileAssociationPickerImpl(props: AssociationPickerProps) {
+  const bridge = useAssociationPickerBridge(props, {
+    itemNoun: "file",
+    createdLocationLabel: "your Files",
+    openCreatedLocation: {
+      label: "Open Files",
+      onClick: () => window.open("/files", "_blank", "noopener,noreferrer"),
+    },
+  });
   return (
     <FilePickerWindow
       open={props.open}
@@ -73,56 +96,15 @@ export function FileAssociationPickerImpl(props: AssociationPickerProps) {
         props.containerLabel ? `Add to ${props.containerLabel}` : "Add files"
       }
       onUpload={async (files) => {
-        const failures: string[] = [];
-        for (const file of files) {
-          try {
-            const result = await props.onAttach(file.fileId, file.name);
-            if (!result.ok) failures.push(file.name);
-          } catch (error: unknown) {
-            console.error(
-              "[AssociationPicker] uploaded file association failed",
-              { fileId: file.fileId, error },
-            );
-            failures.push(file.name);
-          }
-        }
-        if (failures.length > 0) {
-          toast.error(
-            `${failures.length} uploaded ${failures.length === 1 ? "file was" : "files were"} not added`,
-            {
-              description:
-                "The upload is safe in Files. You can retry the association here.",
-              action: {
-                label: "Open Files",
-                onClick: () =>
-                  window.open("/files", "_blank", "noopener,noreferrer"),
-              },
-            },
-          );
-        }
+        await bridge.attachMany(
+          files.map((file) => ({ id: file.fileId, name: file.name })),
+        );
       }}
       onPick={async (selection) => {
-        // A silent no-op pick is the QA F1 bug class (feedback 35d311a9): the
-        // attach RPC can refuse (403) and the row would just look inert.
-        // Scream exactly like the package's generic candidate list does.
-        const name = selection.details.filename || "File";
-        if (props.attachedIds.has(selection.fileId)) {
-          const res = await props.onDetach(selection.fileId);
-          if (!res.ok) {
-            toast.error(
-              `Couldn't detach "${name}"` +
-                (res.error ? `: ${res.error}` : ""),
-            );
-          }
-        } else {
-          const res = await props.onAttach(selection.fileId, name);
-          if (!res.ok) {
-            toast.error(
-              `Couldn't attach "${name}"` +
-                (res.error ? `: ${res.error}` : ""),
-            );
-          }
-        }
+        await bridge.toggle({
+          id: selection.fileId,
+          name: selection.details.filename || "File",
+        });
       }}
     />
   );

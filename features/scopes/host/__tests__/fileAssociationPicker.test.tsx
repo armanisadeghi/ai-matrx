@@ -6,11 +6,19 @@
  * fixed in migrations/entity_access_attrs_org_scoped_ownerless_tables.sql),
  * and this host glue swallowed the failure, so picking a file looked simply
  * inert: no attach, no toast, no console error.
+ *
+ * Since @ai-matrx/associations 0.6.0 the failure semantics live in the
+ * package (`useAssociationPickerBridge`) and the scream arrives through the
+ * bound `notifier` port — which this app binds to `@/lib/toast`. The
+ * behaviour under test is unchanged; the test now renders the override
+ * inside a real provider, exactly as `AssociationsHost` mounts it.
  */
 
-import React, { act } from "react";
+import React, { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { AssociationPickerProps } from "@ai-matrx/associations";
+import { createAssociationsStore } from "@ai-matrx/associations/core";
+import { AssociationsProvider } from "@ai-matrx/associations/react";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -56,6 +64,33 @@ jest.mock("@/features/window-panels/WindowPanel", () => ({
 
 import { FileAssociationPickerImpl } from "../associationsHostPortsImpl";
 
+/**
+ * The provider `AssociationsHost` mounts, minus app identity: a dataSource
+ * the picker never reaches (it only calls the injected onAttach/onDetach)
+ * and the notifier port bound to `@/lib/toast`, the way the real host binds
+ * it — so a scream here is the same scream a user would see.
+ */
+const store = createAssociationsStore({
+  dataSource: { rpc: async () => ({ data: null, error: null }) },
+  identity: { requireUserId: () => "00000000-0000-0000-0000-000000000001" },
+  errorSink: () => {},
+});
+
+function Host({ children }: { children: ReactNode }) {
+  return (
+    <AssociationsProvider
+      store={store}
+      probeSchema={false}
+      notifier={{
+        success: (msg: string) => toastSuccess(msg),
+        error: (msg: string, opts?: unknown) => toastError(msg, opts),
+      }}
+    >
+      {children}
+    </AssociationsProvider>
+  );
+}
+
 const selection: PickSelection = {
   fileId: "7a10f668-358d-4e43-ad97-d605789e475d",
   url: "https://example.test/f",
@@ -100,7 +135,11 @@ describe("FileAssociationPickerImpl pick routing (QA F1)", () => {
   it("routes a pick of an unattached file to onAttach and stays silent on success", async () => {
     const props = makeProps();
     act(() => {
-      root.render(<FileAssociationPickerImpl {...props} />);
+      root.render(
+        <Host>
+          <FileAssociationPickerImpl {...props} />
+        </Host>,
+      );
     });
     expect(capturedOnPick).toBeTruthy();
 
@@ -125,7 +164,11 @@ describe("FileAssociationPickerImpl pick routing (QA F1)", () => {
       })),
     });
     act(() => {
-      root.render(<FileAssociationPickerImpl {...props} />);
+      root.render(
+        <Host>
+          <FileAssociationPickerImpl {...props} />
+        </Host>,
+      );
     });
 
     await act(async () => {
@@ -148,7 +191,11 @@ describe("FileAssociationPickerImpl pick routing (QA F1)", () => {
       })),
     });
     act(() => {
-      root.render(<FileAssociationPickerImpl {...props} />);
+      root.render(
+        <Host>
+          <FileAssociationPickerImpl {...props} />
+        </Host>,
+      );
     });
 
     await act(async () => {
