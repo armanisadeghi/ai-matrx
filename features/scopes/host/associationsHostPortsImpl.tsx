@@ -102,13 +102,26 @@ export function FileAssociationPickerImpl(props: AssociationPickerProps) {
         }
       }}
       onPick={async (selection) => {
+        // A silent no-op pick is the QA F1 bug class (feedback 35d311a9): the
+        // attach RPC can refuse (403) and the row would just look inert.
+        // Scream exactly like the package's generic candidate list does.
+        const name = selection.details.filename || "File";
         if (props.attachedIds.has(selection.fileId)) {
-          await props.onDetach(selection.fileId);
+          const res = await props.onDetach(selection.fileId);
+          if (!res.ok) {
+            toast.error(
+              `Couldn't detach "${name}"` +
+                (res.error ? `: ${res.error}` : ""),
+            );
+          }
         } else {
-          await props.onAttach(
-            selection.fileId,
-            selection.details.filename || "File",
-          );
+          const res = await props.onAttach(selection.fileId, name);
+          if (!res.ok) {
+            toast.error(
+              `Couldn't attach "${name}"` +
+                (res.error ? `: ${res.error}` : ""),
+            );
+          }
         }
       }}
     />

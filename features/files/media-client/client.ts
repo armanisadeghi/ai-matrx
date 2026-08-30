@@ -38,7 +38,11 @@ import {
   reportMediaDurabilityViolation,
   shareableMediaUrl,
 } from "@/lib/media/durability";
-import { mimeFromUrl, recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import {
+  fileIdFromFileEndpointUrl,
+  mimeFromUrl,
+  recognizeOurFileUrl,
+} from "@/lib/media/our-file-sources";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { fileHandler } from "@/features/files/handler/handler";
 import {
@@ -87,13 +91,34 @@ function normalizeRef(ref: MediaRefLike | null | undefined): NormalizedRef {
   if (typeof ref === "string") {
     if (UUID_RE.test(ref)) return { kind: "file_id", fileId: ref, mime: null };
     if (!ref.trim()) return null;
-    return { kind: "url", url: ref, mime: null };
+    return normalizeUrl(ref, null);
   }
   if (ref.file_id) {
     return { kind: "file_id", fileId: ref.file_id, mime: ref.mime_type ?? null };
   }
-  if (ref.url) return { kind: "url", url: ref.url, mime: ref.mime_type ?? null };
+  if (ref.url) return normalizeUrl(ref.url, ref.mime_type ?? null);
   return null;
+}
+
+/**
+ * A URL pointing at one of OUR authenticated byte endpoints
+ * (`{base}/files/{id}/download`, `{base}/media/{id}/v/{class}`) is an
+ * IDENTITY in disguise: rendered as an opaque external URL it fails for
+ * everyone whose file-session cookie isn't fresh, and canvas/crossOrigin
+ * consumers fetch it with no Authorization header at all (QA F2 — the
+ * annotate lane). Promote it to the file_id lane so pixels ride the
+ * bearer-authenticated blob transport like every owned file.
+ */
+function normalizeUrl(url: string, mime: string | null): NormalizedRef {
+  const endpointFileId = fileIdFromFileEndpointUrl(url);
+  if (endpointFileId) {
+    return {
+      kind: "file_id",
+      fileId: endpointFileId,
+      mime: mime ?? mimeFromUrl(url),
+    };
+  }
+  return { kind: "url", url, mime };
 }
 
 function mimeToKind(mime: string | null): MediaKind {

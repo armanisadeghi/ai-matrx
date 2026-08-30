@@ -159,7 +159,7 @@ const BANNED_LUCIDE_ICON_RE = /^(Wand2?|Sparkles?|Bot)$/;
 // value is unknown — that's the DB-edge guard's job), but a hardcoded storage
 // URL in a raw tag is an unambiguous, catchable regression. See FOUND_DEFECTS D1.
 const OUR_STORAGE_HOST_RE =
-  /matrx-user-files\.s3|cdn\.matrxserver|\/podcast-assets\//i;
+  /matrx-user-files\.s3|cdn\.matrxserver|files\.matrxserver|\/podcast-assets\//i;
 
 const matrxLintPlugin = {
   rules: {

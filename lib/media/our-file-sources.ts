@@ -118,6 +118,10 @@ export const OUR_FILE_URL_MARKERS = [
   "cdn.matrxserver",
   "/podcast-assets/",
   "/share/",
+  // Authenticated durable byte endpoints on our backend hosts
+  // (`{base}/files/{id}/download`, `{base}/media/{id}/v/{class}`).
+  "matrxserver.com/files/",
+  "matrxserver.com/media/",
 ] as const;
 
 /** Fast substring pre-check — no URL parse. Safe to run on every line. */
@@ -126,6 +130,31 @@ export function mightBeOurFileUrl(text: string): boolean {
     if (text.includes(marker)) return true;
   }
   return false;
+}
+
+/**
+ * `{base}/files/{file_id}/download[?…]` or `{base}/media/{file_id}/v/{class}`
+ * — the durable authenticated byte endpoints emitted by `fileUrls()` and the
+ * backend's `FileRecord.url`. Pure + synchronous; matches only our hosts
+ * (`*.matrxserver.com` plus localhost dev backends). Exported so the media
+ * client can promote such a URL to its file_id lane WITHOUT the
+ * `mightBeOurFileUrl` pre-gate (which has no localhost marker).
+ */
+const FILE_ENDPOINT_HOST_RE =
+  /(^|\.)matrxserver\.com$|^localhost$|^127\.0\.0\.1$/i;
+const FILE_ENDPOINT_PATH_RE =
+  /^\/(?:files\/([0-9a-f-]{36})\/download|media\/([0-9a-f-]{36})\/v\/[^/]+)\/?$/i;
+
+export function fileIdFromFileEndpointUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!FILE_ENDPOINT_HOST_RE.test(u.hostname)) return null;
+    const m = u.pathname.match(FILE_ENDPOINT_PATH_RE);
+    const candidate = m ? (m[1] ?? m[2]) : null;
+    return candidate && UUID_RE.test(candidate) ? candidate : null;
+  } catch {
+    return null;
+  }
 }
 
 interface OurFileOrigin {
@@ -143,6 +172,22 @@ interface OurFileOrigin {
  * identity-recoverable first. Append new origins here; touch nothing else.
  */
 const OUR_FILE_ORIGINS: OurFileOrigin[] = [
+  // 0. Our authenticated durable byte endpoints — `{base}/files/{id}/download`
+  //    and `{base}/media/{id}/v/{class}` on the backend / files hosts. These
+  //    URLs require auth (Authorization header or the mx_files_session
+  //    cookie), so treating them as opaque external URLs breaks every
+  //    unauthenticated fetch of them (QA F2). We recover the file_id — the
+  //    strongest identity — and the handler renders through the
+  //    authenticated lane.
+  {
+    label: "files-endpoint",
+    test: (url) => fileIdFromFileEndpointUrl(url) !== null,
+    toSource: (url, _parsed, mime) => {
+      const fileId = fileIdFromFileEndpointUrl(url);
+      if (!fileId) return { kind: "external_url", url, mime: mime ?? undefined };
+      return { kind: "file_id", fileId, mime: mime ?? undefined };
+    },
+  },
   // 1. Our signed S3 user-files bucket: `…/{user_id}/{file_id}?X-Amz-…`.
   //    We recover the file_id so the handler re-mints a durable URL forever.
   {
