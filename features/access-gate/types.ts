@@ -39,6 +39,26 @@ export type AccessDisclosure =
   /** Nothing at all (unregistered token, or no such row). */
   | "none";
 
+/**
+ * Whether asking is a real option — the distinction `canRequest` does NOT make.
+ *
+ * `canRequest` answers "is there anybody for us to pass a request to?" (false for
+ * a platform catalog row with neither owner nor org). It says nothing about
+ * whether the caller is ALLOWED to ask, and there are doors where the ask itself
+ * is the leak: an accused person asking for the case file confirms a case exists.
+ *
+ * Only the surface knows that — the resolver deliberately never does, because
+ * `access_denied_context` answers about ROWS, and this is a rule about PEOPLE.
+ * So the surface declares it, and the default stays `"requestable"` so no
+ * existing caller changes behaviour.
+ *
+ *  - `requestable` — the canonical Request-access panel renders (still self-gated
+ *    on `canRequest`, a pending ask, and the report state).
+ *  - `absolute` — the door is closed by law. NO request affordance, and the
+ *    surface's own `reason` must not confirm the record exists.
+ */
+export type AccessRequestability = "requestable" | "absolute";
+
 export type AccessRequestStatus =
   "pending" | "granted" | "declined" | "withdrawn" | "reported";
 

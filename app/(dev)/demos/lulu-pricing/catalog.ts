@@ -564,9 +564,12 @@ export function resolveCombination(
 export function pruneInvalidSelections(
   catalog: LuluCatalog,
   selection: LuluSelection,
+  /** The dimension the user just set — never cleared by its own change. */
+  protectedDimension?: LuluDimension,
 ): LuluSelection {
   let next = selection;
   for (const dimension of ALL_DIMENSIONS) {
+    if (dimension === protectedDimension) continue;
     const chosen = selectedValue(next, dimension);
     if (chosen === null) continue;
     const cleared: LuluSelection = { ...next, ...clearDimension(dimension) };

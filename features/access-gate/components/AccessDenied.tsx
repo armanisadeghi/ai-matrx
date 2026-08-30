@@ -44,7 +44,10 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RequestAccessPanel } from "@/features/access-gate/components/RequestAccessPanel";
 import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
-import type { AccessDeniedContext } from "@/features/access-gate/types";
+import type {
+  AccessDeniedContext,
+  AccessRequestability,
+} from "@/features/access-gate/types";
 
 /**
  * One concrete way forward, offered by the surface that knows the feature.
@@ -78,6 +81,18 @@ export interface AccessDeniedProps {
   onRetry?: () => void;
   /** Concrete next steps in THIS feature. See AccessDeniedSuggestion. */
   suggestions?: AccessDeniedSuggestion[];
+  /**
+   * Whether asking is a real option here. Defaults to `"requestable"` — the
+   * behaviour every existing caller already has. Pass `"absolute"` when the
+   * door is closed by law and the ask itself would leak. See
+   * `AccessRequestability`.
+   */
+  requestability?: AccessRequestability;
+  /**
+   * The surface's own worded reason, shown in place of the generic explanation.
+   * On an `absolute` door this sentence must not confirm the record exists.
+   */
+  reason?: string;
 }
 
 function initials(name: string | null): string {
@@ -206,6 +221,8 @@ export function AccessDeniedView({
   onRetry,
   onChanged,
   suggestions = [],
+  requestability = "requestable",
+  reason,
 }: {
   context: AccessDeniedContext;
   id: string;
@@ -214,6 +231,10 @@ export function AccessDeniedView({
   onRetry?: () => void;
   onChanged: () => void;
   suggestions?: AccessDeniedSuggestion[];
+  /** See `AccessRequestability`. `absolute` removes the request affordance entirely. */
+  requestability?: AccessRequestability;
+  /** The surface's own worded reason, in place of the generic explanation. */
+  reason?: string;
 }) {
   const router = useRouter();
   const signInHref = useLoginHref();
@@ -246,8 +267,16 @@ export function AccessDeniedView({
               </p>
             ) : null}
 
+            {/* The surface's own sentence wins when it has one. A feature that
+                knows WHY (a legal veto, a confidentiality tier) says it better
+                than the generic copy — and the generic denied copy would be an
+                outright lie on an absolute door, since it offers to pass along
+                a request that will never be offered. */}
             <p className="mt-2 text-sm text-muted-foreground">
-              {explanation(context)}
+              {reason?.trim() ||
+                (requestability === "absolute" && context.status === "denied"
+                  ? "You can't open this here."
+                  : explanation(context))}
             </p>
           </div>
         </div>
@@ -306,7 +335,11 @@ export function AccessDeniedView({
           </div>
         ) : null}
 
-        {context.status === "denied" ? (
+        {/* 🚨 ABSOLUTE DOORS GET NO ASK. Some refusals are dead ends by law —
+            an accused person may never request the case against them, because
+            the ASK ITSELF confirms the case exists. `canRequest` cannot express
+            this: it only knows whether somebody exists to receive a request. */}
+        {context.status === "denied" && requestability === "requestable" ? (
           <div className="mt-4">
             <RequestAccessPanel
               context={context}
@@ -415,6 +448,8 @@ export function AccessDenied({
   fallbackLabel,
   onRetry,
   suggestions,
+  requestability,
+  reason,
 }: AccessDeniedProps) {
   const { context, isLoading, refresh } = useAccessGate(token, id, {
     readError,
@@ -439,6 +474,8 @@ export function AccessDenied({
       onRetry={onRetry}
       onChanged={refresh}
       suggestions={suggestions}
+      requestability={requestability}
+      reason={reason}
     />
   );
 }

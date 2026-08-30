@@ -71,11 +71,15 @@ const SCREENS = [
   },
 ] as const;
 
+// Plain-column sort ON PURPOSE: the default KPI sort routes through
+// web.v_site_kpis, which is GSC-access-gated and has no row for KPI-less
+// sites — either way a DOOR page must never lose a site over metrics
+// (2026-08-30). Click ordering happens client-side on whatever the rows carry.
 const LIST_STATE = {
   page: 1,
   pageSize: 50,
   search: "",
-  sort: null,
+  sort: { id: "updated_at", direction: "desc" },
   filters: {},
 } as const;
 
