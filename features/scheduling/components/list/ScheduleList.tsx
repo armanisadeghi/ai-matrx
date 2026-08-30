@@ -42,8 +42,11 @@ function ScheduleListBody() {
   const { tasks, status, error, refetch } = useScheduledTasks();
   // Re-checked whenever the roster changes, so creating or pausing a schedule
   // updates the duplicate banner without a manual refresh.
-  const { groups: duplicateGroups, refetch: refetchDuplicates } =
-    useDuplicateSchedules(tasks.length);
+  const {
+    groups: duplicateGroups,
+    error: duplicateError,
+    refetch: refetchDuplicates,
+  } = useDuplicateSchedules(tasks.length);
 
   if (status === "loading" || status === "idle") {
     return (
@@ -78,8 +81,8 @@ function ScheduleListBody() {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4">
-        <div className="rounded-full bg-blue-50 dark:bg-blue-950/30 p-4 mb-4">
-          <CalendarClock className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+        <div className="mb-4 rounded-full bg-muted p-4">
+          <CalendarClock className="h-8 w-8 text-muted-foreground" />
         </div>
         <h2 className="text-xl font-semibold mb-2">No scheduled tasks yet</h2>
         <p className="text-muted-foreground mb-5 max-w-md">
@@ -99,6 +102,26 @@ function ScheduleListBody() {
 
   return (
     <div className="flex flex-col gap-2">
+      {duplicateError && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Duplicate check unavailable</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            <span>
+              {duplicateError} Your schedules are still available, but possible
+              duplicate runs are not currently highlighted.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchDuplicates()}
+              className="gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Two schedules doing one job cost twice and look like nothing is wrong.
           Surfaced above the list because it is a property of the SET, not of
           any one row — no row can show it. */}

@@ -319,11 +319,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
       setTrigger(type, config as Record<string, unknown>);
     },
     schedule_draft_variables: (value: unknown) => {
-      if (
-        typeof value !== "object" ||
-        value === null ||
-        Array.isArray(value)
-      )
+      if (typeof value !== "object" || value === null || Array.isArray(value))
         throw new Error(
           "schedule_draft_variables expects a flat key/value object (replaces the full set).",
         );
@@ -347,6 +343,30 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
     },
   });
 
+  const getSchedulesScope = () =>
+    createSchedulesScope({
+      ...(task ? buildOpenScheduleValues(task) : {}),
+      schedule_draft_mode: task ? "edit" : "create",
+      schedule_draft: {
+        title: form.title,
+        description: form.description,
+        surfaces: form.surfaces,
+        tags: form.tags,
+        prompt: form.prompt,
+        agent_id: form.agentId,
+        variables: form.variables,
+        persistent_conversation_id: form.persistentConversationId,
+        auth_mode: form.authMode,
+        max_runtime_seconds: form.maxRuntimeSeconds,
+        max_concurrent: form.maxConcurrent,
+        expires_at: form.expiresAt,
+        trigger_type: form.triggerType,
+        trigger_config: form.triggerConfig,
+      },
+      schedule_draft_errors: errors,
+      schedule_draft_submitting: submitting,
+    });
+
   // Surface emitter for `matrx-user/schedules` on the create/edit routes.
   // Nested under nothing else on those pages, so this provider owns the live
   // scope: the editor-draft group plus (in edit mode) the saved record the
@@ -356,368 +376,355 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
       surfaceName="matrx-user/schedules"
       isEditable
       getWriteHandlers={getSurfaceWriteHandlers}
-      getScope={() =>
-        createSchedulesScope({
-          ...(task ? buildOpenScheduleValues(task) : {}),
-          schedule_draft_mode: task ? "edit" : "create",
-          schedule_draft: {
-            title: form.title,
-            description: form.description,
-            surfaces: form.surfaces,
-            tags: form.tags,
-            prompt: form.prompt,
-            agent_id: form.agentId,
-            variables: form.variables,
-            persistent_conversation_id: form.persistentConversationId,
-            auth_mode: form.authMode,
-            max_runtime_seconds: form.maxRuntimeSeconds,
-            max_concurrent: form.maxConcurrent,
-            expires_at: form.expiresAt,
-            trigger_type: form.triggerType,
-            trigger_config: form.triggerConfig,
-          },
-          schedule_draft_errors: errors,
-          schedule_draft_submitting: submitting,
-        })
-      }
+      getScope={getSchedulesScope}
     >
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-      className="space-y-6"
-    >
-      {/* 1. Basics */}
-      <Section title="Basics">
-        <Field label="Title" htmlFor="title" error={errors.title}>
-          <Input
-            id="title"
-            value={form.title}
-            onChange={(e) => patch("title", e.target.value)}
-            placeholder="Daily morning briefing"
-            maxLength={200}
-          />
-        </Field>
-        <Field label="Description" htmlFor="description" optional>
-          <ProTextarea
-            id="description"
-            value={form.description}
-            onChange={(e) => patch("description", e.target.value)}
-            placeholder="What does this schedule do? (optional)"
-            rows={2}
-            maxLength={2000}
-          />
-        </Field>
-      </Section>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+        className="space-y-6"
+      >
+        {/* 1. Basics */}
+        <Section title="Basics">
+          <Field label="Title" htmlFor="title" error={errors.title}>
+            <Input
+              id="title"
+              value={form.title}
+              onChange={(e) => patch("title", e.target.value)}
+              placeholder="Daily morning briefing"
+              maxLength={200}
+            />
+          </Field>
+          <Field label="Description" htmlFor="description" optional>
+            <ProTextarea
+              id="description"
+              value={form.description}
+              onChange={(e) => patch("description", e.target.value)}
+              placeholder="What does this schedule do? (optional)"
+              rows={2}
+              maxLength={2000}
+              surfaceName="matrx-user/schedules"
+              getApplicationScope={getSchedulesScope}
+              enableTextStats={false}
+            />
+          </Field>
+        </Section>
 
-      {/* 2. What to run */}
-      <Section title="What to run">
-        <AgentListDropdown
-          onSelect={(id) => patch("agentId", id)}
-          activeAgentId={form.agentId}
-          label={form.agentId ? undefined : "Select the agent"}
-        />
-        <Field label="Prompt" htmlFor="prompt" error={errors.prompt}>
-          <ProTextarea
-            id="prompt"
-            value={form.prompt}
-            onChange={(e) => patch("prompt", e.target.value)}
-            placeholder="What should the agent do every time this fires?"
-            rows={6}
-            className="font-mono text-sm"
-            maxLength={10000}
+        {/* 2. What to run */}
+        <Section title="What to run">
+          <AgentListDropdown
+            onSelect={(id) => patch("agentId", id)}
+            activeAgentId={form.agentId}
+            label={form.agentId ? undefined : "Select the agent"}
           />
-          <div className="text-xs text-muted-foreground mt-1">
-            {form.prompt.length} / 10,000
-          </div>
-        </Field>
-        <Field label="Variables" optional>
-          <VariablesEditor
-            value={form.variables}
-            onChange={(v) => patch("variables", v)}
-          />
-        </Field>
-        <Field
-          label="Persistent conversation ID"
-          htmlFor="conv-id"
-          optional
-          error={errors.persistentConversationId}
-        >
-          <Input
-            id="conv-id"
-            value={form.persistentConversationId}
-            onChange={(e) => patch("persistentConversationId", e.target.value)}
-            placeholder="conversation UUID — leave blank for heartbeat to auto-bind on first run"
-            className="font-mono text-xs"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            For heartbeat triggers, all runs append to this conversation. Leave
-            blank to let the first run create one.
-          </p>
-        </Field>
-      </Section>
-
-      {/* 3. When to run */}
-      <Section title="When to run">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-          {TRIGGER_TYPES.map((meta) => {
-            const Icon = meta.icon;
-            const selected = form.triggerType === meta.type;
-            return (
-              <button
-                key={meta.type}
-                type="button"
-                onClick={() => setTrigger(meta.type, defaultsFor(meta.type))}
-                className={cn(
-                  "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
-                  selected
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-accent/40",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-4 w-4",
-                    selected ? "text-primary" : "text-muted-foreground",
-                  )}
-                />
-                <div className="text-sm font-medium leading-tight">
-                  {meta.label}
-                </div>
-                <div className="text-[11px] text-muted-foreground leading-snug">
-                  {meta.description}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="pt-3">
-          {form.triggerType === "one-shot" && (
-            <OneShotForm
-              value={form.triggerConfig as { at?: string }}
-              onChange={(v) => setTrigger("one-shot", v)}
-              error={errors["trigger.at"] ?? errors.trigger}
+          <Field label="Prompt" htmlFor="prompt" error={errors.prompt}>
+            <ProTextarea
+              id="prompt"
+              value={form.prompt}
+              onChange={(e) => patch("prompt", e.target.value)}
+              placeholder="What should the agent do every time this fires?"
+              rows={6}
+              className="font-mono text-base sm:text-sm"
+              maxLength={10000}
+              surfaceName="matrx-user/schedules"
+              getApplicationScope={getSchedulesScope}
+              enableTextStats={false}
             />
-          )}
-          {form.triggerType === "interval" && (
-            <IntervalForm
-              value={form.triggerConfig as { every_seconds?: number }}
-              onChange={(v) => setTrigger("interval", v)}
-              error={errors["trigger.every_seconds"] ?? errors.trigger}
+            <div className="text-xs text-muted-foreground mt-1">
+              {form.prompt.length} / 10,000
+            </div>
+          </Field>
+          <Field label="Variables" optional>
+            <VariablesEditor
+              value={form.variables}
+              onChange={(v) => patch("variables", v)}
             />
-          )}
-          {form.triggerType === "cron" && (
-            <CronForm
-              value={form.triggerConfig as { expression?: string; tz?: string }}
-              onChange={(v) => setTrigger("cron", v)}
-              error={errors["trigger.expression"] ?? errors.trigger}
-            />
-          )}
-          {form.triggerType === "heartbeat" && (
-            <HeartbeatForm
-              value={form.triggerConfig as { every_seconds?: number }}
-              onChange={(v) => setTrigger("heartbeat", v)}
-              error={errors["trigger.every_seconds"] ?? errors.trigger}
-            />
-          )}
-          {form.triggerType === "context-match" && (
-            <ContextMatchForm
-              value={
-                form.triggerConfig as {
-                  kind?: string;
-                  url_pattern?: string;
-                  hostname?: string;
-                }
+          </Field>
+          <Field
+            label="Persistent conversation ID"
+            htmlFor="conv-id"
+            optional
+            error={errors.persistentConversationId}
+          >
+            <Input
+              id="conv-id"
+              value={form.persistentConversationId}
+              onChange={(e) =>
+                patch("persistentConversationId", e.target.value)
               }
-              onChange={(v) => setTrigger("context-match", v)}
-              error={errors["trigger.kind"] ?? errors.trigger}
+              placeholder="conversation UUID — leave blank for heartbeat to auto-bind on first run"
+              className="font-mono text-xs"
             />
-          )}
-        </div>
-      </Section>
+            <p className="text-xs text-muted-foreground mt-1">
+              For heartbeat triggers, all runs append to this conversation.
+              Leave blank to let the first run create one.
+            </p>
+          </Field>
+        </Section>
 
-      {/* 4. Where to run */}
-      <Section title="Where to run">
-        <Field label="Surfaces" error={errors.surfaces}>
-          <div className="flex flex-wrap gap-2">
-            {SURFACE_VALUES.map((s) => {
-              const meta = SURFACE_META[s];
-              const selected = form.surfaces.includes(s);
+        {/* 3. When to run */}
+        <Section title="When to run">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {TRIGGER_TYPES.map((meta) => {
+              const Icon = meta.icon;
+              const selected = form.triggerType === meta.type;
               return (
                 <button
-                  key={s}
+                  key={meta.type}
                   type="button"
-                  onClick={() => {
-                    if (selected) {
-                      patch(
-                        "surfaces",
-                        form.surfaces.filter((x) => x !== s) as Surface[],
-                      );
-                    } else {
-                      patch("surfaces", [...form.surfaces, s] as Surface[]);
-                    }
-                  }}
-                  title={meta.description}
+                  onClick={() => setTrigger(meta.type, defaultsFor(meta.type))}
                   className={cn(
-                    "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+                    "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
                     selected
-                      ? "border-primary bg-primary text-primary-foreground"
+                      ? "border-primary bg-primary/5"
                       : "border-border hover:bg-accent/40",
                   )}
                 >
-                  {meta.label}
+                  <Icon
+                    className={cn(
+                      "h-4 w-4",
+                      selected ? "text-primary" : "text-muted-foreground",
+                    )}
+                  />
+                  <div className="text-sm font-medium leading-tight">
+                    {meta.label}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground leading-snug">
+                    {meta.description}
+                  </div>
                 </button>
               );
             })}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            <Badge variant="secondary" className="text-[10px] mr-1">
-              Any
-            </Badge>
-            is the safe default — the first online executor picks it up.
-          </p>
-        </Field>
-      </Section>
 
-      {/* 5. How to run */}
-      <Section title="How to run">
-        <Field label="Auth mode" htmlFor="auth">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="auth"
-              checked={form.authMode === "auto"}
-              onCheckedChange={(checked) =>
-                patch("authMode", checked ? "auto" : "ask")
-              }
-            />
-            <span className="text-sm">
-              {form.authMode === "auto"
-                ? "Auto — runs immediately when due"
-                : "Ask — notifies user, they click to run"}
-            </span>
+          <div className="pt-3">
+            {form.triggerType === "one-shot" && (
+              <OneShotForm
+                value={form.triggerConfig as { at?: string }}
+                onChange={(v) => setTrigger("one-shot", v)}
+                error={errors["trigger.at"] ?? errors.trigger}
+              />
+            )}
+            {form.triggerType === "interval" && (
+              <IntervalForm
+                value={form.triggerConfig as { every_seconds?: number }}
+                onChange={(v) => setTrigger("interval", v)}
+                error={errors["trigger.every_seconds"] ?? errors.trigger}
+              />
+            )}
+            {form.triggerType === "cron" && (
+              <CronForm
+                value={
+                  form.triggerConfig as { expression?: string; tz?: string }
+                }
+                onChange={(v) => setTrigger("cron", v)}
+                error={errors["trigger.expression"] ?? errors.trigger}
+              />
+            )}
+            {form.triggerType === "heartbeat" && (
+              <HeartbeatForm
+                value={form.triggerConfig as { every_seconds?: number }}
+                onChange={(v) => setTrigger("heartbeat", v)}
+                error={errors["trigger.every_seconds"] ?? errors.trigger}
+              />
+            )}
+            {form.triggerType === "context-match" && (
+              <ContextMatchForm
+                value={
+                  form.triggerConfig as {
+                    kind?: string;
+                    url_pattern?: string;
+                    hostname?: string;
+                  }
+                }
+                onChange={(v) => setTrigger("context-match", v)}
+                error={errors["trigger.kind"] ?? errors.trigger}
+              />
+            )}
           </div>
-        </Field>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field
-            label="Max runtime (seconds)"
-            htmlFor="runtime"
-            error={errors.maxRuntimeSeconds}
-          >
-            <Input
-              id="runtime"
-              type="number"
-              min={5}
-              max={86400}
-              value={form.maxRuntimeSeconds}
-              onChange={(e) =>
-                patch("maxRuntimeSeconds", Number(e.target.value) || 600)
-              }
-            />
-            <p className="text-xs text-muted-foreground mt-1">5 – 86,400</p>
+        </Section>
+
+        {/* 4. Where to run */}
+        <Section title="Where to run">
+          <Field label="Surfaces" error={errors.surfaces}>
+            <div className="flex flex-wrap gap-2">
+              {SURFACE_VALUES.map((s) => {
+                const meta = SURFACE_META[s];
+                const selected = form.surfaces.includes(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      if (selected) {
+                        patch(
+                          "surfaces",
+                          form.surfaces.filter((x) => x !== s) as Surface[],
+                        );
+                      } else {
+                        patch("surfaces", [...form.surfaces, s] as Surface[]);
+                      }
+                    }}
+                    title={meta.description}
+                    className={cn(
+                      "min-h-11 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors lg:min-h-0",
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border hover:bg-accent/40",
+                    )}
+                  >
+                    {meta.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <Badge variant="secondary" className="text-[10px] mr-1">
+                Any
+              </Badge>
+              is the safe default — the first online executor picks it up.
+            </p>
           </Field>
-          <Field
-            label="Max concurrent runs"
-            htmlFor="concurrent"
-            error={errors.maxConcurrent}
-          >
-            <Input
-              id="concurrent"
-              type="number"
-              min={1}
-              max={10}
-              value={form.maxConcurrent}
-              onChange={(e) =>
-                patch("maxConcurrent", Number(e.target.value) || 1)
-              }
-            />
-            <p className="text-xs text-muted-foreground mt-1">1 – 10</p>
+        </Section>
+
+        {/* 5. How to run */}
+        <Section title="How to run">
+          <Field label="Auth mode" htmlFor="auth">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="auth"
+                checked={form.authMode === "auto"}
+                onCheckedChange={(checked) =>
+                  patch("authMode", checked ? "auto" : "ask")
+                }
+              />
+              <span className="text-sm">
+                {form.authMode === "auto"
+                  ? "Auto — runs immediately when due"
+                  : "Ask — notifies user, they click to run"}
+              </span>
+            </div>
           </Field>
-        </div>
-        <Field label="Expires at" htmlFor="expires" optional>
-          <Input
-            id="expires"
-            type="datetime-local"
-            value={form.expiresAt}
-            onChange={(e) => patch("expiresAt", e.target.value)}
-            className="max-w-xs"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Task auto-disables after this time. Leave blank for no expiry.
-          </p>
-        </Field>
-      </Section>
-
-      {/* 6. Tags */}
-      <Section title="Tags">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {form.tags.map((t) => (
-            <Badge key={t} variant="secondary" className="gap-1">
-              {t}
-              <button
-                type="button"
-                onClick={() =>
-                  patch(
-                    "tags",
-                    form.tags.filter((x) => x !== t),
-                  )
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field
+              label="Max runtime (seconds)"
+              htmlFor="runtime"
+              error={errors.maxRuntimeSeconds}
+            >
+              <Input
+                id="runtime"
+                type="number"
+                min={5}
+                max={86400}
+                value={form.maxRuntimeSeconds}
+                onChange={(e) =>
+                  patch("maxRuntimeSeconds", Number(e.target.value) || 600)
                 }
-                className="hover:text-destructive"
-                aria-label={`Remove tag ${t}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-          <Input
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                const t = tagInput.trim();
-                if (t && !form.tags.includes(t) && form.tags.length < 50) {
-                  patch("tags", [...form.tags, t]);
+              />
+              <p className="text-xs text-muted-foreground mt-1">5 – 86,400</p>
+            </Field>
+            <Field
+              label="Max concurrent runs"
+              htmlFor="concurrent"
+              error={errors.maxConcurrent}
+            >
+              <Input
+                id="concurrent"
+                type="number"
+                min={1}
+                max={10}
+                value={form.maxConcurrent}
+                onChange={(e) =>
+                  patch("maxConcurrent", Number(e.target.value) || 1)
                 }
-                setTagInput("");
-              }
-            }}
-            placeholder="Add tag, press Enter"
-            className="w-44 h-7 text-xs"
-            maxLength={100}
-          />
+              />
+              <p className="text-xs text-muted-foreground mt-1">1 – 10</p>
+            </Field>
+          </div>
+          <Field label="Expires at" htmlFor="expires" optional>
+            <Input
+              id="expires"
+              type="datetime-local"
+              value={form.expiresAt}
+              onChange={(e) => patch("expiresAt", e.target.value)}
+              className="max-w-xs"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Task auto-disables after this time. Leave blank for no expiry.
+            </p>
+          </Field>
+        </Section>
+
+        {/* 6. Tags */}
+        <Section title="Tags">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {form.tags.map((t) => (
+              <Badge key={t} variant="secondary" className="gap-1">
+                {t}
+                <button
+                  type="button"
+                  onClick={() =>
+                    patch(
+                      "tags",
+                      form.tags.filter((x) => x !== t),
+                    )
+                  }
+                  className="flex h-11 w-11 items-center justify-center hover:text-destructive lg:h-auto lg:w-auto"
+                  aria-label={`Remove tag ${t}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <Input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  const t = tagInput.trim();
+                  if (t && !form.tags.includes(t) && form.tags.length < 50) {
+                    patch("tags", [...form.tags, t]);
+                  }
+                  setTagInput("");
+                }
+              }}
+              placeholder="Add tag, press Enter"
+              className="h-11 w-44 text-base sm:h-7 sm:text-xs"
+              maxLength={100}
+            />
+          </div>
+        </Section>
+
+        <Separator />
+
+        {Object.keys(errors).length > 0 && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Please fix the highlighted fields above before saving.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.back()}
+            disabled={submitting || pending}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={submitting || pending}>
+            {(submitting || pending) && (
+              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            )}
+            {!submitting && !pending && <Save className="h-4 w-4 mr-1.5" />}
+            {task ? "Save changes" : "Create schedule"}
+          </Button>
         </div>
-      </Section>
-
-      <Separator />
-
-      {Object.keys(errors).length > 0 && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            Please fix the highlighted fields above before saving.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => router.back()}
-          disabled={submitting || pending}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={submitting || pending}>
-          {(submitting || pending) && (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          )}
-          {!submitting && !pending && <Save className="h-4 w-4 mr-1.5" />}
-          {task ? "Save changes" : "Create schedule"}
-        </Button>
-      </div>
-    </form>
+      </form>
     </SurfaceRuntimeProvider>
   );
 }

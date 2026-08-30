@@ -177,8 +177,9 @@ agent_runner_adapter.py` and writes results back with `claim_token`
      be reported as "created" — it is a lie the user acts on; the banner
      offers **pause**, never delete, because pausing stops the cost
      immediately, changes no results and is reversible; and the duplicates
-     lookup fails SILENTLY (an advisory layer must never turn a working
-     schedule list into an error page).
+     lookup failure stays non-fatal but must be LOUD: the working schedule list
+     remains usable behind a visible retry warning, and Error Inspector records
+     the missing duplicate protection.
 10. **A directly claimed run inherits nothing in Postgres.** Direct claimers
     receive the full persisted task identity and explicitly insert its
     `organization_id`. Manual-run RPC and trigger remediation remains tracked
@@ -213,6 +214,8 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-30** — codex: Surface certification closed two honesty gaps on `/schedules`. The duplicate guard's advisory read still cannot replace a working roster with a fatal page, but failure is no longer silent: both user and admin lists show an explicit Retry warning and capture the backend failure in Error Inspector. The create/edit form's Description and Prompt `ProTextarea` menus now receive the same live `matrx-user/schedules` scope as the page surface, and compact mobile-only controls meet the 44px interaction floor. Prompt keeps its existing dedicated 10,000-character counter rather than stacking a second text-stats footer; Description deliberately has no metric footer because it is a short metadata field.
 
 - **2026-08-29** — Replaced the temporary handwritten `DbJob*` HTTP wire
   mirrors with direct aliases to the live generated OpenAPI schemas.

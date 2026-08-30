@@ -22,7 +22,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -56,8 +57,11 @@ export default function AdminTasksPage() {
   const [rows, setRows] = useState<AdminTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
-  const { groups: duplicateGroups, refetch: refetchDuplicates } =
-    useDuplicateSchedules(rows.length);
+  const {
+    groups: duplicateGroups,
+    error: duplicateError,
+    refetch: refetchDuplicates,
+  } = useDuplicateSchedules(rows.length);
 
   // The RAW fetched count. The toolbar's search box and the State column's
   // filter live inside MatrxDataTable and narrow the screen without telling
@@ -188,6 +192,26 @@ export default function AdminTasksPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      {duplicateError && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Duplicate check unavailable</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            <span>
+              {duplicateError} Tasks remain available, but possible duplicate
+              runs are not currently highlighted.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchDuplicates()}
+              className="gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Schedules that duplicate each other (THE SCHEDULER DUPLICATE GUARD).
           Above the table because duplication is a property of the SET — no
           single row can show that another row is doing its job too. Same

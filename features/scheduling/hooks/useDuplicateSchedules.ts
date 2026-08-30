@@ -2,7 +2,8 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { listDuplicateSchedules } from "../service/schedulerClient";
 import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
 
@@ -16,31 +17,57 @@ import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
  * would drift from it the first time either side changed. This hook only
  * renders what the server already decided.
  *
- * Failure is silent by design. This is an advisory surface layered on top of a
- * schedule list that works perfectly without it; a duplicates lookup that 404s
- * on an older server must never turn the user's working list into an error
- * page. `groups` simply stays empty.
+ * Failure is non-fatal but never silent. This is an advisory surface layered on
+ * top of a schedule list that remains usable without it; callers render a
+ * retryable warning while the failure is also captured by Error Inspector.
  */
 export function useDuplicateSchedules(refreshToken?: unknown) {
   const [groups, setGroups] = useState<DuplicateScheduleGroup[]>([]);
-
-  const refetch = useCallback(async () => {
-    try {
-      const res = await listDuplicateSchedules();
-      setGroups(res.groups ?? []);
-    } catch {
-      setGroups([]);
-    }
-  }, []);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
-    void refetch();
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await listDuplicateSchedules();
+        if (cancelled) return;
+        setGroups(res.groups ?? []);
+        setError(null);
+      } catch (cause) {
+        if (cancelled) return;
+        const message =
+          cause instanceof Error ? cause.message : "Unknown scheduler error";
+        console.error("[scheduling] Duplicate schedule check failed", cause);
+        captureError({
+          source: "runtime-exception",
+          operation: "select",
+          relation: "scheduler/tasks/duplicates",
+          message: `Duplicate schedule check failed: ${message}`,
+          userMessage: "Couldn't check for duplicate schedules.",
+          recoverable: true,
+          raw: cause,
+        });
+        setGroups([]);
+        setError("Couldn't check for duplicate schedules.");
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
     // refreshToken lets a caller re-check after it changes a schedule (pausing
     // one of a pair resolves its group, and the banner must then disappear).
-  }, [refetch, refreshToken]);
+  }, [refreshToken, refreshVersion]);
 
   // A group whose extras are all paused costs nothing and is already resolved.
   const liveGroups = groups.filter((g) => g.enabled_count > 1);
 
-  return { groups: liveGroups, refetch };
+  return {
+    groups: liveGroups,
+    error,
+    refetch: () => setRefreshVersion((version) => version + 1),
+  };
 }
