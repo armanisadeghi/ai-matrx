@@ -87,6 +87,11 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-30` — A restricted note names its author. `hr._project_row` resolved a display name
+  only from `subject_employment_id` / `employment_id`, and `hr.restricted_note` names its person
+  `author_employment_id`, so every note on a case rendered unsigned; the projection now has an
+  author branch beside its subject one (`author_name`, hr_l3_120), through the same
+  `hr._subject_display_name` door — a name the viewer may not see stays ABSENT, never a uuid.
 - `2026-08-29` — Directory status is derived from the employment spells as of today, by one
   shared server function; the `hr.employee.directory_status` column — which had no writer past
   creation, so every terminated person read "Active" and was counted in headcount — is dropped,

@@ -192,9 +192,11 @@ export function CorrectiveActionPanel({
               <dd className="text-foreground">{formatDay(action.incident_on)}</dd>
             </div>
           ) : null}
-          {/* 🚨 NO "Issued by" LINE. `hr._project_row` names the SUBJECT only;
-              the issuer is `issued_by_employment_id`, a uuid, and there is no
-              door that resolves it to a name. This slot read `action.issuer_name`
+          {/* 🚨 NO "Issued by" LINE. `hr._project_row` names the SUBJECT
+              (`subject_employment_id` / `employment_id`) and, since hr_l3_120, the
+              AUTHOR (`author_employment_id`). The issuer is
+              `issued_by_employment_id` — neither shape — so it is still a uuid
+              with no door that resolves it to a name. This slot read `action.issuer_name`
               — a key that has never been on the wire — so it could never render
               anyway. It stays ABSENT rather than printing a uuid under a heading
               that promises a person. */}

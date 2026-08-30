@@ -226,15 +226,29 @@ export const HR_CORRECTIVE_ACTION_STATE_LABELS: Record<
  * shows the raw value looks deliberate, so nothing about the render said the
  * field was absent rather than unmapped.
  *
- * The derivation lives HERE, once, because the previous arrangement had two
- * call sites independently spelling a column that does not exist.
+ * 🚨 SINCE hr_l1_83 THE DOOR ANSWERS THIS, AND THE DOOR'S ANSWER WINS.
+ * `hr.corrective_action_state(...)` in the database is now THE definition of
+ * §4.8's state: `hr._project_row` stamps it onto every row the get and list
+ * doors emit, and `hr._door_list` FILTERS with the same function. Reading it off
+ * the wire is what keeps the chip and the filter from ever disagreeing — a
+ * "Follow-up due" filter that returns a row labelled "Acknowledged" is what two
+ * spellings of one rule produces at a day boundary.
+ *
+ * The local derivation below stays as the fallback for a row that did not come
+ * through the door (fixtures, tests, an older cached payload). It is the SAME
+ * rule, kept branch-for-branch identical to the SQL — verified against all ten
+ * of its branches on 2026-08-30 — and it never overrides a value the door sent.
  */
 export function correctiveActionState(row: {
+  state?: string | null;
   outcome?: string | null;
   follow_up_on?: string | null;
   employee_acknowledged_at?: string | null;
   employee_acknowledgement_kind?: string | null;
 }): HrCorrectiveActionState {
+  if (row.state && row.state in HR_CORRECTIVE_ACTION_STATE_LABELS) {
+    return row.state as HrCorrectiveActionState;
+  }
   // Terminal: §4.8 node I. An outcome is recorded and the ladder step is closed.
   if (row.outcome) return "outcome-recorded";
   // A refusal leaves `employee_acknowledged_at` NULL on purpose — nobody
@@ -433,7 +447,9 @@ export type HrIncidentRow = {
 // as the issuer, in a rolled-back transaction) AND OFF
 // `information_schema.columns`. SIX DECLARED FIELDS DID NOT EXIST:
 //
-//   `state`                  → there is no state column; see `correctiveActionState`
+//   `state`                  → no such COLUMN, and there never has been. The door
+//                              has PROJECTED a derived one since hr_l1_83; see
+//                              `correctiveActionState`
 //   `acknowledgment_kind`    → the column is `employee_acknowledgement_kind`
 //                              (British spelling, and prefixed)
 //   `issuer_name`            → `hr._project_row` names only the SUBJECT; the
@@ -452,6 +468,12 @@ export type HrIncidentRow = {
 export type HrCorrectiveActionRow = {
   id: string;
   organization_id?: string | null;
+  /**
+   * DERIVED, not stored — `hr.corrective_action_state()` computed by
+   * `hr._project_row` (hr_l1_83). Absent on any row that did not come through
+   * an audited door, which is why `correctiveActionState` still falls back.
+   */
+  state?: HrCorrectiveActionState | null;
   level: HrCorrectiveActionLevel | string;
   issued_on: string | null;
   incident_on: string | null;
