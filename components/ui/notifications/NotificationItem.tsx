@@ -113,7 +113,7 @@ export default function NotificationItem({
                         {notification.message}
                     </p>
                     
-                    <div className="matrx-touch-targets flex items-center justify-between mt-2">
+                    <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                             {timeAgo}
                         </span>
@@ -124,7 +124,7 @@ export default function NotificationItem({
                                     e.stopPropagation();
                                     onMarkAsRead(notification.id);
                                 }}
-                                className="opacity-100 transition-opacity text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                             >
                                 Mark as read
                             </button>

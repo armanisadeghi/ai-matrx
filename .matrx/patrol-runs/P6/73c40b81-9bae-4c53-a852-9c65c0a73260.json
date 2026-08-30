@@ -19,67 +19,6 @@
       ],
       "previousEventHash": null,
       "eventHash": "ee2bb1b61869570eb52e067893a774382fd5c3a9f85765991ea62df6c9b23f80"
-    },
-    {
-      "sequence": 2,
-      "state": "fixing",
-      "at": "2026-08-30T14:27:17.257Z",
-      "actor": "/root/p6_demos_auth",
-      "summary": "Repaired 57 glyph occurrences across 15 demo/auth files; scoped detector is zero.",
-      "evidence": [
-        "Candidate 9c21bc19692cce44f3acf5eaeccd27fec95c0e19 contains exactly 15 owned file deltas from base.",
-        "Scoped diff-check PASS; no batch-caused lint diagnostic."
-      ],
-      "previousEventHash": "ee2bb1b61869570eb52e067893a774382fd5c3a9f85765991ea62df6c9b23f80",
-      "eventHash": "3432bb76a1ea226c3110ceec191087743c63b1977e44ca179010f67ed2f154eb"
-    },
-    {
-      "sequence": 3,
-      "state": "certifying",
-      "at": "2026-08-30T14:27:17.853Z",
-      "actor": "codex-p6-controller",
-      "summary": "Exact 15-file demo/auth candidate preserved remotely and awaiting independent adversarial certification.",
-      "evidence": [
-        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch1-candidate"
-      ],
-      "previousEventHash": "3432bb76a1ea226c3110ceec191087743c63b1977e44ca179010f67ed2f154eb",
-      "eventHash": "4bb6c874e044ce42069da9e38b86bd326801c0e210738f5b368ba24be004c2ac"
-    },
-    {
-      "sequence": 4,
-      "state": "rejected",
-      "at": "2026-08-30T14:35:53.827Z",
-      "actor": "/root/p6_three_batch_certifier",
-      "summary": "REJECTED candidate 9c21bc1: same-file unrelated EntityRef and Slack permalink behavior entered the reconstructed boundary.",
-      "evidence": [
-        "Concrete defects: context-lab organization DOM change; oauth Slack file-name/permalink behavior change."
-      ],
-      "previousEventHash": "4bb6c874e044ce42069da9e38b86bd326801c0e210738f5b368ba24be004c2ac",
-      "eventHash": "2480701e1d05b3b30d7e1f57c3186c00f43347874df8798a39bdb74bf1c0aa33"
-    },
-    {
-      "sequence": 5,
-      "state": "fixing",
-      "at": "2026-08-30T14:35:54.382Z",
-      "actor": "codex-p6-repair",
-      "summary": "Rebuilt batch 1 from only the path-scoped P6 integration hunks, excluding unrelated same-file changes.",
-      "evidence": [
-        "Retry candidate 023db6b57119ad5e88cfaebaf7def724487a230d contains exactly 15 files."
-      ],
-      "previousEventHash": "2480701e1d05b3b30d7e1f57c3186c00f43347874df8798a39bdb74bf1c0aa33",
-      "eventHash": "a64845bc1c845d16a0657572b71d071e005dfaea85f02ef3e133fdecbd097092"
-    },
-    {
-      "sequence": 6,
-      "state": "certifying",
-      "at": "2026-08-30T14:35:54.935Z",
-      "actor": "codex-p6-controller",
-      "summary": "Corrected exact batch 1 candidate awaiting adversarial recertification.",
-      "evidence": [
-        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch1-retry1"
-      ],
-      "previousEventHash": "a64845bc1c845d16a0657572b71d071e005dfaea85f02ef3e133fdecbd097092",
-      "eventHash": "f3f46379a225f52287ef38b897a8c75efe52dd4dc60b24b3a35a4210adb6bd55"
     }
   ]
 }

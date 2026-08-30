@@ -180,7 +180,13 @@ export interface VariableCustomComponent {
  *             somehow calls it on an agent they can't see)
  */
 export type AccessLevel =
-  "owner" | "admin" | "editor" | "viewer" | "system" | "public" | "none";
+  | "owner"
+  | "admin"
+  | "editor"
+  | "viewer"
+  | "system"
+  | "public"
+  | "none";
 
 /**
  * Binds a variable to a scope CONTEXT ITEM (`ctx_context_items`). When set, the variable
@@ -587,9 +593,9 @@ export interface AgentVersionSnapshot {
   ui_gates: UiGates;
   default_rag_boost: number;
   rag_awareness_mode: string;
-  // Supabase models RETURNS TABLE text as non-null, but older version rows
-  // legitimately retain SQL NULL because their input contract is inline.
-  input_kind: string | null;
+  // Supabase models RETURNS TABLE text as non-null even though historical rows
+  // can return SQL NULL. The converter normalizes that runtime case to null.
+  input_kind: string;
 }
 
 /**
@@ -632,12 +638,8 @@ type _Check_AgentSearchRow =
 declare const _agentSearchRow: _Check_AgentSearchRow;
 true satisfies typeof _agentSearchRow;
 
-type AgentVersionSnapshotDbProjection = Omit<
-  AgentVersionSnapshot,
-  "input_kind"
-> & { input_kind: string };
 type _Check_AgentVersionSnapshot =
-  AgentVersionSnapshotDbProjection extends DbRpcRow<"agx_get_version_snapshot">
+  AgentVersionSnapshot extends DbRpcRow<"agx_get_version_snapshot">
     ? true
     : false;
 declare const _agentVersionSnapshot: _Check_AgentVersionSnapshot;
@@ -679,7 +681,11 @@ true satisfies typeof _agentExecutionFull;
  * "shared" and "accessLevel" fetches patch access metadata only and do NOT change this field.
  */
 export type AgentFetchStatus =
-  "list" | "execution" | "customExecution" | "full" | "versionSnapshot";
+  | "list"
+  | "execution"
+  | "customExecution"
+  | "full"
+  | "versionSnapshot";
 
 /**
  * Rank table for precedence checks. Higher number = higher precedence.

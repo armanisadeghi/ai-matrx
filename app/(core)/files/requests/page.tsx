@@ -32,7 +32,6 @@ export default async function CloudFilesRequestsPage({
   return (
     <PageShell
       section="requests"
-      promiseKey="files.file-requests"
       initialSidebarMode={sidebarMode}
       initialUiPatch={initialUiPatch}
       initialFileId={initialFileId}

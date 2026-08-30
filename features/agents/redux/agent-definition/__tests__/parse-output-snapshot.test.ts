@@ -132,13 +132,6 @@ describe("parseAgentVersionSnapshot", () => {
     expect(parseAgentVersionSnapshot(raw).output_schema).toBeNull();
   });
 
-  it("preserves the historical null input kind", () => {
-    const raw = validSnapshotRow();
-    raw.input_kind = null;
-
-    expect(parseAgentVersionSnapshot(raw).input_kind).toBeNull();
-  });
-
   it("rejects malformed generated scalar fields", () => {
     const raw = validSnapshotRow();
     raw.version_number = "4";

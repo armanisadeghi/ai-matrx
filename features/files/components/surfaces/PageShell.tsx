@@ -185,8 +185,6 @@ export interface PageShellProps {
   initialUiPatch?: Partial<UiState>;
   /** Which section the current route represents. Defaults to "all". */
   section?: CloudFilesSection;
-  /** Registry id when this route renders a tracked product promise. */
-  promiseKey?: string;
   /** Server-read cookie value so the sidebar mode matches the user's preference on first paint. */
   initialSidebarMode?: SidebarMode;
   /** Initial sidebar width as a percent of parent. Default 18. */
@@ -292,7 +290,6 @@ function PageShellDesktop({
   initialFileId,
   initialUiPatch,
   section = "all",
-  promiseKey,
   sidebarDefaultPercent = 12,
   sidebarMinPercent = 6,
   className,
@@ -950,10 +947,7 @@ function PageShellDesktop({
                             onRetry={retryTreeLoad}
                           />
                         ) : showPlaceholder ? (
-                          <SectionPlaceholder
-                            section={section}
-                            promiseKey={promiseKey}
-                          />
+                          <SectionPlaceholder section={section} />
                         ) : isEmpty && section === "all" ? (
                           <FileUploadDropzone
                             parentFolderId={null}
@@ -971,7 +965,7 @@ function PageShellDesktop({
                           <EmptyState
                             icon={Star}
                             title="Starred items"
-                            comingSoonId={promiseKey}
+                            comingSoon
                             description="Star any file or folder to pin it here for quick access."
                           />
                         ) : showTableOrGrid ? (
@@ -1168,19 +1162,13 @@ function PageShellDesktop({
   );
 }
 
-function SectionPlaceholder({
-  section,
-  promiseKey,
-}: {
-  section: CloudFilesSection;
-  promiseKey?: string;
-}) {
+function SectionPlaceholder({ section }: { section: CloudFilesSection }) {
   if (section === "requests") {
     return (
       <EmptyState
         icon={FileInput}
         title="File requests"
-        comingSoonId={promiseKey}
+        comingSoon
         description="Collect files from anyone with a shareable link. Requests will be tracked here."
       />
     );
@@ -1190,7 +1178,7 @@ function SectionPlaceholder({
       <EmptyState
         icon={Activity}
         title="Activity"
-        comingSoonId={promiseKey}
+        comingSoon
         description="A live feed of uploads, shares, and edits across your files will appear here."
       />
     );

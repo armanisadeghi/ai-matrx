@@ -16,67 +16,6 @@
       ],
       "previousEventHash": null,
       "eventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e"
-    },
-    {
-      "sequence": 2,
-      "state": "fixing",
-      "at": "2026-08-30T14:27:19.701Z",
-      "actor": "/root/p6_feature_surfaces",
-      "summary": "Repaired 20 detector-visible glyphs plus one multiplication glyph across 15 feature-surface files; only seven comment false positives remain.",
-      "evidence": [
-        "Candidate e99069021a6a5adaf39aeb449137beaffa880dbf contains exactly 15 owned file deltas from base.",
-        "Scoped diff-check PASS; no batch-caused lint diagnostic."
-      ],
-      "previousEventHash": "8d4981ea2211aa21237058aa177022e96648925bed2e2438c48c55b9be732e2e",
-      "eventHash": "6a90b13e91eee6bba4f6601aedb1aedf73e4aa5952cdb7bb2743e423ffa0e386"
-    },
-    {
-      "sequence": 3,
-      "state": "certifying",
-      "at": "2026-08-30T14:27:20.283Z",
-      "actor": "codex-p6-controller",
-      "summary": "Exact 15-file feature-surface candidate preserved remotely and awaiting independent adversarial certification.",
-      "evidence": [
-        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch3-candidate"
-      ],
-      "previousEventHash": "6a90b13e91eee6bba4f6601aedb1aedf73e4aa5952cdb7bb2743e423ffa0e386",
-      "eventHash": "c41eb65f388d133a77f722f6f61f5494accd3f09905c735a98b848c46981eef0"
-    },
-    {
-      "sequence": 4,
-      "state": "rejected",
-      "at": "2026-08-30T14:35:57.113Z",
-      "actor": "/root/p6_three_batch_certifier",
-      "summary": "REJECTED candidate e990690: unrelated CompetitorAutopsy MatrxDataTable copy contract entered the reconstructed boundary.",
-      "evidence": [
-        "Concrete defect: candidate changed copy behavior/contracts outside P6."
-      ],
-      "previousEventHash": "c41eb65f388d133a77f722f6f61f5494accd3f09905c735a98b848c46981eef0",
-      "eventHash": "a9108c3eaff02f7632458f22ea96ba23f3d7cad157612bc4090cf24588c3b97c"
-    },
-    {
-      "sequence": 5,
-      "state": "fixing",
-      "at": "2026-08-30T14:35:57.657Z",
-      "actor": "codex-p6-repair",
-      "summary": "Rebuilt batch 3 from only the path-scoped P6 integration hunks, excluding the unrelated copy contract.",
-      "evidence": [
-        "Retry candidate 2e8ee7eeb5e4834bf7bfa5817c1e57f7f353e804 contains exactly 15 files."
-      ],
-      "previousEventHash": "a9108c3eaff02f7632458f22ea96ba23f3d7cad157612bc4090cf24588c3b97c",
-      "eventHash": "1829f1994747f356730c0422c42e0074c09da81eca3b9711cadfd26cbc05c8ae"
-    },
-    {
-      "sequence": 6,
-      "state": "certifying",
-      "at": "2026-08-30T14:35:58.200Z",
-      "actor": "codex-p6-controller",
-      "summary": "Corrected exact batch 3 candidate awaiting adversarial recertification.",
-      "evidence": [
-        "refs/heads/patrol-runs/P6/73c40b81-9bae-4c53-a852-9c65c0a73260-batch3-retry1"
-      ],
-      "previousEventHash": "1829f1994747f356730c0422c42e0074c09da81eca3b9711cadfd26cbc05c8ae",
-      "eventHash": "cf8278127770c3b78797d448b8383351ae2af415f600d0dc01b08ccd568c067e"
     }
   ]
 }

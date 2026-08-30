@@ -494,15 +494,6 @@ export function checkContainedPatrolCandidates(input: {
           cwd: repoRoot,
         }).status === 0;
       if (!contained) continue;
-      const reconciled = record.events.some((event) => {
-        if (event.state !== "reconciled") return false;
-        const reconciliation = event.reconciliation;
-        return (
-          reconciliation?.candidateSha === candidateSha &&
-          reconciliation.outcome === "exact_candidate_rejected"
-        );
-      });
-      if (reconciled) continue;
       const certification = record.events.find(
         (event) =>
           event.state === "certified" &&

@@ -127,7 +127,7 @@ export function ModelColumnHeader({
     <div
       ref={setNodeRef}
       style={dragStyle}
-      className="matrx-touch-targets flex flex-col gap-1 px-1 py-1 border-b border-border bg-card shrink-0 group"
+      className="flex flex-col gap-1 px-1 py-1 border-b border-border bg-card shrink-0 group"
     >
       <div className="flex items-center gap-1">
         <button
@@ -187,7 +187,7 @@ export function ModelColumnHeader({
                 setLabelDraft(column.label);
                 setEditingLabel(true);
               }}
-              className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+              className="p-0.5 text-muted-foreground/40 hover:text-foreground opacity-0 group-hover:opacity-100"
               title="Rename"
             >
               <Pencil className="w-3 h-3" />

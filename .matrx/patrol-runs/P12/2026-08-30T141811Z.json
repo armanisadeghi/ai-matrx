@@ -30,18 +30,6 @@
       ],
       "previousEventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4",
       "eventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d"
-    },
-    {
-      "sequence": 3,
-      "state": "certifying",
-      "at": "2026-08-30T14:35:06.349Z",
-      "actor": "codex-root",
-      "summary": "Exact nine-file P12 product candidate is preserved for independent review; browser proof remains a required gate",
-      "evidence": [
-        "candidate=029667a044490df629fc088506558e5d1ae4b77a; ref=refs/heads/patrol-runs/P12/2026-08-30T141811Z-candidate; DB mirror=92 values/4 roles/8 writes; type/drift/routes/overlays/lint PASS"
-      ],
-      "previousEventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d",
-      "eventHash": "4f897b93d3b6aa15a6a5bd244ec749450b29b04a953787b5d55dae201acc5fe4"
     }
   ]
 }

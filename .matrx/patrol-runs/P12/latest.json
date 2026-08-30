@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "2026-08-30T141811Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:35:06.349Z",
-  "summary": "Exact nine-file P12 product candidate is preserved for independent review; browser proof remains a required gate",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:20:27.020Z",
+  "summary": "Three disjoint repair units are implementing the ranked overlay family",
   "source": "2026-08-30T141811Z.json",
-  "eventHash": "4f897b93d3b6aa15a6a5bd244ec749450b29b04a953787b5d55dae201acc5fe4"
+  "eventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d"
 }

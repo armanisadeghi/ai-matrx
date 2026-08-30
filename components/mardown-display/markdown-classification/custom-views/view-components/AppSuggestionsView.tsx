@@ -196,7 +196,7 @@ const AppSuggestionsDisplay = ({ data, handleGenerate, handleSelect, imageUrls =
 
                                             {/* Display image if URL exists for this suggestion */}
                                             {imageUrls[index] && (
-                                                <div className="matrx-touch-targets mt-3 relative group">
+                                                <div className="mt-3 relative group">
                                                     <img
                                                         src={imageUrls[index]}
                                                         alt={`Generated visual for ${suggestion.app_name || 'App'}`}
@@ -206,9 +206,7 @@ const AppSuggestionsDisplay = ({ data, handleGenerate, handleSelect, imageUrls =
                                                         href={imageUrls[index]}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        data-tap-target
-                                                        aria-label="Open generated image in a new tab"
-                                                        className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-slate-800/80 rounded-full opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                                                        className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-slate-800/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <ExternalLink size={14} className="text-indigo-500" />

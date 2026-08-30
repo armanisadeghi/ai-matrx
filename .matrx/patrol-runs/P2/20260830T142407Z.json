@@ -30,20 +30,6 @@
       ],
       "previousEventHash": "c7063291c0fe6a7194ad4368f42abab71cb8c7f9da83e44c9b361de9dd6fec85",
       "eventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8"
-    },
-    {
-      "sequence": 3,
-      "state": "certifying",
-      "at": "2026-08-30T14:35:14.486Z",
-      "actor": "codex-p2-eradication",
-      "summary": "Exact integrated candidate 01e441fdf958ca20cafd5497cc8e007e41d77f70 is under independent adversarial certification.",
-      "evidence": [
-        "Candidate is an ancestor of origin/main and preserves the site action authority, EntityListPage adoption, and shared sortable-false contract.",
-        "Focused Jest 9/9, focused ESLint, diff-check, and full type-check passed from the canonical checkout.",
-        "In-app Browser runtime is unavailable in this task; managed preview remains healthy at canonical port 3001, so visual proof is infrastructure-limited and cannot reject a valid candidate."
-      ],
-      "previousEventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8",
-      "eventHash": "47c5d6a605cac6befa4d46cbcbec3a46e8d806946b5c6b9d4f4c7c3465049f88"
     }
   ]
 }

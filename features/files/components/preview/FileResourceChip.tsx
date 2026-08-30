@@ -37,7 +37,6 @@ import { formatFileSize } from "@/features/files/utils/format";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   HoverCard,
   HoverCardContent,
@@ -108,61 +107,67 @@ export function FileResourceChip({
     visibility: "personal" as const,
   };
 
-  // The shell stays non-interactive. EntityRef owns the preview-aware file
-  // door, while remove remains its sibling — never a button/link descendant.
-  const chip = (
-    <span
+  const chipContent = (
+    <>
+      {/* Thumb: real image for image/video, category icon otherwise.
+          Container forces a square so MediaThumbnail's aspect math is happy. */}
+      <MediaThumbnail
+        file={thumbnailFile}
+        iconSize={thumbSizePx}
+        className={cn("h-5 w-5", "shrink-0 rounded-sm")}
+        rounded="rounded-sm"
+      />
+
+      <span
+        className={cn(
+          "truncate",
+          size === "xs" ? "max-w-[120px]" : "max-w-[160px]",
+        )}
+      >
+        {fileName}
+      </span>
+    </>
+  );
+
+  const openButton = (
+    <button
+      type="button"
+      onClick={handleOpen}
+      title={fileName}
       className={cn(
-        "group inline-flex h-7 items-stretch rounded-md border border-border bg-card text-foreground",
-        "transition-colors hover:border-accent-foreground/20 hover:bg-accent",
+        "group inline-flex items-center gap-1.5 border border-border bg-card text-foreground",
+        "transition-colors hover:bg-accent hover:border-accent-foreground/20",
+        onRemove ? "rounded-l-md" : "rounded-md",
+        size === "xs"
+          ? "h-7 pl-1 pr-1.5 text-[11px] leading-none"
+          : "h-7 pl-1 pr-2 text-xs",
         className,
       )}
     >
-      <EntityRef
-        token="file"
-        id={fileId}
-        name={fileName}
-        showIcon={false}
-        onOpen={handleOpen}
-        className="min-w-0"
-        labelClassName={cn(
-          "inline-flex h-full min-w-0 items-center gap-1.5",
-          size === "xs"
-            ? "pl-1 pr-1.5 text-[11px] leading-none"
-            : "pl-1 pr-2 text-xs",
+      {chipContent}
+    </button>
+  );
+
+  // Open and remove are sibling buttons. Interactive descendants inside a
+  // button are invalid HTML and make one keyboard action trigger both paths.
+  const chip = onRemove ? (
+    <span className="inline-flex items-stretch">
+      {openButton}
+      <button
+        type="button"
+        aria-label={`Remove ${fileName}`}
+        onClick={onRemove}
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center rounded-r-md border border-l-0 border-border bg-card",
+          "text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
+          "h-7 w-6",
         )}
       >
-        {/* Keep the named record inside EntityRef's AST subtree so the Door
-            Law detector can prove that the rendered filename owns the door. */}
-        <MediaThumbnail
-          file={thumbnailFile}
-          iconSize={thumbSizePx}
-          className={cn("h-5 w-5", "shrink-0 rounded-sm")}
-          rounded="rounded-sm"
-        />
-        <span
-          className={cn(
-            "truncate",
-            size === "xs" ? "max-w-[120px]" : "max-w-[160px]",
-          )}
-        >
-          {fileName}
-        </span>
-      </EntityRef>
-      {onRemove && (
-        <button
-          type="button"
-          aria-label={`Remove ${fileName}`}
-          onClick={onRemove}
-          className={cn(
-            "inline-flex h-full w-6 shrink-0 items-center justify-center rounded-r-md border-l border-border",
-            "text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
-          )}
-        >
-          <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
-        </button>
-      )}
+        <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+      </button>
     </span>
+  ) : (
+    openButton
   );
 
   return (

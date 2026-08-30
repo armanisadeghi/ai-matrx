@@ -447,7 +447,7 @@ const TranscriptViewer = ({
                   }`}
                 >
                   {/* Header with timecode and speaker */}
-                  <div className="matrx-touch-targets flex items-center justify-between px-3 pt-2 pb-1">
+                  <div className="flex items-center justify-between px-3 pt-2 pb-1">
                     <div className="flex items-center gap-2">
                       {showTimecodes && (
                         <Button
@@ -471,9 +471,8 @@ const TranscriptViewer = ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-7 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => handleCopySegment(segment.text, segment.id)}
-                      aria-label="Copy segment"
                     >
                       {copiedSegmentId === segment.id ? (
                         <CheckCheck className="h-4 w-4 text-green-500" />

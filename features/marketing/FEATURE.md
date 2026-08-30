@@ -216,16 +216,7 @@ belongs to that industry. Site-level pack recommendations require the current
 - `/marketing/brands/[brandId]/sites/[siteId]/**` — every registered site mode
   in `MARKETING_SITE_SECTIONS` lives nested under its brand and appears in the
   shared `EntityModeHeader`. `/socials/...` will join as a sibling.
-- `/marketing/sites` — flattened all-sites view (kept deliberately), now on
-  the canonical `EntityListPage`. Its adapter delegates paging, search, status
-  filtering, and exact counts to `listSites`; all eight table/mobile
-  presentations consume one column registry, while kebab, mobile cards,
-  right-click, and the list shell consume one seven-action site authority.
-  Unsupported KPI filters and the Connections sort stay explicitly absent
-  rather than falling through to a different server operation. Rows link to
-  the nested canonical URLs, and the existing editor, governed delete, copy
-  payloads, lazy quick view, and `site_editor_draft` surface write remain the
-  only corresponding behavior paths.
+- `/marketing/sites` — flattened all-sites view (kept deliberately); rows link to the nested canonical URLs.
 - `/marketing/sites/[siteId]/**` — LEGACY shim only: client redirect that resolves the brand under the caller's session and replaces the URL. Cross-links built from rows that only carry `site_id` may target it.
 - `/marketing/connections` — user/org credential onboarding and site-provider
   binding guide. Its route layout owns one persistent `RouteModeNav` for
@@ -641,17 +632,6 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
-
-- 2026-08-30 — Codex: **The sites portfolio now consumes the canonical list
-  shell and one site action authority.** `EntityListPage` owns server paging,
-  persisted list style, query controls, mobile cards, table actions, and
-  right-click for `/marketing/sites`; its feature adapter still delegates to
-  `listSites`, and the eight-column presentation keeps only the search/status
-  filters and sorts the server can actually serve. The existing seven actions,
-  copy payloads, site editor and agent draft target, governed delete, brand-first
-  doors, GSC notice, and lazy quick-view boundary are preserved. The shared
-  shell now respects an explicit `sortable: false`, preventing Connections
-  from silently falling through to the server's unrelated default sort.
 
 - 2026-08-30 — Pattern Patrol P13: the brand Identity website switcher now
   composes the shared `CreatablePicker` instead of a closed dropdown. A typed

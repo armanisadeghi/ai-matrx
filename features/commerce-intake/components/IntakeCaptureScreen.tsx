@@ -59,6 +59,7 @@ import {
   queryCameraPermission,
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
+import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import {
   acquireMicStream,
   releaseMicStream,
@@ -179,10 +180,6 @@ export function IntakeCaptureScreen({
   const [notSupported, setNotSupported] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  // Flip is a FACING toggle (front↔back), never a deviceId cycle — iPhones
-  // enumerate several back lenses, so "next camera" walked wide→ultrawide→
-  // tele and rarely reached the front ("flip doesn't work").
-  const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [flash, setFlash] = useState(false);
 
   const leaseRef = useRef<CameraLease | null>(null);
@@ -220,7 +217,9 @@ export function IntakeCaptureScreen({
         const lease = await acquireCameraLease(
           {
             profile: "maximum-available",
-            ...(deviceId ? { deviceId } : { facingMode: facing }),
+            ...(deviceId
+              ? { deviceId }
+              : { facingMode: "environment" as const }),
           },
           { combineMicPrompt: true },
         );
@@ -258,17 +257,31 @@ export function IntakeCaptureScreen({
       }
       setStream(null);
     };
-  }, [deviceId, facing]);
+  }, [deviceId]);
 
   const cameraBlocked = notSupported || permissionDenied;
 
+  const { setCamera } = useAudioDevices();
   const switchCamera = useCallback(() => {
-    // Front↔back by facingMode; the OS picks the lens. Clearing deviceId
-    // drops any persisted preferred camera from the spec so it cannot pin
-    // the flip to the previous side.
-    setDeviceId(null);
-    setFacing((f) => (f === "environment" ? "user" : "environment"));
-  }, []);
+    const cams = getMediaDevicesSnapshot().cameras;
+    if (cams.length < 2) return;
+    const currentIdx = deviceId
+      ? cams.findIndex((c) => c.deviceId === deviceId)
+      : cams.findIndex(
+          (c) =>
+            c.deviceId ===
+            leaseRef.current?.stream.getVideoTracks()[0]?.getSettings()
+              .deviceId,
+        );
+    const next = cams[(Math.max(currentIdx, 0) + 1) % cams.length];
+    if (next) {
+      setDeviceId(next.deviceId);
+      // Persist id + label (labels survive iOS deviceId regeneration) so the
+      // SAME camera comes back on the next open — the preferred-camera
+      // resolver applies it as `{ideal}` with no renegotiation or prompt.
+      setCamera(next.deviceId, next.label);
+    }
+  }, [deviceId, setCamera]);
 
   // ── Capture modes ────────────────────────────────────────────────────────
   const [mediaMode, setMediaMode] = useState<"photo" | "video">("photo");
@@ -518,7 +531,6 @@ export function IntakeCaptureScreen({
           stream={stream}
           framing="viewport-crop"
           videoRef={videoRef}
-          mirror={facing === "user"}
         />
       </div>
       {flash && <div className="absolute inset-0 z-20 bg-white/70" />}

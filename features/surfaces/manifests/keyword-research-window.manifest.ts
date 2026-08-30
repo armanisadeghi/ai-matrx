@@ -14,7 +14,6 @@
 
 import type { MarketingSite } from "@/features/marketing/types";
 import type { ResearchRunState } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
-import type { SavedKeywordResearch } from "@/features/marketing/seo/keyword-research/data/queries";
 import type {
   KeywordMarketRow,
   KeywordWithMarket,
@@ -31,7 +30,7 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
 
-export const KEYWORD_RESEARCH_WINDOW_SURFACE_NAME =
+export const KEYWORD_RESEARCH_WINDOW_SURFACE =
   "matrx-user/keyword-research-window" as const;
 
 const groups: SurfaceValueGroup[] = [
@@ -270,41 +269,6 @@ const values: SurfaceValue[] = [
     sortOrder: 400,
   },
   {
-    name: "saved_research_status",
-    label: "Saved research status",
-    description:
-      "Current state of the site-and-keyword-scoped durable research lookup: idle, loading, ready, or error. Always present while the window is mounted.",
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 8,
-    autoContext: false,
-    group: "research_run",
-    sortOrder: 405,
-  },
-  {
-    name: "saved_research_error",
-    label: "Saved research error",
-    description:
-      "Failure message from the durable saved-research lookup. Empty when no lookup failed or no site/phrase is selected.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 160,
-    group: "research_run",
-    sortOrder: 406,
-  },
-  {
-    name: "saved_research",
-    label: "Saved research",
-    description:
-      "Latest durable site-and-keyword-scoped research record displayed after remount, including id, creation time, title, and artifact. Empty when no saved research exists for the staged phrase.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 2200,
-    autoContext: false,
-    group: "research_run",
-    sortOrder: 407,
-  },
-  {
     name: "research_run",
     label: "Research run",
     description:
@@ -460,7 +424,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 ];
 
 export const keywordResearchWindowManifest: SurfaceManifest = {
-  surfaceName: KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
+  surfaceName: KEYWORD_RESEARCH_WINDOW_SURFACE,
   label: "Keyword Research",
   overlayId: "keywordResearchWindow",
   readiness: "partial",
@@ -551,10 +515,7 @@ function markdownContent(args: {
   if (visibleKeywords.length === 0) {
     lines.push("No keyword rows are currently visible.");
   } else {
-    lines.push(
-      "| Keyword | Volume | CPC | Competition | Intent |",
-      "| --- | ---: | ---: | --- | --- |",
-    );
+    lines.push("| Keyword | Volume | CPC | Competition | Intent |", "| --- | ---: | ---: | --- | --- |");
     for (const row of visibleKeywords) {
       lines.push(
         `| ${row.phrase.replaceAll("|", "\\|")} | ${row.search_volume ?? "—"} | ${row.cpc ?? "—"} | ${row.competition ?? "—"} | ${row.intent_class ?? "—"} |`,
@@ -582,9 +543,6 @@ export interface KeywordResearchWindowScopeInput {
   stagedKeyword: string;
   run: ResearchRunState;
   volumeStage: string | null;
-  savedResearch: SavedKeywordResearch | null;
-  savedResearchLoading: boolean;
-  savedResearchError: string | null;
 }
 
 /** Type-safe trigger-time scope builder for the floating family member. */
@@ -606,9 +564,6 @@ export function buildKeywordResearchWindowScope({
   stagedKeyword,
   run,
   volumeStage,
-  savedResearch,
-  savedResearchLoading,
-  savedResearchError,
 }: KeywordResearchWindowScopeInput): SurfaceScopePayload {
   const projectedSites = siteOptions.map(projectSite);
   const selectedSite = projectedSites.find(
@@ -616,7 +571,7 @@ export function buildKeywordResearchWindowScope({
   );
   const projectedLoaded = loadedKeywords.map(projectKeyword);
   const projectedVisible = visibleKeywords.map(projectKeyword);
-  const artifact = run.result?.artifact ?? savedResearch?.artifact;
+  const artifact = run.result?.artifact;
   const researchRun: Record<string, unknown> = {
     status: run.status,
     primary_keyword: run.primaryKeyword ?? null,
@@ -655,17 +610,6 @@ export function buildKeywordResearchWindowScope({
       : undefined,
     cluster_phrases: clusterPhrases?.length ? clusterPhrases : undefined,
     research_input_keyword: stagedKeyword.trim() || undefined,
-    saved_research_status: savedResearchError
-      ? "error"
-      : savedResearchLoading
-        ? "loading"
-        : savedResearch
-          ? "ready"
-          : "idle",
-    saved_research_error: savedResearchError ?? undefined,
-    saved_research: savedResearch
-      ? (savedResearch as unknown as Record<string, unknown>)
-      : undefined,
     research_run: researchRun,
     run_status: run.status,
     run_primary_keyword: run.primaryKeyword ?? undefined,
@@ -709,7 +653,6 @@ export function createKeywordResearchWindowScope(values: {
   explorer_open: boolean;
   research_run: Record<string, unknown>;
   run_status: string;
-  saved_research_status: string;
   initial_keyword?: string;
   site_options_error?: string;
   selected_site_id?: string;
@@ -718,8 +661,6 @@ export function createKeywordResearchWindowScope(values: {
   cluster_primary_keyword?: string;
   cluster_phrases?: string[];
   research_input_keyword?: string;
-  saved_research_error?: string;
-  saved_research?: Record<string, unknown>;
   run_primary_keyword?: string;
   run_stage?: string;
   run_id?: string;

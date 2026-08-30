@@ -274,15 +274,6 @@ function main(): void {
           candidateSha,
           escapedEventHash,
           checks: many(args, "check"),
-          outcome: one(args, "outcome", false) as
-            | "exact_candidate_certified"
-            | "exact_candidate_rejected"
-            | undefined,
-          replacementCandidateSha: one(
-            args,
-            "replacement-candidate",
-            false,
-          ),
         },
       });
       publishPatrolRunAuthority({

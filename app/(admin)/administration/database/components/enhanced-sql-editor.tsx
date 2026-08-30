@@ -500,7 +500,7 @@ export const EnhancedSQLEditor = ({
                           <span className="text-slate-500 dark:text-slate-400 text-[10px]">
                             {item.timestamp.toLocaleTimeString()}
                           </span>
-                          <div className="matrx-touch-targets flex gap-1">
+                          <div className="flex gap-1">
                             {Object.keys(queryCache).includes(item.query) && (
                               <Badge
                                 variant="outline"
@@ -512,12 +512,11 @@ export const EnhancedSQLEditor = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(item.query);
                               }}
-                              aria-label="Copy query"
                             >
                               <Copy className="h-3 w-3" />
                             </Button>

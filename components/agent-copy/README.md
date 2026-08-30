@@ -7,11 +7,11 @@ no page reimplements them.
 
 **Pieces:**
 
-- `CopyButtons` — **the canonical compact two-icon pair.** Pass `human`, `agent`, and `export`;
+- `CopyButtons` — **the one control and one icon.** Pass `human`, `agent`, and `export`;
   hide any segment with `hide={["copy"|"ai"|"export"]}` (cards omit Download
   by not passing `export`, or `hide={["export"]}` when sharing a builder).
-  human Copy is the first icon; every other action appears behind the
-  `CopyForAiIcon` trigger — do not also render `ExportMenu` beside it. AI-menu order is Copy JSON, Copy for
+  every available action appears behind one `CopyForAiIcon` trigger — do not
+  also render `ExportMenu` beside it. Menu order is Copy, Copy JSON, Copy for
   AI, shaped AI variants, then downloads and destinations. A menu item copies, or opens a
   modal (`onSelect` / hosted `modal` on an `AiVariant`; `onSelect` on an
   export item). `groomer` and `aiCustom` already host their own workspaces.
@@ -21,24 +21,24 @@ no page reimplements them.
   focus remains visible through icon color.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
-  structured data; it is the first AI-menu item, never another button.
+  structured data; it is the second menu item, never another button.
 - `CopyForAiIcon` — the canonical text-free AI-copy mark: overlapping copy
   sheets containing a connected intelligence node. Keep this semantic shape
   across surfaces; do not substitute a bot, face, star, or sparkle.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
-- `CopyActionGroup` — the shared compact grouped chrome used by `CopyButtons`
-  and intentionally standalone export-only controls.
+- `CopyActionGroup` — legacy segmented chrome retained only for intentionally
+  standalone export-only controls. `CopyButtons` no longer renders it.
 - `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
   `textExportItem`, `rowsToCsv`) — the **Download** dropdown. Prefer
-  `CopyButtons export={{ items, sheetRows }}` so it sits in the AI menu.
+  `CopyButtons export={{ items, sheetRows }}` so it sits in the one menu.
   Standalone `ExportMenu` stays valid for surfaces that export without copy.
   **Every data surface offers export, not just clipboard copy** — a list/table
   gets JSON + CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it
   free via the `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds
   view-shaped CSV.
 - `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
-  workspace opened from the **Copy-for-AI menu**. It grooms the
+  workspace opened from the **one unified menu**. It grooms the
   whole-page payload before copying; its footer also exports payload `.md` /
   data `.json`. Pass `groomer={() => config}` to `CopyButtons`; **never place
   `AgentCopyGroomerLauncher` beside it.**
@@ -60,7 +60,7 @@ copy/export always operate on ALL rows, never just the visible slice.
 ```tsx
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
-// Per-row / per-card (one compact two-icon pair):
+// Per-row / per-card (one compact icon):
 <CopyButtons
   size="icon"
   label={`Sandbox ${row.sandbox_id}`}
@@ -75,12 +75,12 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
   })}
 />
 
-// Whole-page / whole-list (the same icon-only pair, in the header):
+// Whole-page / whole-list (the same icon-only control, in the header):
 <CopyButtons
   size="sm"
   label="All sandboxes"
   human={() => list.map(humanSummary).join("\n\n")}
-  json={() => list}                        // first item in the AI menu
+  json={() => list}                        // second item in the unified menu
   agent={() => ({
     kind: "sandbox-instances",
     location: "...",
@@ -120,7 +120,7 @@ survives.
   and per item, plus a whole-list control in the section header.
 - **Detail/record pages & row windows**: a record-level control in the header +
   per-field hover controls (see MatrxDataTable integration below).
-- **Whole page**: one `CopyButtons` pair. Its AI menu contains
+- **Whole page**: one `CopyButtons` control. Its menu contains
   JSON, shaped AI variants, and the Groomer/custom workspace when available.
 - **Don't overwhelm visually** — hover-reveal keeps ubiquity from becoming
   clutter. Skip surfaces with no meaningful record (pure tools, visualizers,
@@ -128,13 +128,13 @@ survives.
 
 ## Non-negotiable control shape
 
-- **Two icons, any subset of the action categories:** human Copy, then Copy JSON, Copy for
-  AI, and Export behind the AI icon. Hide with `hide` or by omitting that payload. Export never
+- **One icon, any subset of the action categories:** Copy, Copy JSON, Copy for
+  AI, and Export. Hide with `hide` or by omitting that payload. Export never
   sits beside the control as a loose button.
 - **Icons only at every size.** Accessible names and tooltips carry the labels;
   visible `Copy`, `JSON`, or `Copy for AI` text is forbidden.
-- **The AI menu owns every structured format and destination.** JSON comes
-  first when structured data exists, faithful AI next, then
+- **The menu owns every format and destination.** Human-readable Copy comes
+  first, JSON second when structured data exists, faithful AI third, then
   shaped AI variants, Groomer/custom workspaces, and export destinations.
 - **`CopyForAiIcon` is canonical.** `Sparkles`, `Sparkle`, bot, face, star, and
   any other substitute are banned for AI copy.
@@ -149,9 +149,9 @@ _"what would someone actually hand an AI here?"_:
 
 | Data                                                     | Control                                                           | Variants                                           |
 | -------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------- |
-| **Small / bounded** (one record, a short list)           | two icons; AI direct only for exactly one AI action | Copy + JSON when structured + faithful AI         |
-| **Medium** (a focused list, a digestible page)           | Copy icon + AI menu                                | Copy + JSON + faithful AI + focused variants      |
-| **Massive / unbounded** (giant payloads, full histories) | Copy icon + AI menu + custom workspace             | Copy + JSON + AI variants + export + custom       |
+| **Small / bounded** (one record, a short list)           | one icon; direct only for exactly one action | Copy + JSON when structured + faithful AI         |
+| **Medium** (a focused list, a digestible page)           | one icon menu                                | Copy + JSON + faithful AI + focused variants      |
+| **Massive / unbounded** (giant payloads, full histories) | one icon menu + custom workspace             | Copy + JSON + AI variants + export + custom       |
 
 - **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
   (pure `build()` → envelope-or-string, may be async) and optionally `custom`
@@ -161,7 +161,7 @@ _"what would someone actually hand an AI here?"_:
   dropdown. Shortening logic NEVER lives in the chrome — write a pure
   per-data builder.
 - **`CopyButtons` upgrades in place**: pass `aiVariants` / `aiCustom` and its
-  AI menu gains those choices, with `json`, the existing `agent` payload as the
+  unified menu gains those choices, with `json`, the existing `agent` payload as the
   never-lossy **Everything** escape hatch, and the page Groomer/custom
   workspace. Never render a second AI icon or a standalone JSON icon beside
   the control.
@@ -182,8 +182,8 @@ _"what would someone actually hand an AI here?"_:
 
 ## Built-in integrations (don't rewire by hand)
 
-- **`MatrxDataTable`** — pass the `copy` config and you get per-row two-icon
-  pairs, a toolbar this-view pair (markdown table + summaries + JSON/CSV/Excel/
+- **`MatrxDataTable`** — pass the `copy` config and you get per-row single-icon
+  menus, a toolbar this-view menu (markdown table + summaries + JSON/CSV/Excel/
   Google Sheets), a record control in the row window header
   (`DataRowWindow.headerActions`), and per-field hover controls in
   `DataRowInspector` (side panel + window View tab). One config, five surfaces.
@@ -191,12 +191,12 @@ _"what would someone actually hand an AI here?"_:
   (`fieldCopy={false}` to opt out); pass `recordKind`/`recordLabel`/`location`
   for correct payloads.
 - **`JsonInspector`** — pass `agentCopy` (an `AgentPayloadInput` or builder) to
-  render the canonical compact pair whose AI menu contains Copy JSON and agent
+  render the canonical single control whose menu contains Copy JSON and agent
   variants.
 
-## Whole-page copy — the Groomer inside the AI menu
+## Whole-page copy — the Groomer inside the unified menu
 
-The page header still renders only the `CopyButtons` pair. Its AI menu opens
+The page header still renders only `CopyButtons`. Its unified menu opens
 `AgentCopyGroomerWindow` when `groomer={() => config}` is supplied (WindowPanel;
 the shared `AgentCopyGroomerHost` owns the one client-only loading boundary).
 The user grooms the payload before copying:

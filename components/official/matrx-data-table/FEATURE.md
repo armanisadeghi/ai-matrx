@@ -99,13 +99,13 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
 - **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). Domain-specific
   row actions such as paste-ready repair briefs belong in `copy.rowAiVariants`,
-  which feeds the same table-owned Copy-for-AI menu across cards, rows, side panels,
+  which feeds the same table-owned row menu across cards, rows, side panels,
   and windows; never add a separate copy button or action column. When both `selection` and
   `copy` are configured, the bulk bar automatically exposes Copy / JSON / Copy for AI for the
   loaded selected rows; consumers add only their domain-specific bulk actions.
 - **Desktop row actions are micro; touch targets stay full-size.** Table-owned
   row Copy/Copy-for-AI and window triggers use the `xs` action preset at `lg`
-  (20px pair height, 32px per icon cell) and remain 44px below `lg`. Consumer icon-only
+  (20px group height) and remain 44px below `lg`. Consumer icon-only
   `rowActions` match `h-11 w-11 lg:h-5 lg:w-5`; never use the default icon
   button size inside a row.
 - **Desktop body rows are dense; mobile rows stay touch-spaced.** Body cells use
