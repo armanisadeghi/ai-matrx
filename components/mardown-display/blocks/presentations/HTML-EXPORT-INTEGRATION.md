@@ -22,7 +22,7 @@ User clicks "Save as Webpage"
   ↓
 Convert presentation to markdown
   ↓
-Convert markdown to HTML using markdownToWordPressHTML()
+Convert markdown to HTML using markdownToHtml() (`@ai-matrx/print/markdown`)
   ↓
 Generate complete HTML with WordPress CSS
   ↓
@@ -40,7 +40,7 @@ Show PresentationPublishModal with:
 1. **`PresentationExportMenu.tsx`** - Export dropdown menu
    - Handles all export logic
    - Integrates with `useHTMLPages` hook
-   - Uses `markdownToWordPressHTML()` for conversion
+   - Uses `markdownToHtml() (`@ai-matrx/print/markdown`)` for conversion
    - Triggers publish modal automatically
 
 2. **`PresentationPublishModal.tsx`** - Publish results modal
@@ -65,7 +65,7 @@ Show PresentationPublishModal with:
 
 ### ✅ Fully Implemented
 - ✅ Presentation → Markdown conversion
-- ✅ Markdown → HTML via `markdownToWordPressHTML()`
+- ✅ Markdown → HTML via `markdownToHtml() (`@ai-matrx/print/markdown`)`
 - ✅ Full WordPress CSS styling with `matrx-` classes
 - ✅ Automatic publishing to Supabase database
 - ✅ Professional modal with iframe preview
@@ -158,9 +158,9 @@ AI provides numerous advantages
 
 ### Dependencies Used:
 - `useHTMLPages` hook → Database operations
-- `markdownToWordPressHTML()` → Markdown conversion
+- `markdownToHtml() (`@ai-matrx/print/markdown`)` → Markdown conversion
 - `generateCompleteHtmlFromSources()` → Complete HTML generation
-- `getWordPressCSS()` → Styling
+- `getMarkdownStylesheet()` (`@ai-matrx/print/markdown`) → Styling
 - `useAppSelector(selectUser)` → User authentication
 - `PresentationPublishModal` → Results display
 
@@ -204,7 +204,7 @@ AI provides numerous advantages
 - `features/html-pages/utils/markdown-wordpress-utils.ts` - HTML conversion
 - `features/html-pages/utils/html-source-files-utils.ts` - Complete HTML generation
 - `features/html-pages/hooks/useHTMLPages.js` - Database operations
-- `features/html-pages/css/wordpress-styles.ts` - CSS styling
+- `@ai-matrx/print/markdown` `getMarkdownStylesheet()` - CSS styling
 - `features/html-pages/components/tabs/SavePageTab.tsx` - Reference implementation
 
 ---
