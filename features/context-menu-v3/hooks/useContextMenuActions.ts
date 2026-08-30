@@ -17,7 +17,7 @@
 // (registered by the shell for editable surfaces), so any agent/shortcut
 // launched from the menu can stream `widget_text_*` edits into the surface.
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import {
   AppWindow,
@@ -381,6 +381,7 @@ export function useContextMenuActions(
    *      (runtime only)" in the Surface Context window). A read path is a read
    *      path whether or not anyone wrote it down.
    */
+  const scopeKeySignature = Object.keys(scope).sort().join("|");
   const availableKeys = useMemo(
     () =>
       buildAvailableKeys({
@@ -388,10 +389,11 @@ export function useContextMenuActions(
         declaredValueNames: surfaceName
           ? getManifest(surfaceName)?.values.map((v) => v.name)
           : undefined,
-        runtimeScopeKeys: Object.keys(scope),
+        // `scope` is rebuilt every render but its KEY SET is stable for an
+        // open, so the signature — not the object — is the dependency.
+        runtimeScopeKeys: scopeKeySignature.split("|").filter(Boolean),
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [surfaceName, Object.keys(scope).sort().join(" ")],
+    [surfaceName, scopeKeySignature],
   );
 
   /**
