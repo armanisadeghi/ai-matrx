@@ -13,6 +13,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 interface Recipient {
   id: string;
@@ -213,11 +214,14 @@ export function EmailComposeSheet({
               {emailConfig?.allowedDomains &&
               emailConfig.allowedDomains.length > 0 ? (
                 <>Allowed domains: {emailConfig.allowedDomains.join(", ")}</>
+              ) : emailConfig?.defaultFrom ? (
+                <>Leave blank to use default: {emailConfig.defaultFrom}</>
               ) : (
-                <>
-                  Leave blank to use default:{" "}
-                  {emailConfig?.defaultFrom || "loading..."}
-                </>
+                <SuspenseLoader
+                  centered={false}
+                  size="xs"
+                  message="Loading default sender…"
+                />
               )}
             </p>
           </div>

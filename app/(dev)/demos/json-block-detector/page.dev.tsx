@@ -18,10 +18,7 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
-import {
-  KIND_KEY,
-  type KindSchema,
-} from "@ai-matrx/content-ir";
+import { KIND_KEY, type KindSchema } from "@ai-matrx/content-ir";
 import type { KindStreamEvent } from "@ai-matrx/content-ir";
 import {
   disposeParseSession,
@@ -62,10 +59,7 @@ const FlashcardsBlock = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex h-24 items-center justify-center rounded-lg border border-border bg-muted/30">
-        <SuspenseLoader
-          centered={false}
-          message="Loading flashcard preview…"
-        />
+        <SuspenseLoader centered={false} message="Loading flashcard preview…" />
       </div>
     ),
   },
