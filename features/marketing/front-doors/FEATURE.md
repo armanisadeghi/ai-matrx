@@ -37,6 +37,7 @@ second console and must be cut back to doors.
 | `OutreachFrontDoor.tsx` | Campaign / queue / mailbox counts + the five Chasebox queues + recent confirmed wins |
 | `MonitoringFrontDoor.tsx` | The four site-scoped monitoring views |
 | `EmailFrontDoor.tsx` | Lane B email (mailbox, templates, sequences) + per-org template libraries |
+| `BrandScopedOutreach.tsx` / `BrandScopedEmail.tsx` / `BrandScopedMonitoring.tsx` | The client-workspace mounts: bind the canonical door to `useMarketingBrand()` and pass the brand down. The pages under `/marketing/[brandId]/**` mount THESE, never the bare door |
 
 ## Invariants
 
@@ -46,6 +47,19 @@ second console and must be cut back to doors.
 - **Scope honesty.** The outreach counts use `makeScope("mine")` because that is
   the scope the Chasebox itself opens on. A front door that counted a wider
   scope than the destination would lie by arithmetic.
+- 🚨 **Scope honesty part two: the brand is the tenant, and what cannot be
+  scoped says so.** A front door mounted inside `/marketing/<brand>/**` scopes
+  everything the data model lets it scope — websites carry `brand_id`, so the
+  site picker and every site-scoped door see only that client's sites
+  (`useFrontDoorSite(brandId)`); sending identities carry an org, so the
+  mailbox count takes the brand's `organizationId`. Everything else on these
+  pages (outreach campaigns, Chasebox queues, the reply inbox, earned-placement
+  wins, message templates, the per-org template libraries) has NO brand link in
+  the data model. Those doors are **kept and labelled** — inside a brand each
+  one names its real reach ("across your clients", "in <client>'s
+  organization"). Never fake a filter we cannot apply, and never delete a
+  working door to make the page look tidy: a door removed is a dead end, a door
+  mislabelled is a lie.
 - **aidream is optional to the page, not to the count.** The mailbox count is
   the one non-Supabase read. A failure drops the *number*, never the door.
 - **Unbuilt remainders stay registered.** `/marketing/email` prints
@@ -80,3 +94,14 @@ across all of them.
   front doors; `marketing.outreach` deleted from the coming-soon registry
   (fulfilled), `marketing.email` and `marketing.monitoring` replaced by the
   narrower promises that are genuinely still open.
+- **2026-08-30** — Brand-scoped for the agency model. `BrandScopedOutreach`
+  added and mounted at `/marketing/[brandId]/pr/outreach` (it was still picking
+  the first website on the PLATFORM, so one client's page sent the operator
+  prospecting on another client's site); `OutreachFrontDoor` gained optional
+  `brandId` / `brandName` / `organizationId` / `basePath`, and its mailbox count
+  now takes the org the way `EmailFrontDoor` already did, so the two doors can
+  never disagree. `EmailFrontDoor` gained `brandName` and now names this
+  client's own template library first. Everything with no brand link stayed and
+  gained an honest scope label — see the scope-honesty invariant above. All
+  props default to the org-wide behaviour, so the flat legacy doors are
+  unchanged.
