@@ -20,17 +20,18 @@
  *
  * Switching agents remounts `AgentRunBody` via `key={agentId}`, so the managed
  * `useAgentLauncher` properly disposes the previous instance and reinitializes
- * for the new agent. Clicking a past conversation in the sidebar dispatches
- * `loadConversation` (with the window's surfaceKey) which sets focus, causing
- * the launcher-managed `conversationId` to switch to the loaded one.
+ * for the new agent. Clicking a past conversation switches the window to the
+ * row's owning agent and resumes it through `useConversationResume`, the same
+ * canonical hydration/reconnect path used by the Chat route.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
+import { toast } from "@/lib/toast";
 import { selectAllWindows } from "@/lib/redux/slices/windowManagerSlice";
 import {
   selectAgentById,
@@ -43,9 +44,8 @@ import { ConversationHistorySidebar } from "@/features/agents/components/convers
 import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { startNewConversation } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import {
   registerSurface,
   unregisterSurface,
@@ -85,7 +85,7 @@ function AgentRunWindowSidebar({
   agentId: string | null;
   surfaceKey: string | null;
   activeConversationId: string | null;
-  onSelect: (conversationId: string) => void;
+  onSelect: (conversation: ConversationListItem) => void;
 }) {
   const canonicalAgentId = useAppSelector((state: RootState) => {
     if (!agentId) return null;
@@ -95,7 +95,7 @@ function AgentRunWindowSidebar({
 
   const handleOpenConversation = useCallback(
     (conv: ConversationListItem) => {
-      onSelect(conv.conversationId);
+      onSelect(conv);
     },
     [onSelect],
   );
@@ -238,7 +238,6 @@ function AgentRunBody({
   initialAutoRun = false,
 }: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
 
   const hasDraft =
     Boolean(initialDraftText) ||
@@ -298,7 +297,6 @@ function AgentRunBody({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId, initAttempt]);
 
   // ── Managed launcher ───────────────────────────────────────────────────────
@@ -312,13 +310,27 @@ function AgentRunBody({
     // A floating runner can sit above any feature surface. Its agent is the
     // primary interaction here, so the page underneath must not be adopted.
     runtime: { surfaceName: null },
-    ready: !isInitializing,
+    // Existing conversations resume through useConversationResume below. The
+    // launcher owns only the fresh-conversation path, exactly as /chat does.
+    ready: !isInitializing && !selectedConversationId,
     preferFresh: hasDraft,
     config: {
       autoRun: initialAutoRun,
       defaultVariables: initialVariableValues ?? null,
     },
   });
+
+  // THE canonical existing-conversation sequence: retain a live stream when
+  // already present, otherwise create under the same id, hydrate every
+  // per-conversation slice, surface pending tool calls, and reconnect server
+  // work. ChatRoomClient uses this same hook.
+  const { isResuming, error: resumeError } = useConversationResume({
+    conversationId: selectedConversationId,
+    agentId,
+    surfaceKey,
+    enabled: !isInitializing,
+  });
+  const renderedConversationId = selectedConversationId ?? conversationId;
 
   // ── Seed the composed draft into the fresh conversation's composer ─────────
   // Applied once the launcher's input entry exists (setUserInputText requires
@@ -330,11 +342,18 @@ function AgentRunBody({
   );
   const draftSeededRef = useRef<string | null>(null);
   useEffect(() => {
+    if (selectedConversationId) return;
     if (!initialDraftText || !conversationId || !draftEntryReady) return;
     if (draftSeededRef.current === conversationId) return;
     draftSeededRef.current = conversationId;
     dispatch(setUserInputText({ conversationId, text: initialDraftText }));
-  }, [initialDraftText, conversationId, draftEntryReady, dispatch]);
+  }, [
+    selectedConversationId,
+    initialDraftText,
+    conversationId,
+    draftEntryReady,
+    dispatch,
+  ]);
 
   // ── Seed declared-variable values onto the same fresh conversation ─────────
   // The structured-content channel for this window: never mixed into the
@@ -349,6 +368,7 @@ function AgentRunBody({
   });
   const variableSeededRef = useRef<string | null>(null);
   useEffect(() => {
+    if (selectedConversationId) return;
     if (
       !initialVariableValues ||
       Object.keys(initialVariableValues).length === 0
@@ -363,54 +383,13 @@ function AgentRunBody({
         values: initialVariableValues,
       }),
     );
-  }, [initialVariableValues, conversationId, variableEntryReady, dispatch]);
-
-  // ── Sync selectedConversationId → load + focus (replaces URL sync) ─────────
-  const lastLoadedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!selectedConversationId) {
-      lastLoadedRef.current = null;
-    }
-  }, [selectedConversationId]);
-
-  useEffect(() => {
-    if (!selectedConversationId || isInitializing) return;
-    if (selectedConversationId === lastLoadedRef.current) return;
-    if (selectedConversationId === conversationId) return;
-    lastLoadedRef.current = selectedConversationId;
-
-    (async () => {
-      const exists = !!(store.getState() as RootState).conversations
-        ?.byConversationId[selectedConversationId];
-
-      if (!exists) {
-        try {
-          await dispatch(
-            createManualInstance({
-              agentId,
-              conversationId: selectedConversationId,
-              apiEndpointMode: "agent",
-            }),
-          ).unwrap();
-        } catch (err) {
-          console.error("[AgentRunWindow] createManualInstance failed", err);
-          return;
-        }
-      }
-
-      try {
-        await dispatch(
-          loadConversation({
-            conversationId: selectedConversationId,
-            surfaceKey,
-          }),
-        ).unwrap();
-      } catch (err) {
-        console.error("[AgentRunWindow] loadConversation failed", err);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedConversationId, isInitializing, conversationId]);
+  }, [
+    selectedConversationId,
+    initialVariableValues,
+    conversationId,
+    variableEntryReady,
+    dispatch,
+  ]);
 
   if (initError && !isInitializing) {
     return (
@@ -438,11 +417,30 @@ function AgentRunBody({
     );
   }
 
-  if (isInitializing || !conversationId) {
+  if (resumeError && selectedConversationId) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="flex w-full max-w-md flex-col gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-5">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">Couldn&apos;t reopen this chat</span>
+          </div>
+          <p className="text-sm leading-snug text-muted-foreground">
+            {resumeError} Choose another conversation from the sidebar and try
+            again.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isInitializing || isResuming || !renderedConversationId) {
     return (
       <div className="flex items-center justify-center h-full gap-3 text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        <span className="text-sm">Loading agent…</span>
+        <span className="text-sm">
+          {selectedConversationId ? "Opening chat…" : "Loading agent…"}
+        </span>
       </div>
     );
   }
@@ -452,7 +450,7 @@ function AgentRunBody({
       <DebugSessionActivator />
       <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
         <AgentConversationColumn
-          conversationId={conversationId}
+          conversationId={renderedConversationId}
           surfaceKey={surfaceKey}
           constrainWidth
           edgeToEdgeScroll
@@ -581,9 +579,24 @@ function AgentRunWindowInner({
     setSelectedConversationId(null);
   }, []);
 
-  const handleConversationSelect = useCallback((conversationId: string) => {
-    setSelectedConversationId(conversationId);
-  }, []);
+  const handleConversationSelect = useCallback(
+    (conversation: ConversationListItem) => {
+      if (!conversation.agentId) {
+        console.error(
+          "[AgentRunWindow] Cannot open a conversation without its owning agent",
+          { conversationId: conversation.conversationId },
+        );
+        toast.error("This chat is missing its agent and cannot be opened.");
+        return;
+      }
+
+      // One selection owns both identities. Updating only the conversation id
+      // leaves the header and launcher bound to the previous agent.
+      setAgentId(conversation.agentId);
+      setSelectedConversationId(conversation.conversationId);
+    },
+    [],
+  );
 
   const handleNewRunCleared = useCallback(() => {
     setSelectedConversationId(null);
