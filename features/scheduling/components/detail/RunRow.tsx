@@ -30,7 +30,7 @@ export function RunRow({ run, task = null }: Props) {
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex-1 min-w-0 grid grid-cols-[auto_1fr_auto] items-center gap-3 px-3 py-2 hover:bg-accent/30 text-left",
+            "grid min-h-11 min-w-0 flex-1 grid-cols-[auto_1fr_auto] items-center gap-3 px-3 py-2 text-left hover:bg-accent/30",
           )}
         >
           {open ? (
@@ -74,7 +74,7 @@ export function RunRow({ run, task = null }: Props) {
       {open && (
         <div className="px-3 pb-3 pt-1 text-xs space-y-2 border-t border-border/60">
           {run.error_message && (
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md p-2 text-red-800 dark:text-red-200">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-destructive">
               <div className="font-semibold text-[11px] uppercase tracking-wide mb-1">
                 Error
               </div>

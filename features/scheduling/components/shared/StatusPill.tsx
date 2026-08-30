@@ -7,20 +7,13 @@ import { cn } from "@/lib/utils";
 import type { RunStatus } from "../../types";
 
 const STATUS_STYLES: Record<RunStatus, string> = {
-  queued:
-    "bg-muted text-muted-foreground border border-border",
-  claimed:
-    "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-900",
-  running:
-    "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-900",
-  success:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900",
-  failed:
-    "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-200 dark:border-red-900",
-  cancelled:
-    "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700",
-  skipped:
-    "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800",
+  queued: "border border-border bg-muted text-muted-foreground",
+  claimed: "border border-info/40 bg-info/10 text-info",
+  running: "border border-warning/40 bg-warning/10 text-warning",
+  success: "border border-success/40 bg-success/10 text-success",
+  failed: "border border-destructive/40 bg-destructive/10 text-destructive",
+  cancelled: "border border-border bg-muted text-muted-foreground",
+  skipped: "border border-border bg-muted/60 text-muted-foreground",
 };
 
 const LABEL: Record<RunStatus, string> = {

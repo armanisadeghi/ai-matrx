@@ -35,9 +35,14 @@ function rowsToObj(rows: Row[]): Record<string, unknown> {
     if (!trimmed) continue;
     // Try to parse as JSON; fall back to string.
     let v: unknown = row.value;
-    if (row.value.trim().startsWith("{") || row.value.trim().startsWith("[") ||
-        row.value === "true" || row.value === "false" || row.value === "null" ||
-        /^-?\d+(?:\.\d+)?$/.test(row.value.trim())) {
+    if (
+      row.value.trim().startsWith("{") ||
+      row.value.trim().startsWith("[") ||
+      row.value === "true" ||
+      row.value === "false" ||
+      row.value === "null" ||
+      /^-?\d+(?:\.\d+)?$/.test(row.value.trim())
+    ) {
       try {
         v = JSON.parse(row.value);
       } catch {
@@ -89,7 +94,7 @@ export function VariablesEditor({ value, onChange }: Props) {
             variant="ghost"
             size="icon"
             onClick={() => push(rows.filter((_, j) => j !== i))}
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            className="h-11 w-11 text-muted-foreground hover:text-destructive lg:h-8 lg:w-8"
             aria-label="Remove variable"
           >
             <Trash2 className="h-3.5 w-3.5" />

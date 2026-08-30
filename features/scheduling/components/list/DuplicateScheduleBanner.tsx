@@ -78,7 +78,8 @@ function DuplicateGroupCard({
       onResolved?.();
     } catch {
       toast.error("Couldn't pause the duplicate", {
-        description: "Nothing changed. Try again, or pause it from its own page.",
+        description:
+          "Nothing changed. Try again, or pause it from its own page.",
       });
     } finally {
       setBusy(false);
@@ -86,24 +87,25 @@ function DuplicateGroupCard({
   };
 
   return (
-    <div className="rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 px-3 py-2.5">
+    <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5">
       <div className="flex items-start gap-2.5">
-        <CopyCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <CopyCheck className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground">
             {group.enabled_count} schedules are doing the same job
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Same agent, same instructions, same trigger — so every fire runs the
-            work {group.enabled_count} times and bills for it {group.enabled_count}{" "}
-            times. Different names don&apos;t make them different work.
+            work {group.enabled_count} times and bills for it{" "}
+            {group.enabled_count} times. Different names don&apos;t make them
+            different work.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
             {group.members.map((member) => (
               <Link
                 key={member.id}
                 href={`/schedules/${member.id}`}
-                className="rounded border border-border bg-background px-1.5 py-0.5 text-foreground hover:bg-accent hover:text-accent-foreground"
+                className="inline-flex min-h-11 items-center rounded border border-border bg-background px-1.5 py-0.5 text-foreground hover:bg-accent hover:text-accent-foreground lg:min-h-0"
                 title={
                   member.is_original
                     ? "The original — created first"
@@ -127,7 +129,7 @@ function DuplicateGroupCard({
             variant="outline"
             onClick={pauseExtras}
             disabled={busy}
-            className="shrink-0 gap-1.5 bg-background"
+            className="h-11 shrink-0 gap-1.5 bg-background lg:h-8"
           >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {redundant.length === 1

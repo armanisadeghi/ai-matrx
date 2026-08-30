@@ -28,12 +28,12 @@ export function ContextMatchForm({ value, onChange, error }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 p-2.5 text-xs flex gap-2">
-        <Info className="h-3.5 w-3.5 mt-0.5 text-blue-500 shrink-0" />
+      <div className="flex gap-2 rounded-md border border-info/40 bg-info/10 p-2.5 text-xs">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-info" />
         <span>
           Page matches only fire in the AI Matrx Chrome extension — only it
-          knows what URL you&apos;re on. At least one of the three fields
-          below is required.
+          knows what URL you&apos;re on. At least one of the three fields below
+          is required.
         </span>
       </div>
       <div className="space-y-2">

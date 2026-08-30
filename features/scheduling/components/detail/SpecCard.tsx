@@ -115,7 +115,7 @@ export function SpecCard({ task }: Props) {
         <SectionTitle icon={Code} label="Prompt" />
         <button
           onClick={() => setPromptOpen((o) => !o)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          className="flex min-h-11 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground lg:min-h-0"
           data-surface-value="schedule_prompt"
         >
           {promptOpen ? (

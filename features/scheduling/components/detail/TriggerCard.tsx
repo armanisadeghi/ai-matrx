@@ -47,7 +47,7 @@ export function TriggerCard({ task }: Props) {
       <CardContent className="p-4 sm:p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            {Icon && <Icon className="h-4 w-4 text-blue-500" />}
+            {Icon && <Icon className="h-4 w-4 text-info" />}
             <div className="min-w-0">
               <div className="text-sm font-medium">{meta?.label}</div>
               <div
@@ -91,7 +91,7 @@ export function TriggerCard({ task }: Props) {
                 },
               })}
             />
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="h-11 lg:h-8">
               <Link href={`/schedules/${task.id}/edit`}>
                 <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
               </Link>
