@@ -55,6 +55,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { AddToOutreachListDialog } from "@/features/crm/components/outreach-lists/AddToOutreachListDialog";
 import {
+import { humanizeBackendError } from "@/utils/errors";
   InlineQueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -874,7 +875,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
         ) : null}
         {run.status === "error" && run.error ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-            {run.error}
+            {humanizeBackendError(run.error)}
           </p>
         ) : null}
         {run.status === "done" && run.receipt ? (

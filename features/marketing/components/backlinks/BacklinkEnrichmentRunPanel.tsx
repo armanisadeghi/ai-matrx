@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { BacklinkEnrichmentRunState } from "@/features/marketing/components/backlinks/lib/enrichment-run";
 import { backlinkEnrichmentProgress } from "@/features/marketing/components/backlinks/lib/enrichment-run";
+import { humanizeBackendError } from "@/utils/errors";
 
 function shortSource(url: unknown): string {
   if (typeof url !== "string") return "Source page";
@@ -77,7 +78,7 @@ export function BacklinkEnrichmentRunPanel({
               {run.message}
             </p>
             {run.error ? (
-              <p className="mt-1 text-xs text-destructive">{run.error}</p>
+              <p className="mt-1 text-xs text-destructive">{humanizeBackendError(run.error)}</p>
             ) : null}
             <Progress value={progress} className="mt-2 h-1.5" />
             {run.events.length > 0 ? (

@@ -93,6 +93,8 @@ export interface AccessDeniedProps {
    * On an `absolute` door this sentence must not confirm the record exists.
    */
   reason?: string;
+  /** The surface's own headline, in place of the kind-naming generic one. */
+  headline?: string;
 }
 
 function initials(name: string | null): string {
@@ -223,6 +225,7 @@ export function AccessDeniedView({
   suggestions = [],
   requestability = "requestable",
   reason,
+  headline: headlineOverride,
 }: {
   context: AccessDeniedContext;
   id: string;
@@ -235,6 +238,8 @@ export function AccessDeniedView({
   requestability?: AccessRequestability;
   /** The surface's own worded reason, in place of the generic explanation. */
   reason?: string;
+  /** The surface's own headline, in place of the kind-naming generic one. */
+  headline?: string;
 }) {
   const router = useRouter();
   const signInHref = useLoginHref();
@@ -248,6 +253,22 @@ export function AccessDeniedView({
   const selfInfo = tryGetEntityInfo(context.entity.token);
   const selfHref = selfInfo?.hrefFor?.(id) ?? null;
 
+  /*
+    AN ABSOLUTE DOOR SAYS LESS, ON PURPOSE.
+
+    The generic headline names the KIND ("You don't have access to this
+    employee") and the generic explanation names the OWNER and offers to pass a
+    request along. On a door closed by law all three are disclosure: the kind,
+    the owner, and the very offer to ask. So an absolute denial falls back to a
+    headline that claims nothing, and says only what the surface chose to say.
+  */
+  const absolute =
+    requestability === "absolute" && context.status === "denied";
+  const title =
+    headlineOverride?.trim() ||
+    (absolute ? "You can't open this here" : headline(context));
+  const body = reason?.trim() || (absolute ? "" : explanation(context));
+
   return (
     <div className="matrx-touch-targets flex h-full min-h-64 w-full items-center justify-center p-6">
       <div className="w-full max-w-xl">
@@ -257,7 +278,7 @@ export function AccessDeniedView({
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              {headline(context)}
+              {title}
             </h1>
 
             {context.entity.title ? (
@@ -272,12 +293,9 @@ export function AccessDeniedView({
                 than the generic copy — and the generic denied copy would be an
                 outright lie on an absolute door, since it offers to pass along
                 a request that will never be offered. */}
-            <p className="mt-2 text-sm text-muted-foreground">
-              {reason?.trim() ||
-                (requestability === "absolute" && context.status === "denied"
-                  ? "You can't open this here."
-                  : explanation(context))}
-            </p>
+            {body ? (
+              <p className="mt-2 text-sm text-muted-foreground">{body}</p>
+            ) : null}
           </div>
         </div>
 
@@ -286,7 +304,7 @@ export function AccessDeniedView({
             worse dead end than no link. A denied viewer is, by definition,
             usually outside the owning org — so each identity is a door only when
             we know it actually opens. */}
-        {context.owner || showOrg ? (
+        {!absolute && (context.owner || showOrg) ? (
           <div className="mt-5 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
             {context.owner ? (
               <IdentityBlock
@@ -339,7 +357,7 @@ export function AccessDeniedView({
             an accused person may never request the case against them, because
             the ASK ITSELF confirms the case exists. `canRequest` cannot express
             this: it only knows whether somebody exists to receive a request. */}
-        {context.status === "denied" && requestability === "requestable" ? (
+        {context.status === "denied" && !absolute ? (
           <div className="mt-4">
             <RequestAccessPanel
               context={context}
@@ -450,6 +468,7 @@ export function AccessDenied({
   suggestions,
   requestability,
   reason,
+  headline,
 }: AccessDeniedProps) {
   const { context, isLoading, refresh } = useAccessGate(token, id, {
     readError,
@@ -476,6 +495,7 @@ export function AccessDenied({
       suggestions={suggestions}
       requestability={requestability}
       reason={reason}
+      headline={headline}
     />
   );
 }

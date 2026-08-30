@@ -111,3 +111,56 @@ export function extractErrorMessage(err: unknown): string {
   }
   return "An unexpected error occurred";
 }
+
+
+// eslint-disable-next-line no-control-regex -- stripping the raw control char is the point
+const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
+
+/**
+ * A BACKEND failure as a PERSON should read it.
+ *
+ * 🚨 Added 2026-08-30 after a crawl-sessions table rendered `session.error`
+ * raw and showed the user a full server dump: ANSI colour codes, the ORM's
+ * banner, the failing SQL, and a developer hint about `get_or_none()`. Several
+ * other surfaces printed the same column the same way, and one of them had a
+ * partial copy of this logic that only stripped the colour codes — so the SQL
+ * still reached the screen.
+ *
+ * The durable row keeps every byte (that is what logs are for). This returns
+ * the first real sentence; callers put the untouched text on `title` for
+ * whoever needs it. Returns null when there is no error at all.
+ */
+export function humanizeBackendError(
+  raw: string | null | undefined,
+  fallback = "It failed. The full technical detail is in the logs.",
+): string | null {
+  if (!raw) return null;
+  const clean = raw
+    .replace(ANSI_ESCAPE, "")
+    .replace(/\[\d{1,3}m/g, "")
+    .replace(/-{6,}/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return null;
+
+  // Our ORM's banner puts the readable sentence after a labelled line; prefer
+  // it over the exception class and the SQL that follows.
+  const labelled = clean.match(
+    /(?:Database integrity error|DB error|Reason|message)\s*:\s*([^:]{8,240}?)(?:\s+(?:DETAIL|Hint|Query|Args|Operation)\b|$)/i,
+  );
+  if (labelled?.[1]) return clampSentence(labelled[1], fallback);
+
+  // Otherwise drop a leading `SomeError:` prefix and everything from the first
+  // developer-facing section onward.
+  const withoutClass = clean.replace(/^\s*\w*(?:Error|Exception)\s*:\s*/i, "");
+  const cut = withoutClass.split(
+    /\s+(?:DETAIL|Hint|Query|Args|Operation|Traceback)\b/i,
+  )[0];
+  return clampSentence(cut || withoutClass, fallback);
+}
+
+function clampSentence(value: string, fallback: string): string {
+  const trimmed = value.replace(/[-\s]+$/, "").trim();
+  if (!trimmed) return fallback;
+  return trimmed.length > 200 ? `${trimmed.slice(0, 197)}...` : trimmed;
+}

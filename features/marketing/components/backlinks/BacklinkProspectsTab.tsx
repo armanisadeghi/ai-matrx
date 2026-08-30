@@ -56,6 +56,7 @@ import {
 } from "@/features/marketing/data/page-links";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
+import { humanizeBackendError } from "@/utils/errors";
   AUTHORITY_EXPLAINER,
   LINK_GAP_REVIEW_STATUSES,
   linkGapReviewLabel,
@@ -498,7 +499,7 @@ export function BacklinkProspectsTab({
             ) : null}
             {run.status === "error" && run.error ? (
               <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-                {run.error}
+                {humanizeBackendError(run.error)}
               </p>
             ) : null}
             {run.status === "done" && run.receipt ? (
