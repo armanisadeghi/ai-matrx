@@ -14,6 +14,7 @@ import {
   MapPin,
   RefreshCw,
   ScanSearch,
+  Star,
   Swords,
   Target,
 } from "lucide-react";
@@ -1235,8 +1236,9 @@ export default function CompetitorAutopsyWorkspace({
                             </Badge>
                           )}
                           {business.rating != null ? (
-                            <span className="text-xs text-muted-foreground">
-                              ★ {business.rating}
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Star className="h-3 w-3" aria-hidden="true" />
+                              {business.rating}
                               {business.reviews != null ? ` (${business.reviews})` : ""}
                             </span>
                           ) : null}

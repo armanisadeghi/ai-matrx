@@ -1,6 +1,7 @@
 import {useState, useEffect} from 'react';
 import {SlackChannel, SlackClient, SlackMessage} from '../slackClientUtils';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { X } from 'lucide-react';
 
 const SlackManager: React.FC = () => {
   const [token, setToken] = useState('');
@@ -186,8 +187,9 @@ const SlackManager: React.FC = () => {
                         <button
                             onClick={() => removeToken(savedToken)}
                             className="text-red-500 hover:text-red-700"
+                            aria-label="Remove token"
                         >
-                          ✕
+                          <X aria-hidden="true" className="h-4 w-4" />
                         </button>
                       </div>
                   ))}

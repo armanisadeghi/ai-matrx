@@ -5,6 +5,8 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useThemeMode } from '@/styles/themes/useThemeMode';
 import { toast } from '@/lib/toast';
+import { Search } from 'lucide-react';
+import { createRoot, type Root } from 'react-dom/client';
 
 interface SearchControlProps {
   position?: 'topleft' | 'topright' | 'bottomleft' | 'bottomright';
@@ -26,6 +28,7 @@ export default function SearchControl({
   // This effect runs only once when the component mounts
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const searchIconRoots: Root[] = [];
     
     // Create custom search control
     const SearchControl = L.Control.extend({
@@ -43,7 +46,10 @@ export default function SearchControl({
         input.style.minWidth = `${width}px`;
         
         button.type = 'submit';
-        button.innerHTML = '🔍';
+        button.setAttribute('aria-label', 'Search locations');
+        const searchIconRoot = createRoot(button);
+        searchIconRoot.render(<Search aria-hidden="true" className="h-5 w-5" />);
+        searchIconRoots.push(searchIconRoot);
         
         // Prevent propagation of map events
         L.DomEvent.disableClickPropagation(container);
@@ -102,6 +108,7 @@ export default function SearchControl({
     
     // Cleanup on unmount
     return () => {
+      searchIconRoots.forEach((root) => root.unmount());
       if (searchControlRef.current) {
         map.removeControl(searchControlRef.current);
       }

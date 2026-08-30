@@ -16,6 +16,20 @@
       ],
       "previousEventHash": null,
       "eventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:20:27.020Z",
+      "actor": "codex-root",
+      "summary": "Three disjoint repair units are implementing the ranked overlay family",
+      "evidence": [
+        "quick_answers_surface owns Quick Answers wrapper + canonical child + manifest",
+        "keyword_research_window_surface owns the distinct floating-window identity because matrx-user/keyword-research already owns the routed workbench",
+        "page_research_surface owns Page Research wrapper + manifest"
+      ],
+      "previousEventHash": "d4d3c781a84f3c0afb701bbf7101f52c7668e5dba66912029f9866302f9718c4",
+      "eventHash": "b584e6e0b6b0c9c03ceded2549d7400d3cb946dfd6318ddd04ea6b0b7211f71d"
     }
   ]
 }
