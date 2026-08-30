@@ -22,6 +22,8 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Provider } from "react-redux";
+import { MediaProvider } from "@ai-matrx/media/core";
+import type { MediaClient } from "@ai-matrx/media";
 
 // GenericStructuredBlock's raw-data escape mounts through next/dynamic; stub
 // it so static markup stays about the VALUE on screen (same stub the sibling
@@ -54,6 +56,19 @@ import type { KindComponentProjection } from "../registry/schema-source-kind-com
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import { makeStore } from "@/lib/redux/store";
 
+const TEST_MEDIA_CLIENT: MediaClient = {
+  resolve: () => null,
+  getBlob: async () => {
+    throw new Error("Media bytes are not exercised by this render test.");
+  },
+  recoverLoadError: async () => "terminal",
+  upload: async () => {
+    throw new Error("Media uploads are not exercised by this render test.");
+  },
+  shareableUrl: async () => null,
+  classifyError: () => "unknown",
+};
+
 /**
  * The floor gives a `file_id` a real door (`useFileActions`), which reads the
  * store — so every render here goes through a Provider, exactly as the app
@@ -66,10 +81,12 @@ function renderRouted(block: {
 }): string {
   return renderToStaticMarkup(
     <Provider store={makeStore()}>
-      <GenericStructuredBlock
-        content={block.content}
-        metadata={block.metadata}
-      />
+      <MediaProvider client={TEST_MEDIA_CLIENT}>
+        <GenericStructuredBlock
+          content={block.content}
+          metadata={block.metadata}
+        />
+      </MediaProvider>
     </Provider>,
   );
 }
