@@ -10,7 +10,11 @@
  * directly; only non-text blocks keep the newline separator.
  */
 
-import { extractFlatText } from "../messages.selectors";
+import {
+  extractFlatText,
+  extractInspectableText,
+  stringifyStructuredContent,
+} from "../messages.selectors";
 import type { MessageRecord } from "../messages.slice";
 
 function record(content: unknown[]): MessageRecord {
@@ -36,6 +40,79 @@ describe("extractFlatText", () => {
       { type: "text", text: "The answer." },
     ]);
     expect(extractFlatText(rec)).toBe("The answer.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Inspectable content — "structured content renders blank" class guard.
+//
+// REGRESSION (2026-08-30, conversation 044b4a9d-b3b0-4915-aec3-adf6dd40b5e1,
+// message a386aede-9a59-46f5-b4c2-83f018613c43): an assistant message whose
+// stored `content` is a pure media-block array flattened to "" and the edit /
+// raw-data view rendered NOTHING — the creator could not see what the agent
+// returned. Every raw/inspect surface must show the stored payload:
+// pretty-printed JSON with `isStructuredRaw: true` when no text exists.
+// ---------------------------------------------------------------------------
+
+describe("extractInspectableText", () => {
+  const mediaArray = [
+    {
+      url: "https://example.com/x.png",
+      kind: "image",
+      type: "media",
+      file_id: "f-1",
+      metadata: { width: 512 },
+    },
+  ];
+
+  it("returns pretty-printed JSON for a pure media-block content array", () => {
+    const rec = record(mediaArray);
+    const result = extractInspectableText(rec);
+    expect(result.isStructuredRaw).toBe(true);
+    expect(result.text).toBe(JSON.stringify(mediaArray, null, 2));
+    // The old behavior — the defect — was an empty string.
+    expect(result.text.length).toBeGreaterThan(0);
+  });
+
+  it("returns the flat text (not JSON) when the message carries text", () => {
+    const rec = record([
+      { type: "text", text: "The answer." },
+      ...mediaArray,
+    ]);
+    expect(extractInspectableText(rec)).toEqual({
+      text: "The answer.",
+      isStructuredRaw: false,
+    });
+  });
+
+  it("returns an honest empty for truly empty content", () => {
+    expect(extractInspectableText(record([]))).toEqual({
+      text: "",
+      isStructuredRaw: false,
+    });
+    expect(extractInspectableText(undefined)).toEqual({
+      text: "",
+      isStructuredRaw: false,
+    });
+  });
+
+  it("passes plain-string content through as text, not structured raw", () => {
+    const rec = { content: "plain stored string" } as unknown as MessageRecord;
+    expect(extractInspectableText(rec)).toEqual({
+      text: "plain stored string",
+      isStructuredRaw: false,
+    });
+  });
+});
+
+describe("stringifyStructuredContent", () => {
+  it("nulls out empty payloads and pretty-prints objects", () => {
+    expect(stringifyStructuredContent(null)).toBeNull();
+    expect(stringifyStructuredContent([])).toBeNull();
+    expect(stringifyStructuredContent({})).toBeNull();
+    expect(stringifyStructuredContent({ a: 1 })).toBe(
+      JSON.stringify({ a: 1 }, null, 2),
+    );
   });
 });
 
