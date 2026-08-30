@@ -18,9 +18,11 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 1. **No novels on pages.** Sections state facts; the data talks.
 2. **The list is the canonical entity-list shell** (`browse/` — 3 layouts, server
    sort/filter, facet chips, `urlState`). A feature door lands as a REAL select facet.
-3. **ONE core, two hosts**: `workspace/MandateWorkspace` renders identically on
-   `/agents/mandates/[mandateKey]` (key OR uuid) and inside `MandateWindow`'s Yours pane.
-   Named deliberate divergences only: the window's scope list + Admin pane.
+3. **ONE core, three hosts**: `workspace/MandateWorkspace` renders on
+   `/agents/mandates/[mandateKey]` (key OR uuid), on the ADMIN twin
+   `/administration/agents/mandates/[mandateKey]`, and inside `MandateWindow`'s Yours
+   pane. Named deliberate divergences only: the window's scope list + Admin pane, the
+   admin route's header offset, and the `authoring` rule in rule 8.
 4. **Detail order of importance**: §1 the job (goal · the Provision's full offer · the
    output kind) → §2 current fulfillment (Holder, latest-vs-pin + drift `v2 → v4`,
    view/duplicate) → §3 org context as ONE collapsed line → §4 the override flow.
@@ -33,6 +35,18 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 7. **This page is PERSONAL.** Org editing lives at
    `/organizations/[orgId]/settings/mandates` (org fixed by the route, admin/owner gated —
    the server's `is_org_admin` 403 is the authority).
+8. 🚨 **MANDATE MANAGEMENT IS ADMIN-SIDE (Arman, 2026-08-29).** The user route is
+   **browse/view + their own override**, and nothing else. Editing the GOAL, editing the
+   declared INPUTS, RUN THIS JOB and CREATING a mandate exist only on the admin route —
+   `MandateWorkspace` gates them on `host === "admin-route"` (`authoring`), creation moved
+   to `/administration/agents/mandates/new`, and `/agents/mandates/new` is gone. This is
+   WHERE, not who: the server's `POST /mandates`, `PATCH /mandates/{key}/goal` and
+   `/draft-inputs` are `require_super_admin` (aidream `304fe1848`), so an ungated pencil on
+   the user route was a 403 waiting to happen. The admin console
+   (`features/admin/mandates/`) is now the LIST only — its row click, coverage board,
+   drift strip, right-click menu and `?mandate=` all land on the admin workspace page, and
+   its old side-panel drawer (`MandateDetailPanel`) is off every default path; it still
+   renders the operational depth, inside that page's collapsed **Admin controls**.
 
 ## What lives here
 
@@ -52,12 +66,12 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 | `components/MandateAgentPicker.tsx`            | The reusable consumer-facing "which agent runs this step" control — compact popover: system default + the user's own/shared agents, save-on-pick, reset-to-default, link to `/agents/mandates`. First consumer: podcast topic ideas (`TopicIdeaHelper`, mandate `podcast_client.topic_ideas`). Drop it beside any mandate-resolved affordance.                                                                                                                                                                                                                                                                                                                                              |
 
 | `browse/`                                      | **The list** — `listConfig.tsx` on the canonical entity-list shell over the `mnd_list_scoped` RPC triple (`migrations/mnd_list_scoped.sql`): per-caller `resolved_layer`, drift, honest DB-derived health; facets Feature / Decided by / Output kind / Status; 3 layouts; `urlState`. **The RPC reads only post-1W `mandate.definition` / `mandate.provision` / `mandate.binding`; `post-cutover-rpc.test.ts` refuses the graveyarded `agent.*` names and retired Holder columns.** `url-compat.ts` is the LOAD-BEARING legacy shim: `?feature=<domain>` redirects server-side onto the canonical `?filters=` select-filter form (jest-pinned). |
-| `workspace/`                                   | **THE core** — `MandateWorkspace` (§1–§4 per the vision), `OverrideFlow` (the stepper; principal-aware user/org), `RunThisJobSection` (the run affordance — super-admin gated, Provision-driven inputs, canonical output pipeline, workflow-run door), `Section.tsx` (the shared section chrome), `useMandateWorkspaceData` (the ONE single-mandate load both hosts share; refresh reloads ONE mandate, never the registry), `save-payload.ts` (pure, jest-pinned wipe guards: full map re-send; stored `config_overrides` survive when the settings step never opened; legacy mandates send NO map — the server 422s on `{}`). |
+| `workspace/`                                   | **THE core** — `MandateWorkspace` (§1–§4 per the vision), `OverrideFlow` (the stepper; principal-aware user/org), `RunThisJobSection` (the run affordance — ADMIN ROUTE only since 2026-08-29 and still super-admin gated inside, Provision-driven inputs, canonical output pipeline, workflow-run door), `Section.tsx` (the shared section chrome), `useMandateWorkspaceData` (the ONE single-mandate load both hosts share; refresh reloads ONE mandate, never the registry), `save-payload.ts` (pure, jest-pinned wipe guards: full map re-send; stored `config_overrides` survive when the settings step never opened; legacy mandates send NO map — the server 422s on `{}`). |
 | `provision-shapes.ts`                          | LEAF module (the `contract.ts` pattern) for the Provision era: `OfferedValue` + `parseOfferedValues`, the ONE client consumption-map deserializer `parseConsumptionMap` (legacy `code_value` normalizes to `offered_value`), `parseMandateWave1`/`parseBindingWave1` (runtime narrowing of the wave-1 columns off `select("*")` rows — see the DB-types note below), the kind-law mirrors (`SCALAR_VALUE_KINDS`, `GENERIC_VALUE_KINDS`, `ALLOWED_PIN_KEYS`, `EXECUTABLE_HOLDER_TYPES`), the ONE holder-refusal message (`holderNotExecutableMessage`), and the `consumptionMapProblems` pre-flight. |
 | `provisions.ts`                                | Client reads of `agent.provision` — `fetchProvision` (one key) and `fetchProvisions` (the BATCHED list read: cache-aware, chunked at 100 keys, negative-caches misses) over a shared 5-min cache. A list surface resolves every key it renders in ONE call — never one request per card. Carries the ONE clearly-marked local-type widening for the table (`ProvisionRowLocal` / `Wave1Database`) — **delete it and rerun `pnpm db-types` when the CLI can authenticate**; the generated `types/database.types.ts` predates `agent.provision` and the wave-1 mandate/binding columns (live-verified 2026-08-22). |
 | `components/EffectiveConfigLayers.tsx`         | The truthful three-layer settings view per key: agent's own → binding overrides → mandate PINS (pins win, rendered locked "set by the mandate"). Pins are code-owned levers only (`reasoning`/`streaming`); a model id is NEVER rendered as a pin — `parseMandateWave1` refuses non-lever keys at ingress.                                                                                                                                                                              |
 
-Routes: `app/(core)/agents/mandates/page.tsx` (list) · `app/(core)/agents/mandates/[mandateKey]/page.tsx` (workspace; segment accepts key or uuid) · `app/(core)/organizations/[orgId]/settings/mandates/{,[mandateKey]}` (org principal).
+Routes: `app/(core)/agents/mandates/page.tsx` (list) · `app/(core)/agents/mandates/[mandateKey]/page.tsx` (workspace, read-only triad + own override; segment accepts key or uuid) · `app/(core)/organizations/[orgId]/settings/mandates/{,[mandateKey]}` (org principal) · **admin** `app/(admin)/administration/agents/mandates/{,[mandateKey],new}` (the list, the same workspace with `authoring` on, and creation). `browse/url-compat.ts` owns `adminMandateHref` — never hand-build the admin URL.
 
 ## The Provision era (2026-08-22) — inputs come from the PROVISION
 

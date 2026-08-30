@@ -49,6 +49,41 @@ const inflightDownloads = new Map<
   Promise<{ blob: Blob; filename: string | null }>
 >();
 
+/**
+ * Imperative sibling of `useFileBlob` for non-hook call sites (e.g. the
+ * `@ai-matrx/capture` media cache's `resolve()` port): same three cache
+ * tiers, same in-flight dedup map, same cache-owned URL contract (callers
+ * must NEVER revoke the returned URL — the cache does, on eviction).
+ */
+export async function fetchFileBlobUrl(fileId: string): Promise<string> {
+  const cached = getCached(fileId);
+  if (cached) return cached.url;
+  const idbHit = await hydrateFromIdb(fileId);
+  if (idbHit) return idbHit.url;
+  let download = inflightDownloads.get(fileId);
+  if (!download) {
+    download = Files.downloadFileWithProgress(fileId, () => {}).then(
+      ({ blob, filename }) => ({ blob, filename }),
+    );
+    inflightDownloads.set(fileId, download);
+    void download
+      .finally(() => {
+        if (inflightDownloads.get(fileId) === download) {
+          inflightDownloads.delete(fileId);
+        }
+      })
+      .catch(() => {
+        // Awaiters surface the rejection; this only silences the void chain.
+      });
+  }
+  const { blob } = await download;
+  const already = getCached(fileId);
+  if (already) return already.url;
+  const url = URL.createObjectURL(blob);
+  setCached(fileId, blob, url, { mimeType: blob.type });
+  return url;
+}
+
 export interface UseFileBlobResult {
   /** `blob:`-scheme URL safe to feed into any browser API. `null` until ready. */
   url: string | null;

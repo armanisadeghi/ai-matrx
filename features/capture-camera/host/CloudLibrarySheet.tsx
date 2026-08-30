@@ -12,7 +12,7 @@
  * route (no dead ends).
  */
 
-import React, { useEffect, useMemo, useTransition } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ImageOff, Loader2, Play, X } from "lucide-react";
 
@@ -36,6 +36,10 @@ function isVideoMime(mime: string): boolean {
   return mime.startsWith("video/");
 }
 
+/** Tiles rendered per page — a whole cloud tree at once meant thousands of
+ *  mounted thumbnails and as many fetches. */
+const PAGE_SIZE = 60;
+
 export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -43,6 +47,12 @@ export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
   const treeStatus = useAppSelector(selectTreeStatus);
   const userId = useAppSelector(selectUserId);
   const [isPending, startTransition] = useTransition();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reopening starts back at the first page (fresh scroll position too).
+  useEffect(() => {
+    if (open) setVisibleCount(PAGE_SIZE);
+  }, [open]);
 
   useEffect(() => {
     if (open && treeStatus === "idle" && userId) {
@@ -94,7 +104,7 @@ export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-0.5 sm:grid-cols-5 md:grid-cols-7">
-            {media.map((file) => {
+            {media.slice(0, visibleCount).map((file) => {
               const video = isVideoMime(resolveMime(file.mimeType, file.fileName));
               return (
                 <button
@@ -120,6 +130,17 @@ export function CloudLibrarySheet({ open, onClose }: CloudLibrarySheetProps) {
                 </button>
               );
             })}
+          </div>
+        )}
+        {!loading && media.length > visibleCount && (
+          <div className="flex justify-center py-4">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+              className="h-11 touch-manipulation rounded-full bg-white/10 px-6 text-sm font-medium text-white"
+            >
+              Show more ({media.length - visibleCount} left)
+            </button>
           </div>
         )}
         {isPending && (

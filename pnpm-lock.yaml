@@ -19,13 +19,13 @@ importers:
         version: 0.5.1
       '@ai-matrx/capture':
         specifier: latest
-        version: 0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/content-ir':
         specifier: latest
-        version: 0.7.0
+        version: 0.8.0
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.6.0(@ai-matrx/content-ir@0.7.0)(react@19.2.7)
+        version: 0.6.0(@ai-matrx/content-ir@0.8.0)(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
         version: 0.3.0
@@ -805,8 +805,8 @@ packages:
     resolution: {integrity: sha512-AvLsiQrTkm1gQVH0OX0gModa8C/+1Q4k9eiI1jsvSTFFmzgCVOPbrjQFucvR6shyi75ZZUElJ25QG+95RN60Pw==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/capture@0.1.2':
-    resolution: {integrity: sha512-yf5maKMEpyj9YhprOv1OjRGSkxJeAWrvX23l6DDa3vk8UrNn8msqoAIws6z+ETlqH7SqGLF4FuTmzeaClHvOEA==}
+  '@ai-matrx/capture@0.2.1':
+    resolution: {integrity: sha512-0zXB31HJpJ8Dv10lJhHvsPfMJsVXmam5F9tGKzOr/XD4Urryfi3FcLg4Vzn7vdp7gD4QjSgameQORlx7VG6skw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -822,8 +822,8 @@ packages:
       '@ai-matrx/content-ir': '>=0.6.0'
       react: 19.2.7
 
-  '@ai-matrx/content-ir@0.7.0':
-    resolution: {integrity: sha512-bvfsKc3lUtsvshM0j21JrPXReyQtoD1vq2lVUm8C2MJQ/uHuWCW+uOn4Vf4OdCb2OD2UJsZbb78Ep15+jN5Fgw==}
+  '@ai-matrx/content-ir@0.8.0':
+    resolution: {integrity: sha512-wnk2zgfteq0u3pzjdPf2gd+j03X/OvWLiOBa9Zcr6cMEODWo0siQhX278LHR/jMZb+3vOGVHvPLcy86MGmhrSQ==}
     engines: {node: '>=20'}
 
   '@ai-matrx/data@0.3.0':
@@ -13062,7 +13062,7 @@ snapshots:
 
   '@ai-matrx/agents@0.5.1': {}
 
-  '@ai-matrx/capture@0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/capture@0.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       lucide-react: 0.545.0(react@19.2.7)
       react: 19.2.7
@@ -13070,12 +13070,12 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
-  '@ai-matrx/content-ir-react@0.6.0(@ai-matrx/content-ir@0.7.0)(react@19.2.7)':
+  '@ai-matrx/content-ir-react@0.6.0(@ai-matrx/content-ir@0.8.0)(react@19.2.7)':
     dependencies:
-      '@ai-matrx/content-ir': 0.7.0
+      '@ai-matrx/content-ir': 0.8.0
       react: 19.2.7
 
-  '@ai-matrx/content-ir@0.7.0':
+  '@ai-matrx/content-ir@0.8.0':
     dependencies:
       ajv: 8.20.0
 

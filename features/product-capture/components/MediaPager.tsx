@@ -216,7 +216,7 @@ export function MediaPager({
             )
             .map((m) => (
               <div key={m.key} className="absolute inset-0">
-                <PagerSlide item={m} />
+                <PagerSlide item={m} interactive={false} />
               </div>
             ))}
         </div>
@@ -264,15 +264,30 @@ export function MediaPager({
   );
 }
 
-function PagerSlide({ item }: { item: PagerMedia }) {
+function PagerSlide({
+  item,
+  interactive = true,
+}: {
+  item: PagerMedia;
+  /** False for the invisible preload copies: `pointer-events-auto` on a
+   *  descendant re-enables hit-testing under a pointer-events-none ancestor,
+   *  so a hidden neighbor video would sit ABOVE the visible slide (opacity
+   *  creates a stacking context) and eat every swipe. */
+  interactive?: boolean;
+}) {
   if (item.previewUrl) {
     if (item.kind === "video") {
       return (
         <video
           src={item.previewUrl}
-          controls
+          controls={interactive}
+          muted={!interactive}
+          preload={interactive ? "auto" : "metadata"}
           playsInline
-          className="pointer-events-auto absolute inset-0 h-full w-full object-contain"
+          className={cn(
+            "absolute inset-0 h-full w-full object-contain",
+            interactive ? "pointer-events-auto" : "pointer-events-none",
+          )}
         />
       );
     }

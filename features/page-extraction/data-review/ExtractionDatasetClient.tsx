@@ -69,6 +69,7 @@ import {
   MoreHorizontalTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
@@ -114,9 +115,7 @@ import {
 } from "./constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
-import {
-  MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
 
@@ -447,17 +446,17 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       what: string,
     ) => {
       if (!job) {
-        throw new Error(
+        refuseSurfaceWrite(
           "No extraction dataset is loaded on this page yet — there is nothing to write to.",
         );
       }
       if (results.length === 0) {
-        throw new Error(
+        refuseSurfaceWrite(
           "This dataset has no extracted rows, so there is no cell to write.",
         );
       }
       if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-        throw new Error(
+        refuseSurfaceWrite(
           `${what} needs an object like { "row_id": "…", "column_key": "…", "value": "…" }.`,
         );
       }
@@ -469,34 +468,34 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       } = raw as Record<string, unknown>;
 
       if (typeof rowId !== "string" || rowId.trim() === "") {
-        throw new Error(
+        refuseSurfaceWrite(
           `${what} needs a "row_id" string naming the row to write — take it from extraction_rows.`,
         );
       }
       if (typeof columnKey !== "string" || columnKey.trim() === "") {
-        throw new Error(
+        refuseSurfaceWrite(
           `${what} needs a "column_key" string naming the column to write — take it from extraction_columns.`,
         );
       }
       if (typeof value !== "string") {
-        throw new Error(
+        refuseSurfaceWrite(
           `${what} writes cell text, so "value" must be a string (got ${Array.isArray(value) ? "an array" : typeof value}). Cells are stored as the text the cell editor saves.`,
         );
       }
       if (rowId.includes("#")) {
-        throw new Error(
+        refuseSurfaceWrite(
           `Row "${rowId}" is a synthetic sub-row this grid split out of one stored row in the browser — it has no stored row of its own and cannot be written to.`,
         );
       }
 
       const column = orderedColumns.find((c) => c.key === columnKey);
       if (!column) {
-        throw new Error(
+        refuseSurfaceWrite(
           `This dataset has no column "${columnKey}". Its columns are: ${orderedColumns.map((c) => c.key).join(", ") || "(none)"}.`,
         );
       }
       if (!allowedSources.includes(column.source)) {
-        throw new Error(
+        refuseSurfaceWrite(
           `"${columnKey}" is a ${column.source} column and ${what.toLowerCase()} only writes ${allowedSources.join(" / ")} columns. ${
             column.source === "system"
               ? "The page anchor is provenance and is never writable."
@@ -508,7 +507,9 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       }
       const writeKey = editKeyFor(column);
       if (!writeKey) {
-        throw new Error(`Column "${columnKey}" has no writable payload field.`);
+        refuseSurfaceWrite(
+          `Column "${columnKey}" has no writable payload field.`,
+        );
       }
 
       // Resolve the payload from the STORED rows, never from the display rows:
@@ -517,7 +518,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       // view artifact as extracted data.
       const stored = results.find((r) => r.id === rowId);
       if (!stored) {
-        throw new Error(
+        refuseSurfaceWrite(
           `No row "${rowId}" is loaded in this dataset. Take row_id from extraction_rows.`,
         );
       }
@@ -547,19 +548,20 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         writeCell(value, REVIEW_COLUMN_SOURCES, "Fill a review field"),
       extraction_dataset_name: async (value: unknown) => {
         if (!job) {
-          throw new Error(
+          refuseSurfaceWrite(
             "No extraction dataset is loaded on this page yet — there is nothing to rename.",
           );
         }
         if (typeof value !== "string") {
-          throw new Error(
+          refuseSurfaceWrite(
             `The dataset name must be a string (got ${Array.isArray(value) ? "an array" : typeof value}).`,
           );
         }
         const next = value.trim();
-        if (next === "") throw new Error("The dataset name cannot be empty.");
+        if (next === "")
+          refuseSurfaceWrite("The dataset name cannot be empty.");
         if (next.length > 200) {
-          throw new Error(
+          refuseSurfaceWrite(
             `The dataset name is limited to 200 characters (got ${next.length}).`,
           );
         }
@@ -756,9 +758,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
               : "extraction_sort is unavailable: this dataset has no columns to sort by.",
           );
         if (direction !== "asc" && direction !== "desc")
-          throw new Error(
-            'extraction_sort.direction expects "asc" or "desc".',
-          );
+          throw new Error('extraction_sort.direction expects "asc" or "desc".');
         setSortKey(key);
         setSortDir(direction);
       },

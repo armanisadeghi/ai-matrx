@@ -14,7 +14,7 @@
  * package ships for domain extensions.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BrainCircuit,
@@ -29,8 +29,6 @@ import {
   Play,
   ScanLine,
   Scissors,
-  Trash2,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,12 +38,13 @@ import { CameraPreview } from "@/features/media-capture/components/CameraPreview
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { NotesPanel } from "@/features/product-capture/components/NotesPanel";
 import { VoiceNoteButton } from "@/features/product-capture/components/VoiceNoteButton";
-import { MediaPager } from "@/features/product-capture/components/MediaPager";
 import { InstantProcessSheet } from "@/features/product-capture/components/InstantProcessSheet";
 import { useQrAutoScan } from "@/features/product-capture/hooks/useQrAutoScan";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { fetchFileBlobUrl } from "@/features/files/hooks/useFileBlob";
 
-import { CameraCapture, ImageEditSheet } from "@ai-matrx/capture/react";
+import { CameraCapture } from "@ai-matrx/capture/react";
+import type { CaptureMediaItem } from "@ai-matrx/capture/react";
 import type {
   CaptureCameraMode,
   CaptureOptionTile,
@@ -187,6 +186,14 @@ export function IntakeCaptureScreenV2({
     [session],
   );
 
+  // ── Panels & overlays (declared before the QR gate that reads them) ─────
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  // The package review loop (viewer/editor) reports open state so the QR
+  // scanner pauses while an overlay covers the feed.
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [controlsHidden, setControlsHidden] = useState(false);
+
   // ── QR mode (serialized) vs untracked ────────────────────────────────────
   const qrMode = session.captureMode === "serialized";
   const [qrFlash, setQrFlash] = useState<string | null>(null);
@@ -198,20 +205,37 @@ export function IntakeCaptureScreenV2({
 
   const onQrCode = useCallback(
     (code: string) => {
-      void session.onQrCode(code).then(() => {
-        navigator.vibrate?.(80);
-        setQrFlash(code);
-        if (qrFlashTimerRef.current) clearTimeout(qrFlashTimerRef.current);
-        qrFlashTimerRef.current = setTimeout(() => setQrFlash(null), 1600);
-      });
+      void session
+        .onQrCode(code)
+        .then(() => {
+          navigator.vibrate?.(80);
+          setQrFlash(code);
+          if (qrFlashTimerRef.current) clearTimeout(qrFlashTimerRef.current);
+          qrFlashTimerRef.current = setTimeout(() => setQrFlash(null), 1600);
+        })
+        .catch((err: unknown) => {
+          // A scan that fails to open its item must not be silent — the
+          // worker already moved the box.
+          console.error("[commerce-intake] QR handling failed", err);
+          toast.error("That code could not be processed — scan it again.");
+        });
     },
     [session],
   );
 
-  // Dedupe BY ABSENCE only (§2 policy 2) — identical to v1.
+  // Dedupe BY ABSENCE only (§2 policy 2) — identical to v1. Scanning pauses
+  // while ANY overlay covers the feed: the camera keeps streaming under
+  // them, and a code sitting in frame (the item's own box) would silently
+  // switch items mid-review.
   useQrAutoScan({
     videoRef: host.videoRef,
-    enabled: qrMode && !host.cameraBlocked && !host.recording,
+    enabled:
+      qrMode &&
+      !host.cameraBlocked &&
+      !host.recording &&
+      !reviewOpen &&
+      !libraryOpen &&
+      !processOpen,
     currentCode: null,
     onCode: onQrCode,
   });
@@ -222,17 +246,6 @@ export function IntakeCaptureScreenV2({
     };
   }, []);
 
-  // ── Panels & overlays ────────────────────────────────────────────────────
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [libraryOpen, setLibraryOpen] = useState(false);
-  // The photo being edited: src for the editor + the artifact it REPLACES.
-  const [editTarget, setEditTarget] = useState<{
-    src: string;
-    localId: string;
-  } | null>(null);
-  const [previewArtifact, setPreviewArtifact] =
-    useState<PendingIntakeArtifact | null>(null);
-  const [controlsHidden, setControlsHidden] = useState(false);
   const toggleControls = useCallback(() => {
     setControlsHidden((h) => {
       if (!h) setNotesOpen(false);
@@ -244,14 +257,33 @@ export function IntakeCaptureScreenV2({
   const photoCount = artifacts.filter(
     (a) => a.kind === "photo" && !a.isDelineator,
   ).length;
-  const pagerMedia = artifacts
-    .filter((a) => a.kind !== "audio")
-    .map((a) => ({
-      key: a.localId,
-      kind: a.kind === "video" ? ("video" as const) : ("photo" as const),
-      fileId: a.fileId,
-      previewUrl: a.previewUrl,
-    }));
+  // The package media session: filmstrip, swipe viewer, edit-with-replace
+  // all run INSIDE @ai-matrx/capture. Fresh captures carry their object URL;
+  // persisted-only artifacts (a resumed asset) resolve through the canonical
+  // blob cache — the package memoizes the resolutions.
+  const mediaItems = useMemo<CaptureMediaItem[]>(
+    () =>
+      artifacts.map((a) => {
+        const fileId = a.fileId;
+        return {
+          key: a.localId,
+          kind: a.kind,
+          src: a.previewUrl ?? null,
+          resolve:
+            !a.previewUrl && fileId
+              ? () => fetchFileBlobUrl(fileId)
+              : undefined,
+          status:
+            a.status === "uploading"
+              ? ("uploading" as const)
+              : a.status === "error"
+                ? ("error" as const)
+                : ("ready" as const),
+          accent: a.isDelineator,
+        };
+      }),
+    [artifacts],
+  );
   const itemLabel = qrMode
     ? currentAsset
       ? (currentAsset.qrCode ?? `Item ${session.currentAssetSeq}`)
@@ -315,10 +347,19 @@ export function IntakeCaptureScreenV2({
             </span>
           ),
           onOpenLibrary: () => setLibraryOpen(true),
-          // An edited photo joins the capture stream exactly like a shot —
-          // same uploads.ts boundary, same artifact rows.
-          onSaveEdited: (blob) => session.addPhoto(blob),
         }}
+        // Filmstrip → viewer → edit-with-replace, all package-owned. Replace
+        // = the edited frame joins the stream and the source artifact is
+        // removed (in-flight uploads honor the removal server-side too).
+        media={{
+          items: mediaItems,
+          onDelete: session.removeArtifact,
+          onReplacePhoto: (key, blob) => {
+            session.addPhoto(blob);
+            session.removeArtifact(key);
+          },
+        }}
+        onReviewOpenChange={setReviewOpen}
         controlsHidden={controlsHidden}
         shutterDisabled={shutterDisabled}
         blockedSheet={{
@@ -391,37 +432,6 @@ export function IntakeCaptureScreenV2({
             ) : null
           ) : null,
           optionTiles: commerceTiles,
-          // The filmstrip floats OVER the feed (aboveBar) — it costs the
-          // bottom bar zero height (Arman, 2026-08-29: the bar was eating
-          // the viewfinder).
-          aboveBar:
-            artifacts.length > 0 ? (
-              <div className="flex items-center gap-1 overflow-x-auto">
-                {artifacts.slice(-12).map((artifact) => (
-                  <button
-                    key={artifact.localId}
-                    type="button"
-                    onClick={() => setPreviewArtifact(artifact)}
-                    aria-label="View capture"
-                    className={cn(
-                      "relative h-11 w-8 shrink-0 overflow-hidden rounded bg-black/40 shadow ring-1 ring-white/20",
-                      artifact.isDelineator &&
-                        "ring-2 ring-inset ring-amber-400",
-                    )}
-                  >
-                    <ArtifactThumb artifact={artifact} />
-                    {artifact.status === "uploading" && (
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/40">
-                        <Loader2 className="h-3 w-3 animate-spin text-white" />
-                      </span>
-                    )}
-                    {artifact.status === "error" && (
-                      <span className="absolute inset-0 rounded ring-2 ring-inset ring-red-500" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            ) : null,
           aboveModeSelector: (
             <>
               <div className="flex items-center gap-1.5 py-1">
@@ -598,83 +608,25 @@ export function IntakeCaptureScreenV2({
         onClose={() => setNotesOpen(false)}
       />
 
-      {previewArtifact && previewArtifact.kind !== "audio" && (
-        <MediaPager
-          media={pagerMedia}
-          initialIndex={Math.max(
-            pagerMedia.findIndex((m) => m.key === previewArtifact.localId),
-            0,
-          )}
-          onClose={() => setPreviewArtifact(null)}
-          onDelete={(pagerItem) => {
-            session.removeArtifact(pagerItem.key);
-          }}
-          onEdit={(pagerItem) => {
-            if (pagerItem.previewUrl)
-              setEditTarget({
-                src: pagerItem.previewUrl,
-                localId: pagerItem.key,
-              });
-          }}
-        />
-      )}
-
-      <ImageEditSheet
-        open={editTarget !== null}
-        src={editTarget?.src ?? null}
-        onClose={() => setEditTarget(null)}
-        onSave={(blob) => {
-          // Saving REPLACES the original (edit means edit — coming back to
-          // the uncropped photo is a defect): the edited frame joins the
-          // stream, the source artifact is removed, and the viewer closes
-          // onto the camera whose filmstrip now shows the edited image.
-          const target = editTarget;
-          session.addPhoto(blob);
-          if (target) session.removeArtifact(target.localId);
-          setEditTarget(null);
-          setPreviewArtifact(null);
-        }}
-      />
-
-      {previewArtifact && previewArtifact.kind === "audio" && (
-        <div className="absolute inset-0 z-40 flex flex-col bg-black">
-          <div className="flex min-h-0 flex-1 items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-white/80">
-              <FileAudio className="h-10 w-10" />
-              <p className="px-8 text-center text-sm">
-                Voice note — the pipeline transcribes it into the item notes.
-              </p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center justify-center gap-3 bg-black px-4 py-3 pb-safe">
-            <Button
-              variant="destructive"
-              className="h-11 px-5"
-              onClick={() => {
-                session.removeArtifact(previewArtifact.localId);
-                setPreviewArtifact(null);
-              }}
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" />
-              Delete
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-11 px-5"
-              onClick={() => setPreviewArtifact(null)}
-            >
-              <X className="mr-1.5 h-4 w-4" />
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 function SerialQuickEntry({ onCommit }: { onCommit: (value: string) => void }) {
   const [draft, setDraft] = useState("");
+  // Commit a pending draft on UNMOUNT too — hide-controls and item switches
+  // remount this input (keyed by asset), and onBlur never fires then; a
+  // typed serial must not evaporate.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const onCommitRef = useRef(onCommit);
+  onCommitRef.current = onCommit;
+  useEffect(() => {
+    return () => {
+      const trimmed = draftRef.current.trim();
+      if (trimmed) onCommitRef.current(trimmed);
+    };
+  }, []);
 
   const commit = () => {
     const trimmed = draft.trim();

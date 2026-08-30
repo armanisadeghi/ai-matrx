@@ -18,9 +18,10 @@
  * Non-negotiables (mirrors the kind-action registry's safety posture):
  *  - NEVER throws. Every outcome is a `{ ok } | { ok:false, error }` envelope.
  *  - LOUD on contract breaks. A target nobody declared, a declared target
- *    with no live handler, a handler that throws — each one toasts, captures
- *    a structured error, and returns a failure envelope. Silent skips are how
- *    write paths rot.
+ *    with no live handler, or an unexpected handler failure toasts, captures
+ *    a structured error, and returns a failure envelope. A handler may throw
+ *    `SurfaceWriteRefusalError` for an expected domain refusal; that still
+ *    reaches the caller as a refusal envelope but never pollutes diagnostics.
  *  - Deepest-wins resolution over the live provider stack: the open node
  *    panel's targets shadow the workspace's, but a workspace-level target
  *    still resolves while a panel is open (the walk continues outward).
@@ -51,7 +52,10 @@ import {
  */
 function resolveHandlers(runtime: {
   surfaceName: string;
-  getWriteHandlers?: () => Record<string, (value: unknown) => void | Promise<void>>;
+  getWriteHandlers?: () => Record<
+    string,
+    (value: unknown) => void | Promise<void>
+  >;
 }) {
   return {
     ...(runtime.getWriteHandlers?.() ?? {}),
@@ -74,6 +78,8 @@ export type SurfaceWriteResult =
        * the property unreachable.
        */
       declined?: true;
+      /** The handler safely refused an invalid or stale domain request. */
+      refused?: true;
       /** Optional replacement instruction the user sent instead of approving. */
       instructions?: string;
     };
@@ -89,6 +95,25 @@ export type SurfaceWriteResult =
  * whether it is refused, asked, or applied.
  */
 export type SurfaceWriteOrigin = "user" | "agent";
+
+/**
+ * An expected, user-correctable refusal from a mounted write handler.
+ *
+ * Use this for invalid coordinates, stale page state, source-policy mismatches,
+ * or another domain guard that correctly prevents a write. Ordinary thrown
+ * errors remain platform failures and are captured by the writeback seam.
+ */
+export class SurfaceWriteRefusalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SurfaceWriteRefusalError";
+  }
+}
+
+/** Refuse a write without reporting a platform defect. */
+export function refuseSurfaceWrite(message: string): never {
+  throw new SurfaceWriteRefusalError(message);
+}
 
 export interface ApplySurfaceWriteOptions {
   /**
@@ -277,7 +302,10 @@ function findDeclaredTarget(
   );
 }
 
-function fail(message: string, raw: Record<string, unknown>): SurfaceWriteResult {
+function fail(
+  message: string,
+  raw: Record<string, unknown>,
+): SurfaceWriteResult {
   toast.error(message);
   captureError({
     source: "surface-writeback",
@@ -354,6 +382,9 @@ export async function applySurfaceWrite(
         error instanceof Error
           ? error.message
           : `Applying "${target.label}" failed.`;
+      if (error instanceof SurfaceWriteRefusalError) {
+        return { ok: false, refused: true, error: message };
+      }
       return fail(message, {
         targetName,
         surfaceName: runtime.surfaceName,
@@ -362,13 +393,10 @@ export async function applySurfaceWrite(
     }
   }
 
-  return fail(
-    `No mounted surface declares write target "${targetName}".`,
-    {
-      targetName,
-      mounted: stack.map((entry) => entry.surfaceName),
-    },
-  );
+  return fail(`No mounted surface declares write target "${targetName}".`, {
+    targetName,
+    mounted: stack.map((entry) => entry.surfaceName),
+  });
 }
 
 /**

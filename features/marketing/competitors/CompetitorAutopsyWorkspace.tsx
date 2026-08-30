@@ -81,6 +81,7 @@ import { LandscapeBriefCard } from "./LandscapeBriefCard";
 import {
   discoverCompetitors,
   discoverLocalCompetitors,
+  humanizeLocation,
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -1179,12 +1180,16 @@ export default function CompetitorAutopsyWorkspace() {
               {localResult ? (
                 <div className="mt-3 space-y-1">
                   <p className="text-xs font-medium">
-                    “{localResult.keyword}” in {localResult.canonical_location}
+                    “{localResult.keyword}” in {humanizeLocation(localResult.canonical_location)}
                   </p>
                   {localResult.businesses.length === 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      Google showed no local pack for this search — try a service
-                      keyword a customer would actually type.
+                      Google Maps lists no businesses for this search. That is a
+                      real answer about the local index, not an error — the
+                      competitors below come from keyword overlap with your site
+                      instead. Try the words a customer would actually type (for
+                      example “electronics recycling” rather than an industry
+                      term), or add a competitor by name.
                     </p>
                   ) : (
                     <ul className="divide-y divide-border rounded-md border border-border">
