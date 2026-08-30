@@ -2,7 +2,7 @@
 
 **Status:** `migrating` — **unified architecture scaffolded, zero routes migrated, legacy still in prod**
 **Tier:** `1`
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-08-30`
 
 > This doc covers the new unified `features/conversation/` AND the legacy `features/chat/`, `features/cx-chat/`, `features/cx-conversation/`, `features/public-chat/`. **Critical:** the unified `ConversationShell` is built, but no route uses it yet. Agents modifying chat UX must understand which surface they're actually touching. **The live `/chat` route already exists** — it runs at `app/(a)/chat/` on the `features/agents/` execution-system, and its authoritative doc is [`features/agents/components/chat/FEATURE.md`](../agents/components/chat/FEATURE.md), **not** this file. Do not assume "chat route" means `ConversationShell`.
 
@@ -124,6 +124,7 @@ Every chat/conversation surface — legacy and new — must support:
 - **Socket.IO is legacy.** New code uses NDJSON; any addition to Socket.IO is a regression.
 - **Ephemeral turn 2+ MUST hit `/ai/chat`**, never `/conversations/{id}` — the row doesn't exist.
 - **Error isolation per message.** A single message render failure must not take down the transcript.
+- **Print outcomes are user-visible.** `printMarkdownContent` delegates popup handling to `@ai-matrx/print/core`; a blocked popup downloads `<title>.html` and `notifyPrintOutcome` emits the exact fallback toast. Permanent regressions live in `utils/markdown-print.test.ts` and `lib/print/print-outcome-toast.test.ts`.
 - **Tool call renderers come from the registry**, not inline per-chat custom renders. See [`../tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md).
 - **Scope stamping happens at first-turn time** on `cx_conversation`; subsequent turns inherit. Do not re-stamp.
 - **Legacy features to leave alone:** `features/cx-chat/`, `features/cx-conversation/`. Read-only reference unless you're migrating them.
@@ -139,6 +140,7 @@ Every chat/conversation surface — legacy and new — must support:
 
 ## Change log
 
+- `2026-08-30` — codex: pinned blocked message printing end to end: `window.open() === null` produces `message.html`, and only the `"downloaded"` outcome emits the exact fallback toast.
 - `2026-08-12` — codex: removed the stale `platform.entity_relationships` containment entry that still told IAM/RLS to follow the retired `chat.conversation.project_id` column. Conversation reads now remain association-only and the migration fails loudly if that legacy registry edge survives.
 - `2026-07-27` — codex: removed the forbidden physical `chat.conversation.project_id` FK from the frontend contract. Project membership and fork inheritance now use canonical association edges.
 - `2026-06-26` — claude: **conversation sharing/ownership moved onto canonical `cx_conversation` columns.** `is_public`→`visibility` (`platform.visibility` enum, RLS-enforced via `iam.has_access`) and `user_id`→`created_by` (trigger-stamped owner). Sharing read/write for conversations now writes the `visibility` column directly (owner-UPDATE RLS) instead of the deprecated-`is_public` `make_resource_*` RPCs; ownership reads use `created_by`. Canonical `ConversationVisibility` type + helpers in `features/cx-chat/types/cx-tables.ts`. Full detail in `features/agents/components/chat/FEATURE.md` Change Log (the live `/chat` doc).
