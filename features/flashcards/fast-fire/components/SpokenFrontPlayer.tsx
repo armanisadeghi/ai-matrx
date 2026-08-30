@@ -20,7 +20,7 @@
 // decoded buffer through the Start-resumed AudioContext (like the buzzer).
 
 import { useEffect, useRef } from "react";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
 export function SpokenFrontPlayer({
   fileId,
@@ -32,7 +32,7 @@ export function SpokenFrontPlayer({
   /** Fired when the question finishes playing (or errors) — starts the timer. */
   onEnded?: (cardId: string) => void;
 }) {
-  const src = useFileSrc(fileId ? { kind: "file_id", fileId } : null);
+  const src = useMediaResolution(fileId ?? null).resolution?.src ?? null;
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // autoPlay alone is unreliable after async URL resolution (and on iOS). Explicit

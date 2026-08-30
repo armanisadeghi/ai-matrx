@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { playCard, stopPlayback } from "../redux/fastFireSlice";
 
@@ -28,7 +28,7 @@ export function FastFireReviewPlayer({
   cardId: string;
 }) {
   const dispatch = useAppDispatch();
-  const src = useFileSrc(fileId ? { kind: "file_id", fileId } : null);
+  const src = useMediaResolution(fileId ?? null).resolution?.src ?? null;
 
   if (!fileId) return null;
 
