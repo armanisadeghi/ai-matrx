@@ -46,21 +46,25 @@ this directory.
 ## File map
 
 - `service/` — `scopesService.ts` (the `context.*` chokepoint — Lane F, NOT part of the
-  associations package) and `rpcResult.ts` (shared result helpers for scopes/comments)
+  associations package) and `rpcResult.ts` (shared result helpers)
   are the real implementations here. Everything association-shaped is now a THIN HOST
   WIRING over `@ai-matrx/associations/core`: `associationsService.ts`,
-  `categoriesService.ts`, `favoritesService.ts`, `favoritesCore.ts` (server-injectable
-  `ues_get_bulk`), `associationCandidates.ts`, `entityTitles.ts`, `entityRows.ts`,
-  `associationGuards.ts`, `associationEdges.ts`. Do not grow logic in a wiring module —
-  grow the package.
+  `categoriesService.ts`, `commentsService.ts` (the `cmt_*` chokepoint — replaced the
+  deleted `features/comments/`), `favoritesService.ts`, `favoritesCore.ts`
+  (server-injectable `ues_get_bulk`), `associationCandidates.ts`, `entityTitles.ts`,
+  `entityRows.ts`, `associationGuards.ts`, `associationEdges.ts`. Do not grow logic in
+  a wiring module — grow the package.
 - `host/` — the ONE `@ai-matrx/associations` binding: `associationsStore.ts` (store
   singleton over supabase + `requireUserId`/`ensureOrgId` + errorSink + the
-  `ENTITY_OVERLAY`), `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
-  carrying the five UI ports: toast notifier, lazy WindowPanel shell, capture openers,
-  the `file` picker override, EntityRef/door components; dev-only
-  `assertDemandedSchema` probe), `errorSink.ts` (→ Error Inspector `associations`
-  source), `associationsHostPortsImpl.tsx` (the WindowPanel-parsing bindings behind a
-  lazy edge).
+  `ENTITY_OVERLAY`; its dataSource carries the **`cmt_add` tap** — the task
+  "someone commented" notification fires from this one seam, never a per-composer
+  helper), `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
+  carrying the six UI ports: toast notifier, lazy WindowPanel shell, capture openers,
+  the `file` picker override, EntityRef/door components, and `authorDisplay` —
+  current-user comment-author enrichment from the `selectActiveUser*` selectors;
+  dev-only `assertDemandedSchema` probe), `errorSink.ts` (→ Error Inspector
+  `associations` source), `associationsHostPortsImpl.tsx` (the WindowPanel-parsing
+  bindings behind a lazy edge).
 - `redux/` — `scopesSlice.ts` (the canonical tree + `entityScopesByKey` +
   `contextItemsByTypeId`, the lazy per-scope-type item catalogs fed by
   `ensureScopeTypeItems` — the association/category cache fragments were DELETED in the
@@ -242,6 +246,15 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-30 — The global Supabase diagnostic boundary keeps the handled
+  `assoc_add` non-conveying-edge `42501` authorization verdict local and
+  non-persisting; unrelated association permission failures remain red.
+- 2026-08-30 — **Comments adoption (0.5.0 W6, C9)**: `features/comments/` DELETED;
+  the `cmt_*` chokepoint is `@ai-matrx/associations/core` bound at
+  `service/commentsService.ts`; `CommentThread`/`useComments` are the canonical
+  comment UI (tasks panel/editor/popover swapped); `authorDisplay` port bound on
+  the provider; `cmt_add` tap on the host dataSource carries the task
+  comment-added notification.
 - 2026-08-30 — Pattern Patrol P13: quick-assign's four existing-record pickers
   retain their cascade/reset behavior and now expose selected-record doors plus
   canonical owner/create doors with the shared 44px touch-target floor; no second

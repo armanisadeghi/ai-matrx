@@ -272,8 +272,9 @@ value metadata mirror the manifests.
   `purgeParty` → `crm_party_purge` behind a destructive confirm.
 - `party` + `crm_outreach_list` are registered in `ENTITY_OVERLAY`
   (`features/scopes/registry/entityRegistry.ts`) and `ASSOCIATION_TARGET_TYPES`
-  (`features/scopes/types.ts`); notes use `commentsService` with
-  `entityType: "party"` + explicit `orgId`.
+  (`features/scopes/types.ts`); notes use `commentsService`
+  (`features/scopes/service/commentsService.ts` — the `@ai-matrx/associations`
+  `cmt_*` chokepoint) with `entityType: "party"` + explicit `orgId`.
 
 **Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_outreach_list`,
 `crm_saved_view` (entities) · `party_contact_point`, `crm_address`, `crm_affiliation`,
@@ -822,6 +823,12 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-30 — **Notes ride the `@ai-matrx/associations` `cmt_*` chokepoint**
+  (0.5.0 W6 adoption): `PartyNotes` repointed onto
+  `features/scopes/service/commentsService.ts`; `features/comments/` deleted.
+  The Notes CARD stays host-owned deliberately — flat notes (no threading), CRM
+  copy/agent payloads, `add_note` surface write handler, collapsible bodies —
+  it is a notes surface, not the comment-thread face.
 - 2026-08-30 — Expert tier and Clear controls now keep the 44px mobile touch
   floor while preserving the compact desktop record layout.
 - 2026-08-30 — **Research expert rosters hydrate discovered parties.** The topic edge reader now
