@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-25`
+**Last updated:** `2026-08-30`
 
 > **Skill**: [`.claude/skills/rich-document-actions/SKILL.md`](../../.claude/skills/rich-document-actions/SKILL.md) — the how-to for using RichDocument on a page, adding an action, adding a content source, and wiring a remote surface. Read the skill for tasks; read this FEATURE.md for deep reference.
 
@@ -182,6 +182,7 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 Newest first.
 
+- `2026-08-30` — codex: **Configurable Markdown images resolve owned URLs through durable file identity.** `DurableMarkdownImg` now promotes recognized Matrx file endpoints through `useMediaResolution` before binding the element, so private chat images use authenticated blob transport instead of repeating a cookie-only `<img>` request after session refresh.
 - `2026-08-25` — codex: **Restored the complete RichDocument right-click hierarchy in nested editors.** The shared context-menu trigger now lets the innermost preview own desktop right-click, `MatrxSplit` enables that menu when `actionsSource` opts into RichDocument, and RichDocument converts non-core registry actions through `buildMenuTree` inside a named Document section, restoring Edit content, full-screen editor, and the App subgroup without duplicating handlers or Compare verbs.
 - `2026-07-26` — claude: **Runaway-delimiter guard (the "big red text" bug).** A single stray `$$` in an answer made remark-math swallow ~400 chars of prose into a math node; `rehype-katex` then rendered it through its built-in error fallback (`<span class="katex-error" style="color:#cc0000">`), which our display-math `font-size: 1.5em` rule blew up into a wall of red unrendered markdown. New shared primitive `lib/markdown/delimiter-guard.ts` neutralizes runaway `$$` and `[` openers (zero-width-space split / character reference) while leaving genuine math and links untouched, and reports every firing to the Error Inspector (`markdown-delimiters`). Wired into `BasicMarkdownContent`, `ConfigurableMarkdownContent`, `MarkdownWithPlugins`, and the file-preview markdown renderer.
 - `2026-07-14` — codex: **Removed the orphaned `/notes` remote publisher (D47).** The Notes page had intentionally removed its header `RichDocumentActionSurface` but still passed `note-detail-*` into `NoteContentEditor`, forcing preview/split actions into `remote` mode with no consumer. `NotesView` now omits the remote ID, restoring the canonical inline `bar` in preview and `icon-only` menu in MatrxSplit. Remote-surface documentation now uses the live headless working-document integration and explicitly requires a mounted matching consumer.

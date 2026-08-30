@@ -28,8 +28,12 @@ import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkCom
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
 import type { Components } from "react-markdown";
-import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import {
+  useMediaLoadRecovery,
+  useMediaResolution,
+} from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 
 /**
  * Durable markdown <img> — the media-durability fix for the default renderer.
@@ -45,18 +49,25 @@ function DurableMarkdownImg({
   ...props
 }: React.ComponentProps<"img">) {
   const raw = typeof src === "string" ? src : null;
-  const { retryKey, onLoadError: onError, failed } = useMediaLoadRecovery(raw, {
-    recoverable: !!raw && recognizeOurFileUrl(raw) !== null,
-  });
-  const durableSrc = raw ?? "";
-  if (!raw || failed || !durableSrc) return null;
+  const ourFile = raw ? recognizeOurFileUrl(raw) : null;
+  const resolvedFromIdentity = useMediaResolution(
+    fileSourceToMediaRef(ourFile?.source),
+  ).resolution?.src;
+  const effectiveSrc = resolvedFromIdentity ?? raw;
+  const { retryKey, onLoadError: onError, failed } = useMediaLoadRecovery(
+    effectiveSrc,
+    {
+      recoverable: !!ourFile?.fileId,
+      failureRef: fileSourceToMediaRef(ourFile?.source),
+    },
+  );
+  if (!effectiveSrc || failed) return null;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       key={retryKey}
       className={className}
       {...props}
-      src={durableSrc}
+      src={effectiveSrc}
       alt={alt || "Image"}
       onError={onError}
     />
