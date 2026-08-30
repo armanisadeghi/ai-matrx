@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P1",
+  "runId": "20260830T141853Z",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:18:54.214Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:54.214Z",
+      "actor": "codex-root",
+      "summary": "ERADICATION repair wave claimed the first three still-open HIGH scoreboard units after skipping already-repaired leading rows.",
+      "evidence": [
+        "Canonical shared checkout; worktrees forbidden and the mistakenly created clean worktree was retired before edits.",
+        "Baseline pnpm type-check passed at 857dcd2c3b7bed591441c6a175caf72eb1397ec4.",
+        "Unrelated dirty paths recorded and excluded: P10 run artifacts, login page, and commerce-intake files."
+      ],
+      "previousEventHash": null,
+      "eventHash": "123c49fe46143909968f86e2b217e08fd7daaa037cfae05d1fd1597ca6931b3a"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:19:05.762Z",
+      "actor": "p1-wave-workers",
+      "summary": "Implementing three disjoint canonical EntityRef door repairs from the leading still-open HIGH queue.",
+      "evidence": [
+        "Owned paths: local-tools documents demo, context-lab page, and sharp context-lab organization rows."
+      ],
+      "previousEventHash": "123c49fe46143909968f86e2b217e08fd7daaa037cfae05d1fd1597ca6931b3a",
+      "eventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a"
+    }
+  ]
+}

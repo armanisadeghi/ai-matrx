@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P5",
+  "runId": "2026-08-30-copy-everywhere-eradication",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:18:56.688Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:56.688Z",
+      "actor": "codex-p5-worker",
+      "summary": "P5 ERADICATION resumed at the open Unwired row-copy machinery unit.",
+      "evidence": [
+        "Canonical shared checkout baseline: type-check PASS; copy detector 102 compliant / 26 auto-approved / 1 equivalent / 35 review / 17 excluded; detector tests 8/8; patrol contracts PASS; scoped ESLint 0 errors and one pre-existing types.ts barrel warning.",
+        "Unrelated dirty paths at baseline belong to P10: .matrx/patrol-runs/P10/latest.json and .matrx/patrol-runs/P10/2026-08-30T141622Z.json.",
+        "Canonical preview is running from this checkout at port 3001; ownership is valid but active use by another task is not assumed available."
+      ],
+      "previousEventHash": null,
+      "eventHash": "b9d67de499ebbbd51bf9d446ee9f31cf87ff0b52ae84fd3ee1acc7402c525118"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:18:57.229Z",
+      "actor": "codex-p5-worker",
+      "summary": "Extending the canonical MatrxDataTable copy config with row AI variants, then folding Unwired's finish brief into the table-owned row menu.",
+      "evidence": [
+        "The open 2026-08-19 P5 sighting supplies exact missing machinery and a behavior-preserving repair route."
+      ],
+      "previousEventHash": "b9d67de499ebbbd51bf9d446ee9f31cf87ff0b52ae84fd3ee1acc7402c525118",
+      "eventHash": "9f476b6c4dd1aed472f5eb26e8c78298c8c0e4fca325ae3fda24a3a84817442e"
+    }
+  ]
+}

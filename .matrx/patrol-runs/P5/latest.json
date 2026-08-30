@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P5",
-  "runId": "2026-08-19-copy-everywhere",
-  "state": "closed",
-  "updatedAt": "2026-08-19T07:47:23.847Z",
-  "summary": "Run closed: 3 verified findings, 2 fixed, 1 missing-machinery task remains open; no approvals or exceptions.",
-  "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "b1ed5324c61b20f553633f2bc41aa4dbd4b27148f684ed29a66d63627c39e160"
+  "runId": "2026-08-30-copy-everywhere-eradication",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:18:57.229Z",
+  "summary": "Extending the canonical MatrxDataTable copy config with row AI variants, then folding Unwired's finish brief into the table-owned row menu.",
+  "source": "2026-08-30-copy-everywhere-eradication.json",
+  "eventHash": "9f476b6c4dd1aed472f5eb26e8c78298c8c0e4fca325ae3fda24a3a84817442e"
 }
