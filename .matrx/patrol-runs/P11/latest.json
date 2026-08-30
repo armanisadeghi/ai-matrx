@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T14:40:23.807Z",
-  "summary": "Certified corrected candidate queued for historical delivery reconciliation",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T14:40:32.214Z",
+  "summary": "Reconciled certified corrected candidate with its existing main integration and first containing release",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb"
+  "eventHash": "60a489c6aa36279a68db02c179f9f6359bca864163749271d02ffb70574ca015"
 }

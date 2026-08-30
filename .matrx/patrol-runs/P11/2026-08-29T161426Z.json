@@ -245,6 +245,26 @@
       },
       "previousEventHash": "852472e8cdf491a97a27250dc05f1cdb1755a652514f7324066137d32fc4b3ca",
       "eventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb"
+    },
+    {
+      "sequence": 16,
+      "state": "delivered",
+      "at": "2026-08-30T14:40:32.214Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Reconciled certified corrected candidate with its existing main integration and first containing release",
+      "evidence": [
+        "Candidate is an ancestor of integration merge a6e0cc9b34 and current origin/main",
+        "v0.4.1449 is the first release containing corrected candidate 4b060808",
+        "Historical release-before-certification escape remains preserved in append-only events and was not rewritten"
+      ],
+      "delivery": {
+        "candidateSha": "4b06080808465764e280fbfef3cd895abb093c24",
+        "preservedRef": "refs/heads/patrol-runs/P11/2026-08-29T161426Z",
+        "integratedSha": "a6e0cc9b340cb7e8ccb742235d78625c0aeb8e56",
+        "release": "v0.4.1449"
+      },
+      "previousEventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb",
+      "eventHash": "60a489c6aa36279a68db02c179f9f6359bca864163749271d02ffb70574ca015"
     }
   ]
 }
