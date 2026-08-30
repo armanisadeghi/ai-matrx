@@ -2,13 +2,11 @@
 
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, Copy, ExternalLink, PlugZap } from "lucide-react";
+import { AlertTriangle, ExternalLink, PlugZap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { repositorySourceHref } from "@/features/admin/reporting/source-links";
-import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -19,21 +17,10 @@ import {
   type UnwiredHistoryPoint,
   type UnwiredReport,
 } from "@/scripts/unwired/types";
-import { finishWiringPrompt } from "./fix-prompt";
+import { buildUnwiredCopyConfig, unwiredFindingContent } from "./copy";
 
 function findingKey(finding: UnwiredFinding): string {
   return `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
-}
-
-/** The finding as readable text — what Copy-as / Export / AI actions carry. */
-function findingContent(finding: UnwiredFinding): string {
-  return [
-    `${finding.file}:${finding.line} (${finding.repository})`,
-    `Detector: ${DETECTOR_TITLES[finding.detector]}`,
-    `Artifact: ${finding.symbol}`,
-    `Size: ${finding.lines.toLocaleString()} lines`,
-    `What remains: ${finding.remains}`,
-  ].join("\n");
 }
 
 const STALE_AFTER_DAYS = 7;
@@ -51,21 +38,9 @@ interface UnwiredConsoleProps {
 }
 
 export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProps) {
-  const [copied, setCopied] = useState<string | null>(null);
   const [clickedFinding, setClickedFinding] = useState<UnwiredFinding | null>(null);
   const scanAge = useSyncExternalStore(subscribeToNothing, () => ageInDays(report.generatedAt), () => null);
   const prior = history.length > 1 ? history.at(-2) : null;
-  const copyBrief = async (finding: UnwiredFinding): Promise<void> => {
-    const key = `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
-    try {
-      await navigator.clipboard.writeText(finishWiringPrompt(finding));
-      setCopied(key);
-      window.setTimeout(() => setCopied((value) => (value === key ? null : value)), 1500);
-      toast.success("Finish-the-wiring brief copied");
-    } catch {
-      toast.error("Clipboard unavailable — open the source and copy the row details manually.");
-    }
-  };
 
   const columns: MatrxColumnDef<UnwiredFinding>[] = [
     {
@@ -128,28 +103,6 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
       width: 520,
       cell: (finding) => <span className="block line-clamp-2 text-xs text-muted-foreground" title={finding.remains}>{finding.remains}</span>,
     },
-    {
-      id: "brief",
-      header: "Finish brief",
-      width: 130,
-      cell: (finding) => {
-        const key = `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={(event) => {
-              event.stopPropagation();
-              void copyBrief(finding);
-            }}
-            aria-label={`Copy finish-the-wiring brief for ${finding.symbol}`}
-          >
-            {copied === key ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {copied === key ? "Copied" : "Copy brief"}
-          </Button>
-        );
-      },
-    },
   ];
 
   return (
@@ -211,7 +164,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
             const finding = id ? report.findings.find((f) => findingKey(f) === id) : undefined;
             setClickedFinding(finding ?? null);
             if (!finding) return null;
-            return { content: findingContent(finding) };
+            return { content: unwiredFindingContent(finding) };
           }}
           extraSections={[
             {
@@ -231,17 +184,6 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
                   disabled: !clickedFinding,
                   description: "Open the file:line on the default branch",
                 },
-                {
-                  kind: "item",
-                  id: "unwired-copy-brief",
-                  label: "Copy finish-the-wiring brief",
-                  icon: Copy,
-                  disabled: !clickedFinding,
-                  description: "A paste-ready brief for an agent to finish this",
-                  onSelect: () => {
-                    if (clickedFinding) void copyBrief(clickedFinding);
-                  },
-                },
               ] satisfies ContextMenuExtraItem[],
             },
           ]}
@@ -250,6 +192,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
             data={report.findings}
             columns={columns}
             getRowId={(finding) => findingKey(finding)}
+            copy={buildUnwiredCopyConfig({ report, prior, problems, scanAge })}
             urlState={{ id: "unwired" }}
             pageSize={50}
             toolbar={{ search: true, searchPlaceholder: "Search repository, source, artifact, or remaining work…" }}

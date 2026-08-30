@@ -100,12 +100,37 @@ import type {
   ColumnFilterValue,
   ColumnFiltersState,
   MatrxColumnDef,
+  MatrxDataTableCopyConfig,
   MatrxDataTableHierarchyMove,
   MatrxDataTableProps,
   MatrxDataTableQueryState,
   SortState,
   TableSearchMatchMode,
 } from "./types";
+
+interface TableRowCopyControlProps<T> {
+  copy: MatrxDataTableCopyConfig<T>;
+  row: T;
+  size: "xs" | "icon";
+}
+
+/** One row-copy seam shared by cards, desktop rows, panels, and windows. */
+function TableRowCopyControl<T>({
+  copy,
+  row,
+  size,
+}: TableRowCopyControlProps<T>) {
+  return (
+    <CopyButtons
+      size={size}
+      label={copy.label}
+      human={() => copy.humanRow(row)}
+      json={() => (copy.agentRow ? copy.agentRow(row) : row)}
+      agent={() => buildRowAgentInput(copy, row)}
+      aiVariants={copy.rowAiVariants?.(row)}
+    />
+  );
+}
 
 interface HierarchyDropPreview {
   move: MatrxDataTableHierarchyMove;
@@ -1431,18 +1456,10 @@ function MatrxDataTableCore<T>({
                                 onClick={(event) => event.stopPropagation()}
                               >
                                 {showRowCopy && copy ? (
-                                  <CopyButtons
+                                  <TableRowCopyControl
                                     size="xs"
-                                    label={copy.label}
-                                    human={() => copy.humanRow(displayRow)}
-                                    json={() =>
-                                      copy.agentRow
-                                        ? copy.agentRow(displayRow)
-                                        : displayRow
-                                    }
-                                    agent={() =>
-                                      buildRowAgentInput(copy, displayRow)
-                                    }
+                                    copy={copy}
+                                    row={displayRow}
                                   />
                                 ) : null}
                                 {rowActions?.(row, {
@@ -1842,18 +1859,10 @@ function MatrxDataTableCore<T>({
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {showRowCopy && copy ? (
-                                  <CopyButtons
+                                  <TableRowCopyControl
                                     size="xs"
-                                    label={copy.label}
-                                    human={() => copy.humanRow(displayRow)}
-                                    json={() =>
-                                      copy.agentRow
-                                        ? copy.agentRow(displayRow)
-                                        : displayRow
-                                    }
-                                    agent={() =>
-                                      buildRowAgentInput(copy, displayRow)
-                                    }
+                                    copy={copy}
+                                    row={displayRow}
                                   />
                                 ) : null}
                                 {rowActions?.(row, {
@@ -2002,14 +2011,10 @@ function MatrxDataTableCore<T>({
             headerActions={
               <div className="flex items-center gap-1">
                 {copy && showRowCopy ? (
-                  <CopyButtons
+                  <TableRowCopyControl
                     size="icon"
-                    label={copy.label}
-                    human={() => copy.humanRow(selectedRow)}
-                    json={() =>
-                      copy.agentRow ? copy.agentRow(selectedRow) : selectedRow
-                    }
-                    agent={() => buildRowAgentInput(copy, selectedRow)}
+                    copy={copy}
+                    row={selectedRow}
                   />
                 ) : null}
                 {detail?.headerActions?.(selectedRow)}
@@ -2089,14 +2094,10 @@ function MatrxDataTableCore<T>({
                   </Button>
                 ) : null}
                 {copy ? (
-                  <CopyButtons
+                  <TableRowCopyControl
                     size="icon"
-                    label={copy.label}
-                    human={() => copy.humanRow(windowRow)}
-                    json={() =>
-                      copy.agentRow ? copy.agentRow(windowRow) : windowRow
-                    }
-                    agent={() => buildRowAgentInput(copy, windowRow)}
+                    copy={copy}
+                    row={windowRow}
                   />
                 ) : null}
               </div>

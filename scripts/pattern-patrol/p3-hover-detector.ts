@@ -6,10 +6,7 @@ import { relative, resolve } from "node:path";
 import ts from "typescript";
 
 export type P3HoverClassification =
-  | "actionable"
-  | "decoration"
-  | "review"
-  | "safe";
+  "actionable" | "decoration" | "review" | "safe";
 
 export interface P3HoverFinding {
   classification: P3HoverClassification;
@@ -63,7 +60,8 @@ const EVENT_ATTRIBUTES = new Set([
   "onTouchStart",
 ]);
 const RESPONSIVE_PREFIX = /^(?:sm|md|lg|xl|2xl|min-\[[^\]]+\]):/;
-const HOVER_REVEAL = /(?:^|:)(?:group-hover|peer-hover|hover)(?:\/[^:]+)?:opacity-(?:100|\[1\])$/;
+const HOVER_REVEAL =
+  /(?:^|:)(?:group-hover|peer-hover|hover)(?:\/[^:]+)?:opacity-(?:100|\[1\])$/;
 const HIDDEN_OPACITY = /(?:^|:)opacity-(?:0|\[0\])$/;
 const VISIBLE_OPACITY = /(?:^|:)opacity-(?:100|\[1\])$/;
 
@@ -83,7 +81,8 @@ function attributeName(attribute: ts.JsxAttributeLike): string | undefined {
 
 function staticAttributeValue(attribute: ts.JsxAttribute): string | undefined {
   if (!attribute.initializer) return "";
-  if (ts.isStringLiteral(attribute.initializer)) return attribute.initializer.text;
+  if (ts.isStringLiteral(attribute.initializer))
+    return attribute.initializer.text;
   if (!ts.isJsxExpression(attribute.initializer)) return undefined;
   const expression = attribute.initializer.expression;
   if (!expression) return "";
@@ -96,7 +95,10 @@ function staticAttributeValue(attribute: ts.JsxAttribute): string | undefined {
   return undefined;
 }
 
-function collectStaticStrings(node: ts.Node | undefined, output: string[]): void {
+function collectStaticStrings(
+  node: ts.Node | undefined,
+  output: string[],
+): void {
   if (!node) return;
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     output.push(node.text);
@@ -105,7 +107,8 @@ function collectStaticStrings(node: ts.Node | undefined, output: string[]): void
   if (ts.isTemplateExpression(node)) {
     output.push(node.head.text);
     for (const span of node.templateSpans) output.push(span.literal.text);
-    for (const span of node.templateSpans) collectStaticStrings(span.expression, output);
+    for (const span of node.templateSpans)
+      collectStaticStrings(span.expression, output);
     return;
   }
   ts.forEachChild(node, (child) => collectStaticStrings(child, output));
@@ -124,10 +127,14 @@ function classTokens(opening: ts.JsxOpeningLikeElement): string[] {
       collectStaticStrings(classAttribute.initializer.expression, values);
     }
   }
-  return [...new Set(values.flatMap((value) => value.split(/\s+/)).filter(Boolean))];
+  return [
+    ...new Set(values.flatMap((value) => value.split(/\s+/)).filter(Boolean)),
+  ];
 }
 
-function openingAttributes(opening: ts.JsxOpeningLikeElement): ts.JsxAttribute[] {
+function openingAttributes(
+  opening: ts.JsxOpeningLikeElement,
+): ts.JsxAttribute[] {
   return opening.attributes.properties.filter(ts.isJsxAttribute);
 }
 
@@ -202,7 +209,11 @@ function importedIconNames(sourceFile: ts.SourceFile): Set<string> {
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement)) continue;
     if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
-    if (!/(?:lucide-react|react-icons|heroicons)/.test(statement.moduleSpecifier.text)) {
+    if (
+      !/(?:lucide-react|react-icons|heroicons)/.test(
+        statement.moduleSpecifier.text,
+      )
+    ) {
       continue;
     }
     const bindings = statement.importClause?.namedBindings;
@@ -327,7 +338,9 @@ export function analyzeP3HoverSource(
     const hidden = tokens.filter((token) => HIDDEN_OPACITY.test(token));
     const hoverReveal = tokens.filter((token) => HOVER_REVEAL.test(token));
     if (hidden.length > 0 && hoverReveal.length > 0) {
-      const location = sourceFile.getLineAndCharacterOfPosition(opening.getStart());
+      const location = sourceFile.getLineAndCharacterOfPosition(
+        opening.getStart(),
+      );
       const tag = jsxTagName(opening.tagName);
       const safe = safeReason(tokens, hidden);
       const interaction = interactionEvidence(node);
@@ -347,11 +360,13 @@ export function analyzeP3HoverSource(
       } else if (isDecorativeSubtree(node, iconNames)) {
         classification = "decoration";
         rank = 20;
-        reason = "hover-revealed subtree has no interactive semantics and is decorative";
+        reason =
+          "hover-revealed subtree has no interactive semantics and is decorative";
       } else {
         classification = "review";
         rank = 60;
-        reason = "hover-revealed custom subtree has no statically provable interaction semantics";
+        reason =
+          "hover-revealed custom subtree has no statically provable interaction semantics";
       }
       findings.push({
         classification,
@@ -381,8 +396,7 @@ function trackedTsxFiles(repoRoot: string): string[] {
       (file) =>
         !/(?:^|\/)(?:node_modules|\.next|\.claude|test-utils)(?:\/|$)/.test(
           file,
-        ) &&
-        !/\.(?:test|spec|stories)\.tsx$/.test(file),
+        ) && !/\.(?:test|spec|stories)\.tsx$/.test(file),
     )
     .sort();
 }
@@ -396,7 +410,10 @@ export function scanP3HoverRepository(repoRoot: string): P3HoverScan {
   };
   for (const file of trackedTsxFiles(repoRoot)) {
     const absolute = resolve(repoRoot, file);
-    for (const finding of analyzeP3HoverSource(readFileSync(absolute, "utf8"), file)) {
+    for (const finding of analyzeP3HoverSource(
+      readFileSync(absolute, "utf8"),
+      file,
+    )) {
       scan[finding.classification].push(finding);
     }
   }
@@ -411,7 +428,8 @@ export function firstP3HoverRepairUnit(
   const selectedFiles = new Set<string>();
   const selected: P3HoverFinding[] = [];
   for (const finding of scan.actionable) {
-    if (!selectedFiles.has(finding.file) && selectedFiles.size >= fileLimit) continue;
+    if (!selectedFiles.has(finding.file) && selectedFiles.size >= fileLimit)
+      continue;
     selectedFiles.add(finding.file);
     selected.push(finding);
   }
@@ -425,7 +443,9 @@ function formatFinding(finding: P3HoverFinding, index: number): string {
 function main(): void {
   const repoRoot = resolve(process.cwd());
   const json = process.argv.includes("--json");
-  const limitArgument = process.argv.find((argument) => argument.startsWith("--file-limit="));
+  const limitArgument = process.argv.find((argument) =>
+    argument.startsWith("--file-limit="),
+  );
   const fileLimit = limitArgument
     ? Number.parseInt(limitArgument.slice("--file-limit=".length), 10)
     : 15;
@@ -436,12 +456,23 @@ function main(): void {
   const repairUnit = firstP3HoverRepairUnit(scan, fileLimit);
   if (json) {
     process.stdout.write(
-      `${JSON.stringify({ repo: relative(process.cwd(), repoRoot) || ".", counts: {
-        actionable: scan.actionable.length,
-        decoration: scan.decoration.length,
-        review: scan.review.length,
-        safe: scan.safe.length,
-      }, repairUnit, review: scan.review, decoration: scan.decoration, safe: scan.safe }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          repo: relative(process.cwd(), repoRoot) || ".",
+          counts: {
+            actionable: scan.actionable.length,
+            decoration: scan.decoration.length,
+            review: scan.review.length,
+            safe: scan.safe.length,
+          },
+          repairUnit,
+          review: scan.review,
+          decoration: scan.decoration,
+          safe: scan.safe,
+        },
+        null,
+        2,
+      )}\n`,
     );
     return;
   }

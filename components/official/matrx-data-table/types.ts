@@ -392,6 +392,12 @@ export interface MatrxDataTableCopyConfig<T> {
     all: T[],
   ) => Record<string, string | number | boolean | null | undefined>;
   /**
+   * Additional row-scoped AI actions. Use this to fold a domain action such
+   * as a paste-ready repair brief into the table-owned row copy menu instead
+   * of rendering a separate third control. Builders run at click time.
+   */
+  rowAiVariants?: (row: T) => AiVariant[];
+  /**
    * Graded AI variants for the toolbar's view copy (e.g. "Top 25", "Summary
    * only"). When set, the toolbar's Copy-for-AI upgrades to a dropdown with
    * these variants + the full-view payload as the automatic "Everything"

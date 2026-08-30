@@ -117,9 +117,8 @@ describe("P3 hover-only interaction detector", () => {
       review: [],
       safe: [],
     };
-    expect(firstP3HoverRepairUnit(scan, 2).map((finding) => finding.file)).toEqual([
-      "b.tsx",
-      "c.tsx",
-    ]);
+    expect(
+      firstP3HoverRepairUnit(scan, 2).map((finding) => finding.file),
+    ).toEqual(["b.tsx", "c.tsx"]);
   });
 });

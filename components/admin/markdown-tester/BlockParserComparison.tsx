@@ -152,7 +152,7 @@ function statusBadge(cell: DiffCell): {
     case "content-drift":
       return { variant: "destructive", label: "byte drift" };
     case "missing":
-      return { variant: "destructive", label: "∅ missing" };
+      return { variant: "destructive", label: "missing" };
   }
 }
 

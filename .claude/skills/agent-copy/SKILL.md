@@ -224,6 +224,10 @@ warnings, and live filters that must survive a zero-row view go in
 `copy.listContext`; mirror the same scalar counts in `listAttributes` and
 `rowAttributes`. Also pass
 `window={{ title }}` so rows open the record window.
+Domain-specific row AI actions (for example a paste-ready repair brief) go in
+`copy.rowAiVariants`; the table threads them into that same row menu in cards,
+desktop rows, side panels, and windows. Never add an action column or another
+copy control for the variant.
 **Page already has its own header row above the table?** Set
 `copy.showToolbar: false` and put one `CopyButtons` with `export` IN that row —
 otherwise the table renders a near-empty toolbar row holding only copy icons
