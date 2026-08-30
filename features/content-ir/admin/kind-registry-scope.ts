@@ -32,6 +32,7 @@ export type KindRegistryDetailTab =
   | "try-input"
   | "gate"
   | "schema"
+  | "template"
   | "inputs"
   | "variants";
 
