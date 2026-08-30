@@ -20,7 +20,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import {
   Drawer,
   DrawerContent,

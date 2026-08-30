@@ -40,7 +40,8 @@ const ROOT_IMPORTS: ReadonlyMap<
     new Map<string, InteractiveRootKind>([["Drawer", "drawer"]]),
   ],
   [
-    "@/components/ui/sheet",
+    // Sheet moved to the design-system package (C9 swap, 2026-08-30).
+    "@ai-matrx/design-system",
     new Map<string, InteractiveRootKind>([["Sheet", "sheet"]]),
   ],
   [

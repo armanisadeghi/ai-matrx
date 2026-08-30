@@ -23,7 +23,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { useAccess } from "@/utils/permissions/access";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";

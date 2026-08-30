@@ -288,8 +288,9 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
   },
   {
     path: "@/components/ui/sheet",
-    loader: () => require("@/components/ui/sheet"),
-    scopeStrategy: "spread", // Sheet, SheetTrigger, SheetContent, ...
+    loader: () => require("@ai-matrx/design-system"),
+    scopeStrategy: "named",
+    exports: ["Sheet", "SheetPortal", "SheetOverlay", "SheetTrigger", "SheetClose", "SheetContent", "SheetHeader", "SheetFooter", "SheetTitle", "SheetDescription"],
   },
   {
     path: "@/components/ui/dropdown-menu",

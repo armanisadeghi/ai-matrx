@@ -25,7 +25,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import type { TrustEnvelope } from "@/features/education/trust/types";

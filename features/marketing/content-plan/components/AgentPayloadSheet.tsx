@@ -36,7 +36,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";

@@ -49,7 +49,7 @@ import {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
 import { buildCanvasScope } from "@/features/canvas/lib/canvas-scope";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@ai-matrx/design-system";
 import {
   ResizablePanelGroup,
   ResizablePanel,

@@ -250,8 +250,9 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
   },
   {
     path: "@/components/ui/sheet",
-    loader: () => import("@/components/ui/sheet"),
-    scopeStrategy: "spread",
+    loader: () => import("@ai-matrx/design-system"),
+    scopeStrategy: "named",
+    exports: ["Sheet", "SheetPortal", "SheetOverlay", "SheetTrigger", "SheetClose", "SheetContent", "SheetHeader", "SheetFooter", "SheetTitle", "SheetDescription"],
     core: true,
   },
   {

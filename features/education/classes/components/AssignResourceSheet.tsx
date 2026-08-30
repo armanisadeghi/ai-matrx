@@ -16,7 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";

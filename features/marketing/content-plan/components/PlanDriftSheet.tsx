@@ -23,7 +23,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 

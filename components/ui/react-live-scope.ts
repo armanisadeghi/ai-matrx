@@ -141,7 +141,7 @@ export {
   SheetFooter,
   SheetTitle,
   SheetDescription,
-} from "./sheet";
+} from "@ai-matrx/design-system";
 export { Skeleton } from "@ai-matrx/design-system";
 export { Slider } from "./slider";
 export { Switch } from "./switch";

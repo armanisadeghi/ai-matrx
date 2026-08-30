@@ -21,7 +21,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import type { TutorGroundingSeed } from "../grounding";
 import { EducationTutorClient } from "./EducationTutorClient";

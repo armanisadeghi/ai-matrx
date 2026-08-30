@@ -19,7 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
+} from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import {

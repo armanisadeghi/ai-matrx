@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent } from "@ai-matrx/design-system"
 import { Skeleton } from "@ai-matrx/design-system"
 import {
   Tooltip,
