@@ -27,7 +27,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { agentFileRef, mediaSafe } from "@/lib/media/agent-payload";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -45,6 +44,7 @@ import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import type { Visibility } from "@/features/files/types";
 import {
+  fileInfoAgentPayload,
   fileInfoHumanSummary,
   type FileInfoSnapshot,
 } from "@/features/files/utils/file-info-format";
@@ -151,33 +151,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
             size="sm"
             label={file.fileName}
             human={() => fileInfoHumanSummary(infoSnapshot)}
-            agent={() => ({
-              kind: "cloud-file-info",
-              location: "AI Matrx — Cloud Files — Info tab",
-              description:
-                "Complete metadata for the file currently shown in the Info tab.",
-              // `infoSnapshot.file` is a whole CloudFile, which carries
-              // `url`/`downloadUrl` and `filePath` (a
-              // raw storage path). An agent reads this payload long after the
-              // click, so those are dead weight at best — `mediaSafe` strips
-              // them and `file_ref` carries the durable identity instead.
-              data: {
-                file_ref: agentFileRef(file),
-                ...(mediaSafe(infoSnapshot) as Record<string, unknown>),
-              },
-              summary: fileInfoHumanSummary(infoSnapshot),
-              attributes: {
-                id: file.id,
-                name: file.fileName,
-                "mime-type": file.mimeType ?? "",
-                visibility: file.visibility,
-              },
-              context: {
-                "file-id": file.id,
-                "parent-folder": parentFolder?.folderPath ?? "(root)",
-                "rag-status": docState.state.status,
-              },
-            })}
+            agent={() => fileInfoAgentPayload(infoSnapshot)}
           />
         </div>
 
@@ -242,7 +216,10 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
             ) : (
               // Virtual rows have no entity row to ask about, so all we can
               // honestly report is the client-side setting.
-              <Row label="Visibility" value={visibilityLabel(file.visibility)} />
+              <Row
+                label="Visibility"
+                value={visibilityLabel(file.visibility)}
+              />
             )}
             {shareLink ? (
               <CopyableShareLink

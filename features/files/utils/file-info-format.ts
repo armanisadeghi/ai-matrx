@@ -2,6 +2,8 @@ import type { UseFileDocumentState } from "@/features/files/hooks/useFileDocumen
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { CloudFile, CloudShareLink } from "@/features/files/types";
 import { formatFileSize } from "@/features/files/utils/format";
+import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
+import { agentFileRef, mediaSafe } from "@/lib/media/agent-payload";
 
 export interface FileInfoSnapshot {
   file: CloudFile;
@@ -149,4 +151,62 @@ export function fileInfoHumanSummary(snapshot: FileInfoSnapshot): string {
   }
 
   return lines.join("\n").trimEnd();
+}
+
+function escapeXmlText(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function renderFileRef(file: CloudFile): string {
+  const ref = agentFileRef(file);
+  const fields = [
+    ["file_id", ref.file_id],
+    ["name", ref.name],
+    ["mime_type", ref.mime_type],
+    ["size_bytes", ref.size_bytes],
+    ["durable_url", ref.durable_url],
+  ]
+    .filter(([, value]) => value !== undefined)
+    .map(
+      ([key, value]) =>
+        `<${key}>${escapeXmlText(value === null ? "null" : String(value))}</${key}>`,
+    )
+    .join("\n");
+
+  return `<file_ref>\n${fields}\n</file_ref>`;
+}
+
+/**
+ * Agent copy starts with the durable file identity, then carries the complete
+ * sanitized snapshot. The human summary is deliberately excluded because it
+ * includes the visible full path; the data block already preserves that field
+ * as an explicit omission note through `mediaSafe`.
+ */
+export function fileInfoAgentPayload(snapshot: FileInfoSnapshot): string {
+  const { file, parentFolderPath, ragState } = snapshot;
+  const details = buildAgentPayload({
+    kind: "cloud-file-info",
+    location: "AI Matrx — Cloud Files — Info tab",
+    description:
+      "Complete metadata for the file currently shown in the Info tab.",
+    data: mediaSafe(snapshot),
+    attributes: {
+      id: file.id,
+      name: file.fileName,
+      "mime-type": file.mimeType ?? "",
+      visibility: file.visibility,
+    },
+    context: {
+      "file-id": file.id,
+      "parent-folder": parentFolderPath ?? "(root)",
+      "rag-status": ragState.status,
+    },
+  });
+
+  return `${renderFileRef(file)}\n${details}`;
 }
