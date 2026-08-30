@@ -124,11 +124,13 @@ async def main():
     if have:
         print(f"punches         EXISTS    {have}")
     else:
-        for kind, hhmm in (("in", "09:00"), ("out", "17:00")):
+        for kind, hour in (("in", 9), ("out", 17)):
+            at = datetime.datetime.combine(target["period_start_on"],
+                                           datetime.time(hour, 0), tzinfo=datetime.timezone.utc)
             r = await door(PRIYA_UID,
-                "select hr.punch_record($1::uuid,$2,($3::date + $4::time) at time zone 'UTC',"
-                "'manager_entry',$5,null,null,null,null)",
-                emp, kind, target["period_start_on"], hhmm, f"tl103-ended-{kind}-{emp[:8]}")
+                "select hr.punch_record($1::uuid,$2,$3::timestamptz,"
+                "'manager_entry',$4,null,null,null,null)",
+                emp, kind, at, f"tl103-ended-{kind}-{emp[:8]}")
             print(f"punch {kind:3}       {json.dumps(r)[:150]}")
         print("punches         CREATED   by G2V-Priya Raman (proves the punch reach this fixture is for)")
 

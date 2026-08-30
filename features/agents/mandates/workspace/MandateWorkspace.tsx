@@ -21,9 +21,12 @@
 //   §3 Organization context — one line, collapsed. This surface is PERSONAL;
 //      org editing lives on the org route.
 //   §4 Your override — the stepwise flow (OverrideFlow).
-// Plus: RUN THIS JOB — run the mandate you are looking at, agent holder or
-// workflow holder alike (super-admin gated; the server endpoint is
-// `require_super_admin`).
+// Plus, ON THE ADMIN ROUTE ONLY (Arman, 2026-08-29 — mandate MANAGEMENT is
+// admin-side; the user route is browse + their own override):
+//   · goal editing and draft-input editing (§1)
+//   · RUN THIS JOB — run the mandate you are looking at, agent holder or
+//     workflow holder alike (also super-admin gated inside; the server
+//     endpoints are `require_super_admin`, aidream 304fe1848).
 //
 // No prose paragraphs. Sections state facts; the data does the talking.
 
@@ -191,6 +194,11 @@ export function MandateWorkspace({
 
   const resolution = resolveForPrincipal(data, userId, orgIds, principal);
   const feature = splitMandateKey(data.mandate.mandate_key).feature;
+  // WHERE, not who: a mandate's goal, its declared inputs and running it are
+  // SYSTEM management, so they exist only on the admin route. The user route
+  // and the window panel show the same triad, read-only, and keep the one
+  // thing that is genuinely the user's: their own override.
+  const authoring = host === "admin-route";
 
   return (
     <div
@@ -234,19 +242,20 @@ export function MandateWorkspace({
           </div>
         </header>
 
-        {/* THE TRIAD — INPUT → GOAL → OUTPUT, the mandate's own order. */}
-        <TriadInputSection data={data} onChanged={refresh} />
+        {/* THE TRIAD — INPUT → GOAL → OUTPUT, the mandate's own order.
+            Editable on the admin route only (see `authoring`). */}
+        <TriadInputSection data={data} onChanged={refresh} authoring={authoring} />
         <TriadFlowMark />
-        <TriadGoalSection data={data} onChanged={refresh} />
+        <TriadGoalSection data={data} onChanged={refresh} authoring={authoring} />
         <TriadFlowMark />
         <TriadOutputSection data={data} />
 
         <FulfillmentSection data={data} resolution={resolution} onChanged={refresh} />
 
-        {/* Run it — the workspace's own run affordance, super-admin gated
-            (the server endpoint is require_super_admin) and identical in both
-            hosts. Renders nothing for everyone else. */}
-        <RunThisJobSection data={data} />
+        {/* Run it — mandate management, so it lives where management lives:
+            the admin route. Still super-admin gated inside (the server endpoint
+            is require_super_admin). */}
+        {authoring ? <RunThisJobSection data={data} /> : null}
         {principal.kind === "user" ? (
           <OrgOverridesDisclosure
             resolution={resolution}

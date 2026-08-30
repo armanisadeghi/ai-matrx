@@ -371,7 +371,7 @@ export function TriadGoalSection({
               </span>
             </div>
           </div>
-        ) : (
+        ) : authoring ? (
           <>
             <button
               type="button"
@@ -396,6 +396,17 @@ export function TriadGoalSection({
                 running={refining}
                 onRun={() => void runRefine()}
               />
+            </div>
+          </>
+        ) : (
+          /* Read-only: the goal is a platform definition, changed by an admin
+             on the admin route. Stated plainly, never as a disabled control. */
+          <>
+            <p className="whitespace-pre-wrap text-[15px] font-medium leading-relaxed text-foreground">
+              {goal || "No goal set for this job yet."}
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <GroundingBadge grounding={grounding} />
             </div>
           </>
         )}
