@@ -11,7 +11,7 @@
  * Sections map one-to-one onto the package's entries — /qr, /qr-styled,
  * /barcode, /labels (+ /react LabelSheetPreview), /flashcards (+ /react
  * PrintOptionsDialog), /booklet, and /pdf through the host seam at
- * `@/lib/print/markdown-pdf`.
+ * `@ai-matrx/print/pdf` (converter + stylesheet included since 0.3.0).
  */
 
 import { useState } from "react";

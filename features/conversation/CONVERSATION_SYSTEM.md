@@ -236,7 +236,7 @@ These are all non-generic dependencies the unified system relies on. They live o
 | `parseMarkdownToText` | `utils/markdown-processors/parse-markdown-for-speech.ts` | `AssistantMessage` | Strips markdown syntax to plain text for TTS |
 | `copyToClipboard` | `components/matrx/buttons/markdown-copy-utils.ts` | `MessageOptionsMenu` | Rich copy with Google Docs / WordPress / thinking variants |
 | `printMarkdownContent` | `features/chat/utils/markdown-print-utils.ts` | `MessageOptionsMenu` | Opens browser print dialog with styled markdown |
-| `loadWordPressCSS` | `features/html-pages/css/wordpress-styles.ts` | `MessageOptionsMenu` | Fetches WordPress CSS for copying a complete standalone HTML page |
+| `getMarkdownStylesheet` | `@ai-matrx/print/markdown` | `MessageOptionsMenu` | The package's default print stylesheet, for copying a complete standalone HTML page |
 
 ### 4g. Types (imported)
 

@@ -42,7 +42,7 @@ competing with the one persistent shell header.
 
 ## Change log
 
-- 2026-08-30 — Added `/demos/print-studio`: the feature-visibility surface for `@ai-matrx/print` — one page exercising `/qr`, `/qr-styled`, `/barcode`, `/labels` (+ `LabelSheetPreview`), `/flashcards` (+ `PrintOptionsDialog`), `/booklet`, and `/pdf` via the `@/lib/print/markdown-pdf` seam.
+- 2026-08-30 — Added `/demos/print-studio`: the feature-visibility surface for `@ai-matrx/print` — one page exercising `/qr`, `/qr-styled`, `/barcode`, `/labels` (+ `LabelSheetPreview`), `/flashcards` (+ `PrintOptionsDialog`), `/booklet`, and `/pdf` (the converter and stylesheet ship in the package as of 0.3.0 — no host seam).
 - 2026-08-23 — Added `/demos/canonical-flashcards` with four interactive variants and a recommended non-breaking convergence path for Chat, Education, and Canvas flashcards.
 - 2026-08-23 — Added `/demos/kind-kit`: exercises every `components/kind-kit/` primitive (SortableList, KindPanelGrid, KindPanel, KindHeaderBar, StreamingSkeleton, KeywordChip/TagList) with keyword-research sample data.
 

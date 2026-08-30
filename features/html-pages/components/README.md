@@ -44,7 +44,7 @@ features/html-pages/components/
 ## Architecture Highlights
 
 ### Synchronous Initialization
-The hook initializes CSS synchronously using `getWordPressCSS()` instead of async loading. This ensures:
+The hook initializes CSS synchronously using `getMarkdownStylesheet()` from `@ai-matrx/print/markdown` instead of async loading. This ensures:
 - ✅ Initial preview pages include CSS from the start
 - ✅ Complete HTML generated correctly on first render
 - ✅ Monaco editor auto-format works on properly formed HTML
@@ -360,7 +360,7 @@ The hook provides these utilities:
 - lucide-react (icons)
 - @/components/mardown-display/code/SmallCodeEditor
 - @/components/matrx/buttons/markdown-copy-utils
-- @/features/html-pages/css/wordpress-styles
+- @ai-matrx/print/markdown
 - @/features/html-pages/hooks/useHTMLPages
 - @/lib/redux/hooks (for user selector)
 

@@ -78,7 +78,7 @@ fully self-contained, these are the ones to internalize.
 |--------|---------|--------|
 | `@/features/html-pages/hooks/useHtmlPreviewState` | AssistantMessage | **Keep** — HTML preview is cross-cutting |
 | `@/features/html-pages/components/HtmlPreviewFullScreenEditor` | AssistantMessage (lazy) | **Keep** — lazy, minimal coupling |
-| `@/features/html-pages/css/wordpress-styles` | MessageOptionsMenu | **Keep** — CSS loading utility |
+| `@ai-matrx/print/markdown` (`getMarkdownStylesheet`) | MessageOptionsMenu | **Keep** — the package's default print stylesheet |
 
 ### Canvas
 | Import | Used By | Action |

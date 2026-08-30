@@ -115,7 +115,7 @@ await handleRegenerateHtml(true);  // useMetadata=true
 ```typescript
 // Revert to initial markdown (local state only)
 setCurrentMarkdown(initialMarkdown);
-setGeneratedHtmlContent(markdownToWordPressHTML(initialMarkdown));
+setGeneratedHtmlContent(markdownToHtml(initialMarkdown)); // @ai-matrx/print/markdown
 // Does NOT update database
 ```
 

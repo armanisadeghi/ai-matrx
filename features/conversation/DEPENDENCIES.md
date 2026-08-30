@@ -90,7 +90,7 @@ Project-wide utilities with stable interfaces. No action needed.
 |--------|---------|---------|
 | `useHtmlPreviewState` | AssistantMessage | Eager |
 | `HtmlPreviewFullScreenEditor` | AssistantMessage | **Lazy** |
-| `loadWordPressCSS` | MessageOptionsMenu | Eager |
+| `getMarkdownStylesheet` (`@ai-matrx/print/markdown`) | MessageOptionsMenu | Eager |
 
 ### Canvas
 | Import | Used By | Loading |
