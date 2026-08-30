@@ -17,7 +17,6 @@
 
 import type Stripe from "stripe";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { getStripe } from "@/lib/stripe/server";
 
 /** metadata.purpose value that routes a Checkout session to this handler. */
 export const COPPA_VERIFICATION_PURPOSE = "coppa_verification";
@@ -32,6 +31,7 @@ export const COPPA_VERIFICATION_PURPOSE = "coppa_verification";
  */
 export async function confirmCoppaVerification(
   session: Stripe.Checkout.Session,
+  stripe: Stripe,
 ): Promise<void> {
   const linkId = session.metadata?.link_id;
   if (!linkId) {
@@ -42,7 +42,6 @@ export async function confirmCoppaVerification(
     return; // nothing actionable; do not 500-loop on a malformed session
   }
 
-  const stripe = getStripe();
   const piId =
     typeof session.payment_intent === "string"
       ? session.payment_intent

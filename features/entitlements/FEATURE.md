@@ -274,8 +274,8 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
 The monetization layer also moves **real money to creators**: a student buys a paid
 class, the platform takes a cut, and the rest is paid out to the creator. Built on
 **Stripe Connect Express** (Stripe hosts onboarding, KYC, payouts, tax — we link, we
-never rebuild). Live in TEST mode as far as the Stripe account allows; the money
-paths are **blocked on Arman enabling Connect** (see below).
+never rebuild). Connect is enabled on the AI Matrx platform account in both live
+and test mode, with `transfers` active and hosted Express onboarding available.
 
 **Split model — ONE source: [`lib/stripe/connect.ts`](../../lib/stripe/connect.ts).**
 `PLATFORM_FEE_BPS = 2000` → **platform 20% / creator 80%**. `platformFeeAmount()` /
@@ -316,19 +316,22 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
 `features/education/classes/{ClassAccessPanel,ClassFormDialog}` + `service.startClassCheckout`,
 `features/education/creators/{EnrollButton,CreatorPayoutsPanel}`.
 
-**Blocked on Arman (Stripe dashboard) — exact list:**
-1. **Enable Connect** at `https://dashboard.stripe.com/connect` (verified: account creation currently
-   fails "you can only create new accounts if you've signed up for Connect"). Fill the **platform
-   profile** (business name, support email, statement descriptor) Connect requires.
-2. **Set `STRIPE_WEBHOOK_SECRET`** (still unset) — from `stripe listen --forward-to
-   localhost:3000/api/stripe/webhook` for dev, or the dashboard endpoint secret in prod. Subscribe
-   the endpoint to `checkout.session.completed`, `charge.refunded`, `charge.dispute.created`,
-   `account.updated` (+ the existing subscription events).
-3. **Connect `client_id` is NOT needed** for Express (that's for Standard OAuth). Express uses the
-   platform account + `accounts.create({type:'express'})` — already wired.
-4. Then verify end-to-end: connect a test Express account → set a class paid + priced → buy with a
-   test card → confirm the webhook confers the `active` membership and the split lands in the
-   payment intent's `application_fee_amount` + transfer.
+**Operational contract (live since 2026-08-30):**
+
+- Stripe has one live and one test standard webhook endpoint at
+  `https://www.aimatrx.com/api/stripe/webhook`. Each subscribes to the exact same eight events:
+  `checkout.session.completed`, `charge.refunded`, `charge.dispute.created`,
+  `customer.subscription.created`, `customer.subscription.updated`,
+  `customer.subscription.deleted`, `customer.subscription.trial_will_end`, and `account.updated`.
+- Production keeps the live endpoint secret in `STRIPE_WEBHOOK_SECRET` and the test endpoint secret
+  in `STRIPE_TEST_MODE_WEBHOOK_SECRET`. Preview/development use the established
+  `STRIPE_WEBHOOK_SECRET` for test delivery. The verifier tries only configured modes and requires
+  `event.livemode` to match the secret that verified the signature before any handler runs.
+- `STRIPE_SECRET_KEY` + `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are production-only.
+  `STRIPE_TEST_MODE_SECRET_KEY` is also present in production because the shared production URL
+  receives signed test events; the test publishable key remains preview/development only.
+- Connect `client_id` is not needed for Express (it is for Standard OAuth). Express uses the
+  platform account plus `accounts.create({type:'express'})`.
 
 ## Invariants
 
@@ -410,10 +413,9 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
 - [x] Stripe TEST secret/publishable keys are in `.env.local` (`STRIPE_TEST_MODE_SECRET_KEY` /
       `STRIPE_TEST_MODE_PUBLISHABLE_KEY`, required outside confirmed Vercel production); a
       test `billing.product`/`price` row is seeded (`AI Matrx Premium (TEST)`, $10/mo).
-- [ ] **Blocked on Arman:** `STRIPE_WEBHOOK_SECRET` is still unset (only remaining gap — run
-      `stripe listen --forward-to localhost:3000/api/stripe/webhook` for a dev secret, or pull the
-      endpoint secret from the Stripe dashboard once a real webhook endpoint exists) → then verify
-      checkout→webhook→sub→entitlement end-to-end with the test keys already in place.
+- [x] Stripe Connect production activation: live/test standard endpoints share the production URL,
+      use mode-pinned signature verification, and have the four Stripe API keys plus both endpoint
+      secrets installed in their required Vercel scopes across all three projects.
 - [ ] **Blocked on Arman:** seed `billing.price` with the REAL Premium number (product decision).
       `/pricing` is already DB-backed off the TEST row — swapping the number needs no code change.
 - [ ] **Blocked on Arman:** aidream-side spend re-check per capability → then flip `enforced` per
@@ -456,6 +458,14 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-08-30** — Activated Stripe Connect creator payouts in live and test mode. Connect Express
+  is enabled with transfers, the platform profile/branding is populated, and the live/test standard
+  webhook endpoints use the exact eight-event contract. Repaired the shared production webhook so
+  it verifies both endpoint secrets while pinning the matching Stripe client to `event.livemode`;
+  a live signature can never authorize a test event or vice versa. Added regression coverage for
+  both valid ledgers and the cross-ledger rejection, installed the Stripe key matrix across all
+  three Vercel projects, released, and proved both `account.updated` canaries returned HTTP 200.
 
 - **2026-08-22** — **THE EDUCATION FLIP (Q2, ruled 2026-08-19).** All 16 `education.*`
   capabilities are `enforced: true` — registry AND `billing.capability` rows flipped
@@ -524,8 +534,8 @@ real (F6, 2026-07-13).
   `charge.refunded`/`dispute.created` revoke, `account.updated`). FE: real "Enroll — $X" checkout on
   the class hub + creator page, a price field in the class form, and a creator earnings panel.
   Migration `stripe_connect_creator_payouts.sql` applied + ledgered; grant path verified live. Deleted
-  the bypassable `edu_class_purchase` stub. **Blocked on Arman:** enable Connect + platform profile +
-  `STRIPE_WEBHOOK_SECRET` (see §Creator payouts).
+  the bypassable `edu_class_purchase` stub. The Stripe-account activation and production webhook
+  configuration landed 2026-08-30 (see §Creator payouts).
 - **2026-07-13** — **F6: the meter is now honest — consume-on-success wired platform-wide.**
   Before this, `entitlement_consume` had ZERO callers, so every meter read "X of Y left"
   forever (a TRUST-mandate violation + no usage captured). Added the consume primitive:

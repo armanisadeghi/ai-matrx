@@ -5,12 +5,9 @@
 // logged. Writes go through the admin client (service_role) — the only write
 // path to billing tables (RLS denies authenticated writes).
 //
-// UNTESTED pending Stripe TEST keys + a webhook secret (STRIPE_WEBHOOK_SECRET).
-// Verify with `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
-
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { getStripe, getWebhookSecret } from "@/lib/stripe/server";
+import { verifyStripeWebhook } from "@/lib/stripe/server";
 import {
   hasProcessedStripeEvent,
   recordStripeEvent,
@@ -37,15 +34,12 @@ export async function POST(request: NextRequest) {
   }
 
   let event: Stripe.Event;
+  let stripe: Stripe;
   try {
     const body = await request.text();
-    event = getStripe().webhooks.constructEvent(
-      body,
-      signature,
-      getWebhookSecret(),
-    );
-  } catch (err) {
-    console.error("[stripe/webhook] signature verification failed", err);
+    ({ event, stripe } = verifyStripeWebhook(body, signature));
+  } catch {
+    console.error("[stripe/webhook] signature verification failed");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -71,7 +65,7 @@ export async function POST(request: NextRequest) {
         // catch-all below) on its own metadata.purpose so it never routes into
         // enrolment fulfilment. Marks the guardian_link verified, server-side.
         if (session.metadata?.purpose === COPPA_VERIFICATION_PURPOSE) {
-          await confirmCoppaVerification(session);
+          await confirmCoppaVerification(session, stripe);
           break;
         }
         // Paid-class purchase (Connect destination charge) — confer the enrolment.
@@ -90,7 +84,7 @@ export async function POST(request: NextRequest) {
             typeof session.subscription === "string"
               ? session.subscription
               : session.subscription.id;
-          const sub = await getStripe().subscriptions.retrieve(subId);
+          const sub = await stripe.subscriptions.retrieve(subId);
           await syncSubscription(sub, event.created);
         }
         break;
