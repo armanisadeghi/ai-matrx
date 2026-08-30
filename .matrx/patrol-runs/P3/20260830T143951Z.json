@@ -188,6 +188,25 @@
       },
       "previousEventHash": "dd9db32fc8c176c5e16893f1d10a2b10a5f3f26c64f635543ec54531352e6d86",
       "eventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77"
+    },
+    {
+      "sequence": 13,
+      "state": "delivered",
+      "at": "2026-08-30T15:16:29.539Z",
+      "actor": "root",
+      "summary": "Reconcile exact certified candidate to its existing v0.4.1495 delivery without another release",
+      "evidence": [
+        "escaped delivery was recorded before certification and is not erased",
+        "candidate remains ancestor of origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T143951Z",
+        "integratedSha": "c4eed060429b9941c5325d3e8ff88a10edfd90e8",
+        "release": "v0.4.1495"
+      },
+      "previousEventHash": "196146022c89a79f29b7af988c0595ce4c431b136b4697339198206e5ce8eb77",
+      "eventHash": "d3c11316c360b44f41c8116c6300a84fbfebfb2deacb130f98df5ffaafe98fef"
     }
   ]
 }
