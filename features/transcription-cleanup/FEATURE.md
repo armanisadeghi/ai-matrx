@@ -186,9 +186,9 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 ## Change Log
 
 - 2026-08-29 — **Canonical ProTextarea fleet sweep.** An AST inventory found
-  649 executable raw/basic multiline fields against 154 ProTextarea fields.
-  The tree now has 439 fewer raw/basic fields and 595 ProTextarea fields; all
-  210 survivors
+  650 executable raw/basic multiline fields against 154 ProTextarea fields
+  (including the legacy JSX surface). The tree now has 439 fewer raw/basic
+  fields and 597 ProTextarea fields; all 211 survivors
   were reviewed and are limited to the exception classes above. This includes
   shared form wrappers plus missed prompts, descriptions, notes, TTS scripts,
   CMS/page prose, skill content, workflow prose, and read/write editors. The
