@@ -45,6 +45,7 @@ describe("normalizeAuthDestination", () => {
       "/",
       "/login",
       "/sign-up",
+      "/check-email",
       "/forgot-password",
       "/reset-password",
       "/error",
@@ -55,6 +56,7 @@ describe("normalizeAuthDestination", () => {
       expect(normalizeAuthDestination(path)).toBeNull();
     }
     expect(isNonDestinationPath("/login")).toBe(true);
+    expect(isNonDestinationPath("/check-email")).toBe(true);
     expect(isNonDestinationPath("/tasks")).toBe(false);
   });
 

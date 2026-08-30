@@ -66,6 +66,7 @@ const NON_DESTINATION_PATHS = new Set<string>([
   "/",
   "/login",
   "/sign-up",
+  "/check-email",
   "/signup",
   "/sign-out",
   "/signout",

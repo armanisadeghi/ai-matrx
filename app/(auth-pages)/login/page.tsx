@@ -2,7 +2,6 @@
 
 import {
   login,
-  signup,
   loginWithGoogle,
   loginWithApple,
   loginWithGithub,
@@ -71,7 +70,6 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
   // Create action bindings with redirectTo
   const loginWithRedirect = login.bind(null, redirectTo ?? "");
-  const signupWithRedirect = signup.bind(null, redirectTo ?? "");
   const googleLoginWithRedirect = loginWithGoogle.bind(null, redirectTo ?? "");
   const appleLoginWithRedirect = loginWithApple.bind(null, redirectTo ?? "");
   const githubLoginWithRedirect = loginWithGithub.bind(null, redirectTo ?? "");

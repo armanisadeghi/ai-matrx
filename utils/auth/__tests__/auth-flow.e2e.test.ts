@@ -271,3 +271,36 @@ describe("Journey 8 — nothing can hijack the landing", () => {
     expect(loginSucceeded(captured)).toBe("/tasks?view=board");
   });
 });
+
+describe("Journey 9 — email confirmation is a first-class account state", () => {
+  it("signup → check email → confirmation → original destination", () => {
+    const signup = authPageLink("/sign-up", middlewareBounce("/tasks"));
+    const checkEmail = authPageLink("/check-email", signup);
+
+    expect(checkEmail).toBe("/check-email?redirectTo=%2Ftasks");
+    expect(loginSucceeded(checkEmail)).toBe("/tasks");
+  });
+
+  it("an unconfirmed login goes to check email without losing its destination", () => {
+    const login = middlewareBounce("/pricing");
+    const checkEmail = preserveAuthDestination("/check-email", login, {
+      error: "Confirm your email before signing in.",
+    });
+
+    expect(readAuthDestination(checkEmail)).toBe("/pricing");
+    expect(checkEmail).toContain("error=Confirm+your+email");
+  });
+
+  it("resend and expired-link recovery stay on check email", () => {
+    const current = "/check-email?redirectTo=%2Feducation%2Fstart";
+    const resent = preserveAuthDestination("/check-email", current, {
+      success: "A new confirmation link is on its way.",
+    });
+    const expired = preserveAuthDestination("/check-email", current, {
+      error: "That confirmation link is invalid or expired.",
+    });
+
+    expect(readAuthDestination(resent)).toBe("/education/start");
+    expect(readAuthDestination(expired)).toBe("/education/start");
+  });
+});

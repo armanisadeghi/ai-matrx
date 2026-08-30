@@ -16,7 +16,7 @@ page — the destination survives.
    already carries one**. Every later hop can only pass it along.
 3. **Never lose it on an error path.** Every redirect that re-renders an auth
    page carries it — wrong password, mismatched confirm, expired link.
-4. **An auth page is never a destination.** `/login`, `/reset-password`,
+4. **An auth page is never a destination.** `/login`, `/check-email`, `/reset-password`,
    `/auth/*`, `/` are refused, so a stale param cannot loop or dead-end.
 
 ## The API — read/forward through this, never hand-roll a param
@@ -135,6 +135,11 @@ sales page after signing in.
   error messages above every auth form; errors are assertive live-region alerts.
   Provider email-rate errors use actionable copy, never a raw diagnostic below
   the fold.
+- **Pending confirmation is a real account state.** Signup and an
+  `email_not_confirmed` login both land on `/check-email`, preserving the final
+  destination. The page can resend through `auth.resend`, recover expired
+  links, or change email. [`pending-signup.ts`](./pending-signup.ts) keeps the
+  address in a 24-hour HttpOnly display cookie; it never grants authority.
 
 ## Tests
 
@@ -148,6 +153,10 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-30** — Added the pending-confirmation state: signup and unconfirmed
+  login now route to `/check-email`, with resend, expired-link recovery,
+  short-lived server-only email display, and destination preservation.
 
 - **2026-08-30** — Moved auth result messages above every form, made errors
   assertive alerts, and translated signup email-rate failures into actionable

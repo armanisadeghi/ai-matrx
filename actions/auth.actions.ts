@@ -12,6 +12,7 @@ import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transf
 import {
   authDestinationOr,
   normalizeAuthDestination,
+  preserveAuthDestination,
   withAuthFlowParams,
   readAuthDestination,
   withAuthDestination,
@@ -19,6 +20,12 @@ import {
 import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
 import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
 import { signupErrorMessage } from "@/utils/auth/auth-error-copy";
+import {
+  clearPendingSignupEmail,
+  readPendingSignupEmail,
+  rememberPendingSignupEmail,
+} from "@/utils/auth/pending-signup";
+import { requestOrigin } from "@/utils/auth/request-origin";
 
 function queueAcquisitionLink(visitorId: string | null, userId: string): void {
   if (!visitorId || !/^[A-Za-z0-9]{16,200}$/.test(visitorId)) return;
@@ -45,7 +52,11 @@ export async function signUpAction(
   const visitorId =
     (await cookies()).get(ACQUISITION_VISITOR_COOKIE)?.value ?? null;
 
-  const origin = (await headers()).get("origin");
+  const headersList = await headers();
+  const origin =
+    requestOrigin(headersList) ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    "https://aimatrx.com";
   const safeRedirectTo = authDestinationOr(formData);
 
   if (process.env.NODE_ENV === "development") {
@@ -185,12 +196,10 @@ export async function signUpAction(
       // For email signup, a 504 might mean the user was created but email sending timed out
       // Check if we have user data despite the timeout
       if (data.user) {
-        return encodedRedirect(
-          "success",
-          "/sign-up",
-          "Account created! Please check your email for a verification link. If you don't receive it in a few minutes, try signing up again.",
-          formData,
-        );
+        await rememberPendingSignupEmail(email);
+        return {
+          hardRedirect: preserveAuthDestination("/check-email", formData),
+        };
       }
       return encodedRedirect(
         "error",
@@ -221,16 +230,15 @@ export async function signUpAction(
   // For email signup with confirmation enabled, data.user will exist but data.session will be null
   // This is expected behavior - the user needs to confirm their email first
   if (data.user && !data.session) {
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link.",
-      formData,
-    );
+    await rememberPendingSignupEmail(email);
+    return {
+      hardRedirect: preserveAuthDestination("/check-email", formData),
+    };
   }
 
   // If we have both user and session, the user is immediately signed in (confirmation disabled)
   if (data.user && data.session) {
+    await clearPendingSignupEmail();
     // Full-document landing (see HardRedirectForm).
     return { hardRedirect: safeRedirectTo };
   }
@@ -247,23 +255,54 @@ export async function signUpAction(
   );
 }
 
-export async function signInAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const safeRedirectTo = authDestinationOr(formData);
-  const supabase = await createClient();
+export async function resendSignupConfirmationAction(
+  formData: FormData,
+): Promise<void> {
+  const email = await readPendingSignupEmail();
+  if (!email) {
+    return encodedRedirect(
+      "error",
+      "/sign-up",
+      "Enter your email and password to create an account.",
+      formData,
+    );
+  }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const headersList = await headers();
+  const origin =
+    requestOrigin(headersList) ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    "https://aimatrx.com";
+  const confirmUrl = new URL("/auth/confirm", origin);
+  confirmUrl.searchParams.set("redirectTo", authDestinationOr(formData));
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
     email,
-    password,
+    options: { emailRedirectTo: confirmUrl.toString() },
   });
 
   if (error) {
-    return encodedRedirect("error", "/login", error.message, formData);
+    console.error(
+      "ResendSignupConfirmationAction - Auth error:",
+      error.code,
+      error.message,
+    );
+    return encodedRedirect(
+      "error",
+      "/check-email",
+      signupErrorMessage(error.code, error.message),
+      formData,
+    );
   }
 
-  // Full-document landing (see HardRedirectForm).
-  return { hardRedirect: safeRedirectTo };
+  return encodedRedirect(
+    "success",
+    "/check-email",
+    "A new confirmation link is on its way. The previous link may no longer work.",
+    formData,
+  );
 }
 
 export async function signInWithGoogleAction(formData: FormData) {

@@ -11,6 +11,10 @@ import {
 } from "@/utils/auth/auth-destination";
 import { requestOrigin } from "@/utils/auth/request-origin";
 import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
+import {
+  clearPendingSignupEmail,
+  rememberPendingSignupEmail,
+} from "@/utils/auth/pending-signup";
 
 // Preserve the exact origin where OAuth began (including the localhost port),
 // with deployment metadata only as a no-request-context fallback.
@@ -50,15 +54,34 @@ export async function login(redirectToArg: string, formData: FormData) {
     redirectTo ?? "(none)",
   );
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
+  const email = formData.get("email")?.toString().trim();
+  const password = formData.get("password")?.toString();
+  if (!email || !password) {
+    redirect(
+      preserveAuthDestination(
+        "/login",
+        { redirectTo },
+        { error: "Email and password are required." },
+      ),
+    );
+  }
+
+  const data = { email, password };
   const { error } = await supabase.auth.signInWithPassword(data);
   if (error) {
     console.error(`[${timestamp}] Login error:`, error);
+    if (error.code === "email_not_confirmed") {
+      await rememberPendingSignupEmail(email);
+      redirect(
+        preserveAuthDestination(
+          "/check-email",
+          { redirectTo },
+          {
+            error: "Confirm your email before signing in.",
+          },
+        ),
+      );
+    }
     // THE bug Arman reported: this used to rebuild the URL as
     // `/login?error=…` and nothing else, so ONE wrong password erased the
     // destination for the rest of the session. Wrong password now costs a
@@ -74,7 +97,9 @@ export async function login(redirectToArg: string, formData: FormData) {
     );
   }
 
-  // Gate PII (email) behind dev — matches the signup path below; never leak
+  await clearPendingSignupEmail();
+
+  // Gate PII (email) behind dev; never leak
   // user emails into production logs.
   if (process.env.NODE_ENV === "development") {
     console.log(`[${timestamp}] Login successful for:`, data.email);
@@ -88,59 +113,6 @@ export async function login(redirectToArg: string, formData: FormData) {
   // Success lands via a FULL-DOCUMENT navigation (see HardRedirectForm):
   // a soft redirect() here runs in a possibly-stale tab's old runtime and
   // 404s on the destination's chunks (the chunk-load recovery page on /welcome).
-  return { hardRedirect: finalRedirect };
-}
-
-export async function signup(redirectToArg: string, formData: FormData) {
-  const supabase = await createClient();
-  const timestamp = new Date().toISOString();
-
-  const redirectTo =
-    readAuthDestination({ redirectTo: redirectToArg }) ??
-    readAuthDestination(formData);
-
-  console.log(
-    `[${timestamp}] Signup action - destination:`,
-    redirectTo ?? "(none)",
-  );
-
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const Props = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
-
-  const { data, error } = await supabase.auth.signUp(Props);
-  if (process.env.NODE_ENV === "development") {
-    console.log(
-      `[${timestamp}] Signup result - User:`,
-      data?.user?.email,
-      "Error:",
-      error,
-    );
-  }
-
-  if (error) {
-    console.error(`[${timestamp}] Signup error:`, error.message);
-    redirect(
-      preserveAuthDestination(
-        "/sign-up",
-        { redirectTo },
-        {
-          error: error.message,
-        },
-      ),
-    );
-  }
-
-  revalidatePath("/", "layout");
-
-  // authDestinationOr already refuses "/", "/login", "/sign-up" and every
-  // other auth surface, so no hand-rolled blocklist is needed here.
-  const finalRedirect = authDestinationOr({ redirectTo });
-
-  // Full-document landing — see the note in login() above.
   return { hardRedirect: finalRedirect };
 }
 

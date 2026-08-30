@@ -196,7 +196,8 @@ export async function updateSession(
       pathname === landing ||
       pathname === "/dashboard" ||
       pathname === "/login" ||
-      pathname === "/sign-up";
+      pathname === "/sign-up" ||
+      pathname === "/check-email";
     if (isBounceablePage) {
       const destination = readAuthDestination(request.nextUrl.searchParams);
       if (destination && destination !== pathname + request.nextUrl.search) {
@@ -207,12 +208,13 @@ export async function updateSession(
     }
   }
 
-  // Handle authenticated users trying to access login/signup pages with no
+  // Handle authenticated users trying to access auth pages with no
   // destination to honour — send them to the surface's landing page.
   if (
     user &&
     (request.nextUrl.pathname === "/login" ||
-      request.nextUrl.pathname === "/sign-up")
+      request.nextUrl.pathname === "/sign-up" ||
+      request.nextUrl.pathname === "/check-email")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = landing;
