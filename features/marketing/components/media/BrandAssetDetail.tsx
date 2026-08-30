@@ -34,7 +34,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RecordStamps } from "@/components/official/record-stamps/RecordStamps";
 import { useRecordActors } from "@/components/official/record-stamps/useRecordActors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import {
   CondensedFieldGrid,
   formatDate,

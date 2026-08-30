@@ -35,7 +35,7 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
