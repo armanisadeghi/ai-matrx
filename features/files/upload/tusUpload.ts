@@ -58,15 +58,54 @@ export const TUS_UPLOAD_PATH = "/files/upload/tus";
  * (`features/files/api/files.ts`); the TUS path serializes the SAME object
  * into the `metadata_json` Upload-Metadata key. One builder ⇒ the two
  * transports can never drift (parity is unit-tested).
+ *
+ * 🚨 `scope.organization_id` is the OWNING WORKSPACE of the uploaded file, and
+ * it is not decoration. The server reads it (`SyncEngine._metadata_organization_id`,
+ * membership-checked against `iam.has_org_access_for`) and stamps
+ * `files.files.organization_id` from it. Omit it and the server falls back to
+ * the uploader's PERSONAL workspace — which is how, on 2026-08-30, a screenshot
+ * attached from the composer landed in a personal workspace nobody had chosen
+ * and then disagreed with the team organization the person actually picked.
+ *
+ * Callers never set it by hand: `bindUploadOrganization` in `cloudUpload.ts`
+ * resolves it for every upload before a byte moves, so it is already present in
+ * `metadata` by the time this builder runs. This function keeps the shape
+ * canonical and is where the contract is written down.
  */
 export function buildUploadMetadataEnvelope(
   metadata: Record<string, unknown> | undefined,
 ): Record<string, unknown> {
-  return {
+  const envelope: Record<string, unknown> = {
     // Origin tag aids backend log triage when something goes wrong.
     origin: "cloudUpload",
     ...(metadata ?? {}),
   };
+  if (
+    process.env.NODE_ENV !== "production" &&
+    !hasUploadOrganization(envelope)
+  ) {
+    // Loud in development, never a hard failure in production: a missing
+    // organization is a silent mis-filing, and silence is exactly what made the
+    // original bug survive. The server still fails closed on its own terms.
+    console.warn(
+      "[buildUploadMetadataEnvelope] upload carries no scope.organization_id — " +
+        "it will be filed in the uploader's personal workspace. Route this " +
+        "upload through cloudUpload/cloudUploadRaw so the organization gate runs.",
+    );
+  }
+  return envelope;
+}
+
+function hasUploadOrganization(envelope: Record<string, unknown>): boolean {
+  if (typeof envelope.organization_id === "string" && envelope.organization_id)
+    return true;
+  const scope = envelope.scope;
+  return Boolean(
+    scope &&
+      typeof scope === "object" &&
+      typeof (scope as Record<string, unknown>).organization_id === "string" &&
+      (scope as Record<string, unknown>).organization_id,
+  );
 }
 
 // ─── Dedicated resume-URL storage (mtx-tus-urls) ─────────────────────────────

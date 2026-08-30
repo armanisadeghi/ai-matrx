@@ -71,7 +71,11 @@ import {
   selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
-import { requireExecutionOrganizationId } from "../utils/required-organization";
+import {
+  ensureExecutionOrganization,
+  requireExecutionOrganizationId,
+} from "../utils/required-organization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
@@ -476,7 +480,19 @@ export const executeInstance = createAsyncThunk<
       // Second client-side boundary behind smartExecute. Several internal
       // surfaces invoke this thunk directly; they must not mutate draft or
       // optimistic-message state before discovering that execution has no org.
-      requireExecutionOrganizationId(state, conversationId);
+      //
+      // AI execution does not go through `callApi`, so it needs its own call to
+      // the organization gate. It runs HERE — before any draft, optimistic
+      // message, or resource state is touched — so that cancelling the prompt
+      // leaves the composer exactly as the person left it.
+      //
+      // A conversation that already owns a durable organization never asks:
+      // `requireExecutionOrganizationId` returns it, and the gate is a no-op.
+      // The prompt appears only for a genuinely new conversation with nothing
+      // selected — the case that used to end at "Select an organization before
+      // sending this message. The request was not sent."
+      await ensureExecutionOrganization(state, conversationId);
+      requireExecutionOrganizationId(getState() as RootState, conversationId);
 
       // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
       // A live abort controller means a stream is OPEN on this conversation.
@@ -1085,6 +1101,14 @@ export const executeInstance = createAsyncThunk<
         }
       }
     } catch (error) {
+      // The organization gate asked which workspace and the person declined.
+      // Nothing was sent and nothing was written — the gate runs before any
+      // draft, optimistic message or resource state is touched — so this
+      // settles quietly. No error status, no composer clear, no capture:
+      // cancelling returns them exactly where they were.
+      if (isOrganizationSelectionCancelled(error)) {
+        return rejectWithValue("Cancelled");
+      }
       // runAiStream owns its own cleanup for stream-phase errors and signals
       // that via two marker classes. Pre-stream errors (assemble, inject,
       // payload-build, optimistic-message dispatch) reach here without prior

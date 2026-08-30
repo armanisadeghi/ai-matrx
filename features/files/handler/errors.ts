@@ -21,6 +21,7 @@ export type FileHandlerErrorCode =
   | "cors_blocked"
   | "mime_unknown"
   | "upload_failed"
+  | "upload_cancelled"
   | "quota_exceeded"
   | "in_flight"
   | "internal";
@@ -95,4 +96,23 @@ export class FileUploadError extends FileHandlerError {
     super("upload_failed", message, opts);
     this.name = "FileUploadError";
   }
+}
+
+/**
+ * The person was asked which workspace an upload belongs to and declined.
+ *
+ * Deliberately a distinct class, not a `FileUploadError` with a flag: nothing
+ * failed. No bytes moved, no row was written, and there is nothing to retry or
+ * report. Every catch site must swallow it silently — cancelling has to return
+ * the person exactly where they were, which a red toast does not.
+ */
+export class UploadCancelledError extends FileHandlerError {
+  constructor(message = "Upload cancelled — no workspace was selected.") {
+    super("upload_cancelled", message);
+    this.name = "UploadCancelledError";
+  }
+}
+
+export function isUploadCancelledError(error: unknown): boolean {
+  return error instanceof Error && error.name === "UploadCancelledError";
 }

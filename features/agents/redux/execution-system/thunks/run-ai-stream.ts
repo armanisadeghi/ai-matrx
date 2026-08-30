@@ -18,9 +18,13 @@
  * structurally incapable of diverging from the stream contract.
  *
  * The TWO turn-vs-resume divergence points are explicit args, not branches:
- *   - `kind`: 409 is "Conversation already exists" for turns, but "outstanding
- *     delegated calls still need answering" (benign — set instance back to
- *     `paused`, no failPendingToolLifecycle) for resumes.
+ *   - `kind`: a 409 that really IS a taken conversation id reads "Conversation
+ *     already exists" for turns, but "outstanding delegated calls still need
+ *     answering" (benign — set instance back to `paused`, no
+ *     failPendingToolLifecycle) for resumes. Any OTHER 409 keeps the server's
+ *     own message; relabelling every 409 as an id collision is what produced
+ *     the 2026-08-30 "Conversation already exists: An attached file belongs to
+ *     a different organization" mash-up.
  *   - `clearInputOnError`: turns clear the user's hidden input on pre-persist
  *     failure; resumes never read the input box.
  *
@@ -218,7 +222,8 @@ export interface RunAiStreamArgs {
   submitAt: number;
   /**
    * Turn vs resume. Governs ONLY the 409 branch:
-   *   - turn   → 409 throws "Conversation already exists".
+   *   - turn   → a genuine id collision throws "Conversation already exists";
+   *     every other 409 surfaces the server's own message unchanged.
    *   - resume → 409 is benign (outstanding delegated calls still need
    *     answering). Reset the instance to `paused`, complete the request,
    *     do NOT failPendingToolLifecycle.
@@ -560,10 +565,37 @@ export async function runAiStream(
           unregisterAbortController(conversationId);
           throw new RunInFlightError(serverMessage);
         }
-        if (errorCode === "attachment_organization_mismatch") {
-          throw new ExpectedRequestConflictError(errorCode, serverMessage);
+        // Only a GENUINE id collision may claim this sentence.
+        //
+        // Until 2026-08-30 every unrecognised 409 was relabelled "Conversation
+        // already exists", which is how an attachment rejection reached a user
+        // as `Conversation already exists: An attached file belongs to a
+        // different organization…` — two unrelated failures welded into one
+        // sentence, neither of them true, sending him to resolve a conflict
+        // that did not exist. The server now says `conversation_already_exists`
+        // when and only when the id is really taken (an UNSTARTED conversation
+        // of the caller's own is adopted, not refused), so anything else keeps
+        // the server's own words rather than borrowing a cause.
+        if (
+          errorCode === "conversation_already_exists" ||
+          /already exists/i.test(serverMessage)
+        ) {
+          throw new Error(`Conversation already exists: ${serverMessage}`);
         }
-        throw new Error(`Conversation already exists: ${serverMessage}`);
+        throw new ExpectedRequestConflictError(
+          errorCode ?? "conflict",
+          serverMessage || "The request was rejected.",
+        );
+      } else if (code === 403) {
+        // A boundary the server refused on purpose — today: an attachment the
+        // caller cannot read (`attachment_access_denied`). The tenant contract
+        // worked, so this reaches the normal request-error UI but is never
+        // recorded as a system failure. Never relabelled: the server's sentence
+        // is the only one that knows what actually happened.
+        throw new ExpectedRequestConflictError(
+          errorCode ?? "forbidden",
+          serverMessage || "You do not have access to something in this request.",
+        );
       } else if (code === 404) {
         throw recordUnavailable({
           entity: "conversation",

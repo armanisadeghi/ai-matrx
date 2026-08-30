@@ -243,6 +243,95 @@ async function mintUploadShareLink(
   };
 }
 
+// ─── The upload organization — resolved ONCE, for every transport ────────
+
+/**
+ * Bind the owning organization to an upload before a byte moves.
+ *
+ * 🚨 THE BUG THIS EXISTS FOR (2026-08-30). `InlineUploadArea` — the composer's
+ * attach button — sent no organization at all. The server has honoured
+ * `metadata.scope.organization_id` all along (membership-checked against
+ * `iam.has_org_access_for`), but with nothing supplied it fell back to the
+ * uploader's PERSONAL workspace. So a screenshot attached while no organization
+ * was selected silently became a personal-workspace file; a minute later the
+ * person picked their team organization, and the two no longer agreed.
+ *
+ * Fixing that one component would have been a patch on one of several upload
+ * doors. This is the choke point instead: both transports and every caller go
+ * through here, so an upload that forgets its organization is not possible
+ * rather than merely unusual.
+ *
+ * If nothing is selected, the organization gate ASKS (one dialog, then the
+ * upload continues into the chosen workspace). Cancelling throws
+ * `OrganizationSelectionCancelled`, which the upload paths report as an
+ * ordinary cancelled result — no bytes sent, nothing written, nothing to
+ * clean up.
+ */
+async function bindUploadOrganization(
+  options: CloudUploadOptions,
+): Promise<CloudUploadOptions> {
+  const { ensureOrganizationContext } = await import(
+    "@/lib/organization/organization-gate"
+  );
+  const declared = organizationIdFromUploadMetadata(options.metadata);
+  const organizationId = await ensureOrganizationContext({
+    organizationId: declared,
+  });
+  return {
+    ...options,
+    metadata: {
+      ...(options.metadata ?? {}),
+      scope: {
+        ...(typeof options.metadata?.scope === "object" &&
+        options.metadata?.scope !== null
+          ? (options.metadata.scope as Record<string, unknown>)
+          : {}),
+        organization_id: organizationId,
+      },
+    },
+  };
+}
+
+/**
+ * Turn a failed organization binding into an ordinary upload result.
+ *
+ * `cloudUpload`/`cloudUploadRaw` never throw — every caller reads
+ * `{ ok: false, error }` — so a cancelled prompt keeps that contract. It is
+ * marked `upload_cancelled` rather than an error code so the UI can stay silent:
+ * the person did not fail at anything, they declined, and declining must return
+ * them exactly where they were.
+ */
+function uploadOrganizationFailure(
+  err: unknown,
+  fileName: string,
+): CloudUploadResult {
+  const cancelled =
+    err instanceof Error && err.name === "OrganizationSelectionCancelled";
+  return {
+    ok: false,
+    error: cancelled
+      ? "Upload cancelled — no workspace was selected."
+      : extractErrorMessage(err),
+    errorCode: cancelled ? "upload_cancelled" : "organization_required",
+    fileName,
+  };
+}
+
+/** Read an organization a caller already declared, in either accepted shape. */
+export function organizationIdFromUploadMetadata(
+  metadata: Record<string, unknown> | undefined,
+): string | undefined {
+  if (!metadata) return undefined;
+  const direct = metadata.organization_id;
+  if (typeof direct === "string" && direct.length > 0) return direct;
+  const scope = metadata.scope;
+  if (scope && typeof scope === "object") {
+    const nested = (scope as Record<string, unknown>).organization_id;
+    if (typeof nested === "string" && nested.length > 0) return nested;
+  }
+  return undefined;
+}
+
 // ─── Upload primitive (no Redux side effects) ────────────────────────────
 
 /**
@@ -255,8 +344,14 @@ async function mintUploadShareLink(
  */
 export async function cloudUploadRaw(
   file: File,
-  options: CloudUploadOptions = {},
+  rawOptions: CloudUploadOptions = {},
 ): Promise<CloudUploadResult> {
+  let options: CloudUploadOptions;
+  try {
+    options = await bindUploadOrganization(rawOptions);
+  } catch (err) {
+    return uploadOrganizationFailure(err, file.name);
+  }
   const filePath = resolveFilePath(file, options);
   const requestId = newRequestId();
 
@@ -370,9 +465,18 @@ export async function cloudUploadRaw(
  */
 export async function cloudUpload(
   file: File,
-  options: CloudUploadOptions,
+  rawOptions: CloudUploadOptions,
   dispatch: AppDispatch,
 ): Promise<CloudUploadResult> {
+  // Resolved BEFORE `trackUploadStart` so a cancelled organization prompt
+  // leaves no orphan progress row in the slice — cancelling must look like the
+  // upload never began, because it never did.
+  let options: CloudUploadOptions;
+  try {
+    options = await bindUploadOrganization(rawOptions);
+  } catch (err) {
+    return uploadOrganizationFailure(err, file.name);
+  }
   const filePath = resolveFilePath(file, options);
   const requestId = newRequestId();
 

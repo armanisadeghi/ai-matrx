@@ -8,29 +8,29 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 describe("parseApiErrorBody", () => {
-  test("preserves a nested attachment organization conflict code", () => {
+  test("preserves a nested attachment access-denied code", () => {
     expect(
       parseApiErrorBody({
         detail: {
-          error: "attachment_organization_mismatch",
-          message: "Reselect the attachment.",
+          code: "attachment_access_denied",
+          message: "You do not have access to a file attached to this message.",
         },
       }),
     ).toEqual({
-      errorCode: "attachment_organization_mismatch",
-      serverMessage: "Reselect the attachment.",
+      errorCode: "attachment_access_denied",
+      serverMessage: "You do not have access to a file attached to this message.",
     });
   });
 
   test("preserves production's top-level error envelope", () => {
     expect(
       parseApiErrorBody({
-        error: "attachment_organization_mismatch",
-        message: "Reselect the attachment.",
+        error: "attachment_access_denied",
+        message: "You do not have access to a file attached to this message.",
       }),
     ).toEqual({
-      errorCode: "attachment_organization_mismatch",
-      serverMessage: "Reselect the attachment.",
+      errorCode: "attachment_access_denied",
+      serverMessage: "You do not have access to a file attached to this message.",
     });
   });
 
@@ -38,8 +38,8 @@ describe("parseApiErrorBody", () => {
     expect(
       shouldCaptureStreamFailure(
         new ExpectedRequestConflictError(
-          "attachment_organization_mismatch",
-          "Reselect the attachment.",
+          "attachment_access_denied",
+          "You do not have access to a file attached to this message.",
         ),
       ),
     ).toBe(false);

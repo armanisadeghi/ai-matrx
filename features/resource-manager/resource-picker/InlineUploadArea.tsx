@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
+import { isUploadCancelledError } from "@/features/files/handler/errors";
 import {
   compressPdfMultipart,
   materializeAssetResult,
@@ -395,6 +396,14 @@ export function InlineUploadArea({
               ? `prompt-attachments/${relativeDirectory}`
               : "prompt-attachments",
           );
+          // No `metadata.scope.organization_id` is passed here on purpose:
+          // `cloudUpload` resolves the owning workspace for EVERY upload path
+          // (`bindUploadOrganization`), asking the person when nothing is
+          // selected. This component sending nothing at all is precisely the
+          // 2026-08-30 bug — the server then filed the attachment in the
+          // uploader's personal workspace, which promptly disagreed with the
+          // organization they picked for the conversation a minute later. The
+          // fix belongs at the one upload choke point, not in each door.
           const normalized = await upload(
             { kind: "file", file },
             {
@@ -435,6 +444,12 @@ export function InlineUploadArea({
             };
           }
         } catch (err) {
+          // Declining the workspace question stops the whole batch quietly:
+          // nothing uploaded, no error surface, the picker exactly as it was.
+          if (isUploadCancelledError(err)) {
+            setFileStatuses([]);
+            return;
+          }
           const errMsg =
             err instanceof Error
               ? err.message

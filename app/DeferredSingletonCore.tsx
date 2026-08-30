@@ -38,6 +38,7 @@ import {
   clearEntitlements,
 } from "@/features/entitlements/state/entitlementsSlice";
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
+import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
 
 const KEYWORD_RESEARCH_URL_PANEL_KEYS = ["keyword_research"] as const;
 
@@ -101,6 +102,13 @@ export default function DeferredSingletonCore() {
     <>
       <PersistentDOMConnector />
       <OverlayController />
+      {/* Render-free until an action needs it. The ONE app-wide answer to "you
+          have no organization selected": instead of refusing the action and
+          sending the person somewhere else to fix it, this asks which workspace
+          and then lets the blocked action finish in it. Global on purpose — the
+          question can be raised by any API call, any upload, and any AI run, so
+          it cannot live inside one feature. See lib/organization/organization-gate.ts. */}
+      <OrganizationGateDialog />
       {pathname === "/marketing/keyword-research" && (
         <Suspense fallback={null}>
           <UrlPanelManager managedTypeKeys={KEYWORD_RESEARCH_URL_PANEL_KEYS} />

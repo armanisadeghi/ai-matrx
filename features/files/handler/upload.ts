@@ -30,7 +30,7 @@ import {
   selectProjectId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
-import { FileUploadError } from "./errors";
+import { FileUploadError, UploadCancelledError } from "./errors";
 import { fromCloudFile } from "./input/normalize";
 import { setCached } from "@/features/files/hooks/blob-cache";
 import type {
@@ -166,6 +166,11 @@ export async function uploadInternal(
   );
 
   if (isCloudUploadFailure(result)) {
+    // Declining the workspace question is an answer, not a failure — it must
+    // not reach an error toast or the Error Inspector.
+    if (result.errorCode === "upload_cancelled") {
+      throw new UploadCancelledError(result.error);
+    }
     throw new FileUploadError(result.error);
   }
 

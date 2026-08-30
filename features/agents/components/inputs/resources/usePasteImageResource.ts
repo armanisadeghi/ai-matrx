@@ -29,7 +29,12 @@ import {
   setResourceStatus,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { generateResourceId } from "@/features/agents/redux/execution-system/utils/ids";
-import { requireExecutionOrganizationId } from "@/features/agents/redux/execution-system/utils/required-organization";
+import {
+  ensureExecutionOrganization,
+  requireExecutionOrganizationId,
+} from "@/features/agents/redux/execution-system/utils/required-organization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { isUploadCancelledError } from "@/features/files/handler/errors";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
@@ -70,14 +75,24 @@ export function useUploadAgentResources(
   return async (files: File[]) => {
     if (files.length === 0) return;
 
-    // The file and the conversation will be joined by a tenant-checked
-    // association. Stamp the same canonical execution organization on the
-    // upload instead of letting a personal upload silently fall back to the
-    // user's personal workspace.
-    const organizationId = requireExecutionOrganizationId(
-      store.getState(),
-      conversationId,
-    );
+    // The file and the conversation will be joined later, so the upload must
+    // land in the SAME workspace the conversation will. Resolving it here —
+    // asking the person if nothing is selected — is what stops an attachment
+    // from silently filing itself in a personal workspace nobody chose.
+    //
+    // Declining is not an error: no chips are staged, nothing is uploaded, and
+    // the composer is untouched.
+    let organizationId: string;
+    try {
+      // `null` = could not ask (no picker mounted / non-interactive). Fall
+      // through to the synchronous guard, which owns this surface's message.
+      organizationId =
+        (await ensureExecutionOrganization(store.getState(), conversationId)) ??
+        requireExecutionOrganizationId(store.getState(), conversationId);
+    } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
+      throw err;
+    }
 
     const staged = files.map((file) => {
       const local = normalize({ kind: "file", file });
@@ -178,6 +193,14 @@ export function useUploadAgentResources(
           revokeTrackedObjectUrl(previewUrl);
         }
       } catch (err) {
+        if (isUploadCancelledError(err)) {
+          dispatch(removeResource({ conversationId, resourceId }));
+          if (previewUrl) {
+            livePreviewUrls.current.delete(previewUrl);
+            revokeTrackedObjectUrl(previewUrl);
+          }
+          continue;
+        }
         const reason = err instanceof Error ? err.message : "Upload failed";
         dispatch(
           setResourceStatus({

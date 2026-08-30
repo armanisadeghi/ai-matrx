@@ -142,6 +142,42 @@ const appContextSlice = createSlice({
       state.conversation_id = null;
     },
     /**
+     * FIRST organization choice, made to unblock an action already in flight.
+     *
+     * `setOrganization` cascades: it clears scopes, project, task AND
+     * `conversation_id`, because changing organizations invalidates everything
+     * chosen underneath the old one. That is right for a SWITCH and wrong here.
+     *
+     * This reducer serves the one case where there was no previous
+     * organization: someone attached a file or hit send, the organization gate
+     * asked which workspace, and they answered. There is no old organization
+     * whose descendants went stale — and the conversation being cleared would
+     * be the very conversation they are composing in, which would strand the
+     * action the answer was supposed to unblock.
+     *
+     * So: set the organization, clear the scope/project/task selections (those
+     * were picked with no organization in play and cannot be trusted), and KEEP
+     * the conversation.
+     *
+     * Refuses to act when an organization is already set — a real switch must
+     * go through `setOrganization` and take the full cascade with it.
+     */
+    resolveOrganizationForBlockedAction: (
+      state,
+      action: PayloadAction<{ id: string; name?: string | null }>,
+    ) => {
+      if (state.organization_id) return;
+      state.organization_id = action.payload.id;
+      state.organization_name = action.payload.name ?? null;
+      state.scope_selections = {};
+      state.active_scope_type_ids = [];
+      state.project_id = null;
+      state.project_name = null;
+      state.task_id = null;
+      state.task_name = null;
+      // conversation_id deliberately preserved — see above.
+    },
+    /**
      * Set the user's personal org id. Independent of the active org — does NOT
      * touch organization_id or reset any descendants. Set once at hydration.
      */
@@ -293,6 +329,7 @@ const appContextSlice = createSlice({
 
 export const {
   setOrganization,
+  resolveOrganizationForBlockedAction,
   setPersonalOrganization,
   setScopeSelections,
   addActiveScope,
@@ -439,6 +476,7 @@ export const appContextPolicy = definePolicy<AppContextState>({
   broadcast: {
     actions: [
       "appContext/setOrganization",
+      "appContext/resolveOrganizationForBlockedAction",
       "appContext/setPersonalOrganization",
       "appContext/setFullContext",
       "appContext/clearContext",

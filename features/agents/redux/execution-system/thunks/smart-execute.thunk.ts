@@ -25,7 +25,11 @@ import { enqueueInboxMessage } from "../inbox/inbox.thunks";
 import { cancelAgentRunRequest } from "@/lib/api/matrx-transport";
 import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
-import { requireExecutionOrganizationId } from "../utils/required-organization";
+import {
+  ensureExecutionOrganization,
+  requireExecutionOrganizationId,
+} from "../utils/required-organization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   claimSubmit,
@@ -105,18 +109,35 @@ export const smartExecute = createAsyncThunk<
       if (!state.conversations.byConversationId[conversationId]) return;
 
       // Organization is a hard execution boundary. A personal organization is
-      // not an implicit substitute for an empty picker: keep the draft intact,
-      // show the person the one-click corrective action, and make no request.
+      // still not an implicit substitute for an empty picker — but "no
+      // organization" is now a QUESTION rather than a dead end.
+      //
+      // This exact spot used to toast "Select an organization before sending
+      // this message. The request was not sent." and stop. The person then went
+      // to the switcher, picked an organization, came back and re-sent — and on
+      // 2026-08-30 that round trip is what split a screenshot (uploaded under no
+      // organization, so filed personally) from the conversation (started under
+      // the organization they had just picked). The advice created the mismatch
+      // it was warning about.
+      //
+      // Now the gate asks inline: one dialog, they choose, the choice becomes
+      // their active workspace, and this same submit continues into it with the
+      // draft and attachments untouched. Declining keeps the old behaviour
+      // exactly — draft intact, nothing sent, and no error, because declining
+      // is an answer rather than a fault.
       try {
+        await ensureExecutionOrganization(state, conversationId);
+        state = getState();
         requireExecutionOrganizationId(state, conversationId);
       } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
         const message =
           error instanceof Error
             ? error.message
             : "Select an organization before sending this message.";
-        // This is expected, locally recoverable form validation: no request
-        // crossed the transport boundary and the draft remains intact. Keep it
-        // visible without manufacturing console-error + user-toast incidents.
+        // Expected, locally recoverable form validation: no request crossed the
+        // transport boundary and the draft remains intact. Keep it visible
+        // without manufacturing console-error + user-toast incidents.
         toast.info("Organization required", { description: message });
         return;
       }

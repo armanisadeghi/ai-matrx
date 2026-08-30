@@ -608,6 +608,27 @@ function buildUrl(
  *
  * Fields that are null/undefined are omitted from the final scope object.
  */
+/**
+ * Resolve the organization for THIS call, opening the picker when nothing is
+ * selected — the interactive half of the fail-closed kernel.
+ *
+ * Split out so `callApi` reads as one line and so the "background calls must
+ * not pop a dialog" rule lives in exactly one place: a call that supplies its
+ * own organization never asks, and neither does any non-interactive context
+ * (the gate itself refuses to ask when there is no window or no picker).
+ */
+async function ensureOrganizationContextForCall(
+  selectedOrganizationId: string | null | undefined,
+  overrideOrganizationId: string | undefined,
+): Promise<string> {
+  const { ensureOrganizationContext } = await import(
+    "@/lib/organization/organization-gate"
+  );
+  return ensureOrganizationContext({
+    organizationId: overrideOrganizationId ?? selectedOrganizationId,
+  });
+}
+
 export function resolveScope(
   state: RootState,
   overrides?: Partial<CallScope>,
@@ -1178,8 +1199,34 @@ export function callApi<
     });
 
     try {
+      // ── Step 3b: Resolve the organization, ASKING if we must ────────────
+      //
+      // `resolveScope` below is fail-closed and synchronous — it throws
+      // `organization_context_required` when nothing is selected. Correct, and
+      // a dead end on its own: the person is told to go select an organization
+      // somewhere else and start over.
+      //
+      // This turns that dead end into a question. If no organization is
+      // selected, the gate opens one dialog, the person picks, the choice
+      // becomes their active workspace, and this very request continues with
+      // it. Cancelling throws `OrganizationSelectionCancelled`, which callers
+      // treat as "nothing happened".
+      //
+      // It resolves the value BEFORE the assert rather than softening it, so
+      // the invariant below is unchanged and `resolveScope` still refuses a
+      // request that has no organization. Non-interactive contexts (SSR, no
+      // picker mounted) re-throw the original error exactly as before — this is
+      // never a fallback, and it never picks an organization for anybody.
+      const resolvedOrganizationId = await ensureOrganizationContextForCall(
+        state.appContext?.organization_id,
+        config.scopeOverrides?.organization_id,
+      );
+
       // ── Step 4: Resolve and validate the complete request context ───────
-      const scope = resolveScope(state, config.scopeOverrides);
+      const scope = resolveScope(getState(), {
+        ...config.scopeOverrides,
+        organization_id: resolvedOrganizationId,
+      });
       assertQueryOrganizationMatchesContext(
         config.queryParams,
         scope.organization_id,
@@ -1235,6 +1282,20 @@ export function callApi<
       }
       return result;
     } catch (err) {
+      // The person was asked which workspace this belongs to and said "not
+      // now". That is an ANSWER, not a failure: no request was sent, nothing
+      // was written, and there is nothing to report. It must never reach the
+      // Error Inspector or a toast — Arman's rule is that cancelling puts you
+      // back exactly where you were, and a red banner is not "where you were".
+      if (err instanceof Error && err.name === "OrganizationSelectionCancelled") {
+        return {
+          error: {
+            type: "abort_error",
+            message: err.message,
+            code: "organization_selection_cancelled",
+          },
+        };
+      }
       const error = normalizeError(err);
       // Network-layer / thrown failures (timeout, DNS, abort) capture here —
       // UNLESS the stream layer already recorded this exact throw. A dropped
