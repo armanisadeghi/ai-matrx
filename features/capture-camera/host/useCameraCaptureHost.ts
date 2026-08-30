@@ -180,9 +180,7 @@ export function useCameraCaptureHost(
         const lease = await acquireCameraLease(
           {
             profile: "maximum-available",
-            ...(deviceId
-              ? { deviceId }
-              : { facingMode: "environment" as const }),
+            ...(deviceId ? { deviceId } : { facingMode: facing }),
           },
           { combineMicPrompt: true },
         );
@@ -220,33 +218,25 @@ export function useCameraCaptureHost(
       }
       setStream(null);
     };
-  }, [deviceId]);
+  }, [deviceId, facing]);
 
   const cameraBlocked = notSupported || permissionDenied;
 
-  // ── Camera flip (persisted preferred camera) ────────────────────────────
-  const { setCamera } = useAudioDevices();
+  // ── Camera flip = a FACING toggle, never a deviceId cycle. ──────────────
+  // The cycle version was "flip doesn't work" on every real phone: iPhones
+  // enumerate several BACK lenses (wide, ultrawide, tele, dual...), so
+  // "next camera" walked the back array and rarely reached the front. What
+  // a flip button means is front↔back — ask for it by facingMode and let the
+  // OS pick the lens. Clearing deviceId also drops any persisted preferred
+  // camera from the spec so it cannot pin us to the previous side.
   const switchCamera = useCallback(() => {
     // Flipping reacquires the lease and stops the current tracks — doing it
     // mid-recording would kill the recording. The button is hidden while
     // recording (engine.onFlipCamera goes null), and this guard backstops it.
     if (recordingRef.current) return;
-    const cams = getMediaDevicesSnapshot().cameras;
-    if (cams.length < 2) return;
-    const currentIdx = deviceId
-      ? cams.findIndex((c) => c.deviceId === deviceId)
-      : cams.findIndex(
-          (c) =>
-            c.deviceId ===
-            leaseRef.current?.stream.getVideoTracks()[0]?.getSettings()
-              .deviceId,
-        );
-    const next = cams[(Math.max(currentIdx, 0) + 1) % cams.length];
-    if (next) {
-      setDeviceId(next.deviceId);
-      setCamera(next.deviceId, next.label);
-    }
-  }, [deviceId, setCamera]);
+    setDeviceId(null);
+    setFacing((f) => (f === "environment" ? "user" : "environment"));
+  }, []);
 
   // ── Video-mode mic warm hold (one prompt per medium on iOS Safari) ──────
   useEffect(() => {

@@ -106,9 +106,7 @@ type Phase =
   | { status: "assembling"; topicId: string }
   | { status: "done"; topicId: string };
 
-type ActiveEditor =
-  | { kind: "topic_name" }
-  | { kind: "keyword"; index: number };
+type ActiveEditor = { kind: "topic_name" } | { kind: "keyword"; index: number };
 
 function PageResearchWindowInner({
   onClose,
@@ -146,7 +144,9 @@ function PageResearchWindowInner({
     () =>
       keywords
         .map((keyword) => keyword.trim())
-        .filter((keyword, index, all) => keyword && all.indexOf(keyword) === index),
+        .filter(
+          (keyword, index, all) => keyword && all.indexOf(keyword) === index,
+        ),
     [keywords],
   );
   const canStart =
@@ -181,9 +181,15 @@ function PageResearchWindowInner({
       // result of this window; the run is the paid work on top. A run that
       // dies still leaves the page pointing at real research.
       setAttachment({ status: "attaching", error: null });
-      const attached = await links.attach("research_topic", topic.id, name.trim());
+      const attached = await links.attach(
+        "research_topic",
+        topic.id,
+        name.trim(),
+      );
       if (!attached.ok) {
-        const attachmentError = attached.error ?? "The association write did not return an error message.";
+        const attachmentError =
+          attached.error ??
+          "The association write did not return an error message.";
         setAttachment({ status: "failed", error: attachmentError });
         toast.error(
           `Research started, but attaching it to this page failed: ${attachmentError}`,
@@ -309,9 +315,7 @@ function PageResearchWindowInner({
 
   const activeEditorContent = (): string => {
     const editor = activeEditorRef.current;
-    return editor.kind === "topic_name"
-      ? name
-      : (keywords[editor.index] ?? "");
+    return editor.kind === "topic_name" ? name : (keywords[editor.index] ?? "");
   };
 
   const getEditorScope = () => {
@@ -366,30 +370,59 @@ function PageResearchWindowInner({
     }
   };
 
-  return (
-    <WindowPanel
-      id="page-research-window"
-      overlayId="pageResearchWindow"
-      title="Research for this page"
-      onClose={onClose}
-      width={520}
-      height={480}
-      minWidth={360}
-      minHeight={320}
-      position="center"
-      onCollectData={collectData}
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
+  const windowBody = (
+    <div
+      className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3"
+      data-surface-value="content"
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <p className="text-xs text-muted-foreground">
-          A small, focused research project for this one page. Its report is
-          attached to the page and every agent that runs here reads it — on top
-          of the site&apos;s own research, which is always included.
+      <div
+        className="rounded-md border border-border/70 bg-muted/30 px-2.5 py-2"
+        data-surface-value="page_context"
+      >
+        <p className="truncate text-xs font-medium text-foreground">
+          <span data-surface-value="node_id" title={"Plan node " + nodeId}>
+            <span data-surface-value="page_label">
+              {pageLabel?.trim() || "Untitled planned page"}
+            </span>
+          </span>
         </p>
+        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+          <span data-surface-value="site_id" title={siteId || "No site ID"}>
+            {siteId ? "Site linked" : "No site link"}
+          </span>
+          <span data-surface-value="organization_source">
+            <span
+              data-surface-value="organization_id"
+              title={organizationId ?? "No research organization"}
+            >
+              <span data-surface-value="page_organization_id">
+                <span data-surface-value="active_organization_id">
+                  {organizationSource === "page"
+                    ? "Page organization"
+                    : organizationSource === "active"
+                      ? "Active organization fallback"
+                      : "Organization required"}
+                </span>
+              </span>
+            </span>
+          </span>
+        </div>
+      </div>
 
-        <div className="space-y-1.5">
+      <p className="text-xs text-muted-foreground" data-surface-value="context">
+        A small, focused research project for this one page. Its report is
+        attached to the page and every agent that runs here reads it — on top of
+        the site&apos;s own research, which is always included.
+      </p>
+
+      <div className="space-y-3" data-surface-value="draft_summary">
+        <div
+          className="space-y-1.5"
+          data-page-research-field="topic_name"
+          data-surface-value="topic_name"
+        >
           <Label htmlFor="page-research-name" className="text-xs">
-            Topic name
+            {V.topic_name}
           </Label>
           <ProInput
             id="page-research-name"
@@ -397,23 +430,36 @@ function PageResearchWindowInner({
             onChange={(event) => setName(event.target.value)}
             disabled={phase.status !== "form"}
             placeholder="Page research"
-            enableVoice={false}
-            enableCleanup={false}
-            showCopyButton={false}
+            wrapperClassName="w-full"
           />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-surface-value="keywords">
           <Label className="text-xs">
-            Keywords
-            <span className="ml-1.5 font-normal text-muted-foreground">
+            {V.keywords}
+            <span
+              className="ml-1.5 font-normal text-muted-foreground"
+              data-surface-value="max_keywords"
+            >
               {primaryKeyword
                 ? "the page's target query, plus at most one more"
-                : `at most ${PAGE_RESEARCH_MAX_KEYWORDS}`}
+                : "at most " + PAGE_RESEARCH_MAX_KEYWORDS}
             </span>
           </Label>
+          <span
+            className="sr-only"
+            data-surface-value="primary_keyword"
+            title={primaryKeyword ?? ""}
+          >
+            {V.primary_keyword}
+          </span>
           {keywords.map((keyword, index) => (
-            <div key={index} className="flex items-center gap-1.5">
+            <div
+              key={index}
+              className="flex items-center gap-1.5"
+              data-page-research-field="keyword"
+              data-keyword-index={index}
+            >
               <ProInput
                 value={keyword}
                 onChange={(event) => setKeywordAt(index, event.target.value)}
@@ -421,9 +467,10 @@ function PageResearchWindowInner({
                 placeholder={
                   index === 0 ? "What this page targets" : "One more angle"
                 }
-                enableVoice={false}
                 enableCleanup={false}
-                showCopyButton={false}
+                enableVoice={false}
+                auxiliaryControlsLabel={"keyword " + (index + 1)}
+                wrapperClassName="min-w-0 flex-1"
               />
               {index > 0 && phase.status === "form" ? (
                 <Button
@@ -440,6 +487,13 @@ function PageResearchWindowInner({
               ) : null}
             </div>
           ))}
+          <p
+            className="text-[11px] text-muted-foreground"
+            data-surface-value="clean_keywords"
+          >
+            {cleanKeywords.length} runnable{" "}
+            {cleanKeywords.length === 1 ? "keyword" : "keywords"}
+          </p>
           {phase.status === "form" &&
           keywords.length < PAGE_RESEARCH_MAX_KEYWORDS ? (
             <Button
@@ -454,23 +508,36 @@ function PageResearchWindowInner({
             </Button>
           ) : null}
         </div>
+      </div>
 
-        {phase.status === "form" ? (
-          <div className="mt-auto flex items-center justify-end gap-2 pt-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button size="sm" disabled={!canStart} onClick={() => void start()}>
-              Start research
-            </Button>
-          </div>
-        ) : (
-          <div className="mt-auto space-y-2 pt-2">
-            <div className="flex items-center gap-2 text-sm text-foreground">
-              {phase.status === "done" && !stream.isStreaming ? null : (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-              <span>
+      {phase.status === "form" ? (
+        <div className="mt-auto flex items-center justify-end gap-2 pt-2">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={!canStart}
+            onClick={() => void start()}
+            data-surface-value="can_start"
+          >
+            Start research
+          </Button>
+        </div>
+      ) : (
+        <div
+          className="mt-auto space-y-2 pt-2"
+          data-surface-value="run_summary"
+        >
+          <div
+            className="flex items-center gap-2 text-sm text-foreground"
+            data-surface-value="is_streaming"
+          >
+            {phase.status === "done" && !stream.isStreaming ? null : (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            <span data-surface-value="research_phase">
+              <span data-surface-value="latest_stream_message">
                 {phase.status === "starting"
                   ? "Creating the topic…"
                   : phase.status === "assembling"
@@ -480,40 +547,141 @@ function PageResearchWindowInner({
                         ? "Researching…"
                         : "Research finished."))}
               </span>
-            </div>
-            {stream.error ? (
-              <p className="text-xs text-destructive">{stream.error}</p>
-            ) : null}
-            {topicId ? (
-              <p className="text-xs text-muted-foreground">
-                Attached to this page.{" "}
-                <Link
-                  href={`/research/topics/${topicId}`}
-                  className="inline-flex items-center gap-0.5 font-medium text-foreground underline underline-offset-2"
-                >
-                  Open the research topic
-                  <ArrowUpRight className="h-3 w-3" />
-                </Link>
-              </p>
-            ) : null}
+            </span>
           </div>
-        )}
-      </div>
-
-      {/* The model's own output renders in the ONE canonical live-run window,
-          bound to the adopted request id — this panel never renders a stream. */}
-      {topicId && (stream.isStreaming || stream.requestId) ? (
-        <LiveRunWindowController
-          instanceId={`page-research:${nodeId}`}
-          requestId={stream.requestId}
-          pending={!stream.requestId}
-          label={
-            phase.status === "assembling"
-              ? "Assembling the research report"
-              : "Researching this page"
-          }
-        />
-      ) : null}
-    </WindowPanel>
+          {stream.error ? (
+            <p
+              className="text-xs text-destructive"
+              data-surface-value="stream_error"
+            >
+              {stream.error}
+            </p>
+          ) : null}
+          {topicId ? (
+            <p className="text-xs text-muted-foreground">
+              <span data-surface-value="attachment_status">
+                {attachment.status === "attached"
+                  ? "Attached to this page."
+                  : attachment.status === "failed"
+                    ? "Topic created, but the page attachment failed."
+                    : "Attaching to this page…"}{" "}
+              </span>
+              {attachment.error ? (
+                <span
+                  className="text-destructive"
+                  data-surface-value="attachment_error"
+                >
+                  {attachment.error}{" "}
+                </span>
+              ) : null}
+              <Link
+                href={"/research/topics/" + topicId}
+                className="inline-flex items-center gap-0.5 font-medium text-foreground underline underline-offset-2"
+                data-surface-value="topic_id"
+              >
+                Open the research topic
+                <ArrowUpRight className="h-3 w-3" />
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
+
+  const menuBody =
+    phase.status === "form" ? (
+      <EditableContextMenu
+        sourceFeature="research"
+        surfaceName={PAGE_RESEARCH_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getEditorScope}
+        resolveContextOnOpen={resolveEditorContext}
+        onTextReplace={replaceActiveEditorText}
+        contentSource={{ type: "raw" }}
+      >
+        {windowBody}
+      </EditableContextMenu>
+    ) : (
+      <NonEditableContextMenu
+        sourceFeature="research"
+        surfaceName={PAGE_RESEARCH_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getScope}
+        contentSource={{ type: "raw" }}
+      >
+        {windowBody}
+      </NonEditableContextMenu>
+    );
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={PAGE_RESEARCH_SURFACE_NAME}
+      getScope={getScope}
+      isEditable={phase.status === "form"}
+      getWriteHandlers={() => ({
+        topic_name: (value) => {
+          assertDraftIsOpen();
+          setName(expectNonEmptyString(value, "Topic name"));
+        },
+        keywords: (value) => {
+          assertDraftIsOpen();
+          setKeywords(expectKeywordDraft(value));
+        },
+      })}
+    >
+      <WindowPanel
+        id="page-research-window"
+        overlayId="pageResearchWindow"
+        title="Research for this page"
+        onClose={onClose}
+        width={520}
+        height={480}
+        minWidth={360}
+        minHeight={320}
+        position="center"
+        onCollectData={collectData}
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        {menuBody}
+
+        {/* The model's own output renders in the ONE canonical live-run window,
+            bound to the adopted request id — this panel never renders a stream. */}
+        {topicId && (stream.isStreaming || stream.requestId) ? (
+          <div data-surface-value="stream_request_id">
+            <LiveRunWindowController
+              instanceId={"page-research:" + nodeId}
+              requestId={stream.requestId}
+              pending={!stream.requestId}
+              label={
+                phase.status === "assembling"
+                  ? "Assembling the research report"
+                  : "Researching this page"
+              }
+            />
+          </div>
+        ) : null}
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
+  );
+}
+
+function expectNonEmptyString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(label + " must be a non-empty string");
+  }
+  return value.trim();
+}
+
+function expectKeywordDraft(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 2) {
+    throw new Error("Research keywords must contain one or two strings");
+  }
+  const keywords = value.map((entry) =>
+    expectNonEmptyString(entry, "Each research keyword"),
+  );
+  if (new Set(keywords).size !== keywords.length) {
+    throw new Error("Research keywords must be unique");
+  }
+  return keywords;
 }

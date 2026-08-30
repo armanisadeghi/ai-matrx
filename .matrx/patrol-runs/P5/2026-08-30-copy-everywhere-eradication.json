@@ -47,6 +47,32 @@
       ],
       "previousEventHash": "9f476b6c4dd1aed472f5eb26e8c78298c8c0e4fca325ae3fda24a3a84817442e",
       "eventHash": "14927bd255f5b3f621af99dde79778aaeabeda17df273d556c10f4bc3f78e8c0"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:29:59.031Z",
+      "actor": "p5-exact-certifier",
+      "summary": "REJECTED exact candidate a48dda0a079abac8bc27990da4b0e3c63e10da20: batch used inherited single-icon CopyButtons despite the typed P5 manifest requiring compact Copy and Copy-for-AI icons.",
+      "evidence": [
+        "Focused Jest 30/30, detector/tests, patrol contracts, and scoped ESLint otherwise passed.",
+        "Structural rowAiVariants coverage across cards, desktop rows, panels, and windows passed.",
+        "Concrete defect: semantic manifest/skill/product drift is not detected by check:patrol-contracts."
+      ],
+      "previousEventHash": "14927bd255f5b3f621af99dde79778aaeabeda17df273d556c10f4bc3f78e8c0",
+      "eventHash": "3e33972963ae9d1297fc013ac42dc89cffe558c91258831208c867f0dbf33505"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:29:59.877Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Restoring the manifest-owned compact two-icon CopyButtons contract without reintroducing JSON or bespoke third controls.",
+      "evidence": [
+        "Replacement keeps human Copy as one icon and JSON, Copy for AI, variants, exports, and Groomer under the second icon."
+      ],
+      "previousEventHash": "3e33972963ae9d1297fc013ac42dc89cffe558c91258831208c867f0dbf33505",
+      "eventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce"
     }
   ]
 }

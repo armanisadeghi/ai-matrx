@@ -133,6 +133,7 @@ function KeywordQuickAnswersWindowInner({
       surfaceName={KEYWORD_QUICK_ANSWERS_SURFACE_NAME}
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
+      isEditable
     >
       <WindowPanel
         titleNode={

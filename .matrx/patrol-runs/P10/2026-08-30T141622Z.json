@@ -49,6 +49,40 @@
       },
       "previousEventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41",
       "eventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:29:06.539Z",
+      "actor": "/root",
+      "summary": "Recorded schema-ingress candidate d28f75c13e as escaped delivery pending independent certification.",
+      "evidence": [
+        "candidate is ancestor of origin/main",
+        "focused-tests:58-pass",
+        "scoped-hatches:zero"
+      ],
+      "escape": {
+        "candidateSha": "d28f75c13e",
+        "integratedSha": "d28f75c13e",
+        "release": "integration-only; release not requested",
+        "reason": "The canonical shared-checkout integrator committed and pushed the repair while the fixing wave was still assembling; no prior CERTIFIED event or delivery queue existed."
+      },
+      "previousEventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2",
+      "eventHash": "d0a34234701830e99759e5fab7b3f5dca250668fd1480d65a4f512f68522c40f"
+    },
+    {
+      "sequence": 5,
+      "state": "certifying",
+      "at": "2026-08-30T14:29:22.802Z",
+      "actor": "/root",
+      "summary": "Frozen exact integrated candidate d28f75c13e for independent adversarial certification.",
+      "evidence": [
+        "base:857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+        "candidate:d28f75c13e",
+        "owned-batch:11-product-doc-test-files"
+      ],
+      "previousEventHash": "d0a34234701830e99759e5fab7b3f5dca250668fd1480d65a4f512f68522c40f",
+      "eventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4"
     }
   ]
 }

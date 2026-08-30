@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-30T141622Z",
-  "state": "infrastructure_blocked",
-  "updatedAt": "2026-08-30T14:28:47.668Z",
-  "summary": "Candidate reached origin/main through shared-checkout integration before independent certification could start.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:29:22.802Z",
+  "summary": "Frozen exact integrated candidate d28f75c13e for independent adversarial certification.",
   "source": "2026-08-30T141622Z.json",
-  "eventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2"
+  "eventHash": "243dd994ed5b7f55380408fc34c16b3702adb58faf0eb20d8da1dd7a631c1bf4"
 }

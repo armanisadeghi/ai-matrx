@@ -305,7 +305,13 @@ function KeywordResearchWindowInner({
           contentSource={{ type: "raw" }}
         >
           <SurfaceValueAnchorStack
-            names={["initial_keyword", "auto_run_requested"]}
+            names={[
+              "selection",
+              "content",
+              "context",
+              "initial_keyword",
+              "auto_run_requested",
+            ]}
             className="flex min-h-0 min-w-0 flex-1 flex-col"
           >
             <div className="flex min-h-0 flex-1 flex-col">
@@ -365,6 +371,14 @@ function KeywordResearchWindowInner({
                   "research_result",
                   "run_error",
                   "volume_stage",
+                  // Fixed-site openers omit the picker above. These duplicate
+                  // anchors keep its site scope locatable in that branch; when
+                  // the picker exists its earlier, tighter anchors win.
+                  "site_options_status",
+                  "site_options_error",
+                  "site_options",
+                  "selected_site_id",
+                  "selected_site",
                 ]}
               >
                 <div className="shrink-0 border-b border-border px-3 py-2.5">
@@ -397,6 +411,9 @@ function KeywordResearchWindowInner({
                   "explorer_open",
                   "cluster_primary_keyword",
                   "cluster_phrases",
+                  // The field unmounts while the explorer is collapsed; this
+                  // pane anchor remains so Locate can reopen the right region.
+                  "library_search",
                 ]}
                 className="flex min-h-0 min-w-0 flex-1 flex-col"
               >

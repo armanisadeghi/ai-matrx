@@ -44,7 +44,7 @@ async function copyToClipboard(text: string, message: string) {
   toast.success(message);
 }
 
-function buildSiteCopy(site: SiteListRow) {
+export function siteRowCopy(site: SiteListRow) {
   return webCopy({
     kind: "web-site",
     label: `Site ${site.domain}`,
@@ -75,7 +75,7 @@ function buildSiteCopy(site: SiteListRow) {
 /** The one site-action registry used by every sites-list presentation. */
 export function buildSiteMenu(ctx: SiteMenuContext): ItemMenuConfig {
   const { site } = ctx;
-  const copy = buildSiteCopy(site);
+  const copy = siteRowCopy(site);
 
   return {
     header: { title: site.name, description: site.domain },

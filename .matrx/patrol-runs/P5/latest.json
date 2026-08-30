@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
-  "state": "certifying",
-  "updatedAt": "2026-08-30T14:26:05.013Z",
-  "summary": "Exact candidate a48dda0a079abac8bc27990da4b0e3c63e10da20: shared MatrxDataTable row AI variants and Unwired menu consolidation are ready for adversarial certification.",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:29:59.877Z",
+  "summary": "Restoring the manifest-owned compact two-icon CopyButtons contract without reintroducing JSON or bespoke third controls.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "14927bd255f5b3f621af99dde79778aaeabeda17df273d556c10f4bc3f78e8c0"
+  "eventHash": "026dc94ea8c5170595634ca0dc3899f64e38be1f626f2ecb4e6fa85572f069ce"
 }
