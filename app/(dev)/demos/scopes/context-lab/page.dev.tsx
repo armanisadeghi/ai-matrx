@@ -2137,10 +2137,10 @@ export default function ContextLabPage() {
           <div className="flex gap-2 text-sm text-muted-foreground">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div>
-              Gap list status: assignment field ✓ · active mode (A + composer
-              bar B) ✓ · assign-to-item + cascade ✓ · lateral/promotion
-              suggestions ✓ · live rows panel ✓ · scope-as-value ✓ ·
-              required-slots/gaps ✓ · context hints ✓. Open decisions for Arman:
+              Completed gap-list items: assignment field · active mode (A +
+              composer bar B) · assign-to-item + cascade · lateral/promotion
+              suggestions · live rows panel · scope-as-value ·
+              required-slots/gaps · context hints. Open decisions for Arman:
               org changeable vs locked · where the field surfaces · variation
               A/B for chat · §7.2 cardinality + §7.3 enforcement.
             </div>

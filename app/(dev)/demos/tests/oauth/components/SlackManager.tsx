@@ -7,6 +7,7 @@ import {
   joinChannel
 } from '../utils/slackUtils';
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { RotateCcw, X } from 'lucide-react';
 
 interface SlackManagerProps {
   tokenData: SlackTokenResponse | { access_token: string };
@@ -250,8 +251,9 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                     <button
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         onClick={() => setSearchTerm('')}
+                        aria-label="Clear channel search"
                     >
-                      ✕
+                      <X aria-hidden="true" className="h-4 w-4" />
                     </button>
                 )}
               </div>
@@ -314,7 +316,10 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                   Refreshing...
                 </span>
                 ) : (
-                    <span>🔄 Refresh</span>
+                    <span className="flex items-center gap-1">
+                      <RotateCcw aria-hidden="true" className="h-3 w-3" />
+                      Refresh
+                    </span>
                 )}
               </button>
             </div>
