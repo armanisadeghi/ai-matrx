@@ -40,7 +40,7 @@ builds a screen that depends on an unverified number looking final."*
 
 statement_cache_size=0 is required — the host is pgbouncer in transaction pooling mode.
 """
-import asyncio, json, os, sys
+import asyncio, json, os, re, sys
 from pathlib import Path
 
 import asyncpg
@@ -270,21 +270,25 @@ def edge_cases():
         ("hr_calc_overtime", "edge2", 200, from_rule_fixture(
             "OT-BOUND-01",
             "Semimonthly boundary workweek, 46 hours split 20/26 across two pay periods. The 6 OT "
-            "hours are computed on the WHOLE workweek, never on either period's subtotal, and are "
-            "attributed to the period containing the workweek's END date. workweek_id rides every "
-            "export line so payroll can reconcile.",
+            "hours are computed on the WHOLE workweek, never on either period's subtotal — which is "
+            "what `result.workweek_id` names, and the only reason the answer reconciles. WHERE those "
+            "6 hours are ATTRIBUTED is deliberately NOT asserted here: E-03 answers for a workweek "
+            "and its typed result has no pay-period field (`OvertimeCalcResult` is extra=forbid). "
+            "Attribution is the pay-period/export surface's answer — SPEC-TIME §2.7's "
+            "`boundary_workweek_ids` panel and SPEC-CONTRACTS §4.1's line-level `workweek_id` on "
+            "`hr.payroll_export_line`. The `attributed_pay_period_key` in this rule row belongs to "
+            "the SQL evaluator's own output vocabulary (hr_c5_03_evaluator.sql), not to any API "
+            "response; splicing it in here asserted a body the server cannot emit.",
             lambda exp: {
                 "hours_regular": exp["hours"]["regular"],
                 "hours_overtime": exp["hours"]["ot_1_5"],
                 "hours_doubletime": 0,
                 "weighted_average_regular_rate": "22.000000",
-                "attributed_pay_period_key": exp["attributed_pay_period_key"],
                 "workweek_id": _uuid(7),
                 "lines": [
                     {"earning_code": "OT", "hours": exp["hours"]["ot_1_5"], "rate": "33.000000",
                      "amount": "198.00", "work_date": "2026-04-04",
-                     "work_interval_ids": [_uuid(7)], "workweek_id": _uuid(7),
-                     "pay_period_key": exp["attributed_pay_period_key"]},
+                     "work_interval_ids": [_uuid(7)]},
                 ],
             })),
         ("hr_calc_predictability_pay", "edge", 200, from_rule_fixture(
@@ -623,6 +627,57 @@ def contract_overrides():
     ]
 
 
+# The SQL fixture evaluator (matrx-frontend/migrations/hr_c5_03_evaluator.sql) speaks its OWN
+# output vocabulary in `hr.jurisdiction_rule_test.expected` — it answers "what must the ENGINE
+# compute", not "what must the ENDPOINT return". These keys exist in NO response schema and in no
+# pydantic model, and every calc result model is `extra="forbid"`, so a fixture carrying one
+# asserts a body the server is structurally incapable of emitting. That is exactly how
+# `hr_calc_overtime.edge2` came to assert `attributed_pay_period_key` and a line-level
+# `pay_period_key`/`workweek_id` (2026-08-30): the shape lambda read the evaluator's answer and
+# spliced it straight into an API response. Two contracts, one key. The guard below makes the next
+# attempt a build failure instead of a fixture that quietly misleads a UI.
+EVALUATOR_ONLY_KEYS = {
+    "attributed_pay_period_key",  # → the pay-period surface (SPEC-TIME §2.7 boundary panel)
+    "pay_period_key",             # → ditto; export lines carry `workweek_id`, not a period key
+    "total_hours",                # → `hours_worked` on the typed result
+    "regular_rate",               # → `weighted_average_regular_rate`
+    "premium_amount",             # → per-line `amount`
+}
+
+# Keys that are REAL somewhere and wrong here, so a blanket ban would be a lie. `workweek_id` is a
+# genuine field on `OvertimeCalcResult` (it names the week the OT was computed on) and on
+# `hr.payroll_export_line` (§4.1) — but NOT on `OvertimeLine`, which is extra=forbid. Matched on
+# the shape path, with `[n]` list indices normalised to `[]`.
+MISPLACED_KEYS_BY_PATH = {
+    "result.lines[].workweek_id":
+        "`workweek_id` belongs on the RESULT (the week OT was computed on) and on "
+        "`hr.payroll_export_line` (SPEC-CONTRACTS §4.1) — not on `OvertimeLine`, which is "
+        "extra=forbid and has no such field.",
+}
+
+
+def _reject_evaluator_vocabulary(code, node, path="result"):
+    """Fail the build if a shape lambda projected the evaluator's vocabulary into a response."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            shape_path = re.sub(r"\[\d+\]", "[]", f"{path}.{key}")
+            if shape_path in MISPLACED_KEYS_BY_PATH:
+                raise SystemExit(
+                    f"FATAL: fixture {code} puts `{path}.{key}` in an API response body. "
+                    f"{MISPLACED_KEYS_BY_PATH[shape_path]}")
+            if key in EVALUATOR_ONLY_KEYS:
+                raise SystemExit(
+                    f"FATAL: fixture {code} puts `{path}.{key}` in an API response body. That key "
+                    f"belongs to hr_c5_03_evaluator.sql's own output vocabulary, not to any "
+                    f"response schema — the typed result is extra=forbid and cannot emit it. "
+                    f"Assert what the ENDPOINT returns; attribution lives on the pay-period and "
+                    f"export surfaces (SPEC-TIME §2.7, SPEC-CONTRACTS §4.1).")
+            _reject_evaluator_vocabulary(code, value, f"{path}.{key}")
+    elif isinstance(node, list):
+        for i, item in enumerate(node):
+            _reject_evaluator_vocabulary(code, item, f"{path}[{i}]")
+
+
 def from_rule_fixture(code, note, shape, flags=None, incomplete=None, jurisdiction=None):
     """Render a calc edge fixture FROM `hr.jurisdiction_rule_test`, never hand-typed (§6.4)."""
     def build(rows):
@@ -633,13 +688,15 @@ def from_rule_fixture(code, note, shape, flags=None, incomplete=None, jurisdicti
                 f"§6.4 requires this edge case to be RENDERED from that row, and inventing the "
                 f"numbers here would defeat the entire point of the fixture table.")
         expected = json.loads(row["expected"])
+        result = shape(expected)
+        _reject_evaluator_vocabulary(code, result)
         body = {
             "snapshot_id": _uuid(91),
             "prospective": False,
             "as_of": row["as_of_date"],
             "jurisdiction_key": jurisdiction or row["jurisdiction_key"],
             "engine": {"key": "hr_rules_engine", "version": "3984be1"},
-            "result": shape(expected),
+            "result": result,
             "rules_applied": [{"class": row["class_slug"], "rule_id": _uuid(31),
                                "rule_version": 1, "jurisdiction_key": row["jurisdiction_key"],
                                "status": "advisory" if flags else "active"}],

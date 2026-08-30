@@ -15,6 +15,35 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D293 — no calc fixture has ever been checked against the response model it claims to assert
+
+Found 2026-08-30 fixing the E-03 contradiction (`hr_calc_overtime.edge2` asserted
+`attributed_pay_period_key` and line-level `workweek_id`/`pay_period_key`, none of which
+`OvertimeCalcResult`/`OvertimeLine` — both `extra="forbid"` — can emit). The fixture was wrong and
+is fixed, with a vocabulary guard in `scripts/hr/generate_hr_fixtures.py`. **What is not fixed is
+why nothing caught it for four months.**
+
+`CalcResponse.result` in the frozen `aidream/hr-contracts.openapi.json` is
+`{"type": "object", "additionalProperties": true}` with **no properties** — one schema shared by
+all eight `/hr/calc/*` endpoints. So `synth()` renders `"result": {}` for every calc happy/empty
+fixture, and every edge `result` is whatever a shape lambda typed. **No calc fixture, in either
+direction, is checked against the pydantic model the server actually serialises.** §6.4's stated
+purpose — *"a fixture that drifts from the contract breaks a test rather than quietly misleading a
+UI"* — does not hold for the eight calc families.
+
+The guard added today is a deny-list: it catches the vocabulary we know is wrong, not everything
+that is wrong.
+
+**Fix, and why it needs a ruling.** The generator already runs under aidream's env and can import
+the models, so validating each rendered calc `result` against `OvertimeCalcResult` et al. is a few
+lines. It would immediately go RED on the existing fixtures — `hr_calc_overtime.edge2` is missing
+`hours_worked`, `week_start_local_date` and `hours_of_service`; `.edge` the same; every `happy` is
+`{}`. That RED is the question: **are §6.4 edge `result` bodies partial assertions (subset of the
+real response, assert-what-matters) or complete response bodies?** Today they are partial by
+accident, not by decision. Completing them is real work per family and changes what a mock serves
+to the UI. Amending the frozen stub to describe eight distinct calc results is a §7.2 amendment.
+Decides: Arman, or whoever owns the §6.4 convention.
+
 ### D292 — the mandate routes bounce signed-out users to `/agents` and lose the destination
 
 `app/(core)/mandates/page.tsx:23` and `app/(core)/mandates/[mandateKey]/page.tsx:20` do

@@ -134,11 +134,19 @@ function main(): number {
       (f) => num(f, "result.hours_regular") === 8 && num(f, "result.hours_overtime") === 4 &&
              num(f, "result.hours_doubletime") === 1,
       "OT-CA-01 — 8 regular + 4 OT@1.5 + 1 DT@2.0"],
+    // WHERE the 6 hours are attributed is NOT assertable here: E-03 answers for a workweek and
+    // `OvertimeCalcResult` (extra=forbid) has no pay-period field. Attribution is the pay-period
+    // surface's answer — SPEC-TIME §2.7's `boundary_workweek_ids` panel, checked in
+    // features/hr/time/periods/__checks__/non-browser-contracts.ts — and the export's, via the
+    // line-level `workweek_id` on `hr.payroll_export_line` (SPEC-CONTRACTS §4.1). What E-03 must
+    // prove is that the 6 hours came from the WHOLE week, which is what `result.workweek_id` names.
     ["hr_calc_overtime", "edge2",
-      (f) => num(f, "result.hours_overtime") === 6 &&
-             str(f, "result.attributed_pay_period_key") === "apr-1-15" &&
-             arr(f, "result.lines").every((l) => !!l.workweek_id),
-      "OT-BOUND-01 — 6 OT on the whole workweek, attributed to the period holding its END date, workweek_id on every line"],
+      (f) => num(f, "result.hours_regular") === 40 &&
+             num(f, "result.hours_overtime") === 6 &&
+             !!str(f, "result.workweek_id") &&
+             !has(f, "result.attributed_pay_period_key") &&
+             arr(f, "result.lines").every((l) => !l.pay_period_key && !l.workweek_id),
+      "OT-BOUND-01 — 6 OT computed on the WHOLE 46-hour workweek (never on the 20/26 subtotals), named by result.workweek_id; no pay-period key anywhere in the response"],
     ["hr_calc_predictability_pay", "edge",
       (f) => !has(f, "result.predictability_pay_amount") &&
              arr(f, "flags").some((x) => x.code === "advisory_rule"),

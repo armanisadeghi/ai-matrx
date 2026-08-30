@@ -10,7 +10,7 @@
     "mode": "sync",
     "spec": "SPEC-CONTRACTS §6.4",
     "generated_by": "scripts/hr/generate_hr_fixtures.py",
-    "note": "Semimonthly boundary workweek, 46 hours split 20/26 across two pay periods. The 6 OT hours are computed on the WHOLE workweek, never on either period's subtotal, and are attributed to the period containing the workweek's END date. workweek_id rides every export line so payroll can reconcile.",
+    "note": "Semimonthly boundary workweek, 46 hours split 20/26 across two pay periods. The 6 OT hours are computed on the WHOLE workweek, never on either period's subtotal — which is what `result.workweek_id` names, and the only reason the answer reconciles. WHERE those 6 hours are ATTRIBUTED is deliberately NOT asserted here: E-03 answers for a workweek and its typed result has no pay-period field (`OvertimeCalcResult` is extra=forbid). Attribution is the pay-period/export surface's answer — SPEC-TIME §2.7's `boundary_workweek_ids` panel and SPEC-CONTRACTS §4.1's line-level `workweek_id` on `hr.payroll_export_line`. The `attributed_pay_period_key` in this rule row belongs to the SQL evaluator's own output vocabulary (hr_c5_03_evaluator.sql), not to any API response; splicing it in here asserted a body the server cannot emit.",
     "rendered_from": "hr.jurisdiction_rule_test:OT-BOUND-01"
   },
   "__rendered_from": {
@@ -34,7 +34,6 @@
       "hours_overtime": 6,
       "hours_doubletime": 0,
       "weighted_average_regular_rate": "22.000000",
-      "attributed_pay_period_key": "apr-1-15",
       "workweek_id": "00000000-0000-4000-8000-000000000007",
       "lines": [
         {
@@ -45,9 +44,7 @@
           "work_date": "2026-04-04",
           "work_interval_ids": [
             "00000000-0000-4000-8000-000000000007"
-          ],
-          "workweek_id": "00000000-0000-4000-8000-000000000007",
-          "pay_period_key": "apr-1-15"
+          ]
         }
       ]
     },
