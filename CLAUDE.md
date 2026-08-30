@@ -1,5 +1,15 @@
 # CLAUDE.md — AI Matrx frontend
 
+## The six laws (SYNCED from common-docs/policies/the-campaign-pattern.md — edit there, never here)
+
+1. **Done means done — never on your own word.** Finished = verified by someone who did not build it, against the original vision, on the live surface, with real data. Tests feeding manufactured data to their author's own code prove nothing and are defects.
+2. **Attack before you trust.** Hole-poke plans before commitment; adversarially re-verify "done" before believing it.
+3. **Fix the class, never the instance.** Root cause → census the siblings → a guard proven failing-then-passing.
+4. **Nothing fails silently.** Every stand-in announces itself with a remedy; a screen is absent or honest — never dead, disabled-looking, or lying.
+5. **Think in platform primitives.** Never scope a capability to the feature that surfaced it; build it in the shared layer so every module and client app inherits it.
+6. **Opinions become knobs.** Behavioral choices are org-configurable settings; organizations decide — never agents, never hardcoded taste.
+
+
 **Why you're reading this: you are doing FRONTEND/UI work.** This file carries what a frontend agent needs to not make this repo's common mistakes: the stack, the conventions, the release process, the platform laws (one line + link each), and how to FIND a feature's docs. What does NOT belong here: feature details (each feature's `FEATURE.md` beside its code is its single source of truth), rule bodies that live in canonical docs, stories, or incident narratives. Charter + size budget (≤200 lines): `../common-docs/policies/claude-md-charter.md` (`common-docs` is a sibling repo; every `../common-docs/` pointer below is relative to this repo root). Before editing this file or any `FEATURE.md`: **invoke the `context-docs` skill**.
 
 The product: a Next.js no-code AI app builder. Desktop-first, mobile-responsive. Who it's for and what it is — read once, build toward always: USER `../common-docs/systems/ai-dream-platform/USER.md` (a brilliant, absolutely NON-technical Subject Matter Expert; THE MISMATCH RULE: the person inside a topic UI is usually not an expert in that topic) · core doctrine `../common-docs/systems/ai-dream-platform/ai-matrx-core.md` (expertise made reliable, reusable, accountable) · vocabulary `../common-docs/systems/platform/vocabulary/FEATURE.md` (the ONE lexicon — never coin or rename a product/system/role name).
