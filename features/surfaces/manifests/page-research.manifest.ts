@@ -40,6 +40,7 @@ export interface PageResearchPageContext {
   organization_id: string;
   organization_source: PageResearchOrganizationSource;
 }
+
 export interface PageResearchDraftSummary {
   topic_name: string;
   keywords: string[];

@@ -64,6 +64,7 @@ export interface KeywordResearchWindowProps {
    * opener already knows it. */
   siteId?: string | null;
 }
+
 export default function KeywordResearchWindow({
   isOpen,
   onClose,

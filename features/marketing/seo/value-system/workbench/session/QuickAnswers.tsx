@@ -74,6 +74,7 @@ export interface QuickAnswersSurfaceHandle {
   /** UI-only write twin; never submits an answer. */
   setActiveDimensionSlug: (value: unknown) => void;
 }
+
 interface QuickAnswersProps {
   siteId: string;
   siteLabel?: string | null;

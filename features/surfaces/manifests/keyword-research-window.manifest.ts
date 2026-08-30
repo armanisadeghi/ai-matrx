@@ -489,6 +489,7 @@ interface ProjectedSite {
   name: string | null;
   domain: string | null;
 }
+
 interface ProjectedKeyword {
   keyword_id: string;
   phrase: string;

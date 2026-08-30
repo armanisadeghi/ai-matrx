@@ -33,6 +33,7 @@ interface KeywordQuickAnswersWindowProps {
   /** Null lets the server pick the question worth asking next. */
   dimensionSlug?: string | null;
 }
+
 export default function KeywordQuickAnswersWindow({
   isOpen,
   onClose,
