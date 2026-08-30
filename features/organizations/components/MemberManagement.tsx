@@ -181,8 +181,8 @@ function OrganizationMembersPanel({
       }
       canAssignRole={(_member, role) => (role === "owner" ? isOwner : true)}
       isLastOwner={(member) => member.role === "owner" && ownerCount === 1}
-      onChangeRole={handleChangeRole}
-      onRemove={handleRemove}
+      onChangeRole={onChangeRole}
+      onRemove={onRemove}
       copyContainer={{
         noun: "organization",
         id: organizationId,
