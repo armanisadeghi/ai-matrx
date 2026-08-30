@@ -143,6 +143,17 @@ export const MARKETING_BRAND_SECTIONS = [
     group: "Marketing",
   },
   {
+    slug: "pr",
+    name: "Outreach",
+    titlePrefix: "Outreach",
+    description:
+      "Link and PR prospecting, sequenced contact, and earned-placement tracking.",
+    letter: "Ou",
+    iconName: "Send",
+    group: "Marketing",
+    subPath: "outreach",
+  },
+  {
     slug: "ads",
     name: "Advertising",
     titlePrefix: "Advertising",

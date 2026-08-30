@@ -79,7 +79,16 @@ const LIST_STATE = {
   filters: {},
 } as const;
 
-export function KeywordIntelligenceHub() {
+export function KeywordIntelligenceHub({
+  brandId,
+}: {
+  /**
+   * Scope the hub to one client's websites (the agency-model brand workspace
+   * mounts it as the brand's SEO overview). Omitted, it lists every readable
+   * site — the pre-restructure cross-portfolio behavior.
+   */
+  brandId?: string;
+} = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the shared
   // list hook's query-state type is the table's, not ours; this page needs only
   // the first page of sites by clicks, which is that type's default shape.
@@ -87,10 +96,10 @@ export function KeywordIntelligenceHub() {
 
   const rows = useMemo(
     () =>
-      [...(sites.data?.rows ?? [])].sort(
-        (a, b) => (b.gsc_clicks_28d ?? 0) - (a.gsc_clicks_28d ?? 0),
-      ),
-    [sites.data?.rows],
+      [...(sites.data?.rows ?? [])]
+        .filter((site) => !brandId || site.brand_id === brandId)
+        .sort((a, b) => (b.gsc_clicks_28d ?? 0) - (a.gsc_clicks_28d ?? 0)),
+    [sites.data?.rows, brandId],
   );
 
   return (
@@ -100,21 +109,22 @@ export function KeywordIntelligenceHub() {
           Keyword Intelligence
         </h1>
         <p className="text-xs text-muted-foreground">
-          Every screen that gives your keywords meaning, for every website you
-          run. Pick a website, then the job you came to do.
+          {brandId
+            ? "Every screen that gives this client's keywords meaning. Pick a website, then the job you came to do."
+            : "Every screen that gives your keywords meaning, for every website you run. Pick a website, then the job you came to do."}
         </p>
       </header>
 
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
         <Link
-          href="/marketing/approvals"
+          href={marketingRoutes.approvals()}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
         >
           <ClipboardCheck className="h-3.5 w-3.5" />
           Approvals — everything an agent proposed
         </Link>
         <Link
-          href={marketingRoutes.ranks()}
+          href={marketingRoutes.ranksRollup()}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
         >
           <Search className="h-3.5 w-3.5" />

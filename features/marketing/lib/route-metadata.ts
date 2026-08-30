@@ -138,13 +138,15 @@ function brandSectionIdentity(
   section: string,
   subPath: string | undefined,
 ): MarketingRouteIdentity | null {
-  const match = MARKETING_BRAND_SECTIONS.find((candidate) => {
-    const candidateSub =
-      "subPath" in candidate ? candidate.subPath : undefined;
-    return candidateSub
-      ? candidate.slug === section && candidateSub === subPath
-      : candidate.slug === section;
-  });
+  const candidates = MARKETING_BRAND_SECTIONS.filter(
+    (candidate) => candidate.slug === section,
+  );
+  // A sub-routed row (pr/outreach, intelligence/*) beats the section's own row.
+  const match =
+    candidates.find(
+      (candidate) =>
+        "subPath" in candidate && candidate.subPath && candidate.subPath === subPath,
+    ) ?? candidates.find((candidate) => !("subPath" in candidate && candidate.subPath));
   if (!match) return null;
   return {
     titlePrefix: match.titlePrefix,
@@ -279,7 +281,7 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
 
   const brandIdentity = brandSectionIdentity(
     section,
-    section === "intelligence" ? segments[3] : undefined,
+    section === "intelligence" || section === "pr" ? segments[3] : undefined,
   );
   if (brandIdentity) {
     return createMarketingMetadata(normalizedPath, brandIdentity);

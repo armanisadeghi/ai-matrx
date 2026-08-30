@@ -20,6 +20,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useBrandSites } from "@/features/marketing/data/hooks";
+import { KeywordIntelligenceHub } from "@/features/marketing/seo/hub/KeywordIntelligenceHub";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -94,6 +95,15 @@ export default function MarketingBrandSeoPage() {
             ))}
           </ul>
         )}
+
+        {(sites.data ?? []).length > 0 ? (
+          // The Keyword Intelligence hub — every keyword screen per website,
+          // scoped to this client. Re-doored here after the agency-model
+          // restructure orphaned its flat route (audit, 2026-08-30).
+          <div className="rounded-lg border border-border bg-card">
+            <KeywordIntelligenceHub brandId={brand.id} />
+          </div>
+        ) : null}
       </div>
     </div>
   );
