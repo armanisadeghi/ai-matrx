@@ -633,6 +633,11 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-30 — Pattern Patrol P13: the brand Identity website switcher now
+  composes the shared `CreatablePicker` instead of a closed dropdown. A typed
+  website address writes through the existing `useCreateSite` / `web.create_site`
+  path, refreshes the brand-site query, selects the returned site immediately,
+  and exposes both the created-site toast door and the brand Websites manager.
 - 2026-08-28 — **THE AGENCY-MODEL RESTRUCTURE.** The whole `/marketing` tree
   rebuilt around agency plane + client workspace (`/marketing/[brandId]/…`,
   dual-mode slug/UUID segments, UUID 308s to the key address). Site screens

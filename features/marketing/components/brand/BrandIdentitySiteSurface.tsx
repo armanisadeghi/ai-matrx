@@ -16,21 +16,19 @@
  * offset lives here too, matching `MarketingSiteLayoutClient`.
  */
 
-import { useMemo, type ReactNode } from "react";
+import { useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Globe2 } from "lucide-react";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import {
+  CreatablePicker,
+  type CreatableOption,
+} from "@/components/ui/creatable-picker";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useBrandSites } from "@/features/marketing/data/hooks";
+import { useBrandSites, useCreateSite } from "@/features/marketing/data/hooks";
 import { useSiteCrawlActivity } from "@/features/marketing/data/useSiteCrawlActivity";
 import { MarketingSiteProvider } from "@/features/marketing/components/site/MarketingSiteContext";
 import { MarketingSiteSurfaceProvider } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -40,33 +38,80 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { cn } from "@/lib/utils";
+import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
+import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 
-export function BrandIdentitySiteSurface({ children }: { children: ReactNode }) {
+export function BrandIdentitySiteSurface({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const brand = useMarketingBrand();
+  const router = useRouter();
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
+  const [isNavigating, startTransition] = useTransition();
   const requested = searchParams.get("site");
   const sites = useBrandSites(brand.id);
-  const rows = useMemo(() => sites.data ?? [], [sites.data]);
-
-  const site = useMemo(() => {
-    if (rows.length === 0) return null;
-    if (requested) {
-      const match = rows.find(
+  const createSite = useCreateSite();
+  const rows = sites.data ?? [];
+  const requestedSite = requested
+    ? rows.find(
         (row) => row.id === requested || marketingSeg(row) === requested,
-      );
-      if (match) return match;
+      )
+    : null;
+  const site = requestedSite ?? rows[0] ?? null;
+
+  const options: CreatableOption[] = rows.map((row) => ({
+    value: row.id,
+    label: row.name ?? row.domain,
+    keywords: `${row.domain} ${row.root_url}`,
+    hint: row.domain,
+  }));
+
+  const selectSite = (siteId: string) => {
+    const selected = rows.find((row) => row.id === siteId);
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("site", selected ? marketingSeg(selected) : siteId);
+    startTransition(() => router.push(`${pathname}?${next.toString()}`));
+  };
+
+  const createWebsite = async (typed: string): Promise<string | null> => {
+    try {
+      const parsed = normalizeWebsiteUrl(typed);
+      const created = await createSite.mutateAsync({
+        organizationId: brand.organizationId,
+        name: parsed.hostname,
+        rootUrl: parsed.toString(),
+        domain: parsed.hostname.toLowerCase(),
+        brandId: brand.id,
+      });
+      // useCreateSite invalidates the full Marketing root; await this scoped
+      // read too so the newly selected id cannot momentarily fall back to the
+      // brand's first website while the active picker is still stale.
+      await sites.refetch();
+      toast.success(`Created “${created.name ?? created.domain}”`, {
+        description: `It is selected here and lives with ${brand.name}'s websites.`,
+        action: toastDoor("web_site", created.id, { label: "Open website" }),
+      });
+      return created.id;
+    } catch (error) {
+      toast.error("Could not add website", {
+        description: extractErrorMessage(error),
+      });
+      return null;
     }
-    return rows[0] ?? null;
-  }, [rows, requested]);
+  };
 
   // Hooks run unconditionally; an empty id simply keeps the subscription idle.
   const crawlActivity = useSiteCrawlActivity(site?.id ?? "");
 
   if (sites.isPending) return <LoadingSurface label="Loading websites…" />;
   if (sites.isError) {
-    return <QueryError error={sites.error} onRetry={() => void sites.refetch()} />;
+    return (
+      <QueryError error={sites.error} onRetry={() => void sites.refetch()} />
+    );
   }
 
   if (!site) {
@@ -99,46 +144,39 @@ export function BrandIdentitySiteSurface({ children }: { children: ReactNode }) 
       }}
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
-        {rows.length > 1 ? (
+        {rows.length > 0 ? (
           <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card/40 px-3 py-1.5">
             <span className="text-xs text-muted-foreground">Website</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 gap-1.5 text-xs"
-                >
-                  <Globe2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="max-w-[16rem] truncate">
-                    {site.name ?? site.domain}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[14rem]">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  {brand.name} websites
-                </DropdownMenuLabel>
-                {rows.map((row) => (
-                  <DropdownMenuItem
-                    key={row.id}
-                    asChild
-                    className={cn(row.id === site.id && "bg-accent/60")}
-                  >
-                    <Link
-                      href={`${pathname}?site=${encodeURIComponent(marketingSeg(row))}`}
-                      className="truncate"
-                    >
-                      {row.name ?? row.domain}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <CreatablePicker
+              value={site.id}
+              options={options}
+              onSelect={selectSite}
+              onCreate={createWebsite}
+              noun="website"
+              placeholder="Choose a website"
+              searchPlaceholder="Search or type a website address…"
+              emptyLabel="No website matches that address."
+              disabled={isNavigating || createSite.isPending}
+              loading={sites.isFetching}
+              ariaLabel={`Website for ${brand.name}`}
+              className="max-w-[18rem]"
+              renderSelected={
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <Globe2 className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{site.name ?? site.domain}</span>
+                </span>
+              }
+              manageAction={{
+                label: `Manage ${brand.name} websites`,
+                href: marketingRoutes.brandWebsites(brand.seg),
+              }}
+            />
           </div>
         ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
-          <MarketingSiteSurfaceProvider>{children}</MarketingSiteSurfaceProvider>
+          <MarketingSiteSurfaceProvider>
+            {children}
+          </MarketingSiteSurfaceProvider>
         </div>
       </div>
     </MarketingSiteProvider>
