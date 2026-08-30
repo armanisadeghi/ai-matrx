@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P13",
   "runId": "20260830T083100Z",
-  "state": "certified",
-  "updatedAt": "2026-08-30T08:48:52.128Z",
-  "summary": "Mobile-safe scope owner-door candidate independently certified",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T08:49:28.489Z",
+  "summary": "Certified scope candidate queued for fast integration",
   "source": "20260830T083100Z.json",
-  "eventHash": "6ea1c474b28db7d16a8bb149a2a5081e5fa2a0369debe6be1d369abd6e2c4849"
+  "eventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd"
 }

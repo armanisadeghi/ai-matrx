@@ -103,6 +103,22 @@
       },
       "previousEventHash": "0225abac04503cf7baa11de5ca272c0f9dd5a884d8a320464b7ee2f6a6fba803",
       "eventHash": "6ea1c474b28db7d16a8bb149a2a5081e5fa2a0369debe6be1d369abd6e2c4849"
+    },
+    {
+      "sequence": 8,
+      "state": "delivery_queued",
+      "at": "2026-08-30T08:49:28.489Z",
+      "actor": "root",
+      "summary": "Certified scope candidate queued for fast integration",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P13/20260830T083100Z"
+      ],
+      "delivery": {
+        "candidateSha": "562eaed419b332de4a1cf31136642fcf1e9248ae",
+        "preservedRef": "refs/heads/patrol-runs/P13/20260830T083100Z"
+      },
+      "previousEventHash": "6ea1c474b28db7d16a8bb149a2a5081e5fa2a0369debe6be1d369abd6e2c4849",
+      "eventHash": "a86e1f4c5d015c965d14f92d0a58a0f4949b04a0bc93b8f7555f95c92e041dcd"
     }
   ]
 }
