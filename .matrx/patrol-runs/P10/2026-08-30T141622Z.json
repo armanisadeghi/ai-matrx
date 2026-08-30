@@ -188,6 +188,48 @@
       ],
       "previousEventHash": "c888dbe76416d57e0e2ede1966d1670ccabcfa7103ccc9e0559a36064d507b7d",
       "eventHash": "9297ed6358c865e8f3dbde0dcdd254e603a8e74171127a885e34a64ee30d0d64"
+    },
+    {
+      "sequence": 13,
+      "state": "rejected",
+      "at": "2026-08-30T14:45:49.244Z",
+      "actor": "/root/p10_certifier",
+      "summary": "REJECTED: candidate dd870bc58d preserved corrected ancestry but published the stale prior authority tree.",
+      "evidence": [
+        "authority tree restored rejected product bytes",
+        "empty-commit test failed to exercise product-tree preservation"
+      ],
+      "previousEventHash": "9297ed6358c865e8f3dbde0dcdd254e603a8e74171127a885e34a64ee30d0d64",
+      "eventHash": "652a4f8b3a0cbaee58a20a44c8feba6dc022c236a0c479b97e3f9aec010347b6"
+    },
+    {
+      "sequence": 14,
+      "state": "fixing",
+      "at": "2026-08-30T14:45:50.413Z",
+      "actor": "/root",
+      "summary": "Corrected authority publication to build from candidate bytes and added a non-empty product-fixture assertion.",
+      "evidence": [
+        "git-authority read-tree:candidateSha",
+        "corrected product fixture survives authority publication"
+      ],
+      "previousEventHash": "652a4f8b3a0cbaee58a20a44c8feba6dc022c236a0c479b97e3f9aec010347b6",
+      "eventHash": "a483be97c2903414d880ad35ba112d500976252b10fa845b0fe0e172d386dd6b"
+    },
+    {
+      "sequence": 15,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:45:51.787Z",
+      "actor": "/root",
+      "summary": "Replacement candidate d3a4cd79b6 is integrated; recording escaped delivery before recertification.",
+      "evidence": [
+        "candidate:d3a4cd79b655a0ba0afe3b24a470a0d472fc2952",
+        "origin/main-ancestor:yes"
+      ],
+      "blocker": {
+        "prerequisite": "Exact-candidate recertification"
+      },
+      "previousEventHash": "a483be97c2903414d880ad35ba112d500976252b10fa845b0fe0e172d386dd6b",
+      "eventHash": "71dee340a49f12f3cfec698a97e3a0362e9c3469f71e13e3506c4bc05aade7d0"
     }
   ]
 }
