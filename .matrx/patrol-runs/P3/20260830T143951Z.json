@@ -44,6 +44,36 @@
       ],
       "previousEventHash": "7b5b15af75ac5338700cbf67a95386db7250c1746314f1b540ea2e6ccd0286c2",
       "eventHash": "a2febc6939d08c411bd9a1dbd645615922600695656bfe96998f2a65ae721fd6"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:41:32.259Z",
+      "actor": "root",
+      "summary": "Canonical preview lost the proposed hover repair bytes after a concurrent semantic rollback",
+      "evidence": [
+        "all 15 owned blobs differ from candidate and restore hover-only opacity behavior",
+        "no candidate-caused defect; exact candidate remains preserved remotely"
+      ],
+      "blocker": {
+        "prerequisite": "reapply repair onto current canonical main and serve those bytes in the canonical preview",
+        "preservedRef": "refs/remotes/origin/patrol/P3/2026-08-30-hover-repair-unit-1",
+        "preservedSha": "6eb60cb7d51bb6437fd101c7168440260c38596c"
+      },
+      "previousEventHash": "a2febc6939d08c411bd9a1dbd645615922600695656bfe96998f2a65ae721fd6",
+      "eventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:41:32.897Z",
+      "actor": "root",
+      "summary": "Resume same bounded hover repair on current canonical main",
+      "evidence": [
+        "do not certify stale candidate; produce a new exact candidate after reapplication"
+      ],
+      "previousEventHash": "1b8b26de2dcc80bf812f435a6acd5c2b7853ae2710ccec9dd86880f9ea91640a",
+      "eventHash": "4f68c00faf1414e3019c4ed26d72932fb524b51ebc0085c9c6fde7a087d412bf"
     }
   ]
 }

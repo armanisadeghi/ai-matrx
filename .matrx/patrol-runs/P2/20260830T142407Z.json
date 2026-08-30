@@ -30,6 +30,47 @@
       ],
       "previousEventHash": "c7063291c0fe6a7194ad4368f42abab71cb8c7f9da83e44c9b361de9dd6fec85",
       "eventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:35:14.486Z",
+      "actor": "codex-p2-eradication",
+      "summary": "Exact integrated candidate 01e441fdf958ca20cafd5497cc8e007e41d77f70 is under independent adversarial certification.",
+      "evidence": [
+        "Candidate is an ancestor of origin/main and preserves the site action authority, EntityListPage adoption, and shared sortable-false contract.",
+        "Focused Jest 9/9, focused ESLint, diff-check, and full type-check passed from the canonical checkout.",
+        "In-app Browser runtime is unavailable in this task; managed preview remains healthy at canonical port 3001, so visual proof is infrastructure-limited and cannot reject a valid candidate."
+      ],
+      "previousEventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8",
+      "eventHash": "47c5d6a605cac6befa4d46cbcbec3a46e8d806946b5c6b9d4f4c7c3465049f88"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-30T14:42:10.159Z",
+      "actor": "codex-p2-certifier",
+      "summary": "CERTIFIED: canonical /marketing/sites EntityListPage adoption preserves existing behavior and one site action authority.",
+      "evidence": [
+        "Exact-SHA isolated archive; no shared-checkout edits.",
+        "Full exact-SHA type-check passed; focused ESLint passed; 4 Jest suites and 9 tests passed.",
+        "Static trace verified server paging/search/name/status filters, eight columns, Connections non-sortability, mobile/table presentation, editor and site_editor_draft, copy payloads, seven shared actions, governed delete, lazy quick view, and canonical routes.",
+        "One broader table test failure belongs to unrelated agent-copy aria-label changes in the mixed integration commit and is excluded by baseline delta."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "01e441fdf958ca20cafd5497cc8e007e41d77f70",
+        "certifierTaskId": "/root/site_list_certifier",
+        "checks": [
+          "pnpm type-check: PASS",
+          "focused Jest: 4 suites / 9 tests PASS",
+          "focused ESLint: PASS",
+          "owned dead-end detector: clean",
+          "adversarial static behavior trace: PASS"
+        ]
+      },
+      "previousEventHash": "47c5d6a605cac6befa4d46cbcbec3a46e8d806946b5c6b9d4f4c7c3465049f88",
+      "eventHash": "139df74784a5c4a8b2802124c5928b44ec836177d1fefb3b37eb54ef4093fb88"
     }
   ]
 }

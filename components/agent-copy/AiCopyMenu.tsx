@@ -227,6 +227,7 @@ export function AiCopyMenu({
   });
 
   const buttonCls = cn(
+    "shrink-0",
     grouped
       ? copyActionSegmentClass(size, appearance)
       : size === "xs"

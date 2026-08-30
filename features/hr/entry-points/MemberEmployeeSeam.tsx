@@ -25,13 +25,20 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { IdCard, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { fetchHrMemberEmployeeLinks } from "@/features/hr/service";
 import { hrEmployeeHref, hrPeopleNewHref } from "@/features/hr/routes";
+import type { PanelMember } from "@/components/membership/MembersPanel";
 
 type SeamLink = {
   employeeId: string | null;
@@ -48,6 +55,65 @@ type SeamValue = {
 };
 
 const SeamContext = createContext<SeamValue | null>(null);
+
+type MemberCopyDetails = NonNullable<PanelMember["copyDetails"]>;
+
+/**
+ * The copy twin of MemberEmployeeSeam. Hosts enrich their neutral PanelMember
+ * rows with the same HR relationship fact the visible row renders.
+ */
+export function useMemberEmployeeCopyDetails() {
+  const seam = useContext(SeamContext);
+
+  return (
+    userId: string,
+    displayName?: string | null,
+  ): MemberCopyDetails | undefined => {
+    if (!seam || seam.absent) return undefined;
+    const link = seam.byUserId[userId];
+    if (!link) return undefined;
+
+    if (link.employeeId) {
+      const href = hrEmployeeHref(link.employeeId, null, { org: seam.orgRef });
+      return {
+        fields: {
+          employee_relationship: "linked",
+          employee_id: link.employeeId,
+          employee_name: link.displayName,
+          employee_record_href: href,
+        },
+        summary: [
+          ["Employee", link.displayName || displayName || "Linked"],
+          ["Employee record", href],
+        ],
+      };
+    }
+
+    if (link.markedNotEmployee) {
+      return {
+        fields: { employee_relationship: "not_an_employee" },
+        summary: [["Employee", "Not an employee"]],
+      };
+    }
+
+    if (!seam.canLink) return undefined;
+    const href = hrPeopleNewHref({
+      org: seam.orgRef,
+      userId,
+      name: displayName ?? null,
+    });
+    return {
+      fields: {
+        employee_relationship: "not_linked",
+        employee_link_href: href,
+      },
+      summary: [
+        ["Employee", "Not linked"],
+        ["Link to employee", href],
+      ],
+    };
+  };
+}
 
 export function HrMemberEmployeeSeamProvider({
   organizationId,
@@ -139,7 +205,9 @@ export function MemberEmployeeSeam({
         size="sm"
         className="h-8 gap-1.5 px-2 text-xs"
       >
-        <Link href={hrEmployeeHref(link.employeeId, null, { org: seam.orgRef })}>
+        <Link
+          href={hrEmployeeHref(link.employeeId, null, { org: seam.orgRef })}
+        >
           <IdCard className="h-3.5 w-3.5" />
           Employee record
         </Link>
@@ -150,7 +218,9 @@ export function MemberEmployeeSeam({
   if (link.markedNotEmployee) {
     // Somebody decided. Say so once; do not offer the action again.
     return (
-      <span className="px-2 text-xs text-muted-foreground">Not an employee</span>
+      <span className="px-2 text-xs text-muted-foreground">
+        Not an employee
+      </span>
     );
   }
 

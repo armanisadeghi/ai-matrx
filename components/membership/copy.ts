@@ -76,6 +76,7 @@ export function memberSummary(member: PanelMember): string {
     ["Role", member.role],
     ["Joined", new Date(member.joinedAt).toLocaleDateString()],
     ["User id", member.userId],
+    ...(member.copyDetails?.summary ?? []),
   ]);
 }
 
@@ -87,6 +88,7 @@ export function memberRow(member: PanelMember): Record<string, unknown> {
     email: member.user?.email ?? "",
     role: member.role,
     joined_at: member.joinedAt,
+    ...(member.copyDetails?.fields ?? {}),
   };
 }
 

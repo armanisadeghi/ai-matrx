@@ -49,6 +49,8 @@ export interface PatrolReconciliation {
   candidateSha: string;
   escapedEventHash: string;
   checks: string[];
+  outcome?: "exact_candidate_certified" | "exact_candidate_rejected";
+  replacementCandidateSha?: string;
 }
 
 export interface PatrolRunEvent {
@@ -244,6 +246,52 @@ function validateEventRequirements(
     if (!escaped) {
       throw new Error("reconciliation must name the exact prior escaped-delivery event and candidate");
     }
+    const outcome = reconciliation.outcome ?? "exact_candidate_certified";
+    if (outcome === "exact_candidate_rejected") {
+      nonEmpty(
+        reconciliation.replacementCandidateSha ?? "",
+        "rejected reconciliation replacement candidate SHA",
+      );
+      const certifying = priorEvents.find(
+        (prior) =>
+          prior.sequence > escaped.sequence &&
+          prior.state === "certifying" &&
+          prior.evidence.includes(`candidate:${reconciliation.candidateSha}`),
+      );
+      const rejected = priorEvents.find(
+        (prior) =>
+          certifying &&
+          prior.sequence > certifying.sequence &&
+          prior.state === "rejected",
+      );
+      if (!certifying || !rejected) {
+        throw new Error(
+          "rejected reconciliation requires later exact-candidate certification attempt and rejection",
+        );
+      }
+      const replacementCertified = priorEvents.find(
+        (prior) =>
+          prior.sequence > rejected.sequence &&
+          prior.state === "certified" &&
+          prior.certification?.candidateSha ===
+            reconciliation.replacementCandidateSha,
+      );
+      const replacementDelivered = priorEvents.find(
+        (prior) =>
+          replacementCertified &&
+          prior.sequence > replacementCertified.sequence &&
+          prior.state === "delivered" &&
+          prior.delivery?.candidateSha ===
+            reconciliation.replacementCandidateSha,
+      );
+      if (!replacementCertified || !replacementDelivered) {
+        throw new Error(
+          "rejected reconciliation requires a later certified and delivered replacement candidate",
+        );
+      }
+      return;
+    }
+
     const certified = priorEvents.find(
       (prior) =>
         prior.sequence > escaped.sequence &&
