@@ -551,10 +551,12 @@ export type HrRestrictedNote = {
   /** What a non-owner may be given instead — often nothing at all. */
   redacted_summary?: string | null;
   /**
-   * Usually NULL. `hr.restricted_note` names its person `author_employment_id`,
-   * and `hr._project_row` only resolves a display name off
-   * `subject_employment_id` / `employment_id` — so the door does not currently
-   * name the author. Rendered as absent rather than as a uuid.
+   * The note's WRITER, resolved by the door. `hr.restricted_note` names its person
+   * `author_employment_id`, and since hr_l3_120 `hr._project_row` has an author
+   * branch beside its subject one, so the row arrives carrying `author_name` —
+   * always through `hr._subject_display_name`, which applies the viewer's own
+   * directory permissions. NULL when this viewer may not see that person's name,
+   * and rendered as absent rather than as a uuid.
    */
   author_name?: string | null;
   created_at?: string | null;

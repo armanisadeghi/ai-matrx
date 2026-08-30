@@ -427,6 +427,14 @@ export async function fetchHrIncidentParties(
  * through the org. Asking for them here, as their own audited list, is what
  * keeps that true: the door drops every row this viewer may not have, and what
  * comes back is exactly their lane.
+ *
+ * THE BYLINE. `hr.restricted_note` names its person `author_employment_id` — the
+ * WRITER, not the subject — and `hr._project_row` used to resolve a display name
+ * off `subject_employment_id` / `employment_id` only, so every note rendered
+ * unsigned. hr_l3_120 gave the projection its own author branch, through the same
+ * `hr._subject_display_name` door the subject branch uses: `author_name` arrives
+ * on the row, and it is NULL — never a uuid — when the viewer may not see that
+ * person's name, which the panel renders as no byline at all.
  */
 export async function fetchHrCaseRestrictedNotes(
   organizationId: string | null,
@@ -456,7 +464,7 @@ export async function fetchHrCaseRestrictedNotes(
       title: (row.title as string | null) ?? null,
       body: (row.body as string | null) ?? null,
       redacted_summary: (row.redacted_summary as string | null) ?? null,
-      author_name: (row.subject_name as string | null) ?? null,
+      author_name: (row.author_name as string | null) ?? null,
       created_at: (row.created_at as string | null) ?? null,
     })),
   };
