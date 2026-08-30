@@ -90,8 +90,7 @@ features/html-pages/
 │   ├── README.md                          # Components documentation
 │   └── SIMPLIFIED-ARCHITECTURE.md         # Architecture details
 ├── css/
-│   ├── wordpress-styles.ts                # Single source of truth for CSS
-│   └── matrx-wordpress-styles-example.css # Example CSS file
+│   └── matrx-wordpress-styles-example.css # Static example only — NOT the live sheet
 ├── hooks/
 │   ├── useHTMLPages.js                    # Database operations hook
 │   └── useHtmlPreviewState.ts             # State management hook
@@ -436,27 +435,31 @@ getSEORecommendation(text: string, field: string): string
 
 ### markdown-wordpress-utils.ts
 
-Markdown to HTML conversion:
-
 ```typescript
-// Convert markdown to WordPress HTML with matrx- classes
-markdownToWordPressHTML(markdown: string, includeThinking?: boolean): string
-
 // Format JSON for clipboard
-formatJsonForClipboard(data: any): string
+formatJsonForClipboard(data: unknown): string
 ```
 
-### wordpress-styles.ts
+### Conversion and CSS live in `@ai-matrx/print` (since 0.3.0)
 
-**Single source of truth** for CSS:
+The markdown→HTML converter and the stylesheet used to be
+`markdownToWordPressHTML` and `wordpress-styles.ts` in this feature. Both now
+ship in the package as its default markdown pipeline — they were the required
+injections `@ai-matrx/print/pdf` asked every host to supply, which is why this
+repo ended up with three converters.
 
 ```typescript
-// Get CSS synchronously
-getWordPressCSS(): string
+import { markdownToHtml, getMarkdownStylesheet, removeThinkingContent } from "@ai-matrx/print/markdown";
 
-// Load CSS asynchronously (with fallback)
-loadWordPressCSS(): Promise<string>
+markdownToHtml(markdown, { includeThinking });   // was markdownToWordPressHTML
+getMarkdownStylesheet();                          // was getWordPressCSS / loadWordPressCSS (now sync)
 ```
+
+Brand colours are host-owned tokens:
+`getMarkdownStylesheet({ tokens: ":root{--matrx-print-accent:#0f766e}" })`.
+Fix conversion or styling IN THE PACKAGE (THE SAME-SESSION LAW) — never by
+re-adding a local converter here. `css/matrx-wordpress-styles-example.css` is a
+static example kept for reference; it is not loaded by anything.
 
 ---
 
