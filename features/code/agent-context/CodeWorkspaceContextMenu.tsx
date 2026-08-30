@@ -33,7 +33,6 @@ import {
 import type { StandaloneCodeEditor } from "../editor/MonacoEditor";
 import {
   buildCodeWorkspaceContextData,
-  codeEditorLaunchScope,
   CODE_WORKSPACE_CONTEXT_MENU_PROPS,
   summarizeOpenTabs,
   type CodeSelectionRange,
@@ -245,10 +244,12 @@ export function CodeWorkspaceContextMenu({
   };
 
   // `getContextData()` already produces a complete, live scope (baselines +
-  // declared SurfaceValues + `vsc_*`); `codeEditorLaunchScope` drops the
-  // menu-only `contextFilter` key before it reaches the agent.
+  // declared SurfaceValues + `vsc_*`). Monaco isn't a DOM textarea, so this is
+  // returned directly instead of routing through
+  // `buildApplicationScopeFromMenuContext` (which would clobber the live
+  // text-neighbor values computed from the editor model).
   const getApplicationScope = (): ApplicationScope =>
-    codeEditorLaunchScope(getContextData()) as ApplicationScope;
+    getContextData() as ApplicationScope;
 
   const editorExtraSections = createCodeEditorExtraSections({
     getEditor: () => editorRef.current,

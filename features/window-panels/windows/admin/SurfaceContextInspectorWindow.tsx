@@ -58,9 +58,6 @@ export interface SurfaceContextInspectorWindowProps {
   preferRuntime?: boolean;
 }
 
-/** Menu-control keys that ride on the scope but are not surface values. */
-const NON_VALUE_KEYS = new Set(["contextFilter"]);
-
 type TabId = string;
 
 // ─── Value helpers ────────────────────────────────────────────────────────────
@@ -119,7 +116,7 @@ function useInspectorModel(
   const undeclared = useMemo(
     () =>
       Object.keys(scope).filter(
-        (k) => !declaredNames.has(k) && !NON_VALUE_KEYS.has(k),
+        (k) => !declaredNames.has(k),
       ),
     [scope, declaredNames],
   );

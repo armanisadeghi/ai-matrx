@@ -155,13 +155,12 @@ describe("resolveApplicationScope", () => {
     expect(scope.selection).toBe("whole body");
   });
 
-  it("never leaks the internal keys (contextFilter, __entity) into the scope", () => {
+  it("never leaks the internal __entity key into the scope", () => {
     const scope = resolveApplicationScope({
-      contextData: { contextFilter: "x", __entity: { id: "e" }, keep: "yes" },
+      contextData: { __entity: { id: "e" }, keep: "yes" },
       selectedText: "",
       selectionRange: null,
     });
-    expect("contextFilter" in scope).toBe(false);
     expect("__entity" in scope).toBe(false);
     expect(scope.keep).toBe("yes");
   });

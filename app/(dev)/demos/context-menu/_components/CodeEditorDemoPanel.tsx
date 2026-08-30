@@ -5,7 +5,6 @@
  * menu exactly like `CodeWorkspaceContextMenu` on `/code`:
  *   - sourceFeature / surfaceName / isEditable / enabledPlacements
  *   - full `vsc_*` contextData via `buildCodeWorkspaceContextData`
- *   - contextFilter: "code-editor" (excludes general shortcuts)
  */
 
 import { useCallback, useRef, useState } from "react";
@@ -30,14 +29,6 @@ export interface CodeEditorDemoPanelProps {
   title: string;
   description: React.ReactNode;
   initialContent?: string;
-  /**
-   * `production` — contextFilter: "code-editor" (matches `/code`).
-   * `explicit` — omits contextFilter. Phase 6.7 removed the
-   * addedContexts/excludedContexts slug filters entirely (availability is
-   * derived from what the surface can read), so this mode now differs from
-   * `production` only by not setting the (already inert) contextFilter key.
-   */
-  contextFilterMode?: "production" | "explicit";
   /** Extra props merged onto the production code-editor menu baseline. */
   menuOverrides?: Partial<EditableContextMenuProps>;
   minHeightClass?: string;
@@ -47,7 +38,6 @@ export function CodeEditorDemoPanel({
   title,
   description,
   initialContent = DEMO_CODE_EDITOR_INITIAL_CONTENT,
-  contextFilterMode = "production",
   menuOverrides,
   minHeightClass = "min-h-[180px]",
 }: CodeEditorDemoPanelProps) {
@@ -74,22 +64,17 @@ export function CodeEditorDemoPanel({
     caretIndex,
   );
 
-  const contextData = buildCodeWorkspaceContextData(
-    {
-      fullContent: content,
-      selectedText,
-      language: DEMO_CODE_EDITOR_LANGUAGE,
-      filePath: DEMO_CODE_EDITOR_FILE_PATH,
-      currentLine,
-      currentColumn,
-      lineCount,
-      activeTabDiagnostics: DEMO_CODE_EDITOR_DIAGNOSTICS,
-      allDiagnostics: DEMO_CODE_EDITOR_ALL_DIAGNOSTICS,
-    },
-    {
-      contextFilter: contextFilterMode === "production" ? "code-editor" : null,
-    },
-  );
+  const contextData = buildCodeWorkspaceContextData({
+    fullContent: content,
+    selectedText,
+    language: DEMO_CODE_EDITOR_LANGUAGE,
+    filePath: DEMO_CODE_EDITOR_FILE_PATH,
+    currentLine,
+    currentColumn,
+    lineCount,
+    activeTabDiagnostics: DEMO_CODE_EDITOR_DIAGNOSTICS,
+    allDiagnostics: DEMO_CODE_EDITOR_ALL_DIAGNOSTICS,
+  });
 
 
   const getApplicationScope = useCallback(() => {

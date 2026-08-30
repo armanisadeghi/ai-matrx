@@ -3,14 +3,14 @@
 /**
  * Context Menu v3 — Scenario Matrix
  *
- * Five live panels, each pinning a different combination of:
+ * Four live panels, each pinning a different combination of:
  *   - derived availability (requirement-gate) + placementMode layout
  *   - placementMode ("show" | "hide" | "disable" per placement)
  *   - isEditable vs read-only
  *   - contextData shape (content, context, custom keys)
  *
  * Use this page to verify behavioral deltas at a glance:
- *   1. Correct shortcuts show up given a context filter configuration
+ *   1. Correct shortcuts show up given the surface's derived availability
  *   2. Hidden placements really disappear, disabled ones are greyed out
  *   3. A launched shortcut receives the expected applicationScope
  *      (selection, text_before, text_after, content, context, custom keys)
@@ -37,12 +37,9 @@ export default function ContextMenuScenariosPage() {
     `Panel 3 — read-only block.\nContent Blocks and Quick Actions are HIDDEN here.\nOnly the AI-action submenus for general + content-editor remain.`,
   );
 
-  // ── Panel 4: same shape as panel 1, no contextFilter key ──────────────
-  const restrictiveInitial = `// Same /code context shape as panel 1, but general shortcuts\n// are no longer excluded by slugs at all — availability is derived.\nfunction greet(name: string): number {\n  return "Hello, " + name;\n}\n`;
-
-  // ── Panel 5: Showcase of "disable" mode ─────────────────────────────────
+  // ── Panel 4: Showcase of "disable" mode ─────────────────────────────────
   const [showcaseValue, setShowcaseValue] = useState(
-    `Panel 5 — disable showcase.\nContent Blocks are DISABLED (greyed, unclickable).\nOrganization Tools are also DISABLED.\nAI Actions remain fully enabled.`,
+    `Panel 4 — disable showcase.\nContent Blocks are DISABLED (greyed, unclickable).\nOrganization Tools are also DISABLED.\nAI Actions remain fully enabled.`,
   );
   const showcaseRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -63,9 +60,8 @@ export default function ContextMenuScenariosPage() {
             <>
               Mirrors <code>CodeWorkspaceContextMenu</code>:{" "}
               <code>surfaceName=matrx-user/code-editor</code>,{" "}
-              <code>contextFilter=code-editor</code>, full <code>vsc_*</code>{" "}
-              keys, AI Actions + org/user tools only (no content blocks / quick
-              actions).
+              full <code>vsc_*</code> keys, AI Actions + org/user tools only (no
+              content blocks / quick actions).
             </>
           }
           minHeightClass="min-h-[220px]"
@@ -134,26 +130,10 @@ export default function ContextMenuScenariosPage() {
           </NonEditableContextMenu>
         </section>
 
-        {/* ── 4 ── No contextFilter key on contextData */}
-        <CodeEditorDemoPanel
-          title="4. Code editor (explicit filter API)"
-          description={
-            <>
-              Identical to panel 1 but sets no <code>contextFilter</code> key.
-              Since Phase 6.7 both panels offer the SAME items: availability is
-              derived from the keys this surface can read, not from slugs.
-              Still full <code>vsc_*</code> shape.
-            </>
-          }
-          initialContent={restrictiveInitial}
-          contextFilterMode="explicit"
-          minHeightClass="min-h-[220px]"
-        />
-
-        {/* ── 5 ── Disable showcase */}
+        {/* ── 4 ── Disable showcase */}
         <section className="flex flex-col gap-2">
           <header>
-            <h2 className="text-sm font-semibold">5. Disable showcase</h2>
+            <h2 className="text-sm font-semibold">4. Disable showcase</h2>
             <p className="text-[11px] text-muted-foreground">
               placements:{" "}
               <code>{`{ content-block: 'disable', organization-tool: 'disable' }`}</code>
@@ -171,7 +151,7 @@ export default function ContextMenuScenariosPage() {
             }}
             contextData={{
               content: showcaseValue,
-              context: "panel-5-showcase",
+              context: "panel-4-showcase",
             }}
             scope="user"
           >

@@ -122,7 +122,6 @@ function baseName(path: string): string {
  */
 export function buildCodeWorkspaceContextData(
   args: BuildCodeWorkspaceContextDataArgs,
-  options?: { contextFilter?: string | null },
 ): Record<string, unknown> {
   const {
     fullContent,
@@ -146,11 +145,6 @@ export function buildCodeWorkspaceContextData(
     filesystemLabel,
     surroundContext,
   } = args;
-
-  const contextFilter =
-    options && "contextFilter" in options
-      ? options.contextFilter
-      : "code-editor";
 
   const hasSelection = selectedText.length > 0;
   const hasFile = filePath.length > 0 || fullContent.length > 0;
@@ -204,7 +198,6 @@ export function buildCodeWorkspaceContextData(
 
   return {
     ...surfaceScope,
-    ...(contextFilter ? { contextFilter } : {}),
 
     // Cross-editor `vsc_*` contract — see features/code-editor/FEATURE.md.
     vsc_active_file_path: filePath,
@@ -218,25 +211,6 @@ export function buildCodeWorkspaceContextData(
     vsc_line_count: lineCount,
     vsc_has_selection: hasSelection,
   };
-}
-
-/**
- * The launch-time `ApplicationScope` for a code-editor menu: the full
- * `contextData` minus menu-control keys that are not scope values.
- *
- * `contextFilter` belongs on `contextData` (it tells the menu which shortcuts
- * to show) but must NOT reach the agent — the legacy resolver's pass-3 would
- * otherwise pass it through as an ad-hoc context entry. Monaco isn't a DOM
- * textarea, so wrappers return this directly instead of routing through
- * `buildApplicationScopeFromMenuContext` (which would clobber the live
- * text-neighbor values it computes from the editor model).
- */
-export function codeEditorLaunchScope(
-  contextData: Record<string, unknown>,
-): Record<string, unknown> {
-  const scope = { ...contextData };
-  delete scope.contextFilter;
-  return scope;
 }
 
 /** Shared menu props for the `/code` workspace context menu wrapper. */

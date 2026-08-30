@@ -19,7 +19,6 @@ import React, { useState, useEffect } from 'react';
 import type { editor } from 'monaco-editor';
 import {
   buildCodeWorkspaceContextData,
-  codeEditorLaunchScope,
   CODE_WORKSPACE_CONTEXT_MENU_PROPS,
   type CodeSelectionRange,
 } from '@/features/code/agent-context/buildCodeWorkspaceContextData';
@@ -176,10 +175,12 @@ export function CodeEditorContextMenu({
     };
 
     // `getContextData()` already produces a complete, live scope (baselines +
-    // declared SurfaceValues + `vsc_*`); `codeEditorLaunchScope` drops the
-    // menu-only `contextFilter` key before it reaches the agent.
+    // declared SurfaceValues + `vsc_*`). Monaco isn't a DOM textarea, so this
+    // is returned directly instead of routing through
+    // `buildApplicationScopeFromMenuContext` (which would clobber the live
+    // text-neighbor values computed from the editor model).
     const getApplicationScope = (): ApplicationScope =>
-        codeEditorLaunchScope(getContextData()) as ApplicationScope;
+        getContextData() as ApplicationScope;
 
     // FULL-content replace — the engine contract: Cut/Paste/Find-Replace and
     // the WidgetHandle (widget_text_replace/patch/prepend/append) all pass the

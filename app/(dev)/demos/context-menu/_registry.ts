@@ -85,9 +85,9 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     slug: "scenarios",
     title: "Scenario Matrix",
     tagline:
-      "Five live panels exercising different placement / context combinations side-by-side.",
+      "Four live panels exercising different placement / context combinations side-by-side.",
     description:
-      "Multi-panel smoke test. Panel 1 is a production-accurate code editor harness (`CodeEditorDemoPanel` → same props/context as `/code`). Other panels pin different placement / context combinations. Use this to verify behavioural deltas at a glance — content-editor vs read-only hiding, explicit filter API vs contextFilter, disable showcase, etc.",
+      "Multi-panel smoke test. Panel 1 is a production-accurate code editor harness (`CodeEditorDemoPanel` → same props/context as `/code`). Other panels pin different placement / context combinations. Use this to verify behavioural deltas at a glance — content-editor vs read-only hiding, disable showcase, etc.",
     icon: "layout-grid",
     status: "stable",
   },

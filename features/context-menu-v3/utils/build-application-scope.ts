@@ -1,8 +1,6 @@
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 import type { SelectionRange } from "./selection-tracking";
 
-const SKIP_MERGE_KEYS = new Set(["contextFilter"]);
-
 export function buildApplicationScopeFromMenuContext(args: {
   selectedText: string;
   selectionRange: SelectionRange | null;
@@ -28,7 +26,7 @@ export function buildApplicationScopeFromMenuContext(args: {
 
   // Surface payload first — skip undefined so live capture is not clobbered later.
   for (const [k, v] of Object.entries(cd)) {
-    if (SKIP_MERGE_KEYS.has(k) || v === undefined) continue;
+    if (v === undefined) continue;
     applicationScope[k] = v;
   }
 

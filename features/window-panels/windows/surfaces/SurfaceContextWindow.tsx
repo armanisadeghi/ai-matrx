@@ -33,8 +33,6 @@ export interface SurfaceContextWindowProps {
   isEditable?: boolean;
 }
 
-const NON_VALUE_KEYS = new Set(["contextFilter"]);
-
 function hasValue(value: unknown): boolean {
   if (value == null) return false;
   if (typeof value === "string") return value.length > 0;
@@ -107,7 +105,7 @@ export default function SurfaceContextWindow({
   const declared = manifest?.values ?? [];
   const declaredNames = new Set(declared.map((value) => value.name));
   const runtimeOnlyKeys = Object.keys(live.scope).filter(
-    (key) => !declaredNames.has(key) && !NON_VALUE_KEYS.has(key),
+    (key) => !declaredNames.has(key),
   );
   const items: ContextItem[] = [
     ...declared.map((declaration) => ({

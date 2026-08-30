@@ -54,10 +54,7 @@ export function ContextDebugModal({
   };
 
   const customVariables = Object.entries(contextData)
-    .filter(
-      ([key]) =>
-        !["selection", "content", "context", "contextFilter"].includes(key),
-    )
+    .filter(([key]) => !["selection", "content", "context"].includes(key))
     .reduce(
       (acc, [key, value]) => ({ ...acc, [key]: value }),
       {} as Record<string, unknown>,

@@ -39,7 +39,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "./types";
  * shell already strips it; this is the belt for a surface that puts it in
  * static `contextData`.
  */
-const SKIP_MERGE_KEYS = new Set(["contextFilter", CONTEXT_MENU_ENTITY_KEY]);
+const SKIP_MERGE_KEYS = new Set([CONTEXT_MENU_ENTITY_KEY]);
 
 const isDev = process.env.NODE_ENV !== "production";
 
