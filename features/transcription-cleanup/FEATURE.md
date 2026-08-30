@@ -196,6 +196,10 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
   live in database `agent.*`, but the `clean` role still connects through the
   manifest's `defaultAgentId` rather than a mandate key — an explicit mandate
   conversion gap.
+  A separate explicit-flag audit reviewed all 35 executable
+  `enableCleanup={false}` call sites; the only survivors are dedicated action
+  hosts, anonymous public forms, component demonstrations, exact machine
+  values, and search/keyword/tag fields where rewriting changes the query.
 
 - 2026-08-29 — **Cleanup propagated to canonical single-line text without
   propagating it into machine values.** `ProInput` now reuses the same cleanup
