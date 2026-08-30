@@ -1,7 +1,7 @@
 // features/media-capture/runtime/camera-stream-manager.ts
 //
 // Shared camera stream manager — the ONE legal `getUserMedia({video})` call
-// site in the repo (the camera twin of `features/audio/micStream.ts`, enforced
+// site in the repo (the camera twin of the package’s microphone manager, enforced
 // by the ESLint `getUserMedia({video})` chokepoint ban in eslint.config.mjs).
 // Framework-free: no React, no Redux — React surfaces subscribe via
 // `subscribeCameraStream` / `useSyncExternalStore`.
@@ -36,7 +36,7 @@
 // where the mic is first-class can fold a not-yet-granted mic permission into
 // the SAME getUserMedia call — one browser prompt for camera+mic instead of a
 // camera prompt at open plus a mic prompt mid-action. The audio tracks go
-// straight to the mic singleton (`adoptWarmAudioStream`); this manager still
+// straight to the mic singleton (`adoptWarmMicStream`); this manager still
 // never holds audio. See `shouldCombineMicPrompt` / `performGetUserMedia`.
 //
 // Preferred device/facing comes from an INJECTED resolver
@@ -61,9 +61,9 @@ import {
   type MediaPermissionState,
 } from "@/features/media-devices/deviceManager";
 import {
-  adoptWarmAudioStream,
+  adoptWarmMicStream,
   buildWarmMicConstraints,
-} from "@/features/audio/micStream";
+} from "@ai-matrx/browser-audio/core";
 import type { CaptureQualityProfile } from "@/features/media-capture/core/capture-types";
 import {
   buildVideoConstraints,
@@ -88,7 +88,7 @@ export interface CameraAcquireOptions {
    * ONE combined browser prompt instead of a camera prompt at open plus a mic
    * prompt mid-action (the classic double-prompt annoyance; on iOS Safari it
    * recurs every session). The audio tracks are handed straight to the mic
-   * singleton as its warm stream (`adoptWarmAudioStream`), never kept here.
+   * singleton as its warm stream (`adoptWarmMicStream`), never kept here.
    * When the mic is already granted (no prompt would appear) or already denied
    * (audio would fail the WHOLE call) the acquisition stays video-only.
    */
@@ -414,7 +414,7 @@ async function performGetUserMedia(
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length > 0) {
         for (const t of audioTracks) stream.removeTrack(t);
-        adoptWarmAudioStream(new MediaStream(audioTracks));
+        adoptWarmMicStream(new MediaStream(audioTracks));
       }
     }
     return stream;

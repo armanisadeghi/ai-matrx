@@ -10,7 +10,7 @@ import {
   acquireMicStream,
   releaseMicStream,
   subscribeMicInterruption,
-} from "@/features/audio/micStream";
+} from "@ai-matrx/browser-audio/core";
 import {
   pinForRecording,
   subscribeCameraInterruption,
@@ -23,7 +23,8 @@ import {
   startVideoRecording,
 } from "@/features/media-capture/recording/video-recorder";
 
-jest.mock("@/features/audio/micStream", () => ({
+jest.mock("@ai-matrx/browser-audio/core", () => ({
+  ...jest.requireActual("@ai-matrx/browser-audio/core"),
   acquireMicStream: jest.fn(),
   releaseMicStream: jest.fn(),
   subscribeMicInterruption: jest.fn(() => () => undefined),

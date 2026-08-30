@@ -33,7 +33,7 @@ import {
   acquireMicStream,
   releaseMicStream,
   subscribeMicInterruption,
-} from "@/features/audio/micStream";
+} from "@ai-matrx/browser-audio/core";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
 import {

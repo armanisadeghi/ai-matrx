@@ -61,8 +61,8 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import {
   audioExtensionForType,
-  normalizeAudioContentType,
-} from "@/features/audio/utils/audio-mime";
+  normalizeAudioType,
+} from "@ai-matrx/browser-audio/core";
 import { gradeCard } from "../agents/gradeCard.thunk";
 import { reviewSession } from "../agents/reviewSession.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -346,7 +346,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       if (full && full.size > 0) {
         try {
           // The capture core emits WAV; derive ext/mime from the blob itself.
-          const mime = normalizeAudioContentType(full.type || "audio/wav");
+          const mime = normalizeAudioType(full.type || "audio/wav");
           const ext = audioExtensionForType(mime);
           const uploaded = await fileHandler.upload(
             {

@@ -12,14 +12,14 @@
  * diagnostics only.
  *
  * Audio extension mapping is shared with (not forked from)
- * `features/audio/utils/audio-mime.ts` — the single source of truth for
+ * `@ai-matrx/browser-audio/core` — the single source of truth for
  * audio MIME ↔ extension.
  */
 
 import {
   audioExtensionForType,
-  normalizeAudioContentType,
-} from "@/features/audio/utils/audio-mime";
+  normalizeAudioType,
+} from "@ai-matrx/browser-audio/core";
 
 export type RecordingKind = "video" | "audio";
 
@@ -75,7 +75,7 @@ export function recordingMimeCandidates(
 
 /** Container (parameter-free, lowercased) MIME → file extension, for the
  * video/image containers this pipeline emits. Audio is delegated to
- * `features/audio/utils/audio-mime.ts`. */
+ * `@ai-matrx/browser-audio/core`. */
 const CONTAINER_TO_EXT: Record<string, string> = {
   "video/mp4": "mp4",
   "video/webm": "webm",
@@ -105,7 +105,7 @@ export function extensionForMime(mime: string): string {
     );
   }
   if (container.startsWith("audio/")) {
-    return audioExtensionForType(normalizeAudioContentType(container));
+    return audioExtensionForType(normalizeAudioType(container));
   }
   const ext = CONTAINER_TO_EXT[container];
   if (!ext) {

@@ -54,7 +54,7 @@ export function reportAudioBypassViolation(args: {
         "AudioContext / <audio> for our media."
       : "Route audio IN through the global recorder (useGlobalRecording / " +
         "useVoiceCapture) or register a recording session; acquire the mic only " +
-        "via features/audio/micStream + captureLock.";
+        "via @ai-matrx/browser-audio/core + captureLock.";
 
   console.error(
     "\n================ AUDIO-SYSTEM BYPASS ================\n" +

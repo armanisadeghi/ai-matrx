@@ -40,7 +40,7 @@ import {
   isAudioActivated,
   subscribeAudioActivation,
 } from "@/features/audio/activation";
-import { hasAudioBootMarker } from "@/features/audio/audioBootMarker";
+import { getSharedDirtyRecordingMarker } from "@ai-matrx/browser-audio/core";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
@@ -64,7 +64,7 @@ export function AudioSystemHost() {
   // session activates the system so the orphan scan runs with no gesture.
   const idle = useIdleReady();
   useEffect(() => {
-    if (idle && hasAudioBootMarker()) activateAudio();
+    if (idle && getSharedDirtyRecordingMarker().has()) activateAudio();
   }, [idle]);
 
   if (!activated && !panelOpen) return null;

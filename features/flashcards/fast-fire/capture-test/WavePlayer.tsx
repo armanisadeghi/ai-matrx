@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download } from "lucide-react";
-import { getSharedAudioContext } from "@/features/audio/audioContext";
+import { getSharedAudioContext } from "@ai-matrx/browser-audio/core";
 
 interface WavePlayerProps {
   blob: Blob;

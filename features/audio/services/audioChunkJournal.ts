@@ -38,10 +38,10 @@ import { suppressSupabaseErrorCapture } from "@/lib/diagnostics/supabaseErrorCap
 import { getUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
-  normalizeAudioContentType,
+  normalizeAudioType,
   audioExtensionForType,
   toAudioFile,
-} from "../utils/audio-mime";
+} from "@ai-matrx/browser-audio/core";
 
 const LOG_PREFIX = "[audio-chunk-journal]";
 const MAX_ATTEMPTS = 3;
@@ -93,7 +93,7 @@ async function uploadAndJournalOnce(
   blob: Blob,
   mimeType: string,
 ): Promise<void> {
-  const contentType = normalizeAudioContentType(mimeType || blob.type);
+  const contentType = normalizeAudioType(mimeType || blob.type);
   const ext = audioExtensionForType(contentType);
 
   // Hidden staging folder — idempotent; a failure just falls back to root.

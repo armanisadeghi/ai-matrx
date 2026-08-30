@@ -8,7 +8,7 @@
 
 import { useState, useCallback } from "react";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
-import { toAudioFile } from "../utils/audio-mime";
+import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { transcribeAudioFile } from "../services/speechApi";
 
 export function useAudioTranscription() {

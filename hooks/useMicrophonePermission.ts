@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { acquireMicStream, releaseMicStream } from '@/features/audio/micStream';
+import { acquireMicStream, releaseMicStream } from '@ai-matrx/browser-audio/core';
 
 export type MicPermissionStatus = 'unknown' | 'granted' | 'denied' | 'prompt';
 

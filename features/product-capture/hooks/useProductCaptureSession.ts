@@ -28,7 +28,7 @@ import {
   revokeTrackedObjectUrl,
 } from "@/lib/media/object-url-registry";
 import { toast } from "@/lib/toast";
-import { toAudioFile } from "@/features/audio/utils/audio-mime";
+import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 
 import type {

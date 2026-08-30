@@ -10,7 +10,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { audioSafetyStore, SafetyRecord } from "../services/audioSafetyStore";
 import { discardChunkJournal } from "../services/audioChunkJournal";
-import { clearAudioBootMarker } from "../audioBootMarker";
+import { getSharedDirtyRecordingMarker } from "@ai-matrx/browser-audio/core";
 
 interface AudioRecoveryContextValue {
   hasRecoveredData: boolean;
@@ -51,7 +51,7 @@ export function AudioRecoveryProvider({
       setRecoveredItems(orphans);
       // Clean scan — nothing to recover, so the dirty-recording boot marker
       // (which auto-activates the audio system on boot) has done its job.
-      if (orphans.length === 0) clearAudioBootMarker();
+      if (orphans.length === 0) getSharedDirtyRecordingMarker().clear();
     } catch (err) {
       console.warn("[AudioRecoveryProvider] Failed to check IndexedDB:", err);
     }
@@ -72,7 +72,7 @@ export function AudioRecoveryProvider({
       setRecoveredItems((prev) => {
         const next = prev.filter((item) => item.id !== id);
         // Last orphan handled — stop re-activating audio on every boot.
-        if (next.length === 0) clearAudioBootMarker();
+        if (next.length === 0) getSharedDirtyRecordingMarker().clear();
         return next;
       });
     } catch (err) {
@@ -87,7 +87,7 @@ export function AudioRecoveryProvider({
         void discardChunkJournal(item.id);
       }
       setRecoveredItems([]);
-      clearAudioBootMarker();
+      getSharedDirtyRecordingMarker().clear();
     } catch (err) {
       console.error(
         "[AudioRecoveryProvider] Failed to clear all entries:",

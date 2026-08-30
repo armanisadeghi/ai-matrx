@@ -9,10 +9,10 @@
 import { fileHandler } from "@/features/files/handler/handler";
 import { RECORDING_LIMITS } from "../constants/recording";
 import {
-  normalizeAudioContentType,
+  normalizeAudioType,
   audioExtensionForType,
   toAudioFile,
-} from "@/features/audio/utils/audio-mime";
+} from "@ai-matrx/browser-audio/core";
 
 interface UploadResult {
   /**
@@ -137,7 +137,7 @@ export async function saveAudioToStorage(
   // (the audio-mime rule: never hand-build an audio `File`); it also corrects
   // the extension to match the normalized type when they disagree.
   const sourceName = audioBlob instanceof File ? audioBlob.name : undefined;
-  const contentType = normalizeAudioContentType(audioBlob.type, sourceName);
+  const contentType = normalizeAudioType(audioBlob.type, sourceName);
   const ext = audioExtensionForType(contentType);
   const desiredName =
     isImport && sourceName

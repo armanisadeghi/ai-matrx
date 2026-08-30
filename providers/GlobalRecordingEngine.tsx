@@ -36,9 +36,8 @@ import {
 } from "@/features/audio/recordingCommands";
 import type { StartRecordingArgs } from "@/features/audio/recordingTypes";
 import {
-  clearAudioBootMarker,
-  setAudioBootMarker,
-} from "@/features/audio/audioBootMarker";
+  getSharedDirtyRecordingMarker,
+} from "@ai-matrx/browser-audio/core";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   audioLevelChanged,
@@ -160,7 +159,7 @@ export function GlobalRecordingEngine() {
       // failed transcription keeps its IndexedDB row + marker so the recovery
       // provider surfaces the saved audio on the next boot.
       if ((result.success || cancelled) && !pendingStartRef.current) {
-        clearAudioBootMarker();
+        getSharedDirtyRecordingMarker().clear();
       }
       // Recording fully done — drop the capture lock unless a takeover is queued.
       releaseGlobalCaptureIfIdle();
@@ -240,7 +239,10 @@ export function GlobalRecordingEngine() {
       // A recording is now in flight — if the tab dies before clean finalize,
       // this marker re-activates the audio system on next boot so the orphan
       // recovery scan runs without a user gesture.
-      setAudioBootMarker();
+      // Marked BEFORE capture opens, because the crash window starts here and
+      // the recording's own id does not exist yet; it is refreshed with the
+      // real id the moment the recorder hands one back.
+      getSharedDirtyRecordingMarker().set("pending");
       // Surface this recording in the unified Audio panel (live → history).
       recordingSessionRef.current = beginRecordingSession({
         label: recordingSessionLabel(args.context),
@@ -250,6 +252,8 @@ export function GlobalRecordingEngine() {
       // row it auto-persists knows what it belongs to. Undefined for every
       // surface that declares none — the pre-existing behaviour.
       await recorder.startRecording({ origin: args.context.origin });
+      const safetyId = recorder.getSafetyId();
+      if (safetyId) getSharedDirtyRecordingMarker().set(safetyId);
     },
     [dispatch, recorder],
   );

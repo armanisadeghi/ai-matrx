@@ -37,12 +37,12 @@ import {
   acquireMicStream,
   releaseMicStream,
   subscribeMicInterruption,
-} from "../micStream";
+} from "@ai-matrx/browser-audio/core";
 import {
   createStreamLevelMeter,
   type StreamLevelMeter,
-} from "../streamLevelMeter";
-import { toAudioFile } from "../utils/audio-mime";
+} from "@ai-matrx/browser-audio/core";
+import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { transcribeAudioFile } from "../services/speechApi";
 import { resolveTranscriptionFinalization } from "../services/transcriptionFinalization";
 import {
@@ -159,7 +159,7 @@ export function useChunkedRecordAndTranscribe({
   const startTimeRef = useRef(0);
   const pausedAtRef = useRef(0);
   const pausedDurationRef = useRef(0);
-  // The canonical level meter (features/audio/streamLevelMeter — shared
+  // The canonical level meter (@ai-matrx/browser-audio/core — shared
   // AudioContext, analyser graph + rAF + teardown all inside). Cosmetic only;
   // capture runs off the MediaStream directly.
   const meterRef = useRef<StreamLevelMeter | null>(null);

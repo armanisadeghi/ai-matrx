@@ -49,7 +49,7 @@ import {
   releaseMicStream,
   setPreferredInputDeviceId,
   notifyMicPermissionRevoked,
-} from "@/features/audio/micStream";
+} from "@ai-matrx/browser-audio/core";
 import { setPreferredOutputDeviceId } from "@/features/audio/audioOutputSink";
 
 export type MediaPermissionState = "granted" | "denied" | "prompt" | "unknown";

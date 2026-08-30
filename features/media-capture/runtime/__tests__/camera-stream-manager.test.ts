@@ -29,11 +29,12 @@ jest.mock("@/features/media-devices/deviceManager", () => ({
   }),
 }));
 
-const adoptWarmAudioStream = jest.fn();
+const adoptWarmMicStream = jest.fn();
 const buildWarmMicConstraints = jest.fn(() => ({ echoCancellation: true }));
 
-jest.mock("@/features/audio/micStream", () => ({
-  adoptWarmAudioStream: (...args: unknown[]) => adoptWarmAudioStream(...args),
+jest.mock("@ai-matrx/browser-audio/core", () => ({
+  ...jest.requireActual("@ai-matrx/browser-audio/core"),
+  adoptWarmMicStream: (...args: unknown[]) => adoptWarmMicStream(...args),
   buildWarmMicConstraints: () => buildWarmMicConstraints(),
 }));
 
@@ -338,8 +339,8 @@ describe("camera-stream-manager", () => {
     expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(true);
     expect(noteMicPermissionOutcome).toHaveBeenCalledWith(true);
     // Audio split off into the mic singleton; the camera stream keeps video only.
-    expect(adoptWarmAudioStream).toHaveBeenCalledTimes(1);
-    const adopted = adoptWarmAudioStream.mock.calls[0][0] as FakeStream;
+    expect(adoptWarmMicStream).toHaveBeenCalledTimes(1);
+    const adopted = adoptWarmMicStream.mock.calls[0][0] as FakeStream;
     expect(adopted.getAudioTracks()).toHaveLength(1);
     expect((a.stream as unknown as FakeStream).getAudioTracks()).toHaveLength(0);
     expect((a.stream as unknown as FakeStream).getVideoTracks()).toHaveLength(1);
@@ -356,7 +357,7 @@ describe("camera-stream-manager", () => {
     expect(
       (getUserMedia.mock.calls[0][0] as MediaStreamConstraints).audio,
     ).toBeUndefined();
-    expect(adoptWarmAudioStream).not.toHaveBeenCalled();
+    expect(adoptWarmMicStream).not.toHaveBeenCalled();
     a.release();
 
     jest.clearAllMocks();

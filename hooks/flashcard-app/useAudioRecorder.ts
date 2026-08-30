@@ -1,10 +1,10 @@
 "use client";
 import { useState, useRef, useCallback, useEffect, useId } from "react";
-import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 import {
   getSharedAudioContext,
   resumeSharedAudioContext,
-} from "@/features/audio/audioContext";
+} from "@ai-matrx/browser-audio/core";
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";

@@ -17,8 +17,8 @@ import {
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import {
   audioExtensionForType,
-  normalizeAudioContentType,
-} from "@/features/audio/utils/audio-mime";
+  normalizeAudioType,
+} from "@ai-matrx/browser-audio/core";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -58,7 +58,7 @@ export function MessageInputBar({
         // ladder may emit audio/mp4, not just webm) — map through the shared
         // audio-mime extension table, never a hardcoded guess.
         const ext = audioExtensionForType(
-          normalizeAudioContentType(blob.type || "audio/webm"),
+          normalizeAudioType(blob.type || "audio/webm"),
         );
         const file = new File([blob], `voice-${Date.now()}.${ext}`, {
           type: blob.type || "audio/webm",

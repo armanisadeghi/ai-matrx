@@ -16,7 +16,7 @@
  *   manager — combined-prompt policy, reconfigure events, recording pins).
  * - DEVICE PERSISTENCE: the flip target is persisted via
  *   `useAudioDevices().setCamera` so the same camera comes back next session.
- * - MIC WARM HOLD: holds the APP's mic singleton (`features/audio/micStream`)
+ * - MIC WARM HOLD: holds the APP's mic singleton (`@ai-matrx/browser-audio/core`)
  *   — the same warm stream voice notes and the recorder share; using the
  *   package's own warm-mic manager here would create two competing mic
  *   holders. The four iOS recovery branches live in that singleton (and,
@@ -41,7 +41,7 @@ import {
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
-import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 import {
   acquireCameraLease,
   type CameraLease,

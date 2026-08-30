@@ -63,7 +63,7 @@ import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import {
   acquireMicStream,
   releaseMicStream,
-} from "@/features/audio/micStream";
+} from "@ai-matrx/browser-audio/core";
 import {
   acquireCameraLease,
   type CameraLease,

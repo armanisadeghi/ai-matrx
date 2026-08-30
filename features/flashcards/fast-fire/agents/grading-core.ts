@@ -22,8 +22,8 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   audioExtensionForType,
-  normalizeAudioContentType,
-} from "@/features/audio/utils/audio-mime";
+  normalizeAudioType,
+} from "@ai-matrx/browser-audio/core";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
   coerceGradeVerdict,
@@ -192,7 +192,7 @@ export async function uploadResponseClip(
 ): Promise<string | null> {
   if (!clip || clip.size === 0) return null;
   try {
-    const mime = normalizeAudioContentType(clip.type || "audio/wav");
+    const mime = normalizeAudioType(clip.type || "audio/wav");
     const ext = audioExtensionForType(mime);
     const namePrefix = opts.cardId ? `fastfire-${opts.cardId}` : "answer";
     const uploaded = await fileHandler.upload(

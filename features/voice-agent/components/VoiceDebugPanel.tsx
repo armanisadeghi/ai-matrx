@@ -23,7 +23,7 @@ import {
   voiceDebugSubscribe,
   type VoiceDebugEntry,
 } from "../debug/voiceDebugBus";
-import { micStreamDebug } from "@/features/audio/micStream";
+import { micStreamDebug } from "@ai-matrx/browser-audio/core";
 
 interface VoiceDebugPanelProps {
   instanceId: string;

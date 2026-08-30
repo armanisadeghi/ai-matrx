@@ -49,7 +49,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
-import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 import { useStreamAudioLevel } from "@/features/audio/useStreamAudioLevel";
 import {
   audioContextSinkSupported,

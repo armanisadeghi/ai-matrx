@@ -51,16 +51,16 @@
 // subscribeLevel, fullSessionClip (+ new subscribeDebug / getCaptureDebug for the
 // admin debug panel).
 
-import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 import {
   getSharedAudioContext,
   resumeSharedAudioContext,
-} from "@/features/audio/audioContext";
+} from "@ai-matrx/browser-audio/core";
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
 import {
   createStreamLevelMeter,
   type StreamLevelMeter,
-} from "@/features/audio/streamLevelMeter";
+} from "@ai-matrx/browser-audio/core";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
 import { makeSineFloat32, mixInto } from "@/lib/audio/pcm";
@@ -126,7 +126,7 @@ interface CaptureStore {
   workletNode: AudioWorkletNode | null;
   scriptNode: ScriptProcessorNode | null;
   sinkGain: GainNode | null;
-  /** Canonical level meter (features/audio/streamLevelMeter) — no forked math. */
+  /** Canonical level meter (@ai-matrx/browser-audio/core) — no forked math. */
   levelMeter: StreamLevelMeter | null;
   // Per-card windows + deferred clip resolvers, keyed by stable card id.
   cards: Map<string, CardWindow>;

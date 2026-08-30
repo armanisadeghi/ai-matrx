@@ -66,8 +66,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import {
   audioExtensionForType,
-  normalizeAudioContentType,
-} from "@/features/audio/utils/audio-mime";
+  normalizeAudioType,
+} from "@ai-matrx/browser-audio/core";
 import { verdictResult, type GradeResult } from "@/features/education/trust/types";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { coerceSpokenGrade } from "./grading-core";
@@ -118,7 +118,7 @@ export function gradeCard(args: GradeCardArgs) {
         // The capture core emits WAV; derive the extension/mime from the blob
         // itself rather than hard-coding a container, so the cloud-files row is
         // stored as the real audio type (not mislabelled webm/video).
-        const mime = normalizeAudioContentType(clip.type || "audio/wav");
+        const mime = normalizeAudioType(clip.type || "audio/wav");
         const ext = audioExtensionForType(mime);
         const uploaded = await fileHandler.upload(
           {

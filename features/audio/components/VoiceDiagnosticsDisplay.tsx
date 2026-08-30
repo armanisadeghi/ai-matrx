@@ -12,7 +12,7 @@ import { AlertCircle, CheckCircle, XCircle, RefreshCw, Mic, Settings, ExternalLi
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { runMicrophoneDiagnostics, getFixInstructions, canUserFixIssue, DiagnosticResult } from '../utils/microphone-diagnostics';
-import { acquireMicStream, releaseMicStream } from '../micStream';
+import { acquireMicStream, releaseMicStream } from '@ai-matrx/browser-audio/core';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
 import {

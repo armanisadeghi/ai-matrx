@@ -8,7 +8,8 @@
  * media in tests, and jsdom has no mediaDevices anyway.
  */
 
-jest.mock("@/features/audio/micStream", () => ({
+jest.mock("@ai-matrx/browser-audio/core", () => ({
+  ...jest.requireActual("@ai-matrx/browser-audio/core"),
   acquireMicStream: jest.fn(async () => ({}) as MediaStream),
   releaseMicStream: jest.fn(),
   setPreferredInputDeviceId: jest.fn(),

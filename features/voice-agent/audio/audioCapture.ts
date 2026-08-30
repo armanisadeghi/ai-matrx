@@ -28,7 +28,7 @@ import {
   SAMPLE_RATE_HZ,
 } from "../constants";
 import { writeAmplitude } from "./amplitudeBus";
-import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 
 const WORKLET_PATH = "/pcm-processor-worklet.js";
 

@@ -4,7 +4,7 @@
  * Comprehensive diagnostics and troubleshooting for microphone access
  */
 
-import { acquireMicStream, releaseMicStream } from '../micStream';
+import { acquireMicStream, releaseMicStream } from '@ai-matrx/browser-audio/core';
 
 export interface DiagnosticResult {
   hasMediaDevices: boolean;

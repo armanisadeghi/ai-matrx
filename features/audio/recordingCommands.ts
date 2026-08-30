@@ -21,7 +21,7 @@ import { activateAudio } from "@/features/audio/activation";
 import {
   acquireMicStream,
   releaseMicStream,
-} from "@/features/audio/micStream";
+} from "@ai-matrx/browser-audio/core";
 import type {
   GlobalRecordingCommands,
   StartRecordingArgs,

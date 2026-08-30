@@ -28,9 +28,9 @@ import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
 import { transcribeCloudFile } from "./speechApi";
 import {
-  normalizeAudioContentType,
+  normalizeAudioType,
   audioExtensionForType,
-} from "../utils/audio-mime";
+} from "@ai-matrx/browser-audio/core";
 import { shouldPersistTranscriptionError } from "./transcriptionErrorPolicy";
 
 function generateFileName(ext: string): string {
@@ -73,7 +73,7 @@ async function uploadWithRetry(
   // and later served to the URL-based transcription fetch — as audio, not
   // video. The recorder blob's `;codecs=opus` / empty type would otherwise
   // sniff to `video/webm`.
-  const contentType = normalizeAudioContentType(blob.type);
+  const contentType = normalizeAudioType(blob.type);
   const ext = audioExtensionForType(contentType);
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
