@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Panel, type Layout } from "react-resizable-panels";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
@@ -45,7 +45,6 @@ export function TasksDesktopShell({
   defaultLayout,
   cookieName,
 }: TasksDesktopShellProps) {
-  const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
 
@@ -54,7 +53,6 @@ export function TasksDesktopShell({
   useNowMinuteTick();
 
   useEffect(() => {
-    setHasMounted(true);
     // Per-user snooze/ack/pin state — one fetch per route mount; the smart
     // views (Today/Overdue/…) respect it.
     dispatch(loadTaskUserStateThunk());
@@ -64,7 +62,7 @@ export function TasksDesktopShell({
   // After mount, swap to the mobile view if the viewport is below the
   // breakpoint. The brief desktop-on-mobile-first-paint is acceptable —
   // matches the agents builder pattern.
-  if (hasMounted && isMobile) {
+  if (isMobile) {
     // Mobile owns its own scroll/swipe, but still has to clear the shell's
     // transparent header glass — without this padding the list title slides
     // up under the shell controls.
