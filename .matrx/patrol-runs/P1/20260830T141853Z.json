@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P1",
+  "runId": "20260830T141853Z",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:18:54.214Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:18:54.214Z",
+      "actor": "codex-root",
+      "summary": "ERADICATION repair wave claimed the first three still-open HIGH scoreboard units after skipping already-repaired leading rows.",
+      "evidence": [
+        "Canonical shared checkout; worktrees forbidden and the mistakenly created clean worktree was retired before edits.",
+        "Baseline pnpm type-check passed at 857dcd2c3b7bed591441c6a175caf72eb1397ec4.",
+        "Unrelated dirty paths recorded and excluded: P10 run artifacts, login page, and commerce-intake files."
+      ],
+      "previousEventHash": null,
+      "eventHash": "123c49fe46143909968f86e2b217e08fd7daaa037cfae05d1fd1597ca6931b3a"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:19:05.762Z",
+      "actor": "p1-wave-workers",
+      "summary": "Implementing three disjoint canonical EntityRef door repairs from the leading still-open HIGH queue.",
+      "evidence": [
+        "Owned paths: local-tools documents demo, context-lab page, and sharp context-lab organization rows."
+      ],
+      "previousEventHash": "123c49fe46143909968f86e2b217e08fd7daaa037cfae05d1fd1597ca6931b3a",
+      "eventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:31:24.705Z",
+      "actor": "codex-root",
+      "summary": "Leading HIGH repair batch preserved as clean 13-file candidate b0ae0f612e after 18 detector findings closed.",
+      "evidence": [
+        "Post-wave detector: 54 total, 20 HIGH; baseline was 72 total and all 18 eliminated rows were HIGH.",
+        "One inspected legacy ResourcesSection row remains open because its retired skill.resource id cannot safely route as a Matrx file id.",
+        "Candidate remote: origin/patrol/p1-20260830-wave1 at b0ae0f612eebff3250cb9a9ed510ba3979cef36e."
+      ],
+      "previousEventHash": "048341b49b89830d7b6ac46ee7df055d0287abda9e17391554d05206ffd5047a",
+      "eventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-30T14:34:28.188Z",
+      "actor": "p1-certifier",
+      "summary": "REJECTED: organization chevron lost its navigation hit area in MillerColumns.",
+      "evidence": [
+        "Concrete candidate-caused defect in b0ae0f612e: ChevronRight moved outside EntityRef and became inert."
+      ],
+      "previousEventHash": "5c9994d41dc854fb2f9c6d550c689c70dd76ab9d451b77db1ef866d5efc94778",
+      "eventHash": "99af132e4cd6cfc4c0e4505b1b4aef329c3af9da4c0ff7ceb4717c1e18dc7f71"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-30T14:34:29.068Z",
+      "actor": "codex-root",
+      "summary": "Repairing the concrete MillerColumns interaction regression before recertification.",
+      "evidence": [
+        "ChevronRight restored inside the EntityRef label so its prior click target is preserved."
+      ],
+      "previousEventHash": "99af132e4cd6cfc4c0e4505b1b4aef329c3af9da4c0ff7ceb4717c1e18dc7f71",
+      "eventHash": "d934d99a373d94fcb21fdd86b3010ee39e5d31db8ab75fb7b0749201843d5140"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-30T14:34:50.901Z",
+      "actor": "codex-root",
+      "summary": "Corrected 13-file candidate 6849bb0fac is ready for independent recertification.",
+      "evidence": [
+        "The rejected chevron hit-area regression is repaired; candidate remote force-updated with lease."
+      ],
+      "previousEventHash": "d934d99a373d94fcb21fdd86b3010ee39e5d31db8ab75fb7b0749201843d5140",
+      "eventHash": "0f48fc8ab67751cd5e761013eca2681d247d01c598c6bbdb6a979cc69d783e3c"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T14:35:53.233Z",
+      "actor": "p1-certifier",
+      "summary": "CERTIFIED corrected 13-file P1 candidate; no concrete batch-caused defect remains.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "6849bb0faca2f93d64a04f6c30a0c365df3e95ac",
+        "certifierTaskId": "p1-certifier",
+        "checks": [
+          "Prior MillerColumns chevron hit-area regression corrected and reverified.",
+          "Exact 13-file diff passes diff-check and contains no unrelated context-lab paragraph drift.",
+          "Dead-end detector clears all intended HIGH targets; the excluded legacy ResourcesSection gap remains open.",
+          "pnpm type-check PASS; focused lint and EntityRef tests 6/6 PASS."
+        ]
+      },
+      "previousEventHash": "0f48fc8ab67751cd5e761013eca2681d247d01c598c6bbdb6a979cc69d783e3c",
+      "eventHash": "978d481028a55b1a309bab200e5043d870d80dfa227dfcfa80c19579cf9d9239"
+    }
+  ]
+}
