@@ -93,6 +93,9 @@ tables (AI Models, relationships, …) can cut over to one contract.
   canonical filter engine; controlled consumers send the same validated rule
   shape to their direct database query. Never filter only the visible page.
 - **Select filters are type-to-search and MULTI-select (OR semantics)** — toggling options builds a `values` set; single-`value` writers stay valid. Whenever a column has blank cells, the options automatically include **"(empty)" / "(not empty)"** sentinels (composable with real values: "A or (empty)"). An explicit `filter: "select"` lists ALL distinct values (auto-inference still caps at 24 before falling back to text). **Text filters have Contains / (empty) / (not empty) modes.** **Sorting always puts empty cells last**, both directions. Active filters show a clear **X**; toolbar has **Clear all**.
+- **Opening a column filter focuses its first typeable field.** Text filters focus
+  Contains, searchable selects focus Search options, and number filters focus
+  the minimum field, so a user can type immediately after opening the filter.
 - **Row click → `SidePanelSurface` by default, or `WindowPanel` when `window.openOnRowClick` is set.** The window-first mode turns the trailing action and the window header into explicit “Open in side panel” doors. Desktop side panels use `MatrxDynamicPanelHost`; mobile uses Drawer. Never a blocking `Sheet` / split-pane.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. `rowActions` receive the visible row with pending cell edits merged; after an action persists that row, call `discardPendingEdits()` so Save cannot replay the draft as a second write. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
 - **The TABLE owns the detail scroll — a custom body must never re-own it.** `SidePanelSurface` and `DataRowWindow` hand children a bounded cell, and every custom `detail.render` / `viewContent` / `editContent` is now wrapped in a scrolling container by the primitive. Write detail bodies as plain content (`space-y-3 p-3`); do **not** add an `h-full … overflow-y-auto` root. Custom bodies used to have to know this and mostly didn't, so their content silently cut off at the fold with no scrollbar across ~16 surfaces (fixed at this layer 2026-08-12).
@@ -414,6 +417,9 @@ Do not drop these when replacing `AiModelTable`:
   | `CopyButtons` | agent envelope | — |
 
 ## Change Log
+
+- `2026-08-30` — Column filter popovers now transfer focus directly to their
+  first typeable field (text, searchable-select, or numeric range) on open.
 
 - `2026-08-12` — `AiModelTable` moved from generic UUID rendering to `AiModelRef showId`, preserving audit identity while adding the model's human name.
 

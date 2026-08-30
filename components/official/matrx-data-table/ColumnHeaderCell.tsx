@@ -95,12 +95,26 @@ export function ColumnHeaderCell({
       align="start"
       className="w-64 p-2"
       onClick={(e) => e.stopPropagation()}
+      onOpenAutoFocus={(event) => {
+        const content = event.currentTarget;
+        if (!(content instanceof HTMLElement)) return;
+
+        const input = content.querySelector<HTMLInputElement>(
+          "[data-matrx-filter-autofocus]",
+        );
+        if (!input) return;
+
+        event.preventDefault();
+        input.focus();
+      }}
     >
       {sortable ? (
         <>
           <div className="flex flex-col gap-0.5 pb-2">
             <Button
-              variant={isSorted && sortDirection === "asc" ? "secondary" : "ghost"}
+              variant={
+                isSorted && sortDirection === "asc" ? "secondary" : "ghost"
+              }
               size="sm"
               className="h-8 justify-start gap-2 px-2 text-xs font-normal"
               onClick={onSortAsc}
@@ -109,7 +123,9 @@ export function ColumnHeaderCell({
               Sort ascending
             </Button>
             <Button
-              variant={isSorted && sortDirection === "desc" ? "secondary" : "ghost"}
+              variant={
+                isSorted && sortDirection === "desc" ? "secondary" : "ghost"
+              }
               size="sm"
               className="h-8 justify-start gap-2 px-2 text-xs font-normal"
               onClick={onSortDesc}
@@ -297,7 +313,8 @@ function FilterBody({
 }) {
   if (kind === "text") {
     const text = value?.kind === "text" ? value.value : "";
-    const mode = (value?.kind === "text" ? value.mode : undefined) ?? "contains";
+    const mode =
+      (value?.kind === "text" ? value.mode : undefined) ?? "contains";
     const setMode = (next: "contains" | "empty" | "not_empty") => {
       if (next === "contains") {
         onChange(text ? { kind: "text", value: text } : undefined);
@@ -337,7 +354,7 @@ function FilterBody({
         {mode === "contains" && (
           <div className="relative">
             <Input
-              autoFocus
+              data-matrx-filter-autofocus
               value={text}
               onChange={(e) =>
                 onChange(
@@ -474,6 +491,7 @@ function SearchableSelectFilter({
       </div>
       <Command className="rounded-md border border-border" shouldFilter={false}>
         <CommandInput
+          data-matrx-filter-autofocus
           value={query}
           onValueChange={setQuery}
           placeholder="Search options…"
@@ -569,6 +587,7 @@ function NumberFilterBody({
       </div>
       <div className="flex items-center gap-1.5">
         <Input
+          data-matrx-filter-autofocus
           value={minText}
           onChange={(e) => setMinText(e.target.value)}
           onBlur={(e) => commit(e.target.value, "min")}
