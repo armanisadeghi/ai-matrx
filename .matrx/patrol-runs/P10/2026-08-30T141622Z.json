@@ -33,6 +33,42 @@
       ],
       "previousEventHash": "b0109a9c51c4b2a12f2e5d4d7e8e1c051a9cb77e98eb04449785380b68440826",
       "eventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:28:47.668Z",
+      "actor": "/root",
+      "summary": "Candidate reached origin/main through shared-checkout integration before independent certification could start.",
+      "evidence": [
+        "candidate:d28f75c13e",
+        "origin/main-ancestor:yes"
+      ],
+      "blocker": {
+        "prerequisite": "Independent exact-candidate certification and escaped-delivery reconciliation"
+      },
+      "previousEventHash": "6d85d0faba6fa9a315f75fbeb1682cfd018099049e8f1ace248620437d3b8a41",
+      "eventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-30T14:29:06.539Z",
+      "actor": "/root",
+      "summary": "Recorded schema-ingress candidate d28f75c13e as escaped delivery pending independent certification.",
+      "evidence": [
+        "candidate is ancestor of origin/main",
+        "focused-tests:58-pass",
+        "scoped-hatches:zero"
+      ],
+      "escape": {
+        "candidateSha": "d28f75c13e",
+        "integratedSha": "d28f75c13e",
+        "release": "integration-only; release not requested",
+        "reason": "The canonical shared-checkout integrator committed and pushed the repair while the fixing wave was still assembling; no prior CERTIFIED event or delivery queue existed."
+      },
+      "previousEventHash": "bfa6ff899278ab7d14b6776c273345aaa983dc6d4ef6b6d6cc0dcb27cdbf20b2",
+      "eventHash": "d0a34234701830e99759e5fab7b3f5dca250668fd1480d65a4f512f68522c40f"
     }
   ]
 }
