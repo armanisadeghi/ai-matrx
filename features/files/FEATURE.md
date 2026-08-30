@@ -19,7 +19,7 @@ in the same change.
 | Core components                          | `components/core/` — FileTree, FileList, FileMeta, FilePreview, FileAcquisitionActions, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog. Media renderers (InlineMediaRef, MediaThumbnail, FileIcon, FileUploadDropzone) come from `@ai-matrx/media/react`, wired via `media-client/` |
 | Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                                              |
 | The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                                                |
-| Previewer dispatch                       | `components/core/FilePreview/PreviewerSwitch.tsx`                                                                                                                                                       |
+| Previewer registration + dispatch adapter | `components/core/FilePreview/PreviewerSwitch.tsx` (bodies: `@ai-matrx/media/viewers`)                                                                                                                                                    |
 | File-type registry                       | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`)                                                                                                                     |
 | Route ownership (which host answers)     | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`)                                                                                                                     |
 | URL state                                | `utils/url-state.ts`, `utils/server-search-params.ts`                                                                                                                                                   |
@@ -70,7 +70,15 @@ in the same change.
     them. `FilePickerWindow` MUST be `next/dynamic`-imported (`lazy-bundle-guard` asserts it).
 13. **A file picker must show selectable image pixels, with bounded work.** Never fix request volume
     by replacing image thumbnails with generic icons; lower the mounted page size instead.
-14. **Adding a previewer = edit `PreviewerSwitch`**, never a per-site dynamic import.
+14. **Adding a previewer = register it in `PreviewerSwitch`**, never a per-site dynamic import.
+    Since media 0.4.1 the dispatcher, the kind vocabulary and the text / code / SVG / HTML /
+    generic viewer BODIES live in `@ai-matrx/media/viewers`; `PreviewerSwitch` is the app's
+    `registerMediaViewer` list for the engines a package cannot ship (PDF.js via
+    `features/pdf`, the markdown stack, SheetJS, the Office extractor, the image/video/audio
+    viewers bound to app domain systems) plus the Prism highlighter. **A registered viewer is
+    a COMPONENT — never call it, mount it.** Anything unregistered renders the package's
+    announcing default, which names the missing engine and still offers download; a dead pane
+    is not a reachable state.
 15. **Never write `unnest(<stable fn>)` or `= ANY (<stable fn>)` in an RLS policy** — route the array
     through `iam.unnest_uuids`. Guard: `pnpm check:db-guards`.
 16. **A listing surface never uses `is_discoverable_for`/`has_access_for` as its row gate;**
@@ -138,6 +146,22 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
   unreferenced wrappers `useFileDownloadUrl`/`useFileMediaBlock`) DELETED. Context menus,
   drawers, hover-toolbar action sets, and agent `SourceFeature` wiring stay host-side by
   design.
+- **2026-08-30 — The viewer bodies and the next/image wrapper moved into `@ai-matrx/media`
+  (0.4.1).** `TextPreview`, `CodePreview`, `SvgPreview`, `HtmlPreview` and `GenericPreview`
+  are DELETED — their bodies are the package's `/viewers` entry, and `PreviewerSwitch` is now
+  the app's engine-registration module plus a thin adapter that keeps its three call sites'
+  props. New host-side seams: `PrismCodeHighlighter.tsx` (the ~150KB engine the package must
+  not ship) and a `HostHtmlViewer` that feeds the `FileViewerControlsProvider` rail into the
+  package viewer's `markupControls`. The asset-lane URL (hero/cover variant, authenticated
+  blob for a private image) survives as a host-only context read by the app's own
+  image/video/audio/PDF viewers — the package's own bodies always resolve through the
+  MediaClient, which means a private SVG now renders where it previously showed an endless
+  spinner. `media-client/ports.tsx` lost its 35-line `next/image` wrapper and its four
+  handler casts: `ImageComponent: NextMediaImage` from `@ai-matrx/media/next`. Three defects
+  fixed in the package during the port (a user-visible fuchsia debug ring on the generic
+  card, an unguarded `blob.text()`, `formatFileSize` claiming "0 B" for a missing size) —
+  see the package CHANGELOG. **The whole `features/pdf` tree stays host-owned** and rides the
+  `registerMediaViewer("pdf", …)` seam; so do markdown, spreadsheet and Office.
 - **2026-08-30 — File Info Copy for AI leads with durable identity.** The payload starts with
   `<file_ref>`, excludes signed URLs and raw storage paths from every block, and leaves human Copy
   unchanged.
