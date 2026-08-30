@@ -258,6 +258,16 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-30 — **QA F1 (feedback 35d311a9): scope-type Resources attach fixed at the DB
+  root cause.** Every attach to a `scope_type` container 403'd (then 23514'd): (1)
+  `platform.entity_row_access_attrs` dropped `organization_id` for tables with no
+  ownership columns (context.scope_types), so membership access never applied — new
+  org-only resolver branch in `migrations/entity_access_attrs_org_scoped_ownerless_tables.sql`;
+  (2) zero `* -> scope_type` pairs existed in `platform.association_types` — 14 registered
+  non-conveying in `migrations/scope_type_association_pairs.sql` (conveyance stays a human
+  decision). Host file-picker override (`host/associationsHostPortsImpl.tsx`) no longer
+  swallows failed attach/detach — it toasts, matching the package's generic list scream;
+  regression test `host/__tests__/fileAssociationPicker.test.tsx`.
 - 2026-08-30 — **Address canonicalization (marketing key-system back-port)**: the org
   scope tree now has exactly ONE canonical address per screen. `canonicalizeScopePath`
   (`lib/scopeRoutes.ts`, tested) + `ScopeAddressCanonicalizer`
