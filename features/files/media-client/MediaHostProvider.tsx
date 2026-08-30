@@ -17,16 +17,8 @@ import { mediaHostPorts } from "./ports";
 export function MediaHostProvider({ children }: { children: ReactNode }) {
   return (
     <MediaProvider
-      // PACKAGE DEFECT (@ai-matrx/media 0.1.0, reported to the npm-package
-      // campaign): tsup emits the DurableSrc unique-symbol brand TWICE — once
-      // in dist/index.d.ts (the root types entry this app implements against)
-      // and once in the shared d.ts chunk /core and /react consume — so the
-      // two structurally-identical MediaClient types are nominally
-      // incompatible. This ONE cast at the injection seam bridges the brands
-      // until the package ships a single-source dts. Do not add casts
-      // anywhere else; delete this one when the fixed version lands.
-      client={mediaClient as unknown as MediaProviderProps["client"]}
-      ports={mediaHostPorts as unknown as MediaProviderProps["ports"]}
+      client={mediaClient}
+      ports={mediaHostPorts}
     >
       {children}
     </MediaProvider>
