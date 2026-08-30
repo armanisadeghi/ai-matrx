@@ -22,7 +22,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { CircleAlert, CircleDashed } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { cn } from "@/lib/utils";
 import {
   COVERAGE_META,
@@ -71,6 +72,12 @@ export function useMandateCoverageStates(
   error: string | null;
 } {
   const dispatch = useAppDispatch();
+  // `callApi` requires an explicitly selected organization on EVERY request.
+  // A list can mount before app-context hydration finishes, and firing at null
+  // froze the admin console's coverage on a local pre-flight error even though
+  // the shell showed the organization moments later (the same fix as
+  // MandatesConsole). Wait for the authority the transport itself reads.
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const [report, setReport] = useState<MandateCoverageStatesResponse | null>(
     null,
   );
@@ -82,7 +89,7 @@ export function useMandateCoverageStates(
     // Not yet answerable (an org page before its organization resolves).
     // Stay in LOADING rather than firing an unscoped report the page would
     // then present as that organization's coverage.
-    if (!enabled) return;
+    if (!enabled || !activeOrganizationId) return;
     let cancelled = false;
     setLoading(true);
     void fetchMandateCoverageStates(dispatch, organizationId)
@@ -106,7 +113,7 @@ export function useMandateCoverageStates(
     return () => {
       cancelled = true;
     };
-  }, [dispatch, organizationId, enabled]);
+  }, [dispatch, organizationId, enabled, activeOrganizationId]);
 
   return { report, states, loading, error };
 }

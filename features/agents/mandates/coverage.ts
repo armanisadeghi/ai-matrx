@@ -194,9 +194,16 @@ export async function fetchMandateCoverageStates(
     callApi({
       path: "/mandates/coverage/states",
       method: "GET",
-      queryParams: organizationId
-        ? { organization_id: organizationId }
-        : undefined,
+      // The query org and the request's ORG CONTEXT must be the same
+      // organization — `assertQueryOrganizationMatchesContext` refuses the call
+      // otherwise. An org-settings page asks about the org in its ROUTE, which
+      // is not necessarily the ambient one, so bind both to that value.
+      ...(organizationId
+        ? {
+            queryParams: { organization_id: organizationId },
+            scopeOverrides: { organization_id: organizationId },
+          }
+        : {}),
     }),
   );
   if (response.error) throw new Error(response.error.message);
