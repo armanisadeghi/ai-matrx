@@ -84,6 +84,13 @@ GAP` screams and zero hydration errors. `pnpm type-check` clean for your files.
 Error Inspector clean on a normal load. Static analysis or a `deferred-visual`
 verdict can support repair, but can never satisfy this step.
 
+The tested dependency graph must be reproducible from the recorded commit. A
+workspace package build copied over `node_modules`, an unpublished package
+subpath, a locally patched install, or any other future-only dependency overlay
+may unblock diagnosis but is not certification evidence. Publish and adopt the
+package (or use the released API), perform a clean install/preview, and rerun the
+entire live matrix. Otherwise settle `retry` with the exact package boundary.
+
 ## Step 4 — Submit a certification candidate
 
 ```json
