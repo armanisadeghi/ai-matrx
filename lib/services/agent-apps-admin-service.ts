@@ -396,7 +396,11 @@ export async function updateAgentAppAdmin(
     .select()
     .single();
   if (error) throw error;
-  return data as AgentAppAdminView;
+  const keyByMandateId = await fetchMandateKeys([data.mandate_id]);
+  return {
+    ...data,
+    mandate_key: keyByMandateId.get(data.mandate_id ?? "") ?? null,
+  } as AgentAppAdminView;
 }
 
 export async function fetchAgentAppExecutions(filters?: {

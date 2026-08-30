@@ -7,6 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
