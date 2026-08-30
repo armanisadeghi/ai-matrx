@@ -81,4 +81,61 @@ describe("Pattern Patrol remote run authority", () => {
       }),
     ).toThrow("not an exact prefix");
   });
+
+  it("preserves a corrected candidate after the recorded candidate is rejected", () => {
+    const firstCandidate = git(repo, ["rev-parse", "HEAD"]);
+    const authorityRef = "refs/heads/patrol-runs/P9/run-9";
+    const first = blockedRecord();
+    const firstAuthority = publishPatrolRunAuthority({
+      repoRoot: repo,
+      record: first,
+      candidateSha: firstCandidate,
+      authorityRef,
+      actor: "controller",
+    });
+
+    git(repo, ["commit", "--allow-empty", "-m", "corrected candidate"]);
+    const correctedCandidate = git(repo, ["rev-parse", "HEAD"]);
+    const certifying = appendPatrolRunEvent(first, {
+      state: "certifying",
+      at: "2026-08-14T12:02:00.000Z",
+      actor: "controller",
+      summary: "Certifying first candidate",
+    });
+    const rejected = appendPatrolRunEvent(certifying, {
+      state: "rejected",
+      at: "2026-08-14T12:03:00.000Z",
+      actor: "certifier",
+      summary: "Rejected first candidate",
+    });
+    const fixing = appendPatrolRunEvent(rejected, {
+      state: "fixing",
+      at: "2026-08-14T12:04:00.000Z",
+      actor: "worker",
+      summary: "Corrected rejected defect",
+    });
+
+    const correctedAuthority = publishPatrolRunAuthority({
+      repoRoot: repo,
+      record: fixing,
+      candidateSha: correctedCandidate,
+      authorityRef,
+      actor: "controller",
+    });
+
+    expect(
+      git(repo, ["merge-base", "--is-ancestor", firstAuthority, correctedAuthority]),
+    ).toBe("");
+    expect(
+      git(repo, ["merge-base", "--is-ancestor", correctedCandidate, correctedAuthority]),
+    ).toBe("");
+    expect(
+      JSON.parse(
+        git(repo, [
+          "show",
+          `${correctedAuthority}:.matrx/patrol-runs/P9/run-9.json`,
+        ]),
+      ),
+    ).toEqual(fixing);
+  });
 });

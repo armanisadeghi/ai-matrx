@@ -91,6 +91,49 @@
       ],
       "previousEventHash": "7557b407ab6b23d3f3036e21abba016017e847652a00898fb0afae81b6158ac3",
       "eventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-30T14:36:43.468Z",
+      "actor": "/root/p8_batch1_certifier",
+      "summary": "CERTIFIED after correction: exact 15-file compact/control P8 batch has no batch-caused regression.",
+      "evidence": [
+        "rejected predecessor 18a0f0ce19 corrected before certification",
+        "all 15 candidate blobs match preserved remote ref",
+        "AgentComparison established wrapper/theme/geometry restored byte-for-byte",
+        "in-app Browser control unavailable; transient-state geometry proved statically and public auth routes returned HTTP 200"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "5d46322225ddc07a366620b9c304513ccaf4e6ec",
+        "certifierTaskId": "/root/p8_batch1_certifier",
+        "checks": [
+          "bare generic Loading literal grep: zero across 15 files",
+          "pnpm type-check: PASS in independent certification",
+          "auth destination tests: 83/83 PASS",
+          "scoped ESLint: unchanged baseline only (13 errors, 1 warning)",
+          "diff and formatting checks: PASS"
+        ]
+      },
+      "previousEventHash": "e908b3a1ff64171d9231694c1c65025c3c28cabdf5f50a2e6b53069429028dae",
+      "eventHash": "36af12ffdd6318616af20392474d84b2d94f4343b059381f840e79b4cc391a4e"
+    },
+    {
+      "sequence": 8,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:36:48.911Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "Corrected certified candidate is integrated on origin/main and queued for the serialized release lane; no redundant release created.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/ae48b585-c52d-4f15-a576-8ab736c3065e"
+      ],
+      "delivery": {
+        "candidateSha": "5d46322225ddc07a366620b9c304513ccaf4e6ec",
+        "preservedRef": "refs/heads/patrol-runs/P8/ae48b585-c52d-4f15-a576-8ab736c3065e"
+      },
+      "previousEventHash": "36af12ffdd6318616af20392474d84b2d94f4343b059381f840e79b4cc391a4e",
+      "eventHash": "30f5885d581873a3fe44c5719720a07413c9ea9b8e680e95ac3f8a5806bb90be"
     }
   ]
 }

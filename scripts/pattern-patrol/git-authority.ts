@@ -82,12 +82,14 @@ export function publishPatrolRunAuthority(input: {
   git(repoRoot, ["cat-file", "-e", `${candidateSha}^{commit}`]);
 
   const priorAuthority = remoteRefSha(repoRoot, authorityRef);
+  let candidateAlreadyPreserved = false;
   if (priorAuthority) {
     git(repoRoot, ["fetch", "--no-tags", "origin", authorityRef]);
     try {
       git(repoRoot, ["merge-base", "--is-ancestor", candidateSha, priorAuthority]);
+      candidateAlreadyPreserved = true;
     } catch {
-      throw new Error(`authority ref ${authorityRef} does not preserve candidate ${candidateSha}`);
+      candidateAlreadyPreserved = false;
     }
     const priorPath = recordPath(record);
     const prior = JSON.parse(git(repoRoot, ["show", `${priorAuthority}:${priorPath}`])) as PatrolRunRecord;
@@ -106,7 +108,20 @@ export function publishPatrolRunAuthority(input: {
     ) {
       throw new Error("remote authority history is not an exact prefix of the new record");
     }
-    if (canonicalPatrolRecordJson(prior) === canonicalPatrolRecordJson(record)) {
+    if (!candidateAlreadyPreserved) {
+      const replacementWasAuthorized = record.events
+        .slice(prior.events.length)
+        .some((event) => event.state === "rejected" || event.state === "reversed");
+      if (!replacementWasAuthorized) {
+        throw new Error(
+          `authority ref ${authorityRef} does not preserve candidate ${candidateSha}, and no later rejection or reversal authorizes replacement`,
+        );
+      }
+    }
+    if (
+      candidateAlreadyPreserved &&
+      canonicalPatrolRecordJson(prior) === canonicalPatrolRecordJson(record)
+    ) {
       return priorAuthority;
     }
   }
@@ -123,12 +138,13 @@ export function publishPatrolRunAuthority(input: {
       git(repoRoot, ["update-index", "--add", "--cacheinfo", "100644", object, path], { env });
     }
     const tree = git(repoRoot, ["write-tree"], { env });
-    const parent = priorAuthority ?? candidateSha;
+    const parents = priorAuthority
+      ? [priorAuthority, ...(candidateAlreadyPreserved ? [] : [candidateSha])]
+      : [candidateSha];
     const commit = git(repoRoot, [
       "commit-tree",
       tree,
-      "-p",
-      parent,
+      ...parents.flatMap((parent) => ["-p", parent]),
       "-m",
       `patrol run authority: ${record.patrolId}/${record.runId} ${currentPatrolRunState(record)}`,
       "-m",
