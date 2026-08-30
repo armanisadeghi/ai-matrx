@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
@@ -490,7 +491,13 @@ export default function AdminEmailPage() {
                       ) : (
                         <>
                           Leave blank to use default:{" "}
-                          {emailConfig?.defaultFrom || "loading..."}
+                          {emailConfig?.defaultFrom || (
+                            <SuspenseLoader
+                              size="xs"
+                              centered={false}
+                              message="Loading default sender…"
+                            />
+                          )}
                         </>
                       )}
                     </p>

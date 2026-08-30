@@ -219,7 +219,7 @@ const SlackManager: React.FC = () => {
                 disabled={!token || loading}
                 className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
             >
-              {loading ? 'Loading...' : 'Refresh'}
+              {loading ? 'Loading channels…' : 'Refresh'}
             </button>
           </div>
         </div>

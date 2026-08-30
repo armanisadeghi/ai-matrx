@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   updateFeedback,
   setAdminDecision,
@@ -54,6 +60,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   AlertCircle,
   Flame,
@@ -858,11 +865,9 @@ export default function FeedbackDetailDialog({
         status: formStatus,
         hasOpenIssues,
         categoryId,
-        categoryName:
-          categories.find((c) => c.id === categoryId)?.name ?? null,
+        categoryName: categories.find((c) => c.id === categoryId)?.name ?? null,
         assigneeId,
-        assigneeName:
-          assignee?.display_name ?? assignee?.email ?? null,
+        assigneeName: assignee?.display_name ?? assignee?.email ?? null,
         parentId,
       },
       drafts: {
@@ -1208,7 +1213,8 @@ export default function FeedbackDetailDialog({
                           // (preview + download button + Open-in-app),
                           // not on raw bytes that some browsers/CDNs
                           // attachment-force.
-                          const viewHref = feedbackScreenshotHref(screenshotRef);
+                          const viewHref =
+                            feedbackScreenshotHref(screenshotRef);
                           return (
                             <a
                               key={screenshotRef}
@@ -1311,7 +1317,11 @@ export default function FeedbackDetailDialog({
                                       </span>
                                     ) : (
                                       <span className="text-muted-foreground italic">
-                                        Loading...
+                                        <SuspenseLoader
+                                          size="xs"
+                                          centered={false}
+                                          message="Loading parent feedback…"
+                                        />
                                       </span>
                                     )}
                                   </>

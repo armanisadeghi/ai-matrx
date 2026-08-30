@@ -178,7 +178,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
             <input type="hidden" name="redirectTo" value={redirectTo ?? ""} />
             <GuestFingerprintField />
             <SubmitButton
-              pendingText="Loading..."
+              pendingText="Google sign-in…"
               className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200"
             >
               <IconBrandGoogle className="h-5 w-5 mr-1" />
@@ -190,7 +190,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
             <input type="hidden" name="redirectTo" value={redirectTo ?? ""} />
             <GuestFingerprintField />
             <SubmitButton
-              pendingText="Loading..."
+              pendingText="Apple sign-in…"
               className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200"
             >
               <IconBrandApple className="h-5 w-5 mr-1" />
@@ -202,7 +202,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
             <input type="hidden" name="redirectTo" value={redirectTo ?? ""} />
             <GuestFingerprintField />
             <SubmitButton
-              pendingText="Loading..."
+              pendingText="GitHub sign-in…"
               className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200"
             >
               <IconBrandGithub className="h-5 w-5 mr-1" />
