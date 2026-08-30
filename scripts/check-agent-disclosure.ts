@@ -21,8 +21,8 @@
  * visible page content. The deleted inline PageAgents API is forbidden, and
  * this guard fails immediately if it returns.
  *
- * WHAT THIS FLAGS: a file that runs a mandate — `useMandateRunner`,
- * `runMandate(`, `launchMandate(`, `resolveMandate(`, `useMandate(`, a
+ * WHAT THIS FLAGS: a file that runs a mandate — `runMandate(`,
+ * `launchMandate(`, `resolveMandate(`, `useMandate(`, a
  * `mandateKey:` literal, or a POST to `/mandates/{key}` — and which
  * neither registers the job at runtime nor sits in a feature whose manifest
  * declares that job as an agent role.
@@ -44,7 +44,6 @@ const SCAN_DIRS = ["app", "features", "components"];
 
 /** Running a mandate — the signals that mean "this file drives an agent". */
 const RUN_SIGNALS: RegExp[] = [
-  /useMandateRunner\s*\(/,
   /\brunMandate\s*\(/,
   /\blaunchMandate\s*\(/,
   /\bresolveMandate(?:Server)?\s*\(/,
