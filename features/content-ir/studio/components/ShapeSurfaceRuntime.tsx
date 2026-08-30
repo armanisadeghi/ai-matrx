@@ -22,7 +22,15 @@ import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest
 
 interface ShapeSurfaceRuntimeProps {
   /** Which studio route this is — mirrors the manifest's `studio_tab`. */
-  studioTab: "schema" | "instances" | "test" | "stream";
+  studioTab:
+    | "schema"
+    | "instances"
+    | "test"
+    | "stream"
+    | "examples"
+    | "gate"
+    | "template"
+    | "inputs";
   kind: string;
   label: string;
   kindDefinitionId: string;

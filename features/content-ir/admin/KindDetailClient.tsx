@@ -26,6 +26,8 @@ import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-typ
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
 import KindEmitTemplate from "@/features/content-ir/render-paths/KindEmitTemplate";
+import ShapeStreamTabLoader from "@/features/content-ir/studio/components/ShapeStreamTabLoader";
+import ShapeInstancesTabLoader from "@/features/content-ir/studio/components/ShapeInstancesTabLoader";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
@@ -110,6 +112,8 @@ const TABS = [
   "template",
   "inputs",
   "variants",
+  "stream",
+  "instances",
 ] as const;
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
@@ -126,7 +130,19 @@ const TAB_LABELS: Record<TabId, string> = {
   template: "Template",
   inputs: "Inputs",
   variants: "Variants",
+  // 🚨 THE ADMIN PAGE HAD EVERY TAB EXCEPT THE ONE THAT TOLD THE TRUTH.
+  // Stream is the only surface that has ever fed real text through the real
+  // recognizer; it lived exclusively in the user studio, so an admin looking
+  // at a broken kind saw nine green tabs and no way to find out. Instances
+  // was the studio's other exclusive. One set of tabs (Arman, 2026-08-29).
+  stream: "Stream",
+  instances: "Instances",
 };
+
+/** The instance-title override, when the server payload carried one. */
+function titleKeyOf(detail: KindDetailData): string | null {
+  return detail.titleKey ?? null;
+}
 
 function isTabId(value: string | undefined): value is TabId {
   return TABS.includes(value as TabId);
@@ -337,6 +353,26 @@ export default function KindDetailClient({
             />
           )}
           {tab === "variants" && <KindVariantsTab detail={detail} />}
+          {tab === "stream" && (
+            <div className="mx-auto max-w-4xl">
+              <ShapeStreamTabLoader
+                kind={detail.kind}
+                label={detail.label}
+                kindDefinitionId={detail.id}
+              />
+            </div>
+          )}
+          {tab === "instances" && (
+            <div className="mx-auto max-w-4xl">
+              <ShapeInstancesTabLoader
+                kind={detail.kind}
+                label={detail.label}
+                kindDefinitionId={detail.id}
+                currentVersion={detail.version}
+                titleKey={titleKeyOf(detail)}
+              />
+            </div>
+          )}
           {tab === "assets" && (
             <KindAssetsTab
               detail={detail}

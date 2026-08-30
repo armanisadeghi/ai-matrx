@@ -35,6 +35,11 @@ export interface ShapeDetail {
    * (Arman's ruling) — never read here or anywhere else.
    */
   dataOnly: boolean;
+  /**
+   * `metadata.family` verbatim — the Gate tab's render-leg doctrine reads it
+   * to decide whether a render leg even applies to this kind.
+   */
+  family: string | null;
   /** True only when `created_by` is the viewer; grants do not imply ownership. */
   isOwnedByViewer: boolean;
 }
@@ -94,6 +99,7 @@ export async function getShapeDetail(
     dataOnly: GENERATED_CONTRACT_FAMILY_VALUES.has(
       kindFamilyFromMetadata(data.metadata) ?? "",
     ),
+    family: kindFamilyFromMetadata(data.metadata),
     isOwnedByViewer: Boolean(auth.user && data.created_by === auth.user.id),
   };
 }

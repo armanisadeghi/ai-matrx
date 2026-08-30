@@ -71,6 +71,33 @@ export function shapeInstancesHref(kind: string): string {
 }
 
 /**
+ * 🚨 ONE SET OF TABS FOR EVERYONE (Arman, 2026-08-29): "there's no reason why
+ * we get this amazing set of options and users get fucked… any kind of
+ * difference between them is going to be permissions differences."
+ *
+ * These four existed only on the admin registry page while the studio had
+ * Preview/Test/Stream/Instances/Schema. Neither surface was a superset — the
+ * admin lacked the one tab that told the truth (Stream), and the studio lacked
+ * everything else. Same components, same routes; what a viewer may CHANGE is
+ * the only difference.
+ */
+export function shapeExamplesHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/examples`;
+}
+
+export function shapeGateHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/gate`;
+}
+
+export function shapeTemplateHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/template`;
+}
+
+export function shapeInputsHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/inputs`;
+}
+
+/**
  * Canonical per-instance permalink — MUST stay in lockstep with the
  * `content_ir_kind_instance` sharing-registry `url_path_template`
  * (`/shapes/instances/{id}`). Resolved by `app/(core)/shapes/instances/[id]`,

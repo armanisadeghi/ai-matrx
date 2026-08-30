@@ -34,7 +34,9 @@ export type KindRegistryDetailTab =
   | "schema"
   | "template"
   | "inputs"
-  | "variants";
+  | "variants"
+  | "stream"
+  | "instances";
 
 export interface KindComponentEditorScopeState {
   rows: KindComponentCodeRecord[];
