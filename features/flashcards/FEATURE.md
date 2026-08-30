@@ -20,6 +20,11 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` and
 ([fast-fire/helper-audio/generateHelperAudio.thunk.ts](./fast-fire/helper-audio/generateHelperAudio.thunk.ts))
 is its consumer.
 
+The authenticated set-detail route gates with `getServerAuth` before mounting
+`SetDetailView`. Guests redirect through `loginHref` with the set destination intact;
+they never reach `fcService` as the anonymous PostgREST role. Public decks use the
+separate `/p/e/fc_set/[id]` lane and its purpose-built RPC.
+
 ## Agent-generated decks — the single-writer contract (D-WP3-4)
 
 A headless generation run has TWO potential fc_set writers: the surface's explicit
@@ -156,6 +161,9 @@ own fresh conversation):
   print) carry the URL and alt text but not the credit caption.
 
 ## Change log
+
+- 2026-08-30 — Set detail now stops guests at the server auth boundary before any
+  `education.fc_set` client read, preserving the requested deck through login.
 
 - 2026-08-25 — 🚨 **Bulk enrichment rebuilt as a LIVE CASCADE, and driven by the selection
   that already existed.** The version shipped hours earlier was mechanically right and
