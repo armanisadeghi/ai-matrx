@@ -154,6 +154,18 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-08-31** — ROOT CAUSE FIX for the mobile Google OAuth outage: the
+  auth-authority cutover renamed the cookie mid-day and the legacy rename
+  migration skips `name-code-verifier`, so a client still running a
+  pre-cutover document started OAuth writing the verifier under the OLD
+  cookie name and the new callback read only the new one — a permanent,
+  silent, retry-proof login loop. `/auth/callback` now accepts a verifier
+  under ANY historical `sb-*-code-verifier` name (aliased to the current
+  name for the exchange, expired after success), and the missing-verifier
+  login error carries a cookie-NAME diagnostic so any affected device
+  reports its own jar state. Package gap (migrateLegacyCookies not covering
+  `-code-verifier`) logged in FOUND_DEFECTS.md for `@ai-matrx/data`.
+
 - **2026-08-31** — `/auth/callback` now diagnoses a failed PKCE exchange
   instead of looping on a generic error (2026-08-31 mobile Google OAuth
   outage: iPhones with pre-cutover cookie jars never returned the

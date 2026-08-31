@@ -7,11 +7,11 @@
 // unlike Server Components where it throws).
 
 import { after, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { cookies, headers } from "next/headers";
 import {
   AUTH_COOKIE_NAME,
   LEGACY_AUTH_COOKIE_NAME,
+  supabaseNext,
 } from "@/utils/supabase/authCookie";
 import { extractErrorMessage } from "@/utils/errors";
 import { safeForwardedHost } from "@/utils/auth/safe-redirect";
@@ -131,8 +131,65 @@ export async function GET(request: Request) {
       const baseUrl =
         !isLocalEnv && forwardedHost ? `https://${forwardedHost}` : origin;
 
+      const [jar, requestHeaders] = await Promise.all([cookies(), headers()]);
+
+      // THE CUTOVER-COMPAT SHIM — root cause of the 2026-08-31 mobile outage.
+      // The auth-authority cutover renamed the cookie (`sb-matrx-auth` →
+      // `sb-matrx-auth-v2`) mid-day, and the legacy rename migration covers the
+      // session cookie and its `name.N` chunks but NOT `name-code-verifier`.
+      // A client still running a pre-cutover document (a stale mobile tab whose
+      // action POST Vercel routes to its matching older deployment) starts
+      // OAuth writing the verifier under the OLD name; Google's redirect then
+      // lands on the CURRENT deployment, which reads only the new name — so the
+      // exchange dies client-side with zero server trace, forever, on every
+      // retry. Accept a verifier under ANY historical `sb-*-code-verifier`
+      // name by presenting it to the client under the current name.
+      const verifierAliasFrom = jar.has(CODE_VERIFIER_COOKIE)
+        ? null
+        : (jar
+            .getAll()
+            .find(
+              ({ name, value }) =>
+                name !== CODE_VERIFIER_COOKIE &&
+                name.startsWith("sb-") &&
+                name.endsWith("-code-verifier") &&
+                value.length > 0,
+            )?.name ?? null);
+      if (verifierAliasFrom) {
+        console.log(
+          `[${timestamp}] Auth callback - LOUD: verifier arrived under historical cookie name "${verifierAliasFrom}"; aliasing to "${CODE_VERIFIER_COOKIE}" for the exchange`,
+        );
+      }
+
       console.log(`[${timestamp}] Auth callback - Creating Supabase client...`);
-      const supabase = await createClient();
+      const supabase = supabaseNext.serverClient({
+        cookieStore: {
+          getAll: () =>
+            jar
+              .getAll()
+              .map((cookie) =>
+                cookie.name === verifierAliasFrom
+                  ? { name: CODE_VERIFIER_COOKIE, value: cookie.value }
+                  : cookie,
+              ),
+          set: (name, value, options) => {
+            try {
+              (
+                jar.set as (
+                  name: string,
+                  value: string,
+                  options?: Record<string, unknown>,
+                ) => void
+              )(name, value, options);
+            } catch {
+              // Mirrors utils/supabase/server.ts: a swallowed write is only
+              // legal outside Route Handlers; here set() succeeds, but the
+              // adapter contract stays identical to the canonical client.
+            }
+          },
+        },
+        host: requestHeaders.get("host"),
+      });
       console.log(
         `[${timestamp}] Auth callback - Client created, exchanging code...`,
       );
@@ -144,17 +201,18 @@ export async function GET(request: Request) {
       if (error) {
         // Diagnose before reporting: which auth cookies actually arrived?
         // Names only — never log cookie values.
-        const jar = await cookies();
         const authCookieNames = jar
           .getAll()
           .map(({ name }) => name)
           .filter(isAuthCookieName);
-        const verifierArrived = jar.has(CODE_VERIFIER_COOKIE);
+        const verifierArrived =
+          jar.has(CODE_VERIFIER_COOKIE) || verifierAliasFrom !== null;
 
         console.error(
           `[${timestamp}] Auth callback - LOUD: code exchange failed ` +
             `(code=${error.code ?? "none"}, status=${error.status ?? "none"}, ` +
             `verifierCookiePresent=${verifierArrived}, ` +
+            `verifierAliasedFrom=${verifierAliasFrom ?? "none"}, ` +
             `authCookiesPresent=[${authCookieNames.join(", ")}], ` +
             `ua=${request.headers.get("user-agent") ?? "unknown"}):`,
           error,
@@ -181,8 +239,16 @@ export async function GET(request: Request) {
             "/login",
             { redirectTo },
             {
+              // The diagnostic rides in the visible error on purpose: cookie
+              // NAMES only, never values. It is the one channel that reaches
+              // us from any affected device without server-log access.
               error:
-                "Sign-in could not complete because this browser did not return its sign-in security cookie. Stale sign-in cookies have been cleared — please try again.",
+                "Sign-in could not complete because this browser did not return its sign-in security cookie. Stale sign-in cookies have been cleared — please try again. " +
+                `(diagnostic: expected ${CODE_VERIFIER_COOKIE}; received ${
+                  authCookieNames.length > 0
+                    ? authCookieNames.slice(0, 6).join(", ")
+                    : "no sign-in cookies at all"
+                })`,
             },
           )}`;
           const response = NextResponse.redirect(loginUrl);
@@ -269,7 +335,6 @@ export async function GET(request: Request) {
       // FAIL-OPEN: any failure logs loudly and the login proceeds untouched.
       let guestFpToClear = false;
       try {
-        const jar = await cookies();
         const guestFp = jar.get(GUEST_OAUTH_FP_COOKIE)?.value;
         if (guestFp) {
           guestFpToClear = true;
@@ -306,6 +371,21 @@ export async function GET(request: Request) {
       if (guestFpToClear) {
         // One-shot carrier: always clear after the callback consumed it.
         response.cookies.delete(GUEST_OAUTH_FP_COOKIE);
+      }
+      if (verifierAliasFrom) {
+        // The shim carried this login — say so, and retire the historical
+        // verifier so the next flow writes and reads only the current name.
+        // Domain scope matches how every aimatrx host writes auth cookies;
+        // response.cookies (not raw headers) so it composes with the session
+        // cookies Next merges onto this response.
+        console.log(
+          `[${timestamp}] Auth callback - LOUD: exchange succeeded via historical verifier cookie "${verifierAliasFrom}"; expiring it`,
+        );
+        response.cookies.set(verifierAliasFrom, "", {
+          path: "/",
+          maxAge: 0,
+          domain: ".aimatrx.com",
+        });
       }
       return response;
     }
