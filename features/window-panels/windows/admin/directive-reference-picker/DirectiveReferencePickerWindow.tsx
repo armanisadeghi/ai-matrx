@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RecordReferencePicker } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
@@ -76,15 +77,27 @@ export function DirectiveReferencePickerWindow({
       position="center"
       bodyClassName="p-0 overflow-hidden"
     >
-      <div className="flex h-full min-h-0 flex-col gap-2 p-3">
-        <p className="shrink-0 text-xs text-muted-foreground">
-          Search accessible {info.labelPlural.toLowerCase()} and select the real
-          record for <code className="font-mono">{fieldKey}</code>.
-        </p>
-        <div className="min-h-0 flex-1">
-          <RecordReferencePicker token={entityToken} onPickMany={handlePick} />
+      {/*
+       * Generic picker for whatever `entityToken` a directive field names —
+       * no fixed identity to menu here (that's `RecordReferencePicker`'s own
+       * rows, a shared component out of this shard). Raw-content menu so the
+       * window still answers for itself.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: `${info.label} · ${fieldKey}` }}
+      >
+        <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+          <p className="shrink-0 text-xs text-muted-foreground">
+            Search accessible {info.labelPlural.toLowerCase()} and select the real
+            record for <code className="font-mono">{fieldKey}</code>.
+          </p>
+          <div className="min-h-0 flex-1">
+            <RecordReferencePicker token={entityToken} onPickMany={handlePick} />
+          </div>
         </div>
-      </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
