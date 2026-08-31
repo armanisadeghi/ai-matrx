@@ -154,6 +154,17 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-08-31** — THE STALE-TAB ANNIHILATOR: a failed PKCE exchange no longer
+  307s back into the same (possibly stale) document — the callback returns a
+  tiny interstitial that sends `Clear-Site-Data: "cache"` and hard-replaces to
+  /login with a cache-buster, so the failing tab reloads the CURRENT bundle
+  before the next attempt; only the failing tab is touched. The
+  verifier-present-but-exchange-rejected branch (previously mute) now carries
+  an on-screen diagnostic (error code/status, verifier length or alias source
+  — never values), and an EMPTY verifier cookie is treated as absent (it fails
+  supabase-js client-side exactly like a missing one, and must not shadow an
+  aliased historical verifier).
+
 - **2026-08-31** — ROOT CAUSE FIX for the mobile Google OAuth outage: the
   auth-authority cutover renamed the cookie mid-day and the legacy rename
   migration skips `name-code-verifier`, so a client still running a
