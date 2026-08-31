@@ -13,6 +13,7 @@ import {
   bodyPointerEventsRepairCount,
   restoreBodyPointerEventsIfOrphaned,
 } from "@/components/dialogs/confirm/body-pointer-events-guard";
+import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
 import { extractErrorMessage } from "@/utils/errors";
 import { coverageLine } from "../words";
 import { writeReportStillDescribesDraft } from "../write-report-life";
@@ -180,6 +181,28 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
 
   test("not locked: nothing to do", () => {
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+  });
+});
+
+describe("V1 R2-1 producer — a selection closes before its confirm opens", () => {
+  test("the handoff cannot continue synchronously inside Radix onValueChange", async () => {
+    let scheduled: FrameRequestCallback | null = null;
+    let continued = false;
+
+    const handoff = afterCurrentLayerCloses((callback) => {
+      scheduled = callback;
+      return 1;
+    }).then(() => {
+      continued = true;
+    });
+
+    expect(continued).toBe(false);
+    expect(scheduled).not.toBeNull();
+
+    const release = scheduled as FrameRequestCallback | null;
+    release?.(0);
+    await handoff;
+    expect(continued).toBe(true);
   });
 });
 

@@ -113,6 +113,8 @@ with `#bind`.
    with an honest sentence. The structural skip is what this build exists to end.
 6. **Nothing dead, nothing silent.** Every empty, loading, unreadable and refused state is a
    sentence with a remedy. Save is disabled only with its reason printed beside it.
+7. **A selection closes before its confirmation opens.** `afterCurrentLayerCloses` separates
+   the rung picker from the dirty-draft AlertDialog so their Radix body locks never overlap.
 
 ## The four sources, all four real
 
@@ -220,6 +222,11 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-08-31 — **The rung picker closes before its dirty-draft confirm opens.** Both mandate
+  routes mount `OneBindingWorkspace`; deferring that shared handoff by one animation frame ends
+  the overlapping Radix body-lock class at its producer. The global orphan-lock guard remains a
+  loud recovery boundary, not the normal path. `fix4-guards.test.ts` pins the asynchronous order.
 
 - 2026-08-31 — **The write speaks, and the screen prints what it said.** aidream
   v0.2.456 added two fields to `BindingResult` that nothing here read, because

@@ -31,6 +31,7 @@ import { AlertTriangle, CircleCheck, Settings2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -875,6 +876,12 @@ function BindingDraft({
       return;
     }
     if (dirty) {
+      // `ShortcutScopePicker` is a Radix Select. Its selection callback runs
+      // before the listbox has committed its close, so opening the confirm in
+      // this same stack overlaps two body-lock owners. Both mandate routes use
+      // this boundary; wait one paint so the Select owns a complete close
+      // before the AlertDialog owns its open.
+      await afterCurrentLayerCloses();
       const ok = await confirm({
         title: `Move to ${rungWords(nextRung).noun}?`,
         description: `${rungWords(nextRung).noun[0].toUpperCase()}${rungWords(nextRung).noun.slice(1)} starts from its OWN stored answer, so the unsaved changes you have made here are discarded. Save first if you want to keep them.`,
