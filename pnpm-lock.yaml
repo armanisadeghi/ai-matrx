@@ -49,7 +49,7 @@ importers:
         version: 0.7.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/media':
         specifier: latest
-        version: 0.4.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.4.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/print':
         specifier: latest
         version: 0.4.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -903,8 +903,8 @@ packages:
     peerDependencies:
       react: 19.2.7
 
-  '@ai-matrx/media@0.4.2':
-    resolution: {integrity: sha512-s6l4Qus74B0bff5GkqB1Kcn1Ct1QeChkv7p7N5OGQTHBd27n/B0Is+1yCB/jiU3Iu2HHWptxnMYJTjEOrWBwGg==}
+  '@ai-matrx/media@0.4.3':
+    resolution: {integrity: sha512-Jp9c4uQnAkZ4+BkkMfGpalMlcrwmob9haRHrBP2Dj7Ckawo5j14tSQCG6cB6x0T1Br+RDV+8zmVXKDEsqaaXpg==}
     engines: {node: '>=20'}
     peerDependencies:
       next: '>=14.0.0'
@@ -13236,7 +13236,7 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@ai-matrx/media@0.4.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/media@0.4.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/associations': 0.7.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
