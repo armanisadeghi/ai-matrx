@@ -18865,6 +18865,48 @@
         }
       }
     },
+    "/hootsuite/public/status": {
+      "get": {
+        "tags": [
+          "Hootsuite Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hootsuite_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HootsuiteServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/emplifi/public/status": {
+      "get": {
+        "tags": [
+          "Emplifi Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_emplifi_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmplifiServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/buttercms/public/status": {
       "get": {
         "tags": [
@@ -18879,6 +18921,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ButterCmsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloudcannon/public/status": {
+      "get": {
+        "tags": [
+          "CloudCannon Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_cloudcannon_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudCannonServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kaltura/public/status": {
+      "get": {
+        "tags": [
+          "Kaltura Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kaltura_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KalturaServiceStatus"
                 }
               }
             }
@@ -19047,6 +19131,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BizzaboStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vfairs/public/status": {
+      "get": {
+        "tags": [
+          "vFairs Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_vfairs_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VFairsStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stova/public/status": {
+      "get": {
+        "tags": [
+          "Stova Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_stova_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StovaStatusResult"
                 }
               }
             }
@@ -38460,6 +38586,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -51070,6 +51256,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MandateBindingDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/input-surface": {
+      "get": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Get Mandate Input Surface",
+        "description": "The mandate's ONE input surface — its Provision's offered values, its own\ndescribed inputs, or the bound Holder's declared variables, whichever it\nactually has. Resolved for the caller so their override's Holder is the one\nthat informs the form.",
+        "operationId": "get_mandate_input_surface_mandates__mandate_key__input_surface_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateInputSurfaceResponse"
                 }
               }
             }
@@ -82774,7 +83003,8 @@
             "type": "string",
             "enum": [
               "user",
-              "org"
+              "org",
+              "global"
             ],
             "title": "Principal Type"
           },
@@ -96635,6 +96865,47 @@
           "success"
         ],
         "title": "ClosePageResult"
+      },
+      "CloudCannonServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cloudcannon_public_content_platform_status",
+            "title": "Kind",
+            "default": "cloudcannon_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CloudCannon",
+            "title": "Provider",
+            "default": "CloudCannon"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.cloudcannon.com",
+            "title": "Status Page",
+            "default": "https://status.cloudcannon.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CloudCannonServiceStatus",
+        "description": "Safe aggregate status projection for CloudCannon's fixed status page."
       },
       "CloudflareAccountMetadata": {
         "properties": {
@@ -112213,6 +112484,61 @@
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -113013,6 +113339,13 @@
             },
             "type": "object",
             "title": "Aliases"
+          },
+          "item_kinds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Item Kinds"
           }
         },
         "additionalProperties": false,
@@ -117135,6 +117468,51 @@
           "vectors"
         ],
         "title": "EmbeddingResponse"
+      },
+      "EmplifiServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "emplifi_public_service_status",
+            "title": "Kind",
+            "default": "emplifi_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "emplifi",
+            "title": "Provider",
+            "default": "emplifi"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.emplifi.io/",
+            "title": "Status Page",
+            "default": "https://status.emplifi.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "EmplifiServiceStatus",
+        "description": "Safe aggregate status projection for Emplifi's fixed status page."
       },
       "EndOfLifeDatePublicRelease": {
         "properties": {
@@ -131018,6 +131396,51 @@
         "title": "HomebrewPublicFormula",
         "description": "Safe bounded projection of one public Homebrew/core formula."
       },
+      "HootsuiteServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hootsuite_public_service_status",
+            "title": "Kind",
+            "default": "hootsuite_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "hootsuite",
+            "title": "Provider",
+            "default": "hootsuite"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.hootsuite.com",
+            "title": "Status Page",
+            "default": "https://status.hootsuite.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "HootsuiteServiceStatus",
+        "description": "Safe aggregate status projection for Hootsuite's fixed status page."
+      },
       "HuggingFaceModelResult": {
         "properties": {
           "__kind": {
@@ -136427,6 +136850,47 @@
         "title": "KajabiServiceStatus",
         "description": "Safe aggregate status projection for Kajabi's fixed status page."
       },
+      "KalturaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kaltura_public_media_platform_status",
+            "title": "Kind",
+            "default": "kaltura_public_media_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kaltura",
+            "title": "Provider",
+            "default": "Kaltura"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.kaltura.com",
+            "title": "Status Page",
+            "default": "https://status.kaltura.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "KalturaServiceStatus",
+        "description": "Safe aggregate status projection for Kaltura's fixed status page."
+      },
       "KeyFindingEntry": {
         "properties": {
           "label_category": {
@@ -137552,6 +138016,17 @@
               }
             ],
             "title": "Item Schema"
+          },
+          "item_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Kind"
           }
         },
         "additionalProperties": false,
@@ -144412,7 +144887,8 @@
             "type": "string",
             "enum": [
               "user",
-              "org"
+              "org",
+              "global"
             ],
             "title": "Principal Type",
             "default": "user"
@@ -144442,7 +144918,8 @@
             "type": "string",
             "enum": [
               "user",
-              "org"
+              "org",
+              "global"
             ],
             "title": "Principal Type"
           },
@@ -144465,7 +144942,8 @@
             "type": "string",
             "enum": [
               "user",
-              "org"
+              "org",
+              "global"
             ],
             "title": "Principal Type",
             "default": "user"
@@ -145305,6 +145783,75 @@
         ],
         "title": "MandateGoalResponse"
       },
+      "MandateInputSurfaceResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "provision_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provision Key"
+          },
+          "surface_source": {
+            "type": "string",
+            "enum": [
+              "provision",
+              "mandate_inputs",
+              "holder",
+              "none"
+            ],
+            "title": "Surface Source"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
+          },
+          "accepts_user_input": {
+            "type": "boolean",
+            "title": "Accepts User Input",
+            "default": false
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/MandateServedInput"
+            },
+            "type": "array",
+            "title": "Inputs",
+            "default": []
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "surface_source"
+        ],
+        "title": "MandateInputSurfaceResponse",
+        "description": "THE mandate's input declaration, resolved for THIS caller.\n\n``surface_source`` names where the declaration came from, and it is the\nonly honest way to say \"this job takes user text only\" — that claim is\ntrue when and only when ``surface_source == 'none'``."
+      },
       "MandateOption": {
         "properties": {
           "mandate_key": {
@@ -145630,6 +146177,136 @@
         ],
         "title": "MandateResultPromotion",
         "description": "Receipt for promoting a persisted bench result into the exemplar's\nreference."
+      },
+      "MandateServedInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "sourcing": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "require",
+              "optional"
+            ],
+            "title": "Sourcing"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "help": {
+            "type": "string",
+            "title": "Help",
+            "default": ""
+          },
+          "placeholder": {
+            "type": "string",
+            "title": "Placeholder",
+            "default": ""
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options",
+            "default": []
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "field",
+              "variable",
+              "provision",
+              "mandate_input",
+              "holder"
+            ],
+            "title": "Origin",
+            "default": "field"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "json_schema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Json Schema",
+            "default": {}
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "pinned": {
+            "type": "boolean",
+            "title": "Pinned",
+            "default": false
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "default": false
+          },
+          "pinned_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "sourcing"
+        ],
+        "title": "MandateServedInput",
+        "description": "One entry of the mandate's served input surface.\n\nField-for-field the workflow surface's ``ServedInput``\n(``routers/workflow.py``) — INPUT-SURFACE.md is ONE contract with four\nconsumers, so a mandate input and a workflow input are addressed\nidentically and parse through the same client module. ``origin`` is wider\nhere because a mandate's declaration can come from a Provision, the\nmandate's own described inputs, or the bound Holder, and the reader is\nalways told which."
       },
       "MandateSummaryResponse": {
         "properties": {
@@ -194528,6 +195205,56 @@
         "title": "StoryAngleRulingResult",
         "description": "The human-owned status written to one story angle."
       },
+      "StovaStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "stova_official_service_status",
+            "title": "Kind",
+            "default": "stova_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "stova",
+            "title": "Provider",
+            "default": "stova"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.stova.io",
+            "title": "Status Url",
+            "default": "https://status.stova.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "StovaStatusResult",
+        "description": "Safe projection of Stova's high-level service status."
+      },
       "StrapiServiceStatus": {
         "properties": {
           "__kind": {
@@ -207222,6 +207949,56 @@
         ],
         "title": "UsgsPublicEarthquakeEvent",
         "description": "Safe factual projection of one public USGS earthquake event."
+      },
+      "VFairsStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "vfairs_official_service_status",
+            "title": "Kind",
+            "default": "vfairs_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "vfairs",
+            "title": "Provider",
+            "default": "vfairs"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.vfairs.com",
+            "title": "Status Url",
+            "default": "https://status.vfairs.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "VFairsStatusResult",
+        "description": "Safe projection of vFairs' high-level service status."
       },
       "ValidateCronRequest": {
         "properties": {
