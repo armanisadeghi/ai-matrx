@@ -27,6 +27,7 @@
 import { useCallback } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MatcherReviewBody } from "@/features/marketing/seo/value-system/dimensions/MatcherReviewBody";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface MatcherReviewWindowProps {
   isOpen: boolean;
@@ -74,17 +75,30 @@ export default function MatcherReviewWindow({
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <MatcherReviewBody
-        siteId={siteId}
-        matcherId={matcherId}
-        pattern={pattern ?? null}
-        kindLabel={kindLabel || "Match"}
-        valueLabel={valueLabel || "this answer"}
-        dimensionLabel={dimensionLabel || "Dimension"}
-        // Undo deleted the match — the window's whole subject is gone, so it
-        // closes rather than sitting there showing a table of a dead rule.
-        onGone={onClose}
-      />
+      {/*
+       * Catch-all pane menu, keyed to the matcher's own site — `MatcherReviewBody`
+       * mounts its own keyword menu over the matched-keyword list; this one
+       * only answers for the header/footer strip around it, so nothing in
+       * this window falls through to the page open behind it.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: pattern ?? valueLabel ?? "" }}
+        entity={{ type: "web_site", id: siteId, title: siteId, resourceType: "web_site" }}
+      >
+        <MatcherReviewBody
+          siteId={siteId}
+          matcherId={matcherId}
+          pattern={pattern ?? null}
+          kindLabel={kindLabel || "Match"}
+          valueLabel={valueLabel || "this answer"}
+          dimensionLabel={dimensionLabel || "Dimension"}
+          // Undo deleted the match — the window's whole subject is gone, so it
+          // closes rather than sitting there showing a table of a dead rule.
+          onGone={onClose}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

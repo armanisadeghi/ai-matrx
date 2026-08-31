@@ -33,7 +33,7 @@
  * honest — the thing it reverses is the thing it deletes.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -58,6 +58,14 @@ import {
   getMatcherReview,
   type MatcherReviewRow,
 } from "./data";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 
 type Outcome = MatcherReviewRow["outcome"];
 
@@ -153,6 +161,24 @@ export function MatcherReviewBody({
     staleTime: 15_000,
   });
 
+  /**
+   * Every row here IS a keyword — same identity, same shared builder, as
+   * every other keyword surface (context-menu-v3 rollout).
+   */
+  const clickedMatchRow = useRef<MatcherReviewRow | null>(null);
+  const keywordAssignSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () => void review.refetch(),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    surfaces: keywordAssignSurfaces,
+    getRow: (): KeywordMenuRow | null => {
+      const row = clickedMatchRow.current;
+      return row ? { phrase: row.phrase, keywordId: row.keywordId } : null;
+    },
+  });
+
   const undo = useMutation({
     mutationFn: () => deleteDimensionMatcher(matcherId),
     onSuccess: (result) => {
@@ -208,6 +234,7 @@ export function MatcherReviewBody({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {keywordAssignSurfaces.node}
       <header className="shrink-0 border-b border-border px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className="text-sm font-semibold text-foreground">
@@ -336,6 +363,23 @@ export function MatcherReviewBody({
           </p>
         ) : null}
 
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          extraSections={[keywordMenuSection]}
+          resolveContextOnOpen={(target) => {
+            const el = target?.closest<HTMLElement>("[data-row-id]");
+            const id = el?.getAttribute("data-row-id") ?? null;
+            const row = shown.find((r) => r.keywordId === id) ?? null;
+            clickedMatchRow.current = row;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef(
+                row ? { phrase: row.phrase, keywordId: row.keywordId } : null,
+              ),
+              content: row ? row.phrase : "",
+            };
+          }}
+        >
         <ul className="divide-y divide-border">
           {shown.map((row) => {
             const meta = OUTCOME[row.outcome];
@@ -343,6 +387,7 @@ export function MatcherReviewBody({
             return (
               <li
                 key={row.keywordId}
+                data-row-id={row.keywordId}
                 className={cn(
                   "flex flex-wrap items-start gap-x-3 gap-y-1 border-l-2 px-3 py-2",
                   meta.edge,
@@ -421,6 +466,7 @@ export function MatcherReviewBody({
             );
           })}
         </ul>
+        </NonEditableContextMenu>
       </div>
 
       <footer className="shrink-0 border-t border-border px-3 py-2">
