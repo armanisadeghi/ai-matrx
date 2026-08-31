@@ -23,6 +23,8 @@
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MediaProvider } from "@ai-matrx/media/core";
+import { mintDurableSrc, type MediaClient } from "@ai-matrx/media";
 
 // The canonical markdown renderer resolves its content through a client-only
 // pipeline, so `renderToStaticMarkup` yields its wrapper but not its prose.
@@ -55,6 +57,24 @@ import type { KindComponentProjection } from "../registry/schema-source-kind-com
 import WebAnalysisItemBlock from "@/components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock";
 
 const FAMILY_COMPONENT_KEY = "web_analysis_item";
+
+const TEST_MEDIA_CLIENT: MediaClient = {
+  resolve: (ref) => {
+    const url = typeof ref === "string" ? ref : ref.url;
+    return url
+      ? { src: mintDurableSrc(url), kind: "image", recoverable: false }
+      : null;
+  },
+  getBlob: async () => {
+    throw new Error("Media bytes are not exercised by this render test.");
+  },
+  recoverLoadError: async () => "terminal",
+  upload: async () => {
+    throw new Error("Media uploads are not exercised by this render test.");
+  },
+  shareableUrl: async () => null,
+  classifyError: () => "unknown",
+};
 
 interface Fixture {
   kind: string;
@@ -213,10 +233,12 @@ describe("the web_analysis_item family routes to ONE registered component", () =
       expect(routed.serverData).toBeUndefined();
 
       const markup = renderToStaticMarkup(
-        <WebAnalysisItemBlock
-          content={routed.content}
-          metadata={routed.metadata}
-        />,
+        <MediaProvider client={TEST_MEDIA_CLIENT}>
+          <WebAnalysisItemBlock
+            content={routed.content}
+            metadata={routed.metadata}
+          />
+        </MediaProvider>,
       );
 
       for (const text of fixture.visible) {
