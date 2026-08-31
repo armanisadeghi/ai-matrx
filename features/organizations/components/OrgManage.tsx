@@ -37,6 +37,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import {
   canManageInvitations,
@@ -190,7 +191,7 @@ export function OrgManage({
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden">
                 <InlineMediaRef
-                  ref={displayOrganization.logoUrl ?? null}
+                  ref={organizationLogoRef(displayOrganization)}
                   size="fill"
                   fit="cover"
                   rounded="lg"

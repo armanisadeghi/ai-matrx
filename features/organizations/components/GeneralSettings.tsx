@@ -15,6 +15,7 @@ import {
   type OrgRole,
 } from "../types";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";
@@ -401,7 +402,7 @@ export function GeneralSettings({
           <div className="flex items-center gap-4">
             {hasLogo ? (
               <InlineMediaRef
-                ref={logoFileId ? { file_id: logoFileId } : logoUrl}
+                ref={organizationLogoRef({ logoFileId, logoUrl })}
                 size={{ width: 64, height: 64 }}
                 fit="cover"
                 rounded="lg"

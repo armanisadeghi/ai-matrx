@@ -73,6 +73,7 @@ import {
   organizationSummary,
   type OrganizationKpis,
 } from "@/features/organizations/lib/copy";
+import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
 
 interface RoleMeta {
   label: string;
@@ -164,7 +165,7 @@ function OrgCard({
         <div className="flex items-start gap-3.5">
           <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-muted flex items-center justify-center border border-border">
             <InlineMediaRef
-              ref={org.logoUrl ?? null}
+              ref={organizationLogoRef(org)}
               size="fill"
               fit="cover"
               rounded="none"

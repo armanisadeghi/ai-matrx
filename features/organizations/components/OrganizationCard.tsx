@@ -17,6 +17,7 @@ import Link from "next/link";
 import type { OrganizationWithRole } from "../types";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
 import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
@@ -140,7 +141,7 @@ export function OrganizationCard({
               )}
             >
               <InlineMediaRef
-                ref={organization.logoUrl ?? null}
+                ref={organizationLogoRef(organization)}
                 size="fill"
                 fit="cover"
                 rounded="lg"

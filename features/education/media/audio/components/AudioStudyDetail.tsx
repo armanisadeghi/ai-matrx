@@ -27,9 +27,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
-import { SessionAudio } from "@/features/education/study/components/SessionAudio";
-import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
-import { podcastService } from "@/features/podcasts/service";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
@@ -40,6 +37,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createEducationAudioStudyScope } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { studyMediaService } from "../../service";
 import { useAudioStudyRunPersistence } from "../useAudioStudyRunPersistence";
+import { AudioPlayback } from "./AudioPlayback";
 import type { StudyMediaRow } from "../../types";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
@@ -50,55 +48,6 @@ const FORMAT_LABEL: Record<string, string> = {
   panel: "Panel",
   review: "Audio review",
 };
-
-/**
- * Durable audio playback for a finished study. Prefers the re-mintable `file_id`
- * (best); falls back to the produced episode's durable public audio URL — the
- * path that matters when the run completed while the tab was closed, so no
- * live `audio_stream_end` file_id was ever captured (recovery).
- */
-function AudioPlayback({
-  fileId,
-  episodeId,
-}: {
-  fileId: string | null;
-  episodeId: string | null;
-}) {
-  const [episodeUrl, setEpisodeUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (fileId || !episodeId) return;
-    let active = true;
-    podcastService.fetchEpisodeById(episodeId).then((ep) => {
-      if (active) setEpisodeUrl(ep?.audio_url ?? null);
-    });
-    return () => {
-      active = false;
-    };
-  }, [fileId, episodeId]);
-
-  if (fileId) return <SessionAudio fileId={fileId} className="h-10 w-full" />;
-  if (episodeUrl) {
-    // Episode audio_url is a durable public/CDN URL (episodes are share-ready).
-    return (
-      <SessionMediaElement
-        as="audio"
-        src={episodeUrl}
-        controls
-        preload="none"
-        className="h-10 w-full"
-        sessionSource="podcast"
-        sessionLabel="Education audio study"
-        trackKey={episodeUrl}
-      />
-    );
-  }
-  return (
-    <div className="flex h-10 items-center gap-2 text-xs text-muted-foreground">
-      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading audio…
-    </div>
-  );
-}
 
 /** Build the "generate a new version" link, preserving the original source kind. */
 function regenerateHref(media: StudyMediaRow): string {

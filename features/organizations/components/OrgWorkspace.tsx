@@ -53,6 +53,7 @@ import { toast } from "@/lib/toast";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import {
   useAppDispatch,
@@ -376,10 +377,10 @@ export function OrgWorkspace() {
         <Card className="p-5 md:p-6 relative overflow-hidden">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
           <div className="flex flex-col md:flex-row md:items-start gap-5">
-            {organization.logoUrl ? (
+            {organization.logoFileId || organization.logoUrl ? (
               <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20">
                 <InlineMediaRef
-                  ref={organization.logoUrl}
+                  ref={organizationLogoRef(organization)}
                   size="fill"
                   fit="cover"
                   rounded="lg"
