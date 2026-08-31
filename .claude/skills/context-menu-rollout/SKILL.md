@@ -226,3 +226,47 @@ Per file, five lines. No prose essays.
 ```
 
 Then, separately: anything you found and did **not** touch.
+
+
+---
+
+## For the coordinator — dispatching a wave
+
+**Shard with the script, never by hand:**
+
+```bash
+npx tsx scripts/context-menu-shard.ts --agents 8 --population tables
+```
+
+It groups by directory before dealing (siblings usually share an identity, and
+the agent holding the whole group is the one who spots the shared builder) and
+it asserts the partition is disjoint. Two agents on one file is worse than a
+conflict: both wrap the pane, the nested inner trigger wins, and the outer menu
+never opens — a failure that looks fine in a screenshot.
+
+**🚨 DISPATCH NEUTRALLY. This is a real lesson, not a nicety.** In the first
+wave the coordinator wrote *"if each appears on only this one surface, inline
+is the correct answer"* into two agents' prompts. Both agents returned
+all-inline. The one agent told *"these almost certainly recur — extract and
+register"* extracted a builder, registered it, adopted it across four files and
+grew it. **The prompt decided the outcome more than the skill did.** Never hint
+at the answer to step 2; let the grep decide. Say only:
+
+> You are a fleet worker on the context-menu rollout in <repo>.
+> FIRST: invoke the `context-menu-rollout` skill and follow it exactly.
+> YOUR ASSIGNMENT — these files ONLY (another agent owns every other file):
+> <paths>
+> Return the report the skill specifies. Nothing longer.
+
+Add per-shard notes ONLY for genuine hazards — a protected resource, a known
+in-flight breakage to ignore — never for how step 2 should come out.
+
+**Verify, do not trust the report.** Every wave, before dispatching the next:
+
+```bash
+pnpm type-check                    # errors in the fleet's files only
+npx tsx scripts/check-context-menu.ts   # populations shrink; density stays 0
+```
+
+Then spot-check the "page-local" claims by running the recurrence grep
+yourself. In wave one, five of six page-local claims were false.
