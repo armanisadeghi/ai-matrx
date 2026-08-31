@@ -1,5 +1,6 @@
 import { getHydrator, registerPanelHydrator } from "./UrlPanelRegistry";
-import { setDisplayMode } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { initInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 
@@ -22,12 +23,11 @@ function getRestorableResourceId(
 export function initUrlHydration() {
   // Agent execution floating panels
   registerPanelHydrator("agent", (dispatch, id, args) => {
+    const displayMode = resolveAgentPanelDisplayMode(args.m);
     dispatch(
-      setDisplayMode({
+      initInstanceUIState({
         conversationId: id,
-        displayMode:
-          (args.m as "floating-chat" | "modal-full" | "panel") ||
-          "floating-chat",
+        displayMode,
       }),
     );
   });
@@ -335,4 +335,22 @@ export function initUrlHydration() {
       );
     }
   }
+}
+
+const RESTORABLE_AGENT_DISPLAY_MODES = new Set<ResultDisplayMode>([
+  "floating-chat",
+  "flexible-panel",
+  "modal-full",
+  "modal-compact",
+  "panel",
+  "sidebar",
+]);
+
+export function resolveAgentPanelDisplayMode(
+  mode: string | undefined,
+): ResultDisplayMode {
+  if (!mode || mode === "fc") return "floating-chat";
+  return RESTORABLE_AGENT_DISPLAY_MODES.has(mode as ResultDisplayMode)
+    ? (mode as ResultDisplayMode)
+    : "floating-chat";
 }

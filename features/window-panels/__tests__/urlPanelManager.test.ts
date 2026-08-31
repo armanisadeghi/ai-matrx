@@ -3,6 +3,7 @@ import {
   parseParams,
   serializeParams,
 } from "../url-sync/UrlPanelManager";
+import { resolveAgentPanelDisplayMode } from "../url-sync/initUrlHydration";
 
 describe("UrlPanelManager URL helpers", () => {
   const entries = {
@@ -50,5 +51,16 @@ describe("UrlPanelManager URL helpers", () => {
         args: undefined,
       },
     ]);
+  });
+
+  it("restores agent URL panels to a real registered display mode", () => {
+    expect(resolveAgentPanelDisplayMode(undefined)).toBe("floating-chat");
+    expect(resolveAgentPanelDisplayMode("fc")).toBe("floating-chat");
+    expect(resolveAgentPanelDisplayMode("flexible-panel")).toBe(
+      "flexible-panel",
+    );
+    expect(resolveAgentPanelDisplayMode("not-a-display-mode")).toBe(
+      "floating-chat",
+    );
   });
 });
