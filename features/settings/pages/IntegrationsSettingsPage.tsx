@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
@@ -16,6 +16,8 @@ import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { buildSupabaseScopedMcpEndpoint } from "@/features/agents/services/mcp-oauth/endpoint";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
@@ -160,113 +162,101 @@ export default function IntegrationsPage() {
 
   // ── Filtering ──────────────────────────────────────────────────────────────
 
-  const filtered = useMemo(() => {
-    let entries = [...catalog];
+  let filtered = [...catalog];
 
-    if (activeCategory !== "all") {
-      entries = entries.filter((e) => e.category === activeCategory);
-    }
+  if (activeCategory !== "all") {
+    filtered = filtered.filter((entry) => entry.category === activeCategory);
+  }
 
-    if (viewFilter === "connected") {
-      entries = entries.filter((e) => e.connectionStatus === "connected");
-    } else if (viewFilter === "available") {
-      entries = entries.filter(
-        (e) => e.serverStatus === "active" || e.serverStatus === "beta",
-      );
-    } else if (viewFilter === "coming_soon") {
-      entries = entries.filter((e) => e.serverStatus === "coming_soon");
-    }
+  if (viewFilter === "connected") {
+    filtered = filtered.filter(
+      (entry) => entry.connectionStatus === "connected",
+    );
+  } else if (viewFilter === "available") {
+    filtered = filtered.filter(
+      (entry) =>
+        entry.serverStatus === "active" || entry.serverStatus === "beta",
+    );
+  } else if (viewFilter === "coming_soon") {
+    filtered = filtered.filter((entry) => entry.serverStatus === "coming_soon");
+  }
 
-    if (search.trim()) {
-      entries = filterAndSortBySearch(entries, search, [
-        { get: (e) => e.name, weight: "title" },
-        { get: (e) => e.vendor, weight: "subtitle" },
-        { get: (e) => e.description, weight: "body" },
-      ]);
-    }
+  if (search.trim()) {
+    filtered = filterAndSortBySearch(filtered, search, [
+      { get: (entry) => entry.name, weight: "title" },
+      { get: (entry) => entry.vendor, weight: "subtitle" },
+      { get: (entry) => entry.description, weight: "body" },
+    ]);
+  }
 
-    return entries;
-  }, [catalog, search, activeCategory, viewFilter]);
+  const sorted = [...filtered].sort((a, b) => {
+    const aConn = a.connectionStatus === "connected" ? 0 : 1;
+    const bConn = b.connectionStatus === "connected" ? 0 : 1;
+    if (aConn !== bConn) return aConn - bConn;
+    if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
+    const statusOrder = {
+      active: 0,
+      beta: 1,
+      community: 2,
+      coming_soon: 3,
+      deprecated: 4,
+    };
+    const aOrder = statusOrder[a.serverStatus as keyof typeof statusOrder] ?? 5;
+    const bOrder = statusOrder[b.serverStatus as keyof typeof statusOrder] ?? 5;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.name.localeCompare(b.name);
+  });
 
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      const aConn = a.connectionStatus === "connected" ? 0 : 1;
-      const bConn = b.connectionStatus === "connected" ? 0 : 1;
-      if (aConn !== bConn) return aConn - bConn;
-      if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
-      const statusOrder = {
-        active: 0,
-        beta: 1,
-        community: 2,
-        coming_soon: 3,
-        deprecated: 4,
-      };
-      const aOrder =
-        statusOrder[a.serverStatus as keyof typeof statusOrder] ?? 5;
-      const bOrder =
-        statusOrder[b.serverStatus as keyof typeof statusOrder] ?? 5;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return a.name.localeCompare(b.name);
-    });
-  }, [filtered]);
+  const categoryCounts: Record<string, number> = { all: catalog.length };
+  for (const entry of catalog) {
+    categoryCounts[entry.category] = (categoryCounts[entry.category] ?? 0) + 1;
+  }
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: catalog.length };
-    for (const entry of catalog) {
-      counts[entry.category] = (counts[entry.category] ?? 0) + 1;
-    }
-    return counts;
-  }, [catalog]);
-
-  const connectedCount = useMemo(
-    () => catalog.filter((e) => e.connectionStatus === "connected").length,
-    [catalog],
-  );
+  const connectedCount = catalog.filter(
+    (entry) => entry.connectionStatus === "connected",
+  ).length;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleOAuthConnect = useCallback(
-    async (entry: McpCatalogEntry, endpointOverride?: string) => {
-      if (entry.slug === "github") {
-        if (!organizationId) {
-          toast.error("Select an organization before connecting GitHub.");
-          return;
-        }
-        window.location.assign(
-          githubConnectUrl(window.location.pathname, organizationId),
-        );
+  const handleOAuthConnect = async (
+    entry: McpCatalogEntry,
+    endpointOverride?: string,
+  ) => {
+    if (entry.slug === "github") {
+      if (!organizationId) {
+        toast.error("Select an organization before connecting GitHub.");
         return;
       }
-      const outcome = await startMcpOAuthPopup(
-        entry.serverId,
-        undefined,
-        endpointOverride,
+      window.location.assign(
+        githubConnectUrl(window.location.pathname, organizationId),
       );
-      if (outcome.ok) {
-        dispatch(fetchCatalog());
-        toast.success(`Connected to ${entry.name}`);
-      } else if (!outcome.cancelled) {
-        toast.error(`Could not connect to ${entry.name}`, {
-          description: outcome.error,
-        });
-      }
-    },
-    [dispatch, organizationId],
-  );
+      return;
+    }
+    const outcome = await startMcpOAuthPopup(
+      entry.serverId,
+      undefined,
+      endpointOverride,
+    );
+    if (outcome.ok) {
+      dispatch(fetchCatalog());
+      toast.success(`Connected to ${entry.name}`);
+    } else if (!outcome.cancelled) {
+      toast.error(`Could not connect to ${entry.name}`, {
+        description: outcome.error,
+      });
+    }
+  };
 
-  const handleBearerConnect = useCallback(
-    (serverId: string, token: string) => {
-      dispatch(
-        connectServerWithCredentials({
-          serverId,
-          authMethod: "bearer",
-          fields: { token },
-          transport: "http",
-        }),
-      );
-    },
-    [dispatch],
-  );
+  const handleBearerConnect = (serverId: string, token: string) => {
+    dispatch(
+      connectServerWithCredentials({
+        serverId,
+        authMethod: "bearer",
+        fields: { token },
+        transport: "http",
+      }),
+    );
+  };
 
   /**
    * A server with `auth_strategy: "none"` has NO credential to store. This
@@ -275,38 +265,48 @@ export default function IntegrationsPage() {
    * so connecting a no-auth server always failed. The right call is the
    * metadata-only connection RPC. (D128)
    */
-  const handleNoAuthConnect = useCallback(
-    async (entry: McpCatalogEntry) => {
-      try {
-        await dispatch(
-          connectServer({
-            serverId: entry.serverId,
-            transport: entry.transport,
-          }),
-        ).unwrap();
-        toast.success(`Connected to ${entry.name}`);
-      } catch (error) {
-        toast.error(`Could not connect to ${entry.name}`, {
-          description: error instanceof Error ? error.message : String(error),
-        });
-      }
-    },
-    [dispatch],
-  );
+  const handleNoAuthConnect = async (entry: McpCatalogEntry) => {
+    try {
+      await dispatch(
+        connectServer({
+          serverId: entry.serverId,
+          transport: entry.transport,
+        }),
+      ).unwrap();
+      toast.success(`Connected to ${entry.name}`);
+    } catch (error) {
+      toast.error(`Could not connect to ${entry.name}`, {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
 
-  const handleDisconnect = useCallback(
-    (serverId: string) => {
-      dispatch(disconnectServer(serverId));
-    },
-    [dispatch],
-  );
+  const handleDisconnect = async (entry: McpCatalogEntry) => {
+    const confirmed = await confirm({
+      title: `Disconnect ${entry.name}?`,
+      description:
+        "Agents will lose access to this server until you reconnect. AI Matrx will remove the saved connection and its stored credentials; the external provider account is not deleted.",
+      confirmLabel: `Disconnect ${entry.name}`,
+      variant: "destructive",
+    });
+    if (!confirmed) return;
+
+    try {
+      await dispatch(disconnectServer(entry.serverId)).unwrap();
+      toast.success(`Disconnected ${entry.name}`);
+    } catch (error) {
+      toast.error(`Could not disconnect ${entry.name}`, {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (status === "loading" && catalog.length === 0) {
     return (
-      <div className="p-6 flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex h-full items-center justify-center p-6">
+        <SuspenseLoader size="sm" message="Loading integrations…" />
       </div>
     );
   }
@@ -337,6 +337,7 @@ export default function IntegrationsPage() {
           <Button
             variant="outline"
             size="sm"
+            className="h-11 w-full sm:h-8 sm:w-auto"
             onClick={() => dispatch(fetchCatalog())}
             disabled={status === "loading"}
           >
@@ -365,13 +366,13 @@ export default function IntegrationsPage() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative w-full flex-1 sm:max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search integrations..."
-              className="pl-8 h-8 text-sm"
+              className="h-11 pl-8 text-base sm:h-8 sm:text-sm"
             />
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -387,7 +388,7 @@ export default function IntegrationsPage() {
                 key={key}
                 variant={viewFilter === key ? "default" : "outline"}
                 size="sm"
-                className="h-8 text-xs"
+                className="h-11 text-sm sm:h-8 sm:text-xs"
                 onClick={() => setViewFilter(key)}
               >
                 {label}
@@ -466,7 +467,7 @@ export default function IntegrationsPage() {
           <Button
             variant={activeCategory === "all" ? "default" : "outline"}
             size="sm"
-            className="h-7 text-xs px-2.5"
+            className="h-11 px-3 text-sm sm:h-7 sm:px-2.5 sm:text-xs"
             onClick={() => setActiveCategory("all")}
           >
             All ({categoryCounts.all ?? 0})
@@ -476,7 +477,7 @@ export default function IntegrationsPage() {
               key={key}
               variant={activeCategory === key ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs px-2.5"
+              className="h-11 px-3 text-sm sm:h-7 sm:px-2.5 sm:text-xs"
               onClick={() => setActiveCategory(key)}
             >
               {meta.label} ({categoryCounts[key]})
@@ -509,7 +510,7 @@ export default function IntegrationsPage() {
                   handleBearerConnect(entry.serverId, token)
                 }
                 onNoAuthConnect={() => handleNoAuthConnect(entry)}
-                onDisconnect={() => handleDisconnect(entry.serverId)}
+                onDisconnect={() => void handleDisconnect(entry)}
               />
             ))}
           </div>
@@ -604,7 +605,7 @@ function ServerCard({
       <CardContent className="p-4">
         {/* Record pair — SANITIZED via mcpEntryMeta (no endpoint URL, auth
             strategy, connection id or token expiry ever reaches a payload). */}
-        <div className="float-right opacity-0 transition-opacity group-hover/integration:opacity-100 focus-within:opacity-100">
+        <div className="float-right opacity-100 transition-opacity sm:opacity-0 sm:group-hover/integration:opacity-100 sm:focus-within:opacity-100">
           <CopyButtons
             size="xs"
             label={`Integration ${entry.name}`}
@@ -743,7 +744,7 @@ function ServerCard({
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs flex-1"
+              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
               onClick={onDisconnect}
             >
               Disconnect
@@ -751,7 +752,7 @@ function ServerCard({
           ) : canConnect && needsOAuth && !isSupabase ? (
             <Button
               size="sm"
-              className="h-7 text-xs flex-1"
+              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
               onClick={() => onOAuthConnect()}
               disabled={isConnecting}
             >
@@ -765,7 +766,7 @@ function ServerCard({
           ) : canConnect && needsOAuth && isSupabase ? (
             <Button
               size="sm"
-              className="h-7 text-xs flex-1"
+              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
               onClick={handleSupabaseOAuth}
               disabled={isConnecting || !supabaseProjectRef.trim()}
             >
@@ -779,7 +780,7 @@ function ServerCard({
           ) : canConnect && needsToken ? (
             <Button
               size="sm"
-              className="h-7 text-xs flex-1"
+              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
               onClick={() => setShowTokenForm(!showTokenForm)}
               disabled={isConnecting}
             >
@@ -789,7 +790,7 @@ function ServerCard({
           ) : canConnect && noAuth ? (
             <Button
               size="sm"
-              className="h-7 text-xs flex-1"
+              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
               onClick={onNoAuthConnect}
               disabled={isConnecting}
             >
@@ -804,7 +805,7 @@ function ServerCard({
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs flex-1"
+              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
               disabled
             >
               <Clock className="h-3 w-3 mr-1" />
@@ -816,7 +817,7 @@ function ServerCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs flex-1"
+                  className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
                   disabled
                 >
                   <Terminal className="h-3 w-3 mr-1" />
@@ -833,8 +834,13 @@ function ServerCard({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 shrink-0"
+            className="h-11 w-11 shrink-0 p-0 sm:h-7 sm:w-7"
             onClick={onToggleExpand}
+            aria-label={
+              isExpanded
+                ? `Hide ${entry.name} details`
+                : `Show ${entry.name} details`
+            }
           >
             {isExpanded ? (
               <ChevronUp className="h-3.5 w-3.5" />
@@ -856,7 +862,7 @@ function ServerCard({
                 setSupabaseError(null);
               }}
               placeholder="20-character project ref"
-              className="h-8 text-xs font-mono"
+              className="h-11 font-mono text-base sm:h-8 sm:text-xs"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
@@ -892,15 +898,16 @@ function ServerCard({
                     ? "Enter API key..."
                     : "Enter access token..."
                 }
-                className="h-8 text-xs pr-16"
+                className="h-11 pr-24 text-base sm:h-8 sm:pr-16 sm:text-xs"
                 onKeyDown={(e) => e.key === "Enter" && handleTokenSubmit()}
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0"
+                  className="h-11 w-11 p-0 sm:h-6 sm:w-6"
                   onClick={() => setShowToken(!showToken)}
+                  aria-label={showToken ? "Hide token" : "Show token"}
                 >
                   {showToken ? (
                     <EyeOff className="h-3 w-3" />
@@ -910,7 +917,7 @@ function ServerCard({
                 </Button>
                 <Button
                   size="sm"
-                  className="h-6 px-2 text-[10px]"
+                  className="h-11 px-3 text-sm sm:h-6 sm:px-2 sm:text-[10px]"
                   onClick={handleTokenSubmit}
                   disabled={!token.trim() || isConnecting}
                 >
@@ -1020,8 +1027,8 @@ function DetailRow({
       <span className="text-muted-foreground w-24 shrink-0">{label}</span>
       <span
         className={cn(
-          "text-foreground break-all",
-          mono && "font-mono text-[11px]",
+          "min-w-0 flex-1 break-words text-foreground",
+          mono && "break-all font-mono text-[11px]",
         )}
       >
         {value}

@@ -23,6 +23,7 @@ import { Check, ExternalLink, Lock, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
@@ -53,7 +54,32 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
 
   // While the inventory loads, every card would flash "Not Connected" at a
   // user who has already connected — same rule as ChatConnectorStrip: wait.
-  if (inventory.isLoading) return null;
+  if (inventory.isLoading) {
+    return (
+      <div className={cn("rounded-lg border border-border p-4", className)}>
+        <SuspenseLoader
+          centered={false}
+          size="sm"
+          message="Loading Google integrations…"
+        />
+      </div>
+    );
+  }
+
+  if (inventory.isError) {
+    return (
+      <div
+        className={cn(
+          "rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive",
+          className,
+        )}
+        role="alert"
+      >
+        Google integration status could not be loaded. Refresh the page to try
+        again.
+      </div>
+    );
+  }
 
   const rows = inventory.data?.connections ?? [];
 
@@ -139,7 +165,7 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs flex-1"
+                      className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
                       asChild
                     >
                       <Link href={connector.manageHref}>
@@ -149,7 +175,11 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
                     </Button>
                   ) : null
                 ) : connectHref ? (
-                  <Button size="sm" className="h-7 text-xs flex-1" asChild>
+                  <Button
+                    size="sm"
+                    className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+                    asChild
+                  >
                     <Link href={connectHref}>
                       <ConnectIcon className="h-3 w-3 mr-1" />
                       {connectLabel}
@@ -158,7 +188,7 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
                 ) : (
                   <Button
                     size="sm"
-                    className="h-7 text-xs flex-1"
+                    className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
                     onClick={() =>
                       openGoogleConnect({ reason: reason ?? undefined })
                     }

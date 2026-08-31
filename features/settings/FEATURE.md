@@ -263,6 +263,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-08-31` — **Integrations completed the mobile surface-check repair.** The GitHub account card now stacks its identity and actions instead of squeezing the account name into a one-character column; MCP, GitHub, Google, filter, detail, credential, and refresh controls keep 44pt phone targets while retaining the dense desktop sizes; credential/project inputs stay above the iOS zoom floor; per-card copy controls remain visible on touch; GitHub and MCP disconnects name the access loss before removing the connection; and MCP/Google loading and failure states are explicit. Added a focused GitHub-card regression and a distinct `/user-settings` favicon identity.
+
 - `2026-08-29` — **General → Personal configuration: the USER rung of scoped configuration, and a new `"server"` persistence tier.** `tabs/PersonalConfigTab.tsx` renders platform knobs whose register row opens the `user` rung (`overridable_by`), org-qualified (org selector when the person has several); reads via `platform.knob_index` (`lib/scoped-config/useScopedKnobs`), writes via `platform.knob_override_set` — NEVER a Redux slice, so the server resolves exactly what the tab shows. `SettingsPersistence` gained `"server"` for this class. Zero keys are user-curated yet: the tab explains that state and lights up with the first curation, no deploy. SoR: `../common-docs/systems/platform/feature-knobs/FEATURE.md`.
 
 - `2026-08-26` — Integrations now requires a project-scoped, read-only endpoint before Supabase MCP OAuth. Other connection surfaces route there instead of opening an unscoped grant.
