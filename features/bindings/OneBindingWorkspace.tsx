@@ -167,6 +167,18 @@ export function OneBindingWorkspace({
   const [organizationId, setOrganizationId] = useState<string | null>(
     initialOrganizationId,
   );
+  // 🚨 THE MODE LIVES OUT HERE, above the draft's key, for the same reason the
+  // rung does: applying a batch WRITES a binding, which changes the row this
+  // draft is keyed to, which remounts it. Held inside, the mode would snap back
+  // to "map" the instant a batch succeeded — the person's grid, their written
+  // markers and their remaining rows would vanish at the moment they most want
+  // to see them.
+  const [mode, setMode] = useState<BindingMode>("map");
+  // A batch that wrote rows leaves the single-place view stale. Refreshing
+  // immediately would remount the draft UNDER the grid the person is still
+  // reading, so the refresh waits for them to leave batch mode — and it is
+  // never skipped.
+  const [batchWrote, setBatchWrote] = useState(false);
 
   const binding = findBinding(data.bindings, rung, userId, organizationId);
   const bindingIdentity = `${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
@@ -179,6 +191,15 @@ export function OneBindingWorkspace({
       rung={rung}
       organizationId={organizationId}
       allowGlobal={allowGlobal}
+      mode={mode}
+      onModeChange={(next) => {
+        setMode(next);
+        if (next === "map" && batchWrote) {
+          setBatchWrote(false);
+          onChanged();
+        }
+      }}
+      onBatchWrote={() => setBatchWrote(true)}
       onRungChange={(nextRung, nextOrgId) => {
         setRung(nextRung);
         setOrganizationId(
@@ -198,6 +219,9 @@ function BindingDraft({
   rung,
   organizationId,
   allowGlobal,
+  mode,
+  onModeChange,
+  onBatchWrote,
   onRungChange,
   onChanged,
 }: {
@@ -206,6 +230,10 @@ function BindingDraft({
   rung: BindingRung;
   organizationId: string | null;
   allowGlobal: boolean;
+  mode: BindingMode;
+  onModeChange: (next: BindingMode) => void;
+  /** A batch wrote rows — the single-place view is stale until it is left. */
+  onBatchWrote: () => void;
   onRungChange: (rung: BindingRung, organizationId: string | null) => void;
   onChanged: () => void;
 }) {
@@ -226,7 +254,6 @@ function BindingDraft({
     () => parseBindingWave1(binding).autoRun,
   );
   const [mapTab, setMapTab] = useState<"ai" | "manual">("manual");
-  const [mode, setMode] = useState<BindingMode>("map");
   const [autoBound, setAutoBound] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -730,7 +757,7 @@ function BindingDraft({
 
       {/* ONE SCREEN, TWO MODES (P17). The rung and the holder above hold still;
           only the shape of the match changes. */}
-      <ModeToggle mode={mode} onChange={setMode} disabled={disabled} />
+      <ModeToggle mode={mode} onChange={onModeChange} disabled={disabled} />
 
       {mode === "batch" ? (
         <BatchMode
@@ -760,7 +787,7 @@ function BindingDraft({
           currentMandateKey={data.mandate.mandate_key}
           canBindGlobal={canBindGlobal}
           disabled={disabled}
-          onChanged={onChanged}
+          onChanged={onBatchWrote}
         />
       ) : (
         <>
