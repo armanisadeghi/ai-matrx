@@ -31,6 +31,8 @@ with operational status and the categorized tool registry.
 - SQL execution stays pending until the privileged Server Action returns. The
   editor exposes no client-only Cancel or timeout claim because neither aborts
   the PostgreSQL statement.
+- The SQL workbench mounts one canonical editable context menu over its pane;
+  it resolves live surface scope and edits the same controlled query buffer.
 - **One SQL execution path:** the enhanced editor and legacy dashboard call
   `useDatabaseAdmin.executeQuery`; the notebook calls the same
   `executeSqlQuery` Server Action directly. Only that action invokes
@@ -43,6 +45,7 @@ with operational status and the categorized tool registry.
 
 ## Change log
 
+- 2026-08-31 — The SQL workbench gained its missing canonical editable context menu, including live scope and controlled-buffer editing.
 - 2026-08-31 — Result provenance now distinguishes a query that exists in the cache from an execution actually served by that cache; uncached reruns never display the false `From Cache` badge.
 - 2026-08-31 — The SQL workbench leaves derivations and event handlers to the
   React Compiler; the surface contract guards every workbench file against

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -43,6 +43,7 @@ import { toast } from "@/lib/toast";
 import { CategoryNotesModal } from "@/features/notes/actions/CategoryNotesModal";
 import type { Note } from "@/features/notes/types";
 import { validateSqlQueryWrite } from "@/features/administration/lib/sql-editor-write-targets";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { DEFAULT_DATABASE_SCHEMA } from "../config";
 
 // Example queries — schema in snippets is illustrative; swap via the editor.
@@ -80,6 +81,7 @@ export const EnhancedSQLEditor = ({
   queryCache = {},
   className,
 }: EnhancedSQLEditorProps) => {
+  const sqlTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [sqlQuery, setSqlQuery] = useState("");
   const [queryResult, setQueryResult] = useState<unknown>(null);
   const [resultWasServedFromCache, setResultWasServedFromCache] =
@@ -281,6 +283,16 @@ export const EnhancedSQLEditor = ({
       getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
+    <EditableContextMenu
+      sourceFeature="admin"
+      surfaceName={ADMIN_DATABASE_SURFACE_NAME}
+      getApplicationScope={getSurfaceScope}
+      getTextarea={() => sqlTextareaRef.current}
+      onTextReplace={setSqlQuery}
+      onTextInsertBefore={(text) => setSqlQuery((current) => text + current)}
+      onTextInsertAfter={(text) => setSqlQuery((current) => current + text)}
+      contentSource={{ type: "raw" }}
+    >
     <Card
       className={`w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm rounded-xl flex flex-col overflow-hidden gap-0 py-0 ${className ?? ""}`}
     >
@@ -353,6 +365,7 @@ export const EnhancedSQLEditor = ({
               controls. The global iOS zoom floor still guarantees 16px on
               touch input. */}
           <textarea
+            ref={sqlTextareaRef}
             value={sqlQuery}
             onChange={(e) => setSqlQuery(e.target.value)}
             className="min-h-[120px] h-[400px] w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-500 disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
@@ -655,6 +668,7 @@ export const EnhancedSQLEditor = ({
         allowDelete={true}
       />
     </Card>
+    </EditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 };

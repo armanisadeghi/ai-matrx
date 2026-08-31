@@ -19,6 +19,18 @@ describe("database admin surface contract", () => {
     expect(hub).toContain("content: databaseToolCatalogueText");
   });
 
+  it("mounts one canonical editable context menu over the SQL workbench", () => {
+    const editor = source(
+      "app/(admin)/administration/database/components/enhanced-sql-editor.tsx",
+    );
+
+    expect(editor.match(/<EditableContextMenu/g)).toHaveLength(1);
+    expect(editor).toContain('sourceFeature="admin"');
+    expect(editor).toContain("surfaceName={ADMIN_DATABASE_SURFACE_NAME}");
+    expect(editor).toContain("getApplicationScope={getSurfaceScope}");
+    expect(editor).toContain("getTextarea={() => sqlTextareaRef.current}");
+  });
+
   it("keeps database navigation controls at the shared touch floor", () => {
     const layout = source(
       "app/(admin)/administration/database/DatabaseAdminLayoutClient.tsx",
