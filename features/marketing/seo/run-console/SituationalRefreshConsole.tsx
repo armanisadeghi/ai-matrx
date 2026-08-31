@@ -40,6 +40,9 @@ import { cn } from "@/styles/themes/utils";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { siteEntityRef, siteMenuSection, type SiteMenuRow } from "./site-menu";
 import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { getSituationalRefreshStatus, runSituationalRefresh } from "./data";
@@ -118,6 +121,11 @@ export function SituationalRefreshConsole({
   const [queue, setQueue] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
   const [outcomes, setOutcomes] = useState<SituationalRunOutcome[]>([]);
+  // KI right-click rollout: STATE (never a ref) — the shared section's items
+  // are `link`s, so their `href` must be correct at render time.
+  const [contextBrandRow, setContextBrandRow] = useState<SiteMenuRow | null>(
+    null,
+  );
 
   const rows = useSituationalRows(sites);
   const byId = new Map(sites.map((site) => [site.id, site]));
@@ -374,22 +382,50 @@ export function SituationalRefreshConsole({
               Could not read the brand list.
             </p>
           ) : (
-            <MatrxDataTable<SituationalRow>
-              data={rows}
-              columns={columns}
-              getRowId={(r) => r.site.id}
-              isLoading={sitesLoading}
-              toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
-              selection={{
-                selectedIds: selected,
-                onSelectedIdsChange: onSelectedChange,
-                noun: "brand",
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = (id && rows.find((r) => r.site.id === id)) || null;
+                const siteRow: SiteMenuRow | null = row
+                  ? {
+                      id: row.site.id,
+                      name: row.site.name,
+                      brandId: row.site.brand_id,
+                    }
+                  : null;
+                setContextBrandRow(siteRow);
+                if (!siteRow) return null;
+                return {
+                  content: `${siteRow.name}`,
+                  [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef(siteRow),
+                };
               }}
-              pageSize={0}
-              zebra
-              emptyState={{ title: "No brands match your search." }}
-              className="h-full"
-            />
+              extraSections={
+                contextBrandRow ? [siteMenuSection(contextBrandRow)] : []
+              }
+            >
+              <MatrxDataTable<SituationalRow>
+                data={rows}
+                columns={columns}
+                getRowId={(r) => r.site.id}
+                isLoading={sitesLoading}
+                toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
+                selection={{
+                  selectedIds: selected,
+                  onSelectedIdsChange: onSelectedChange,
+                  noun: "brand",
+                }}
+                pageSize={0}
+                zebra
+                emptyState={{ title: "No brands match your search." }}
+                className="h-full"
+              />
+            </NonEditableContextMenu>
           )}
         </div>
           </TabsContent>
