@@ -48,3 +48,25 @@ it("rejects reserved and malformed route segments before querying the UUID colum
   expect(container.textContent).toContain("shortcut");
   expect(container.querySelector('a[href="/agents/shortcuts/all"]')).not.toBeNull();
 });
+
+// The screen must not claim a shortcut failed to open when the address never
+// named a shortcut. A hub tab deep-linked under `/shortcuts/` (the production
+// report was `.../system-agents/shortcuts/categories`) is a WRONG ADDRESS.
+it("says a non-id segment is a wrong address, not a broken shortcut", async () => {
+  await act(async () => {
+    root.render(<ShortcutDirectResolver shortcutId="categories" mode="admin" />);
+  });
+
+  const text = container.textContent ?? "";
+  expect(text).toContain("categories");
+  expect(text).toContain("is not a shortcut id");
+  // The old, lying sentence — pinned as forbidden.
+  expect(text).not.toMatch(/couldn'?t open this shortcut/i);
+  // And no dead control: retrying the same wrong address can only fail.
+  expect(text).not.toContain("Retry");
+  expect(
+    container.querySelector(
+      'a[href="/administration/agents/system-agents/shortcuts/all"]',
+    ),
+  ).not.toBeNull();
+});
