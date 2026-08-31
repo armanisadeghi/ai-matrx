@@ -19,6 +19,13 @@ import {
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  pageEntityRef,
+  pageMenuSection,
+} from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -575,6 +582,8 @@ function EvidenceTable({
       b.active_backlinks * 4 -
       ((a.link_score ?? 0) + a.active_backlinks * 4),
   );
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [contextRow, setContextRow] = useState<AuthorityPage | null>(null);
   const columns: MatrxColumnDef<AuthorityPage>[] = [
     {
       id: "path",
@@ -665,6 +674,39 @@ function EvidenceTable({
   ];
   return (
     <div className="overflow-hidden rounded-xl border bg-card p-3">
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = (target as HTMLElement | null)
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = (id && rows.find((r) => r.page_id === id)) || null;
+          setContextRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+              pageId: row.page_id,
+              url: row.url,
+            }),
+            content: `${row.url}\nRole: ${row.role}\nTarget keyword: ${row.target_keyword || "Unmapped"}`,
+          };
+        }}
+        extraSections={
+          contextRow
+            ? [
+                pageMenuSection({
+                  siteId,
+                  siteName: null,
+                  url: contextRow.url,
+                  pageId: contextRow.page_id,
+                  openDrilldown,
+                }),
+              ]
+            : []
+        }
+      >
       <MatrxDataTable
         urlState={{ id: "authority-routes" }}
         data={rows}
@@ -677,6 +719,7 @@ function EvidenceTable({
           description: "Run the authority analysis to populate this table.",
         }}
       />
+      </NonEditableContextMenu>
     </div>
   );
 }

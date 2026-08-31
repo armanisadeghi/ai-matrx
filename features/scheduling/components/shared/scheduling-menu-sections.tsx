@@ -25,6 +25,7 @@ import { useState } from "react";
 import {
   ExternalLink,
   Hash,
+  Play,
   Power,
   SquareArrowOutUpRight,
   XCircle,
@@ -86,6 +87,14 @@ export function useScheduledTaskMenuSection<T extends ScheduledTaskMenuRow>(opts
   content?: (row: T) => string;
   /** Fires after a successful disable, so the host can update local state. */
   onDisabled?: (row: T) => void;
+  /**
+   * Queues one manual run without touching the schedule's enabled state
+   * (e.g. `runNow` from `features/scheduling/service/schedulerClient`).
+   * Omit on a host that has no run-now door — the item stays hidden rather
+   * than disabled, since "run now" is opt-in surface capability, not a
+   * universal action every task row supports.
+   */
+  onRunNow?: (row: T) => void | Promise<void>;
 }): ScheduledTaskMenu {
   const [clicked, setClicked] = useState<T | null>(null);
 
@@ -131,6 +140,18 @@ export function useScheduledTaskMenuSection<T extends ScheduledTaskMenuRow>(opts
 
   const href = clicked ? scheduleHref(clicked.id) : "#";
   const items: ContextMenuExtraItem[] = [
+    ...(opts.onRunNow
+      ? ([
+          {
+            kind: "item",
+            id: "sch-task-run-now",
+            label: "Run now",
+            icon: Play,
+            disabled: !clicked,
+            onSelect: withRow((row) => void opts.onRunNow?.(row)),
+          },
+        ] satisfies ContextMenuExtraItem[])
+      : []),
     {
       kind: "link",
       id: "sch-task-open",

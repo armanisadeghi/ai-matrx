@@ -46,6 +46,8 @@ import {
   type SeoTaskRow,
 } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 
 // ── Automations panel ───────────────────────────────────────────────────────
 
@@ -139,6 +141,22 @@ function AutomationsPanel() {
     [runningId, trigger],
   );
 
+  // `sch_task` already has a shared menu section (SECTIONS.md — Scheduled
+  // task); this IS that identity (`fetchSeoTasks` reads `scheduler.sch_task`
+  // directly), so it adopts the builder rather than re-implementing "open
+  // schedule" / "disable" here. Growth: this surface's own "Run now" queue
+  // action is now an opt-in `onRunNow` on the shared builder, so every other
+  // task-row consumer inherits it too.
+  const taskMenu = useScheduledTaskMenuSection<SeoTaskRow>({
+    rows: () => rows,
+    content: (row) => `${row.title} — ${row.enabled ? "ON" : "OFF"}`,
+    onRunNow: (row) => trigger(row),
+    onDisabled: (row) =>
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, enabled: false } : r)),
+      ),
+  });
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
@@ -153,16 +171,25 @@ function AutomationsPanel() {
         </Link>
         .
       </p>
-      <MatrxDataTable
-        urlState={{ id: "seo-ops-automations" }}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        isLoading={loading}
-        pageSize={30}
-        emptyState={{ title: "No SEO automations found" }}
-        toolbar={{ search: true }}
-      />
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={taskMenu.resolveContextOnOpen}
+        getApplicationScope={taskMenu.getApplicationScope}
+        extraSections={taskMenu.sections}
+      >
+        <MatrxDataTable
+          urlState={{ id: "seo-ops-automations" }}
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          isLoading={loading}
+          pageSize={30}
+          emptyState={{ title: "No SEO automations found" }}
+          toolbar={{ search: true }}
+        />
+      </NonEditableContextMenu>
     </div>
   );
 }

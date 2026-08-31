@@ -155,6 +155,7 @@ export function HrPayGroupsPanel() {
   const { structure, isLoading, error, refresh } = useHrSettingsStructure(organizationId);
   const [creating, setCreating] = useState(false);
   const [clickedRow, setClickedRow] = useState<HrPayGroup | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const payGroups = structure?.pay_groups ?? [];
   const calendars = structure?.holiday_calendars ?? [];
@@ -309,7 +310,7 @@ export function HrPayGroupsPanel() {
                       label: "Edit pay group",
                       disabled: !clickedRow,
                       onSelect: () => {
-                        if (clickedRow) setEditingRow(clickedRow);
+                        if (clickedRow) setSelectedId(clickedRow.id);
                       },
                     },
                   ],
@@ -321,7 +322,9 @@ export function HrPayGroupsPanel() {
               columns={columns}
               getRowId={(row) => row.id}
               pageSize={25}
-              urlState={{ id: "hr-pay-groups" }}
+              urlState={{ id: "hr-pay-groups", selectedRow: false }}
+              selectedId={selectedId}
+              onSelectedIdChange={setSelectedId}
               toolbar={{ search: true, searchPlaceholder: "Search pay groups" }}
               emptyState={{
                 title: "No pay groups yet",
