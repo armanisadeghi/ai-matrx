@@ -6,6 +6,7 @@ import {
   MetadataAnalyzer,
   type MetadataAnalyzerValues,
 } from "@/features/marketing/seo/serp/MetadataAnalyzer";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 /**
  * SerpAnalyzerWindow — the canonical Metadata Analyzer in a floating window.
@@ -87,12 +88,27 @@ function SerpAnalyzerWindowInner({
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-y-auto p-4"
     >
-      <MetadataAnalyzer
-        initialUrl={initialUrl}
-        initialTitle={initialTitle}
-        initialDescription={initialDescription}
-        onValuesChange={handleValuesChange}
-      />
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({
+          content: [
+            valuesRef.current.url,
+            valuesRef.current.title,
+            valuesRef.current.description,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        })}
+      >
+        <MetadataAnalyzer
+          initialUrl={initialUrl}
+          initialTitle={initialTitle}
+          initialDescription={initialDescription}
+          onValuesChange={handleValuesChange}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

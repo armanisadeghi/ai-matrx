@@ -17,6 +17,15 @@ import {
   type KeywordIntelTab,
 } from "@/features/marketing/seo/keyword/types";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 
 /**
  * KeywordWindow — the canonical Keyword Intelligence window: everything the
@@ -214,6 +223,30 @@ function KeywordWindowInner({
     setPanelState({ phrase: nextPhrase, activeTab: "overview" });
   };
 
+  const siteId = initialSiteId ?? "";
+  const keywordSurfaces = useKeywordAssignSurfaces({ siteId });
+  const keywordMenuRow: KeywordMenuRow = {
+    phrase: panelState.phrase,
+    keywordId: null,
+  };
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    brandId: initialBrandId,
+    organizationId: initialOrganizationId,
+    surfaces: keywordSurfaces,
+    // The window's title bar already reads "Keyword Intelligence" — a door
+    // back to itself would be a dead end pointing at the surface it's on.
+    includeIntelDoor: false,
+    getRow: () => (keywordMenuRow.phrase ? keywordMenuRow : null),
+    unavailable: {
+      "kw-set-class": !siteId ? unavailableHere("a site-scoped keyword table") : undefined,
+      "kw-set-service": !siteId ? unavailableHere("a site-scoped keyword table") : undefined,
+      "kw-set-dimension": !siteId ? unavailableHere("a site-scoped keyword table") : undefined,
+      "kw-pin-level": !siteId ? unavailableHere("a site-scoped keyword table") : undefined,
+      "kw-why": !siteId ? unavailableHere("a site-scoped keyword table") : undefined,
+    },
+  });
+
   return (
     <WindowPanel
       id="keyword-window"
@@ -240,25 +273,43 @@ function KeywordWindowInner({
       sidebarMinSize={160}
       sidebarClassName="bg-muted/10"
     >
-      <KeywordIntelPanel
-        phrase={panelState.phrase}
-        activeTab={panelState.activeTab}
-        scope={{
-          organizationId: initialOrganizationId || undefined,
-          siteId: initialSiteId || undefined,
-          pageId: initialPageId || undefined,
-          brandId: initialBrandId || undefined,
-        }}
-        onPhraseChange={(phrase) => {
-          recordVisitedKeyword(phrase);
-          setPanelState((current) => ({ ...current, phrase }));
-        }}
-        onTabChange={(activeTab) =>
-          setPanelState((current) => ({ ...current, activeTab }))
-        }
-        onRelatedKeywordNavigate={navigateToRelatedKeyword}
-        onResearchStart={recordVisitedKeyword}
-      />
+      {keywordSurfaces.isOpen ? (
+        <div className="shrink-0 border-b border-border p-2">
+          {keywordSurfaces.node}
+        </div>
+      ) : null}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: panelState.phrase }}
+        resolveContextOnOpen={() => ({
+          content: panelState.phrase,
+          [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef(keywordMenuRow),
+        })}
+        extraSections={[keywordMenuSection]}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          <KeywordIntelPanel
+            phrase={panelState.phrase}
+            activeTab={panelState.activeTab}
+            scope={{
+              organizationId: initialOrganizationId || undefined,
+              siteId: initialSiteId || undefined,
+              pageId: initialPageId || undefined,
+              brandId: initialBrandId || undefined,
+            }}
+            onPhraseChange={(phrase) => {
+              recordVisitedKeyword(phrase);
+              setPanelState((current) => ({ ...current, phrase }));
+            }}
+            onTabChange={(activeTab) =>
+              setPanelState((current) => ({ ...current, activeTab }))
+            }
+            onRelatedKeywordNavigate={navigateToRelatedKeyword}
+            onResearchStart={recordVisitedKeyword}
+          />
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
