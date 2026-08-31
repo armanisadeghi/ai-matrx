@@ -9,7 +9,8 @@
  * budget-blocked run is visible, not silent.
  */
 
-import { AlertTriangle, CircleDollarSign, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, CircleDollarSign, Copy, Loader2 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,9 @@ import {
   type SeoBudgetRejectionRow,
   type SeoProviderSpendRow,
 } from "@/features/marketing/data/spend";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { toast } from "@/lib/toast";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const pct = Math.max(0, Math.min(100, row.pct_used));
@@ -60,6 +64,10 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
 
 export function SeoSpendPanel() {
   const spend = useSeoSpendSummary();
+  /** Right-clicked rejection row — STATE (not a ref) so the menu reads the
+   *  row that was actually clicked. */
+  const [clickedRejection, setClickedRejection] =
+    useState<SeoBudgetRejectionRow | null>(null);
 
   if (spend.isError) {
     return (
@@ -139,6 +147,46 @@ export function SeoSpendPanel() {
     },
   ];
 
+  const resolveRejectionContext = (target: HTMLElement | null) => {
+    const runId = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const row =
+      (runId &&
+        data.recent_budget_rejections.find((r) => r.run_id === runId)) ||
+      null;
+    setClickedRejection(row);
+    if (!row) return null;
+    return {
+      content: [
+        `${row.provider} — ${row.ceiling ?? "budget exceeded"}`,
+        `spent=${row.spent_usd ?? "—"} limit=${row.limit_usd ?? "—"}`,
+        `occurred: ${row.occurred_at}`,
+        `run: ${row.run_id}`,
+      ].join("\n"),
+    };
+  };
+
+  const rejectionMenuSection: ContextMenuExtraSection = {
+    id: "seo-budget-rejection-row",
+    label: clickedRejection ? clickedRejection.provider : "This rejection",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "item",
+        id: "seo-budget-rejection-copy-run-id",
+        label: "Copy run ID",
+        icon: Copy,
+        disabled: !clickedRejection,
+        onSelect: () => {
+          if (!clickedRejection) return;
+          void navigator.clipboard.writeText(clickedRejection.run_id);
+          toast.success("Run ID copied");
+        },
+      },
+    ],
+  };
+
   return (
     <div className="grid h-full grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto p-1">
       <section className="rounded-lg border border-border bg-card p-3">
@@ -189,6 +237,12 @@ export function SeoSpendPanel() {
           <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Recent budget
           rejections
         </h2>
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveRejectionContext}
+          extraSections={[rejectionMenuSection]}
+        >
         <MatrxDataTable
           urlState={{ id: "seo-budget-rejections" }}
           data={data.recent_budget_rejections}
@@ -202,6 +256,7 @@ export function SeoSpendPanel() {
               "No runs were rejected for exceeding a spend ceiling in the last 30 days.",
           }}
         />
+        </NonEditableContextMenu>
       </section>
     </div>
   );
