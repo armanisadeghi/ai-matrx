@@ -5,7 +5,9 @@ manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/in
 (capture + client-run instant analysis) · `/commerce/intake/assets` (hub list) ·
 `/commerce/intake/assets/[id]` (asset detail) · `/commerce/intake/answer`
 (answer queue) · `/commerce/labels` (label batches) · `/commerce/labels/[batchId]`
-(print run detail) · `/l/[code]` (public label resolver) · `/commerce/intake/admin` (map) ·
+(print run detail) · `/commerce/labels/printers` (certified printers) ·
+`/commerce/labels/printers/certify` (the guided certification wizard) ·
+`/l/[code]` (public label resolver) · `/commerce/intake/admin` (map) ·
 `/commerce/intake/v2` + `/v2/instant` (ISOLATED iPhone-style rebuild on `features/capture-camera/`
 — same engine and write rules, new chrome; replaces `/commerce/intake` only after Arman approves;
 read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before touching it) ·
@@ -124,6 +126,51 @@ uniqueness forbids the duplicate row by design; re-scan now opens the existing a
   repoints them at `Database["commerce"]` and deletes the casts (labels/service.ts +
   the `/l/[code]` page).
 
+## Printer certification (2026-08-31 — `labels/printers/` module)
+
+`commerce.certified_printer` (applied + certified live 2026-08-31,
+`migrations/commerce_certified_printer_2026_08_31.sql`) — the org register of which
+printers are PROVEN to print a given label stock correctly. The platform ships
+officially-supported recommendations (**Brother QL-810W, DYMO LW550, Zebra ZD410**, ruled
+2026-08-29); this module is how ANY other printer earns the same trust, without an agent or
+Arman in the loop.
+
+- **The wizard** (`/commerce/labels/printers/certify`, `?id=` re-checks) is a guided session —
+  one screen at a time, saying what to click, what to look for, what to do:
+  1. **Which printer, and which labels?** make + model + a free-text connection note (cable /
+     network name / driver / queue), and one stock from `LABEL_TEMPLATES` (sheet AND roll), with
+     the `LabelSheetPreview` calibration view of exactly what will print.
+  2. **Print the calibration page** — `printCalibrationSheet(template)` from
+     `@ai-matrx/print/labels`, with the print-dialog settings named on screen because *those
+     settings are the test*: 100% scale (never Fit to page), margins None, the stock's own paper
+     size, headers/footers and two-sided off. On plain paper — the page is held AGAINST the
+     labels, so no stock is burned. `notifyPrintOutcome` covers the popup-blocked lane.
+  3. **Look at the printed page** — the four checks in `printers/types.ts`
+     (`CERTIFICATION_CHECKS`), worded differently for sheet vs roll stock: outlines fully inside
+     their labels · crop marks at the corners · outline #1 on label #1 · printed at full size.
+     Every answer must be Yes to certify; a No is recorded as a real `failed` result.
+  4. **Verdict** — the row is written and the answers echoed back. A failure offers the SAME
+     printer against a DIFFERENT stock (the actual remedy most of the time); a pass offers
+     certifying the same printer on another stock. Never a dead end.
+- **The register** (`/commerce/labels/printers`) is `EntityListPage` → `MatrxDataTable`: every
+  column sorts AND filters, with every predicate served server-side by
+  `fetchCertifiedPrinterPage` (ilike for make/model/connection, `in` for status/stock, a
+  relative-bucket `gte` for the two dates). Status chips are certified / failed / needs re-check.
+  Row actions: open · open in new tab · **Re-check** (stamps `needs_recheck`, then walks the same
+  wizard against the stored printer + stock) · **Delete** via `ConfirmDialog`. **No dead ends:**
+  the label-stock cell opens that template's `LabelSheetPreview` calibration view; a `custom`
+  stock says so instead of pretending to be a door.
+- **One row per (org, make, model, stock) while live** — `certified_printer_org_model_template_live_uq`
+  makes a duplicate unrepresentable, so a re-check UPDATES rather than stacking history.
+  `certified_by` + `certified_at` are stamped from the signed-in admin on every verdict (the
+  table's CHECK requires both for `certified`); `result_notes` jsonb carries the per-check
+  answers plus the questions as they were asked.
+- **Access is RLS, not a bespoke gate.** The row is org-scoped `internal` and the surface sits in
+  the org's own commerce area alongside `/commerce/labels` — a warehouse lead certifying their own
+  printer is the normal case, and a super-admin gate here would be over-tightening (db-rules §6).
+- Every write carries an EXPLICIT `organization_id` from `selectEffectiveOrganizationId`; the
+  wizard refuses with a named remedy when no org or no signed-in user is present.
+
 ## The two ironclad write rules
 
 1. 🚨 **The status write IS the trigger (§2 policy 3).** Finishing an item writes
@@ -181,6 +228,10 @@ features/commerce-intake/
     codes.ts · service.ts · types.ts · columns/listConfig/rowActions (EntityListPage) ·
     components/ (BatchesPage, CreateLabelBatchDialog, LabelBatchDetail, PrintLabelDialog,
     ImportIdentifiersDialog)
+    printers/                         printer certification (see § Printer certification):
+      types.ts (row projection + CERTIFICATION_CHECKS) · service.ts · columns/listConfig/
+      useCertifiedPrinterRowActions · components/ (CertifyPrinterWizard,
+      CertifiedPrintersPage, TemplatePreviewButton)
 app/(core)/commerce/intake/           capture (ssr:false client boundary) + assets + answer + admin
 app/(core)/commerce/labels/           batches list + [batchId] print-run detail
 app/(public)/l/[code]/                the public label resolver (thin redirect)
@@ -225,6 +276,18 @@ On a phone, logged into an org:
    working; notes and voice keep working.
 
 ## Change log
+
+- 2026-08-31 — **Printer certification** (Arman's recorded wish P8). `commerce.certified_printer`
+  via `platform.create_entity_table` (`iam.canonical_certify_ok` true in-migration;
+  `migrations/commerce_certified_printer_2026_08_31.sql`, ledgered, `pnpm db-types` regenerated —
+  the new row types project `Database["commerce"]` directly, no hand twins). New
+  `labels/printers/` module + `/commerce/labels/printers` (register) and
+  `/commerce/labels/printers/certify` (the four-step guided wizard over
+  `printCalibrationSheet` / `LabelSheetPreview`); the QR Labels header gained a Printers door;
+  both routes registered in the `/commerce/intake/admin` map. Placement: this extends the
+  existing commerce labels owner rather than inventing a top-level feature — the calibration
+  capability itself already lives in the platform layer (`@ai-matrx/print`), so only the
+  org-scoped RECORD is added here. type-check green on the new files.
 
 - 2026-08-30 — **Real-phone round: flip, video swipe, hold semantics.** (1) Camera flip in v1/v2/v3 is now a FACING toggle (`environment ↔ user`; deviceId cleared so the persisted preferred camera can't pin the side; preview mirrors while front-facing) — the deviceId cycle walked the iPhone's several BACK lenses and rarely reached the front ("flip doesn't work"). Host adapter exposes `facing`. (2) `@ai-matrx/capture` 0.4.0: viewer video slides are a control-less tap-to-play player (paused glyph + progress bar) so the stage owns all gestures and videos swipe exactly like photos; v1's `MediaPager` keeps native controls pending replacement. (3) HoldShutter: the 1.2s auto-latch is gone — recording follows the finger; slide UP ~64px to the lock target to latch deliberately, then tap stops. Flip needs a real phone to verify (this machine has one camera).
 

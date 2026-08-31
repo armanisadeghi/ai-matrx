@@ -6,7 +6,8 @@
  */
 
 import { useMemo, useState } from "react";
-import { FileUp, Plus } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, FileUp, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -30,6 +31,12 @@ export function LabelBatchesPage() {
 
   const actions = (
     <div className="flex gap-2">
+      <Button variant="outline" size="sm" className="h-11 lg:h-7" asChild>
+        <Link href="/commerce/labels/printers">
+          <BadgeCheck className="h-4 w-4" />
+          <span className="max-sm:sr-only">Printers</span>
+        </Link>
+      </Button>
       <Button
         variant="outline"
         size="sm"

@@ -104,6 +104,30 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/commerce/labels/printers",
+      label: "Certified printers",
+      description:
+        "The org register of which printers are PROVEN to print a given label stock correctly (commerce.certified_printer). The platform ships officially-supported recommendations (Brother QL-810W, DYMO LW550, Zebra ZD410); this list is how any other printer earns the same trust. MatrxDataTable via EntityListPage — every column sorts AND filters; the stock cell opens its LabelSheetPreview calibration view.",
+      filePath: "app/(core)/commerce/labels/printers/page.tsx",
+      status: "Live",
+      notes: [
+        "Row actions: open/re-check (certified → needs_recheck, then the wizard) and soft delete via ConfirmDialog",
+        "Org register: scope 'orgs', explicit organization_id on every write",
+      ],
+    },
+    {
+      url: "/commerce/labels/printers/certify",
+      label: "Certify a printer (guided wizard)",
+      description:
+        "Four guided steps: (1) name the printer + pick the label stock, with the calibration preview shown; (2) print the @ai-matrx/print calibration page with the exact print-dialog settings named on screen (100% scale, margins none, correct media); (3) answer four plain-language physical checks about the printed page; (4) verdict written to commerce.certified_printer with the answers in result_notes. `?id=` re-checks an existing row instead of creating a second one.",
+      filePath: "app/(core)/commerce/labels/printers/certify/page.tsx",
+      status: "Live",
+      notes: [
+        "A failure is never a dead end — it offers the same printer against a different stock",
+        "certified_by / certified_at stamped from the signed-in admin; the CHECK requires both for 'certified'",
+      ],
+    },
+    {
       url: "/l/[code]",
       label: "Public label resolver",
       description:
@@ -167,6 +191,21 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/commerce-intake/labels/service.ts",
       description:
         "Mint (mintLabelCodes, retry-on-23505), reverse lookup (resolveScannedValue), state-guarded claim (claimLabelCode), void, batch auto-derive, CSV conversion import; codes.ts owns the alphabet/URL/normalization; components own create/print/import dialogs and the batch surfaces.",
+      status: "Live",
+    },
+    {
+      name: "printers module (certification)",
+      filePath: "features/commerce-intake/labels/printers/service.ts",
+      description:
+        "commerce.certified_printer persistence (fetch page with server-side text/select/date-bucket filters, recordCertification — update-in-place on re-check, markNeedsRecheck, soft delete), plus columns/listConfig/rowActions (EntityListPage) and components/ (CertifyPrinterWizard, CertifiedPrintersPage, TemplatePreviewButton).",
+      status: "Live",
+    },
+    {
+      name: "CertifyPrinterWizard",
+      filePath:
+        "features/commerce-intake/labels/printers/components/CertifyPrinterWizard.tsx",
+      description:
+        "The guided session: pick printer + stock → printCalibrationSheet(template) with the exact dialog settings named on screen → four yes/no physical checks (CERTIFICATION_CHECKS in printers/types.ts, worded per sheet vs roll stock) → verdict written with an explicit organization_id and the answers in result_notes.",
       status: "Live",
     },
     {
