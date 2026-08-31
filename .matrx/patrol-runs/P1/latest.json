@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P1",
-  "runId": "20260830T141853Z",
-  "state": "closed",
-  "updatedAt": "2026-08-30T14:40:15.256Z",
-  "summary": "Closed certified HIGH repair wave after origin/main integration; next repair wave remains queued from 54-item scoreboard.",
-  "source": "20260830T141853Z.json",
-  "eventHash": "38ff66ab86f27fe4b6db748d73e376488db11eeee6896b9ee77c6f451f40ff65"
+  "runId": "20260831T081603Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-31T08:16:18.447Z",
+  "summary": "Three disjoint repair workers are implementing the first ready canonical EntityRef doors.",
+  "source": "20260831T081603Z.json",
+  "eventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969"
 }

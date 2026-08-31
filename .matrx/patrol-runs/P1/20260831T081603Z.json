@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P1",
+  "runId": "20260831T081603Z",
+  "baseSha": "6f8c7484300f2296f6c253ca2e6601a3e1cf7d86",
+  "createdAt": "2026-08-31T08:16:17.654Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-31T08:16:17.654Z",
+      "actor": "codex-root",
+      "summary": "ERADICATION resumed from the first ready HIGH scoreboard rows after the prior certified wave closed.",
+      "evidence": [
+        "Canonical shared checkout baseline at 6f8c7484300f2296f6c253ca2e6601a3e1cf7d86; no dirty paths before repair.",
+        "Baseline pnpm type-check PASS; detector 58 total / 24 HIGH / 34 medium across 45 files.",
+        "Manifest contracts PASS; prior permanent P1 run valid and closed."
+      ],
+      "previousEventHash": null,
+      "eventHash": "b6fd345f686340870d6b43cd12c672e7b91cdfacb9bb4f137f3183b7a14d6389"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-31T08:16:18.447Z",
+      "actor": "p1-wave-workers",
+      "summary": "Three disjoint repair workers are implementing the first ready canonical EntityRef doors.",
+      "evidence": [
+        "Known legacy skill-resource and cx_agent_task machinery gaps remain open while independent ready rows proceed."
+      ],
+      "previousEventHash": "b6fd345f686340870d6b43cd12c672e7b91cdfacb9bb4f137f3183b7a14d6389",
+      "eventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969"
+    }
+  ]
+}
