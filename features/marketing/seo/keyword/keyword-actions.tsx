@@ -28,6 +28,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BrainCircuit,
   Gavel,
+  Globe2,
   Info,
   Network,
   PanelTop,
@@ -54,6 +55,8 @@ import {
 } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import { OfferingAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel";
 import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import { useSiteOptions } from "@/features/marketing/data/hooks";
+import { assignKeywordsToSite } from "@/features/marketing/seo/keyword-research/data/queries";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import {
   getValueVocabulary,
@@ -386,11 +389,53 @@ export function useKeywordMenuSection(opts: {
    * Contract: `features/context-menu-v3/utils/availability.ts`.
    */
   unavailable?: AvailabilityMap;
+  /**
+   * Called after "Track on a site…" successfully assigns the keyword to a
+   * site. Hosts that show site membership (the library workbench's "Sites"
+   * column) re-read it here; hosts that don't care can leave it out.
+   */
+  onTracked?: () => void;
 }): ContextMenuExtraSection {
   const openKeywordWindow = useOpenKeywordWindow();
   const openWhyScore = useOpenGscWhyScoreWindow();
   const openDrilldown = useOpenGscDrilldownWindow();
   const { siteId, surfaces, getRow } = opts;
+
+  // THE GROWTH STEP (2026-08-30): a keyword shown OUTSIDE any one site's
+  // context — a fresh research report, the org-wide library — has nothing to
+  // set a class/service/level on until it is tracked SOMEWHERE. Fetched only
+  // once a menu using this builder actually mounts; `useSiteOptions` is
+  // 60s-cached and already paid for by every surface with a site picker.
+  const siteOptions = useSiteOptions();
+  const trackOnSite = async (
+    row: KeywordMenuRow,
+    site: { id: string; name: string | null; domain: string | null; organization_id: string },
+  ) => {
+    if (!row.keywordId) {
+      toast.error("This query is not in the keyword library yet", {
+        description: "Run research on it first, then it can be tracked.",
+      });
+      return;
+    }
+    const label = site.name ?? site.domain ?? "the site";
+    try {
+      const written = await assignKeywordsToSite({
+        keywordIds: [row.keywordId],
+        siteId: site.id,
+        organizationId: site.organization_id,
+      });
+      toast.success(
+        written > 0
+          ? `Tracking “${row.phrase}” on ${label}`
+          : `“${row.phrase}” is already tracked on ${label}`,
+      );
+      opts.onTracked?.();
+    } catch (error) {
+      toast.error("Could not track this keyword", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
 
   const withRow =
     (fn: (row: KeywordMenuRow) => void) => () => {
@@ -430,6 +475,29 @@ export function useKeywordMenuSection(opts: {
       label: "Pin a level…",
       icon: Gavel,
       onSelect: withRow((row) => surfaces.openLevel(row)),
+    },
+    {
+      kind: "submenu",
+      id: "kw-track-site",
+      label: "Track on a site…",
+      icon: Globe2,
+      children:
+        (siteOptions.data ?? []).length > 0
+          ? (siteOptions.data ?? []).map((site) => ({
+              kind: "item" as const,
+              id: `kw-track-site-${site.id}`,
+              label: site.name ?? site.domain ?? "Untitled site",
+              onSelect: withRow((row) => void trackOnSite(row, site)),
+            }))
+          : [
+              {
+                kind: "item" as const,
+                id: "kw-track-site-empty",
+                label: "No sites yet",
+                onSelect: () => undefined,
+                disabled: true,
+              },
+            ],
     },
     {
       kind: "item",
