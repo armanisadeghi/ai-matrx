@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ExposureAuditRow, ExposureAuditSummary } from "../types";
 import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
 import {
@@ -309,6 +312,9 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
 export function ExposureAuditClient() {
   const [summaries, setSummaries] = useState<ExposureAuditSummary[]>([]);
   const [rows, setRows] = useState<ExposureAuditRow[]>([]);
+  // Right-clicked row — STATE (not a ref) so the menu resolves the row that
+  // was actually clicked, not a stale capture.
+  const [clickedRow, setClickedRow] = useState<ExposureAuditRow | null>(null);
   const [resourceFilter, setResourceFilter] = useUrlState(
     "resource",
     enumUrlCodec<ResourceFilter>(["all", "file", "note"], "all"),
@@ -427,6 +433,33 @@ export function ExposureAuditClient() {
   const linkCount = sumSummary(summaries, "active_share_link_count");
   const sharedCount = sumSummary(summaries, "active_grant_count");
   const contextualCount = sumSummary(summaries, "contextual_count");
+
+  const resolveContextOnOpen = (target: HTMLElement | null) => {
+    const rowId = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const [resourceType, resourceId] = rowId ? rowId.split(":") : [];
+    const row =
+      (resourceId &&
+        rows.find(
+          (r) => r.resource_type === resourceType && r.resource_id === resourceId,
+        )) ||
+      null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: isEntityTypeToken(row.resource_type)
+        ? { type: row.resource_type, id: row.resource_id, title: row.display_name }
+        : null,
+      content: [
+        `${row.resource_type}:${row.resource_id} — ${row.display_name}`,
+        row.discovery_status,
+        row.exposure_reasons.join("; "),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
+  };
 
   return (
     <section className="flex h-full min-h-0 flex-col gap-3">
@@ -565,6 +598,11 @@ export function ExposureAuditClient() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveContextOnOpen}
+        >
         <MatrxDataTable<ExposureAuditRow>
           data={rows}
           columns={COLUMNS}
@@ -614,6 +652,7 @@ export function ExposureAuditClient() {
               "No files or notes match this exposure, resource, and search combination.",
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </section>
   );

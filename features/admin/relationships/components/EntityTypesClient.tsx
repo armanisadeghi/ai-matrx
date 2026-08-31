@@ -26,6 +26,8 @@ import { Switch } from "@/components/ui/switch";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {
   EntityTypeForm,
   isValidEntityToken,
@@ -131,6 +133,9 @@ export function EntityTypesClient({ entityTypes }: Props) {
   const [writablePending, setWritablePending] = useState<string | null>(null);
   /** Row targeted for deactivate/reactivate confirmation. */
   const [activeTarget, setActiveTarget] = useState<EntityTypeRow | null>(null);
+  /** Right-clicked row — STATE (not a ref) so the menu's items read the row
+   *  actually clicked, not a stale capture. */
+  const [clickedRow, setClickedRow] = useState<EntityTypeRow | null>(null);
 
   const refresh = () => startTransition(() => router.refresh());
 
@@ -470,6 +475,64 @@ export function EntityTypesClient({ entityTypes }: Props) {
     }
   }
 
+  // -- right-click menu -------------------------------------------------------
+
+  const resolveContextOnOpen = (target: HTMLElement | null) => {
+    const token = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const row = (token && filtered.find((r) => r.token === token)) || null;
+    setClickedRow(row);
+    if (!row) return null;
+    // No registered entity-type token names "an entity_types row" itself
+    // (it IS the token registry) — Attach To / Share correctly stay absent.
+    return {
+      content: [
+        `${row.label} (${row.token}) — ${row.schema_name}.${row.table_name}`,
+        `tier=${row.base_tier} active=${row.is_active}`,
+        row.notes ? `notes: ${row.notes}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
+  };
+
+  const entityTypeMenuSection: ContextMenuExtraSection = {
+    id: "entity-type-row",
+    label: clickedRow ? clickedRow.label : "This entity type",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "item",
+        id: "entity-type-edit",
+        label: "Edit entity type…",
+        icon: Pencil,
+        disabled: !clickedRow,
+        onSelect: () => clickedRow && openEditInSidePanel(clickedRow),
+      },
+      {
+        kind: "item",
+        id: "entity-type-copy-token",
+        label: "Copy token",
+        icon: Copy,
+        disabled: !clickedRow,
+        onSelect: () => {
+          if (!clickedRow) return;
+          void navigator.clipboard.writeText(clickedRow.token);
+          toast.success("Token copied");
+        },
+      },
+      {
+        kind: "item",
+        id: "entity-type-toggle-active",
+        label: clickedRow?.is_active ? "Deactivate…" : "Reactivate…",
+        icon: Power,
+        disabled: !clickedRow,
+        onSelect: () => clickedRow && setActiveTarget(clickedRow),
+      },
+    ],
+  };
+
   // -- render ---------------------------------------------------------------------
 
   const activeCount = entityTypes.filter((r) => r.is_active).length;
@@ -527,6 +590,12 @@ export function EntityTypesClient({ entityTypes }: Props) {
       </div>
 
       <div className="min-h-[28rem]">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveContextOnOpen}
+          extraSections={[entityTypeMenuSection]}
+        >
         <MatrxDataTable
           urlState={{ id: "entity-types", selectedRow: false }}
           data={filtered}
@@ -642,6 +711,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
             </>
           )}
         />
+        </NonEditableContextMenu>
       </div>
 
       {/* Create — SidePanelSurface */}
