@@ -19222,6 +19222,27 @@
         }
       }
     },
+    "/chili-piper/public/status": {
+      "get": {
+        "tags": [
+          "Chili Piper Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_chili_piper_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiliPiperStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/beautiful-ai/public/status": {
       "get": {
         "tags": [
@@ -94995,6 +95016,56 @@
         ],
         "title": "CheckupRequest",
         "description": "The Final Checkup — run every registered producer over the Rulebook and\nstream back the findings.\n\n``producers`` names which producers to run; omitted = all registered ones.\n``use_cleaned`` consumes the SAVED cleaned corpus when one exists. It never\ntriggers a clean pass on its own — a hidden paid call is exactly what\n\"manual option\" rules out — it just says which corpus the producers read."
+      },
+      "ChiliPiperStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "chili_piper_official_service_status",
+            "title": "Kind",
+            "default": "chili_piper_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "chili_piper",
+            "title": "Provider",
+            "default": "chili_piper"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.chilipiper.com",
+            "title": "Status Url",
+            "default": "https://status.chilipiper.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ChiliPiperStatusResult",
+        "description": "Safe projection of Chili Piper's high-level service status."
       },
       "ChunkDetail": {
         "properties": {

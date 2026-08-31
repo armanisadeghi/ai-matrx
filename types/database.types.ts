@@ -52176,6 +52176,7 @@ export type Database = {
     Tables: {
       binding: {
         Row: {
+          auto_run: boolean | null
           config_overrides: Json | null
           consumption_map: Json | null
           created_at: string
@@ -52197,6 +52198,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          auto_run?: boolean | null
           config_overrides?: Json | null
           consumption_map?: Json | null
           created_at?: string
@@ -52218,6 +52220,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          auto_run?: boolean | null
           config_overrides?: Json | null
           consumption_map?: Json | null
           created_at?: string

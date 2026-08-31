@@ -8250,6 +8250,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chili-piper/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_chili_piper_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/beautiful-ai/public/status": {
         parameters: {
             query?: never;
@@ -38041,6 +38058,43 @@ export interface components {
              * @default 0
              */
             min_confidence?: number;
+        };
+        /**
+         * ChiliPiperStatusResult
+         * @description Safe projection of Chili Piper's high-level service status.
+         */
+        ChiliPiperStatusResult: {
+            /**
+             * Kind
+             * @default chili_piper_official_service_status
+             * @constant
+             */
+            __kind?: "chili_piper_official_service_status";
+            /**
+             * Provider
+             * @default chili_piper
+             * @constant
+             */
+            provider?: "chili_piper";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.chilipiper.com
+             * @constant
+             */
+            status_url?: "https://status.chilipiper.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** ChunkDetail */
         ChunkDetail: {
@@ -102762,6 +102816,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StovaStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_chili_piper_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiliPiperStatusResult"];
                 };
             };
         };
