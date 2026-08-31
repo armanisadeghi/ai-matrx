@@ -243,6 +243,23 @@ function MandateWindowInner({
           />
         </div>
       </div>
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        extraSections={[mandateMenuFor(clickedMandateRow.current)]}
+        resolveContextOnOpen={(target) => {
+          const el = target?.closest<HTMLElement>("[data-row-id]");
+          const id = el?.getAttribute("data-row-id") ?? null;
+          const row = visibleRows.find((r) => r.id === id) ?? null;
+          clickedMandateRow.current = row;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: row
+              ? { type: "mandate", id: row.mandateKey, title: row.label ?? row.mandateKey }
+              : null,
+            content: row ? row.mandateKey : "",
+          };
+        }}
+      >
       <div className="flex-1 min-h-0 space-y-0.5 p-1.5">
         {visibleRows.map((row) => {
           const { feature, mandate } = splitMandateKey(row.mandateKey);
@@ -251,6 +268,7 @@ function MandateWindowInner({
             <button
               key={row.id}
               type="button"
+              data-row-id={row.id}
               onClick={() => setSelectedKey(row.mandateKey)}
               title={row.mandateKey}
               className={cn(
@@ -275,6 +293,7 @@ function MandateWindowInner({
           </p>
         )}
       </div>
+      </NonEditableContextMenu>
     </div>
   );
 
@@ -300,6 +319,12 @@ function MandateWindowInner({
       urlSyncKey="mandate"
       urlSyncId="mandate-window"
     >
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: selected?.mandateKey ?? "" }}
+        extraSections={[mandateMenuFor(selected)]}
+      >
       <div className="flex h-full min-w-0 flex-1 flex-col bg-background">
         {/* Identity + panes */}
         <div className="shrink-0 border-b border-border px-3 py-2">
@@ -375,6 +400,7 @@ function MandateWindowInner({
           )}
         </div>
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
