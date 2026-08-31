@@ -33,6 +33,11 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+} from "@/features/context-menu-v3/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
@@ -82,6 +87,7 @@ export function AllItemsTable() {
   const [rows, setRows] = useState<ItemTableRow[] | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ItemTableRow | null>(null);
   const [actionsTarget, setActionsTarget] = useState<ItemTableRow | null>(null);
+  const [clickedRow, setClickedRow] = useState<ItemTableRow | null>(null);
 
   const load = useCallback(async () => {
     if (!organizationId) return;
@@ -369,6 +375,93 @@ export function AllItemsTable() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <NonEditableContextMenu
+        sourceFeature="product_capture_intake"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = (id && rows?.find((r) => r.id === id)) || null;
+          setClickedRow(row ?? null);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "product_capture_item",
+              id: row.id,
+              title: row.code ?? "Captured item",
+            },
+            content: [
+              row.code ? `Product #${row.code}` : "No code",
+              `Status: ${STATUS_LABELS[row.status] ?? row.status}`,
+              `${row.photoCount} photo(s), ${row.videoCount} video(s), ${row.audioCount} voice note(s)`,
+              row.notes ? `Notes: ${row.notes}` : null,
+              `Captured: ${formatWhen(row.createdAt)}`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          };
+        }}
+        extraSections={[
+          {
+            id: "product-capture-item-row",
+            label: "This item",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "item",
+                id: "product-capture-item-view",
+                label: "View item",
+                icon: Eye,
+                onSelect: () => clickedRow && openView(clickedRow),
+                disabled: !clickedRow,
+              },
+              {
+                kind: "item",
+                id: "product-capture-item-capture",
+                label: "Capture more",
+                icon: Camera,
+                onSelect: () => clickedRow && openCapture(clickedRow),
+                disabled: !clickedRow,
+              },
+              {
+                kind: "item",
+                id: "product-capture-item-mark-ready",
+                label:
+                  clickedRow?.status === "processed"
+                    ? "Reprocess"
+                    : "Mark ready",
+                icon:
+                  clickedRow?.status === "processed"
+                    ? RefreshCw
+                    : CheckCircle2,
+                onSelect: () => clickedRow && void markReady(clickedRow),
+                disabled:
+                  !clickedRow ||
+                  (clickedRow.status !== "capturing" &&
+                    clickedRow.status !== "processed"),
+                description:
+                  clickedRow &&
+                  clickedRow.status !== "capturing" &&
+                  clickedRow.status !== "processed"
+                    ? "Already queued for processing"
+                    : undefined,
+              },
+              {
+                kind: "item",
+                id: "product-capture-item-delete",
+                label: "Delete item",
+                icon: Trash2,
+                onSelect: () => clickedRow && setConfirmDelete(clickedRow),
+                disabled: !clickedRow,
+                destructive: true,
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
+      <div className="flex min-h-0 flex-1 flex-col">
       <MatrxDataTable<ItemTableRow>
         data={rows ?? []}
         columns={columns}
@@ -451,6 +544,8 @@ export function AllItemsTable() {
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
+      </div>
+      </NonEditableContextMenu>
 
       <ConfirmDialog
         open={confirmDelete !== null}
