@@ -153,9 +153,12 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
   return (
     <div ref={panelRef} className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
       <div className="rounded-xl border border-border/60 bg-card">
+        {/* Same class as the OPTIONS drawer's fold — a disclosure states its
+            own state. Censused together, fixed together. */}
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
           className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
         >
           <Wrench className="h-3.5 w-3.5 text-muted-foreground" />

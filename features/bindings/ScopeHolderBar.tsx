@@ -91,6 +91,14 @@ export interface ScopeHolderBarProps {
     /** null while the offer is still being read — never a premature 0. */
     offeredCount: number | null;
     offerSourceLine: string;
+    /**
+     * WHETHER THE OFFER COVERS WHAT THE HOLDER NEEDS — `coverageLine()` in
+     * `words.ts`, derived from the live draft. This is the JOB cell's real
+     * content (V2 G3): the wireframe's "enough to feed every input below
+     * without asking the user anything", said honestly for the map as it
+     * stands right now.
+     */
+    coverageLine: string;
   };
 
   /** One honest sentence about the ladder as it stands right now. */
@@ -283,7 +291,16 @@ export function ScopeHolderBar({
                   </p>
                 )}
               </div>
+              {/* 🚨 FOLDED (V2 G3 round 2). This block is ~230px of reference
+                  detail and it was setting the height of the whole three-cell
+                  row — the RUNG and JOB cells then measured 64-71% empty, the
+                  exact dead space Arman rejected by name and two adversarial
+                  rounds re-found. Folded it states its own answer in one line
+                  and expands to the identical controls; the shortcut editor,
+                  where this block IS the panel, keeps it open (the prop
+                  defaults to off). */}
               <AgentVersionPicker
+                collapsible
                 subjectNoun="job"
                 agentId={holder.agentId}
                 agentVersionId={holder.agentVersionId}
@@ -339,6 +356,12 @@ export function ScopeHolderBar({
           </div>
           <p className="text-[11px] leading-snug text-muted-foreground">
             {job.offerSourceLine}
+          </p>
+          {/* DOES THE OFFER COVER THE HOLDER? The cell's own reason to exist,
+              and the answer to the only question a person asks while looking
+              at it. */}
+          <p className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            {job.coverageLine}
           </p>
         </div>
       </div>

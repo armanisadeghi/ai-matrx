@@ -367,11 +367,43 @@ function consumptionMapForApi(
  * A `validation_error` detail is authored prose about the caller's own input,
  * so it IS the copy. Anything else keeps the safe generic.
  */
+/**
+ * 🚨 THE ORG-CONTEXT REFUSAL, IN WORDS A PERSON CAN ACT ON (V1 finding R2-3,
+ * round 2, 2026-08-31).
+ *
+ * The org rung's picker offers every organization the person belongs to, and
+ * writing to one that is not the session's active workspace used to be refused
+ * with the transport's own internal sentence — *"Request body organization_id
+ * must match the request context organization."* — printed on the page and in
+ * a toast. Nine organizations offered, eight of them dead, and the screen said
+ * nothing a Subject Matter Expert could use.
+ *
+ * The write itself now carries the chosen organization's context
+ * (`scopeOverrides`, below), so this should be unreachable. It is kept because
+ * "unreachable" is a claim, and if the transport ever refuses again the person
+ * must get a cause and a remedy rather than a sentence about request contexts.
+ */
+const ORGANIZATION_CONTEXT_CODES = new Set([
+  "organization_context_mismatch",
+  "organization_context_required",
+  "organization_context_invalid",
+]);
+
+function organizationContextRefusal(error: { code?: string }): string | null {
+  if (!error.code || !ORGANIZATION_CONTEXT_CODES.has(error.code)) return null;
+  return error.code === "organization_context_required"
+    ? "No organization is selected, so there is no context to write this answer in. Nothing was written. Pick a workspace in the header and save again."
+    : "This answer is for a different organization than the workspace you have selected, and the write could not be sent in that organization's context. Nothing was written. Switch your workspace to that organization in the header and save again.";
+}
+
 function bindGateMessage(error: {
   message: string;
   status?: number;
+  code?: string;
   serverDetail?: unknown;
 }): string {
+  const organizationRefusal = organizationContextRefusal(error);
+  if (organizationRefusal) return organizationRefusal;
   const parsed = parseCallApiError(error);
   if (parsed.code === "validation_error" && parsed.detail.trim().length > 0) {
     return parsed.detail;

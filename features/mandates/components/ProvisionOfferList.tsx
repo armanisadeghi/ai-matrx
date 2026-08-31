@@ -14,6 +14,7 @@ import { useState } from "react";
 import { ChevronDown, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import type { OfferedValue } from "../provision-shapes";
 
 export interface ProvisionOfferListProps {
@@ -67,10 +68,23 @@ function OfferedValueRow({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/40"
+        className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-muted/40"
       >
-        <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">
-          {value.name}
+        {/* 🚨 THE HUMAN LABEL LEADS, THE KEY FOLLOWS (V2 round-2 residual 8,
+            2026-08-31). This printed the bare storage key — 27 lines of
+            `episode_title` / `host_persona_notes` on `podcast.solo_script`'s
+            INPUT section — while the one binding UI, the AI-map proposals and
+            the offered rail all lead with the display label and demote the key
+            to a mono sub-line. One anatomy for a declared value everywhere it
+            appears, or the same value reads as two different things on two
+            screens of the same job. */}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[12.5px] text-foreground">
+            {formatVariableDisplayName(value.name)}
+          </span>
+          <code className="block truncate font-mono text-[10px] text-muted-foreground">
+            {value.name}
+          </code>
         </span>
         <code className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
           {value.kind}

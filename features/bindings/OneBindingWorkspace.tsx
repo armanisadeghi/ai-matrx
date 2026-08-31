@@ -117,6 +117,9 @@ import {
   sourcesFor,
 } from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
+import { coverageLine, isFed } from "./words";
+import { writeReportStillDescribesDraft } from "./write-report-life";
+import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { BatchMode } from "./batch/BatchMode";
 import { unfedRequiredTargets } from "./batch/batch-model";
 import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
@@ -198,6 +201,25 @@ export function OneBindingWorkspace({
   const [writeReport, setWriteReport] = useState<BindingWriteReport | null>(
     null,
   );
+  /**
+   * 🚨 WHAT THE DRAFT LOOKED LIKE WHEN THAT REPORT ARRIVED (V1 finding R2-2,
+   * round 2, 2026-08-31).
+   *
+   * The report was already held above the draft's key — that part was right —
+   * and it was still destroyed in the same commit that set it. The clearing
+   * rule was "clear when the draft is dirty", and `dirty` compares the draft to
+   * the STORED row, which after a save is the row as it was BEFORE the save
+   * until the refetch lands. So every successful save was instantly dirty
+   * against its own stale baseline, the effect fired, and `applies_in` was
+   * wiped before a single frame rendered. The adversary's MutationObserver
+   * measured exactly that: `everRendered: false` over five saves.
+   *
+   * The honest comparison is against WHAT WAS WRITTEN, not against what the
+   * client last read. This holds the draft signature at the moment of the
+   * write; the report survives until the person edits away from it, which is
+   * the only condition that ever made it untrue.
+   */
+  const [writtenSignature, setWrittenSignature] = useState<string | null>(null);
 
   const binding = findBinding(data.bindings, rung, userId, organizationId);
   const bindingIdentity = `${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
@@ -220,10 +242,18 @@ export function OneBindingWorkspace({
       }}
       onBatchWrote={() => setBatchWrote(true)}
       writeReport={writeReport}
-      onWrote={setWriteReport}
-      onDraftMoved={() => setWriteReport(null)}
+      writtenSignature={writtenSignature}
+      onWrote={(report, signature) => {
+        setWriteReport(report);
+        setWrittenSignature(signature);
+      }}
+      onDraftMoved={() => {
+        setWriteReport(null);
+        setWrittenSignature(null);
+      }}
       onRungChange={(nextRung, nextOrgId) => {
         setWriteReport(null);
+        setWrittenSignature(null);
         setRung(nextRung);
         setOrganizationId(
           nextRung === "org"
@@ -246,6 +276,7 @@ function BindingDraft({
   onModeChange,
   onBatchWrote,
   writeReport,
+  writtenSignature,
   onWrote,
   onDraftMoved,
   onRungChange,
@@ -263,7 +294,9 @@ function BindingDraft({
   /** What the server said about the last write, or `null` if it has not spoken
    * about the row on screen. Held above this component's key — see the state. */
   writeReport: BindingWriteReport | null;
-  onWrote: (report: BindingWriteReport) => void;
+  /** The draft signature at the moment that report arrived — see the state. */
+  writtenSignature: string | null;
+  onWrote: (report: BindingWriteReport, signature: string) => void;
   /** The draft moved away from what was written — the report stops being true. */
   onDraftMoved: () => void;
   onRungChange: (rung: BindingRung, organizationId: string | null) => void;
@@ -642,7 +675,9 @@ function BindingDraft({
           : { principalType: "user" },
       payload,
     );
-    onWrote(report);
+    // The signature of exactly what this write sent — the report's lifetime is
+    // measured against it, never against the stored row (R2-2).
+    onWrote(report, draftSignature);
     return report;
   }
 
@@ -794,21 +829,42 @@ function BindingDraft({
   // while it is true. Both — a confirm at the moment of the move, and a
   // standing sentence in the rung cell whenever there is work to lose.
   const storedDraft = useMemo(() => parseBindingWave1(binding), [binding]);
-  const dirty =
-    JSON.stringify(holder) !== JSON.stringify(holderDraftOf(binding)) ||
-    JSON.stringify(withoutUnpicked(draftMap)) !==
-      JSON.stringify(storedDraft.consumptionMap) ||
-    autoRun !== storedDraft.autoRun;
+  /**
+   * ONE SIGNATURE FOR "WHAT THIS DRAFT IS", used by both the unsaved-work note
+   * and the write report's lifetime — because they are the same question asked
+   * against two different baselines, and computing them separately is how they
+   * came to disagree (R2-2).
+   */
+  const draftSignature = JSON.stringify([
+    holder,
+    withoutUnpicked(draftMap),
+    autoRun,
+  ]);
+  const storedSignature = JSON.stringify([
+    holderDraftOf(binding),
+    storedDraft.consumptionMap,
+    storedDraft.autoRun,
+  ]);
+  const dirty = draftSignature !== storedSignature;
 
-  // The server's report describes the row it wrote. The instant the draft moves
-  // off that row it is a sentence about something that no longer exists, so it
-  // goes — the same rule the unsaved-work note runs on, in the other direction.
+  // The server's report describes THE ROW IT WROTE. The instant the draft moves
+  // off THAT — not off whatever the client last read from the server — it is a
+  // sentence about something that no longer exists, so it goes.
+  //
+  // 🚨 This used to key off `dirty`, which is measured against the STORED row.
+  // A successful save leaves the draft dirty against that stale baseline until
+  // the refetch lands, so the report was cleared in the same commit that set
+  // it and `applies_in` never rendered a frame (V1 R2-2). Compare against what
+  // was written instead.
   useEffect(() => {
-    if (dirty && writeReport) onDraftMoved();
+    if (!writeReport) return;
+    if (!writeReportStillDescribesDraft({ writtenSignature, draftSignature })) {
+      onDraftMoved();
+    }
     // `onDraftMoved` is a plain setter from the parent; re-running on identity
     // churn would clear a report the draft has not actually moved off.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, writeReport]);
+  }, [draftSignature, writtenSignature, writeReport]);
 
   async function requestRungChange(
     nextRung: BindingRung,
@@ -841,12 +897,18 @@ function BindingDraft({
         // would mark an offered value "in use" that nothing is using.
         if (!isOfferedSource(entry)) continue;
         const list = out.get(entry.target) ?? [];
-        list.push(targetName);
+        // THE INPUT'S OWN LABEL, not its storage key (V2 round-2 residual 3).
+        // The holder declares the label; the rail has no way to know it, so it
+        // is resolved here where the declarations are.
+        const target = holderInputs.targets.find((t) => t.name === targetName);
+        list.push(
+          target?.label ?? formatVariableDisplayName(targetName) ?? targetName,
+        );
         out.set(entry.target, list);
       }
     }
     return out;
-  }, [draftMap]);
+  }, [draftMap, holderInputs.targets]);
 
   // F2 — the rail is handed THE SOURCES, never a count. A count cannot know a
   // kind, and the rail's sentence is about kinds.
@@ -936,6 +998,40 @@ function BindingDraft({
     [jobSurfaceName],
   );
 
+  /**
+   * THE JOB CELL'S CONTENT (V2 G3 round 2) — read off the live draft, so it is
+   * a fact about this map right now and never decoration. `fedBy` already holds
+   * each holder input's sources, and `isFed` is the same rule the rail's
+   * highlight uses: one definition of "fed" for both, or the two would
+   * disagree on the same screen.
+   */
+  const jobCoverage = useMemo(() => {
+    let fedInputs = 0;
+    let askingInputs = 0;
+    for (const target of holderInputs.targets) {
+      const sources = fedBy.get(target.name) ?? [];
+      if (isFed(sources)) fedInputs += 1;
+      if (sources.some((e) => e.mapType === "prompt_user")) askingInputs += 1;
+    }
+    return coverageLine({
+      hasHolder: holderChosen,
+      inputsReady: holderInputs.status === "ready",
+      totalInputs: holderInputs.targets.length,
+      fedInputs,
+      askingInputs,
+      unfedRequired: unfedRequired.length,
+      offeredCount: offerPending ? null : offeredValues.length,
+    });
+  }, [
+    fedBy,
+    holderChosen,
+    holderInputs.status,
+    holderInputs.targets,
+    offerPending,
+    offeredValues.length,
+    unfedRequired.length,
+  ]);
+
   const canProposeMap =
     holderInputs.status === "ready" &&
     holderInputs.targets.length > 0 &&
@@ -970,6 +1066,7 @@ function BindingDraft({
           outputKind: data.mandate.output_kind,
           offeredCount: offerPending ? null : offeredValues.length,
           offerSourceLine,
+          coverageLine: jobCoverage,
         }}
         ladderLine={ladderLine(data.bindings, rung, userId, organizationId)}
         disabled={disabled}

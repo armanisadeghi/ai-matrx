@@ -106,6 +106,80 @@ export function feedSentence(
     : `Fed by ${list}, joined in order.${tail}`;
 }
 
+/**
+ * WHAT THIS JOB'S OFFER ACTUALLY COVERS — the JOB cell's own content
+ * (V2 finding G3, round 2, 2026-08-31; the plan's wireframe, §"PLACE").
+ *
+ * 🚨 The JOB cell held an identity, two badges and a provenance line — about
+ * 110px of content in a row the holder cell stretched to ~400px, so it measured
+ * 71% empty and two adversarial rounds called that dead space by name. The
+ * wireframe always said what belongs there: not padding, but whether what this
+ * job offers is ENOUGH — "Offers 60 values — enough to feed every input below
+ * without asking the user anything."
+ *
+ * Every clause is derived from the draft map and the holder's own inputs, and
+ * nothing is asserted about a state that has not been read: no holder, inputs
+ * still loading and a holder that declares nothing each get their own sentence
+ * rather than a coverage claim about nothing.
+ */
+export function coverageLine({
+  hasHolder,
+  inputsReady,
+  totalInputs,
+  fedInputs,
+  askingInputs,
+  unfedRequired,
+  offeredCount,
+}: {
+  hasHolder: boolean;
+  inputsReady: boolean;
+  totalInputs: number;
+  fedInputs: number;
+  askingInputs: number;
+  unfedRequired: number;
+  offeredCount: number | null;
+}): string {
+  if (!hasHolder) {
+    return offeredCount === null
+      ? "Pick a holder and this job's offered values become its inputs."
+      : offeredCount === 0
+        ? "This job offers nothing yet, so a holder here would run on what its caller passes and nothing else."
+        : `Pick a holder and these ${offeredCount} offered values become the inputs it can be fed from.`;
+  }
+  if (!inputsReady) return "Reading what this holder needs…";
+  if (totalInputs === 0) {
+    return "This holder declares no inputs, so there is nothing on this screen to feed.";
+  }
+
+  const head =
+    fedInputs === totalInputs
+      ? `Every input this holder needs is fed — all ${totalInputs}.`
+      : `${fedInputs} of the ${totalInputs} inputs this holder needs ${
+          fedInputs === 1 ? "is" : "are"
+        } fed.`;
+
+  const asks =
+    askingInputs > 0
+      ? askingInputs === 1
+        ? " One of them asks the person at run time."
+        : ` ${askingInputs} of them ask the person at run time.`
+      : "";
+
+  const blocked =
+    unfedRequired > 0
+      ? unfedRequired === 1
+        ? " 1 required input is still unmapped, and a run would refuse."
+        : ` ${unfedRequired} required inputs are still unmapped, and a run would refuse.`
+      : "";
+
+  const slack =
+    unfedRequired === 0 && fedInputs < totalInputs
+      ? ` The other ${totalInputs - fedInputs} fall back to the holder's own defaults.`
+      : "";
+
+  return `${head}${asks}${blocked}${slack}`;
+}
+
 /** Does anything actually feed this input right now? (The rail's highlight.) */
 export function isFed(sources: readonly ConsumptionEntry[] | undefined): boolean {
   return (sources ?? []).some((e) => !(isOfferedSource(e) && e.target === ""));

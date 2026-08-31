@@ -34,6 +34,7 @@ import type {
   RequestInitiation,
 } from "@/features/agents/types/instance.types";
 import { extractFirstJson } from "@/utils/json/extract-json";
+import { extractErrorMessage } from "@/utils/errors";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -248,6 +249,21 @@ export interface HeadlessAgentJsonResult {
   conversationId?: string;
 }
 
+/**
+ * A thrown thing NOBODY could read, described for the capture record — the
+ * only case that reaches the generic reason. Never shown to a person; this
+ * exists so "shapeless" is a report we can act on rather than a shrug.
+ */
+function safeShape(err: unknown): string {
+  if (err === null) return "null";
+  if (typeof err !== "object") return `${typeof err}: ${String(err)}`;
+  try {
+    return `object keys: ${Object.keys(err as object).join(", ") || "(none)"}`;
+  } catch {
+    return "object (unreadable)";
+  }
+}
+
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_POLL_MS = 250;
 const DEFAULT_SETTLE_MS = 6_000;
@@ -389,8 +405,9 @@ export async function adoptHeadlessAgentJson(
       ...(opts.signal ? { signal: opts.signal } : {}),
     });
   } catch (err: unknown) {
-    const detail =
-      err instanceof Error ? err.message : "Unknown error awaiting the agent";
+    // Same class as the catch in `runHeadlessAgentJson` below — a thrown thing
+    // here is almost never an `Error` instance either. One reader, one rule.
+    const detail = extractErrorMessage(err);
     captureError({
       source: "agent-json-result",
       message: `Adopted headless agent wait threw before producing a result: ${detail}`,
@@ -551,11 +568,32 @@ async function launchAndWait(
     });
   } catch (err: unknown) {
     // The thrown detail is for US, not for the user: a launch/transport
-    // failure's message ("Unknown error running the agent", "Failed to fetch")
-    // tells a subject-matter expert nothing and reads as a dead end. Capture
-    // the technical text, show the feature's own copy.
-    const detail =
-      err instanceof Error ? err.message : "Unknown error running the agent";
+    // failure's message ("Failed to fetch") tells a subject-matter expert
+    // nothing on its own. Capture the technical text, show the feature's own
+    // copy — and the technical text rides back as `errorDetail`, which the
+    // caller prints as the reason.
+    //
+    // 🚨 THE REASON WAS BEING THROWN AWAY (V2 finding G5, round 2,
+    // 2026-08-31). This read `err instanceof Error ? err.message : <generic>`,
+    // and NOTHING that reaches this catch is an Error: every path here runs
+    // through `createAsyncThunk(...).unwrap()`, which rethrows either the
+    // `rejectWithValue` payload (a plain STRING on the execute path) or a
+    // `SerializedError` (a plain OBJECT). Both fail `instanceof`, so the
+    // server's own words — parsed out of the response body by
+    // `parseApiErrorBody` and carried all the way here — were replaced with
+    // "Unknown error running the agent", and the AI-map panel printed that as
+    // "Reason:". A reason slot filled with "unknown" is the stand-in the
+    // adversary rejected, wearing a label.
+    //
+    // `extractErrorMessage` is the platform's one reader of a thrown thing —
+    // Error, string, SerializedError, PostgrestError, FastAPI `detail` — so
+    // every other consumer of that helper inherits this fix. It keeps a
+    // catch-all of its own ("An unexpected error occurred") for a genuinely
+    // shapeless throw, which is the only case that deserves one; when that is
+    // what we got, the raw shape goes into the capture below so it is never
+    // silently lost.
+    const detail = extractErrorMessage(err);
+    const shapeless = detail === "An unexpected error occurred";
     const fullResponse = conversationId
       ? selectLatestAnswerText(conversationId)(getState())
       : "";
@@ -567,6 +605,9 @@ async function launchAndWait(
         surfaceKey: opts.surfaceKey,
         agent: opts.agentId ?? opts.mandateKey ?? "unknown",
         detail,
+        // Only when nothing readable came out: the raw shape, so a throw this
+        // helper cannot read is a bug report rather than a shrug.
+        ...(shapeless ? { rawThrown: safeShape(err) } : {}),
         answerTextLength: fullResponse.length,
       },
     });

@@ -21,7 +21,17 @@ import { RAIL_MAX_HEIGHT, scrollHint } from "./rail-height";
 
 export interface OfferedInventoryColumnProps {
   values: readonly OfferedValue[];
-  /** Offered value name → the holder inputs it currently feeds. */
+  /**
+   * Offered value name → the holder inputs it currently feeds, BY THEIR
+   * DISPLAY LABEL.
+   *
+   * 🚨 V2 round-2 residual 3: this printed "Feeds rulebook_document" — the raw
+   * storage key — in the one column a Subject Matter Expert reads to find out
+   * where a value goes, while the row it points at is titled "Rulebook
+   * Document" three inches away. The workspace builds this map and is the only
+   * thing that holds the holder's own labels, so it resolves the label there;
+   * the raw key still rides on `title` for whoever needs it.
+   */
   consumedBy: ReadonlyMap<string, string[]>;
   /** Values the platform delivers automatically — shown, never hidden (P8). */
   pinnedContext: readonly string[];

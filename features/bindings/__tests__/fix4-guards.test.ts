@@ -1,0 +1,221 @@
+/**
+ * FIX-4 guards — one case per adversarial finding this wave closes, each
+ * written so it FAILS against the shape that was shipped before it.
+ *
+ * V2 G3   — the JOB cell had no content of its own (`coverageLine`).
+ * V2 G5   — the run's own reason was discarded for a placeholder.
+ * V1 R2-1 — a dead page after a confirm opened from a Radix Select.
+ * V1 R2-2 — the server's `applies_in` cleared in the commit that set it.
+ */
+
+import {
+  __resetBodyPointerEventsRepairs,
+  bodyPointerEventsRepairCount,
+  restoreBodyPointerEventsIfOrphaned,
+} from "@/components/dialogs/confirm/body-pointer-events-guard";
+import { extractErrorMessage } from "@/utils/errors";
+import { coverageLine } from "../words";
+import { writeReportStillDescribesDraft } from "../write-report-life";
+
+describe("V2 G3 — the JOB cell says whether the offer covers the holder", () => {
+  test("no holder: it names what the offer would become, never a coverage claim", () => {
+    expect(
+      coverageLine({
+        hasHolder: false,
+        inputsReady: false,
+        totalInputs: 0,
+        fedInputs: 0,
+        askingInputs: 0,
+        unfedRequired: 0,
+        offeredCount: 27,
+      }),
+    ).toBe(
+      "Pick a holder and these 27 offered values become the inputs it can be fed from.",
+    );
+  });
+
+  test("inputs still loading: it says so rather than claiming full coverage", () => {
+    expect(
+      coverageLine({
+        hasHolder: true,
+        inputsReady: false,
+        totalInputs: 0,
+        fedInputs: 0,
+        askingInputs: 0,
+        unfedRequired: 0,
+        offeredCount: 5,
+      }),
+    ).toBe("Reading what this holder needs…");
+  });
+
+  test("full coverage with a question names the question", () => {
+    expect(
+      coverageLine({
+        hasHolder: true,
+        inputsReady: true,
+        totalInputs: 5,
+        fedInputs: 5,
+        askingInputs: 1,
+        unfedRequired: 0,
+        offeredCount: 5,
+      }),
+    ).toBe(
+      "Every input this holder needs is fed — all 5. One of them asks the person at run time.",
+    );
+  });
+
+  test("an unmapped required input says the run would refuse", () => {
+    expect(
+      coverageLine({
+        hasHolder: true,
+        inputsReady: true,
+        totalInputs: 5,
+        fedInputs: 3,
+        askingInputs: 0,
+        unfedRequired: 1,
+        offeredCount: 5,
+      }),
+    ).toBe(
+      "3 of the 5 inputs this holder needs are fed. 1 required input is still unmapped, and a run would refuse.",
+    );
+  });
+
+  test("unfed but optional inputs are named as falling back, not as a problem", () => {
+    expect(
+      coverageLine({
+        hasHolder: true,
+        inputsReady: true,
+        totalInputs: 5,
+        fedInputs: 3,
+        askingInputs: 0,
+        unfedRequired: 0,
+        offeredCount: 5,
+      }),
+    ).toBe(
+      "3 of the 5 inputs this holder needs are fed. The other 2 fall back to the holder's own defaults.",
+    );
+  });
+});
+
+describe("V2 G5 — the run's own reason survives to the screen", () => {
+  test("a redux SerializedError is a plain OBJECT, and its message is the reason", () => {
+    // This is what `createAsyncThunk(...).unwrap()` rethrows when the thunk
+    // threw. `err instanceof Error` is FALSE here — the old code's whole bug.
+    const serialized = {
+      name: "Error",
+      message: "The agent service is unavailable (503).",
+      stack: "…",
+    };
+    expect(serialized instanceof Error).toBe(false);
+    expect(extractErrorMessage(serialized)).toBe(
+      "The agent service is unavailable (503).",
+    );
+  });
+
+  test("a rejectWithValue payload is a plain STRING and is the reason verbatim", () => {
+    expect(extractErrorMessage("mandate_unfulfilled: no rung answers this job")).toBe(
+      "mandate_unfulfilled: no rung answers this job",
+    );
+  });
+
+  test("a FastAPI body's `detail` is read, string or object", () => {
+    expect(extractErrorMessage({ detail: "Holder is not executable." })).toBe(
+      "Holder is not executable.",
+    );
+    expect(
+      extractErrorMessage({ detail: { code: "x", message: "Model refused." } }),
+    ).toBe("Model refused.");
+  });
+
+  test("only a genuinely shapeless throw reaches the catch-all", () => {
+    expect(extractErrorMessage({})).toBe("An unexpected error occurred");
+  });
+});
+
+describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", () => {
+  beforeEach(() => {
+    __resetBodyPointerEventsRepairs();
+    document.body.style.removeProperty("pointer-events");
+    document.body.innerHTML = "";
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    document.body.style.removeProperty("pointer-events");
+    document.body.innerHTML = "";
+  });
+
+  test("locked with no layer in the document: repaired and screamed once", () => {
+    document.body.style.pointerEvents = "none";
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
+    expect(document.body.style.pointerEvents).toBe("");
+    expect(bodyPointerEventsRepairCount()).toBe(1);
+    expect(console.error).toHaveBeenCalledTimes(1);
+
+    // A second repair counts but does not reprint — a guard that repeats a
+    // paragraph is noise, and noise is how a scream stops being heard.
+    document.body.style.pointerEvents = "none";
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
+    expect(bodyPointerEventsRepairCount()).toBe(2);
+    expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  test("locked WITH a dialog open: left completely alone", () => {
+    document.body.style.pointerEvents = "none";
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "alertdialog");
+    document.body.appendChild(dialog);
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+    expect(document.body.style.pointerEvents).toBe("none");
+    expect(bodyPointerEventsRepairCount()).toBe(0);
+  });
+
+  test("locked with an open Select's listbox: left alone", () => {
+    document.body.style.pointerEvents = "none";
+    const listbox = document.createElement("div");
+    listbox.setAttribute("role", "listbox");
+    document.body.appendChild(listbox);
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+  });
+
+  test("not locked: nothing to do", () => {
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+  });
+});
+
+describe("V1 R2-2 — the write report outlives the save that produced it", () => {
+  const written = JSON.stringify([{ agentId: "a" }, { x: [] }, true]);
+
+  test("THE REGRESSION: dirty against a stale stored row does NOT clear it", () => {
+    // Immediately after a save the draft differs from the STORED row (the
+    // refetch has not landed), so `dirty` is true — the old rule cleared the
+    // report right here, and `applies_in` never rendered a frame.
+    const stored = JSON.stringify([null, {}, null]);
+    const draft = written;
+    expect(draft !== stored).toBe(true); // i.e. `dirty`
+    expect(
+      writeReportStillDescribesDraft({
+        writtenSignature: written,
+        draftSignature: draft,
+      }),
+    ).toBe(true);
+  });
+
+  test("editing away from what was written DOES clear it", () => {
+    expect(
+      writeReportStillDescribesDraft({
+        writtenSignature: written,
+        draftSignature: JSON.stringify([{ agentId: "b" }, { x: [] }, true]),
+      }),
+    ).toBe(false);
+  });
+
+  test("no write has spoken: there is nothing to keep", () => {
+    expect(
+      writeReportStillDescribesDraft({
+        writtenSignature: null,
+        draftSignature: written,
+      }),
+    ).toBe(false);
+  });
+});

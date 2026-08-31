@@ -324,9 +324,14 @@ export function BindingOptionsDrawer({
 
   return (
     <section className="rounded-xl border border-border bg-card">
+      {/* `aria-expanded` states the fold's own state to anyone not looking at
+          the chevron (V2 round-2 residual 9). A disclosure that only says
+          "open" in a rotation is silent to a screen reader — the same class as
+          a control that looks disabled without saying why. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="flex w-full items-center gap-2 px-3 py-2 text-left"
       >
         <ChevronDown

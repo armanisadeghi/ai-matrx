@@ -22,6 +22,8 @@
 
 import dynamic from "next/dynamic";
 
+import { useBodyPointerEventsGuard } from "./body-pointer-events-guard";
+
 export { confirm } from "@ai-matrx/kit/confirm-opener";
 export type { ConfirmOptions } from "@ai-matrx/kit/confirm-opener";
 
@@ -31,5 +33,10 @@ const ConfirmDialogHostImpl = dynamic(
 );
 
 export function ConfirmDialogHost() {
+  // 🚨 R2-1 — a confirm opened from inside a Radix Select selection left the
+  // whole page dead to the mouse. The guard rides here because this host is
+  // already mounted once in every provider tree, and the defect is not the
+  // confirm's: it is any two modal layers whose body locks overlap.
+  useBodyPointerEventsGuard();
   return <ConfirmDialogHostImpl />;
 }

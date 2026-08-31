@@ -548,8 +548,16 @@ function AddAnotherSource({
     <div className="flex items-center gap-1.5 px-0.5">
       <Plus className="h-3 w-3 text-muted-foreground" />
       <Select value="" disabled={disabled} onValueChange={(v) => v && onAdd(v)}>
+        {/* 🚨 LET IT SAY THE WHOLE THING (V2 round-2 residual 5, the only
+            truncation that survived 1600). The trigger was a fixed 280px box
+            whose 239px content area had to hold 258px of "Also feed Rulebook
+            Document another value…", so the one sentence that names WHICH
+            input you are adding to was clipped exactly where the input's name
+            is. `SelectTrigger`'s base class is `whitespace-nowrap` with
+            `[&>span]:line-clamp-1`; both are overridden here so the label
+            wraps to a second line instead, and the box grows with it. */}
         <SelectTrigger
-          className="h-7 w-[280px] text-[11.5px]"
+          className="h-auto min-h-7 w-[280px] whitespace-normal py-1 text-left text-[11.5px] [&>span]:line-clamp-none"
           aria-label={`Add another value to ${targetName}`}
         >
           <SelectValue

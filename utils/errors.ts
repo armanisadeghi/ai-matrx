@@ -98,6 +98,18 @@ export function extractErrorMessage(err: unknown): string {
     const e = err as Record<string, unknown>;
     const parts: string[] = [];
     if (typeof e.message === "string" && e.message) parts.push(e.message);
+    // 🚨 FastAPI's own word for the reason (2026-08-31, V2 finding G5). Our
+    // server refuses in `detail` — a string, or an object carrying `message` —
+    // and every reader here checked `message`/`details` only, so a body that
+    // said exactly why was flattened into "An unexpected error occurred". The
+    // server's sentence is the whole point of catching this.
+    if (parts.length === 0) {
+      if (typeof e.detail === "string" && e.detail) parts.push(e.detail);
+      else if (e.detail && typeof e.detail === "object") {
+        const d = e.detail as Record<string, unknown>;
+        if (typeof d.message === "string" && d.message) parts.push(d.message);
+      }
+    }
     if (typeof e.details === "string" && e.details) parts.push(e.details);
     if (typeof e.hint === "string" && e.hint) parts.push(`Hint: ${e.hint}`);
     if (typeof e.code === "string" && e.code) parts.push(`Code: ${e.code}`);

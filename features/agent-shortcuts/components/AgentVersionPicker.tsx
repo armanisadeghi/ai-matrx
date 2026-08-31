@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, Loader2, Zap } from "lucide-react";
+import { AlertCircle, ChevronDown, Loader2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -77,6 +77,29 @@ interface AgentVersionPickerProps {
    * call site reading exactly as it always has.
    */
   subjectNoun?: string;
+  /**
+   * 🚨 FOLD THE VERSION BLOCK TO ONE LINE UNTIL IT IS ASKED FOR (V2 finding
+   * G3, round 2, 2026-08-31).
+   *
+   * This block is four stacked pieces — agent header, "Pin to version" select,
+   * the pinned-version line with its uuid chip, and the always-latest switch
+   * with its two-sentence explanation. That is ~230px of REFERENCE DETAIL, and
+   * on the one binding UI's scope bar it set the height of a three-cell grid
+   * row whose other two cells then measured 64-71% empty. Two adversarial
+   * rounds named that dead space, and the previous wave "fixed" it by changing
+   * the column widths — which cannot touch a height.
+   *
+   * Version pinning is a decision a person makes once and then reads, so
+   * folded it states its own answer in one line ("Follows the latest version" /
+   * "Pinned to v7 · Mar 4, 2026") and expands to the identical controls. The
+   * default is `false`, so the shortcut editor — where this block is the point
+   * of the panel, not a footnote in someone else's row — is untouched.
+   *
+   * The agent header is omitted while collapsible, because the ONE call site
+   * that folds already prints the holder's name and id directly above: two
+   * copies of an identity in one cell is the noise, not the fold.
+   */
+  collapsible?: boolean;
 }
 
 function formatChangedAt(iso: string | null): string {
@@ -102,6 +125,7 @@ export function AgentVersionPicker({
   disabled,
   initialCurrentVersionId,
   subjectNoun = "shortcut",
+  collapsible = false,
 }: AgentVersionPickerProps) {
   const dispatch = useAppDispatch();
 
@@ -110,6 +134,10 @@ export function AgentVersionPicker({
   );
   const liveVersionNumber = agent?.version ?? null;
 
+  // Folded by default WHEN foldable; a non-collapsible call site is always
+  // "expanded" and never renders a trigger, so its markup is byte-identical to
+  // what it has always been.
+  const [expanded, setExpanded] = useState(false);
   const [versions, setVersions] = useState<AgentVersionHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -212,10 +240,69 @@ export function AgentVersionPicker({
     }
   };
 
+  /**
+   * THE FOLD'S OWN SENTENCE. A collapsed control must answer the question it
+   * hides, or it is just a thing to click: every state — latest, pinned, still
+   * reading, nothing chosen — has a word here, and none of them is silence.
+   */
+  const pinSummary = !agentId
+    ? "No agent chosen yet"
+    : useLatest
+      ? "Follows the latest version"
+      : selectedVersion
+        ? `Pinned to v${selectedVersion.version_number}${
+            formatChangedAt(selectedVersion.changed_at)
+              ? ` · ${formatChangedAt(selectedVersion.changed_at)}`
+              : ""
+          }`
+        : loading
+          ? "Reading this agent's versions…"
+          : "No version pinned";
+
+  if (collapsible && !expanded) {
+    return (
+      <button
+        type="button"
+        aria-expanded={false}
+        onClick={() => setExpanded(true)}
+        className="flex w-full items-center gap-2 rounded-md border border-border px-2 py-1.5 text-left hover:bg-accent/40"
+      >
+        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          Version
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[11.5px] text-foreground">
+          {pinSummary}
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-3">
+      {collapsible ? (
+        <button
+          type="button"
+          aria-expanded
+          onClick={() => setExpanded(false)}
+          className="flex w-full items-center gap-2 rounded-md border border-border px-2 py-1.5 text-left hover:bg-accent/40"
+        >
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+            Version
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[11.5px] text-foreground">
+            {pinSummary}
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 rotate-180 text-muted-foreground" />
+        </button>
+      ) : null}
       {/* ── Agent header: NAME is prominent, UUID is a small chip ─────── */}
-      <div className="flex items-start justify-between gap-3">
+      {/* Omitted when folded into another cell that already names the agent —
+          see the `collapsible` prop note. */}
+      <div
+        className="flex items-start justify-between gap-3"
+        hidden={collapsible}
+      >
         <div className="min-w-0 flex-1">
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">
             Agent
