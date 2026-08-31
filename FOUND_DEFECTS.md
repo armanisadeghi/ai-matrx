@@ -2731,3 +2731,25 @@ Two-part fix, the second part is a product call:
    candidates are `"files"` (it is a file-capture flow) or `"image-studio"` —
    which one is correct is an attribution decision for Arman, not a guess an
    agent should make, so it is logged rather than changed.
+
+## `sourceFeature="camera"` is not a valid SOURCE_FEATURE — 2026-08-26
+
+`features/media-capture/components/CaptureStudio.tsx:252` **defaults**
+`sourceFeature` to `"camera"`, and `CameraPage.tsx:62` passes it explicitly.
+`"camera"` is not in the generated allow-list
+(`types/python-generated/source-attribution.ts`, sourced from the Python
+server's provenance list), so every agent run launched from the capture studio
+— including from every caller that simply omits the prop — is stamped with a
+source_feature the server does not recognise.
+
+**tsc cannot catch this**: `CaptureStudio` declares the prop as a plain
+`string` (lines 120/223), not `SourceFeature`. Found by
+`pnpm check:context-menu --population=attribution`.
+
+Two-part fix; the second part is a product call:
+1. Type the prop as `SourceFeature` (from `types/python-generated/source-attribution.ts`)
+   so this class can never recur silently in that component.
+2. Replace the value AND the default with a real allow-list entry. Nearest
+   candidates are `"files"` (it is a file-capture flow) or `"image-studio"` —
+   which one is correct is an attribution decision for Arman, not a guess an
+   agent should make, so it is logged rather than changed.
