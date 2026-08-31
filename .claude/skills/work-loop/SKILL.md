@@ -24,6 +24,10 @@ Canonical contract:
 2. Reclaiming is automatic on claim. Fill every free slot, up to three workers,
    by calling `claim` with a unique stable holder and giving each worker the
    returned contract unchanged.
+   When dispatching a known follow-up such as an independent verifier, pass its
+   exact `canonical_key` to `claim` and assert the returned key and role before
+   dispatch. A mismatch is a coordinator error: release it without work and do
+   not substitute another pending item.
 3. Wait for the first worker. Settle through `complete`, `retry`, or `defer`,
    then fill the slot again. Continue while claimable work exists.
 4. Add newly supplied tasks through `add_items`; stable keys make re-adding safe.
@@ -53,6 +57,8 @@ If the heartbeat says ownership was lost, stop writing and do not claim success.
 Complete only with concrete evidence. The service will create the independent
 verifier. A verifier starts from fresh state, assumes the work is wrong, and
 returns `passed` or `rejected`; rejection automatically creates repair work.
+The coordinator claims that verifier by its exact returned follow-up key; queue
+priority alone is never identity.
 
 `defer` is legal only for one named human-only boundary from the contract. It
 parks that item; the coordinator immediately continues other work. Never turn a

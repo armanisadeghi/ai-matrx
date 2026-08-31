@@ -65,7 +65,11 @@ facts and exceptions. Never launch one schedule per surface.
    slot. `complete` means a full candidate; it is not certification.
 6. Let the service create an independent verifier. A passed verifier promotes
    the durable `ui.ui_surface.last_check`; rejection creates repair work at a
-   higher priority than untouched backlog.
+   higher priority than untouched backlog. Claim a known verifier or repair
+   follow-up with its exact `canonical_key`, then assert the returned key and
+   role before dispatch. Queue priority is ordering, never identity. If either
+   value differs, release the accidental claim without doing work and repair
+   the coordinator contract before proceeding.
 7. Continue while claimable work exists. Report pilot/review batches from
    durable state, never from agent recollection.
 
