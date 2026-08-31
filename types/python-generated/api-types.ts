@@ -8114,6 +8114,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/capsule-crm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_capsule_crm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cognito-forms/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_cognito_forms_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ashby/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ashby_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teamtailor/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_teamtailor_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/frontify/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_frontify_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/wasabi/public/status": {
         parameters: {
             query?: never;
@@ -8123,6 +8208,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_wasabi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files-com/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_files_com_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -32063,6 +32165,43 @@ export interface components {
              */
             attribution?: "Thank you to arXiv for use of its open access interoperability.";
         };
+        /**
+         * AshbyServiceStatus
+         * @description Safe aggregate status projection for Ashby's fixed status page.
+         */
+        AshbyServiceStatus: {
+            /**
+             * Kind
+             * @default ashby_official_recruiting_platform_status
+             * @constant
+             */
+            __kind?: "ashby_official_recruiting_platform_status";
+            /**
+             * Provider
+             * @default Ashby
+             * @constant
+             */
+            provider?: "Ashby";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.ashbyhq.com
+             * @constant
+             */
+            status_page?: "https://status.ashbyhq.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** Asset */
         Asset: {
             /**
@@ -36929,6 +37068,41 @@ export interface components {
             applied?: boolean;
         };
         /**
+         * CapsuleServiceStatus
+         * @description Safe aggregate status projection for Capsule CRM's fixed status page.
+         */
+        CapsuleServiceStatus: {
+            /**
+             * Kind
+             * @default capsulecrm_public_service_status
+             * @constant
+             */
+            __kind?: "capsulecrm_public_service_status";
+            /**
+             * Provider
+             * @default capsulecrm
+             * @constant
+             */
+            provider?: "capsulecrm";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.capsulecrm.com
+             * @constant
+             */
+            status_page?: "https://status.capsulecrm.com";
+        };
+        /**
          * CaptivateServiceStatus
          * @description Safe aggregate status projection for Captivate.fm's fixed status page.
          */
@@ -40527,6 +40701,41 @@ export interface components {
             complete: boolean;
             /** Next Cursor */
             next_cursor?: string | null;
+        };
+        /**
+         * CognitoFormsServiceStatus
+         * @description Safe aggregate status projection for Cognito Forms' fixed status page.
+         */
+        CognitoFormsServiceStatus: {
+            /**
+             * Kind
+             * @default cognitoforms_public_service_status
+             * @constant
+             */
+            __kind?: "cognitoforms_public_service_status";
+            /**
+             * Provider
+             * @default cognitoforms
+             * @constant
+             */
+            provider?: "cognitoforms";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.cognitoforms.com
+             * @constant
+             */
+            status_page?: "https://status.cognitoforms.com";
         };
         /** CollectionReceipt */
         CollectionReceipt: {
@@ -50443,6 +50652,38 @@ export interface components {
             change_summary?: string | null;
         };
         /**
+         * FilesComServiceStatus
+         * @description Safe aggregate status projection for Files.com's fixed status page.
+         */
+        FilesComServiceStatus: {
+            /**
+             * Kind
+             * @default files_com_public_managed_file_transfer_status
+             * @constant
+             */
+            __kind?: "files_com_public_managed_file_transfer_status";
+            /**
+             * Provider
+             * @default Files.com
+             * @constant
+             */
+            provider?: "Files.com";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.files.com
+             * @constant
+             */
+            status_page?: "https://status.files.com";
+        };
+        /**
          * FilestackServiceStatus
          * @description Safe aggregate status projection for Filestack's fixed status page.
          */
@@ -51557,6 +51798,38 @@ export interface components {
             attempt?: number;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * FrontifyServiceStatus
+         * @description Safe aggregate status projection for Frontify's fixed status page.
+         */
+        FrontifyServiceStatus: {
+            /**
+             * Kind
+             * @default frontify_public_brand_management_status
+             * @constant
+             */
+            __kind?: "frontify_public_brand_management_status";
+            /**
+             * Provider
+             * @default Frontify
+             * @constant
+             */
+            provider?: "Frontify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.frontify.com
+             * @constant
+             */
+            status_page?: "https://status.frontify.com";
         };
         /** FullListBookmark */
         FullListBookmark: {
@@ -81961,6 +82234,43 @@ export interface components {
             chat_id: string;
         };
         /**
+         * TeamtailorServiceStatus
+         * @description Safe aggregate status projection for Teamtailor's fixed status page.
+         */
+        TeamtailorServiceStatus: {
+            /**
+             * Kind
+             * @default teamtailor_official_recruiting_platform_status
+             * @constant
+             */
+            __kind?: "teamtailor_official_recruiting_platform_status";
+            /**
+             * Provider
+             * @default Teamtailor
+             * @constant
+             */
+            provider?: "Teamtailor";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.teamtailor.com
+             * @constant
+             */
+            status_page?: "https://status.teamtailor.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * TeamworkStatusResult
          * @description Safe projection of Teamwork.com's official high-level service status.
          */
@@ -103739,6 +104049,106 @@ export interface operations {
             };
         };
     };
+    public_status_capsule_crm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapsuleServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_cognito_forms_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitoFormsServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_ashby_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AshbyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_teamtailor_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamtailorServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_frontify_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrontifyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_wasabi_public_status_get: {
         parameters: {
             query?: never;
@@ -103755,6 +104165,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WasabiServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_files_com_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilesComServiceStatus"];
                 };
             };
         };
