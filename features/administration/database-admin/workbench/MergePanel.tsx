@@ -182,7 +182,6 @@ export function MergePanel({
     onResult({
       rows: merged.rows,
       stats: merged.stats,
-      generatedAt: Date.now(),
       config: { ...config },
     });
 

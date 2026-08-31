@@ -43,7 +43,6 @@ export interface MergeResultStats {
 
 export interface MergeResult {
   rows: Record<string, unknown>[];
-  generatedAt: number;
   config: MergeConfig;
   stats: MergeResultStats;
 }
