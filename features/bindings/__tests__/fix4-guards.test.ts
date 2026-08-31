@@ -242,3 +242,24 @@ describe("V1 R2-2 — the write report outlives the save that produced it", () =
     ).toBe(false);
   });
 });
+
+describe("V1 R2-3 — who can decide for an organization, said before the click", () => {
+  /**
+   * The server's rule, copied from its own SQL (`public.is_org_admin_for`:
+   * `role in ('owner','admin')`), which the router calls before any write
+   * (`mandate_bindings.py:_principal_org` → 403). The client states the same
+   * rule so the refusal arrives BEFORE a holder is chosen and Save is pressed —
+   * proven live on 2026-08-31: nine organizations offered, and the one where
+   * this account is a plain `member` refused after the click.
+   */
+  const canBind = (role: string | undefined) =>
+    role === "owner" || role === "admin";
+
+  test("owner and admin can; a plain member cannot; a non-member cannot", () => {
+    expect(canBind("owner")).toBe(true);
+    expect(canBind("admin")).toBe(true);
+    // THE REGRESSION: this is the case the picker offered and the server 403'd.
+    expect(canBind("member")).toBe(false);
+    expect(canBind(undefined)).toBe(false);
+  });
+});

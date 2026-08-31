@@ -593,12 +593,39 @@ function BindingDraft({
       : [];
   const rungReady = rung !== "org" || Boolean(organizationId);
 
+  /**
+   * 🚨 CAN THIS PERSON DECIDE FOR THIS ORGANIZATION? (V1 R2-3, proven live
+   * 2026-08-31 by an independent walk.)
+   *
+   * The org picker offers every organization the person belongs to, and the
+   * write is org-ADMIN-gated: `mandate_bindings.py:_principal_org` refuses with
+   * 403 unless `is_org_admin_for(user, org)`, whose SQL is `role in ('owner',
+   * 'admin')`. Nine organizations were offered and the one where this account
+   * is a plain `member` — Titanium — was refused AFTER the holder was chosen
+   * and Save was pressed.
+   *
+   * That is the same shape the system rung already handles honestly one cell
+   * away (`allowGlobal`: "a super-admin decision, so it is not offered here").
+   * The role travels with the org list already (`OrganizationWithRole`), so the
+   * screen can know BEFORE the click. The rule is copied from the server's own
+   * SQL rather than invented, and if the two ever disagree the server still
+   * refuses — now in its own words, because `bindGateMessage` stopped throwing
+   * a 403's authored detail away in the same wave.
+   */
+  const selectedOrgRole = organizations.find(
+    (o) => o.id === organizationId,
+  )?.role;
+  const canBindThisOrg =
+    selectedOrgRole === "owner" || selectedOrgRole === "admin";
+
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
   const saveRefusal = !holderChosen
     ? "Choose an agent or a workflow first — a binding names who runs the job."
     : !rungReady
       ? "Pick the organization this answer is for."
-      : rung === "global" && !canBindGlobal
+      : rung === "org" && !canBindThisOrg
+        ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
+        : rung === "global" && !canBindGlobal
         ? "The system answer is a super-admin decision — the server refuses this write."
         : holder.kind === "agent" && !verdict.passed
           ? verdict.checking

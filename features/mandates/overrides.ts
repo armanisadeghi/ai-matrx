@@ -408,6 +408,25 @@ function bindGateMessage(error: {
   if (parsed.code === "validation_error" && parsed.detail.trim().length > 0) {
     return parsed.detail;
   }
+  /**
+   * 🚨 A 403's DETAIL IS AUTHORED PROSE TOO (V1 R2-3, verified live 2026-08-31).
+   *
+   * The org rung refused with *"You do not have permission to access this
+   * resource."* — `api/errors.py`'s generic sentence for the STATUS. The server
+   * had actually said *"organization admin required to set an org-wide
+   * override"*, which names the cause and implies the remedy, and this function
+   * threw it away because only `validation_error` was allowed to keep its
+   * detail. Same class as G5 in this wave: the reason was on the wire and the
+   * client replaced it with a placeholder.
+   *
+   * An authorization refusal is, like a 422, a sentence about the CALLER'S own
+   * situation — it is the copy. Only a detail the server actually authored is
+   * kept: `parseCallApiError` leaves `detail` empty when the body carried none,
+   * and then the generic still stands.
+   */
+  if (parsed.status === 403 && parsed.detail.trim().length > 0) {
+    return parsed.detail;
+  }
   return parsed.userMessage;
 }
 
