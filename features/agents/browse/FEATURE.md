@@ -173,12 +173,12 @@ what "we have no way of creating system orchestrators" actually was.
 Both routes now render `<AgentBrowsePage>`. They differ by ONE serializable
 word:
 
-| | `/agents/all` | `/administration/agents/system-agents/agents` |
-| --- | --- | --- |
-| `variant` | `"user"` (default) | `"system-admin"` |
-| Opens on | Mine | System |
-| Surface emitted | `matrx-user/agents` | `matrx-admin/system-agents` (roster half) |
-| Clears the glass header | yes | no — `/administration` already begins below it |
+|                         | `/agents/all`       | `/administration/agents/system-agents/agents`  |
+| ----------------------- | ------------------- | ---------------------------------------------- |
+| `variant`               | `"user"` (default)  | `"system-admin"`                               |
+| Opens on                | Mine                | System                                         |
+| Surface emitted         | `matrx-user/agents` | `matrx-admin/system-agents` (roster half)      |
+| Clears the glass header | yes                 | no — `/administration` already begins below it |
 
 **`variant` is a string, not a bag of props, because both callers are SERVER
 components.** Passing the surface object itself 500s the page: "Functions
@@ -196,8 +196,8 @@ how the duplicate grid came to exist.
 ### The System scope
 
 `system` is a member of the SHARED list-scope vocabulary (`lib/list-scope/`),
-not a local invention: *what does the platform itself ship*, as distinct from
-`public` (*what a tenant published platform-wide*). Two gates, both
+not a local invention: _what does the platform itself ship_, as distinct from
+`public` (_what a tenant published platform-wide_). Two gates, both
 load-bearing:
 
 - The page renders the tab only for a Matrx admin (`selectIsAdmin` — any tier,
@@ -240,6 +240,7 @@ tab, so the new tab read a permanent "0" beside 400 rows.
 
 ## Invariants
 
+- **Authenticated reads wait for the browser session.** The SSR-authenticated shell may paint before the browser Supabase client adopts its cookie session; all three browse RPCs call `requireAuthenticatedSupabaseSession`, and `useDriftAlerts` requires ready identity plus an access token before reading `agent.drift_alert`. Never solve an anonymous hydration race by granting `anon` access.
 - **The table is CONTROLLED.** Sort and pagination are server operations over the whole result set. A column whose filter cannot be served by `agx_list_scoped` is declared `filter: false` rather than rendering a control that quietly filters only the current page — that is the exact defect in the `/transcripts` table.
 - **Every `ORDER BY` ends in `id`.** A non-total order silently drops rows across pages; that bug already cost this table 59 of 365 agents once (`agx_get_list_stable_pagination.sql`).
 - **Scope tabs show server totals**, never `rows.length`.
@@ -269,6 +270,7 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-08-31 (authenticated read boundary)** — Prevented the admin System Agents mount from sending `agx_list_scoped`, scope-count, facet, and drift-alert reads as `guest` during browser-session hydration. Browse services now prove an authenticated Supabase session before constructing RPC work, while the header alert hook waits for ready identity and token state; the forcing guard covers all four producers.
 - **2026-08-26 (one list, two routes)** — The admin System Agents route now
   renders THIS list (`variant="system-admin"`); `SystemAgentsGrid` and the
   `getSystemAgentListSeed` SSR seed behind it were deleted. Added the `system`

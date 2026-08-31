@@ -14,6 +14,7 @@
 // page replaced — and at 773 distinct tags it is not a rounding error.
 
 import { supabase } from "@/utils/supabase/client";
+import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type { Database, Json } from "@/types/database.types";
 import type { AgentBrowseRow, AgentRowEdit } from "./types";
 import {
@@ -55,6 +56,11 @@ export async function fetchAgentBrowsePage(
   query: BrowseQuery,
   opts: BrowseSortOpts,
 ): Promise<AgentBrowsePage> {
+  // The admin shell is SSR-authenticated, but the browser client can mount
+  // before its cookie-backed session has hydrated. Prove the client has a JWT
+  // before constructing PostgREST work; otherwise these RPCs leave as `anon`
+  // and produce a cascade of misleading permission errors.
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc("agx_list_scoped", {
     p_scope: query.scope.kind,
     p_org_id: scopeOrgId(query.scope) ?? undefined,
@@ -80,6 +86,7 @@ export async function fetchAgentBrowsePage(
 export async function fetchBrowseScopeCounts(
   query: BrowseQuery,
 ): Promise<BrowseScopeCounts> {
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc("agx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
@@ -122,6 +129,7 @@ export async function fetchBrowseScopeCounts(
 export async function fetchBrowseFacets(
   query: BrowseQuery,
 ): Promise<BrowseFacets> {
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc("agx_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: scopeOrgId(query.scope) ?? undefined,
