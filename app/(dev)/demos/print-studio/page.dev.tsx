@@ -10,20 +10,37 @@
  *
  * Sections map one-to-one onto the package's entries — /qr, /qr-styled,
  * /barcode, /labels (+ /react LabelSheetPreview), /flashcards (+ /react
- * PrintOptionsDialog), /booklet, and /pdf through the host seam at
- * `@ai-matrx/print/pdf` (converter + stylesheet included since 0.3.0).
+ * PrintOptionsDialog), /booklet, /pdf through the host seam at
+ * `@ai-matrx/print/pdf` (converter + stylesheet included since 0.3.0), and the
+ * wave-3 entries /education, /exam, /certificate and /zpl (0.4.0).
  */
 
 import { useState } from "react";
-import { Barcode, BookOpen, FileText, Layers, Palette, Printer, QrCode } from "lucide-react";
+import {
+    Award,
+    Barcode,
+    BookOpen,
+    ClipboardCheck,
+    FileText,
+    GraduationCap,
+    Layers,
+    Palette,
+    Printer,
+    QrCode,
+    Terminal,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 import { BarcodeSection } from "./BarcodeSection";
 import { BookletSection } from "./BookletSection";
+import { CertificateSection } from "./CertificateSection";
+import { EducationSection } from "./EducationSection";
+import { ExamSection } from "./ExamSection";
 import { FlashcardsSection } from "./FlashcardsSection";
 import { LabelsSection } from "./LabelsSection";
 import { MarkdownPdfSection } from "./MarkdownPdfSection";
 import { QrSection } from "./QrSection";
 import { StyledQrSection } from "./StyledQrSection";
+import { ZplSection } from "./ZplSection";
 
 const TABS = [
     { id: "qr", label: "QR", icon: QrCode },
@@ -33,6 +50,10 @@ const TABS = [
     { id: "flashcards", label: "Flashcards", icon: Printer },
     { id: "booklet", label: "Booklet", icon: BookOpen },
     { id: "pdf", label: "Markdown → PDF", icon: FileText },
+    { id: "education", label: "Education", icon: GraduationCap },
+    { id: "exam", label: "Exam & bubble sheet", icon: ClipboardCheck },
+    { id: "certificate", label: "Certificate & workbook", icon: Award },
+    { id: "zpl", label: "ZPL", icon: Terminal },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -53,8 +74,10 @@ export default function PrintStudioPage() {
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                     QR and barcode generation, styled brand codes, label sheets and roll stock with data-defined
-                    formats, the flashcard deck printer, saddle-stitch booklet imposition, and markdown → PDF. Nothing
-                    here is a mock: each section calls the published package.
+                    formats, the flashcard deck printer, saddle-stitch booklet imposition, markdown → PDF, the
+                    education artifact library (cheat sheets, glossaries, study calendars), practice tests with
+                    scannable bubble answer forms, certificates and composed workbooks, and raw ZPL for Zebra-class
+                    thermal printers. Nothing here is a mock: each section calls the published package.
                 </p>
             </header>
 
@@ -84,6 +107,10 @@ export default function PrintStudioPage() {
             {tab === "flashcards" ? <FlashcardsSection /> : null}
             {tab === "booklet" ? <BookletSection /> : null}
             {tab === "pdf" ? <MarkdownPdfSection /> : null}
+            {tab === "education" ? <EducationSection /> : null}
+            {tab === "exam" ? <ExamSection /> : null}
+            {tab === "certificate" ? <CertificateSection /> : null}
+            {tab === "zpl" ? <ZplSection /> : null}
         </div>
     );
 }

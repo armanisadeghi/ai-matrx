@@ -11,7 +11,9 @@
 
 import type { ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import type { PrintOutcome } from "@ai-matrx/print/core";
 import { cn } from "@/utils/cn";
+import { toast } from "@/lib/toast";
 
 export type StudioTone = "ok" | "warn" | "info";
 
@@ -103,6 +105,23 @@ export function Field({
 
 export const controlClass =
     "h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+/**
+ * The studio's ONE print-outcome announcement.
+ *
+ * Every printer in the package may resolve to a `PrintOutcome`: `"opened"` when
+ * a print window went up, `"downloaded"` when the popup was blocked and the
+ * document fell back to an `.html` file. That fallback must never be silent —
+ * a user who never sees a print dialog otherwise has no idea a file landed in
+ * their downloads folder.
+ */
+export function announcePrintOutcome(outcome: void | PrintOutcome, label: string): void {
+    if (outcome === "downloaded") {
+        toast.warning(`${label}: the print window was blocked, so it downloaded as an .html file instead — open it and print from there.`);
+        return;
+    }
+    toast.success(`${label} sent to the print window.`);
+}
 
 /** An `<img>` source for locally generated SVG markup — avoids raw HTML injection. */
 export function svgToImgSrc(svg: string): string {
