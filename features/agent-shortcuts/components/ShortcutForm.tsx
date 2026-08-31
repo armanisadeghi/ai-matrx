@@ -81,6 +81,7 @@ import {
   fetchAgentsListFull,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type {
@@ -216,80 +217,6 @@ function ToggleRow({
         onCheckedChange={onChange}
         disabled={disabled}
       />
-    </div>
-  );
-}
-
-function JsonEditorRow({
-  id,
-  label,
-  help,
-  value,
-  onChange,
-  disabled,
-}: {
-  id: string;
-  label: string;
-  help?: string;
-  value: Record<string, unknown> | null;
-  onChange: (next: Record<string, unknown> | null) => void;
-  disabled?: boolean;
-}) {
-  const [text, setText] = useState(() =>
-    value ? JSON.stringify(value, null, 2) : "",
-  );
-  const [parseError, setParseError] = useState<string | null>(null);
-
-  // Sync external value changes (e.g. shortcut reload) back into the textarea.
-  useEffect(() => {
-    setText(value ? JSON.stringify(value, null, 2) : "");
-    setParseError(null);
-  }, [value]);
-
-  const handleBlur = () => {
-    const trimmed = text.trim();
-    if (trimmed === "") {
-      onChange(null);
-      setParseError(null);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (
-        parsed === null ||
-        typeof parsed !== "object" ||
-        Array.isArray(parsed)
-      ) {
-        setParseError('Must be a JSON object (e.g. { "key": "value" })');
-        return;
-      }
-      setParseError(null);
-      onChange(parsed as Record<string, unknown>);
-    } catch (e) {
-      setParseError(e instanceof Error ? e.message : "Invalid JSON");
-    }
-  };
-
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-      </Label>
-      <Textarea
-        id={id}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={handleBlur}
-        rows={3}
-        placeholder="{}"
-        spellCheck={false}
-        disabled={disabled}
-        className="text-[12px] font-mono"
-      />
-      {help && <p className="text-[10px] text-muted-foreground">{help}</p>}
-      {parseError && (
-        <p className="text-[10px] text-destructive">{parseError}</p>
-      )}
     </div>
   );
 }
@@ -1051,14 +978,33 @@ export function ShortcutForm({
           />
         </div>
 
-        <JsonEditorRow
-          id="llm-overrides"
-          label="LLM Overrides (JSON)"
-          help='Partial LLMParams delta — e.g. {"temperature": 0.2}. Only keys provided are sent.'
+        {/* 🚨 THE MODAL IS A THIRD DOOR, AND THE FIRST SWEEP MISSED IT
+            (found by the independent walk of v0.4.1585, which is the whole
+            point of the walk). `AdvancedSection` was fixed and
+            `ShortcutEditorNext` inherited it — but THIS form, which is the
+            only editor for the three non-per-agent shortcut route families
+            (personal, organization and admin system-agent shortcuts), carries
+            its OWN advanced block and still asked the person to type a raw
+            JSON object into a textarea. Arman: "users are never made to enter
+            objects." Same shared composition as everywhere else — the
+            canonical model picker plus the canonical settings panel — so one
+            fix covers all three route families. The local `JsonEditorRow` had no other call site and
+            is DELETED, not left as a fallback. */}
+        <StoredModelOverridesField
+          instanceKey={`shortcut-form-${shortcut?.id ?? "new"}`}
           value={formData.llmOverrides as Record<string, unknown> | null}
           onChange={(v) =>
             handleChange("llmOverrides", v as ShortcutFormData["llmOverrides"])
           }
+          title="Model & settings"
+          hint="Which model this shortcut runs on, and the settings it runs with. Left alone, it uses the agent's own model and settings."
+          words={{
+            heading: "Model settings for this shortcut",
+            scopeNote:
+              "These are stored on this shortcut and applied every time it runs. Resetting a value hands it back to the agent's own default.",
+            noModelNote:
+              "No model chosen — this shortcut runs on the agent's own model.",
+          }}
           disabled={saving}
         />
       </div>

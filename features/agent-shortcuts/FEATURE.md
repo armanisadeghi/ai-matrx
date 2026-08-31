@@ -131,6 +131,8 @@ A structured component (like Card — with title + description fields) flips one
 | `showSubAgents`                     | When `false`, sub-agent turns are filtered from the transcript selector             |
 | `hideReasoning` / `hideToolResults` | Clean up what the user sees mid-run                                                 |
 
+**Model overrides use `StoredModelOverridesField`.** Every shortcut editor exposes the canonical model picker and settings panel; users never enter an LLM-parameter JSON object.
+
 ---
 
 ## Key flows
@@ -196,6 +198,7 @@ See `features/agents/migration/MASTER-PLAN.md`.
 
 ## Change log
 
+- `2026-08-31` — Replaced the shortcut form's raw LLM-overrides JSON textarea with the shared model picker and settings panel across user, organization, and system shortcut routes.
 - `2026-08-31` — Added the canonical personal-create route at `/agents/shortcuts/new` and made `ShortcutDirectResolver` reject reserved/malformed path segments before a UUID predicate reaches PostgREST.
 - `2026-08-27` — **D200 fixed at the shared write boundary.** `resolveShortcutWriteScope` now combines visibility with required tenant ownership for form, quick-create, bulk, surface-seeded, Saved Request, and category paths; the direct thunk independently calls `ensureOrgId`. The next editor preserves RTK plain-object messages and uses the already-captured toast path, so one rejection is one attributable incident. `check:organization-context` now pins the resolver and every writer connection. The live table's `_stamp_org_default` removal remains the ordered post-deployment cutover in `common-docs/projects/no-db-assigned-org/PLAN.md`; callers no longer depend on it.
 - `2026-08-15` — Nested `CategoryForm` is mounted once and then kept mounted (`isOpen` drives the close). Unmounting it the instant it succeeded skipped Radix's own close cleanup, leaving `body { pointer-events: none }` behind and making the whole link modal inert — every button looked enabled and silently did nothing.
