@@ -127,7 +127,14 @@ Do this, in order:
 1. **Mount the pane menu anyway.** A window without its own menu answers
    right-clicks with the page underneath — that is the harm, and mounting fixes
    it even with no per-row entity.
-2. **Do NOT reach into the child.** It belongs to another agent.
+2. **Do NOT reach into the child** — with ONE narrow exception. You may follow
+   into a child ONLY when all three hold: the child is the sole owner of the
+   thing you were told to wire (e.g. it holds the textarea ref and setter, so
+   no honest `EditableContextMenu` exists without it); you verified by grep
+   that no other assigned file references it; and you disclose the crossing at
+   the TOP of your report with that reasoning. When any of the three is in
+   doubt, report instead — a second agent arriving at the same file produces
+   nested menus, and the inner trigger silently wins.
 3. **Report the exact child file and what it needs.** Almost always one line
    per row — the DOM sniffer means the child needs no resolver at all:
 
@@ -239,6 +246,13 @@ git add <your exact paths> && git commit --only <your exact paths> -m "…"
   bug.
 - **Nested menus: the innermost wins.** A pane menu wrapped around rows that
   mount their own menus will never open on those rows.
+- **A `createPortal` child cannot be wrapped from its parent.** If the workspace
+  portals itself to `document.body` (e.g.
+  `features/pdf-extractor/components/PdfExtractorWorkspace.tsx`), a wrapper
+  written in the window file has no real DOM child to attach to — Radix
+  `asChild`/Slot needs an element, not a portal marker. The menu must be
+  mounted INSIDE the portaling component. Report it; do not fake a wrap that
+  provably cannot work.
 - **An overlay/window must mount its OWN menu.** Without one, a right-click
   inside it is answered by the page underneath, handing the user that page's
   surface and agents — silently wrong, and it looks like it works.
