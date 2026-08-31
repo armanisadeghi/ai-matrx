@@ -11,7 +11,7 @@ Read `../work-loop/SKILL.md`, then `../surface-check/SKILL.md` and its
 
 `CHECKLIST_VERSION = 2`
 
-`SURFACE_CERTIFICATION_RULE_VERSION = 2026-08-30.1`
+`SURFACE_CERTIFICATION_RULE_VERSION = 2026-08-30.2`
 
 **Bump the rule version for every material acceptance-rule change.** A version
 change creates recheck items for every previously certified surface whose

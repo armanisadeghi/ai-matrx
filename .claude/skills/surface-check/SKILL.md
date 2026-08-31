@@ -84,6 +84,15 @@ GAP` screams and zero hydration errors. `pnpm type-check` clean for your files.
 Error Inspector clean on a normal load. Static analysis or a `deferred-visual`
 verdict can support repair, but can never satisfy this step.
 
+**A clean load is not a workflow proof.** For every primary user outcome and
+each declared write target, run one representative real-data path end to end
+(or the contract's safe restored canary), wait for every asynchronous action to
+settle, and inspect the resulting UI, console, and Error Inspector again. A
+button click, spinner, optimistic state, or session-complete shell is not proof
+that the downstream agent/write succeeded. Record the terminal result and
+restore the canary. If an unsafe side effect cannot be restored, the item
+contract must provide a safe fixture; never silently skip the outcome.
+
 The tested dependency graph must be reproducible from the recorded commit. A
 workspace package build copied over `node_modules`, an unpublished package
 subpath, a locally patched install, or any other future-only dependency overlay

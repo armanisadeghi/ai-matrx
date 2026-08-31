@@ -66,6 +66,11 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 - MUST: the live verification protocol in the skill (ask dialog → Apply lands → "Keep as is" declines → undeclared refused → invalid value throws verbatim → Error Inspector clean).
 - **No browser? `deferred-visual`, not skipped.** Ship the declaration + handler (a declared-but-unwired target fails loudly, so shipping half is worse than shipping none), verify the handler's logic by reading it, and hand over the exact run to perform: which target, what to type, what Apply should change on screen. Never record `pass` for a target no agent has actually applied.
 - Evidence: target names, live-run proof (screenshot or Error Inspector clean line) — or the deferred run description.
+- MUST: one representative real-data end-to-end path reaches the terminal
+  downstream result for every primary outcome/write target; wait for async
+  agents/writes to settle, then recheck the UI, console, and Error Inspector.
+  A clicked control, spinner, optimistic state, or completion shell alone is
+  never success evidence.
 
 ## S4 · Family: inheritance & own identity — `surface-authoring` § THE FAMILY DOCTRINE
 
@@ -153,6 +158,9 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 
 - MUST: every loading state says WHAT is loading (or is a surface-shaped skeleton); no bare "Loading…"; empty states are real (`EntityListPage` empties); every async op has structured error handling that surfaces — recovery layers scream.
 - MUST: a surface that streams AI never shows a spinner while AI works (S17).
+- MUST: re-open Error Inspector and console after each representative primary
+  workflow has reached its terminal async state; initial-load cleanliness does
+  not cover downstream failures.
 - Evidence: the three states captured.
 
 ## S12 · No dead ends — `no-dead-ends`
