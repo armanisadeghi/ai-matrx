@@ -123,7 +123,11 @@ export function NotesWindow({
         minWidth={640}
         minHeight={460}
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-        urlSyncKey={`notes-${stableKey}`}
+        // typeKey is the stable PANEL TYPE; the instance rides in urlSyncId.
+        // Folding the instance into the key (`notes-${stableKey}`) wrote
+        // `?panels=notes-default:default` — a token with no hydrator, so the
+        // URL the app produced was one the app could not read back.
+        urlSyncKey="notes"
         urlSyncId={stableKey}
         sidebar={
           <NoteSidebar instanceId={notesInstanceId} />

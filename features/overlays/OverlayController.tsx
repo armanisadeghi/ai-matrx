@@ -5335,9 +5335,8 @@ export default function OverlayController() {
         const data = inst.data as Record<string, unknown> | null | undefined;
         // windowInstanceId falls back to the overlay instance id (not undefined)
         // so each overlay instance maps to a DISTINCT notes instance instead of
-        // every window collapsing onto notes-default. (Non-"default" ids don't yet
-        // round-trip through the registry's static urlSync key "notes" — fine until
-        // multi-instance URL sync lands.)
+        // every window collapsing onto notes-default. Instance ids DO round-trip
+        // through `?panels=notes:<instanceId>` (typeKey "notes" + urlSyncId).
         return (
           <NotesWindow
             key={inst.instanceId}

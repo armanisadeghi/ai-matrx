@@ -13,7 +13,6 @@
 // file), never in this core.
 
 import { Suspense, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { useIdleTask } from "@ai-matrx/kit/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -40,12 +39,10 @@ import {
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
 import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
 
-const KEYWORD_RESEARCH_URL_PANEL_KEYS = ["keyword_research"] as const;
 
 export default function DeferredSingletonCore() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
-  const pathname = usePathname();
 
   // NOTE: global error capture + persistence install live in the WRAPPER
   // (DeferredSingletonWrapper.tsx), not here — they must be running during
@@ -109,11 +106,18 @@ export default function DeferredSingletonCore() {
           question can be raised by any API call, any upload, and any AI run, so
           it cannot live inside one feature. See lib/organization/organization-gate.ts. */}
       <OrganizationGateDialog />
-      {pathname === "/marketing/keyword-research" && (
-        <Suspense fallback={null}>
-          <UrlPanelManager managedTypeKeys={KEYWORD_RESEARCH_URL_PANEL_KEYS} />
-        </Suspense>
-      )}
+      {/* Render-free. THE reader/writer of `?panels=` — the deep-link channel
+          for floating windows (`?panels=notes`, `?panels=vault:<id>`, …).
+          Mounted GLOBALLY and unallowlisted: it owns every key that has a
+          hydrator in url-sync/initUrlHydration.ts, on every authenticated
+          route. It was route-scoped to /marketing/keyword-research from
+          2026-08-27 until 2026-08-30, which made every other `?panels=` link
+          on every other route a silent no-op — no window, no warning. Never
+          re-scope it to one route: a deep link that works only where its
+          author happened to test it is the same defect. */}
+      <Suspense fallback={null}>
+        <UrlPanelManager />
+      </Suspense>
       <LazyMessagingIsland />
       <KgNewSuggestionNotifier />
       <AssistsDock />

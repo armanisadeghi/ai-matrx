@@ -37,12 +37,14 @@ export function initUrlHydration() {
     );
   });
 
-  // Notes (NotesWindow — primary instance; title stays "Notes" in chrome)
-  registerPanelHydrator("notes", (dispatch) => {
+  // Notes (NotesWindow — multi-instance; `?panels=notes` opens the primary,
+  // `?panels=notes:<instanceId>` the exact window the link was made from.
+  // Title stays "Notes" in chrome.)
+  registerPanelHydrator("notes", (dispatch, id) => {
     dispatch(
       openOverlay({
         overlayId: "notesWindow",
-        instanceId: "default",
+        instanceId: id || "default",
         data: { title: "Notes" },
       }),
     );
@@ -241,6 +243,53 @@ export function initUrlHydration() {
   // Social Cards — `?panels=social_cards` (same missing-hydrator drift).
   registerPanelHydrator("social_cards", (dispatch) => {
     dispatch(openOverlay({ overlayId: "socialCardAnalyzerWindow" }));
+  });
+
+  // Creator Hub — `?panels=creator_hub` (optionally `:<tabId>`).
+  registerPanelHydrator("creator_hub", (dispatch, id) => {
+    dispatch(
+      openOverlay({
+        overlayId: "creatorHub",
+        data: id && id !== "creatorHub" ? { initialTab: id } : null,
+      }),
+    );
+  });
+
+  // Mandates — `?panels=mandate` (optionally `:<mandateKey>`) opens the
+  // mandate window in place, which is the ONLY way a mandate opens.
+  registerPanelHydrator("mandate", (dispatch, id) => {
+    dispatch(
+      openOverlay({
+        overlayId: "mandateWindow",
+        data: id && id !== "mandateWindow" ? { initialMandateKey: id } : null,
+      }),
+    );
+  });
+
+  // Picklists v1 — `?panels=structuredListManagerV1` (optionally `:<listId>`).
+  registerPanelHydrator("structuredListManagerV1", (dispatch, id) => {
+    dispatch(
+      openOverlay({
+        overlayId: "structuredListManagerV1Window",
+        data:
+          id && id !== "structuredListManagerV1Window"
+            ? { forcedListId: id }
+            : null,
+      }),
+    );
+  });
+
+  // Picklists v2 — `?panels=structuredListManagerV2` (optionally `:<listId>`).
+  registerPanelHydrator("structuredListManagerV2", (dispatch, id) => {
+    dispatch(
+      openOverlay({
+        overlayId: "structuredListManagerV2Window",
+        data:
+          id && id !== "structuredListManagerV2Window"
+            ? { forcedListId: id }
+            : null,
+      }),
+    );
   });
 
   // ── Dev-only integrity check ─────────────────────────────────────────────

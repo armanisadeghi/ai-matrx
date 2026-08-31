@@ -881,6 +881,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
       scope: "mine",
     },
     mobilePresentation: "drawer",
+    urlSync: { key: "vault" },
   },
 
   // ── Drill Deck Context ────────────────────────────────────────────────────
@@ -1363,6 +1364,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { transcript: null },
     mobilePresentation: "fullscreen",
     instanceMode: "multi",
+    urlSync: { key: "voice-advanced" },
   },
   {
     slug: "transcription-cleanup",
@@ -1372,6 +1374,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { transcript: null },
     mobilePresentation: "fullscreen",
     instanceMode: "multi",
+    urlSync: { key: "transcription-cleanup" },
   },
 
   {

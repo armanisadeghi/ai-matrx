@@ -99,6 +99,29 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-30 — **`?panels=` deep-linking works everywhere; it had been working
+  nowhere.** `UrlPanelManager` is now mounted globally and unallowlisted in
+  `app/DeferredSingletonCore.tsx`. The 2026-08-27 pilot gated it on
+  `pathname === "/marketing/keyword-research"` with a one-key allowlist; that
+  route became a `permanentRedirect` on 2026-08-29, so the manager mounted on
+  no route at all and every `?panels=` link — `notes`, `vault`, all of them —
+  did nothing, with no console warning, because the reader itself was absent.
+  Four fixes in the same class: (1) global mount, never route-coupled again;
+  (2) an allowlisted manager now WARNS on a token it drops instead of dropping
+  it silently; (3) the Redux→URL writer's "wait for the restored window to
+  register" guard is bounded at 5 s and names the keys that never registered —
+  an alias key like `files` (opens `cloudFilesWindow`, registry key
+  `cloud_files`) previously froze URL sync for the entire page session;
+  (4) round-trip drift closed — `NotesWindow` wrote `?panels=notes-default:default`,
+  a token with no hydrator, so the URL the app produced was one it could not
+  read back; typeKey is now the stable `notes` with the instance in
+  `urlSyncId`, and the hydrator honors it (`?panels=notes:<instanceId>`).
+  Added the four missing hydrators the dev integrity check found once it could
+  finally run (`creator_hub`, `mandate`, `structuredListManagerV1`/`V2`) and
+  the three missing registry `urlSync.key`s (`vault`, `voice-advanced`,
+  `transcription-cleanup`). Verified live on the dev server: open → canonicalize
+  → reload → close-clears-the-token, for `notes`, `vault`, and `notes,files`.
+
 - 2026-08-27 — **Added `agentTestCasesWindow` for the agent builder's sample inputs.** The builder's Flask launcher now sits directly above Smart Agent and opens this singleton ephemeral WindowPanel instead of a blocking right Sheet. The window wraps the existing `AgentSamplesManager`, preserves the normal Redux prefill path, and uses fullscreen rather than drawer presentation on mobile.
 
 - 2026-08-27 — **Listen panel gains an in-place voice settings pane.** A tiny `Settings2` toggle in the window header swaps the BODY (transport footer stays live) for a settings pane composed from the canonical settings-system primitives on the SAME paths the Settings → Voice tab edits (`userPreferences.voice.voice/speed/language` via `useSetting`) — so every change auto-saves to the user's profile and is the app-wide default for all speech (`speak()` + the app-root streaming speaker read prefs per utterance). Includes a "Preview voice" button (stops current audio first, then speaks a sample through the canonical queue — no takeover popup). `LiveRunDisplay` is CSS-hidden, never unmounted, so its viewer retention keeps holding live request rows while settings are open.
@@ -326,7 +349,7 @@ Adding an overlay requires **explicit registration at every boundary**: typed ov
 Parallel subsystems that read the registry:
 
 - **WindowPersistenceManager** — hydrates the current tab/identity workspace from localStorage + IndexedDB, stages lazy restores, and runs the idle overlay GC sweep.
-- **UrlPanelManager** — globally unmounted. An audited, allowlisted instance is mounted only on `/marketing/keyword-research` for `keyword_research`; every other `?panels=` hydrator remains dormant until deliberately enabled and tested.
+- **UrlPanelManager** — mounted GLOBALLY and unallowlisted in `app/DeferredSingletonCore.tsx`; it owns every key that has a hydrator in `initUrlHydration.ts`, on every authenticated route.
 - **WindowPanel** — looks up its own registry entry by `overlayId` to resolve `mobilePresentation`, `mobileSidebarAs`, and `urlSync.key`; a page-local window without an overlay id may pass `mobilePresentationOverride`.
 
 ---
@@ -357,7 +380,7 @@ interface WindowRegistryEntry {
   instanceMode?: "singleton" | "multi"; // default "singleton"
 
   // Integrations
-  urlSync?: { key: string }; // active only where an audited UrlPanelManager owns the key
+  urlSync?: { key: string }; // `?panels=<key>` deep link; needs a hydrator
   icon?: LucideIconName; // (reserved — grid uses toolsGridTiles)
   category?: ToolsCategory; // (reserved — see above)
   heavySnapshot?: boolean; // Phase 7 opt-in
@@ -377,7 +400,7 @@ interface WindowRegistryEntry {
 1. Every metadata entry has `kind`; every overlay id has one lazy renderer in `OverlayController`.
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
-4. Before a `urlSync.key` is allowlisted on a mounted `UrlPanelManager`, its hydrator in `initUrlHydration.ts` must be context-safe on that route.
+4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the writer then waits 5 s for a registration that never comes.
 
 ### How to add a new overlay
 
@@ -567,9 +590,9 @@ Decision tree:
 
 ## URL sync
 
-`UrlPanelManager` is not mounted globally. `/marketing/keyword-research` mounts an allowlisted instance for `keyword_research`; that manager hydrates and synchronizes only its owned key and preserves all unowned `?panels=` tokens verbatim. Every other key remains dormant. `WindowPanel` may still register metadata in `urlSyncSlice`, but no manager reads or writes a key unless it owns it. Share and Transcript Studio intentionally have no `urlSync` metadata because safe hydration requires resource/session context.
+`UrlPanelManager` is mounted globally (once, in `app/DeferredSingletonCore.tsx`) with no allowlist, so `?panels=` works on every authenticated route for every key that has a hydrator. It never gets re-scoped to a route: a deep link that works only where its author tested it is the same defect as no deep link (the 2026-08-27 pilot was pinned to `/marketing/keyword-research`, which became a `permanentRedirect` two days later — the pilot's one route stopped existing and nothing noticed). The `managedTypeKeys` prop still exists for a deliberately scoped second manager; a token it does not own is now warned about, never dropped in silence. Share and Transcript Studio intentionally have no `urlSync` metadata because safe hydration requires resource/session context.
 
-When a manager is enabled for a key, set `urlSync: { key: "..." }` on its registry entry. `WindowPanel` auto-activates `useUrlSync` when:
+To give a window a deep link, set `urlSync: { key: "..." }` on its registry entry and register the matching hydrator. `WindowPanel` auto-activates `useUrlSync` when:
 
 1. The entry has `overlayId` defined (caller passes it).
 2. Either the caller passes `urlSyncKey`/`urlSyncId` props, or the registry has `urlSync.key`.
@@ -653,7 +676,7 @@ Enforced by:
 | `tools-grid/menuPrimitives.tsx`             | `MenuSection` / `MenuDivider` / `MenuItem` / `MenuGridItem`.                                                       |
 | `url-sync/initUrlHydration.ts`              | `registerPanelHydrator` calls + dev-time integrity check.                                                          |
 | `url-sync/UrlPanelRegistry.ts`              | Hydrator map.                                                                                                      |
-| `url-sync/UrlPanelManager.tsx`              | Allowlisted `?panels=` coordinator; globally dormant, route-scoped for audited keys.                               |
+| `url-sync/UrlPanelManager.tsx`              | THE `?panels=` coordinator: hydrates URL → panels, serializes panels → URL. Mounted globally.                      |
 | `url-sync/useUrlSync.ts`                    | Registers/unregisters open panel in `urlSyncSlice`.                                                                |
 | `constants/tray.ts`                         | Single source for tray dimensions, margins, wrapping, and slot rectangles.                                         |
 | `utils/rectClamp.ts`                        | Viewport-safe geometry clamping.                                                                                   |
@@ -686,7 +709,7 @@ Enforced by:
 | 5 — Mobile presentation layer (drawer/card surfaces, rect clamp)             | ✅ shipped                                                                                       |
 | 6 — WindowPanel decomposition                                                | ⏸ deferred                                                                                       |
 | 7 — Local persistence hardening + audited semantic preservation pilots       | ✅ platform shipped; broader registry rollout remains audited                                    |
-| 8 — URL-sync implementation                                                  | route-scoped pilot: `keyword_research`; global manager remains dormant                           |
+| 8 — URL-sync implementation                                                  | ✅ shipped globally 2026-08-30                                                                    |
 | 9 — Dead code removal                                                        | ✅ shipped                                                                                       |
 | 10 — Tests                                                                   | ✅ preservation/reducer/store coverage shipped; broader mobile matrix remains                    |
 | 11 — Docs refresh (this file)                                                | ✅ current                                                                                       |

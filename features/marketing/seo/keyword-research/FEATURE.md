@@ -281,6 +281,14 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-30 — **The deep link is no longer route-coupled.** The 2026-08-27
+  route-scoped `UrlPanelManager` was pinned to `/marketing/keyword-research`,
+  which became a `permanentRedirect` to the client roster on 2026-08-29 — so
+  the manager mounted nowhere and `?panels=keyword_research` silently stopped
+  working two days after it shipped. One global unallowlisted manager now owns
+  every `?panels=` key on every authenticated route
+  (`app/DeferredSingletonCore.tsx`); see `features/window-panels/FEATURE.md`.
+
 - 2026-08-27 — **The canonical window deep link is hydrated again.** A lazy,
   route-scoped `UrlPanelManager` now owns only `keyword_research` on
   `/marketing/keyword-research`, so `?panels=keyword_research` opens the same
