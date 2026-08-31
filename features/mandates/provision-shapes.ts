@@ -238,9 +238,12 @@ const WHEN_ABSENT_VALUES = new Set(["skip", "use_default", "fail"]);
 
 /**
  * THE one client-side deserializer for a persisted consumption map. Legacy
- * `code_value` entries normalize to the neutral `offered_value` (mirrors
- * aidream `parse_value_mapping` — normalize on read, ONE funnel); any other
- * mapType is not consumable and is dropped loudly.
+ * `surface_value` and legacy `code_value` entries normalize to the neutral
+ * `offered_value` (mirrors aidream `parse_value_mapping` — normalize on read,
+ * ONE funnel). `surface_value` is the shared binding writer's persisted word
+ * for "take the value this call site offers"; a mandate Provision is that
+ * call site, so dropping it loses a valid binding. Any other mapType is not
+ * consumable and is dropped loudly.
  */
 export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
   return parseConsumptionMapWithDrops(raw).map;
@@ -327,7 +330,11 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
         });
         continue;
       }
-      if (mapType !== "offered_value" && mapType !== "code_value") {
+      if (
+        mapType !== "offered_value" &&
+        mapType !== "surface_value" &&
+        mapType !== "code_value"
+      ) {
         console.error(
           `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
         );

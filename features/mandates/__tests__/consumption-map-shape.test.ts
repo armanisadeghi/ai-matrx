@@ -44,6 +44,24 @@ describe("the frozen shape — reading", () => {
     expect(map.topic[0].deliver).toBe("variable");
   });
 
+  it("normalizes the shared binding writer's surface_value alias", () => {
+    const map = parseConsumptionMap({
+      transcript: {
+        mapType: "surface_value",
+        target: "transcript",
+        required: true,
+      },
+    });
+    expect(map.transcript).toEqual([
+      {
+        mapType: "offered_value",
+        target: "transcript",
+        deliver: "variable",
+        required: true,
+      },
+    ]);
+  });
+
   it("reads an ordered multi-source list and KEEPS the order", () => {
     const map = parseConsumptionMap({
       topic: [
