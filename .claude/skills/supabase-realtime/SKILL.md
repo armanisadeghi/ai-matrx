@@ -5,7 +5,7 @@ description: The canonical doctrine for ALL Supabase realtime in matrx-frontend 
 
 # Supabase Realtime — the Matrx doctrine
 
-> Cross-repo node: [`common-docs/systems/platform/realtime/STATE.md`](../../../../common-docs/systems/platform/realtime/STATE.md). `@ai-matrx/realtime` will absorb these rules as code (R8 makes its README the doctrine's home and this skill the pointer); it is **not built** as of 2026-08-30, so this page governs.
+> Cross-repo node: [`common-docs/systems/platform/realtime/STATE.md`](../../../../common-docs/systems/platform/realtime/STATE.md). `@ai-matrx/realtime` now absorbs these rules as code — its README is the doctrine's home (R8) and this page is the frontend-specific companion. As of 2026-08-30 the package is **built but not yet published or adopted**, so **this page governs every `.channel(` that exists in this repo today**; new realtime work should read the package README first and be written so it can move onto the package the day it is installable.
 
 Realtime + Redux + autosave is the most freeze-prone combination in this app. Every historical browser lockup traced to one of the mechanisms below. Reference implementations: **`features/notes/redux/realtimeMiddleware.ts`** (postgres_changes, the canonical one), `features/files/redux/realtime-middleware.ts` (request-ledger id-dedup variant), `features/data-tables/collab/SupabaseYjsProvider.ts` (broadcast CRDT).
 
