@@ -20062,6 +20062,48 @@
         }
       }
     },
+    "/netlify/public/status": {
+      "get": {
+        "tags": [
+          "Netlify Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_netlify_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetlifyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/woopra/public/status": {
+      "get": {
+        "tags": [
+          "Woopra Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_woopra_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WoopraServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/hotjar/public/status": {
       "get": {
         "tags": [
@@ -20181,6 +20223,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WireCloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloudtalk/public/status": {
+      "get": {
+        "tags": [
+          "CloudTalk Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_cloudtalk_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudTalkServiceStatus"
                 }
               }
             }
@@ -99165,6 +99228,56 @@
         "title": "CloudCannonServiceStatus",
         "description": "Safe aggregate status projection for CloudCannon's fixed status page."
       },
+      "CloudTalkServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cloudtalk_official_business_communications_platform_status",
+            "title": "Kind",
+            "default": "cloudtalk_official_business_communications_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CloudTalk",
+            "title": "Provider",
+            "default": "CloudTalk"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.cloudtalk.io/",
+            "title": "Status Page",
+            "default": "https://status.cloudtalk.io/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CloudTalkServiceStatus",
+        "description": "Safe aggregate status projection for CloudTalk's fixed status page."
+      },
       "CloudflareAccountMetadata": {
         "properties": {
           "server_id": {
@@ -155478,6 +155591,46 @@
         ],
         "title": "NeighbourSelection",
         "description": "One plan page selected as a likely competitor of the target, with the\nreason it was selected. The reason is not decoration — it is what lets a\nhuman (or a later audit) see whether the selector actually knew."
+      },
+      "NetlifyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "netlify_public_content_platform_status",
+            "title": "Kind",
+            "default": "netlify_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Netlify",
+            "title": "Provider",
+            "default": "Netlify"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.netlifystatus.com",
+            "title": "Status Page",
+            "default": "https://www.netlifystatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "NetlifyServiceStatus"
       },
       "NewRelicAccountStatus": {
         "properties": {
@@ -219741,6 +219894,50 @@
         ],
         "title": "WoodpeckerServiceStatus",
         "description": "Safe aggregate status projection for Woodpecker.co's fixed status page."
+      },
+      "WoopraServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "woopra_public_service_status",
+            "title": "Kind",
+            "default": "woopra_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Woopra",
+            "title": "Provider",
+            "default": "Woopra"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.woopra.com",
+            "title": "Status Page",
+            "default": "https://status.woopra.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "WoopraServiceStatus"
       },
       "WordPressOrgPlugin": {
         "properties": {

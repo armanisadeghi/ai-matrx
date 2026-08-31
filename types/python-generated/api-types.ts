@@ -8930,6 +8930,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/netlify/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_netlify_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/woopra/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_woopra_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hotjar/public/status": {
         parameters: {
             query?: never;
@@ -9024,6 +9058,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_wire_cloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudtalk/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_cloudtalk_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -40514,6 +40565,43 @@ export interface components {
             status_page?: "https://status.cloudcannon.com";
         };
         /**
+         * CloudTalkServiceStatus
+         * @description Safe aggregate status projection for CloudTalk's fixed status page.
+         */
+        CloudTalkServiceStatus: {
+            /**
+             * Kind
+             * @default cloudtalk_official_business_communications_platform_status
+             * @constant
+             */
+            __kind?: "cloudtalk_official_business_communications_platform_status";
+            /**
+             * Provider
+             * @default CloudTalk
+             * @constant
+             */
+            provider?: "CloudTalk";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.cloudtalk.io/
+             * @constant
+             */
+            status_page?: "https://status.cloudtalk.io/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * CloudflareAccountMetadata
          * @description Provider-formatted account metadata from one fixed Cloudflare API read.
          */
@@ -63972,6 +64060,35 @@ export interface components {
             score?: number;
             /** Reasons */
             reasons?: string[];
+        };
+        /** NetlifyServiceStatus */
+        NetlifyServiceStatus: {
+            /**
+             * Kind
+             * @default netlify_public_content_platform_status
+             * @constant
+             */
+            __kind?: "netlify_public_content_platform_status";
+            /**
+             * Provider
+             * @default Netlify
+             * @constant
+             */
+            provider?: "Netlify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://www.netlifystatus.com
+             * @constant
+             */
+            status_page?: "https://www.netlifystatus.com";
         };
         /**
          * NewRelicAccountStatus
@@ -91231,6 +91348,38 @@ export interface components {
              */
             status_page?: "https://status.woodpecker.co";
         };
+        /** WoopraServiceStatus */
+        WoopraServiceStatus: {
+            /**
+             * Kind
+             * @default woopra_public_service_status
+             * @constant
+             */
+            __kind?: "woopra_public_service_status";
+            /**
+             * Provider
+             * @default Woopra
+             * @constant
+             */
+            provider?: "Woopra";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.woopra.com
+             * @constant
+             */
+            status_page?: "https://status.woopra.com";
+        };
         /**
          * WordPressOrgPlugin
          * @description Safe factual projection of one WordPress.org plugin-directory entry.
@@ -107441,6 +107590,46 @@ export interface operations {
             };
         };
     };
+    public_status_netlify_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetlifyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_woopra_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WoopraServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_hotjar_public_status_get: {
         parameters: {
             query?: never;
@@ -107557,6 +107746,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WireCloudServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_cloudtalk_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudTalkServiceStatus"];
                 };
             };
         };
