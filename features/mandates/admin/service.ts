@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@/features/mandates/service";
 /** The ad-hoc run path + its transport shapes moved down to the shared
  * mandates feature so the (core) Mandate workspace can run a job too — ONE
@@ -124,6 +125,11 @@ export async function fetchMandateConsoleData(
   options: FetchMandateConsoleDataOptions = {},
 ): Promise<MandateConsoleData> {
   const supabase = createClient();
+  // Proxy admission proves the request had a server-side session. It cannot
+  // prove the browser client has hydrated (or retained) that session by the
+  // time this async bundle starts. Refuse before constructing either protected
+  // mandate query, otherwise one guest state fans out into two 42501 rows.
+  await requireAuthenticatedSupabaseSession(supabase);
   const scopedKeys =
     options.mandateKeys && options.mandateKeys.length > 0
       ? [...new Set(options.mandateKeys)]
@@ -731,6 +737,9 @@ function isMandateCodeTruthReport(value: unknown): value is MandateCodeTruthRepo
 export async function fetchMandateCodeTruthReport(
   dispatch: AppDispatch,
 ): Promise<MandateCodeTruthReport> {
+  // `callApi` obtains its bearer token independently. Establish the browser
+  // session first so a transient guest state never reaches aidream as a 401.
+  await requireAuthenticatedSupabaseSession(createClient());
   const response = await dispatch(
     callApi({
       path: "/mandates/code-truth",

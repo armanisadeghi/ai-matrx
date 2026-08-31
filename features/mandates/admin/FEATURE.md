@@ -9,7 +9,7 @@ Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandat
 Routes: `/administration/mandates` (the LIST — `MandatesConsole.tsx`) ·
 `/administration/mandates/[mandateKey]` (ONE mandate — `AdminMandateWorkspacePage.tsx`) ·
 `/administration/mandates/new` (creation — `features/mandates/authoring/NewMandatePage.tsx`).
-Code: `service.ts` (direct supabase reads/writes on `agent.mandate` / `agent.mandate_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC).
+Code: `service.ts` (direct supabase reads/writes on `agent.mandate` / `agent.mandate_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC). **Every protected console/code-truth read establishes a usable browser session before constructing a Supabase query or `callApi` request**; proxy admission alone cannot prevent a client-hydration/session-loss fan-out.
 
 🚨 **ONE MANDATE UI (Arman, 2026-08-29) — the console is the LIST, the page is the mandate.**
 Arman lives on this route and kept seeing an experience that had diverged from the rebuilt
@@ -118,6 +118,8 @@ The page is the `matrx-admin/mandates` surface (`features/surfaces/manifests/man
 The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate` (`ui`, handled on the console's own provider, which owns `selectedId`) and `mandate_exemplar_draft` (`draft`, registered by `MandateTestBench` via `useSurfaceWriteHandlers`). Both are `applyPolicy: "ask"`. Read the JUDGMENT BAR block at the top of the manifest before adding a third: rebind, enable/disable, the per-principal overrides, Run all, and every health/roll-up value are deliberately NOT writable, and each has its reason written down there.
 
 ## Change Log
+
+- 2026-08-31 — Protected console and code-truth reads now refuse at the client auth boundary before issuing either mandate-table query or the aidream request, preventing one guest/hydration state from fanning out into backend 401, table 42501, and duplicate toast incidents.
 
 - 2026-08-30 — Output-kind pills now keep the secondary foreground/background pair on hover instead of swapping only the purple background for the pale accent surface and making their white text unreadable. A focused regression test holds the contrast classes.
 

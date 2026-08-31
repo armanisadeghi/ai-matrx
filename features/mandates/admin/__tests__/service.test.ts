@@ -6,12 +6,15 @@ import {
   type MandateTestResponse,
 } from "@/features/mandates/test-run";
 import {
+  fetchMandateConsoleData,
   fetchMandateCodeTruthReport,
   fetchMandateVariableVerdicts,
   parseMandateTestHistory,
   runMandateTests,
   type MandateTestBatchResponse,
 } from "../service";
+import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import { createClient } from "@/utils/supabase/client";
 
 jest.mock("@/lib/api/call-api", () => ({
   callApi: jest.fn((config: unknown) => config),
@@ -21,7 +24,15 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: jest.fn(),
 }));
 
+jest.mock("@/utils/supabase/webDb", () => ({
+  requireAuthenticatedSupabaseSession: jest.fn().mockResolvedValue({
+    access_token: "test-token",
+  }),
+}));
+
 const callApiMock = jest.mocked(callApi);
+const requireSessionMock = jest.mocked(requireAuthenticatedSupabaseSession);
+const createClientMock = jest.mocked(createClient);
 
 function result(
   id: string,
@@ -53,6 +64,10 @@ function result(
 describe("mandate owner bench service", () => {
   beforeEach(() => {
     callApiMock.mockClear();
+    requireSessionMock.mockClear();
+    requireSessionMock.mockResolvedValue({
+      access_token: "test-token",
+    } as Awaited<ReturnType<typeof requireAuthenticatedSupabaseSession>>);
   });
 
   it("reads persisted history newest-first and drops malformed entries loudly", () => {
@@ -203,6 +218,35 @@ describe("mandate owner bench service", () => {
       method: "GET",
       connectTimeoutMs: 60_000,
     });
+    expect(requireSessionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("never constructs the code-truth request without a browser session", async () => {
+    requireSessionMock.mockRejectedValueOnce(
+      new Error("Opening the mandate console requires an authenticated session."),
+    );
+    const dispatch = jest.fn();
+
+    await expect(
+      fetchMandateCodeTruthReport(dispatch as unknown as AppDispatch),
+    ).rejects.toThrow("requires an authenticated session");
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(callApiMock).not.toHaveBeenCalled();
+  });
+
+  it("never constructs mandate table reads without a browser session", async () => {
+    const schema = jest.fn();
+    createClientMock.mockReturnValueOnce({
+      schema,
+    } as unknown as ReturnType<typeof createClient>);
+    requireSessionMock.mockRejectedValueOnce(
+      new Error("Opening the mandate console requires an authenticated session."),
+    );
+
+    await expect(fetchMandateConsoleData()).rejects.toThrow(
+      "requires an authenticated session",
+    );
+    expect(schema).not.toHaveBeenCalled();
   });
 
   it("evaluates the mapped code fields against the agent that really runs", async () => {
