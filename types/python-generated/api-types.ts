@@ -8080,6 +8080,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/woodpecker/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_woodpecker_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/insightly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_insightly_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wasabi/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_wasabi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/buttercms/public/status": {
         parameters: {
             query?: never;
@@ -8225,6 +8276,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_pixieset_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/syncplicity/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_syncplicity_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8497,6 +8565,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_morgen_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guru/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_guru_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lattice/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lattice_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -52656,6 +52758,43 @@ export interface components {
             mode?: "incremental" | "backfill";
         };
         /**
+         * GuruServiceStatus
+         * @description Safe aggregate status projection for Guru's fixed status page.
+         */
+        GuruServiceStatus: {
+            /**
+             * Kind
+             * @default guru_official_knowledge_platform_status
+             * @constant
+             */
+            __kind?: "guru_official_knowledge_platform_status";
+            /**
+             * Provider
+             * @default Guru
+             * @constant
+             */
+            provider?: "Guru";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.getguru.com
+             * @constant
+             */
+            status_page?: "https://status.getguru.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * HEPDataPublicRecord
          * @description Safe factual projection of one finished public HEPData record.
          */
@@ -54764,6 +54903,41 @@ export interface components {
              * @default false
              */
             join_duplicates?: boolean;
+        };
+        /**
+         * InsightlyServiceStatus
+         * @description Safe aggregate status projection for Insightly's fixed status page.
+         */
+        InsightlyServiceStatus: {
+            /**
+             * Kind
+             * @default insightly_public_service_status
+             * @constant
+             */
+            __kind?: "insightly_public_service_status";
+            /**
+             * Provider
+             * @default insightly
+             * @constant
+             */
+            provider?: "insightly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.insightly.com
+             * @constant
+             */
+            status_page?: "https://status.insightly.com";
         };
         /** InspectedScreenshot */
         InspectedScreenshot: {
@@ -56939,6 +57113,43 @@ export interface components {
             total: number;
             /** Finished At */
             finished_at?: string | null;
+        };
+        /**
+         * LatticeServiceStatus
+         * @description Safe aggregate status projection for Lattice's fixed status page.
+         */
+        LatticeServiceStatus: {
+            /**
+             * Kind
+             * @default lattice_official_people_platform_status
+             * @constant
+             */
+            __kind?: "lattice_official_people_platform_status";
+            /**
+             * Provider
+             * @default Lattice
+             * @constant
+             */
+            provider?: "Lattice";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.lattice.com
+             * @constant
+             */
+            status_page?: "https://status.lattice.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * LeakRule
@@ -80798,6 +81009,38 @@ export interface components {
             /** Cluster Ids */
             cluster_ids: number[];
         };
+        /**
+         * SyncplicityServiceStatus
+         * @description Safe aggregate status projection for Syncplicity's fixed status page.
+         */
+        SyncplicityServiceStatus: {
+            /**
+             * Kind
+             * @default syncplicity_public_file_platform_status
+             * @constant
+             */
+            __kind?: "syncplicity_public_file_platform_status";
+            /**
+             * Provider
+             * @default Syncplicity
+             * @constant
+             */
+            provider?: "Syncplicity";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.syncplicity.com
+             * @constant
+             */
+            status_page?: "https://status.syncplicity.com";
+        };
         /** SynthesisRequest */
         SynthesisRequest: {
             /**
@@ -87318,6 +87561,38 @@ export interface components {
             /** Completed At */
             completed_at?: string | null;
         };
+        /**
+         * WasabiServiceStatus
+         * @description Safe aggregate status projection for Wasabi's fixed status page.
+         */
+        WasabiServiceStatus: {
+            /**
+             * Kind
+             * @default wasabi_public_object_storage_status
+             * @constant
+             */
+            __kind?: "wasabi_public_object_storage_status";
+            /**
+             * Provider
+             * @default Wasabi
+             * @constant
+             */
+            provider?: "Wasabi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.wasabi.com
+             * @constant
+             */
+            status_page?: "https://status.wasabi.com";
+        };
         /** WatchdogStatusResponse */
         WatchdogStatusResponse: {
             /** Tables */
@@ -88210,6 +88485,41 @@ export interface components {
              * @default 1
              */
             per_page?: number;
+        };
+        /**
+         * WoodpeckerServiceStatus
+         * @description Safe aggregate status projection for Woodpecker.co's fixed status page.
+         */
+        WoodpeckerServiceStatus: {
+            /**
+             * Kind
+             * @default woodpecker_public_service_status
+             * @constant
+             */
+            __kind?: "woodpecker_public_service_status";
+            /**
+             * Provider
+             * @default woodpecker
+             * @constant
+             */
+            provider?: "woodpecker";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.woodpecker.co
+             * @constant
+             */
+            status_page?: "https://status.woodpecker.co";
         };
         /**
          * WordPressOrgPlugin
@@ -103389,6 +103699,66 @@ export interface operations {
             };
         };
     };
+    public_status_woodpecker_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WoodpeckerServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_insightly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightlyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_wasabi_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WasabiServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_buttercms_public_status_get: {
         parameters: {
             query?: never;
@@ -103565,6 +103935,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PixiesetServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_syncplicity_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncplicityServiceStatus"];
                 };
             };
         };
@@ -103885,6 +104275,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MorgenServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_guru_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuruServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_lattice_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatticeServiceStatus"];
                 };
             };
         };

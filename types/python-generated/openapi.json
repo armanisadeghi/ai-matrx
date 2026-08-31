@@ -19012,6 +19012,69 @@
         }
       }
     },
+    "/woodpecker/public/status": {
+      "get": {
+        "tags": [
+          "Woodpecker Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_woodpecker_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WoodpeckerServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/insightly/public/status": {
+      "get": {
+        "tags": [
+          "Insightly Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_insightly_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightlyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wasabi/public/status": {
+      "get": {
+        "tags": [
+          "Wasabi Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_wasabi_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WasabiServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/buttercms/public/status": {
       "get": {
         "tags": [
@@ -19194,6 +19257,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PixiesetServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/syncplicity/public/status": {
+      "get": {
+        "tags": [
+          "Syncplicity Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_syncplicity_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncplicityServiceStatus"
                 }
               }
             }
@@ -19530,6 +19614,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MorgenServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/public/status": {
+      "get": {
+        "tags": [
+          "Guru Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_guru_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lattice/public/status": {
+      "get": {
+        "tags": [
+          "Lattice Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_lattice_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatticeServiceStatus"
                 }
               }
             }
@@ -130993,6 +131119,56 @@
         "type": "object",
         "title": "GscSearchPerformanceSyncBody"
       },
+      "GuruServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "guru_official_knowledge_platform_status",
+            "title": "Kind",
+            "default": "guru_official_knowledge_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Guru",
+            "title": "Provider",
+            "default": "Guru"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.getguru.com",
+            "title": "Status Page",
+            "default": "https://status.getguru.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GuruServiceStatus",
+        "description": "Safe aggregate status projection for Guru's fixed status page."
+      },
       "HEPDataPublicRecord": {
         "properties": {
           "__kind": {
@@ -135584,6 +135760,51 @@
         },
         "type": "object",
         "title": "InsertPagesRequest"
+      },
+      "InsightlyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "insightly_public_service_status",
+            "title": "Kind",
+            "default": "insightly_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "insightly",
+            "title": "Provider",
+            "default": "insightly"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.insightly.com",
+            "title": "Status Page",
+            "default": "https://status.insightly.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "InsightlyServiceStatus",
+        "description": "Safe aggregate status projection for Insightly's fixed status page."
       },
       "InspectedScreenshot": {
         "properties": {
@@ -141289,6 +141510,56 @@
           "total"
         ],
         "title": "LatestDeriveRun"
+      },
+      "LatticeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lattice_official_people_platform_status",
+            "title": "Kind",
+            "default": "lattice_official_people_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Lattice",
+            "title": "Provider",
+            "default": "Lattice"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.lattice.com",
+            "title": "Status Page",
+            "default": "https://status.lattice.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LatticeServiceStatus",
+        "description": "Safe aggregate status projection for Lattice's fixed status page."
       },
       "LeakRule": {
         "type": "string",
@@ -197534,6 +197805,47 @@
         ],
         "title": "SyncOpinionsRequest"
       },
+      "SyncplicityServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "syncplicity_public_file_platform_status",
+            "title": "Kind",
+            "default": "syncplicity_public_file_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Syncplicity",
+            "title": "Provider",
+            "default": "Syncplicity"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.syncplicity.com",
+            "title": "Status Page",
+            "default": "https://status.syncplicity.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SyncplicityServiceStatus",
+        "description": "Safe aggregate status projection for Syncplicity's fixed status page."
+      },
       "SynthesisRequest": {
         "properties": {
           "scope": {
@@ -213674,6 +213986,47 @@
         ],
         "title": "WarmupProgress"
       },
+      "WasabiServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wasabi_public_object_storage_status",
+            "title": "Kind",
+            "default": "wasabi_public_object_storage_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wasabi",
+            "title": "Provider",
+            "default": "Wasabi"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.wasabi.com",
+            "title": "Status Page",
+            "default": "https://status.wasabi.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "WasabiServiceStatus",
+        "description": "Safe aggregate status projection for Wasabi's fixed status page."
+      },
       "WatchdogStatusResponse": {
         "properties": {
           "tables": {
@@ -215800,6 +216153,51 @@
         ],
         "title": "WooCommerceProductQueryResult",
         "description": "Provider-formatted result from one fixed, one-product catalog query."
+      },
+      "WoodpeckerServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "woodpecker_public_service_status",
+            "title": "Kind",
+            "default": "woodpecker_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "woodpecker",
+            "title": "Provider",
+            "default": "woodpecker"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.woodpecker.co",
+            "title": "Status Page",
+            "default": "https://status.woodpecker.co"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "WoodpeckerServiceStatus",
+        "description": "Safe aggregate status projection for Woodpecker.co's fixed status page."
       },
       "WordPressOrgPlugin": {
         "properties": {
