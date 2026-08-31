@@ -645,7 +645,9 @@ function AdminsManagementPageContent() {
           <div className="h-[480px]">
             {/* A PLAIN DOM CHILD, not the table itself — MatrxDataTable
                 forwards neither the ref nor onContextMenu Radix clones onto
-                its trigger. Read-only menu: see the note by `clickedAdmin`. */}
+                its trigger. Read-only menu: see the note by `clickedAdmin`.
+                context-menu-exempt: surfaceName — this admins sub-route has no SurfaceRuntimeProvider of its own (matrx-admin/users belongs to the accounts roster page)
+                context-menu-exempt: entity — admin.admins has no registered platform.entity_types token (checked @ai-matrx/associations) */}
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
@@ -803,7 +805,9 @@ function AdminsManagementPageContent() {
           <div className="h-[440px]">
             {/* Read-only navigation only — same protected-resource rule as
                 the admins table above; the audit log is immutable by design
-                and this menu never writes to it. */}
+                and this menu never writes to it.
+                context-menu-exempt: surfaceName — same as the admins table above, no manifest wired on this route
+                context-menu-exempt: entity — admin.admin_audit_log has no registered platform.entity_types token (checked @ai-matrx/associations) */}
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
