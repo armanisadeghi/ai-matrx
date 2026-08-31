@@ -61,6 +61,14 @@ import { displayUrl } from "@/features/marketing/components/inspection/link-grap
 import { cn } from "@/lib/utils";
 import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { useState } from "react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  linkEdgeEntityRef,
+  linkEdgeMenuSection,
+  type LinkEdgeMenuRow,
+} from "@/features/marketing/components/inspection/link-edge-actions";
 
 function humanLinkEdgeRow(row: InspectionLinkRow): string {
   return humanLines([
@@ -261,6 +269,18 @@ export function LinksInspectionTable({
   );
   const crawl = useCrawl(site.id, crawlId ?? "");
   const links = crawlId ? crawlLinks : siteLinks;
+  const [clickedLinkRow, setClickedLinkRow] = useState<InspectionLinkRow | null>(
+    null,
+  );
+  const toLinkEdgeMenuRow = (row: InspectionLinkRow): LinkEdgeMenuRow => ({
+    siteId: site.id,
+    brandId,
+    linkEdgeId: row.id,
+    sourcePageId: row.source_page_id,
+    targetPageId: row.target_page_id,
+    targetUrl: row.target_url,
+    snapshotId: row.snapshot_id ?? null,
+  });
   const columns: MatrxColumnDef<InspectionLinkRow>[] = [
     {
       id: "source_page",
@@ -594,6 +614,32 @@ export function LinksInspectionTable({
             onRetry={() => void links.refetch()}
           />
         ) : (
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id
+                ? (links.data?.rows.find((r) => r.id === id) ?? null)
+                : null;
+              setClickedLinkRow(row);
+              if (!row) return null;
+              return {
+                content: humanLinkEdgeRow(row),
+                [CONTEXT_MENU_ENTITY_KEY]: linkEdgeEntityRef(
+                  toLinkEdgeMenuRow(row),
+                ),
+              };
+            }}
+            extraSections={[
+              linkEdgeMenuSection(
+                clickedLinkRow ? toLinkEdgeMenuRow(clickedLinkRow) : null,
+              ),
+            ]}
+          >
           <MatrxDataTable<InspectionLinkRow>
             data={links.data?.rows ?? []}
             columns={columns}
@@ -667,6 +713,7 @@ export function LinksInspectionTable({
                 "Link edges appear after a snapshot has been captured and its extracted links are persisted.",
             }}
           />
+          </NonEditableContextMenu>
         )}
       </div>
     </main>
