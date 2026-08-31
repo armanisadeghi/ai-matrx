@@ -16,6 +16,12 @@ type Client = Parameters<typeof fetchConversationsWithDetails>[0];
 
 function clientReturning(rows: unknown[], onCall: () => void): Client {
   return {
+    auth: {
+      getSession: async () => ({
+        data: { session: { user: { id: "user-1" } } },
+        error: null,
+      }),
+    },
     rpc: async () => {
       onCall();
       // Yield so concurrent callers all land while the request is in flight.
@@ -74,13 +80,42 @@ describe("fetchConversationsWithDetails", () => {
     });
 
     await fetchConversationsWithDetails(client, "user-1");
-    await fetchConversationsWithDetails(client, "user-2");
+    const secondClient = clientReturning([], () => {
+      calls += 1;
+    });
+    secondClient.auth.getSession = async () => ({
+      data: { session: { user: { id: "user-2" } } },
+      error: null,
+    }) as never;
+    await fetchConversationsWithDetails(secondClient, "user-2");
     expect(calls).toBe(2);
+  });
+
+  it("does not call the self-guarded RPC when Redux still names the previous account", async () => {
+    let calls = 0;
+    const client = clientReturning([], () => {
+      calls += 1;
+    });
+    client.auth.getSession = async () => ({
+      data: { session: { user: { id: "user-2" } } },
+      error: null,
+    }) as never;
+
+    await expect(
+      fetchConversationsWithDetails(client, "user-1"),
+    ).rejects.toBeInstanceOf(Error);
+    expect(calls).toBe(0);
   });
 
   it("rejects on RPC error and does not poison the next call", async () => {
     let calls = 0;
     const client = {
+      auth: {
+        getSession: async () => ({
+          data: { session: { user: { id: "user-1" } } },
+          error: null,
+        }),
+      },
       rpc: async () => {
         calls += 1;
         if (calls === 1) return { data: null, error: { message: "boom" } };
@@ -107,6 +142,12 @@ describe("fetchConversationsWithDetails", () => {
 
     let calls = 0;
     const client = {
+      auth: {
+        getSession: async () => ({
+          data: { session: { user: { id: "user-1" } } },
+          error: null,
+        }),
+      },
       rpc: async () => {
         calls += 1;
         if (calls === 1) {
@@ -174,6 +215,12 @@ describe("fetchMoreConversationsWithDetails", () => {
     let calls = 0;
     let capturedArgs: unknown;
     const client = {
+      auth: {
+        getSession: async () => ({
+          data: { session: { user: { id: "user-1" } } },
+          error: null,
+        }),
+      },
       rpc: async (_name: string, args: unknown) => {
         calls += 1;
         capturedArgs = args;

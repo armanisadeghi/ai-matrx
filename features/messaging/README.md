@@ -112,6 +112,7 @@ A message can carry a generic **`action_data`** envelope `{ kind, version, paylo
   (in-flight dedup + TTL cache), or better, take the profile the conversation
   read already returned.
 - `get_dm_conversations_with_details(user_id)` - **Canonical conversation-list read.** Returns conversation metadata, unread count, and active participants with guarded profile fields in one request. List loaders must consume this payload; per-conversation participant SELECTs and per-participant `get_dm_user_info` fan-out are forbidden. **Browser code reads it only through `features/messaging/data/conversationsWithDetails.ts`** — the ONE deduped reader; a second direct `.rpc()` call site re-creates the stampede it exists to prevent.
+  The reader verifies the active Supabase session still names `user_id` before every page request. During logout or account switching, stale Redux identity must pause as `SessionUnavailableError`; it must never reach the self-guarded RPC as a guaranteed 42501.
 - `find_dm_direct_conversation(user1_id, user2_id)` - Find existing direct chat (read-only)
 - `dm_get_or_create_direct_conversation(user1_id, user2_id, org_id?)` - **Canonical atomic** find-or-create for a 1:1 DM. Advisory-locks the unordered pair so concurrent callers (two tabs / double-click / batched system notifications) can't mint duplicate conversations — the old client-side `find_dm` → insert-conversation → insert-participants raced and silently did. All 4 DM find-or-create callsites route through this (browser + service-role). SECURITY DEFINER; guards that an `authenticated` caller can only pass themselves as user1. `2026-07-04`.
 
@@ -577,6 +578,12 @@ sequenceDiagram
 4. Console logs show correct count after fetch
 
 ## Change Log
+
+- **2026-08-31 — account transitions cannot issue cross-identity DM reads.**
+  `conversationsWithDetails.ts` verifies the active Supabase user matches the
+  requested Redux user before every page RPC. A stale render pauses through the
+  existing session-unavailable path instead of generating both a PostgREST
+  42501 and its duplicate console-error capture.
 
 - **2026-08-31 — session expiry no longer manufactures a messaging system error.** The canonical reader still refuses anonymous requests and retries recoverable auth gaps; `MessagingInitializer` now classifies its deliberate `SessionUnavailableError` as an auth-lifecycle pause instead of emitting `console.error`. Genuine conversation-refresh failures remain in the red capture lane, with a forcing regression test for both branches.
 - **2026-08-25 — surface context and failure states now stay truthful at the point of action.** The route passes its live `matrx-user/messages` scope into the one list and thread context menu; the focused conversation/message overlays its exact identity, sender, body, and timestamp so actions no longer run against only generic pane text. Initial conversation-load failures are now visible and retryable, mark-as-read failures no longer disappear, mobile composer/list controls meet the 44px target, raw theme branches were replaced in the touched route UI, and conversation-menu navigation uses a real link instead of `window.location.assign`. `/messages/admin` now inventories the Tier 1 route, windows, components, and Redux owner.

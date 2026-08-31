@@ -32,7 +32,10 @@
  */
 
 import type { createClient } from "@/utils/supabase/client";
-import { runWithSessionRetry } from "@/lib/supabase/authRetry";
+import {
+  runWithSessionRetry,
+  SessionUnavailableError,
+} from "@/lib/supabase/authRetry";
 
 import type { DmConversationRpcRow } from "@/features/messaging/data/conversation-list";
 
@@ -71,6 +74,16 @@ interface CacheEntry {
 
 const cacheByUser = new Map<string, CacheEntry>();
 
+async function assertCurrentMessagingUser(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || data.session?.user.id !== userId) {
+    throw new SessionUnavailableError();
+  }
+}
+
 function entryFor(userId: string): CacheEntry {
   const existing = cacheByUser.get(userId);
   if (existing) return existing;
@@ -89,6 +102,12 @@ export async function fetchConversationsWithDetails(
   userId: string,
   options?: { maxAgeMs?: number },
 ): Promise<DmConversationRpcRow[]> {
+  // Redux can still carry the previous account for one render while Supabase
+  // has already completed an account switch. Never send that stale identity to
+  // the self-guarded RPC: it is guaranteed to answer 42501 and creates a second
+  // console-error capture at the caller.
+  await assertCurrentMessagingUser(supabase, userId);
+
   const maxAgeMs = options?.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
   const entry = entryFor(userId);
 
@@ -130,6 +149,8 @@ export async function fetchMoreConversationsWithDetails(
   cursor: ConversationsPageCursor,
   pageSize: number = DM_CONVERSATIONS_PAGE_SIZE,
 ): Promise<DmConversationRpcRow[]> {
+  await assertCurrentMessagingUser(supabase, userId);
+
   const { data, error } = await runWithSessionRetry(() =>
     supabase.rpc("get_dm_conversations_with_details", {
       p_user_id: userId,
