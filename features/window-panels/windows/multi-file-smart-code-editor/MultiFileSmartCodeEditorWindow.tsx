@@ -65,6 +65,7 @@ import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input
 import { setInputPlaceholder } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 import { useMultiFileSmartCodeEditorEmitter } from "./useMultiFileSmartCodeEditorEmitter";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -448,41 +449,55 @@ export function MultiFileSmartCodeEditorWindow({
       {/* ── Body ──────────────────────────────────────────────────────────
           Content only: the tab bar and the active file's editor. The editor
           toolbar + active-file identity live in the header slots (above); the
-          agent composer lives in the `footer` slot (footerVariant="rich"). */}
-      <CodeEditorTabBar
-        openTabs={openTabs}
-        activeTab={activeTab}
-        files={files}
-        onTabClick={selectTab}
-        onTabClose={handleCloseTab}
-      />
-
-      {currentFile ? (
-        <div ref={editorWrapperRef} className="flex-1 min-h-0">
-          <SmallCodeEditor
-            key={editorKey}
-            path={editorPath}
-            language={monacoLanguage}
-            initialCode={currentFile.content}
-            onChange={handleUserContentChange}
-            mode={mode}
-            autoFormat={autoFormatOnOpen}
-            defaultWordWrap={defaultWordWrap}
-            height={editorHeight}
-            readOnly={!isEditing || currentFile.readOnly}
-            formatTrigger={formatTrigger}
-            controlledWordWrap={showWrapLines ? "on" : "off"}
-            controlledMinimap={minimapEnabled}
-            showFormatButton={false}
-            showCopyButton={false}
-            showResetButton={false}
-            showWordWrapToggle={false}
-            showMinimapToggle={false}
+          agent composer lives in the `footer` slot (footerVariant="rich").
+          Monaco owns its own right-click menu inside the buffer itself; this
+          wrap covers the tab bar and empty-state so a right-click there
+          doesn't fall through to whatever page hosts the floating window. No
+          getTextarea/onTextReplace are wired (Monaco's internal textarea
+          isn't exposed by SmallCodeEditor), so no text-mutation action can
+          appear here — nothing that could corrupt code. */}
+      <EditableContextMenu
+        sourceFeature="code-editor"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: currentFile?.content ?? "" }}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          <CodeEditorTabBar
+            openTabs={openTabs}
+            activeTab={activeTab}
+            files={files}
+            onTabClick={selectTab}
+            onTabClose={handleCloseTab}
           />
+
+          {currentFile ? (
+            <div ref={editorWrapperRef} className="flex-1 min-h-0">
+              <SmallCodeEditor
+                key={editorKey}
+                path={editorPath}
+                language={monacoLanguage}
+                initialCode={currentFile.content}
+                onChange={handleUserContentChange}
+                mode={mode}
+                autoFormat={autoFormatOnOpen}
+                defaultWordWrap={defaultWordWrap}
+                height={editorHeight}
+                readOnly={!isEditing || currentFile.readOnly}
+                formatTrigger={formatTrigger}
+                controlledWordWrap={showWrapLines ? "on" : "off"}
+                controlledMinimap={minimapEnabled}
+                showFormatButton={false}
+                showCopyButton={false}
+                showResetButton={false}
+                showWordWrapToggle={false}
+                showMinimapToggle={false}
+              />
+            </div>
+          ) : (
+            <EmptyState files={files} onOpenFile={handleOpenFile} />
+          )}
         </div>
-      ) : (
-        <EmptyState files={files} onOpenFile={handleOpenFile} />
-      )}
+      </EditableContextMenu>
     </WindowPanel>
   );
 }
