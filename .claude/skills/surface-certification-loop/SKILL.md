@@ -135,7 +135,11 @@ When Arman identifies a missed requirement:
    checklist/rule versions and required evidence keys;
 4. enqueue every mismatch with a stable key for the new version, prioritizing
    surfaces certified after the earliest affected rule/evidence date;
-5. independently verify each repaired page before promotion.
+5. after each replacement key exists, exact-claim every older still-claimable
+   version and settle it through `supersede`, naming the replacement key and
+   rule-change reason. Preserve already-terminal history. Never leave two rule
+   versions claimable, reset attempts, or use human deferral for supersession;
+6. independently verify each repaired page before promotion.
 
 Never mutate a prior certification to look current. The old record is evidence
 of what was proved under the old contract; the new item is the audit trail.

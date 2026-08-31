@@ -31,6 +31,10 @@ Canonical contract:
 3. Wait for the first worker. Settle through `complete`, `retry`, or `defer`,
    then fill the slot again. Continue while claimable work exists.
 4. Add newly supplied tasks through `add_items`; stable keys make re-adding safe.
+   When a new contract/rule version replaces an older claimable key, atomically
+   claim the exact older key and settle it with `supersede`, naming the existing
+   replacement key and reason. Never leave both versions claimable, reset the
+   old attempt count, or disguise supersession as human deferral.
 5. Never spend a work turn repeating inventory or producing a report while a
    claimable item exists. Coordinator success is queue advancement.
 
