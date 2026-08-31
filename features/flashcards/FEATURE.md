@@ -162,6 +162,14 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-31 — FastFire starts microphone capture before creating its durable
+  study session, so permission denial or capture startup failure cannot leave an
+  orphaned active session. Expected permission refusal stays visible with the
+  browser-settings remedy and no longer pollutes the system-error console. The
+  isolated Browser certification can replace only the physical audio source at
+  `getUserMedia` with `scripts/qa/fastfire-browser-audio-fixture.mjs`; the real
+  capture, clip, upload, grading, persistence, and terminal-result paths remain.
+
 - 2026-08-30 — FastFire's React 19 audit is clean: card-local help now resets
   through a keyed card boundary, the deadline loop updates committed refs in an
   effect rather than during render, and voice-test hydration uses `useIsMounted`.

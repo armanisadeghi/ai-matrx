@@ -25,6 +25,10 @@ import { sourceRefFromTrust } from "@/features/education/trust/sourceRef";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ItemMasteryRow } from "@/features/education/study/types";
 import { startContinuousCapture } from "../audio/continuousCapture";
+import {
+  getErrorSolution,
+  isMicrophonePermissionDenial,
+} from "@/features/audio/utils/microphone-diagnostics";
 import { startDrill, setError } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import type { DrillCard } from "../redux/fastFireSlice";
@@ -139,7 +143,13 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
         };
       });
 
-      // 3. Open a study session on the shared spine (best-effort — a failed
+      // 3. Warm the mic + start the ONE continuous recording (single prompt).
+      //    Do this before creating durable session state: permission denial or
+      //    capture startup failure means the drill never started, so it must
+      //    not leave an orphaned active study_session behind.
+      await startContinuousCapture();
+
+      // 4. Open a study session on the shared spine (best-effort — a failed
       //    session does NOT block the drill; attempts are valid session-less).
       const sessionRes = await studyService.createSession({
         mode: STUDY_MODE,
@@ -159,10 +169,6 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
       }
       const sessionId = sessionRes.data?.id ?? null;
 
-      // 4. Warm the mic + start the ONE continuous recording (single prompt).
-      //    Must run inside the click gesture, which it is.
-      await startContinuousCapture();
-
       // 5. Hand off to the state machine.
       dispatch(
         startDrill({
@@ -174,8 +180,18 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
       );
       return true;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not start the drill.";
-      console.error("[useFastFireLauncher] start failed:", err);
+      const permissionDenied = isMicrophonePermissionDenial(err);
+      const msg = permissionDenied
+        ? (() => {
+            const solution = getErrorSolution(err);
+            return `${solution.message}. ${solution.solution}`;
+          })()
+        : err instanceof Error
+          ? err.message
+          : "Could not start the drill.";
+      if (!permissionDenied) {
+        console.error("[useFastFireLauncher] start failed:", err);
+      }
       setStartError(msg);
       dispatch(setError(msg));
       return false;
