@@ -15,9 +15,12 @@
  * no dates and derives no totals.
  */
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { formatLocalDate } from "../../shared/format";
@@ -44,6 +47,7 @@ export interface PayPeriodsTableProps {
 
 export function PayPeriodsTable({ rows, isLoading, hrefFor }: PayPeriodsTableProps) {
   const router = useRouter();
+  const [clickedRow, setClickedRow] = useState<PayPeriodRow | null>(null);
 
   const columns: MatrxColumnDef<PayPeriodRow>[] = [
     {
@@ -128,6 +132,46 @@ export function PayPeriodsTable({ rows, isLoading, hrefFor }: PayPeriodsTablePro
   ];
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="hr"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const rowId = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+        setClickedRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: {
+            type: "hr_pay_period",
+            id: row.id,
+            title: `${row.payGroupName} — ${row.periodStartOn} to ${row.periodEndOn}`,
+          },
+          content: [
+            `Pay group: ${row.payGroupName}`,
+            `Period: ${row.periodStartOn} – ${row.periodEndOn}`,
+            `State: ${PERIOD_STATE_LABEL[row.state]}`,
+          ].join("\n"),
+        };
+      }}
+      extraSections={[
+        {
+          id: "pay-period-actions",
+          label: "Pay period",
+          items: [
+            {
+              kind: "link",
+              id: "pay-period-open",
+              label: "Open pay period",
+              href: clickedRow ? hrefFor(clickedRow) : "#",
+              disabled: !clickedRow,
+            },
+          ],
+        },
+      ]}
+    >
     <MatrxDataTable<PayPeriodRow>
       data={rows}
       columns={columns}
@@ -145,5 +189,6 @@ export function PayPeriodsTable({ rows, isLoading, hrefFor }: PayPeriodsTablePro
           "Pay periods are generated from a pay group's calendar. Once a pay group has a calendar, its periods appear here and move through the lifecycle as time is submitted, approved, exported and locked.",
       }}
     />
+    </NonEditableContextMenu>
   );
 }

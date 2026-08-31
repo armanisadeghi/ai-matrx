@@ -7961,40 +7961,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/hootsuite/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_hootsuite_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/emplifi/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_emplifi_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/buttercms/public/status": {
         parameters: {
             query?: never;
@@ -8004,40 +7970,6 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_buttercms_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/cloudcannon/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_cloudcannon_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kaltura/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_kaltura_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8174,40 +8106,6 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_bizzabo_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/vfairs/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_vfairs_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/stova/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_stova_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -16249,30 +16147,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -20651,29 +20525,6 @@ export interface paths {
         post?: never;
         /** Delete Mandate Binding */
         delete: operations["delete_mandate_binding_mandates__mandate_key__binding_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/mandates/{mandate_key}/input-surface": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Mandate Input Surface
-         * @description The mandate's ONE input surface — its Provision's offered values, its own
-         *     described inputs, or the bound Holder's declared variables, whichever it
-         *     actually has. Resolved for the caller so their override's Holder is the one
-         *     that informs the form.
-         */
-        get: operations["get_mandate_input_surface_mandates__mandate_key__input_surface_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -33239,7 +33090,7 @@ export interface components {
              * Principal Type
              * @enum {string}
              */
-            principal_type: "user" | "org" | "global";
+            principal_type: "user" | "org";
             /** Subject User Id */
             subject_user_id?: string | null;
             /** Organization Id */
@@ -38672,38 +38523,6 @@ export interface components {
             closed?: boolean;
             /** Active Page Id */
             active_page_id?: string | null;
-        };
-        /**
-         * CloudCannonServiceStatus
-         * @description Safe aggregate status projection for CloudCannon's fixed status page.
-         */
-        CloudCannonServiceStatus: {
-            /**
-             * Kind
-             * @default cloudcannon_public_content_platform_status
-             * @constant
-             */
-            __kind?: "cloudcannon_public_content_platform_status";
-            /**
-             * Provider
-             * @default CloudCannon
-             * @constant
-             */
-            provider?: "CloudCannon";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /** Indicator */
-            indicator: string;
-            /**
-             * Status Page
-             * @default https://status.cloudcannon.com
-             * @constant
-             */
-            status_page?: "https://status.cloudcannon.com";
         };
         /**
          * CloudflareAccountMetadata
@@ -44876,33 +44695,6 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -45218,10 +45010,6 @@ export interface components {
             actions?: components["schemas"]["KindActionEntry"][];
             /** Aliases */
             aliases?: {
-                [key: string]: string;
-            };
-            /** Item Kinds */
-            item_kinds?: {
                 [key: string]: string;
             };
         };
@@ -46872,41 +46660,6 @@ export interface components {
             dimensions: number;
             /** Vectors */
             vectors: number[][];
-        };
-        /**
-         * EmplifiServiceStatus
-         * @description Safe aggregate status projection for Emplifi's fixed status page.
-         */
-        EmplifiServiceStatus: {
-            /**
-             * Kind
-             * @default emplifi_public_service_status
-             * @constant
-             */
-            __kind?: "emplifi_public_service_status";
-            /**
-             * Provider
-             * @default emplifi
-             * @constant
-             */
-            provider?: "emplifi";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /**
-             * Indicator
-             * @enum {string}
-             */
-            indicator: "none" | "minor" | "major" | "critical";
-            /**
-             * Status Page
-             * @default https://status.emplifi.io/
-             * @constant
-             */
-            status_page?: "https://status.emplifi.io/";
         };
         /**
          * EndOfLifeDatePublicRelease
@@ -52598,41 +52351,6 @@ export interface components {
             disabled: boolean;
         };
         /**
-         * HootsuiteServiceStatus
-         * @description Safe aggregate status projection for Hootsuite's fixed status page.
-         */
-        HootsuiteServiceStatus: {
-            /**
-             * Kind
-             * @default hootsuite_public_service_status
-             * @constant
-             */
-            __kind?: "hootsuite_public_service_status";
-            /**
-             * Provider
-             * @default hootsuite
-             * @constant
-             */
-            provider?: "hootsuite";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /**
-             * Indicator
-             * @enum {string}
-             */
-            indicator: "none" | "minor" | "major" | "critical";
-            /**
-             * Status Page
-             * @default https://status.hootsuite.com
-             * @constant
-             */
-            status_page?: "https://status.hootsuite.com";
-        };
-        /**
          * HuggingFaceModelResult
          * @description Safe bounded projection of one public Hugging Face model repository.
          */
@@ -55021,38 +54739,6 @@ export interface components {
              */
             status_page?: "https://status.kajabi.com/";
         };
-        /**
-         * KalturaServiceStatus
-         * @description Safe aggregate status projection for Kaltura's fixed status page.
-         */
-        KalturaServiceStatus: {
-            /**
-             * Kind
-             * @default kaltura_public_media_platform_status
-             * @constant
-             */
-            __kind?: "kaltura_public_media_platform_status";
-            /**
-             * Provider
-             * @default Kaltura
-             * @constant
-             */
-            provider?: "Kaltura";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /** Indicator */
-            indicator: string;
-            /**
-             * Status Page
-             * @default https://status.kaltura.com
-             * @constant
-             */
-            status_page?: "https://status.kaltura.com";
-        };
         /** KeyFindingEntry */
         KeyFindingEntry: {
             /** Label Category */
@@ -55611,8 +55297,6 @@ export interface components {
             item_schema?: {
                 [key: string]: unknown;
             } | null;
-            /** Item Kind */
-            item_kind?: string | null;
         };
         /**
          * KindAvailabilityResponse
@@ -58039,7 +57723,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type?: "user" | "org" | "global";
+            principal_type?: "user" | "org";
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -58051,7 +57735,7 @@ export interface components {
              * Principal Type
              * @enum {string}
              */
-            principal_type: "user" | "org" | "global";
+            principal_type: "user" | "org";
             /** Removed */
             removed: boolean;
         };
@@ -58062,7 +57746,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type?: "user" | "org" | "global";
+            principal_type?: "user" | "org";
             /**
              * Holder Type
              * @default agent
@@ -58326,44 +58010,6 @@ export interface components {
             goal_grounding: string;
         };
         /**
-         * MandateInputSurfaceResponse
-         * @description THE mandate's input declaration, resolved for THIS caller.
-         *
-         *     ``surface_source`` names where the declaration came from, and it is the
-         *     only honest way to say "this job takes user text only" — that claim is
-         *     true when and only when ``surface_source == 'none'``.
-         */
-        MandateInputSurfaceResponse: {
-            /** Mandate Key */
-            mandate_key: string;
-            /** Provision Key */
-            provision_key?: string | null;
-            /**
-             * Surface Source
-             * @enum {string}
-             */
-            surface_source: "provision" | "mandate_inputs" | "holder" | "none";
-            /** Holder Name */
-            holder_name?: string | null;
-            /**
-             * Accepts User Input
-             * @default false
-             */
-            accepts_user_input?: boolean;
-            /**
-             * Inputs
-             * @default []
-             */
-            inputs?: components["schemas"]["MandateServedInput"][];
-            /**
-             * Notes
-             * @default []
-             */
-            notes?: string[];
-        } & {
-            [key: string]: unknown;
-        };
-        /**
          * MandateOption
          * @description One mandate an author can point a scenario at, with what it offers.
          */
@@ -58502,85 +58148,6 @@ export interface components {
             reference_output: string;
             /** Has Reference Artifact */
             has_reference_artifact: boolean;
-        };
-        /**
-         * MandateServedInput
-         * @description One entry of the mandate's served input surface.
-         *
-         *     Field-for-field the workflow surface's ``ServedInput``
-         *     (``routers/workflow.py``) — INPUT-SURFACE.md is ONE contract with four
-         *     consumers, so a mandate input and a workflow input are addressed
-         *     identically and parse through the same client module. ``origin`` is wider
-         *     here because a mandate's declaration can come from a Provision, the
-         *     mandate's own described inputs, or the bound Holder, and the reader is
-         *     always told which.
-         */
-        MandateServedInput: {
-            /** Name */
-            name: string;
-            /** Kind */
-            kind: string;
-            /**
-             * Sourcing
-             * @enum {string}
-             */
-            sourcing: "ask" | "require" | "optional";
-            /** Variant */
-            variant?: string | null;
-            default?: components["schemas"]["JsonValue"] | null;
-            /**
-             * Label
-             * @default
-             */
-            label?: string;
-            /**
-             * Help
-             * @default
-             */
-            help?: string;
-            /**
-             * Placeholder
-             * @default
-             */
-            placeholder?: string;
-            /**
-             * Options
-             * @default []
-             */
-            options?: string[];
-            /**
-             * Origin
-             * @default field
-             * @enum {string}
-             */
-            origin?: "field" | "variable" | "provision" | "mandate_input" | "holder";
-            /** Node Id */
-            node_id?: string | null;
-            /**
-             * Json Schema
-             * @default {}
-             */
-            json_schema?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /**
-             * Required
-             * @default false
-             */
-            required?: boolean;
-            /**
-             * Pinned
-             * @default false
-             */
-            pinned?: boolean;
-            /**
-             * Read Only
-             * @default false
-             */
-            read_only?: boolean;
-            pinned_value?: components["schemas"]["JsonValue"] | null;
-        } & {
-            [key: string]: unknown;
         };
         /**
          * MandateSummaryResponse
@@ -79375,43 +78942,6 @@ export interface components {
             status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
         };
         /**
-         * StovaStatusResult
-         * @description Safe projection of Stova's high-level service status.
-         */
-        StovaStatusResult: {
-            /**
-             * Kind
-             * @default stova_official_service_status
-             * @constant
-             */
-            __kind?: "stova_official_service_status";
-            /**
-             * Provider
-             * @default stova
-             * @constant
-             */
-            provider?: "stova";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /**
-             * Status Url
-             * @default https://status.stova.io
-             * @constant
-             */
-            status_url?: "https://status.stova.io";
-            /**
-             * Indicator
-             * @enum {string}
-             */
-            indicator: "none" | "minor" | "major" | "critical";
-            /** Operational */
-            operational: boolean;
-        };
-        /**
          * StrapiServiceStatus
          * @description Safe aggregate status projection for Strapi's fixed status page.
          */
@@ -84453,43 +83983,6 @@ export interface components {
             depth_km: number;
             /** Official Page */
             official_page: string;
-        };
-        /**
-         * VFairsStatusResult
-         * @description Safe projection of vFairs' high-level service status.
-         */
-        VFairsStatusResult: {
-            /**
-             * Kind
-             * @default vfairs_official_service_status
-             * @constant
-             */
-            __kind?: "vfairs_official_service_status";
-            /**
-             * Provider
-             * @default vfairs
-             * @constant
-             */
-            provider?: "vfairs";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /**
-             * Status Url
-             * @default https://status.vfairs.com
-             * @constant
-             */
-            status_url?: "https://status.vfairs.com";
-            /**
-             * Indicator
-             * @enum {string}
-             */
-            indicator: "none" | "minor" | "major" | "critical";
-            /** Operational */
-            operational: boolean;
         };
         /** ValidateCronRequest */
         ValidateCronRequest: {
@@ -102376,46 +101869,6 @@ export interface operations {
             };
         };
     };
-    public_status_hootsuite_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HootsuiteServiceStatus"];
-                };
-            };
-        };
-    };
-    public_status_emplifi_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EmplifiServiceStatus"];
-                };
-            };
-        };
-    };
     public_status_buttercms_public_status_get: {
         parameters: {
             query?: never;
@@ -102432,46 +101885,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ButterCmsServiceStatus"];
-                };
-            };
-        };
-    };
-    public_status_cloudcannon_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudCannonServiceStatus"];
-                };
-            };
-        };
-    };
-    public_status_kaltura_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KalturaServiceStatus"];
                 };
             };
         };
@@ -102632,46 +102045,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BizzaboStatusResult"];
-                };
-            };
-        };
-    };
-    public_status_vfairs_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VFairsStatusResult"];
-                };
-            };
-        };
-    };
-    public_status_stova_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StovaStatusResult"];
                 };
             };
         };
@@ -115845,41 +115218,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -124136,37 +123474,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateBindingDeleteResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_mandate_input_surface_mandates__mandate_key__input_surface_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                mandate_key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateInputSurfaceResponse"];
                 };
             };
             /** @description Validation Error */

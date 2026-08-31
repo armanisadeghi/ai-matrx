@@ -28,6 +28,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import type { KioskDeviceRow, KioskTrustState } from "@/features/hr/time/api/types";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 import type { KioskDeviceAdminSource } from "./deviceAdminSource";
 
@@ -65,6 +68,7 @@ export function DeviceFleetTable({
   const [busyId, setBusyId] = useState<string | null>(null);
   /** A re-issued code, shown once above the table. */
   const [reissued, setReissued] = useState<{ deviceName: string; code: string } | null>(null);
+  const [clickedRow, setClickedRow] = useState<KioskDeviceRow | null>(null);
 
   async function changeTrust(row: KioskDeviceRow, trustState: KioskTrustState) {
     const destructive = trustState === "revoked";
@@ -309,7 +313,85 @@ export function DeviceFleetTable({
           </Button>
         </div>
       )}
+      {/* Same actions as the row buttons — approve/pause/revoke/reissue all
+          go through `confirm({...})` above, never a silent onSelect. */}
+      <NonEditableContextMenu
+        sourceFeature="hr"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+          const row = (id && rows.find((r) => r.id === id)) || null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            content: `${row.deviceName} — ${TRUST_LABEL[row.trustState]} (${row.locationName ?? "no location"})`,
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "hr_kiosk_device",
+              id: row.id,
+              title: row.deviceName,
+            },
+          };
+        }}
+        extraSections={[
+          {
+            id: "kiosk-device-row",
+            label: "This tablet",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "item",
+                id: "kiosk-device-approve",
+                label: "Approve",
+                icon: ShieldCheck,
+                disabled:
+                  !clickedRow ||
+                  !(clickedRow.trustState === "pending" || clickedRow.trustState === "suspended"),
+                description: "Only a waiting or paused tablet can be approved",
+                onSelect: () => {
+                  if (clickedRow) void approve(clickedRow);
+                },
+              },
+              {
+                kind: "item",
+                id: "kiosk-device-new-code",
+                label: "Issue new code",
+                icon: KeyRound,
+                disabled: !clickedRow || clickedRow.trustState === "revoked",
+                description: "A revoked tablet must be paired again from scratch",
+                onSelect: () => {
+                  if (clickedRow) void reissue(clickedRow);
+                },
+              },
+              {
+                kind: "item",
+                id: "kiosk-device-pause",
+                label: "Pause",
+                icon: ShieldOff,
+                disabled: !clickedRow || clickedRow.trustState !== "trusted",
+                description: "Only an approved tablet can be paused",
+                onSelect: () => {
+                  if (clickedRow) void changeTrust(clickedRow, "suspended");
+                },
+              },
+              {
+                kind: "item",
+                id: "kiosk-device-revoke",
+                label: "Revoke",
+                icon: ShieldX,
+                destructive: true,
+                disabled: !clickedRow || clickedRow.trustState === "revoked",
+                description: "Bricks the tablet — it must be paired again from scratch",
+                onSelect: () => {
+                  if (clickedRow) void changeTrust(clickedRow, "revoked");
+                },
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
       <MatrxDataTable data={rows} columns={columns} getRowId={(row) => row.id} />
+      </NonEditableContextMenu>
     </div>
   );
 }

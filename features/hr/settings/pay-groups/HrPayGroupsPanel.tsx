@@ -48,6 +48,8 @@ import {
   Save,
 } from "lucide-react";
 
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +154,7 @@ export function HrPayGroupsPanel() {
   const organizationId = active?.organization_id ?? null;
   const { structure, isLoading, error, refresh } = useHrSettingsStructure(organizationId);
   const [creating, setCreating] = useState(false);
+  const [clickedRow, setClickedRow] = useState<HrPayGroup | null>(null);
 
   const payGroups = structure?.pay_groups ?? [];
   const calendars = structure?.holiday_calendars ?? [];
@@ -268,6 +271,51 @@ export function HrPayGroupsPanel() {
           ) : null}
 
           <div className="p-4">
+            <NonEditableContextMenu
+              sourceFeature="hr"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const rowId = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = rowId
+                  ? (payGroups.find((r) => r.id === rowId) ?? null)
+                  : null;
+                setClickedRow(row);
+                if (!row) return null;
+                return {
+                  [CONTEXT_MENU_ENTITY_KEY]: {
+                    type: "hr_pay_group",
+                    id: row.id,
+                    title: row.name,
+                  },
+                  content: [
+                    `Pay group: ${row.name}`,
+                    `Frequency: ${row.pay_frequency}`,
+                    `Workweek starts: ${WORKWEEK_DAYS[row.workweek_start_dow] ?? row.workweek_start_dow}`,
+                    `Status: ${row.is_active ? "Active" : "Inactive"}`,
+                  ].join("\n"),
+                };
+              }}
+              extraSections={[
+                {
+                  id: "pay-group-actions",
+                  label: "Pay group",
+                  items: [
+                    {
+                      kind: "item",
+                      id: "pay-group-edit",
+                      label: "Edit pay group",
+                      disabled: !clickedRow,
+                      onSelect: () => {
+                        if (clickedRow) setEditingRow(clickedRow);
+                      },
+                    },
+                  ],
+                },
+              ]}
+            >
             <MatrxDataTable
               data={payGroups}
               columns={columns}

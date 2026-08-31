@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   CircleGauge,
@@ -9,6 +9,13 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import {
+  pageEntityRef,
+  pageMenuSection,
+} from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -98,6 +105,8 @@ export function SiteAnalysisTable() {
     defaultSort: { id: "priority", direction: "desc" },
   });
   const priority = useSitePriorityQueue(site.id, table.queryState);
+  const [clickedRow, setClickedRow] = useState<PriorityQueueRow | null>(null);
+  const openDrilldown = useOpenGscDrilldownWindow();
   const columns: MatrxColumnDef<PriorityQueueRow>[] = [
     {
       id: "priority",
@@ -346,6 +355,53 @@ export function SiteAnalysisTable() {
         siteId={site.id}
         className="mb-2 shrink-0"
       />
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const rowId = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = rowId
+            ? ((priority.data?.rows ?? []).find((r) => r.row_key === rowId) ??
+              null)
+            : null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: row.page_id
+              ? pageEntityRef({ pageId: row.page_id, url: row.page_url ?? "" })
+              : null,
+            content: humanPriorityRow(row),
+          };
+        }}
+        extraSections={[
+          {
+            id: "priority-queue-actions",
+            label: "Finding",
+            items: [
+              {
+                kind: "link",
+                id: "priority-open-findings",
+                label: "Open in Findings",
+                icon: ListChecks,
+                href: clickedRow
+                  ? filteredFindingsHref(brandId, site.id, clickedRow)
+                  : "#",
+                disabled: !clickedRow,
+              },
+            ],
+          },
+          pageMenuSection({
+            siteId: site.id,
+            siteName: site.name,
+            url: clickedRow?.page_url ?? "",
+            pageId: clickedRow?.page_id ?? null,
+            openDrilldown,
+          }),
+        ]}
+      >
       <div className="min-h-0 flex-1">
       <MatrxDataTable<PriorityQueueRow>
         data={priority.data?.rows ?? []}
@@ -455,6 +511,7 @@ export function SiteAnalysisTable() {
         }}
       />
       </div>
+      </NonEditableContextMenu>
     </main>
     </SurfaceRuntimeProvider>
   );

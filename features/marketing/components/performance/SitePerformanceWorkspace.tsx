@@ -17,6 +17,13 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  pageEntityRef,
+  pageMenuSection,
+} from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -132,14 +139,20 @@ function ChangeList({
   direction,
   brandId,
   siteId,
+  siteName,
+  onRunTest,
 }: {
   title: string;
   rows: ChangePage[];
   direction: "up" | "down";
   brandId: string | null;
   siteId: string;
+  siteName: string | null;
+  onRunTest: (pageId: string) => void;
 }) {
   const Icon = direction === "up" ? TrendingUp : TrendingDown;
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [contextRow, setContextRow] = useState<ChangePage | null>(null);
   const columns: MatrxColumnDef<ChangePage>[] = [
     {
       id: "url",
@@ -225,6 +238,54 @@ function ChangeList({
         />
         {title}
       </h3>
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = (target as HTMLElement | null)
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row =
+            (id && rows.find((r) => `${r.page_id}-${r.strategy}` === id)) ||
+            null;
+          setContextRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+              pageId: row.page_id,
+              url: row.url,
+            }),
+            content: `${row.url}\n${row.strategy} · ${scoreLabel(row.previous_performance_score)} → ${scoreLabel(row.current_performance_score)}`,
+          };
+        }}
+        extraSections={
+          contextRow
+            ? [
+                pageMenuSection({
+                  siteId,
+                  siteName,
+                  url: contextRow.url,
+                  pageId: contextRow.page_id,
+                  openDrilldown,
+                }),
+                {
+                  id: "performance-actions",
+                  label: "Performance",
+                  items: [
+                    {
+                      kind: "item",
+                      id: "run-pagespeed-test",
+                      label: "Run PageSpeed test",
+                      icon: Zap,
+                      onSelect: () => onRunTest(contextRow.page_id),
+                    },
+                  ],
+                },
+              ]
+            : []
+        }
+      >
       <MatrxDataTable
         urlState={{ id: `performance-${direction}` }}
         data={rows}
@@ -238,6 +299,7 @@ function ChangeList({
             "Two tests within this window are needed to show changes.",
         }}
       />
+      </NonEditableContextMenu>
     </section>
   );
 }
@@ -247,6 +309,12 @@ export function SitePerformanceWorkspace() {
   const { site } = useMarketingSite();
   const performance = useSitePerformance(site.id);
   const [testingPageId, setTestingPageId] = useState<string | null>(null);
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [suggestedContextRow, setSuggestedContextRow] =
+    useState<SuggestedPage | null>(null);
+  const [worstContextRow, setWorstContextRow] = useState<TrafficPage | null>(
+    null,
+  );
 
   if (performance.isLoading && !performance.data) {
     return <LoadingSurface label="Loading site performance…" />;
@@ -400,13 +468,13 @@ export function SitePerformanceWorkspace() {
     },
   ];
 
-  const runPageTest = async (page: SuggestedPage) => {
+  const runTest = async (pageId: string) => {
     if (testingPageId) return;
-    setTestingPageId(page.page_id);
+    setTestingPageId(pageId);
     try {
       await syncPagespeed(
         dispatch,
-        page.page_id,
+        pageId,
         site.organization_id,
         "mobile",
       );
@@ -513,7 +581,7 @@ export function SitePerformanceWorkspace() {
               </div>
               {suggested ? (
                 <Button
-                  onClick={() => void runPageTest(suggested)}
+                  onClick={() => void runTest(suggested.page_id)}
                   disabled={testingPageId !== null}
                 >
                   {testingPageId === suggested.page_id ? (
@@ -526,6 +594,55 @@ export function SitePerformanceWorkspace() {
               ) : null}
             </div>
             <div className="p-3">
+              <NonEditableContextMenu
+                sourceFeature="marketing"
+                contentSource={{ type: "raw" }}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={(target) => {
+                  const id = (target as HTMLElement | null)
+                    ?.closest("[data-row-id]")
+                    ?.getAttribute("data-row-id");
+                  const row =
+                    (id && suggestedPages.find((r) => r.page_id === id)) ||
+                    null;
+                  setSuggestedContextRow(row);
+                  if (!row) return null;
+                  return {
+                    [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+                      pageId: row.page_id,
+                      url: row.url,
+                    }),
+                    content: `${row.url}\n${row.tier} · ${row.reason.replaceAll("_", " ")}`,
+                  };
+                }}
+                extraSections={
+                  suggestedContextRow
+                    ? [
+                        pageMenuSection({
+                          siteId: site.id,
+                          siteName: site.name,
+                          url: suggestedContextRow.url,
+                          pageId: suggestedContextRow.page_id,
+                          openDrilldown,
+                        }),
+                        {
+                          id: "performance-actions",
+                          label: "Performance",
+                          items: [
+                            {
+                              kind: "item",
+                              id: "run-pagespeed-test",
+                              label: "Run PageSpeed test",
+                              icon: Zap,
+                              onSelect: () =>
+                                void runTest(suggestedContextRow.page_id),
+                            },
+                          ],
+                        },
+                      ]
+                    : []
+                }
+              >
               <MatrxDataTable
                 urlState={{ id: "performance-suggested-pages" }}
                 data={suggestedPages}
@@ -541,7 +658,7 @@ export function SitePerformanceWorkspace() {
                         ? "default"
                         : "outline"
                     }
-                    onClick={() => void runPageTest(page)}
+                    onClick={() => void runTest(page.page_id)}
                     disabled={testingPageId !== null}
                   >
                     {testingPageId === page.page_id ? (
@@ -553,6 +670,7 @@ export function SitePerformanceWorkspace() {
                   </Button>
                 )}
               />
+              </NonEditableContextMenu>
             </div>
           </section>
         ) : null}
@@ -571,7 +689,7 @@ export function SitePerformanceWorkspace() {
             {suggested ? (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button
-                  onClick={() => void runPageTest(suggested)}
+                  onClick={() => void runTest(suggested.page_id)}
                   disabled={testingPageId !== null}
                 >
                   {testingPageId === suggested.page_id ? (
@@ -708,6 +826,8 @@ export function SitePerformanceWorkspace() {
                 direction="up"
                 brandId={brandId}
                 siteId={site.id}
+                siteName={site.name}
+                onRunTest={(pageId) => void runTest(pageId)}
               />
               <ChangeList
                 title={`Most regressed · ${data.window_days} days`}
@@ -715,6 +835,8 @@ export function SitePerformanceWorkspace() {
                 direction="down"
                 brandId={brandId}
                 siteId={site.id}
+                siteName={site.name}
+                onRunTest={(pageId) => void runTest(pageId)}
               />
             </div>
           </>
