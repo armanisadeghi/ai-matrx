@@ -4,9 +4,9 @@
 // defaults, the bounds every control is constrained by, and the ONE validator
 // that turns an untrusted partial patch into a safe `Partial<FastFireConfig>`.
 //
-// Not to be confused with `config.ts`, which holds FastFire's AGENT-ID settings
-// (which grader/help/review agent each lane uses). This module is about the
-// DRILL's own settings — pace, length, voice mode.
+// Agent identity does not live in a sibling config: grader/help/review lanes use
+// mandate keys and resolve their bound agents from the database. This module is
+// only the DRILL's own settings — pace, length, voice mode.
 //
 // WHY THIS MODULE EXISTS SEPARATELY FROM THE SLICE
 // The bounds used to live as bare numeric literals inside `FastFireSetup`'s

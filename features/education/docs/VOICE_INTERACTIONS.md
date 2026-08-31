@@ -13,9 +13,10 @@
    / `startCardClip` / `stopCardClip` / `stopContinuousCapture` / `subscribeLevel`.
 2. **Grading core** — `features/flashcards/fast-fire/agents/grading-core.ts`.
    Slice-DECOUPLED: `uploadResponseClip` (durable file_id) + `runSpokenGrader`
-   (launch grader agent → attach audio → execute → wait → `coerceSpokenGrade` →
-   return a `SpokenGrade`). The no-audio guard lives here. **Every voice surface
-   grades through this** — it is the crown jewel, kept in one place.
+   (launch grader mandate → pass `variables.answer_audio` → execute → wait →
+   `coerceSpokenGrade` → return a `SpokenGrade`). The no-audio guard lives here.
+   **Every voice surface grades through this** — it is the crown jewel, kept in
+   one place. `messageParts` is not a spoken-grading input path.
 3. **Answer primitive** — `agents/gradeSpokenAnswer.thunk.ts`. `upload → grade →
    record on the study spine → RETURN the grade` (awaited). Takes an optional
    `itemType`/`itemId` so any prompt (a card, a debate turn, a role-play beat) can
@@ -58,14 +59,18 @@ a new capture or grading path.** If you find yourself re-implementing audio slic
 or grade parsing, stop — extend the core instead.
 
 ## Grading agent + voice (for tuning)
-- Grader agent: the FastFire grader in `fast-fire/config.ts` (`FC_AGENTS`), called
-  variables-only (`front`/`back`/`seconds_allowed`/`rubric?`). Fix output in the
-  agent DB (`agent_author`), never in code.
+- Grader mandate: `flashcards.grade_spoken` (`FC_MANDATES.gradeSpoken`), resolved
+  live from database bindings. `runSpokenGrader` sends `front` / `back` /
+  `seconds_allowed` / `rubric?` plus the guaranteed file offered value
+  `answer_audio`. Fix the bound agent's output in the database, never in code.
 - Spoken questions (TTS): agent `04f69dff` ("Generate custom speech",
   `gemini-3.1-flash-tts-preview`, voice = `settings.tts_voice`). The text + style
   are `fast-fire/spoken-front/variations.ts`.
 
 ## Change log
+- 2026-08-30 — Reconciled the completed mandate/media migration: every spoken
+  caller routes through `runSpokenGrader`, and audio travels only as the named
+  `answer_audio` offered value.
 - 2026-07-04 — Created with the single-card "Test me" landing. Layered the reusable
   capture/grading/answer/experience/entry stack so debate + role-play are additive.
 </content>

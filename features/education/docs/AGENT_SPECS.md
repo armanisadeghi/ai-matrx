@@ -18,8 +18,9 @@ the agent's `response_format`.
 Conventions:
 - **Inputs** are passed as agent **variables** (substituted into the prompt). `user_request` is an
   optional free-text field for extra guidance.
-- **Audio/image inputs** are uploaded to a durable `file_id` first, then attached as a message part
-  (`fileHandler.toContentPart` + `setUserInputMessageParts`) — NOT through `userInput` (a string).
+- **Audio/image inputs** are uploaded to a durable `file_id`, then passed through the mandate's
+  named media offered value (for spoken grading: `variables.answer_audio`). Never put machine media
+  in `userInput` or `messageParts`; the Provision materializes the named file value for the model.
 - **Persistence** notes where the FE writes the result (or where a baked-in Matrx action auto-persists).
 
 Priority for the current build: **P1** = needed for Wave 3 (create flows), **P2** = Wave 4 (FastFire),
@@ -215,8 +216,10 @@ Then the FE calls `narrate()` to render durable audio.
 **Goal:** Given the learner's spoken-answer audio + the card, return a structured grade + spoken
 feedback. Use a native-audio model (e.g. Gemini 3.5 Flash) OR a realtime agent with a score tool.
 
-**Variables:** `front`, `back`, `rubric` (string/object, optional), `seconds_allowed` (int).
-**Audio in:** YES — the per-card clip (~1s overlap + buzzer markers), attached as a message part.
+**Variables:** `front`, `back`, `rubric` (string/object, optional), `seconds_allowed` (int),
+`answer_audio` (durable `file_id`, guaranteed file offered value).
+**Audio in:** YES — `runSpokenGrader` passes the per-card clip only as
+`variables.answer_audio`; no spoken-grading caller constructs `messageParts`.
 
 ```json
 {

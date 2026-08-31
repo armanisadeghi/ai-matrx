@@ -18,7 +18,7 @@ export const SPOKEN_PRACTICE_MANDATES = {
   designSession: "education.spoken_practice_design",
   /** focus, difficulty, count, study_material → the same plan shape, target-language utterances (pronunciation mode) */
   designLanguageSession: "education.spoken_practice_design_language",
-  /** front, back, rubric (mode-framed), seconds_allowed (+ audio) → unified spoken grade JSON */
+  /** front, back, rubric (mode-framed), seconds_allowed, answer_audio (durable file_id) → unified spoken grade JSON */
   gradeAnswer: "education.spoken_practice_grade",
   /** Same grade JSON PLUS { pronunciation } — the dedicated pronunciation-mode grader */
   gradePronunciation: "education.spoken_practice_grade_pronunciation",

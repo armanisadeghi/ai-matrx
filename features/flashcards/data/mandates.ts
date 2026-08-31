@@ -16,7 +16,7 @@ export const FC_MANDATES = {
   enrichCard: "flashcards.enrich_card",
   /** topic, front, back, struggle_signal → { sub_cards[] } */
   expandCard: "flashcards.expand_card",
-  /** front, back, rubric, seconds_allowed (+ audio message part) → spoken grade JSON */
+  /** front, back, rubric, seconds_allowed, answer_audio (durable file_id) → spoken grade JSON */
   gradeSpoken: "flashcards.grade_spoken",
   /** question, expected_answer, learner_answer → GradeVerdict (grade-on-meaning, paraphrase-tolerant) */
   gradeTypedAnswer: "flashcards.grade_typed_answer",
