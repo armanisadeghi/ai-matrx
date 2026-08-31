@@ -215,6 +215,14 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-30** — Rule `.2` certification pins the user-facing write boundary:
+  forms dispatch the scheduling thunks, and the thunks alone call the canonical
+  `/scheduler/*` client; a source-census regression rejects direct `sch_*`
+  access outside `service/queries.ts`. `useTaskDetail` now derives idle,
+  loading, and already-loaded states during render instead of synchronously
+  repairing them in an effect, satisfying React 19 without changing fetch or
+  error semantics.
+
 - **2026-08-30** — Surface-write replacement of draft variables now
   reconciles the Variables editor's private incomplete-row state with the
   canonical form object. The write result and visible editor can no longer
