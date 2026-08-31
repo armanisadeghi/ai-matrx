@@ -23,7 +23,12 @@ import { createClient } from "@/utils/supabase/server";
  * front of this; the drive-by CSRF protection the token provides is
  * preserved because a hostile page cannot write files into the repo.
  */
-const NONCE_FILE = join(process.cwd(), ".dev-login-nonce");
+// Runtime-only, single-file root. Excluding this dynamic cwd segment prevents
+// Turbopack from conservatively tracing the whole checkout into the route.
+const NONCE_FILE = join(
+  /* turbopackIgnore: true */ process.cwd(),
+  ".dev-login-nonce",
+);
 
 function consumeNonce(presented: string): boolean {
   let expected: string;
