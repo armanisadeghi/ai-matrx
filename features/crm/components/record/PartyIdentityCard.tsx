@@ -396,10 +396,12 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               <CategorySelect
                 dimension={CATEGORY_DIMENSIONS.crmLifecycleStage}
                 value={party.lifecycle_stage_id}
+                orgId={party.organization_id}
                 onChange={(id) =>
                   void commitCategoryFk("lifecycle_stage_id", id)
                 }
                 placeholder="Set stage"
+                noun="stage"
               />
             </div>
           </div>
@@ -411,8 +413,10 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               <CategorySelect
                 dimension={CATEGORY_DIMENSIONS.crmRating}
                 value={party.rating_id}
+                orgId={party.organization_id}
                 onChange={(id) => void commitCategoryFk("rating_id", id)}
                 placeholder="Set rating"
+                noun="rating"
               />
             </div>
           </div>

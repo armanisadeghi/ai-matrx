@@ -830,6 +830,12 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-31 — **CRM category creation now carries the record's organization.**
+  The lifecycle-stage and rating `CategorySelect` callers pass
+  `party.organization_id` explicitly, so inline `Create “…”` cannot borrow the
+  currently active or personal organization when the open record belongs to a
+  different tenant. The shared package still owns create-and-select behavior;
+  a focused caller guard pins the explicit boundary for both vocabularies.
 - 2026-08-30 — **Contact imports commit only selected preview rows.** The
   canonical wizard adds select-all/clear-all plus per-row selection, the engine
   enforces the bounded set, and partial Google Contacts imports keep the sync
