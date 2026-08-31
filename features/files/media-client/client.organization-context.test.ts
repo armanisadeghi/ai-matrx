@@ -5,6 +5,15 @@
  * `[AUTH][REJECT] POST /files/session` in ~35 minutes for one user on
  * 2026-08-31). The mint must therefore WAIT for hydration — never guess an
  * organization, never burn a refused request.
+ *
+ * The first repair wrapped the client's public `ensureSession` with that wait.
+ * It guarded ONE door: the package also mints internally, from
+ * `recoverLoadError` -> `session.ensure({ force: true })` on every private-
+ * media retry, which never reaches a host wrapper. Production kept refusing
+ * 124 mints in 15 minutes, 23 minutes after that wrapper shipped. The gate now
+ * lives at the injected transport (`filesFetch`), which every package door
+ * passes through — so the last block below tests the INTERNAL door, and it is
+ * the one that actually regressed.
  */
 
 let organizationId: string | null = null;
@@ -30,15 +39,18 @@ jest.mock("@/lib/python-client", () => ({
   resolveBaseUrl: () => "https://server.app.matrxserver.com",
   resolveFilesBaseUrl: () => "https://files.matrxserver.com",
 }));
+const fakeStore = () => ({
+  getState: () => ({}),
+  dispatch: jest.fn(),
+  subscribe: (listener: () => void) => {
+    subscribers.add(listener);
+    return () => subscribers.delete(listener);
+  },
+});
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({
-    getState: () => ({}),
-    dispatch: jest.fn(),
-    subscribe: (listener: () => void) => {
-      subscribers.add(listener);
-      return () => subscribers.delete(listener);
-    },
-  }),
+  getStoreSingleton: () => fakeStore(),
+  // `lib/api/organization-admission` reads the store through this alias.
+  getStore: () => fakeStore(),
 }));
 jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectAccessToken: () => accessToken,
@@ -172,5 +184,46 @@ describe("file-session mint — organization admission", () => {
     ];
     const headers = new Headers(init.headers);
     expect(headers.get("X-Organization-Id")).toBeNull();
+  });
+
+  // ── the door the ensureSession wrapper never covered ─────────────────────
+
+  it("binds the organization on the package's INTERNAL mint (recoverLoadError)", async () => {
+    organizationId = ORGANIZATION_ID;
+    orgBootstrapResolved = true;
+    const fetchMock = mintOk();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await mediaFilesClient.recoverLoadError(
+      "https://server.app.matrxserver.com/files/f1/download" as never,
+      1,
+    );
+
+    const minted = (
+      fetchMock.mock.calls as unknown as [string, RequestInit][]
+    ).filter(([url]) => /\/files\/session$/.test(url));
+    expect(minted.length).toBeGreaterThan(0);
+    for (const [, init] of minted) {
+      expect(new Headers(init.headers).get("X-Organization-Id")).toBe(
+        ORGANIZATION_ID,
+      );
+    }
+  });
+
+  it("refuses the INTERNAL mint rather than burn it, when no organization resolves", async () => {
+    orgBootstrapResolved = true;
+    organizationId = null;
+    const fetchMock = mintOk();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await mediaFilesClient.recoverLoadError(
+      "https://server.app.matrxserver.com/files/f1/download" as never,
+      1,
+    );
+
+    const minted = (
+      fetchMock.mock.calls as unknown as [string, RequestInit][]
+    ).filter(([url]) => /\/files\/session$/.test(url));
+    expect(minted).toHaveLength(0);
   });
 });
