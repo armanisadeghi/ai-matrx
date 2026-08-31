@@ -13,10 +13,41 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 
 const listDuplicatesMock = jest.mocked(listDuplicateSchedules);
 const captureErrorMock = jest.mocked(captureError);
+let selectedOrganizationId: string | null =
+  "11111111-1111-4111-8111-111111111111";
+
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => selectedOrganizationId,
+}));
+
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+  selectOrganizationId: jest.fn(),
+}));
 
 describe("useDuplicateSchedules", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    selectedOrganizationId = "11111111-1111-4111-8111-111111111111";
+  });
+
+  it("waits for organization hydration before checking duplicates", async () => {
+    selectedOrganizationId = null;
+    listDuplicatesMock.mockResolvedValue({ groups: [] });
+
+    const hook = await renderHook(() => useDuplicateSchedules());
+
+    expect(listDuplicatesMock).not.toHaveBeenCalled();
+
+    selectedOrganizationId = "11111111-1111-4111-8111-111111111111";
+    await hook.act(() => hook.current.refetch());
+    await settle(
+      hook,
+      () => listDuplicatesMock.mock.calls.length === 1,
+      "the post-hydration duplicate check",
+    );
+
+    expect(captureErrorMock).not.toHaveBeenCalled();
+    await hook.unmount();
   });
 
   it("keeps the roster usable while making a failed duplicate check loud", async () => {

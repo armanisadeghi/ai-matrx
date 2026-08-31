@@ -4,6 +4,8 @@
 
 import { useEffect, useState } from "react";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { listDuplicateSchedules } from "../service/schedulerClient";
 import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
 
@@ -22,6 +24,7 @@ import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
  * retryable warning while the failure is also captured by Error Inspector.
  */
 export function useDuplicateSchedules(refreshToken?: unknown) {
+  const organizationId = useAppSelector(selectOrganizationId);
   const [groups, setGroups] = useState<DuplicateScheduleGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -30,6 +33,10 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
     let cancelled = false;
 
     const load = async () => {
+      // App context hydrates after the first client render. The scheduler
+      // transport correctly refuses organization-less requests, so wait for
+      // the explicit selection and let this effect re-run when it arrives.
+      if (!organizationId) return;
       try {
         const res = await listDuplicateSchedules();
         if (cancelled) return;
@@ -59,7 +66,7 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
     };
     // refreshToken lets a caller re-check after it changes a schedule (pausing
     // one of a pair resolves its group, and the banner must then disappear).
-  }, [refreshToken, refreshVersion]);
+  }, [organizationId, refreshToken, refreshVersion]);
 
   // A group whose extras are all paused costs nothing and is already resolved.
   const liveGroups = groups.filter((g) => g.enabled_count > 1);

@@ -215,6 +215,12 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-30** — The duplicate-schedule advisory now waits for the explicit
+  organization selection to hydrate before calling the strict scheduler
+  transport, then re-runs immediately when that selection arrives. A cold
+  `/schedules` load therefore never emits a false organization-context error,
+  while real post-hydration transport failures remain loud and retryable.
+
 - **2026-08-30** — The canonical `/scheduler/*` client now applies the
   explicitly selected organization to every authenticated request as
   `X-Organization-Id` and fails closed before networking when no organization
