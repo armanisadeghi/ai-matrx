@@ -600,7 +600,9 @@ export default function DataIntegrityPage() {
 
       <div className="min-h-0 flex-1">
         {/* A PLAIN DOM CHILD, not the table itself — MatrxDataTable forwards
-            neither the ref nor onContextMenu Radix clones onto its trigger. */}
+            neither the ref nor onContextMenu Radix clones onto its trigger.
+            context-menu-exempt: surfaceName — this page has no registered surface manifest
+            context-menu-exempt: entity — a check (lib/integrity) is config, not a row in platform.entity_types */}
         <NonEditableContextMenu
           sourceFeature="admin"
           contentSource={{ type: "raw" }}
