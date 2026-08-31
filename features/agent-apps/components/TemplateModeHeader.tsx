@@ -5,6 +5,10 @@ import { CopyTapButton } from "@ai-matrx/tap-target/buttons";
 /**
  * RIGHT region — contextual actions for the active template.
  * Tap buttons self-space; the only non-tap item (Chat badge) uses a margin.
+ *
+ * A control is absent or honest: with no template code there is nothing to
+ * copy and no words here to explain a greyed button, so the button is not
+ * rendered at all.
  */
 export function TemplateModeActions({
   templateCode,
@@ -24,12 +28,13 @@ export function TemplateModeActions({
           Chat
         </span>
       )}
-      <CopyTapButton
-        onClick={copyCode}
-        ariaLabel="Copy template code"
-        tooltip="Copy template code"
-        disabled={!templateCode}
-      />
+      {templateCode ? (
+        <CopyTapButton
+          onClick={copyCode}
+          ariaLabel="Copy template code"
+          tooltip="Copy template code"
+        />
+      ) : null}
     </div>
   );
 }

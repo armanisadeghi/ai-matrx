@@ -276,19 +276,21 @@ export function AdvancedMandateCrud() {
             searchPlaceholder: "Search the whole row (uuid, key, or a value inside jsonb)…",
             searchValue: search,
             onSearchChange: setSearch,
-            leading: (
+            // A control is absent or honest: a relation with no soft-delete
+            // column has no rows to show, so the toggle is not rendered —
+            // never a dead switch the reader has to guess about.
+            leading: relation?.softDeletes ? (
               <div className="flex items-center gap-2">
                 <Switch
                   id="include-deleted"
                   checked={includeDeleted}
                   onCheckedChange={setIncludeDeleted}
-                  disabled={!relation?.softDeletes}
                 />
                 <Label htmlFor="include-deleted" className="text-xs">
                   Show soft-deleted
                 </Label>
               </div>
-            ),
+            ) : undefined,
             actions: (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">

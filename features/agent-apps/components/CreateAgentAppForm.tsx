@@ -61,17 +61,25 @@ export function CreateAgentAppForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(
+  /**
+   * What this form is still waiting for, in the reader's words. A control is
+   * absent or honest — the Create button stays clickable and refuses out loud
+   * naming exactly what is missing, because "slug not checked yet" is a
+   * requirement no greyed button could ever have taught.
+   */
+  const missing = useMemo(
     () =>
-      Boolean(
-        agentId &&
-          name.trim() &&
-          slug.trim() &&
-          slugStatus === "available" &&
-          !submitting &&
-          !busy,
-      ),
-    [agentId, name, slug, slugStatus, submitting, busy],
+      [
+        agentId ? null : "an agent (pick one above)",
+        name.trim() ? null : "a name",
+        slug.trim() ? null : "a slug",
+        slug.trim() && slugStatus !== "available"
+          ? slugStatus === "taken"
+            ? "a slug that is not already taken"
+            : "the slug checked for availability"
+          : null,
+      ].filter(Boolean) as string[],
+    [agentId, name, slug, slugStatus],
   );
 
   const handleSuggestSlug = useCallback(async () => {
@@ -95,7 +103,14 @@ export function CreateAgentAppForm({
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!agentId || !name.trim() || !slug.trim()) return;
+      if (missing.length > 0 || !agentId) {
+        setError(
+          `Not yet — this app still needs ${
+            missing.length > 0 ? missing.join(", ") : "an agent (pick one above)"
+          }.`,
+        );
+        return;
+      }
       setSubmitting(true);
       setError(null);
       try {
@@ -117,7 +132,7 @@ export function CreateAgentAppForm({
         setSubmitting(false);
       }
     },
-    [agentId, name, slug, tagline, description, displayMode, onSubmit],
+    [agentId, missing, name, slug, tagline, description, displayMode, onSubmit],
   );
 
   return (
@@ -236,12 +251,17 @@ export function CreateAgentAppForm({
       {error && <div className="text-sm text-destructive">{error}</div>}
 
       <div className="flex items-center justify-end gap-2 pt-2">
+        {missing.length > 0 && (
+          <span className="mr-auto text-[11.5px] text-muted-foreground/70">
+            Still needs {missing.join(", ")}.
+          </span>
+        )}
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={!canSubmit}>
+        <Button type="submit" disabled={submitting || busy}>
           {submitting || busy ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -3,9 +3,11 @@
 // features/mandates/authoring/AutomationButton.tsx
 //
 // An affordance that runs a MANDATE BY KEY — mandates all the way down. While
-// the key resolves to nothing it renders honestly disabled, naming the exact
-// key to create; the moment that mandate exists (Arman creates it, no deploy)
-// the button lights up. Never a hardcoded agent id, never a silent no-op.
+// the key resolves to nothing the button stays CLICKABLE and refuses out loud,
+// naming the exact key to create — a tooltip is not words on the screen, and a
+// dead button teaches nothing. The moment that mandate exists (Arman creates
+// it, no deploy) it just runs. Never a hardcoded agent id, never a silent
+// no-op.
 
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
 
 export function AutomationButton({
@@ -40,8 +43,16 @@ export function AutomationButton({
       variant="outline"
       size="sm"
       className="h-7 gap-1.5 text-[12px]"
-      disabled={!available || running || loading}
-      onClick={available ? onRun : undefined}
+      disabled={running || loading}
+      onClick={() => {
+        if (!available) {
+          toast.error(
+            `Not yet — this needs the mandate "${mandateKey}", which does not exist. Create it and this runs.`,
+          );
+          return;
+        }
+        onRun();
+      }}
     >
       {running ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -304,10 +304,7 @@ export function SurfacesTable({
               return (
                 <tr
                   key={row.name}
-                  onClick={() => {
-                    if (navigatingName) return;
-                    onSelect(row);
-                  }}
+                  onClick={() => onSelect(row)}
                   className={`border-b border-border group cursor-pointer hover:bg-accent/40 ${
                     isSelected ? "bg-primary/10" : ""
                   } ${row.is_active ? "" : "opacity-60"} ${
@@ -346,8 +343,13 @@ export function SurfacesTable({
                           </TooltipContent>
                         </Tooltip>
                       )}
+                      {/* The ONLY row whose editor button is disabled — and it
+                          says why, in words, right here. */}
                       {isNavigating && (
-                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
+                        <span className="inline-flex items-center gap-1 shrink-0 text-[10px] text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Opening…
+                        </span>
                       )}
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -470,7 +472,6 @@ export function SurfacesTable({
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
-                            disabled={!!navigatingName}
                             onClick={(e) => {
                               e.stopPropagation();
                               onPeek(row);
@@ -487,7 +488,7 @@ export function SurfacesTable({
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
-                            disabled={!!navigatingName}
+                            disabled={isNavigating}
                             onClick={(e) => {
                               e.stopPropagation();
                               onEdit(row);

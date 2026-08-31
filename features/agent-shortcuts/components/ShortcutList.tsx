@@ -686,26 +686,35 @@ export function ShortcutList({
               className="max-w-md text-[16px]"
             />
 
-            <Select
-              value={placementFilter}
-              onValueChange={setPlacementFilter}
-              disabled={!!placementFilterProp}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Placements</SelectItem>
-                {availablePlacements.map((placement) => {
-                  const meta = getPlacementTypeMeta(placement);
-                  return (
-                    <SelectItem key={placement} value={placement}>
-                      {meta.label}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            {/* A control is absent or honest. When the host pins a placement
+                there is nothing to choose, so the reader gets the fixed value
+                in words instead of a greyed dropdown that explains nothing. */}
+            {placementFilterProp ? (
+              <Badge
+                variant="outline"
+                className="h-9 px-3 text-xs font-normal text-muted-foreground"
+              >
+                Placement: {getPlacementTypeMeta(placementFilterProp).label} —
+                fixed by this view
+              </Badge>
+            ) : (
+              <Select value={placementFilter} onValueChange={setPlacementFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Placements</SelectItem>
+                  {availablePlacements.map((placement) => {
+                    const meta = getPlacementTypeMeta(placement);
+                    return (
+                      <SelectItem key={placement} value={placement}>
+                        {meta.label}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            )}
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-[180px]">
