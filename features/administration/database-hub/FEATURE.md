@@ -43,6 +43,7 @@ with operational status and the categorized tool registry.
 
 ## Change log
 
+- 2026-08-31 — Result provenance now distinguishes a query that exists in the cache from an execution actually served by that cache; uncached reruns never display the false `From Cache` badge.
 - 2026-08-31 — The SQL workbench leaves derivations and event handlers to the
   React Compiler; the surface contract guards every workbench file against
   manual `useMemo` / `useCallback` regressions.
