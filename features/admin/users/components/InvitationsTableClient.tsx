@@ -24,6 +24,9 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 interface InvitationRequest {
   id: string;
@@ -74,6 +77,7 @@ export function InvitationsTableClient() {
   const [reason, setReason] = useState("");
   const [acting, setActing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [clickedRow, setClickedRow] = useState<InvitationRequest | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,6 +196,54 @@ export function InvitationsTableClient() {
         </div>
       ) : null}
       <div className="min-h-0 flex-1">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "invitation_request",
+                id: row.id,
+                title: row.full_name,
+              },
+              content: summary(row),
+            };
+          }}
+          extraSections={[
+            {
+              id: "invitation-actions",
+              label: clickedRow?.full_name || "This request",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "action",
+                  id: "invitation-approve",
+                  label: "Approve & send code",
+                  icon: CheckCircle,
+                  disabled: !clickedRow || clickedRow.status !== "pending",
+                  onSelect: () =>
+                    clickedRow && void act(clickedRow, "approve"),
+                },
+                {
+                  kind: "action",
+                  id: "invitation-reject",
+                  label: "Reject request…",
+                  icon: XCircle,
+                  destructive: true,
+                  disabled: !clickedRow || clickedRow.status !== "pending",
+                  onSelect: () => clickedRow && void act(clickedRow, "reject"),
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "user-invitations", selectedRow: false }}
           data={rows}
@@ -345,6 +397,7 @@ export function InvitationsTableClient() {
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
