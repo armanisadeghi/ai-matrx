@@ -68,11 +68,23 @@ const OPEN_LAYER_SELECTOR = [
  */
 function hasOpenLayer(doc: Document): boolean {
   for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
-    if (el.getAttribute("data-state") === "closed") continue;
+    // 🚨 ONLY AN EXPLICITLY OPEN LAYER COUNTS. The previous cut fell back to
+    // "no state stamp, but it occupies space → treat as open", and that one
+    // clause is what made the guard repair EXACTLY ONCE PER PAGE MOUNT: the
+    // moment a person opened and closed any dropdown, some laid-out leftover
+    // matching `[role=…]` satisfied the fallback, `hasOpenLayer` answered true
+    // for the rest of the page's life, and every later orphan went unrepaired.
+    // The second independent walk measured precisely that — probe 1 repairs,
+    // probes 2-8 leave the body dead — and it is worse than no guard, because
+    // the first repair makes it look present.
+    //
+    // Radix stamps `data-state` on every layer it opens, and the body lock is
+    // Radix/react-remove-scroll's doing in the first place, so an unstamped
+    // element is not the thing that locked the body. Requiring the stamp is
+    // both stricter and more correct than guessing from geometry.
+    if (el.getAttribute("data-state") !== "open") continue;
     if (el.getAttribute("aria-hidden") === "true") continue;
-    if (el.getAttribute("data-state") === "open") return true;
-    // No state stamp — believe it only if it is really on screen.
-    if ((el as HTMLElement).getClientRects().length > 0) return true;
+    return true;
   }
   return false;
 }

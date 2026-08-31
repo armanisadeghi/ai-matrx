@@ -49,7 +49,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { isJsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentLineageIndex,
@@ -226,6 +229,7 @@ export function MandatesConsole() {
     [navPending, router],
   );
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByMandateKey, setCodeTruthByMandateKey] = useState<
     Record<string, MandateCodeTruth>
@@ -241,6 +245,8 @@ export function MandatesConsole() {
   const [coverageFilter, setCoverageFilter] =
     useState<MandateCoverageBucket | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Settled fact: the bootstrap resolved and no organization is selected. */
+  const [noOrganization, setNoOrganization] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
   // SELECTION LIVES IN THE URL — the table's OWN `urlState.selectedRow` key,
   // read and written here so the console's programmatic openers (the coverage
@@ -354,10 +360,33 @@ export function MandatesConsole() {
   // preflight error even though the shell showed the organization moments
   // later. Wait for the same Redux authority the transport reads, and refetch
   // whenever the user switches organizations.
+  //
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the third instance of this class
+  // (walk, 2026-08-31: the console intermittently sticks in its loading
+  // skeleton and recovers later). `loading` starts `true`, so a bare early
+  // return here leaves the skeleton up FOREVER whenever the organization has
+  // not hydrated — and if the bootstrap resolves with no organization selected
+  // at all, it never recovers and never says why. Exactly the shape already
+  // fixed in `useMandateInputSurface` and in the two readers V3 F4 caught.
+  //
+  // Before the bootstrap resolves, "loading" is the truth and nothing flashes.
+  // Once it has resolved and there is still no organization, that is a settled
+  // fact about this session: stop loading and say it, with the action that
+  // fixes it.
   useEffect(() => {
-    if (!selectedOrganizationId) return;
+    if (!selectedOrganizationId) {
+      if (orgBootstrapResolved) {
+        setLoading(false);
+        setFetching(false);
+        setNoOrganization(
+          "No organization is selected, so the mandate console cannot read anything — choose one from the organization picker in the header and this fills in.",
+        );
+      }
+      return;
+    }
+    setNoOrganization(null);
     fetchData();
-  }, [fetchData, selectedOrganizationId]);
+  }, [fetchData, orgBootstrapResolved, selectedOrganizationId]);
 
   // Any mandate write anywhere — including a rebind made from the Linked Agent
   // Sync window (updateMandateDefinition fires the invalidation bus) — reloads
@@ -1050,6 +1079,14 @@ export function MandatesConsole() {
         }}
         className="flex h-full min-h-0 flex-col gap-3 p-4"
       >
+        {/* The settled "nothing is selected" fact, in words with its remedy —
+            a skeleton that simply stops is indistinguishable from a screen
+            that is still working. */}
+        {noOrganization ? (
+          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
+            {noOrganization}
+          </p>
+        ) : null}
         <MandateCoverageBoard
           report={coverage}
           loading={loading}

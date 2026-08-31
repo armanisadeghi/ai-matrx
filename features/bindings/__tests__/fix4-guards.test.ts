@@ -326,3 +326,57 @@ describe("R2-1 follow-up — PRESENT is not OPEN (walk: repaired only 2 of 6 pro
     expect(document.body.style.pointerEvents).toBe("none");
   });
 });
+
+describe("R2-1 — THE WALKER'S 8-PROBE PROTOCOL (guard repaired exactly once per mount)", () => {
+  beforeEach(() => {
+    __resetBodyPointerEventsRepairs();
+    document.body.style.removeProperty("pointer-events");
+    document.body.innerHTML = "";
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    document.body.style.removeProperty("pointer-events");
+    document.body.innerHTML = "";
+  });
+
+  /**
+   * 🚨 THE EXACT FINGERPRINT the second walk measured: probe 1 repaired and
+   * logged; probes 2-8 on the same page mount left `pointer-events: none`
+   * forever. That is worse than having no guard at all, because the first
+   * repair makes a dead guard look alive.
+   *
+   * Cause: leftover Radix nodes from any dropdown the person had opened and
+   * closed satisfied the old "occupies space → treat as open" fallback, so
+   * `hasOpenLayer` answered true for the rest of the page's life. This test
+   * interleaves exactly those leftovers, as the walker was asked to.
+   */
+  test("repairs on ALL 8 probes with Radix leftovers present, and logs once", () => {
+    const leftovers = [
+      '<span data-radix-focus-guard tabindex="0"></span>',
+      '<div role="dialog" data-state="closed"></div>',
+      '<div role="listbox" aria-hidden="true"></div>',
+      '<div data-radix-popper-content-wrapper></div>',
+    ];
+    let repaired = 0;
+    for (let probe = 0; probe < 8; probe += 1) {
+      // A dropdown was opened and closed since the last probe.
+      document.body.innerHTML = leftovers.slice(0, (probe % 4) + 1).join("");
+      document.body.style.pointerEvents = "none";
+      if (restoreBodyPointerEventsIfOrphaned(document)) repaired += 1;
+      expect(document.body.style.pointerEvents).toBe("");
+    }
+    expect(repaired).toBe(8);
+    expect(bodyPointerEventsRepairCount()).toBe(8);
+    // Only the LOGGING is deduplicated — never the repair.
+    expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  test("and it still refuses while a real layer is genuinely open", () => {
+    document.body.innerHTML =
+      '<span data-radix-focus-guard></span><div role="alertdialog" data-state="open"></div>';
+    document.body.style.pointerEvents = "none";
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+    expect(document.body.style.pointerEvents).toBe("none");
+  });
+});

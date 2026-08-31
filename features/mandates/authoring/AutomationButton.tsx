@@ -46,7 +46,7 @@ import React, { useMemo, useState } from "react";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
 import { useMandateInputSurface } from "../input-surface";
@@ -211,10 +211,18 @@ export function AutomationButton({
                   {ask.help}
                 </p>
               ) : null}
-              <ProTextarea
+              {/* 🚨 A PLAIN CONTROLLED TEXTAREA, deliberately (walk, 2026-08-31).
+                  This was `ProTextarea` — an authoring surface with its own
+                  refs, sync effects, toolbar, menus and mic streaming — and
+                  answering the ask then pressing Run immediately sent only the
+                  FIRST CHARACTER of what was typed ("M" of a full sentence).
+                  An inline one-line question is not an authoring surface; the
+                  primitive with no machinery between the keystroke and the
+                  state is the right component, and it cannot lose characters. */}
+              <Textarea
                 id={`ask-${mandateKey}-${ask.name}`}
                 value={answers[ask.name] ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                onChange={(e) =>
                   setAnswers((prev) => ({ ...prev, [ask.name]: e.target.value }))
                 }
                 rows={2}

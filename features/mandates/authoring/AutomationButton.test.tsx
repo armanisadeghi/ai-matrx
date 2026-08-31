@@ -39,7 +39,7 @@ jest.mock("../useMandate", () => ({ useMandate: jest.fn() }));
 // surface; the seam's own rules are pinned in
 // `features/mandates/__tests__/invoke-supplied-values.test.ts`.
 jest.mock("../input-surface", () => ({
-  useMandateInputSurface: (key: string | null) =>
+  useMandateInputSurface: jest.fn((key: string | null) =>
     key === null
       ? { status: "loading" }
       : {
@@ -54,7 +54,11 @@ jest.mock("../input-surface", () => ({
             notes: [],
           },
         },
+  ),
 }));
+
+const mockedSurface = jest.requireMock("../input-surface")
+  .useMandateInputSurface as jest.Mock;
 
 const mockedUseMandate = useMandate as unknown as jest.Mock<MandateState>;
 
@@ -147,5 +151,87 @@ describe("AutomationButton — the key resolves to nothing", () => {
       'Not yet — this needs the mandate "mandates.kind_converter", which does not exist. Create it and this runs.',
     );
     expect(toast.error).not.toHaveBeenCalled();
+  });
+});
+
+describe("the inline ask captures EVERY character, then submits it", () => {
+  /**
+   * 🚨 The walk typed a full sentence into the ask and the request body
+   * carried only "M" — its first character. Arman would hit this the first
+   * time he answers a question, so the round trip is pinned here: type, then
+   * submit IMMEDIATELY, and assert the whole string reaches `onRun`.
+   */
+  it("types a full sentence and hands all of it to the run", () => {
+    mockedUseMandate.mockReturnValue({
+      mandate: { agentId: "a1" } as never,
+      loading: false,
+      error: null,
+    });
+    mockedSurface.mockReturnValue({
+      status: "ready",
+      surface: {
+        mandateKey: "mandate.goal_writer",
+        provisionKey: null,
+        surfaceSource: "mandate_inputs",
+        holderName: null,
+        acceptsUserInput: false,
+        inputs: [
+          {
+            name: "brief",
+            kind: "text",
+            sourcing: "ask",
+            variant: null,
+            default: null,
+            label: "Brief",
+            help: "",
+            placeholder: "",
+            options: [],
+            origin: "binding_prompt",
+            nodeId: null,
+          },
+        ],
+        notes: [],
+      },
+    } as never);
+
+    const onRun = jest.fn();
+    act(() => {
+      root.render(
+        <AutomationButton
+          mandateKey="mandate.goal_writer"
+          label="Refine with AI"
+          runningLabel="Refining…"
+          running={false}
+          onRun={onRun}
+        />,
+      );
+    });
+
+    const textarea = container.querySelector("textarea");
+    if (!textarea) throw new Error("the ask did not render a textarea");
+    const button = container.querySelector("button");
+    if (!button) throw new Error("no button");
+
+    // The button refuses while the question is unanswered.
+    expect(button.disabled).toBe(true);
+
+    const typed = "Make it tighter and state the done-well condition.";
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      "value",
+    )?.set;
+    act(() => {
+      setter?.call(textarea, typed);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Submit IMMEDIATELY — no blur, no debounce window.
+    act(() => {
+      (container.querySelector("button") as HTMLButtonElement).click();
+    });
+
+    expect(onRun).toHaveBeenCalledTimes(1);
+    // THE REGRESSION: this used to be "M".
+    expect(onRun.mock.calls[0][0]).toEqual({ brief: typed });
   });
 });
