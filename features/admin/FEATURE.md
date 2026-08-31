@@ -219,6 +219,9 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-31` — Registered every static System Agents shortcut-tab alias as
+  an exact owned route of the Shortcuts destination, keeping the canonical
+  admin catalog from mistaking those linkable tabs for shortcut IDs.
 - `2026-08-29` — Registered the mandate creation leaf as an owned route of the
   canonical Mandates destination, keeping the admin catalog exact without a
   duplicate navigation row.
