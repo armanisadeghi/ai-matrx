@@ -11,11 +11,7 @@ import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { ScalarValueControl } from "./BatchFieldControls";
 import { BatchBindingCell } from "./BatchBindingCell";
-import {
-  FillDownButton,
-  RowKindBadge,
-  RowStatusDot,
-} from "./BatchGridParts";
+import { FillDownButton, RowKindBadge, RowStatusDot } from "./BatchGridParts";
 import {
   getFieldDef,
   rowAttention,
@@ -152,12 +148,17 @@ export function BatchGrid({
                       limits="Apply one binding to every row. Direct values, prompts, and defaults fill cleanly; surface values only match where the name exists."
                       width="w-80"
                       onApply={(m) =>
-                        onFillBinding(t.name, (m ?? null) as ValueMapping | null)
+                        onFillBinding(
+                          t.name,
+                          (m ?? null) as ValueMapping | null,
+                        )
                       }
                       renderControl={(value, set) => (
                         <SurfaceVariableBinding
                           target={t}
-                          mapping={(value as ValueMapping | undefined) ?? undefined}
+                          mapping={
+                            (value as ValueMapping | undefined) ?? undefined
+                          }
                           availableSurfaceValues={BASELINE_ONLY}
                           onChange={(next) => set(next)}
                         />
@@ -177,7 +178,9 @@ export function BatchGrid({
               return (
                 <tr
                   key={row.key}
-                  className={done ? "opacity-50 hover:opacity-100" : "hover:bg-accent/30"}
+                  className={
+                    done ? "opacity-50 hover:opacity-100" : "hover:bg-accent/30"
+                  }
                 >
                   {/* Surface cell (sticky) */}
                   <td className="sticky left-0 z-10 bg-background px-3 py-1.5 border-b border-r border-border align-middle">

@@ -28,7 +28,11 @@ import {
   type ConsumptionMap,
 } from "@/features/mandates/provision-shapes";
 import { BindingMiddleRow } from "../BindingMiddle";
-import { applyRowMapping, mappingForRow, sourcesFor } from "../consumption-writer";
+import {
+  applyRowMapping,
+  mappingForRow,
+  sourcesFor,
+} from "../consumption-writer";
 import { offeredValuesToSurfaceValues } from "../offered-adapter";
 import { sourceLabelsFor } from "../words";
 import type { PlaceOfferState } from "./batch-model";

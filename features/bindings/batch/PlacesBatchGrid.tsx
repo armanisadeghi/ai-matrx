@@ -42,7 +42,8 @@ import type { PlaceHealth, PlaceOfferState, PlaceRow } from "./batch-model";
 const STATUS_WORDS = {
   red: (n: number) =>
     `${n} required ${n === 1 ? "input is" : "inputs are"} still unmapped here`,
-  amber: (n: number) => `${n} ${n === 1 ? "input needs" : "inputs need"} a look`,
+  amber: (n: number) =>
+    `${n} ${n === 1 ? "input needs" : "inputs need"} a look`,
   green: "This place is ready to write",
 };
 
@@ -154,7 +155,9 @@ export function PlacesBatchGrid({
                         renderControl={(value, set) => (
                           <SurfaceVariableBinding
                             target={target}
-                            mapping={(value as ValueMapping | undefined) ?? undefined}
+                            mapping={
+                              (value as ValueMapping | undefined) ?? undefined
+                            }
                             availableSurfaceValues={commonSurfaceValues}
                             sourceLabels={sourceLabelsFor(holderKind)}
                             valueFieldLabel="Offered value"
@@ -186,7 +189,10 @@ export function PlacesBatchGrid({
                   <tr className={done ? "opacity-60" : "hover:bg-accent/30"}>
                     <td className="sticky left-0 z-10 border-b border-r border-border bg-background px-3 py-1.5 align-middle">
                       <div className="flex min-w-0 items-center gap-2">
-                        <RowStatusDot att={toAttention(health)} words={STATUS_WORDS} />
+                        <RowStatusDot
+                          att={toAttention(health)}
+                          words={STATUS_WORDS}
+                        />
                         <RowKindBadge
                           kind={row.kind}
                           addTitle="No answer at this rung yet — this writes a new one"
@@ -283,8 +289,8 @@ export function PlacesBatchGrid({
       {columns.length === 0 ? (
         <div className="border-t border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
           No per-place columns yet — every input is inherited or set once for
-          all places. Flip an input to <span className="font-medium">Per place</span>{" "}
-          above to vary it here.
+          all places. Flip an input to{" "}
+          <span className="font-medium">Per place</span> above to vary it here.
         </div>
       ) : null}
       {attentionOnly && visible.length === 0 ? (
@@ -301,8 +307,6 @@ function toAttention(health: PlaceHealth) {
     unmapped:
       health.unmapped + health.unfedRequired.length + health.problems.length,
     requiredUnmapped:
-      health.requiredUnmapped +
-      health.problems.length +
-      health.blockers.length,
+      health.requiredUnmapped + health.problems.length + health.blockers.length,
   };
 }

@@ -106,8 +106,14 @@ import {
   type BindingRung,
   type HolderDraft,
 } from "./ScopeHolderBar";
-import { applySuggestions, seedAutoBinds, sourcesFor } from "./consumption-writer";
+import {
+  applySuggestions,
+  seedAutoBinds,
+  sourcesFor,
+} from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
+import { BatchMode } from "./batch/BatchMode";
+import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
 
@@ -176,7 +182,9 @@ export function OneBindingWorkspace({
       onRungChange={(nextRung, nextOrgId) => {
         setRung(nextRung);
         setOrganizationId(
-          nextRung === "org" ? (nextOrgId ?? organizations[0]?.id ?? null) : null,
+          nextRung === "org"
+            ? (nextOrgId ?? organizations[0]?.id ?? null)
+            : null,
         );
       }}
       onChanged={onChanged}
@@ -208,7 +216,9 @@ function BindingDraft({
   const canBindGlobal = allowGlobal && isSuperAdmin;
 
   // ── The holder draft — seeded once, from the row this instance is keyed to ─
-  const [holder, setHolder] = useState<HolderDraft>(() => holderDraftOf(binding));
+  const [holder, setHolder] = useState<HolderDraft>(() =>
+    holderDraftOf(binding),
+  );
   const [draftMap, setDraftMap] = useState<ConsumptionMap>(
     () => parseBindingWave1(binding).consumptionMap,
   );
@@ -216,6 +226,7 @@ function BindingDraft({
     () => parseBindingWave1(binding).autoRun,
   );
   const [mapTab, setMapTab] = useState<"ai" | "manual">("manual");
+  const [mode, setMode] = useState<BindingMode>("map");
   const [autoBound, setAutoBound] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -246,11 +257,7 @@ function BindingDraft({
       draftInputs: (data.mandate as { draft_inputs?: unknown }).draft_inputs,
       surface: surfaceState.surface,
     });
-  }, [
-    data.provisionKey,
-    data.mandate,
-    surfaceState,
-  ]);
+  }, [data.provisionKey, data.mandate, surfaceState]);
   const offer = data.offer ?? describedOffer;
   const offerPending =
     !data.provisionKey && !data.offer && surfaceState.status === "loading";
@@ -259,12 +266,12 @@ function BindingDraft({
   const offerSourceLine = offerPending
     ? "Reading what this job offers…"
     : data.provisionKey
-    ? `Declared by the ${data.provisionKey} provision — the call site supplies these every launch.`
-    : offer
-      ? "This job's own described inputs. They ARE its provision."
-      : surfaceState.status === "error"
-        ? `The job's inputs could not be read: ${surfaceState.message}`
-        : "Nothing described yet.";
+      ? `Declared by the ${data.provisionKey} provision — the call site supplies these every launch.`
+      : offer
+        ? "This job's own described inputs. They ARE its provision."
+        : surfaceState.status === "error"
+          ? `The job's inputs could not be read: ${surfaceState.message}`
+          : "Nothing described yet.";
 
   // ── The holder's inputs (the consuming side) ──────────────────────────────
   const holderInputs = useHolderInputs(
@@ -308,6 +315,12 @@ function BindingDraft({
   // DERIVED — writing it from the effect body is the same cascading-render
   // defect, and a verdict stamped with a stale agent id is a lie.
   const agentId = effectiveAgentId(holder, data);
+  // The holder agent's own declarations — read once here and handed to batch
+  // mode's requirement gate, so N places are checked against ONE read.
+  const agentPayload = useAppSelector((state) =>
+    selectAgentExecutionPayload(state, agentId ?? ""),
+  );
+
   const [settledVerdict, setSettledVerdict] = useState<{
     agentId: string;
     problems: string[];
@@ -346,11 +359,18 @@ function BindingDraft({
         }
         if (!data.provisionKey) {
           const check = compareStoredContract(data.contract, {
-            variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
-            contextPolicyKeys: (payload.contextPolicies ?? []).map((s) => s.key),
+            variableNames: (payload.variableDefinitions ?? []).map(
+              (v) => v.name,
+            ),
+            contextPolicyKeys: (payload.contextPolicies ?? []).map(
+              (s) => s.key,
+            ),
           });
           if (!check.passing) {
-            const missing = [...check.missingVariables, ...check.missingPolicies]
+            const missing = [
+              ...check.missingVariables,
+              ...check.missingPolicies,
+            ]
               .map((r) => `\`${r.name}\``)
               .join(", ");
             problems.push(
@@ -379,7 +399,8 @@ function BindingDraft({
   );
   const overriddenKeys = useAppSelector(selectOverriddenKeys(overridesId));
   const overriddenCount =
-    (overriddenKeys?.changed.length ?? 0) + (overriddenKeys?.removed.length ?? 0);
+    (overriddenKeys?.changed.length ?? 0) +
+    (overriddenKeys?.removed.length ?? 0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(
     () => () => {
@@ -415,7 +436,9 @@ function BindingDraft({
         );
       }
     }
-    dispatch(initInstanceOverrides({ conversationId: overridesId, baseSettings }));
+    dispatch(
+      initInstanceOverrides({ conversationId: overridesId, baseSettings }),
+    );
     if (storedOverrides) {
       const changes: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(storedOverrides)) {
@@ -705,46 +728,82 @@ function BindingDraft({
         disabled={disabled}
       />
 
-      {/* The agent pre-flight, above the match it gates. */}
-      {holder.kind === "agent" && agentId ? (
-        <div className="rounded-xl border border-border bg-card px-3 py-2">
-          {verdict.checking ? (
-            <p className="text-[12px] text-muted-foreground">
-              Checking whether this agent meets the mandate…
-            </p>
-          ) : verdict.passed ? (
-            <p className="flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-400">
-              <CircleCheck className="h-3.5 w-3.5" />
-              This agent meets the mandate.
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {verdict.problems.map((problem) => (
-                <li
-                  key={problem}
-                  className="flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
-                >
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  {problem}
-                </li>
-              ))}
-              <li className="pl-5 text-[11.5px] text-muted-foreground">
-                Fix the agent in the builder, then re-select it here.
-              </li>
-            </ul>
-          )}
-        </div>
-      ) : null}
+      {/* ONE SCREEN, TWO MODES (P17). The rung and the holder above hold still;
+          only the shape of the match changes. */}
+      <ModeToggle mode={mode} onChange={setMode} disabled={disabled} />
 
-      {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
+      {mode === "batch" ? (
+        <BatchMode
+          rung={rung}
+          organizationId={organizationId}
+          userId={userId}
+          holder={holder}
+          agentId={agentId}
+          agentName={
+            holderName ??
+            (agentId ? data.agentsById[agentId]?.name : null) ??
+            "This holder"
+          }
+          agentDeclarations={
+            holder.kind === "agent" && agentPayload.isReady
+              ? {
+                  variableNames: (agentPayload.variableDefinitions ?? []).map(
+                    (v) => v.name,
+                  ),
+                  contextPolicyKeys: (agentPayload.contextPolicies ?? []).map(
+                    (s) => s.key,
+                  ),
+                }
+              : null
+          }
+          holderInputs={holderInputs}
+          currentMandateKey={data.mandate.mandate_key}
+          canBindGlobal={canBindGlobal}
+          disabled={disabled}
+          onChanged={onChanged}
+        />
+      ) : (
+        <>
+          {/* The agent pre-flight, above the match it gates. */}
+          {holder.kind === "agent" && agentId ? (
+            <div className="rounded-xl border border-border bg-card px-3 py-2">
+              {verdict.checking ? (
+                <p className="text-[12px] text-muted-foreground">
+                  Checking whether this agent meets the mandate…
+                </p>
+              ) : verdict.passed ? (
+                <p className="flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-400">
+                  <CircleCheck className="h-3.5 w-3.5" />
+                  This agent meets the mandate.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {verdict.problems.map((problem) => (
+                    <li
+                      key={problem}
+                      className="flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
+                    >
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      {problem}
+                    </li>
+                  ))}
+                  <li className="pl-5 text-[11.5px] text-muted-foreground">
+                    Fix the agent in the builder, then re-select it here.
+                  </li>
+                </ul>
+              )}
+            </div>
+          ) : null}
+
+          {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
           🚨 CONTAINER query, not a viewport one. This workspace is hosted in a
           3xl reading column, in the admin shell, and inside a draggable window
           panel; a `lg:` breakpoint measures the WINDOW and would lay three
           columns into a 768px container, which is how the first dark-theme walk
           found the middle squeezed to ~90px. `@container` measures the space
           this actually has, so every host gets the layout it can carry. */}
-      <div className="@container">
-        {/* 🚨 THE MIDDLE IS THE STAR (Arman, 2026-08-31, on the first ship:
+          <div className="@container">
+            {/* 🚨 THE MIDDLE IS THE STAR (Arman, 2026-08-31, on the first ship:
             "the match is a ~180px sliver while both inventory columns sit wide
             and mostly empty"). The grid template is the root cause and the only
             place it is fixed:
@@ -757,225 +816,234 @@ function BindingDraft({
               · three columns only once the container can carry all of it
                 (@5xl); below that the middle stacks FIRST and the rails follow,
                 because the match is what you came here to do. */}
-        <div className="grid justify-center gap-3 @5xl:grid-cols-[minmax(0,18rem)_minmax(32rem,56rem)_minmax(0,18rem)]">
-        <div className="order-2 min-w-0 @5xl:order-none">
-          <OfferedInventoryColumn
-            values={offeredValues}
-            consumedBy={consumedBy}
-            pinnedContext={data.pinnedContext}
-            sourceLine={offerSourceLine}
-            status={offerPending ? "loading" : "ready"}
-          />
-        </div>
-
-        <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
-          <header className="shrink-0 border-b border-border px-3 py-2">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <h3 className="text-[12.5px] font-semibold text-foreground">
-                The match
-              </h3>
-              {holderInputs.status === "ready" ? (
-                <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
-                  {holderInputs.targets.length} inputs
-                </span>
-              ) : null}
-              {/* P11 — the two tabs sit in the middle panel's own header, the
-                  way the surface bind panel puts them over its mapping section.
-                  AI map PROPOSES into this same editor; it never applies. */}
-              {canProposeMap ? (
-                <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
-                  {(
-                    [
-                      ["ai", "AI map"],
-                      ["manual", "Map manually"],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setMapTab(key)}
-                      className={cn(
-                        "rounded px-2 py-0.5 text-[10.5px] transition-colors",
-                        mapTab === key
-                          ? "bg-primary/10 font-medium text-primary"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-              One row per holder input. Several offered values may feed one
-              input — they are joined in order, separated by a blank line.
-            </p>
-          </header>
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <MiddleBody
-              holderStatus={holderInputs.status}
-              holderMessage={holderInputs.message}
-              holderKind={holder.kind}
-              offerPending={offerPending}
-              hasOffer={offeredValues.length > 0}
-              targetCount={holderInputs.targets.length}
-            >
-              {mapTab === "ai" && canProposeMap ? (
-                <BindingSuggestionsTab
-                  surfaceName={data.mandate.mandate_key}
-                  agent={{
-                    name:
-                      holderName ??
-                      (agentId ? data.agentsById[agentId]?.name : null) ??
-                      "the bound agent",
-                    description: holderDescription,
-                    variableDefinitions: mapperVariableDefinitions,
-                    contextPolicies: mapperContextPolicies,
-                  }}
-                  availableSurfaceValues={offeredSurfaceValues}
-                  writeTargets={[]}
-                  targetNames={holderInputs.targets.map((t) => t.name)}
-                  disabled={disabled}
-                  manyToOne
-                  words={MANDATE_MAP_WORDS}
-                  onAccept={(_mappings, _policies, suggestions) => {
-                    // P11 — accepting FILLS the manual editor and switches to
-                    // it. Nothing is saved, nothing is applied blind: every
-                    // line is still editable, and the same pre-flight that
-                    // gates Save re-runs over the result on the way in.
-                    setDraftMap((current) =>
-                      applySuggestions({
-                        map: current,
-                        suggestions,
-                        targetNames: holderInputs.targets.map((t) => t.name),
-                        offeredByName: new Map(
-                          offeredValues.map((v) => [v.name, v]),
-                        ),
-                        deliverFor: (name) =>
-                          holderInputs.contextKeys.has(name)
-                            ? "context"
-                            : "variable",
-                      }),
-                    );
-                    setMapTab("manual");
-                    toast.success(
-                      "Filled in below — change any line before you save.",
-                    );
-                  }}
-                />
-              ) : (
-                <BindingMiddle
-                  holderKind={holder.kind}
-                  targets={holderInputs.targets}
-                  contextKeys={holderInputs.contextKeys}
-                  offered={offeredValues}
+            <div className="grid justify-center gap-3 @5xl:grid-cols-[minmax(0,18rem)_minmax(32rem,56rem)_minmax(0,18rem)]">
+              <div className="order-2 min-w-0 @5xl:order-none">
+                <OfferedInventoryColumn
+                  values={offeredValues}
+                  consumedBy={consumedBy}
                   pinnedContext={data.pinnedContext}
-                  value={draftMap}
-                  onChange={setDraftMap}
-                  autoBound={autoBound}
-                  disabled={disabled}
-                />
-              )}
-            </MiddleBody>
-          </div>
-        </section>
-
-          <div className="order-3 min-w-0 @5xl:order-none">
-            <HolderInputsColumn
-              inputs={holderInputs}
-              fedCount={fedCount}
-              holderKind={holder.kind}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
-          meaningful once something is actually mapped: before that the bar
-          would be a control about a promise nobody has made yet. */}
-      {holderChosen && holderInputs.targets.length > 0 ? (
-        <AutoRunBar
-          targets={holderInputs.targets}
-          map={draftMap}
-          value={autoRun}
-          onChange={setAutoRun}
-          disabled={disabled}
-        />
-      ) : null}
-
-      {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
-      {holder.kind === "agent" && agentId ? (
-        <div className="rounded-xl border border-border bg-card px-3 py-2">
-          <Button
-            variant={overriddenCount > 0 ? "secondary" : "ghost"}
-            size="sm"
-            className="gap-1.5"
-            onClick={() => void openSettings()}
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            {overriddenCount > 0
-              ? `Settings (${overriddenCount} overridden)`
-              : "Settings"}
-            <span className="text-[10.5px] font-normal text-muted-foreground">
-              rarely needed
-            </span>
-          </Button>
-          {settingsOpen ? (
-            overridesReady ? (
-              <div className="mt-2 space-y-2">
-                <RunConfigOverrides conversationId={overridesId} />
-                <EffectiveConfigLayers
-                  pins={data.pins}
-                  bindingOverrides={storedOverrides}
+                  sourceLine={offerSourceLine}
+                  status={offerPending ? "loading" : "ready"}
                 />
               </div>
-            ) : (
-              <p className="mt-2 text-[12px] text-muted-foreground">
-                Loading settings…
-              </p>
-            )
+
+              <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
+                <header className="shrink-0 border-b border-border px-3 py-2">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <h3 className="text-[12.5px] font-semibold text-foreground">
+                      The match
+                    </h3>
+                    {holderInputs.status === "ready" ? (
+                      <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
+                        {holderInputs.targets.length} inputs
+                      </span>
+                    ) : null}
+                    {/* P11 — the two tabs sit in the middle panel's own header, the
+                  way the surface bind panel puts them over its mapping section.
+                  AI map PROPOSES into this same editor; it never applies. */}
+                    {canProposeMap ? (
+                      <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
+                        {(
+                          [
+                            ["ai", "AI map"],
+                            ["manual", "Map manually"],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setMapTab(key)}
+                            className={cn(
+                              "rounded px-2 py-0.5 text-[10.5px] transition-colors",
+                              mapTab === key
+                                ? "bg-primary/10 font-medium text-primary"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                    One row per holder input. Several offered values may feed
+                    one input — they are joined in order, separated by a blank
+                    line.
+                  </p>
+                </header>
+                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                  <MiddleBody
+                    holderStatus={holderInputs.status}
+                    holderMessage={holderInputs.message}
+                    holderKind={holder.kind}
+                    offerPending={offerPending}
+                    hasOffer={offeredValues.length > 0}
+                    targetCount={holderInputs.targets.length}
+                  >
+                    {mapTab === "ai" && canProposeMap ? (
+                      <BindingSuggestionsTab
+                        surfaceName={data.mandate.mandate_key}
+                        agent={{
+                          name:
+                            holderName ??
+                            (agentId ? data.agentsById[agentId]?.name : null) ??
+                            "the bound agent",
+                          description: holderDescription,
+                          variableDefinitions: mapperVariableDefinitions,
+                          contextPolicies: mapperContextPolicies,
+                        }}
+                        availableSurfaceValues={offeredSurfaceValues}
+                        writeTargets={[]}
+                        targetNames={holderInputs.targets.map((t) => t.name)}
+                        disabled={disabled}
+                        manyToOne
+                        words={MANDATE_MAP_WORDS}
+                        onAccept={(_mappings, _policies, suggestions) => {
+                          // P11 — accepting FILLS the manual editor and switches to
+                          // it. Nothing is saved, nothing is applied blind: every
+                          // line is still editable, and the same pre-flight that
+                          // gates Save re-runs over the result on the way in.
+                          setDraftMap((current) =>
+                            applySuggestions({
+                              map: current,
+                              suggestions,
+                              targetNames: holderInputs.targets.map(
+                                (t) => t.name,
+                              ),
+                              offeredByName: new Map(
+                                offeredValues.map((v) => [v.name, v]),
+                              ),
+                              deliverFor: (name) =>
+                                holderInputs.contextKeys.has(name)
+                                  ? "context"
+                                  : "variable",
+                            }),
+                          );
+                          setMapTab("manual");
+                          toast.success(
+                            "Filled in below — change any line before you save.",
+                          );
+                        }}
+                      />
+                    ) : (
+                      <BindingMiddle
+                        holderKind={holder.kind}
+                        targets={holderInputs.targets}
+                        contextKeys={holderInputs.contextKeys}
+                        offered={offeredValues}
+                        pinnedContext={data.pinnedContext}
+                        value={draftMap}
+                        onChange={setDraftMap}
+                        autoBound={autoBound}
+                        disabled={disabled}
+                      />
+                    )}
+                  </MiddleBody>
+                </div>
+              </section>
+
+              <div className="order-3 min-w-0 @5xl:order-none">
+                <HolderInputsColumn
+                  inputs={holderInputs}
+                  fedCount={fedCount}
+                  holderKind={holder.kind}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
+          meaningful once something is actually mapped: before that the bar
+          would be a control about a promise nobody has made yet. */}
+          {holderChosen && holderInputs.targets.length > 0 ? (
+            <AutoRunBar
+              targets={holderInputs.targets}
+              map={draftMap}
+              value={autoRun}
+              onChange={setAutoRun}
+              disabled={disabled}
+            />
           ) : null}
-        </div>
-      ) : null}
 
-      {/* The server's refusal, kept ON THE PAGE — its words name the exact
+          {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
+          {holder.kind === "agent" && agentId ? (
+            <div className="rounded-xl border border-border bg-card px-3 py-2">
+              <Button
+                variant={overriddenCount > 0 ? "secondary" : "ghost"}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => void openSettings()}
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                {overriddenCount > 0
+                  ? `Settings (${overriddenCount} overridden)`
+                  : "Settings"}
+                <span className="text-[10.5px] font-normal text-muted-foreground">
+                  rarely needed
+                </span>
+              </Button>
+              {settingsOpen ? (
+                overridesReady ? (
+                  <div className="mt-2 space-y-2">
+                    <RunConfigOverrides conversationId={overridesId} />
+                    <EffectiveConfigLayers
+                      pins={data.pins}
+                      bindingOverrides={storedOverrides}
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[12px] text-muted-foreground">
+                    Loading settings…
+                  </p>
+                )
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* The server's refusal, kept ON THE PAGE — its words name the exact
           missing deliverable or the exact input, and a toast loses them. */}
-      {saveError ? (
-        <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {saveError}
-        </p>
-      ) : null}
+          {saveError ? (
+            <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {saveError}
+            </p>
+          ) : null}
 
-      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-3">
-        {saveRefusal ? (
-          <p className="mr-auto flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {saveRefusal}
-          </p>
-        ) : null}
-        {binding ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            className="gap-1.5 text-muted-foreground"
-            onClick={() => void remove()}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Remove {rungWords(rung).noun}
-          </Button>
-        ) : null}
-        <Button
-          size="sm"
-          className={cn("min-w-[130px]")}
-          disabled={disabled || Boolean(saveRefusal)}
-          onClick={() => void save()}
-        >
-          {busy ? "Saving…" : binding ? "Save" : `Set ${rungWords(rung).noun}`}
-        </Button>
-      </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-3">
+            {saveRefusal ? (
+              <p className="mr-auto flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {saveRefusal}
+              </p>
+            ) : null}
+            {binding ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={disabled}
+                className="gap-1.5 text-muted-foreground"
+                onClick={() => void remove()}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Remove {rungWords(rung).noun}
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              className={cn("min-w-[130px]")}
+              disabled={disabled || Boolean(saveRefusal)}
+              onClick={() => void save()}
+            >
+              {busy
+                ? "Saving…"
+                : binding
+                  ? "Save"
+                  : `Set ${rungWords(rung).noun}`}
+            </Button>
+          </div>
+        </>
+      )}
 
       {rebindDialog}
     </div>
@@ -1033,7 +1101,8 @@ function MiddleBody({
     return (
       <p className="py-8 text-center text-[12px] leading-relaxed text-muted-foreground">
         This {holderKind} declares no inputs — it runs on the job&apos;s user
-        text alone. There is nothing to map, and the binding saves without a map.
+        text alone. There is nothing to map, and the binding saves without a
+        map.
       </p>
     );
   }

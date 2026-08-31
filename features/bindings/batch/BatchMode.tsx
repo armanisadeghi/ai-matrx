@@ -93,7 +93,11 @@ export interface BatchModeProps {
 
 type ConsoleState =
   | { status: "loading" }
-  | { status: "ready"; mandates: MandateRowDb[]; bindings: Record<string, MandateBindingRow[]> }
+  | {
+      status: "ready";
+      mandates: MandateRowDb[];
+      bindings: Record<string, MandateBindingRow[]>;
+    }
   | { status: "error"; message: string };
 
 export function BatchMode({
@@ -126,19 +130,21 @@ export function BatchMode({
   );
   const [attentionOnly, setAttentionOnly] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(
-    null,
-  );
+  const [progress, setProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [failures, setFailures] = useState<
     ReadonlyArray<{ key: string; label: string; error: string }>
   >([]);
   const [lastFill, setLastFill] = useState<string | null>(null);
-  const [missingOutputs, setMissingOutputs] = useState<Set<string> | null>(null);
+  const [missingOutputs, setMissingOutputs] = useState<Set<string> | null>(
+    null,
+  );
 
   // ── The jobs, and who answers them today ──────────────────────────────────
   useEffect(() => {
     let live = true;
-    setConsole({ status: "loading" });
     void (async () => {
       try {
         const data = await fetchMandateConsoleData();
@@ -219,10 +225,7 @@ export function BatchMode({
   // variables this holder never declares, cannot be written — and the row says
   // which, in the same words.
   useEffect(() => {
-    if (!agentId) {
-      setMissingOutputs(null);
-      return;
-    }
+    if (!agentId) return;
     let live = true;
     void (async () => {
       const schemas = await fetchAgentOutputSchemas([agentId]);
@@ -251,7 +254,7 @@ export function BatchMode({
       const offer = offerOf(row.mandate_key);
       if (offer.status === "error") out.push(offer.message);
       if (holder.kind === "workflow") return out;
-      if (missingOutputs?.has(row.mandate_key)) {
+      if (agentId && missingOutputs?.has(row.mandate_key)) {
         out.push(
           `${agentName}'s structured output does not carry what this job promises to deliver — whatever reads this job's result would get nothing.`,
         );
@@ -262,7 +265,10 @@ export function BatchMode({
           const contract = parseMandateContract(contractOfMandate(row));
           const check = compareStoredContract(contract, agentDeclarations);
           if (!check.passing) {
-            const missing = [...check.missingVariables, ...check.missingPolicies]
+            const missing = [
+              ...check.missingVariables,
+              ...check.missingPolicies,
+            ]
               .map((r) => `"${r.name}"`)
               .join(", ");
             out.push(
@@ -273,7 +279,7 @@ export function BatchMode({
       }
       return out;
     },
-    [offerOf, holder.kind, missingOutputs, agentDeclarations, agentName],
+    [offerOf, holder.kind, agentId, missingOutputs, agentDeclarations, agentName],
   );
 
   // ── Seeding: every place starts from its own stored answer, plus the exact
@@ -306,7 +312,9 @@ export function BatchMode({
     const ready = selectedRows
       .map((row) => offerOf(row.mandate_key))
       .filter(
-        (state): state is { status: "ready"; offered: readonly OfferedValue[] } =>
+        (
+          state,
+        ): state is { status: "ready"; offered: readonly OfferedValue[] } =>
           state.status === "ready",
       );
     if (ready.length === 0) return [];
@@ -460,15 +468,16 @@ export function BatchMode({
 
   // ── Apply — N binding writes, each identical to a single-place save ───────
   const pendingRows = gridRows.filter((row) => !appliedKeys.has(row.key));
-  const refusal = holderRefusal({
-    holder,
-    agentId,
-    rung,
-    organizationId,
-    canBindGlobal,
-    holderStatus: holderInputs.status,
-  })
-    ?? applyRefusal(
+  const refusal =
+    holderRefusal({
+      holder,
+      agentId,
+      rung,
+      organizationId,
+      canBindGlobal,
+      holderStatus: holderInputs.status,
+    }) ??
+    applyRefusal(
       pendingRows.map((row) => healths[row.key]).filter(Boolean),
       pendingRows.length,
     );

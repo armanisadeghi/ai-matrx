@@ -45,10 +45,7 @@ import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 type FourWayMode =
-  | "agent_default"
-  | "surface_value"
-  | "direct_value"
-  | "prompt_user";
+  "agent_default" | "surface_value" | "direct_value" | "prompt_user";
 
 const MODE_META: Record<
   FourWayMode,

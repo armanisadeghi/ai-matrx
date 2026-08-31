@@ -136,7 +136,10 @@ export function FillDownButton({
   /** The sentence naming what fills cleanly and what does not. Required. */
   limits: string;
   onApply: (value: unknown) => void;
-  renderControl: (value: unknown, set: (next: unknown) => void) => React.ReactNode;
+  renderControl: (
+    value: unknown,
+    set: (next: unknown) => void,
+  ) => React.ReactNode;
   /** Word on the trigger. Omit for the icon-only trigger. */
   label?: string;
   title: string;
