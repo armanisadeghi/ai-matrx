@@ -43,7 +43,9 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentCustomExecutionPayload,
+  selectAgentDescription,
   selectAgentExecutionPayload,
+  selectAgentName,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
@@ -712,6 +714,17 @@ function BindingDraft({
   // The tab is OFFERED only when it has both halves to reason over. Anything
   // less and it would be a control that runs and answers nothing — absent is
   // the honest state, and the manual editor is always there.
+  // The mapper is TOLD who it is mapping for, and the name has to be the real
+  // one: "the bound agent" is a placeholder in the model's prompt, and a
+  // placeholder makes worse proposals. `useHolderInputs` has already fetched
+  // this agent's execution record, so the name is in hand — the workspace's own
+  // `agentsById` is the mandate console's roster and does not always hold it.
+  const holderName = useAppSelector((state) =>
+    agentId ? selectAgentName(state, agentId) : undefined,
+  );
+  const holderDescription = useAppSelector((state) =>
+    agentId ? selectAgentDescription(state, agentId) : null,
+  );
   const canProposeMap =
     holderInputs.status === "ready" &&
     holderInputs.targets.length > 0 &&
@@ -858,9 +871,10 @@ function BindingDraft({
                   surfaceName={data.mandate.mandate_key}
                   agent={{
                     name:
+                      holderName ??
                       (agentId ? data.agentsById[agentId]?.name : null) ??
                       "the bound agent",
-                    description: null,
+                    description: holderDescription,
                     variableDefinitions: mapperVariableDefinitions,
                     contextPolicies: mapperContextPolicies,
                   }}
