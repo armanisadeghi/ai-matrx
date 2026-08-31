@@ -25,6 +25,16 @@ import { selectInstanceStatus } from "@/features/agents/redux/execution-system/c
 import { selectConversationRequestIds } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { cn } from "@/lib/utils";
 import { shallowEqual } from "react-redux";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+// Reused menu labeled item shapes: the canonical `buildConversationMenu` needs
+// favorite/archived/excludeFromKg state this debug slice does not carry (it
+// only tracks stream/request status, not conversation-list metadata), so
+// wiring it here would ship mislabeled toggles ("Archive" on an already
+// archived conversation). Entity attachment needs none of that state, so the
+// row and the active conversation both get a real `conversation` entity —
+// Attach To / Share / the canonical Open door all work — without guessing at
+// state this file cannot see.
 
 // ─── Copy helper ──────────────────────────────────────────────────────────────
 
@@ -92,6 +102,7 @@ function ConversationSidebarRow({
     <div
       role="button"
       tabIndex={0}
+      data-conversation-id={conversationId}
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onSelect();
@@ -319,7 +330,27 @@ function StreamDebugHistoryWindowInner({
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
       sidebar={
-        <StreamDebugSidebar selectedId={activeId} onSelect={setActiveId} />
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target
+              ?.closest("[data-conversation-id]")
+              ?.getAttribute("data-conversation-id");
+            if (!id) return null;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "conversation",
+                id,
+                title: id.slice(0, 8) + "…",
+              },
+              content: `conversationId: ${id}`,
+            };
+          }}
+        >
+          <StreamDebugSidebar selectedId={activeId} onSelect={setActiveId} />
+        </NonEditableContextMenu>
       }
       sidebarDefaultSize={200}
       sidebarMinSize={150}
@@ -329,7 +360,20 @@ function StreamDebugHistoryWindowInner({
         // StreamDebugPanel already shows per-request tabs (#1, #2, …) internally.
         // It also shows the Timeline/Raw/Text/Tools tabs per request.
         // The sidebar is the conversation switcher — no extra tab layer needed here.
-        <StreamDebugPanel conversationId={activeId} className="h-full" />
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "conversation",
+              id: activeId,
+              title: activeId.slice(0, 8) + "…",
+            },
+            content: "",
+          }}
+        >
+          <StreamDebugPanel conversationId={activeId} className="h-full" />
+        </NonEditableContextMenu>
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
           <Activity className="h-10 w-10 opacity-15" />

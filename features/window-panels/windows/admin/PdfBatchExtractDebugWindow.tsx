@@ -22,6 +22,11 @@ import {
   type BatchExtractDebugSession,
 } from "@/features/pdf-extractor/state/pdfBatchExtractDebugSlice";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { toast } from "@/lib/toast";
+// context-menu-exempt: entity — an in-memory Redux debug session (the raw NDJSON stream of one batch-extract call), not a persisted record
 
 function useCopyText(text: string) {
   const [copied, setCopied] = useState(false);
@@ -369,27 +374,66 @@ function PdfBatchExtractDebugWindowInner({
         </div>
       }
     >
-      {selectedSession ? (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <RequestBlock session={selectedSession} />
-          <ResponseBlock session={selectedSession} />
-          <StreamLog session={selectedSession} />
-        </div>
-      ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Activity className="h-10 w-10 opacity-15" />
-          <div className="space-y-1 text-center">
-            <p className="text-sm font-medium text-foreground">
-              No session selected
-            </p>
-            <p className="text-xs opacity-60">
-              Upload a PDF to capture the live{" "}
-              <code className="font-mono">/utilities/pdf/batch-extract</code>{" "}
-              stream.
-            </p>
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: selectedSession
+            ? selectedSession.lines.map((l) => l.raw).join("\n")
+            : "",
+        }}
+        extraSections={
+          selectedSession
+            ? [
+                {
+                  id: "pdf-batch-extract-debug",
+                  label: "Session",
+                  icon: Copy,
+                  items: [
+                    {
+                      kind: "item",
+                      id: "pbed-copy-session-json",
+                      label: "Copy session as JSON",
+                      icon: Copy,
+                      onSelect: () => {
+                        void copyToClipboard(
+                          JSON.stringify(selectedSession, null, 2),
+                          {
+                            formatJson: false,
+                            onSuccess: () => toast.success("Session copied"),
+                            onError: () => toast.error("Could not copy session"),
+                          },
+                        );
+                      },
+                    },
+                  ],
+                } satisfies ContextMenuExtraSection,
+              ]
+            : []
+        }
+      >
+        {selectedSession ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <RequestBlock session={selectedSession} />
+            <ResponseBlock session={selectedSession} />
+            <StreamLog session={selectedSession} />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+            <Activity className="h-10 w-10 opacity-15" />
+            <div className="space-y-1 text-center">
+              <p className="text-sm font-medium text-foreground">
+                No session selected
+              </p>
+              <p className="text-xs opacity-60">
+                Upload a PDF to capture the live{" "}
+                <code className="font-mono">/utilities/pdf/batch-extract</code>{" "}
+                stream.
+              </p>
+            </div>
+          </div>
+        )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
