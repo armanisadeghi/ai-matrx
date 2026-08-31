@@ -1673,6 +1673,11 @@ export default function CompetitorAutopsyWorkspace({
           </TabsContent>
 
           <TabsContent value="history" className="mt-0">
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              resolveContextOnOpen={resolveRunContext}
+            >
             <MatrxDataTable
               urlState={{ id: "competitor-autopsy-runs" }}
               data={data?.runs ?? []}
@@ -1693,6 +1698,7 @@ export default function CompetitorAutopsyWorkspace({
                   "Every run will remain here with its durable result and cost evidence.",
               }}
             />
+            </NonEditableContextMenu>
           </TabsContent>
         </Tabs>
 
