@@ -101,17 +101,38 @@ function agentDefaultForDirectValue(value: unknown): unknown {
   return value;
 }
 
+/**
+ * What the four sources are CALLED at this call site. The mechanic is fixed —
+ * four sources, closed set, named in the user's words, DSL never on screen —
+ * but the words themselves belong to the domain: a surface binding says
+ * "Surface Value", a job binding says "Offered Value", and a workflow holder
+ * has no "agent" default to speak of. Defaults are the surface wording, so the
+ * four existing call sites read exactly as they always have.
+ */
+export interface SourceLabels {
+  agent_default?: string;
+  surface_value?: string;
+  direct_value?: string;
+  prompt_user?: string;
+}
+
 export function SurfaceVariableBinding({
   target,
   mapping,
   availableSurfaceValues,
   disabled = false,
+  sourceLabels,
+  valueFieldLabel,
   onChange,
 }: {
   target: BindingTarget;
   mapping: ValueMapping | undefined;
   availableSurfaceValues: readonly SurfaceValue[];
   disabled?: boolean;
+  /** Domain wording for the four sources. Omit for the surface wording. */
+  sourceLabels?: SourceLabels;
+  /** Label over the picker ("Surface value" by default). */
+  valueFieldLabel?: string;
   onChange: (next: ValueMapping | null) => void;
 }) {
   const surfaceValueIndex = useMemo(() => {
@@ -208,7 +229,12 @@ export function SurfaceVariableBinding({
 
         {/* 4-button source picker */}
         <div className="px-4">
-          <ModeButtons mode={mode} onChange={setMode} disabled={disabled} />
+          <ModeButtons
+            mode={mode}
+            onChange={setMode}
+            disabled={disabled}
+            labels={sourceLabels}
+          />
         </div>
 
         {/* Detail panel — fixed height, no UI shift between modes */}
@@ -224,6 +250,7 @@ export function SurfaceVariableBinding({
               mapping={mapping}
               availableSurfaceValues={availableSurfaceValues}
               disabled={disabled}
+              fieldLabel={valueFieldLabel}
               onChange={onChange}
             />
           )}
@@ -238,6 +265,7 @@ export function SurfaceVariableBinding({
               }}
               availableSurfaceValues={availableSurfaceValues}
               disabled={disabled}
+              fieldLabel={valueFieldLabel}
               onChange={onChange}
             />
           )}
@@ -278,28 +306,39 @@ const MODES: {
   { id: "prompt_user", label: "Prompt User", icon: MessageCircleQuestion },
 ];
 
+/**
+ * 🚨 THE WORDS ARE THE CONTROL (P3). An icon-only pill is not "four sources
+ * named in the user's words" — rocket / lightning / T / question mark is a DSL
+ * of its own. So the label never truncates away: the buttons wrap onto a second
+ * line before a word is cut, and the icon is the decoration beside the word,
+ * never a replacement for it.
+ */
 function ModeButtons({
   mode,
   onChange,
   disabled,
+  labels,
 }: {
   mode: FourWayMode;
   onChange: (next: FourWayMode) => void;
   disabled: boolean;
+  labels?: SourceLabels;
 }) {
   return (
-    <div className="grid grid-cols-4 gap-1.5">
+    <div className="flex flex-wrap gap-1.5">
       {MODES.map(({ id, label, icon: Icon }) => {
         const active = mode === id;
+        const words = labels?.[id] ?? label;
         return (
           <button
             key={id}
             type="button"
             disabled={disabled}
             onClick={() => onChange(id)}
+            title={words}
             className={cn(
-              "flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-center",
-              "border transition-all min-w-0",
+              "flex min-w-0 flex-1 basis-[8.5rem] items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-center",
+              "border transition-all",
               active
                 ? "border-primary bg-primary/10 text-foreground shadow-sm"
                 : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent/50",
@@ -311,8 +350,8 @@ function ModeButtons({
                 active ? "text-primary" : "text-muted-foreground",
               )}
             />
-            <span className="text-[11px] font-medium leading-tight truncate w-full">
-              {label}
+            <span className="whitespace-nowrap text-[11.5px] font-medium leading-tight">
+              {words}
             </span>
           </button>
         );
@@ -374,11 +413,13 @@ function SurfaceValueDetail({
   mapping,
   availableSurfaceValues,
   disabled,
+  fieldLabel,
   onChange,
 }: {
   mapping: Extract<ValueMapping, { mapType: "surface_value" }>;
   availableSurfaceValues: readonly SurfaceValue[];
   disabled: boolean;
+  fieldLabel?: string;
   onChange: (next: ValueMapping) => void;
 }) {
   const selected = availableSurfaceValues.find(
@@ -389,7 +430,7 @@ function SurfaceValueDetail({
     <div className="space-y-2.5">
       <div className="space-y-1.5">
         <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Surface value
+          {fieldLabel ?? "Surface value"}
         </Label>
         <Select
           value={mapping.target || "__none__"}
@@ -588,12 +629,16 @@ export function SurfaceVariableBindingList({
   value,
   availableSurfaceValues,
   disabled,
+  sourceLabels,
+  valueFieldLabel,
   onChange,
 }: {
   targets: readonly BindingTarget[];
   value: ValueMappingMap;
   availableSurfaceValues: readonly SurfaceValue[];
   disabled?: boolean;
+  sourceLabels?: SourceLabels;
+  valueFieldLabel?: string;
   onChange: (next: ValueMappingMap) => void;
 }) {
   const update = (name: string, mapping: ValueMapping | null) => {
@@ -624,6 +669,8 @@ export function SurfaceVariableBindingList({
           mapping={value[target.name]}
           availableSurfaceValues={availableSurfaceValues}
           disabled={disabled}
+          sourceLabels={sourceLabels}
+          valueFieldLabel={valueFieldLabel}
           onChange={(next) => update(target.name, next)}
         />
       ))}

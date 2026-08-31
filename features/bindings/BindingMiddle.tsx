@@ -61,6 +61,8 @@ import {
 } from "./consumption-writer";
 
 export interface BindingMiddleProps {
+  /** Agent or workflow — only the wording of the "own default" source differs. */
+  holderKind: "agent" | "workflow";
   targets: readonly BindingTarget[];
   contextKeys: ReadonlySet<string>;
   offered: readonly OfferedValue[];
@@ -77,6 +79,7 @@ export interface BindingMiddleProps {
 }
 
 export function BindingMiddle({
+  holderKind,
   targets,
   contextKeys,
   offered,
@@ -95,6 +98,17 @@ export function BindingMiddle({
   // picker's list, not the inventory.
   const selectable = offered.filter((v) => !pinned.has(v.name));
   const selectableSurfaceValues = offeredValuesToSurfaceValues(selectable);
+
+  // THE FOUR SOURCES, IN THIS DOMAIN'S WORDS. A job binding consumes an OFFERED
+  // value, not a surface value, and a workflow holder has no "agent" default —
+  // the mechanic is the shared one, the nouns are ours.
+  const sourceLabels = {
+    agent_default:
+      holderKind === "workflow" ? "Holder Default" : "Agent Default",
+    surface_value: "Offered Value",
+    direct_value: "Direct Value",
+    prompt_user: "Prompt User",
+  };
 
   if (targets.length === 0) return null;
 
@@ -150,6 +164,8 @@ export function BindingMiddle({
               mapping={mappingForRow(sources)}
               availableSurfaceValues={selectableSurfaceValues}
               disabled={disabled}
+              sourceLabels={sourceLabels}
+              valueFieldLabel="Offered value"
               onChange={(next) => {
                 const result = applyRowMapping({
                   map: value,

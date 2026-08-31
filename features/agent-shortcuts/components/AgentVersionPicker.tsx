@@ -66,6 +66,17 @@ interface AgentVersionPickerProps {
    * can show *all* versions, but it will auto-pin to this value first.
    */
   initialCurrentVersionId?: string | null;
+  /**
+   * 🚨 WHAT THIS PICKER IS PINNING, in the reader's words.
+   *
+   * This component was written for shortcuts and says "shortcut" in its copy.
+   * It is now also the version cell of the one binding UI, where a mandate
+   * author was told "pin the shortcut … can't break this shortcut" about a
+   * JOB — copy from another feature leaking onto a flagship screen (found by
+   * Arman, 2026-08-31). The noun is a prop; the default keeps every shortcut
+   * call site reading exactly as it always has.
+   */
+  subjectNoun?: string;
 }
 
 function formatChangedAt(iso: string | null): string {
@@ -90,6 +101,7 @@ export function AgentVersionPicker({
   onUseLatestChange,
   disabled,
   initialCurrentVersionId,
+  subjectNoun = "shortcut",
 }: AgentVersionPickerProps) {
   const dispatch = useAppDispatch();
 
@@ -336,9 +348,10 @@ export function AgentVersionPicker({
             Always use the latest agent version
           </Label>
           <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-            Off (recommended): pin the shortcut to the version shown above, so
-            future edits to the agent can&apos;t break this shortcut. On: the
-            shortcut follows the live agent at runtime.
+            Off (recommended): pin {subjectNoun === "shortcut" ? "the" : "this"}{" "}
+            {subjectNoun} to the version shown above, so future edits to the
+            agent can&apos;t break it. On: {subjectNoun === "shortcut" ? "the" : "this"}{" "}
+            {subjectNoun} follows the live agent at runtime.
           </p>
         </div>
         <Switch

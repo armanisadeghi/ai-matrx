@@ -693,16 +693,29 @@ function BindingDraft({
           found the middle squeezed to ~90px. `@container` measures the space
           this actually has, so every host gets the layout it can carry. */}
       <div className="@container">
-        <div className="grid gap-3 @4xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,260px)]">
-        <OfferedInventoryColumn
-          values={offeredValues}
-          consumedBy={consumedBy}
-          pinnedContext={data.pinnedContext}
-          sourceLine={offerSourceLine}
-          status={offerPending ? "loading" : "ready"}
-        />
+        {/* 🚨 THE MIDDLE IS THE STAR (Arman, 2026-08-31, on the first ship:
+            "the match is a ~180px sliver while both inventory columns sit wide
+            and mostly empty"). The grid template is the root cause and the only
+            place it is fixed:
+              · the middle has a FLOOR of 32rem and takes every spare pixel, so
+                a row card is always comfortable and nothing in it truncates;
+              · the rails are `minmax(0, 15rem)` — they are reference, so they
+                compress first and disappear last;
+              · three columns only once the container can carry all of it
+                (@5xl); below that the middle stacks FIRST and the rails follow,
+                because the match is what you came here to do. */}
+        <div className="grid gap-3 @5xl:grid-cols-[minmax(0,15rem)_minmax(32rem,1fr)_minmax(0,15rem)]">
+        <div className="order-2 min-w-0 @5xl:order-none">
+          <OfferedInventoryColumn
+            values={offeredValues}
+            consumedBy={consumedBy}
+            pinnedContext={data.pinnedContext}
+            sourceLine={offerSourceLine}
+            status={offerPending ? "loading" : "ready"}
+          />
+        </div>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+        <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
           <header className="shrink-0 border-b border-border px-3 py-2">
             <div className="flex items-baseline gap-2">
               <h3 className="text-[12.5px] font-semibold text-foreground">
@@ -729,6 +742,7 @@ function BindingDraft({
               targetCount={holderInputs.targets.length}
             >
               <BindingMiddle
+                holderKind={holder.kind}
                 targets={holderInputs.targets}
                 contextKeys={holderInputs.contextKeys}
                 offered={offeredValues}
@@ -751,11 +765,13 @@ function BindingDraft({
           </div>
         </section>
 
-          <HolderInputsColumn
-            inputs={holderInputs}
-            fedCount={fedCount}
-            holderKind={holder.kind}
-          />
+          <div className="order-3 min-w-0 @5xl:order-none">
+            <HolderInputsColumn
+              inputs={holderInputs}
+              fedCount={fedCount}
+              holderKind={holder.kind}
+            />
+          </div>
         </div>
       </div>
 

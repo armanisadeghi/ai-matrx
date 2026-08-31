@@ -124,6 +124,11 @@ export function ScopeHolderBar({
               onRungChange(scopeToRung(scope), scopeId ?? null)
             }
           />
+          {/* THE RUNG EXPLAINS ITSELF IN ITS OWN CELL — who it covers and what
+              it overrides — instead of a lone select in dead space. */}
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {rungWords(rung).covers}
+          </p>
           {!allowGlobal ? (
             <p className="text-[10.5px] leading-snug text-muted-foreground/80">
               The system rung — the answer everybody gets — is a super-admin
@@ -193,12 +198,18 @@ export function ScopeHolderBar({
             />
           ) : holder.agentId ? (
             <div className="space-y-1.5">
-              <EntityRef
-                token="agent"
-                id={holder.agentId}
-                className="text-[12.5px] font-medium"
-              />
+              {/* The holder's IDENTITY gets a full line of its own. It used to
+                  sit in a flex row beside the version panel and rendered as
+                  "Agent G…" / "Specializes i…" — a name nobody could read. */}
+              <div className="min-w-0 rounded-md border border-border px-2 py-1.5">
+                <EntityRef
+                  token="agent"
+                  id={holder.agentId}
+                  className="block w-full text-[12.5px] font-medium"
+                />
+              </div>
               <AgentVersionPicker
+                subjectNoun="job"
                 agentId={holder.agentId}
                 agentVersionId={holder.agentVersionId}
                 useLatest={holder.useLatest}
