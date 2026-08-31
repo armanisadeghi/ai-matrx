@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Database, FileText, Layers3 } from "lucide-react";
+import { Check, Copy, Database, ExternalLink, FileText, Layers3 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   allRagAiCopyOptions,
   buildRagAiPayload,
@@ -133,6 +134,31 @@ function RagAiCopyWindowInner({
       position="center"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
+      {/*
+       * Page-local export config for ONE already-selected retrieval result —
+       * no list of rows to menu, so the growth this window can offer is a
+       * door back to the source document it has no other link to.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="rag-search"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: preview }}
+        extraSections={[
+          {
+            id: "rag-ai-copy-source",
+            label: bundle.source.name,
+            items: [
+              {
+                kind: "link",
+                id: "rag-ai-copy-open-source",
+                label: "Open source",
+                icon: ExternalLink,
+                href: bundle.source.href,
+              },
+            ],
+          },
+        ]}
+      >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-muted/20 px-3 py-2">
           <span className="mr-1 min-w-0 flex-1 truncate text-xs text-muted-foreground">
@@ -356,6 +382,7 @@ function RagAiCopyWindowInner({
           </Button>
         </div>
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
