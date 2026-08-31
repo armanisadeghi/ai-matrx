@@ -6,6 +6,8 @@
  *   - `invalidateAgentCache` thunk (explicit user action with confirmation)
  */
 
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
   selectAccessToken,
@@ -36,7 +38,34 @@ export function resolveAgentCacheBustBackend(
   const fingerprintId = selectFingerprintId(state);
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
-  } else if (fingerprintId) {
+    // The server's AuthMiddleware refuses an authenticated request that names
+    // no organization (400 `organization_required`, 2026-08-30 admission
+    // gate) before it routes, and never picks one for the caller. This lane
+    // hand-built its headers and had never attached `X-Organization-Id`, so
+    // every cache bust a signed-in person triggered died at the door. The
+    // organization is transport identity, exactly like the bearer token — it
+    // is bound HERE, the one place this lane builds headers.
+    const organizationId = selectOrganizationId(state);
+    if (!organizationId) {
+      // Sending it anyway is a guaranteed 400, and inventing an organization
+      // is how work lands in the wrong tenant. Refuse, and say why — this
+      // lane is partly fire-and-forget, so silence would look like success.
+      console.warn(
+        "[agent-cache-bust] Skipped: signed in but no active organization is " +
+          "selected, and the server requires one on every authenticated " +
+          "request. Choose an organization, then save or bust the cache again.",
+      );
+      return null;
+    }
+    return {
+      baseUrl: trimmedBase,
+      headers: applyOrganizationContextHeader(headers, organizationId),
+    };
+  }
+
+  // The fingerprint-guest lane is admitted without an organization: a guest
+  // has no membership to name, and the server exempts that lane by design.
+  if (fingerprintId) {
     headers["X-Fingerprint-ID"] = fingerprintId;
   }
 
