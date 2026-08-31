@@ -41,7 +41,13 @@ jest.mock("@/utils/supabase/client", () => ({
         return builder;
       },
     }),
-    auth: { getUser: () => Promise.resolve({ data: { user: null } }) },
+    auth: {
+      getUser: () =>
+        Promise.resolve({
+          data: { user: { id: "dead-mandate-test-user" } },
+          error: null,
+        }),
+    },
   }),
 }));
 

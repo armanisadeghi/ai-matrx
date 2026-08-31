@@ -54,6 +54,7 @@ const MANDATE_ROW: Row = {
 
 let scenario: Scenario = { userId: null, orgBindings: [], userBinding: null };
 let mandateRow: Row | null = MANDATE_ROW;
+let definitionReads = 0;
 
 interface Chain {
   select: (columns?: string) => Chain;
@@ -65,6 +66,7 @@ interface Chain {
 }
 
 function makeChain(table: string): Chain {
+  if (table === "definition") definitionReads += 1;
   const chain: Chain = {
     select: () => chain,
     eq: () => chain,
@@ -85,6 +87,7 @@ const mockSupabaseClient = {
   auth: {
     getUser: async () => ({
       data: { user: scenario.userId ? { id: scenario.userId } : null },
+      error: null,
     }),
   },
 };
@@ -104,6 +107,18 @@ beforeEach(() => {
     userBinding: null,
   };
   invalidateMandateCache();
+  definitionReads = 0;
+});
+
+describe("resolveMandate — authenticated table boundary", () => {
+  it("refuses before reading mandate.definition when the session is anonymous", async () => {
+    scenario.userId = null;
+
+    await expect(resolveMandate("education.classes_guidance")).rejects.toThrow(
+      "mandate resolution requires an authenticated session",
+    );
+    expect(definitionReads).toBe(0);
+  });
 });
 
 describe("resolveMandate — deliberately optional keys", () => {

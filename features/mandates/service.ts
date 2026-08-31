@@ -127,6 +127,10 @@ export interface ResolvedMandate {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { at: number; value: ResolvedMandate }>();
 
+function mandateCacheKey(userId: string, mandateKey: string): string {
+  return `${userId}:${mandateKey}`;
+}
+
 /** Subscribers re-resolve when a mandate's cached resolution is invalidated
  * (binding saved/removed) — how a mounted picker/consumer refreshes without
  * prop-drilling a reload. `mandateKey === undefined` means "all mandates". */
@@ -143,7 +147,9 @@ export function onMandateCacheInvalidated(
 
 export function invalidateMandateCache(mandateKey?: string): void {
   if (mandateKey) {
-    cache.delete(mandateKey);
+    for (const key of cache.keys()) {
+      if (key.endsWith(`:${mandateKey}`)) cache.delete(key);
+    }
     pinCache.delete(mandateKey);
   } else {
     cache.clear();
@@ -202,10 +208,20 @@ export async function resolveMandate(
   mandateKey: string,
   options: ResolveMandateOptions = {},
 ): Promise<ResolvedMandate | null> {
-  const cached = cache.get(mandateKey);
+  const supabase = createClient();
+  // `mandate.definition` is authenticated-only. Establish identity before a
+  // protected read or cache lookup so hydration/session drift cannot emit an
+  // anonymous PostgREST request or reuse another caller's resolved binding.
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  const userId = auth.user?.id;
+  if (authError || !userId) {
+    throw new Error("mandate resolution requires an authenticated session");
+  }
+
+  const cacheKey = mandateCacheKey(userId, mandateKey);
+  const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
-  const supabase = createClient();
   // `select("*")` on purpose: the wave-1 columns (provision_key, pins,
   // pinned_context) are live but ahead of the generated Row type — they ride
   // the full row and are narrowed at ingress by `parseMandateWave1`.
@@ -238,9 +254,6 @@ export async function resolveMandate(
   let provenance: ResolvedMandate["provenance"] = "system";
   let holderType: ResolvedMandate["holderType"] = "agent";
   let configOverrides: Partial<FeLlmParams> | null = null;
-
-  const { data: auth } = await supabase.auth.getUser();
-  const userId = auth.user?.id;
 
   // THE ORG LAYER (2026-08-26 — closed a doctrine fork). The server resolves
   // system → org → user; this resolver silently skipped org, so an org
@@ -354,7 +367,7 @@ export async function resolveMandate(
     pinnedContext: wave1.pinnedContext,
     presentation,
   };
-  cache.set(mandateKey, { at: Date.now(), value });
+  cache.set(cacheKey, { at: Date.now(), value });
   return value;
 }
 
