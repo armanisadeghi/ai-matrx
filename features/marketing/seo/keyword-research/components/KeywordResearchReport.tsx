@@ -24,12 +24,20 @@
 
 import Link from "next/link";
 import { ArrowUpRight, SearchCheck } from "lucide-react";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import KeywordClassificationBatchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordClassificationBatchBlock";
 import KeywordResearchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordResearchBlock";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import {
   KeywordCompetitionBadge,
   KeywordIntentChip,
@@ -80,6 +88,19 @@ export interface KeywordResearchReportProps {
   sections?: readonly KeywordResearchReportSection[];
   /** Opens a phrase in the host's canonical keyword dossier when available. */
   onKeywordNavigate?: (phrase: string) => void;
+  /**
+   * The site this report's keywords are (or would be) tracked against.
+   * Keyword facts (class/service/dimension/level/why-score/pages) are
+   * site-scoped, and this report's three callers — the anonymous share link,
+   * the grantee permalink, the owner's embedded feed — do not currently
+   * thread one through, so the market table's right-click menu shows every
+   * item but leaves them disabled until a caller supplies it (THE
+   * CONSISTENCY STEP, never a fake enabled control).
+   */
+  siteId?: string | null;
+  siteName?: string | null;
+  brandId?: string | null;
+  organizationId?: string | null;
 }
 
 export type KeywordResearchReportSection =
@@ -219,6 +240,10 @@ export default function KeywordResearchReport({
   actions,
   sections,
   onKeywordNavigate,
+  siteId,
+  siteName,
+  brandId,
+  organizationId,
 }: KeywordResearchReportProps) {
   const researchData = buildResearchBlockData(artifact);
   const classificationData = buildClassificationBlockData(keywords);
@@ -226,6 +251,35 @@ export default function KeywordResearchReport({
   const summary = summarizeKeywordReport(artifact, metricRows);
   const measuredRows = metricRows.filter((row) => row.searchVolume !== null);
   const marketColumns = marketDataColumns(onKeywordNavigate);
+
+  // THE CANONICAL v3 KEYWORD MENU (adopted, not reinvented — SECTIONS.md).
+  // `siteId` is optional here because none of this report's three callers
+  // (anon share, grantee permalink, owner embed) currently track one; the
+  // menu stays visible with every item, disabled until one is supplied.
+  const keywordSurfaces = useKeywordAssignSurfaces({ siteId: siteId ?? "" });
+  const clickedKeywordRow = useRef<KeywordReportMetricRow | null>(null);
+  const noSiteReason = siteId
+    ? undefined
+    : unavailableHere("the Keyword Research workbench");
+  const keywordSection = useKeywordMenuSection({
+    siteId: siteId ?? "",
+    siteName,
+    brandId,
+    organizationId,
+    surfaces: keywordSurfaces,
+    getRow: () => {
+      const row = clickedKeywordRow.current;
+      return row ? { phrase: row.phrase, keywordId: row.id } : null;
+    },
+    unavailable: {
+      "kw-set-class": noSiteReason,
+      "kw-set-service": noSiteReason,
+      "kw-set-dimension": noSiteReason,
+      "kw-pin-level": noSiteReason,
+      "kw-why": noSiteReason,
+      "kw-pages": noSiteReason,
+    },
+  });
   const visibleSections = new Set(
     sections ??
       (variant === "page"
@@ -258,23 +312,46 @@ export default function KeywordResearchReport({
               the canonical table, not a hand-rolled <table> that looked like
               one. The report still decides which columns SHOW; it does not get
               to decide whether they work. */}
-          <MatrxDataTable<KeywordReportMetricRow>
-            data={measuredRows}
-            columns={marketColumns}
-            getRowId={(row) => row.id}
-            pageSize={25}
-            zebra
-            className="border-0"
-            copy={{
-              label: "Keyword",
-              listLabel: "Market data",
-              location: "Keyword research report",
-              rowKind: "keyword_market_row",
-              listKind: "keyword_market_list",
-              humanRow: (row) =>
-                `${row.phrase} — ${formatSearchVolume(row.searchVolume)} monthly searches, CPC ${formatCpc(row.cpc)}`,
+          {keywordSurfaces.node}
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = (id && measuredRows.find((r) => r.id === id)) || null;
+              clickedKeywordRow.current = row;
+              if (!row) return null;
+              return {
+                content: `${row.phrase} — ${formatSearchVolume(row.searchVolume)} monthly searches, CPC ${formatCpc(row.cpc)}`,
+                [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+                  phrase: row.phrase,
+                  keywordId: row.id,
+                }),
+              };
             }}
-          />
+            extraSections={[keywordSection]}
+          >
+            <MatrxDataTable<KeywordReportMetricRow>
+              data={measuredRows}
+              columns={marketColumns}
+              getRowId={(row) => row.id}
+              pageSize={25}
+              zebra
+              className="border-0"
+              copy={{
+                label: "Keyword",
+                listLabel: "Market data",
+                location: "Keyword research report",
+                rowKind: "keyword_market_row",
+                listKind: "keyword_market_list",
+                humanRow: (row) =>
+                  `${row.phrase} — ${formatSearchVolume(row.searchVolume)} monthly searches, CPC ${formatCpc(row.cpc)}`,
+              }}
+            />
+          </NonEditableContextMenu>
         </section>
       ) : null}
 
