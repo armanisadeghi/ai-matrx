@@ -63,7 +63,10 @@ facts and exceptions. Never launch one schedule per surface.
    Work Loop lease. Settlement, retry, defer, lease loss, or task interruption
    releases the lane immediately. A pending, deferred, failed, succeeded, or
    unleased item can never retain it. Reconcile durable lease state before each
-   grant; never trust a stale task message as ownership.
+   grant; never trust a stale task message as ownership. Persist the tab ids and
+   URLs created under each grant. On interruption or failed cleanup, the
+   coordinator closes those exact campaign-created tabs before the next grant;
+   it never closes tabs that predated the campaign or belong to another task.
 4. Heartbeat active claims before half the lease elapses. Ownership loss stops
    writes immediately.
 5. Settle each worker through `complete`, `retry`, or `defer`, then refill the

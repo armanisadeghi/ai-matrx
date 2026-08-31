@@ -48,7 +48,10 @@ On a shared Browser host, Browser ownership is valid only while the same holder
 owns an `in_progress` Work Loop lease. Settling, releasing, losing, or
 interrupting that claim releases the Browser lane immediately; a pending,
 deferred, failed, or succeeded item can never reserve it. The coordinator must
-reconcile durable claim state before every Browser handoff.
+reconcile durable claim state before every Browser handoff. Record tab ids/URLs
+created under each lease. If a worker is interrupted or cannot clean up, the
+coordinator closes those recorded campaign tabs before the next grant, without
+touching tabs that predated the campaign.
 
 **There are no routine blockers.** Missing login state, stale tokens, broken
 preview, missing fixtures, failing tests, server/tool failures, deployment lag,
