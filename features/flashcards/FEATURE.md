@@ -162,6 +162,10 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-30 — FastFire's React 19 audit is clean: card-local help now resets
+  through a keyed card boundary, the deadline loop updates committed refs in an
+  effect rather than during render, and voice-test hydration uses `useIsMounted`.
+
 - 2026-08-30 — FastFire surface-check candidate repairs: `/education/fastfire`
   now uses the shared `EducationToolHeader`, keeps one bounded body scroll owner
   below the glass header, replaces generic setup/chunk spinners with contextual
