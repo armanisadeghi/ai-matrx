@@ -4,6 +4,8 @@ import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { QuickMessageTemplateSaveCore } from "@/features/message-templates/quick-save/QuickMessageTemplateSaveCore";
 import type { MessageRole } from "@/features/message-templates/types/message-templates-db";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+// context-menu-exempt: entity — a save-as-template draft; the template does not exist as a record until Save commits it, so there is nothing yet to attach
 
 export interface QuickMessageTemplateSaveWindowProps {
   isOpen: boolean;
@@ -44,17 +46,23 @@ export default function QuickMessageTemplateSaveWindow({
       onClose={onClose}
       footerRight={<div ref={setFooterHost} className="flex items-center" />}
     >
-      <div className="h-full min-h-0 p-3">
-        <QuickMessageTemplateSaveCore
-          initialContent={
-            typeof initialContent === "string" ? initialContent : ""
-          }
-          defaultName={defaultName}
-          defaultRole={defaultRole}
-          onCancel={onClose}
-          footerHost={footerHost}
-        />
-      </div>
+      <NonEditableContextMenu
+        sourceFeature="messages"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: initialContent ?? "" }}
+      >
+        <div className="h-full min-h-0 p-3">
+          <QuickMessageTemplateSaveCore
+            initialContent={
+              typeof initialContent === "string" ? initialContent : ""
+            }
+            defaultName={defaultName}
+            defaultRole={defaultRole}
+            onCancel={onClose}
+            footerHost={footerHost}
+          />
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
