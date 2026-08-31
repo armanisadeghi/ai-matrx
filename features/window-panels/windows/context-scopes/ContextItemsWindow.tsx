@@ -37,6 +37,7 @@ import { Input } from "@ai-matrx/design-system";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  deleteContextItem,
   listScopeTypeItems,
   selectItemsByType,
   selectItemsLoadedForType,
@@ -46,11 +47,20 @@ import {
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import { ContextItemSettingsForm } from "@/features/scope-system/components/forms/ContextItemSettingsForm";
 import { ContextItemAddForm } from "@/features/scope-system/components/ContextItemAddForm";
+import {
+  contextItemEntityRef,
+  contextItemMenuContent,
+  useContextItemMenuSection,
+  type ContextItemMenuRow,
+} from "@/features/scope-system/components/context-item-actions";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { makeSelectScopeType } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -166,6 +176,7 @@ function SidebarRow({
       tabIndex={tabIndex}
       aria-current={isActive ? "page" : undefined}
       data-context-item-sidebar-row
+      data-context-item-id={item.id}
       className={cn(
         "flex w-full min-w-0 items-start gap-1.5 border-l-2 px-2 py-1.5 text-left transition-colors",
         isActive
@@ -518,8 +529,38 @@ function ContextItemsWindowInner({
 
   const tabs = useContextItemTabs(initialItemId, openNewOnMount);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const [clickedItem, setClickedItem] = useState<ContextItem | null>(null);
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
+
+  const handleDeleteItem = useCallback(
+    async (row: ContextItemMenuRow) => {
+      const ok = await confirm({
+        title: `Delete "${row.display_name}"?`,
+        description:
+          "This removes this context item from every scope of this type. Existing values stay in history but won't display anywhere.",
+        confirmLabel: "Delete",
+        variant: "destructive",
+      });
+      if (!ok) return;
+      try {
+        await dispatch(deleteContextItem(row.id)).unwrap();
+        tabs.closeTab(row.id);
+        toast.success(`Deleted "${row.display_name}"`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to delete");
+      }
+    },
+    [dispatch, tabs],
+  );
+
+  const contextItemSection = useContextItemMenuSection({
+    getRow: () => clickedItem,
+    actions: {
+      openItem: (row) => tabs.openTab(row.id),
+      deleteItem: handleDeleteItem,
+    },
+  });
 
   const handleCreated = useCallback(
     (tabId: TabId, item: ContextItem) => {
@@ -555,6 +596,23 @@ function ContextItemsWindowInner({
   );
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const rowEl = target?.closest<HTMLElement>("[data-context-item-id]");
+        const id = rowEl?.getAttribute("data-context-item-id") ?? null;
+        const row = id ? (itemById.get(id) ?? null) : null;
+        setClickedItem(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: contextItemEntityRef(row),
+          content: contextItemMenuContent(row),
+        };
+      }}
+      extraSections={[contextItemSection]}
+    >
     <WindowPanel
       id="context-items-window"
       overlayId={OVERLAY_ID}
@@ -627,6 +685,7 @@ function ContextItemsWindowInner({
         onSave={saveOrder}
       />
     </WindowPanel>
+    </NonEditableContextMenu>
   );
 }
 
