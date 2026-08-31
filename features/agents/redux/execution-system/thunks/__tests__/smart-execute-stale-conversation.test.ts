@@ -1,6 +1,9 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
-import { smartExecute } from "../smart-execute.thunk";
+import {
+  hasConversationAtExecutionBoundary,
+  smartExecute,
+} from "../smart-execute.thunk";
 import { claimSubmit, releaseSubmitClaim } from "../submit-claims";
 
 jest.mock("@/lib/toast", () => ({
@@ -49,6 +52,25 @@ describe("smartExecute stale conversation admission", () => {
 
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it("rejects a conversation removed during asynchronous preflight at final admission", () => {
+    const conversationId = "removed-during-preflight";
+    const beforePreflight = {
+      conversations: {
+        byConversationId: { [conversationId]: { organizationId: "org-1" } },
+      },
+    } as unknown as RootState;
+    const afterPreflight = {
+      conversations: { byConversationId: {} },
+    } as unknown as RootState;
+
+    expect(
+      hasConversationAtExecutionBoundary(beforePreflight, conversationId),
+    ).toBe(true);
+    expect(
+      hasConversationAtExecutionBoundary(afterPreflight, conversationId),
+    ).toBe(false);
   });
 
   it("keeps missing-organization validation visible without reporting an incident", async () => {

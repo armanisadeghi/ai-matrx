@@ -54,6 +54,13 @@ interface SmartExecuteArgs {
   whileRunning?: "queue" | "steer";
 }
 
+export function hasConversationAtExecutionBoundary(
+  state: RootState,
+  conversationId: string,
+): boolean {
+  return state.conversations.byConversationId[conversationId] !== undefined;
+}
+
 /**
  * The single submit entrypoint. Handles two flavours:
  *
@@ -106,7 +113,7 @@ export const smartExecute = createAsyncThunk<
       // That is a cancelled UI intent, not an organization failure and not a
       // product error: drop it before the organization guard emits a toast or
       // console error. The finally block still releases the admission claim.
-      if (!state.conversations.byConversationId[conversationId]) return;
+      if (!hasConversationAtExecutionBoundary(state, conversationId)) return;
 
       // Organization is a hard execution boundary. A personal organization is
       // still not an implicit substitute for an empty picker — but "no
@@ -303,6 +310,15 @@ export const smartExecute = createAsyncThunk<
         if (scopeGate.blocked) return;
         scopeIdsOverride = scopeGate.scopeIdsOverride;
       }
+
+      // Every gate above may suspend while the person navigates or starts a
+      // fresh chat. Re-read at the final admission boundary: dispatching the
+      // child against the earlier snapshot would manufacture a paired
+      // execute/rejected + smartExecute/rejected incident for expected stale
+      // UI intent, and markInputSubmitted would mutate state for a conversation
+      // that no longer exists.
+      state = getState();
+      if (!hasConversationAtExecutionBoundary(state, conversationId)) return;
 
       const autoClear = selectAutoClearConversation(conversationId)(state);
 
