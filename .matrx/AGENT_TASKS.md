@@ -16,7 +16,42 @@ _(none)_
 
 ## Blocked
 
-_(none)_
+### TASK-B4-1: Retire the two legacy shortcut editors (census #45/#46) — NOT a repoint
+- **Status:** blocked (2026-08-31) — needs a build lane of its own, and Arman's ruling on the capability list
+- **Created:** 2026-08-31 by the one-binding-UI step-7 lane
+- **Source:** `PLAN-ONE-BINDING-UI.md` §4 asked step 7 to "repoint every consumer, DELETE the files, no shims."
+  A census of the consumers before touching anything says that instruction cannot be carried out as written.
+
+**Why it is blocked — three findings, each verified**
+
+1. **`features/agents/components/shortcuts/AgentShortcutEditor.tsx` is the ONLY live editor
+   on the admin per-agent shortcuts tree.** `AgentShortcutsPanel.tsx:147/:288/:669` builds its
+   edit + New hrefs from a `basePath` prop; under `/administration/agents/system-agents/agents`
+   those resolve to `[shortcutId]/page.tsx` and `new/page.tsx`, both of which render this file.
+   **There is no `ShortcutEditorNext` route under the admin tree at all.** Deleting it breaks
+   the live admin "new/edit shortcut for a system agent" flow outright.
+2. **`features/agent-shortcuts/components/ShortcutForm.tsx` is the only editor for three
+   route families that are not per-agent at all** — `/agents/shortcuts*`,
+   `/organizations/[orgId]/shortcuts*`, `/administration/agents/system-agents/shortcuts*`.
+   `ShortcutEditorNext` takes an `AgentDefinition` prop those routes have no way to supply,
+   and hard-codes `useAgentShortcutCrud({ scope: "user" })` at `:226`, so it cannot create or
+   edit an org-scoped or global shortcut even given one.
+3. **~14 capabilities exist only in the two legacy files** and are all marked DEFERRED in
+   `common-docs/.../MANAGEMENT-HARVEST.md` §6b/§6c — the scope picker with entity pickers,
+   holder rebinding from inside the form, scope→variable and scope→context-policy mapping
+   editors, the two default-value editors, the enabled-features picker, global-promotion,
+   in-form Duplicate, inline/dialog/drawer tri-mode, and rich Postgres error surfacing.
+   `PHASE8-CROSSCHECK.md:88-89` records both as **DEFERRED-R14**, i.e. deferred by ruling.
+
+**What "done" would take** (a lane, not a step): make `ShortcutEditorNext` scope-capable and
+holder-changeable; give it an admin-tree route; port or explicitly retire each DEFERRED
+capability with Arman's ruling on the ones nobody uses; repoint all 11 route files; then delete.
+Re-run `features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx` after any
+repoint — it asserts the exact hrefs that currently point at the legacy admin route.
+
+**What was NOT done, and why that is the right call:** deleting the files on schedule would
+have removed the only working editor from two live surfaces. A half-done deletion is the
+failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 

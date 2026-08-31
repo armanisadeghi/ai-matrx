@@ -32,6 +32,9 @@ Arman's sentence is the spine:
 | `WorkflowHolderPicker.tsx` | Lifted from the wizard; now retries instead of dead-ending on a read failure. |
 | `described-offer.ts` | What a job offers when no code declared it (D18.1). ONE derivation, shared by both modes. |
 | `words.ts` | The four sources' names and the fill-down limits sentence — one vocabulary, so no two controls name one thing differently. |
+| `BindingOptionsDrawer.tsx` | The folded **OPTIONS** stack (P16). See below. |
+| `treatment-shape.ts` | 🚨 **THE ONE CODEC** for `mandate.treatment.config` — a job's presentation. |
+| `treatment-writer.ts` | 🚨 **THE ONE WRITER** for that row, as `consumption-writer` is for the map. |
 | `batch/` | **Batch mode** — the same middle transposed. See below. |
 
 ## Batch mode — the same screen, many places
@@ -62,8 +65,13 @@ Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
    re-bound by name; it is kept or dropped, because re-binding it would join one
    value to itself.
 3. **Apply is refused in words, with the count, ON THE PAGE** — *"1 required
-   input is still unmapped. Fix the red cells first."* The shortcut grid answers
-   the same refusal with a toast; that is its defect, not a pattern to copy.
+   input is still unmapped. Fix the red cells first."* The shortcut grid used to
+   answer the same refusal with a `toast.error` fired from inside its click
+   handler; that defect is fixed at its class rather than merely avoided here.
+   `ApplyRefusal` in `agent-shortcuts/.../BatchGridParts` is now the ONE
+   renderer both grids use, and in both the refusal is a DERIVED fact that
+   disables Apply with its reason already visible — never a live button that
+   scolds you afterwards.
 4. **N places are N ordinary binding writes.** There is no batch endpoint and no
    second write path: each place goes through `consumption-writer` →
    `buildBindingSavePayload` → `putMandateBinding`, and each keeps its own stored
@@ -143,6 +151,64 @@ refuses to store it (down to `false`, loudly), and `resolve_mandate` refuses to 
 it against the map that actually won — because a later layer's map wins outright, so a
 promise can go stale without anyone touching the binding that carries it.
 
+## OPTIONS — the folded drawer (P16)
+
+Last on the page, folded shut, and its trigger says how many options this job
+has actually answered, so nobody opens it out of curiosity. Four sections, every
+one of them a component the Gen-A shortcut editor renders, at a new call site:
+
+| Section | Composed of | Stored at |
+|---|---|---|
+| **Display** | `WidgetPicker` + `SettingsSection` (`omitAutoRun`) | `display_mode`, `allow_chat`, `variables.*`, `reveal.*`, `gate.*` |
+| **Visibility** | `CategoryPicker` | `menu.category_id` |
+| **Write access** | `WritePolicyEditor` | `write_policies` |
+| **Advanced** | `AdvancedSection` (`omit: ["description"]`) | `seeds.*`, `menu.sort_order`, `icon_name`, `keyboard_shortcut`, `json_extraction`, and the row's `is_enabled` |
+
+**Every reveal is caused.** Write access is ABSENT unless this job names a
+surface whose manifest declares write targets — a panel that can only say
+"nothing here" is a reveal nobody asked for. The gate cascade appears only while
+the binding's auto-run fact makes it meaningful. Advanced's raw-JSON fields
+parse on every keystroke and never propagate invalid JSON upward.
+
+**Three things are deliberately NOT in the drawer**, each because it already has
+one home: *Run instantly* (the `AutoRunBar` — on a job it is a fact about the
+mapping, not a preference, which is what `omitAutoRun` exists for), the
+*mapping* (the middle), and the job's own *description* (the job, not its
+presentation — hence the `omit`).
+
+### Where these options live, and who they cover
+
+`mandate.treatment` — tier `widget`, `is_default`, one row per job, the exact
+natural key `mandate.vw_shortcut` joins on. This is not a new home: the 208
+migrated shortcuts have served their presentation out of this table since the
+cutover (`SHORTCUT_WRITE_POLICIES_ON_TREATMENT`), and `treatment-shape.ts` is a
+client codec for the SAME `schema_version: 1` object that
+`mandate.shortcut_treatment_config` builds — nine jest cases pin every key and
+default against the view's own SQL, so a drift is a failing test, not a fork.
+
+🚨 **A treatment has no per-person rung, and the drawer says so.** The holder
+above can differ for you, your organization and everyone; how the job PRESENTS
+itself is one answer for the job's organization. A drawer that let the rung
+control above be assumed to apply would be the screen lying.
+
+### The inversion this closed
+
+A shortcut has painted itself out of that row since the cutover —
+`launch-agent-execution.thunk.ts`'s shortcut branch reads `shortcut.displayMode`,
+`.allowChat`, `.writePolicies`. A JOB stored the identical row and **nothing
+read it**, so every mandate launched on whatever literal its call site happened
+to type. Both resolvers (`service.ts` and its SSR twin `service.server.ts`) now
+carry `ResolvedMandate.presentation`, and the thunk honours it on the mandate
+branch where the caller said nothing — caller first, then the job, then nothing,
+with `??` so a stored `false` is still an answer. Without that half the drawer
+would have been a dead control.
+
+**Named follow-up, not a silent gap:** `features/assists/runtime/useAssistRunner.ts`
+passes an explicit `config: { displayMode: "direct", … }` on every assist-run of
+a mandate. Explicit callers win by design, so that path still paints itself and
+does not read the job's answer. Whether an assist should defer to the job is a
+product question, not a bug to fix quietly.
+
 ## The example (D2)
 
 An offered value carries one STATIC `example` — declared with the provision, or typed
@@ -153,6 +219,22 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-08-31 — **Step 7 — the OPTIONS drawer, and the reader that makes it mean
+  something.** `BindingOptionsDrawer` is `WidgetPicker` + `SettingsSection` +
+  `CategoryPicker` + `WritePolicyEditor` + `AdvancedSection` at a fifth call
+  site, over `mandate.treatment.config` — the live storage, with one client
+  codec (`treatment-shape.ts`, 9 jest cases against the view's own SQL) and one
+  writer (`treatment-writer.ts`). Three shared components gained a prop rather
+  than a fork: `SettingsSection.omitAutoRun` (the bar owns that promise),
+  `AdvancedSection.omit`/words (a control whose value goes nowhere is hidden,
+  never shown dead), and `BatchGridParts.ApplyRefusal`. **The inversion closed
+  on the way through:** a job's stored presentation had no reader anywhere, so
+  both resolvers now carry it and `launchAgentExecution` honours it where the
+  caller said nothing. **B3's flagged sibling fixed at its class:** the shortcut
+  batch grid answered its Apply refusal with a `toast.error` thrown from inside
+  the click handler; it is now a derived fact that disables the button with its
+  sentence beside it, through the renderer both grids share. **Not shipped:**
+  the two legacy shortcut editors survive — see the note below.
 - 2026-08-31 — **Steps 4–5, and the seam closed.** The AI map tab (P11/P12) is the
   shared `BindingSuggestionsTab` at a fifth call site, taught this domain's nouns and
   D18.2 combinations (the ONE mapper agent gained a `combination_rule` variable and an
