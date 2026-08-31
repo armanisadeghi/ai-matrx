@@ -1,8 +1,9 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: () => <div data-testid="inline-media" />,
@@ -31,13 +32,15 @@ describe("ResultMedia open action", () => {
     act(() => {
       root.render(
         <ResultMedia
-          refValue={{ file_id: FILE_ID, mime_type: "image/png" }}
+          mediaRef={{ file_id: FILE_ID, mime_type: "image/png" }}
           alt="Captured page"
         />,
       );
     });
 
-    const open = container.querySelector<HTMLAnchorElement>('a[aria-label="View in Files"]');
+    const open = container.querySelector<HTMLAnchorElement>(
+      'a[aria-label="View in Files"]',
+    );
     expect(open?.getAttribute("href")).toBe(`/files/f/${FILE_ID}`);
     expect(open?.getAttribute("target")).toBe("_blank");
   });
@@ -46,7 +49,10 @@ describe("ResultMedia open action", () => {
     act(() => {
       root.render(
         <ResultMedia
-          refValue={{ url: "https://example.com/capture.png", mime_type: "image/png" }}
+          mediaRef={{
+            url: "https://example.com/capture.png",
+            mime_type: "image/png",
+          }}
         />,
       );
     });

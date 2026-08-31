@@ -13,10 +13,26 @@ import type { MediaRef } from "@/features/files/types";
 import { cn } from "@/lib/utils";
 
 export interface ResultMediaProps {
-    refValue: MediaRef;
+    mediaRef: MediaRef;
     alt?: string;
     density?: "inline" | "full";
     className?: string;
+}
+
+interface InlineResultMediaProps {
+    source: MediaRef;
+    as: "img" | "video" | "audio";
+    size: "fill" | "xl";
+    alt: string;
+}
+
+/**
+ * Isolate the package component's literal `ref=` media-source prop from the
+ * React Compiler's React-ref analysis. This leaf only hands the value through;
+ * all ordinary MediaRef reads stay in ResultMedia.
+ */
+function InlineResultMedia({ source, as, size, alt }: InlineResultMediaProps) {
+    return <InlineMediaRef ref={source} as={as} size={size} fit="contain" alt={alt} fallback="icon" />;
 }
 
 /** Resolve which media element to render from the ref's hints. */
@@ -32,12 +48,10 @@ function pickElement(ref: MediaRef): "img" | "video" | "audio" {
     return "img";
 }
 
-export const ResultMedia: React.FC<ResultMediaProps> = ({ refValue, alt, density = "inline", className }) => {
-    const as = pickElement(refValue);
+export const ResultMedia: React.FC<ResultMediaProps> = ({ mediaRef, alt, density = "inline", className }) => {
+    const as = pickElement(mediaRef);
     const size = density === "full" ? "fill" : "xl";
-    const viewerHref = refValue.file_id
-        ? `/files/f/${encodeURIComponent(refValue.file_id)}`
-        : null;
+    const viewerHref = mediaRef.file_id ? `/files/f/${encodeURIComponent(mediaRef.file_id)}` : null;
 
     return (
         <div
@@ -47,14 +61,7 @@ export const ResultMedia: React.FC<ResultMediaProps> = ({ refValue, alt, density
                 className,
             )}
         >
-            <InlineMediaRef
-                ref={refValue}
-                as={as}
-                size={size}
-                fit="contain"
-                alt={alt ?? "Tool result media"}
-                fallback="icon"
-            />
+            <InlineResultMedia source={mediaRef} as={as} size={size} alt={alt ?? "Tool result media"} />
             {viewerHref ? (
                 <a
                     href={viewerHref}

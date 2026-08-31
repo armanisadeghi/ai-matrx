@@ -83,10 +83,10 @@ const InlineText: React.FC<{ value: string }> = ({ value }) => {
 };
 
 /** A bullet list of scalars, capped in inline density. */
-const ScalarList: React.FC<{ items: Array<string | number | boolean | null>; density: ResultDensity }> = ({
-    items,
-    density,
-}) => {
+const ScalarList: React.FC<{
+    items: Array<string | number | boolean | null>;
+    density: ResultDensity;
+}> = ({ items, density }) => {
     const [showAll, setShowAll] = React.useState(false);
     const cap = density === "inline" && !showAll ? INLINE_ROW_CAP : items.length;
     const shown = items.slice(0, cap);
@@ -99,11 +99,7 @@ const ScalarList: React.FC<{ items: Array<string | number | boolean | null>; den
                     <li key={i} className="flex gap-2 text-sm text-foreground">
                         <span className="select-none text-muted-foreground">•</span>
                         <span className="min-w-0 break-words">
-                            {item === null ? (
-                                <span className="italic text-muted-foreground">null</span>
-                            ) : (
-                                String(item)
-                            )}
+                            {item === null ? <span className="italic text-muted-foreground">null</span> : String(item)}
                         </span>
                     </li>
                 ))}
@@ -155,7 +151,7 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                 return <UrlChip url={shape.value} />;
 
             case "media":
-                return <ResultMedia refValue={shape.ref} alt={shape.alt} density={density} />;
+                return <ResultMedia mediaRef={shape.ref} alt={shape.alt} density={density} />;
 
             case "file":
                 return <ResultFile file={shape.file} density={density} />;
@@ -168,7 +164,7 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                                 item.kind === "media" ? (
                                     <ResultMedia
                                         key={`${item.ref.file_id ?? item.ref.url ?? "media"}-${index}`}
-                                        refValue={item.ref}
+                                        mediaRef={item.ref}
                                         alt={item.alt}
                                         density={density}
                                     />
@@ -219,14 +215,7 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                 );
 
             case "object":
-                return (
-                    <KeyValueGrid
-                        value={shape.value}
-                        density={density}
-                        depth={depth}
-                        embedMedia={embedMedia}
-                    />
-                );
+                return <KeyValueGrid value={shape.value} density={density} depth={depth} embedMedia={embedMedia} />;
 
             case "json":
                 return <ResultJson data={shape.value} />;

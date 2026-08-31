@@ -36,7 +36,7 @@ export const ImageGenerationResult: React.FC<ToolRendererProps> = (props) => {
   return (
     <div className="space-y-1.5">
       <div className="flex items-start gap-2">
-        <ResultMedia refValue={media} alt="Generated image" density="full" />
+        <ResultMedia mediaRef={media} alt="Generated image" density="full" />
         <div className="shrink-0">
           <CopyButtons
             label="Image"
