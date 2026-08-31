@@ -19,7 +19,11 @@ import React from "react";
 
 import type { DbKindComponentImplProps } from "./DbKindComponentImpl";
 import { useKindActionRunner } from "../actions/useKindActionRunner";
-import { KindComponentFixBadge } from "./KindComponentFixBadge";
+import {
+  KindComponentFixBadge,
+  useCanFixKindComponent,
+} from "./KindComponentFixBadge";
+import { cn } from "@/lib/utils";
 
 const LazyImpl = dynamic(
   () =>
@@ -39,13 +43,22 @@ export const DbKindComponent: React.FC<DbKindComponentProps> = (props) => {
   // compiled component. Keeping this in the shell — not the impl — keeps the
   // impl bare-renderable (tests/SSR) and Redux out of that path.
   const runAction = useKindActionRunner();
-  // The wrapper reserves the badge's 8px outside-corner gutter inside its own
-  // box. Chat intentionally clips horizontal overflow to contain wide model
-  // output, so a negative right offset gets cut regardless of z-index. Keeping
-  // the gutter in-flow preserves the same floating overlap while making the
-  // badge immune to host overflow clipping everywhere this renderer appears.
+  // The wrapper reserves the badge's corner inside its own box. Chat
+  // intentionally clips horizontal overflow to contain wide model output, so a
+  // negative right offset gets cut regardless of z-index — keeping the gutter
+  // in-flow makes the badge immune to host overflow clipping everywhere this
+  // renderer appears.
+  //
+  // The band must clear the badge's FULL 24px height, not the 8px it used to
+  // get: at 8px the badge overlapped the component's own top-right by 16px and,
+  // sitting at the popover layer, swallowed every click in that square. The
+  // shell cannot know what an arbitrary DB-authored component draws up there,
+  // so it reserves the whole band and leaves nothing behind the badge.
+  // Reserved only when the badge actually renders (author / super admin), so
+  // ordinary viewers keep the original 8px gutter and their layout is unchanged.
+  const { canFix } = useCanFixKindComponent(props.content, props.metadata);
   return (
-    <div className="relative pt-2 pr-2">
+    <div className={cn("relative pr-2", canFix ? "pt-7" : "pt-2")}>
       <KindComponentFixBadge content={props.content} metadata={props.metadata} />
       <LazyImpl {...props} runAction={runAction} />
     </div>

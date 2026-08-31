@@ -62,22 +62,46 @@ export interface KindComponentFixBadgeProps {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Does this viewer get the badge for this instance?
+ *
+ * Exported because the DbKindComponent shell must RESERVE the badge's corner
+ * in-flow. The badge is absolutely positioned at the padding box's top-right
+ * and sits at the popover layer, so any corner it is not given outright it
+ * TAKES: measured on `agent_mandate_specification`, a 24px badge over an 8px
+ * gutter covered 16px of the component's own header — landing on a live stat
+ * and winning every click in that square. Reserving the band is the only fix
+ * that holds for arbitrary DB-authored components, since the shell cannot know
+ * what any of them draw in their top-right.
+ *
+ * Both call sites read this one predicate so the reserved gutter can never
+ * disagree with whether the badge actually renders.
+ */
+export function useCanFixKindComponent(
+  content: string,
+  metadata?: Record<string, unknown>,
+): { canFix: boolean; kind: string | null } {
+  const userId = useAppSelector(selectUserId);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+
+  const kind = readKindSlug(content, metadata);
+  if (!kind || !userId) return { canFix: false, kind };
+
+  const resolution = resolveComponent(kind, "web", "output");
+  if (!resolution || resolution.resolvedBy !== "db") {
+    return { canFix: false, kind };
+  }
+
+  return { canFix: isSuperAdmin || resolution.createdBy === userId, kind };
+}
+
 export const KindComponentFixBadge: React.FC<KindComponentFixBadgeProps> = ({
   content,
   metadata,
 }) => {
-  const userId = useAppSelector(selectUserId);
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openRun = useOpenAgentRunWindow();
-
-  const kind = readKindSlug(content, metadata);
-  if (!kind || !userId) return null;
-
-  const resolution = resolveComponent(kind, "web", "output");
-  if (!resolution || resolution.resolvedBy !== "db") return null;
-
-  const canEdit = isSuperAdmin || resolution.createdBy === userId;
-  if (!canEdit) return null;
+  const { canFix, kind } = useCanFixKindComponent(content, metadata);
+  if (!canFix || !kind) return null;
 
   const launch = () => {
     // Resolve the `content_ir.kind_creator` mandate at click time — same loud
