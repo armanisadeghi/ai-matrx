@@ -364,12 +364,14 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
         getApplicationScope={getScope}
         contentSource={{ type: "raw" }}
       >
-        <SettingsTabHost
-          activeTab={activeTab}
-          treeNodes={treeNodes}
-          onNavigate={navigate}
-          navigationPending={isNavigationPending}
-        />
+        <div className="contents">
+          <SettingsTabHost
+            activeTab={activeTab}
+            treeNodes={treeNodes}
+            onNavigate={navigate}
+            navigationPending={isNavigationPending}
+          />
+        </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
