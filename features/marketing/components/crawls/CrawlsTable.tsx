@@ -29,6 +29,8 @@ import {
 } from "@/features/marketing/data/hooks";
 import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 import type { CrawlSession } from "@/features/marketing/types";
 import {
@@ -69,6 +71,7 @@ export function CrawlsTable() {
   const deleteMutation = useDeleteCrawlSession(site.id);
   const [deleting, setDeleting] = useState<CrawlSession | null>(null);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [clickedRow, setClickedRow] = useState<CrawlSession | null>(null);
   const activeCrawl = crawlActivity.activeCrawl;
 
   // Live elapsed time for running rows — a frozen duration on a running
@@ -375,6 +378,68 @@ export function CrawlsTable() {
           <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>
       </header>
+      {/* Crawl session identity is page-local — `grep -rl "CrawlSession\b"
+          features app` returns CrawlSubnav.tsx (a nav header, not a row
+          render) and crawl-surface.tsx (a context provider); this table is
+          the only surface that renders CrawlSession rows. No entity: sessions
+          have no registered EntityTypeToken and are not shareable resources. */}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+          const row = (id && rows.find((r) => r.id === id)) || null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            content: `Crawl session ${row.id} — ${row.status} (${row.trigger})`,
+          };
+        }}
+        extraSections={[
+          {
+            id: "crawl-session-row",
+            label: "This crawl session",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "item",
+                id: "crawl-session-open",
+                label: "Open crawl session",
+                icon: ScanSearch,
+                disabled: !clickedRow,
+                onSelect: () => {
+                  if (clickedRow)
+                    router.push(
+                      marketingRoutes.site(brandId, site.id, `/crawls/${clickedRow.id}`),
+                    );
+                },
+              },
+              {
+                kind: "item",
+                id: "crawl-session-cancel",
+                label: "Cancel crawl",
+                icon: Ban,
+                disabled: !clickedRow || !ACTIVE_STATUSES.has(clickedRow.status),
+                description: "Only running or queued crawls can be canceled",
+                onSelect: () => {
+                  if (clickedRow) void requestCancel(clickedRow);
+                },
+              },
+              {
+                kind: "item",
+                id: "crawl-session-delete",
+                label: "Delete crawl session",
+                icon: Trash2,
+                disabled: !clickedRow,
+                onSelect: () => {
+                  if (clickedRow) setDeleting(clickedRow);
+                },
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
       <MatrxDataTable<CrawlSession>
         className="min-h-0 flex-1"
         data={crawls.data?.rows ?? []}
@@ -502,6 +567,7 @@ export function CrawlsTable() {
             "Crawl commands are sent directly to the scraper; durable sessions will appear here from Supabase.",
         }}
       />
+      </NonEditableContextMenu>
 
       <ConfirmDialog
         open={Boolean(deleting)}
