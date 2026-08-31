@@ -8488,6 +8488,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/morgen/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_morgen_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/beautiful-ai/public/status": {
         parameters: {
             query?: never;
@@ -61132,6 +61149,40 @@ export interface components {
             show_login_form: boolean;
         };
         /**
+         * MorgenServiceStatus
+         * @description Safe aggregate status projection for Morgen's fixed status page.
+         */
+        MorgenServiceStatus: {
+            /**
+             * Kind
+             * @default morgen_public_calendar_task_platform_status
+             * @constant
+             */
+            __kind?: "morgen_public_calendar_task_platform_status";
+            /**
+             * Provider
+             * @default Morgen
+             * @constant
+             */
+            provider?: "Morgen";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** State */
+            state: string;
+            /** Operational */
+            operational: boolean;
+            /**
+             * Status Page
+             * @default https://status.morgen.so/
+             * @constant
+             */
+            status_page?: "https://status.morgen.so/";
+        };
+        /**
          * MotionServiceStatus
          * @description Safe aggregate status projection for Motion's fixed status page.
          */
@@ -103814,6 +103865,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RescueTimeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_morgen_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MorgenServiceStatus"];
                 };
             };
         };

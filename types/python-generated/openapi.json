@@ -19516,6 +19516,27 @@
         }
       }
     },
+    "/morgen/public/status": {
+      "get": {
+        "tags": [
+          "Morgen Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_morgen_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MorgenServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/beautiful-ai/public/status": {
       "get": {
         "tags": [
@@ -151357,6 +151378,52 @@
         ],
         "title": "MoodlePublicConfigResult",
         "description": "Bounded projection of Moodle's unauthenticated mobile public config."
+      },
+      "MorgenServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "morgen_public_calendar_task_platform_status",
+            "title": "Kind",
+            "default": "morgen_public_calendar_task_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Morgen",
+            "title": "Provider",
+            "default": "Morgen"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "State"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.morgen.so/",
+            "title": "Status Page",
+            "default": "https://status.morgen.so/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "operational"
+        ],
+        "title": "MorgenServiceStatus",
+        "description": "Safe aggregate status projection for Morgen's fixed status page."
       },
       "MotionServiceStatus": {
         "properties": {
