@@ -135,3 +135,4 @@ public/pdfjs/
 # once complete, so a concurrent type-check never sees a half-written database.types.ts.
 # A lingering staging file means a generation run failed; it must never be committable.
 types/database.types.ts.staging
+.dev-login-nonce

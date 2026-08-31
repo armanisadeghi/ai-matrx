@@ -1,5 +1,46 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
+
+/**
+ * THE NONCE HANDSHAKE — dev login with no credential in any URL.
+ *
+ * `?token=` puts DEV_LOGIN_TOKEN — a durable credential — into browser
+ * history, dev-server logs, and (when an agent drives the browser) the
+ * agent's own transcript, which is how it leaked on 2026-08-31 and had to be
+ * rotated. Agents with shell access have a cleaner proof of identity
+ * available: the ability to WRITE A FILE into this checkout.
+ *
+ *   1. shell:   openssl rand -hex 16 > .dev-login-nonce   (gitignored)
+ *   2. browser: GET /api/dev-login?nonce=<that value>&next=/wherever
+ *   3. route:   compares, DELETES the file, signs in.
+ *
+ * Single-use by construction — the file is consumed on first presentation
+ * (match or mismatch), so the nonce that unavoidably appears in the
+ * navigation URL is already worthless by the time anything logs it. All the
+ * existing guards (NODE_ENV !== production, localhost-only host) sit in
+ * front of this; the drive-by CSRF protection the token provides is
+ * preserved because a hostile page cannot write files into the repo.
+ */
+const NONCE_FILE = join(process.cwd(), ".dev-login-nonce");
+
+function consumeNonce(presented: string): boolean {
+  let expected: string;
+  try {
+    expected = readFileSync(NONCE_FILE, "utf8").trim();
+  } catch {
+    return false; // no handshake file — nothing to consume
+  }
+  // Consume on ANY presentation: a wrong guess must burn the nonce too,
+  // otherwise it can be brute-forced against a long-lived file.
+  try {
+    rmSync(NONCE_FILE);
+  } catch {
+    /* already gone */
+  }
+  return expected.length >= 16 && presented === expected;
+}
 
 /**
  * Dev-only magic login for local AI agents.
@@ -56,8 +97,14 @@ export async function GET(request: NextRequest) {
   }
 
   const token = url.searchParams.get("token");
-  if (!token || token !== expectedToken) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  const nonce = url.searchParams.get("nonce");
+  const tokenOk = !!token && token === expectedToken;
+  const nonceOk = !tokenOk && !!nonce && consumeNonce(nonce);
+  if (!tokenOk && !nonceOk) {
+    return NextResponse.json(
+      { error: "Invalid token (or expired/missing nonce)" },
+      { status: 401 },
+    );
   }
 
   const nextParam = url.searchParams.get("next") ?? "/dashboard";
