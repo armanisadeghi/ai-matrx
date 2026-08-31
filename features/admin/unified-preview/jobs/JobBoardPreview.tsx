@@ -21,6 +21,8 @@ import { SegmentedControl } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { CoverageScoreboard } from "./CoverageScoreboard";
 import { JobWorkbench } from "./JobWorkbench";
 import {
@@ -63,6 +65,7 @@ export function JobBoardPreview() {
     null,
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [clickedRow, setClickedRow] = useState<BoardRow | null>(null);
 
   const scopedJobs = useMemo(
     () => jobsAtScope(scope, domainOnly ? PREVIEW_DOMAIN : null),
@@ -239,6 +242,44 @@ export function JobBoardPreview() {
     ];
   }, []);
 
+  // Right-click: ONE menu for the board, resolved per row via `data-row-id` +
+  // STATE. A "job" here is mock data (`PreviewJob`), not a real DB record —
+  // there is no entity to attach/share, so no `CONTEXT_MENU_ENTITY_KEY`. The
+  // identity also renders on `CoverageScoreboard` (its tile list), out of
+  // this file's assignment — a future touch of that file should extract a
+  // shared section rather than copy this one.
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && rows.find((r) => r.id === id)) || null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      content: [
+        `Job: ${row.mandate_key}`,
+        `Goal: ${row.goal}`,
+        `Held by: ${row.holderName}`,
+        `Coverage: ${row.coverage}`,
+      ].join("\n"),
+    };
+  };
+  const jobItems: ContextMenuExtraItem[] = clickedRow
+    ? [
+        {
+          kind: "item",
+          id: "job-open-workbench",
+          label: "Open job workbench",
+          icon: LayoutGrid,
+          onSelect: () => setSelectedId(clickedRow.id),
+        },
+      ]
+    : [];
+  const jobSection = {
+    id: "job-board-actions",
+    label: "Job",
+    icon: LayoutGrid,
+    items: jobItems,
+  };
+
   return (
     // The scoreboard names every red and orange row inline, so its height is
     // data-driven. The page scrolls; the board below it keeps a real, bounded
@@ -303,6 +344,13 @@ export function JobBoardPreview() {
 
       {/* ── THE BOARD ────────────────────────────────────────────────────── */}
       <div className="h-[620px] shrink-0">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={resolveRowContext}
+          extraSections={clickedRow ? [jobSection] : []}
+        >
         <MatrxDataTable
           data={rows}
           columns={columns}
@@ -383,6 +431,7 @@ export function JobBoardPreview() {
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       {selectedJob ? null : (
