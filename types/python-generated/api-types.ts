@@ -8964,6 +8964,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pantheon/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pantheon_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/akamai/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_akamai_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storj/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_storj_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lightdash/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lightdash_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tinybird/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tinybird_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uxcam/public/status": {
         parameters: {
             query?: never;
@@ -9126,6 +9211,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_talkdesk_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aircall/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_aircall_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kixie/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kixie_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -32243,6 +32362,43 @@ export interface components {
             status_page?: "https://status.air.inc";
         };
         /**
+         * AircallServiceStatus
+         * @description Safe aggregate status projection for Aircall's fixed status page.
+         */
+        AircallServiceStatus: {
+            /**
+             * Kind
+             * @default aircall_official_business_communications_platform_status
+             * @constant
+             */
+            __kind?: "aircall_official_business_communications_platform_status";
+            /**
+             * Provider
+             * @default Aircall
+             * @constant
+             */
+            provider?: "Aircall";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.aircall.com
+             * @constant
+             */
+            status_page?: "https://status.aircall.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * AirfocusStatusResult
          * @description Safe projection of airfocus's high-level service status.
          */
@@ -32315,6 +32471,35 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** AkamaiServiceStatus */
+        AkamaiServiceStatus: {
+            /**
+             * Kind
+             * @default akamai_public_content_delivery_status
+             * @constant
+             */
+            __kind?: "akamai_public_content_delivery_status";
+            /**
+             * Provider
+             * @default Akamai
+             * @constant
+             */
+            provider?: "Akamai";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://www.akamaistatus.com
+             * @constant
+             */
+            status_page?: "https://www.akamaistatus.com";
         };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
@@ -58804,6 +58989,43 @@ export interface components {
             /** Canonical Page */
             canonical_page: string;
         };
+        /**
+         * KixieServiceStatus
+         * @description Safe aggregate status projection for Kixie's fixed status page.
+         */
+        KixieServiceStatus: {
+            /**
+             * Kind
+             * @default kixie_official_business_communications_platform_status
+             * @constant
+             */
+            __kind?: "kixie_official_business_communications_platform_status";
+            /**
+             * Provider
+             * @default Kixie
+             * @constant
+             */
+            provider?: "Kixie";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.kixie.com
+             * @constant
+             */
+            status_page?: "https://status.kixie.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** KontentAIServiceStatus */
         KontentAIServiceStatus: {
             /**
@@ -59975,6 +60197,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.liferay.cloud";
+        };
+        /** LightdashServiceStatus */
+        LightdashServiceStatus: {
+            /**
+             * Kind
+             * @default lightdash_public_service_status
+             * @constant
+             */
+            __kind?: "lightdash_public_service_status";
+            /**
+             * Provider
+             * @default Lightdash
+             * @constant
+             */
+            provider?: "Lightdash";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.lightdash.com
+             * @constant
+             */
+            status_page?: "https://status.lightdash.com";
         };
         /**
          * LineageNode
@@ -67949,6 +68203,35 @@ export interface components {
              * @default 0
              */
             run_count?: number;
+        };
+        /** PantheonServiceStatus */
+        PantheonServiceStatus: {
+            /**
+             * Kind
+             * @default pantheon_public_content_platform_status
+             * @constant
+             */
+            __kind?: "pantheon_public_content_platform_status";
+            /**
+             * Provider
+             * @default Pantheon
+             * @constant
+             */
+            provider?: "Pantheon";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.pantheon.io
+             * @constant
+             */
+            status_page?: "https://status.pantheon.io";
         };
         /** PatchFolderRequest */
         PatchFolderRequest: {
@@ -82976,6 +83259,35 @@ export interface components {
              */
             applied?: boolean;
         };
+        /** StorjServiceStatus */
+        StorjServiceStatus: {
+            /**
+             * Kind
+             * @default storj_public_object_storage_status
+             * @constant
+             */
+            __kind?: "storj_public_object_storage_status";
+            /**
+             * Provider
+             * @default Storj DCS
+             * @constant
+             */
+            provider?: "Storj DCS";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.storj.io
+             * @constant
+             */
+            status_page?: "https://status.storj.io";
+        };
         /** StoryAngleGenerateBody */
         StoryAngleGenerateBody: {
             /**
@@ -85368,6 +85680,38 @@ export interface components {
              * @enum {string}
              */
             format: "pdf" | "csv";
+        };
+        /** TinybirdServiceStatus */
+        TinybirdServiceStatus: {
+            /**
+             * Kind
+             * @default tinybird_public_service_status
+             * @constant
+             */
+            __kind?: "tinybird_public_service_status";
+            /**
+             * Provider
+             * @default Tinybird
+             * @constant
+             */
+            provider?: "Tinybird";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.tinybird.co/
+             * @constant
+             */
+            status_page?: "https://status.tinybird.co/";
         };
         /**
          * TogglServiceStatus
@@ -107781,6 +108125,106 @@ export interface operations {
             };
         };
     };
+    public_status_pantheon_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantheonServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_akamai_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AkamaiServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_storj_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorjServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_lightdash_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightdashServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tinybird_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TinybirdServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_uxcam_public_status_get: {
         parameters: {
             query?: never;
@@ -107977,6 +108421,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TalkdeskServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_aircall_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AircallServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_kixie_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KixieServiceStatus"];
                 };
             };
         };
