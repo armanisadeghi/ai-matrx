@@ -22,6 +22,14 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import { useState } from "react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  crawlUrlEntityRef,
+  crawlUrlMenuSection,
+  type CrawlUrlMenuRow,
+} from "@/features/marketing/components/crawls/crawl-url-actions";
 
 const OUTCOME_OPTIONS = [
   { value: "discovered", label: "Discovered" },
@@ -61,6 +69,14 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
   });
   const crawl = useCrawl(site.id, crawlId);
   const urls = useCrawlUrls(site.id, crawlId, table.queryState);
+  const [clickedRow, setClickedRow] = useState<CrawlUrl | null>(null);
+  const toCrawlUrlMenuRow = (row: CrawlUrl): CrawlUrlMenuRow => ({
+    siteId: site.id,
+    brandId,
+    crawlUrlId: row.id,
+    pageId: row.page_id,
+    rawUrl: row.raw_url,
+  });
   const columns: MatrxColumnDef<CrawlUrl>[] = [
     {
       id: "sequence",
@@ -192,6 +208,32 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
         {urls.isError ? (
           <QueryError error={urls.error} onRetry={() => void urls.refetch()} />
         ) : (
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id
+                ? (urls.data?.rows.find((r) => r.id === id) ?? null)
+                : null;
+              setClickedRow(row);
+              if (!row) return null;
+              return {
+                content: `${row.raw_url} — ${row.outcome} (${row.classification})`,
+                [CONTEXT_MENU_ENTITY_KEY]: crawlUrlEntityRef(
+                  toCrawlUrlMenuRow(row),
+                ),
+              };
+            }}
+            extraSections={[
+              crawlUrlMenuSection(
+                clickedRow ? toCrawlUrlMenuRow(clickedRow) : null,
+              ),
+            ]}
+          >
           <MatrxDataTable<CrawlUrl>
             data={urls.data?.rows ?? []}
             columns={columns}
@@ -253,6 +295,7 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
                 "This ledger is the crawl's encountered URL set; it is deliberately separate from canonical pages.",
             }}
           />
+          </NonEditableContextMenu>
         )}
       </div>
     </main>
