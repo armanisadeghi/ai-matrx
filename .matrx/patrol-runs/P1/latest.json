@@ -3,8 +3,8 @@
   "patrolId": "P1",
   "runId": "20260831T081603Z",
   "state": "fixing",
-  "updatedAt": "2026-08-31T08:16:18.447Z",
-  "summary": "Three disjoint repair workers are implementing the first ready canonical EntityRef doors.",
+  "updatedAt": "2026-08-31T08:31:39.157Z",
+  "summary": "Correcting the two concrete fd212 adversarial regressions.",
   "source": "20260831T081603Z.json",
-  "eventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969"
+  "eventHash": "080a20f82d514020ed444126d87644076d96cc1eeaf0d4f56701cb3383d38ef3"
 }

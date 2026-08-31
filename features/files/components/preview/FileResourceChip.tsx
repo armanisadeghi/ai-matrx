@@ -150,26 +150,27 @@ export function FileResourceChip({
     </EntityRef>
   );
 
-  // Open and remove are siblings. Keeping the remove button outside EntityRef
-  // prevents one keyboard action from triggering both paths.
-  const chip = onRemove ? (
+  // HoverCardTrigger needs a real DOM child so Radix can attach its ref and
+  // hover/focus handlers. Keep that wrapper for both removable and read-only
+  // chips; EntityRef intentionally does not act as a generic slot primitive.
+  const chip = (
     <span className="inline-flex items-stretch">
       {openControl}
-      <button
-        type="button"
-        aria-label={`Remove ${fileName}`}
-        onClick={onRemove}
-        className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-r-md border border-l-0 border-border bg-card",
-          "text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
-          "h-7 w-6",
-        )}
-      >
-        <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
-      </button>
+      {onRemove ? (
+        <button
+          type="button"
+          aria-label={`Remove ${fileName}`}
+          onClick={onRemove}
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center rounded-r-md border border-l-0 border-border bg-card",
+            "text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
+            "h-7 w-6",
+          )}
+        >
+          <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+        </button>
+      ) : null}
     </span>
-  ) : (
-    openControl
   );
 
   return (

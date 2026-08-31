@@ -30,6 +30,77 @@
       ],
       "previousEventHash": "b6fd345f686340870d6b43cd12c672e7b91cdfacb9bb4f137f3183b7a14d6389",
       "eventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-31T08:26:04.513Z",
+      "actor": "codex-root",
+      "summary": "Shared checkpoint interrupted the normal certification-before-delivery sequence.",
+      "evidence": [
+        "Owned product diff was committed as fd212230d9 after worker checks but before the second signature."
+      ],
+      "blocker": {
+        "prerequisite": "Record the escaped delivery and independently certify the exact origin/main candidate before reconciliation."
+      },
+      "previousEventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969",
+      "eventHash": "98ab19b1b1ef457e76479c0d956b84b3afcf9645957ee2642566fbd375921417"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-31T08:26:05.074Z",
+      "actor": "codex-root",
+      "summary": "Recorded escaped delivery of the exact 11-file P1 candidate before adversarial certification.",
+      "evidence": [
+        "Candidate fd212230d9 is already origin/main; no product bytes were lost or altered after worker verification."
+      ],
+      "escape": {
+        "candidateSha": "fd212230d92ce6819a01a4cb709c893266ce2ee8",
+        "integratedSha": "fd212230d92ce6819a01a4cb709c893266ce2ee8",
+        "release": "main-unreleased",
+        "reason": "shared-checkout checkpoint committed the owned 11-file product diff before independent certification"
+      },
+      "previousEventHash": "98ab19b1b1ef457e76479c0d956b84b3afcf9645957ee2642566fbd375921417",
+      "eventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049"
+    },
+    {
+      "sequence": 5,
+      "state": "certifying",
+      "at": "2026-08-31T08:31:00.838Z",
+      "actor": "codex-root",
+      "summary": "Exact escaped candidate fd212230d9 entered independent adversarial certification.",
+      "evidence": [
+        "Type-check, detector delta, exact diff, focused tests, focused lint baseline, and interaction semantics were assigned to an independent certifier."
+      ],
+      "previousEventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049",
+      "eventHash": "4b7f4e8fa97c00d93f2c04ccd5cca68d000329d75f1881399d75ba1814893749"
+    },
+    {
+      "sequence": 6,
+      "state": "rejected",
+      "at": "2026-08-31T08:31:01.401Z",
+      "actor": "p1-certifier-wave1",
+      "summary": "REJECTED: hover-preview and transcript keyboard semantics regressed in fd212230d9.",
+      "evidence": [
+        "FileResourceChip passed EntityRef directly to HoverCardTrigger asChild, dropping Radix trigger props/ref for read-only chips.",
+        "TranscriptsSidebar nested anchors beneath role=button key handling that prevented Enter/Space and created invalid interactive semantics."
+      ],
+      "previousEventHash": "4b7f4e8fa97c00d93f2c04ccd5cca68d000329d75f1881399d75ba1814893749",
+      "eventHash": "1e24fee332df4df7e504ec3d0b1bb2dbd16cb8643bc9dc078159a5bf7b30af6b"
+    },
+    {
+      "sequence": 7,
+      "state": "fixing",
+      "at": "2026-08-31T08:31:39.157Z",
+      "actor": "codex-root",
+      "summary": "Correcting the two concrete fd212 adversarial regressions.",
+      "evidence": [
+        "Restore a real DOM Radix hover trigger around every FileResourceChip variant.",
+        "Separate transcript row selection from EntityRef and rename controls with sibling interactive layers."
+      ],
+      "previousEventHash": "1e24fee332df4df7e504ec3d0b1bb2dbd16cb8643bc9dc078159a5bf7b30af6b",
+      "eventHash": "080a20f82d514020ed444126d87644076d96cc1eeaf0d4f56701cb3383d38ef3"
     }
   ]
 }
