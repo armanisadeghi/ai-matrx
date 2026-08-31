@@ -86,7 +86,6 @@ export function CloudImageGrid({
                 }}
                 fileName={file.fileName}
                 mimeType={file.mimeType}
-                thumbnailUrl={file.thumbnailUrl}
                 iconSize={iconSize}
                 className="absolute inset-0"
               />

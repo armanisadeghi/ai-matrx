@@ -112,10 +112,12 @@ export function FileResourceChip({
       {/* Thumb: real image for image/video, category icon otherwise.
           Container forces a square so MediaThumbnail's aspect math is happy. */}
       <MediaThumbnail
-        mediaRef={{ file_id: thumbnailFile.id, mime_type: thumbnailFile.mimeType ?? undefined }}
+        mediaRef={{
+          file_id: thumbnailFile.id,
+          mime_type: thumbnailFile.mimeType ?? undefined,
+        }}
         fileName={thumbnailFile.fileName}
         mimeType={thumbnailFile.mimeType}
-        thumbnailUrl={thumbnailFile.thumbnailUrl}
         iconSize={thumbSizePx}
         className={cn("h-5 w-5", "shrink-0 rounded-sm")}
         rounded="rounded-sm"
@@ -194,10 +196,12 @@ export function FileResourceChip({
               displayName={details.displayName}
               thumb={
                 <MediaThumbnail
-                  mediaRef={{ file_id: thumbnailFile.id, mime_type: thumbnailFile.mimeType ?? undefined }}
+                  mediaRef={{
+                    file_id: thumbnailFile.id,
+                    mime_type: thumbnailFile.mimeType ?? undefined,
+                  }}
                   fileName={thumbnailFile.fileName}
                   mimeType={thumbnailFile.mimeType}
-                  thumbnailUrl={thumbnailFile.thumbnailUrl}
                   iconSize={56}
                   className="aspect-[4/3] w-full"
                   rounded="rounded-md"

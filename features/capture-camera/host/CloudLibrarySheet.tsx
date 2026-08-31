@@ -88,7 +88,6 @@ export function CloudLibrarySheet({
             }}
             fileName={file.fileName}
             mimeType={file.mimeType}
-            thumbnailUrl={file.thumbnailUrl}
             iconSize={28}
             className="h-full w-full object-cover"
           />

@@ -76,7 +76,6 @@ export function CloudImageList({
                   }}
                   fileName={file.fileName}
                   mimeType={file.mimeType}
-                  thumbnailUrl={file.thumbnailUrl}
                   iconSize={20}
                   className="absolute inset-0"
                 />

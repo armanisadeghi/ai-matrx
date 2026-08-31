@@ -132,10 +132,12 @@ function GridFile({
         */}
           <div className="absolute inset-0" onClick={onActivate}>
             <MediaThumbnail
-              mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
+              mediaRef={{
+                file_id: file.id,
+                mime_type: file.mimeType ?? undefined,
+              }}
               fileName={file.fileName}
               mimeType={file.mimeType}
-              thumbnailUrl={file.thumbnailUrl}
               iconSize={48}
               className="h-full w-full"
             />

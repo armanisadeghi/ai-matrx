@@ -4,6 +4,8 @@ import {
   pruneImageSelectionToVisible,
   selectVisibleCloudImages,
 } from "./images-surface-actions";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const visible = [
   { id: "image-a", fileName: "alpha.png" },
@@ -11,6 +13,30 @@ const visible = [
 ];
 
 describe("Images surface action guards", () => {
+  it("keeps every image-manager thumbnail on the durable file-id path", () => {
+    const durableFileCallers = [
+      "components/image/cloud/CloudImageGrid.tsx",
+      "components/image/cloud/CloudImageList.tsx",
+      "components/image/cloud/CloudFilesBrowserTable.tsx",
+      "features/capture-camera/host/CloudLibrarySheet.tsx",
+      "features/files/components/multi-view/MultiFileGridViewer.tsx",
+      "features/files/components/preview/FileResourceChip.tsx",
+      "features/files/components/preview/SelectableFileThumbnail.tsx",
+      "features/files/components/surfaces/PickerShell.tsx",
+      "features/files/components/surfaces/desktop/FileGridCell.tsx",
+      "features/image-manager/components/CloudFileMetadataSheet.tsx",
+      "features/resource-manager/resource-picker/FilesResourcePicker.tsx",
+    ];
+
+    for (const caller of durableFileCallers) {
+      const source = readFileSync(resolve(process.cwd(), caller), "utf8");
+      expect(source).toMatch(/file_id: (?:file|thumbnailFile)\.id/);
+      expect(source).not.toMatch(
+        /thumbnailUrl=\{(?:file|thumbnailFile)\.thumbnailUrl\}/,
+      );
+    }
+  });
+
   it("normalizes a complete visible selection without changing order", () => {
     expect(
       parseVisibleImageSelection(

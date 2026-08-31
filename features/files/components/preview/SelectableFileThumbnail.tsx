@@ -102,10 +102,12 @@ export function SelectableFileThumbnail({
           )}
         >
           <MediaThumbnail
-            mediaRef={{ file_id: thumbnailFile.id, mime_type: thumbnailFile.mimeType ?? undefined }}
+            mediaRef={{
+              file_id: thumbnailFile.id,
+              mime_type: thumbnailFile.mimeType ?? undefined,
+            }}
             fileName={thumbnailFile.fileName}
             mimeType={thumbnailFile.mimeType}
-            thumbnailUrl={thumbnailFile.thumbnailUrl}
             iconSize={40}
             className="h-full w-full"
             rounded="rounded-lg"

@@ -137,7 +137,6 @@ function PickerFileThumbnail({ file }: PickerFileThumbnailProps) {
       mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
       fileName={file.fileName}
       mimeType={file.mimeType}
-      thumbnailUrl={file.thumbnailUrl}
       iconSize={18}
       className="h-10 w-10 shrink-0"
       rounded="rounded-md border border-border/50"

@@ -203,7 +203,6 @@ function GridTile({
         mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
         fileName={file.fileName}
         mimeType={file.mimeType}
-        thumbnailUrl={file.thumbnailUrl}
         className="absolute inset-0 h-full w-full"
       />
     </button>
@@ -246,7 +245,6 @@ function FocusView({
           mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
           fileName={file.fileName}
           mimeType={file.mimeType}
-          thumbnailUrl={file.thumbnailUrl}
           className="h-full max-h-[80dvh] aspect-square"
         />
       )}

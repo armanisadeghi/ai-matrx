@@ -34,15 +34,33 @@ import { cn } from "@/lib/utils";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { FileIcon } from "@ai-matrx/media/react";
 import { MediaThumbnail } from "@ai-matrx/media/react";
-import { ShareLinkDialog, ShareLinkDialogBody } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
+import {
+  ShareLinkDialog,
+  ShareLinkDialogBody,
+} from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
-import { useFileMutation, useFolderMutation } from "@/features/files/hooks/useFileMutation";
+import {
+  useFileMutation,
+  useFolderMutation,
+} from "@/features/files/hooks/useFileMutation";
 import { fileUrls } from "@/features/files/handler/utils/python-base";
-import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
-import { isImageMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
+import {
+  formatFileSize,
+  formatRelativeTime,
+} from "@/features/files/utils/format";
+import {
+  isImageMime,
+  isVideoMime,
+  resolveMime,
+} from "@/features/files/utils/file-types";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { CloudFileRecord, CloudFolderRecord, ResourceType, Visibility } from "@/features/files/types";
+import type {
+  CloudFileRecord,
+  CloudFolderRecord,
+  ResourceType,
+  Visibility,
+} from "@/features/files/types";
 import {
   allCloudBrowserRowIds,
   buildCloudFilesBrowserRows,
@@ -147,10 +165,14 @@ export function CloudFilesBrowserTable({
       await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
         await fileMut.move(file.id, target);
       });
-      await runWithConcurrency(selectedFolders, MAX_PARALLEL, async (folder) => {
-        if (folder.id === target) return;
-        await folderMut.move(folder.id, target);
-      });
+      await runWithConcurrency(
+        selectedFolders,
+        MAX_PARALLEL,
+        async (folder) => {
+          if (folder.id === target) return;
+          await folderMut.move(folder.id, target);
+        },
+      );
       clearSelection();
     } finally {
       setBusyKind(null);
@@ -173,15 +195,26 @@ export function CloudFilesBrowserTable({
         await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
           await fileMut.setVisibility(file.id, visibility);
         });
-        await runWithConcurrency(selectedFolders, MAX_PARALLEL, async (folder) => {
-          await folderMut.setVisibility(folder.id, visibility);
-        });
+        await runWithConcurrency(
+          selectedFolders,
+          MAX_PARALLEL,
+          async (folder) => {
+            await folderMut.setVisibility(folder.id, visibility);
+          },
+        );
         toast.success(`Visibility set to ${visibility}`);
       } finally {
         setBusyKind(null);
       }
     },
-    [busyKind, fileMut, folderMut, selectedFiles, selectedFolders, selectedIds.length],
+    [
+      busyKind,
+      fileMut,
+      folderMut,
+      selectedFiles,
+      selectedFolders,
+      selectedIds.length,
+    ],
   );
 
   const handleDelete = useCallback(async () => {
@@ -191,9 +224,13 @@ export function CloudFilesBrowserTable({
       await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
         await fileMut.remove(file.id);
       });
-      await runWithConcurrency(selectedFolders, MAX_PARALLEL, async (folder) => {
-        await folderMut.remove(folder.id);
-      });
+      await runWithConcurrency(
+        selectedFolders,
+        MAX_PARALLEL,
+        async (folder) => {
+          await folderMut.remove(folder.id);
+        },
+      );
       clearSelection();
       setConfirmDelete(false);
     } finally {
@@ -484,7 +521,16 @@ function MobileFileRow({
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/40">
             {showThumb ? (
-              <MediaThumbnail mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }} fileName={file.fileName} mimeType={file.mimeType} thumbnailUrl={file.thumbnailUrl} iconSize={18} className="h-full w-full" />
+              <MediaThumbnail
+                mediaRef={{
+                  file_id: file.id,
+                  mime_type: file.mimeType ?? undefined,
+                }}
+                fileName={file.fileName}
+                mimeType={file.mimeType}
+                iconSize={18}
+                className="h-full w-full"
+              />
             ) : (
               <FileIcon fileName={file.fileName} size={18} />
             )}
@@ -685,7 +731,16 @@ function CloudFileBrowserRow({
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/40">
             {showThumb ? (
-              <MediaThumbnail mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }} fileName={file.fileName} mimeType={file.mimeType} thumbnailUrl={file.thumbnailUrl} iconSize={18} className="h-full w-full" />
+              <MediaThumbnail
+                mediaRef={{
+                  file_id: file.id,
+                  mime_type: file.mimeType ?? undefined,
+                }}
+                fileName={file.fileName}
+                mimeType={file.mimeType}
+                iconSize={18}
+                className="h-full w-full"
+              />
             ) : (
               <FileIcon fileName={file.fileName} size={18} />
             )}
@@ -732,7 +787,11 @@ function SelectCell({
 }) {
   return (
     <td className="w-8 px-3 py-2">
-      <Checkbox checked={checked} onCheckedChange={onChange} aria-label={label} />
+      <Checkbox
+        checked={checked}
+        onCheckedChange={onChange}
+        aria-label={label}
+      />
     </td>
   );
 }
@@ -949,7 +1008,8 @@ function MobileShareLinkDrawer({
           <DrawerTitle>Share link</DrawerTitle>
           <DrawerDescription>
             Anyone with the link will be able to{" "}
-            {resourceType === "folder" ? "view the folder" : "access this file"}.
+            {resourceType === "folder" ? "view the folder" : "access this file"}
+            .
           </DrawerDescription>
         </DrawerHeader>
         <div className="overflow-y-auto px-4 pb-6">

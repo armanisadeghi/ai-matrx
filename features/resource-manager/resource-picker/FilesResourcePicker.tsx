@@ -288,7 +288,6 @@ function FileRow({ file, onSelect, multiple, selected }: FileRowProps) {
           mediaRef={{ file_id: file.id, mime_type: file.mimeType ?? undefined }}
           fileName={file.fileName}
           mimeType={file.mimeType}
-          thumbnailUrl={file.thumbnailUrl}
           iconSize={14}
           rounded="rounded-md"
           className="h-10 w-10 shrink-0 border border-border/50"
@@ -363,7 +362,6 @@ function FileGridTile({
             }}
             fileName={file.fileName}
             mimeType={file.mimeType}
-            thumbnailUrl={file.thumbnailUrl}
             iconSize={24}
             rounded="rounded-none"
             className="absolute inset-0 h-full w-full"
