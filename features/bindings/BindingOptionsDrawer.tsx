@@ -42,7 +42,7 @@
 // how the job PRESENTS itself is one answer for the whole organization. The
 // drawer says that rather than letting the rung control above imply otherwise.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -113,8 +113,20 @@ export function BindingOptionsDrawer({
 
   // The stored answer is read the first time the drawer is opened, never on
   // mount: a folded drawer that fetches is a query nobody asked for.
+  //
+  // 🚨 THE LATCH IS A REF, NOT THE LOAD STATE — and this is not a style choice.
+  // Gating on `load.status !== "idle"` with `load.status` in the deps is a trap
+  // that eats its own request: setting "loading" re-runs the effect, whose
+  // CLEANUP flips the first run's `cancelled` flag, so the answer that arrives
+  // is thrown away — and the re-run returns early because the status is no
+  // longer idle. The drawer then says "Reading this job's options…" forever.
+  // Caught on the live walk of v0.4.1561, fixed here at the class: the "have I
+  // asked yet" latch must not be a value the asking itself changes.
+  const startedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!open || load.status !== "idle") return;
+    if (!open) return;
+    if (startedFor.current === owner.mandateId) return;
+    startedFor.current = owner.mandateId;
     let cancelled = false;
     setLoad({ status: "loading" });
     readPresentation(owner.mandateId)
@@ -140,7 +152,7 @@ export function BindingOptionsDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, load.status, owner.mandateId]);
+  }, [open, owner.mandateId]);
 
   // Categories — the same three scopes the shortcut editor loads, for the same
   // reason: a single-scope fetch misses two-thirds of what a person may pick.
@@ -317,7 +329,10 @@ export function BindingOptionsDrawer({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setLoad({ status: "idle" })}
+                onClick={() => {
+                  startedFor.current = null;
+                  setLoad({ status: "idle" });
+                }}
               >
                 Try again
               </Button>
