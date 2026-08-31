@@ -1,7 +1,7 @@
-import type { AppDispatch } from "@/lib/redux/store";
+import type { Dispatch, UnknownAction } from "@reduxjs/toolkit";
 
 export type PanelHydrateCallback = (
-  dispatch: AppDispatch,
+  dispatch: Dispatch<UnknownAction>,
   instanceId: string,
   args: Record<string, string>,
 ) => void;

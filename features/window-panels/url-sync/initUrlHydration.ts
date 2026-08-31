@@ -4,6 +4,18 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 
 /**
+ * URL sync uses the instance slot for both singleton window identities and
+ * resource identities. Only the latter may be forwarded into feature data.
+ */
+function getRestorableResourceId(
+  id: string,
+  ...singletonIds: string[]
+): string | null {
+  if (!id || id === "default" || singletonIds.includes(id)) return null;
+  return id;
+}
+
+/**
  * Register all known panel URL hydrators.
  * This runs exactly once on client mount.
  */
@@ -247,10 +259,11 @@ export function initUrlHydration() {
 
   // Creator Hub — `?panels=creator_hub` (optionally `:<tabId>`).
   registerPanelHydrator("creator_hub", (dispatch, id) => {
+    const initialTab = getRestorableResourceId(id, "creatorHub");
     dispatch(
       openOverlay({
         overlayId: "creatorHub",
-        data: id && id !== "creatorHub" ? { initialTab: id } : null,
+        data: initialTab ? { initialTab } : null,
       }),
     );
   });
@@ -258,36 +271,43 @@ export function initUrlHydration() {
   // Mandates — `?panels=mandate` (optionally `:<mandateKey>`) opens the
   // mandate window in place, which is the ONLY way a mandate opens.
   registerPanelHydrator("mandate", (dispatch, id) => {
+    const initialMandateKey = getRestorableResourceId(
+      id,
+      "mandateWindow",
+      "mandate-window",
+    );
     dispatch(
       openOverlay({
         overlayId: "mandateWindow",
-        data: id && id !== "mandateWindow" ? { initialMandateKey: id } : null,
+        data: initialMandateKey ? { initialMandateKey } : null,
       }),
     );
   });
 
   // Picklists v1 — `?panels=structuredListManagerV1` (optionally `:<listId>`).
   registerPanelHydrator("structuredListManagerV1", (dispatch, id) => {
+    const forcedListId = getRestorableResourceId(
+      id,
+      "structuredListManagerV1Window",
+    );
     dispatch(
       openOverlay({
         overlayId: "structuredListManagerV1Window",
-        data:
-          id && id !== "structuredListManagerV1Window"
-            ? { forcedListId: id }
-            : null,
+        data: forcedListId ? { forcedListId } : null,
       }),
     );
   });
 
   // Picklists v2 — `?panels=structuredListManagerV2` (optionally `:<listId>`).
   registerPanelHydrator("structuredListManagerV2", (dispatch, id) => {
+    const forcedListId = getRestorableResourceId(
+      id,
+      "structuredListManagerV2Window",
+    );
     dispatch(
       openOverlay({
         overlayId: "structuredListManagerV2Window",
-        data:
-          id && id !== "structuredListManagerV2Window"
-            ? { forcedListId: id }
-            : null,
+        data: forcedListId ? { forcedListId } : null,
       }),
     );
   });
