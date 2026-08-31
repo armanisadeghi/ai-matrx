@@ -5,6 +5,7 @@ import { createTasksScope } from "@/features/surfaces/manifests/tasks.manifest";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
 import { isClosedStatus } from "@/features/tasks/constants/status";
+import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
 import type { Project, TaskWithProject } from "@/features/tasks/types";
 
 /** Placements for the task editor (target wiring with surfaceName). */
@@ -58,8 +59,8 @@ export interface BuildTasksContextDataArgs {
   selectionEnd?: number;
   /** DB status value of the active task (`completed` | `not_started` | …). */
   status?: string | null;
-  /** DB priority value (`low` | `medium` | `high`) or null. */
-  priority?: string | null;
+  /** Exact editor priority (`low` | `medium` | `high`) or null for None. */
+  priority?: TaskPriorityValue | null;
   /** ISO date the task is due, or null. */
   dueDate?: string | null;
   /** Parent project id (null = unassigned). */
@@ -178,7 +179,7 @@ export function buildTasksContextData(
         description: text || undefined,
         status: surfaceStatus || undefined,
         lifecycle_status: status || undefined,
-        priority: priority || undefined,
+        priority: priority ?? null,
         due_date: dueDate || undefined,
         labels,
         assignee_id: assigneeId || undefined,
@@ -208,7 +209,7 @@ export function buildTasksContextData(
     completed_subtask_count: taskOpen ? completedSubtaskCount : undefined,
 
     // ── Task metadata ────────────────────────────────────────────────────
-    active_task_priority: priority || undefined,
+    active_task_priority: taskOpen ? (priority ?? null) : undefined,
     active_task_status: surfaceStatus || undefined,
     active_task_lifecycle_status: status || undefined,
     active_task_due_date: dueDate || undefined,

@@ -63,4 +63,44 @@ describe("Tasks surface context", () => {
       },
     });
   });
+
+  it("emits priority as an exact read twin, including honest None", () => {
+    const savedMedium = buildTasksContextData({
+      taskId: "task-1",
+      title: "Ship the surface",
+      description: "",
+      priority: "medium",
+    });
+    expect(savedMedium).toMatchObject({
+      active_task_priority: "medium",
+      active_task: { priority: "medium" },
+    });
+
+    const savedNone = buildTasksContextData({
+      taskId: "task-1",
+      title: "Ship the surface",
+      description: "",
+      priority: null,
+    });
+    expect(savedNone).toHaveProperty("active_task_priority", null);
+    expect(savedNone).toHaveProperty("active_task.priority", null);
+  });
+
+  it("rebuilds the next submitted turn from fresh saved priority", () => {
+    const firstTurn = buildTasksContextData({
+      taskId: "task-1",
+      title: "Ship the surface",
+      description: "",
+      priority: null,
+    });
+    const nextTurn = buildTasksContextData({
+      taskId: "task-1",
+      title: "Ship the surface",
+      description: "",
+      priority: "medium",
+    });
+
+    expect(firstTurn).toHaveProperty("active_task_priority", null);
+    expect(nextTurn).toHaveProperty("active_task_priority", "medium");
+  });
 });

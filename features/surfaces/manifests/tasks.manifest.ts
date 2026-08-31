@@ -21,6 +21,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { TASK_LABELS } from "@/features/tasks/constants/labels";
+import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -194,7 +195,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_task_priority",
     label: "Active task priority",
     description:
-      '"low", "medium", "high", or empty. Empty when unset or no task is selected.',
+      'Exact priority shown by the open editor: "low", "medium", "high", or null for None. Empty only when no task is selected.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 8,
@@ -446,7 +447,8 @@ export const tasksManifest: SurfaceManifest = {
   urlPattern: "/tasks",
   intro: `<surface_intro>
 You are on the Tasks surface: the user's task editor and to-do lists. The primary mount is the single-task editor — the active_task_* values, subtasks, and comments describe the ONE task the user has open, and the baselines (content/selection/context) come from its description editor: content is the live description draft, selection is the user's highlighted text within it.
-Description edits you propose act on the live draft the user sees. active_task_status is the derived attention state completed/pending/overdue; active_task_lifecycle_status is the exact editable lifecycle draft and is the read-twin for task_status writes.
+Description edits you propose act on the live draft the user sees. active_task_status is the derived attention state completed/pending/overdue; active_task_lifecycle_status is the exact editable lifecycle draft and is the read-twin for task_status writes. active_task_priority is the exact priority draft and is the read-twin for task_priority writes; null means the visible None state.
+Surface values are snapshotted when an execution turn is submitted. Writes performed by that turn do not rewrite its already-submitted context; the next submitted turn re-reads this mounted surface before execution.
 List-level values (task_list, project_list, task_count, search_query) only appear on list mounts — when absent, you are on a single task and must not assume anything about the surrounding list.
 </surface_intro>`,
   groups,
@@ -484,7 +486,7 @@ export function createTasksScope(values: {
   completed_subtask_count?: number;
   active_task_status?: string;
   active_task_lifecycle_status?: string;
-  active_task_priority?: string;
+  active_task_priority?: TaskPriorityValue | null;
   active_task_due_date?: string;
   active_task_labels?: string[];
   active_task_assignee_id?: string;
