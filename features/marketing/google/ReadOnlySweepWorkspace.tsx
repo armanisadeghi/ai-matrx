@@ -40,6 +40,7 @@ import {
   selectIsSuperAdmin,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/lib/utils";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
@@ -115,6 +116,7 @@ export function ReadOnlySweepWorkspace({
 function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   const google = useGoogleAPI();
   const userId = useAppSelector(selectUserId);
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const organizationIds = useAppSelector(selectOrganizationIds);
   const inventory = useGoogleConnectionInventory();
   const connect = useConnectGoogle();
@@ -155,6 +157,9 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
       null
     );
   };
+
+  const operationOrganizationId = (connection: GoogleConnectionSummary) =>
+    connection.organization_id ?? activeOrganizationId;
 
   const allDisclosuresAccepted = SWEEP_CAPABILITIES.every(
     (capability) => accepted[capability],
@@ -214,7 +219,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await calendar.mutateAsync({
         connectionId: connection.id,
-        organizationId: connection.organization_id,
+        organizationId: operationOrganizationId(connection),
         days: 14,
       });
     } catch (error) {
@@ -228,7 +233,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await tasks.mutateAsync({
         connectionId: connection.id,
-        organizationId: connection.organization_id,
+        organizationId: operationOrganizationId(connection),
       });
     } catch (error) {
       showReadError("Google Tasks", error);
@@ -241,7 +246,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await youtube.mutateAsync({
         connectionId: connection.id,
-        organizationId: connection.organization_id,
+        organizationId: operationOrganizationId(connection),
         channelId: youtubeChannelId,
         startDate: isoDate(29),
         endDate: isoDate(0),
@@ -257,7 +262,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await tagManager.mutateAsync({
         connectionId: connection.id,
-        organizationId: connection.organization_id,
+        organizationId: operationOrganizationId(connection),
       });
     } catch (error) {
       showReadError("Tag Manager", error);

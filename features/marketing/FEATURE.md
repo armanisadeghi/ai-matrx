@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-08-29
+**Last updated:** 2026-08-30
 
 Supporting-keyword chips in the Page Workspace may wrap their label and
 metadata, but keep their action buttons together and inside the phone viewport.
@@ -659,6 +659,11 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-30 — **Google read-only operations use the active organization for
+  personal credentials.** Calendar, Tasks, YouTube Analytics, and Tag Manager
+  keep an organization-owned connection's stored tenant; a user-owned
+  connection now carries the explicitly selected workspace instead of sending
+  `null` and failing after the UI already said which organization was active.
 - 2026-08-30 — Brands portfolio mobile composition now consumes the shared
   whole-row table scroll contract without duplicating its whole-view copy pair
   in the route header. The identity cell has a real 208px boundary, Add brand is
