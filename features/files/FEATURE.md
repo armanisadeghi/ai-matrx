@@ -105,17 +105,23 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
-- **2026-08-31 — The file-session mint waits for organization admission.** `POST /files/session`
-  is organization-admitted, but the mint fires at boot (`AuthSessionWatcher`, the moment an
-  authenticated identity exists) and again on every private-media retry — all before app context
-  hydrates. One user produced ~511 `[AUTH][REJECT] POST /files/session` rejections in ~35 minutes
-  (server app_log family `40b5275c-812c-426a-bf73-d8debb43dd78`, 2026-08-31T00:37–01:11Z).
-  `media-client/client.ts` now defers an authenticated mint until the active organization hydrates
-  (guests mint immediately — the fingerprint lane carries no organization), and skips it with one
-  loud diagnostic when the bootstrap authoritatively resolves with no organization. Nothing is
-  guessed; the posture stays fail-closed, minus the burned requests. `AuthSessionWatcher` re-mints
-  when the selection arrives or changes. Covered by
-  `media-client/client.organization-context.test.ts`.
+- **2026-08-31 — Organization admission lives at the files transport.** `POST /files/session`
+  and every other authenticated files request is organization-admitted, but the mint fires at boot
+  (`AuthSessionWatcher`, the moment an authenticated identity exists) and again on every
+  private-media retry — all before app context hydrates. One user produced ~511
+  `[AUTH][REJECT] POST /files/session` rejections in ~35 minutes (server app_log family
+  `40b5275c-812c-426a-bf73-d8debb43dd78`, 2026-08-31T00:37–01:11Z). The first repair wrapped the
+  client's public `ensureSession` and guarded exactly one door — the package mints internally too
+  (`recoverLoadError` → `session.ensure({force:true})`), so 124 more rejects landed 23 minutes
+  after it shipped. Admission now sits in `filesFetch`, the ONE fetch boundary this host injects,
+  so minting, metadata, bytes, shares and uploads cannot drift apart: no `Authorization` header →
+  sent untouched (the guest/`<img>` lanes the server admits org-less); `Authorization` present →
+  wait for the bootstrap (shared `lib/api/organization-admission` kernel), then bind the
+  organization; bootstrap authoritatively finished with none → refused here, once and loudly,
+  instead of a guaranteed 400 at the gate. Nothing is guessed; the posture stays fail-closed, minus
+  the burned requests. `AuthSessionWatcher` re-mints when the selection arrives or changes. Covered
+  by `media-client/client.organization-context.test.ts`; proven live on 2026-08-31 against the
+  production backend — both session bases mint `200` carrying the hydrated organization.
 - **2026-08-30 — Google Picker stays interactive above Files windows.** The provider injects its
   modal at z-index 1000/1001, below Matrx floating windows; global picker-layer overrides now place
   its scrim and dialog at the application ceiling so ordinary clicks reach Drive items and actions.
