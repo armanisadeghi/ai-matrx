@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. Normal chat shows exactly three fairly rotated live integrations and a `More` door. `More` opens the complete live-only catalogue in a canonical `WindowPanel`; local-only and coming-soon Settings placeholders are deliberately excluded.
+The user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. Normal chat shows exactly three fairly rotated, proven-connectable integrations and a `More` door. `More` opens the complete live-only catalogue in a canonical `WindowPanel`; unproven, local-only, and coming-soon Settings placeholders are deliberately excluded.
 
 ---
 
@@ -46,7 +46,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 ## Data model
 
-No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. MCP-backed connectors use the existing `useMcpCatalog()` selector over each signed-in user's `tool.mcp_user_conn` state; credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
+No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. MCP-backed connectors use `useMcpCatalog()` over `public.get_mcp_catalog_for_user()`: its sanitized `connection_ready` bit is true only for an existing connection, an explicitly certified provider, a proven prior connection path, GitHub's canonical flow, or a real no-auth remote server. Credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
 
 **Key types** (`types.ts`)
 
@@ -82,7 +82,7 @@ Each visit consumes the next three ids from a shuffled bag. No provider repeats 
 
 ### (d) The live-only `More` window
 
-The WindowPanel always includes Google, Gmail, and Notion, then adds MCP catalogue entries whose server status is `active`, `beta`, or `community` and which can be used from the web app now. Disconnected providers need a real remote endpoint and a direct OAuth, GitHub, or no-auth route. An already-connected remote provider remains visible so its management door is never lost. Local-only (`stdio`) and `coming_soon` entries never appear.
+The WindowPanel always includes Google, Gmail, and Notion, then adds MCP catalogue entries whose server status is `active`, `beta`, or `community`, whose sanitized `connection_ready` gate is true, and which can be used from the web app now. Disconnected providers also need a real remote endpoint and a direct OAuth, GitHub, or no-auth route. An already-connected remote provider remains visible so its management door is never lost. Unproven, local-only (`stdio`), and `coming_soon` entries never appear.
 
 ### (e) A connector we do not support yet
 
@@ -90,7 +90,7 @@ The WindowPanel always includes Google, Gmail, and Notion, then adds MCP catalog
 
 ### (f) Adding a provider
 
-One entry in `registry.ts`: id (generic to the provider, permanent), name (today's truth), blurb (one user-facing line), a local mark, and `surfaces`. For an official OAuth MCP provider, the id must match the canonical `tool.mcp_server.slug`; `ChatConnectorStrip` then resolves connection state and OAuth generically. Nothing in `ConnectorStrip.tsx` changes.
+One entry in `registry.ts`: id (generic to the provider, permanent), name (today's truth), blurb (one user-facing line), a local mark, and `surfaces`. For an official OAuth MCP provider, the id must match the canonical `tool.mcp_server.slug`; after a real connection proof, `ChatConnectorStrip` resolves connection state and OAuth generically. Before proof, keep `connection_ready` false and the provider out of chat. Nothing in `ConnectorStrip.tsx` changes.
 
 ---
 
@@ -99,7 +99,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - **`ConnectorStrip` owns no connect logic.** It raises intents. `useLiveConnectors` is the sole container that turns those intents into canonical connection flows.
 - **Normal chat shows exactly three plus `More`.** Connection state never collapses or hides those discovery/management doors.
 - **Rotation is fair, not merely random.** Selection is without replacement across a complete bag; do not replace it with independent random draws that can favor one provider indefinitely.
-- **The full window is live-only.** An entry's presence in Settings does not prove it is usable. Never admit local-only or coming-soon placeholders.
+- **The full window fails closed.** Catalog presence, an official endpoint, OAuth discovery, and an `active` label do not prove usability. Admit a disconnected MCP provider only when `connection_ready` is true; never admit unproven, local-only, or coming-soon entries.
 - **`surfaces` is the seeded first-party gate.** Dynamic live MCP providers join through `buildLiveConnectorDefinitions`; niche first-party definitions such as Google Search Console remain directory-only.
 - **The `id` is generic; the `name` carries today's truth.** `google-workspace` covers any file the user picks or we create — Docs and Sheets are today's support, not the ceiling. Never bake a feature list into an id or a file name.
 - **Provider artwork is canonical.** Dynamic MCP entries walk the real provider-artwork chain; first-party entries render their local SVG. Keep artwork full-color and use the check/chip treatment for connection state—never replace a provider with a generic monochrome icon or initial while provider identity is available.
@@ -136,6 +136,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-08-30` — Made chat connector visibility fail closed on the catalog's sanitized `connection_ready` proof and stopped generic OAuth from inventing a CIMD client id unless provider metadata explicitly supports it; Figma now remains hidden while its MCP client admission is pending.
 - `2026-08-30` — Completed dynamic-provider artwork fallback: each entry now tries its website favicon, known brand glyph, catalogue art, and cached 128px favicon before any branded initial, eliminating anonymous letter tiles whenever provider identity is available.
 - `2026-08-30` — Restored the canonical full-color provider artwork in the rotating chat strip and Integrations window; dynamic MCP entries now retain catalogue `iconUrl`/brand color instead of collapsing to one generic monochrome plug.
 - `2026-08-29` — Chat now shows three fairly rotated live integrations plus `More`. The shuffled bag prevents provider favoritism and consecutive repeats when possible; `More` opens a searchable WindowPanel containing every web-usable live integration while excluding local-only and coming-soon Settings entries.
