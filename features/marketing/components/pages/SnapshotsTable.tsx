@@ -7,6 +7,12 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  snapshotEntityRef,
+  snapshotMenuSection,
+} from "@/features/marketing/components/pages/snapshot-actions";
 import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -33,6 +39,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
   // selection. The diff panel renders above the table on demand.
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [contextRow, setContextRow] = useState<PageSnapshot | null>(null);
   const toggleCompare = (snapshotId: string) => {
     setCompareIds((current) => {
       if (current.includes(snapshotId)) {
@@ -163,6 +170,50 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         </div>
       ) : null}
       <div className="min-h-0 flex-1">
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = (target as HTMLElement | null)
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row =
+            (id && snapshots.data?.rows?.find((r) => r.id === id)) || null;
+          setContextRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: snapshotEntityRef({
+              siteId: site.id,
+              brandId,
+              pageId,
+              snapshotId: row.id,
+              capturedAt: row.captured_at,
+              finalUrl: row.final_url,
+            }),
+            content: humanLines([
+              ["Captured", formatCompactDate(row.captured_at)],
+              ["Final URL", row.final_url],
+              ["HTTP", row.http_status],
+              ["Words", row.word_count],
+            ]),
+          };
+        }}
+        extraSections={
+          contextRow
+            ? [
+                snapshotMenuSection({
+                  siteId: site.id,
+                  brandId,
+                  pageId,
+                  snapshotId: contextRow.id,
+                  capturedAt: contextRow.captured_at,
+                  finalUrl: contextRow.final_url,
+                }),
+              ]
+            : []
+        }
+      >
       <MatrxDataTable<PageSnapshot>
         data={snapshots.data?.rows ?? []}
         columns={columns}
@@ -243,6 +294,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
             "The page identity is stable even when no crawl has captured content for it yet.",
         }}
       />
+      </NonEditableContextMenu>
       </div>
     </main>
   );

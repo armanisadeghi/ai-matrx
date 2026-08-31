@@ -17,6 +17,13 @@ import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  pageEntityRef,
+  pageMenuSection,
+} from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -266,6 +273,8 @@ export function PagesTable() {
   const dismissMutation = useDismissPage(site.id);
   const [adding, setAdding] = useState(false);
   const [dismissing, setDismissing] = useState<PageListRow | null>(null);
+  const [contextRow, setContextRow] = useState<PageListRow | null>(null);
+  const openDrilldown = useOpenGscDrilldownWindow();
 
   const confirmDismiss = async () => {
     if (!dismissing) return;
@@ -493,6 +502,46 @@ export function PagesTable() {
         {dismissedScope ? (
           <DismissedPagesTable />
         ) : (
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = (target as HTMLElement | null)
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row =
+              (id && pages.data?.rows?.find((r) => r.id === id)) || null;
+            setContextRow(row);
+            if (!row) return null;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+                pageId: row.id,
+                url: row.url,
+              }),
+              content: humanLines([
+                ["URL", row.url],
+                ["Title", row.observed_title],
+                ["Status", row.status],
+                ["Provenance", row.provenance],
+              ]),
+            };
+          }}
+          extraSections={
+            contextRow
+              ? [
+                  pageMenuSection({
+                    siteId: site.id,
+                    siteName: site.name,
+                    url: contextRow.url,
+                    pageId: contextRow.id,
+                    openDrilldown,
+                    onDismiss: () => setDismissing(contextRow),
+                  }),
+                ]
+              : []
+          }
+        >
         <MatrxDataTable<PageListRow>
           data={pages.data?.rows ?? []}
           columns={columns}
@@ -606,6 +655,7 @@ export function PagesTable() {
               : "A crawl, sitemap, GSC sync, or manual entry can add URLs to this independent registry.",
           }}
         />
+        </NonEditableContextMenu>
         )}
       </div>
 

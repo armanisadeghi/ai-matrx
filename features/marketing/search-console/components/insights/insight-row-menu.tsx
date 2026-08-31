@@ -18,12 +18,25 @@
  * the Rulebook, or a page workspace.
  */
 
-import { ExternalLink, Filter, ListChecks, PanelTop, Pencil } from "lucide-react";
+import {
+  EyeOff,
+  ExternalLink,
+  Filter,
+  ListChecks,
+  PanelTop,
+  Pencil,
+  RotateCcw,
+} from "lucide-react";
 
 import type {
+  ContextMenuEntityRef,
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
+import {
+  applyAvailability,
+  type AvailabilityMap,
+} from "@/features/context-menu-v3/utils/availability";
 import type { OpenGscDrilldownWindowOptions } from "@/features/overlays/openers/gscDrilldownWindow";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { levelVocabularyHref } from "@/features/marketing/seo/value-system/reason-links";
@@ -139,10 +152,26 @@ export function levelMenuSection(opts: {
   return { id: "insight-level-actions", label: "Level", icon: ListChecks, items };
 }
 
+/** There is no separate "page row" record — this IS the `web.page` row. */
+export function pageEntityRef(opts: {
+  pageId: string | null;
+  url: string;
+}): ContextMenuEntityRef | null {
+  if (!opts.pageId) return null;
+  return { type: "web_page", id: opts.pageId, title: opts.url };
+}
+
 /**
  * A PAGE ROW. `pageId` is the canonical `web.page` the RPC already resolved —
  * without one there is no workspace to open, so that item is absent rather
  * than a link to nowhere.
+ *
+ * `onDismiss` / `onRestore` are host-supplied — the pages registry (Pages
+ * table, Dismissed table) is the same `web.page` identity as the GSC
+ * dimension tables, and dismissal is a registry-only concept those tables
+ * don't have. Passing neither omits both items rather than disabling them:
+ * a GSC dimension row has no dismiss state to speak of, so a disabled row
+ * would teach nothing true.
  */
 export function pageMenuSection(opts: {
   siteId: string;
@@ -150,6 +179,10 @@ export function pageMenuSection(opts: {
   url: string;
   pageId: string | null;
   openDrilldown: OpenDrilldown;
+  onDismiss?: () => void;
+  onRestore?: () => void;
+  /** THE CONSISTENCY STEP — see `features/context-menu-v3/utils/availability.ts`. */
+  unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
   const { siteId, siteName, url, pageId, openDrilldown } = opts;
   const items: ContextMenuExtraItem[] = [
@@ -176,5 +209,26 @@ export function pageMenuSection(opts: {
       icon: ExternalLink,
       href: marketingRoutes.sitePage(null, siteId, pageId),
     });
-  return { id: "insight-page-actions", label: "Page", icon: ExternalLink, items };
+  if (opts.onRestore)
+    items.push({
+      kind: "item",
+      id: "page-restore",
+      label: "Restore page",
+      icon: RotateCcw,
+      onSelect: opts.onRestore,
+    });
+  else if (opts.onDismiss)
+    items.push({
+      kind: "item",
+      id: "page-dismiss",
+      label: "Dismiss page",
+      icon: EyeOff,
+      onSelect: opts.onDismiss,
+    });
+  return {
+    id: "insight-page-actions",
+    label: "Page",
+    icon: ExternalLink,
+    items: applyAvailability(items, opts.unavailable),
+  };
 }

@@ -5,6 +5,12 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  snapshotEntityRef,
+  snapshotMenuSection,
+} from "@/features/marketing/components/pages/snapshot-actions";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
   formatDate,
@@ -120,7 +126,7 @@ export function SnapshotCompare({
   secondId: string;
   onClose: () => void;
 }) {
-  const { site } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const first = useSnapshot(site.id, pageId, firstId);
   const second = useSnapshot(site.id, pageId, secondId);
 
@@ -277,7 +283,34 @@ export function SnapshotCompare({
     },
   });
 
+  const beforeRow = {
+    siteId: site.id,
+    brandId,
+    pageId,
+    snapshotId: before.id,
+    capturedAt: before.captured_at,
+    finalUrl: before.final_url,
+  };
+  const afterRow = {
+    siteId: site.id,
+    brandId,
+    pageId,
+    snapshotId: after.id,
+    capturedAt: after.captured_at,
+    finalUrl: after.final_url,
+  };
+
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: copy.human() }}
+      entity={snapshotEntityRef(afterRow) ?? undefined}
+      extraSections={[
+        snapshotMenuSection(beforeRow, { label: "Before snapshot" }),
+        snapshotMenuSection(afterRow, { label: "After snapshot" }),
+      ]}
+    >
     <SectionCard
       title={
         changedCount > 0
@@ -297,5 +330,6 @@ export function SnapshotCompare({
         pageSizeOptions={[10, 25, 50, 100]}
       />
     </SectionCard>
+    </NonEditableContextMenu>
   );
 }

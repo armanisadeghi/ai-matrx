@@ -1,9 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { EyeOff, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
+import {
+  pageEntityRef,
+  pageMenuSection,
+} from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
@@ -46,6 +55,8 @@ export function DismissedPagesTable() {
   });
   const pages = useDismissedPages(site.id, table.queryState, true);
   const restoreMutation = useRestorePage(site.id);
+  const [contextRow, setContextRow] = useState<MarketingPage | null>(null);
+  const openDrilldown = useOpenGscDrilldownWindow();
 
   const restore = async (row: MarketingPage) => {
     try {
@@ -124,6 +135,52 @@ export function DismissedPagesTable() {
   }
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const id = (target as HTMLElement | null)
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row =
+          (id && pages.data?.rows?.find((r) => r.id === id)) || null;
+        setContextRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+            pageId: row.id,
+            url: row.url,
+          }),
+          content: humanLines([
+            ["URL", row.url],
+            ["Provenance", row.provenance],
+            ["Dismissed", formatCompactDate(row.deleted_at)],
+            ["Last seen", formatCompactDate(row.last_seen)],
+          ]),
+        };
+      }}
+      extraSections={
+        contextRow
+          ? [
+              pageMenuSection({
+                siteId: site.id,
+                siteName: site.name,
+                url: contextRow.url,
+                pageId: contextRow.id,
+                openDrilldown,
+                onRestore: () => void restore(contextRow),
+                unavailable: {
+                  // Dismissed rows deliberately never open the page
+                  // workspace — the single-entity fetchers exclude
+                  // dismissed rows by design (see the file header).
+                  "page-open": unavailableHere("the Pages table"),
+                },
+              }),
+            ]
+          : []
+      }
+    >
     <MatrxDataTable<MarketingPage>
       data={pages.data?.rows ?? []}
       columns={columns}
@@ -188,5 +245,6 @@ export function DismissedPagesTable() {
           "Pages you dismiss from the registry appear here. Dismissal hides a page from primary views; the crawler still treats it as observed reality.",
       }}
     />
+    </NonEditableContextMenu>
   );
 }
