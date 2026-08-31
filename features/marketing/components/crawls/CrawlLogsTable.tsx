@@ -21,6 +21,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const LEVEL_OPTIONS = [
   { value: "debug", label: "Debug" },
@@ -135,6 +136,36 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
             onRetry={() => void events.refetch()}
           />
         ) : (
+          // Crawl event identity is page-local — `grep -rl "CrawlEvent\b"
+          // features app` also returns LiveCrawlFeed.tsx / SiteCommandFeed.tsx,
+          // but those render transient `PresentedCrawlEvent` stream messages,
+          // a different identity from this durable, persisted row (see the
+          // empty-state copy below). No entity: durable events have no
+          // registered EntityTypeToken and are not shareable resources.
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id
+                ? (events.data?.rows.find((r) => r.id === id) ?? null)
+                : null;
+              if (!row) return null;
+              return {
+                content: humanLines([
+                  ["Seq", row.sequence],
+                  ["Time", formatCompactDate(row.occurred_at)],
+                  ["Level", row.level],
+                  ["Phase", row.phase],
+                  ["Event", row.event_type],
+                  ["Message", row.message],
+                ]),
+              };
+            }}
+          >
           <MatrxDataTable<CrawlEvent>
             data={events.data?.rows ?? []}
             columns={columns}
@@ -192,6 +223,7 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
                 "Live stream messages are transient; only crawler-persisted events belong in this history.",
             }}
           />
+          </NonEditableContextMenu>
         )}
       </div>
     </main>

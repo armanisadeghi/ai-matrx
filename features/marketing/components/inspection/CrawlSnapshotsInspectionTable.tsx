@@ -23,6 +23,14 @@ import {
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { useState } from "react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  snapshotEntityRef,
+  snapshotMenuSection,
+  type SnapshotMenuRow,
+} from "@/features/marketing/components/pages/snapshot-actions";
 
 function pageUrl(row: InspectionSnapshotRow): string {
   return row.page?.url ?? row.final_url ?? row.page_id;
@@ -41,6 +49,17 @@ export function CrawlSnapshotsInspectionTable({
   const crawl = useCrawl(site.id, crawlId);
   const openFilePreview = useOpenFilePreviewWindow();
   const snapshots = useCrawlSnapshots(site.id, crawlId, table.queryState);
+  const [clickedRow, setClickedRow] = useState<InspectionSnapshotRow | null>(
+    null,
+  );
+  const toSnapshotMenuRow = (row: InspectionSnapshotRow): SnapshotMenuRow => ({
+    siteId: site.id,
+    brandId,
+    pageId: row.page_id,
+    snapshotId: row.id,
+    capturedAt: row.captured_at,
+    finalUrl: row.final_url,
+  });
   const columns: MatrxColumnDef<InspectionSnapshotRow>[] = [
     {
       id: "page",
@@ -208,6 +227,37 @@ export function CrawlSnapshotsInspectionTable({
             onRetry={() => void snapshots.refetch()}
           />
         ) : (
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id
+                ? (snapshots.data?.rows.find((r) => r.id === id) ?? null)
+                : null;
+              setClickedRow(row);
+              if (!row) return null;
+              return {
+                content: humanLines([
+                  ["Page", pageUrl(row)],
+                  ["Snapshot", row.id],
+                  ["Captured", formatCompactDate(row.captured_at)],
+                  ["Final URL", row.final_url],
+                ]),
+                [CONTEXT_MENU_ENTITY_KEY]: snapshotEntityRef(
+                  toSnapshotMenuRow(row),
+                ),
+              };
+            }}
+            extraSections={[
+              snapshotMenuSection(
+                clickedRow ? toSnapshotMenuRow(clickedRow) : null,
+              ),
+            ]}
+          >
           <MatrxDataTable<InspectionSnapshotRow>
             data={snapshots.data?.rows ?? []}
             columns={columns}
@@ -267,6 +317,7 @@ export function CrawlSnapshotsInspectionTable({
                 "Snapshots appear here as the crawler persists page captures for this session.",
             }}
           />
+          </NonEditableContextMenu>
         )}
       </div>
     </main>
