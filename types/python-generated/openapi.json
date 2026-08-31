@@ -19411,6 +19411,111 @@
         }
       }
     },
+    "/iterable/public/status": {
+      "get": {
+        "tags": [
+          "Iterable Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_iterable_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IterableServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dochub/public/status": {
+      "get": {
+        "tags": [
+          "DocHub Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_dochub_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocHubServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/justworks/public/status": {
+      "get": {
+        "tags": [
+          "Justworks Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_justworks_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JustworksServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deputy/public/status": {
+      "get": {
+        "tags": [
+          "Deputy Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_deputy_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeputyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lucky-orange/public/status": {
+      "get": {
+        "tags": [
+          "Lucky Orange Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_lucky_orange_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LuckyOrangeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/wasabi/public/status": {
       "get": {
         "tags": [
@@ -19425,6 +19530,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WasabiServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readme/public/status": {
+      "get": {
+        "tags": [
+          "ReadMe Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_readme_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadMeServiceStatus"
                 }
               }
             }
@@ -112614,6 +112740,56 @@
         "title": "DemodeskStatusResult",
         "description": "Safe projection of Demodesk's high-level service status."
       },
+      "DeputyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "deputy_official_workforce_platform_status",
+            "title": "Kind",
+            "default": "deputy_official_workforce_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Deputy",
+            "title": "Provider",
+            "default": "Deputy"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.deputy.com",
+            "title": "Status Page",
+            "default": "https://status.deputy.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "DeputyServiceStatus",
+        "description": "Safe aggregate status projection for Deputy's fixed status page."
+      },
       "DerivationDocumentCounts": {
         "properties": {
           "pages": {
@@ -115700,6 +115876,47 @@
         ],
         "title": "DocBlock",
         "description": "One block of a generated Word document."
+      },
+      "DocHubServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dochub_public_pdf_document_platform_status",
+            "title": "Kind",
+            "default": "dochub_public_pdf_document_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "DocHub",
+            "title": "Provider",
+            "default": "DocHub"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.dochub.com",
+            "title": "Status Page",
+            "default": "https://status.dochub.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DocHubServiceStatus",
+        "description": "Safe aggregate status projection for DocHub's fixed status page."
       },
       "Docket": {
         "properties": {
@@ -137787,6 +138004,51 @@
         ],
         "title": "ItemResponse"
       },
+      "IterableServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "iterable_public_service_status",
+            "title": "Kind",
+            "default": "iterable_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "iterable",
+            "title": "Provider",
+            "default": "iterable"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.iterable.com",
+            "title": "Status Page",
+            "default": "https://status.iterable.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "IterableServiceStatus",
+        "description": "Safe aggregate status projection for Iterable's fixed status page."
+      },
       "IterationAgentConfig": {
         "properties": {
           "system_prompt": {
@@ -138498,6 +138760,56 @@
         ],
         "title": "JudgeAccuracyReport",
         "description": "One judge's calibration against human labels, plus its raw counts."
+      },
+      "JustworksServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "justworks_official_workforce_platform_status",
+            "title": "Kind",
+            "default": "justworks_official_workforce_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Justworks",
+            "title": "Provider",
+            "default": "Justworks"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.justworks.com",
+            "title": "Status Page",
+            "default": "https://status.justworks.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "JustworksServiceStatus",
+        "description": "Safe aggregate status projection for Justworks' fixed status page."
       },
       "JwxServiceStatus": {
         "properties": {
@@ -146459,6 +146771,51 @@
         ],
         "title": "LucidStatusResult",
         "description": "Safe projection of Lucid Software's high-level service status."
+      },
+      "LuckyOrangeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lucky_orange_public_service_status",
+            "title": "Kind",
+            "default": "lucky_orange_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "lucky_orange",
+            "title": "Provider",
+            "default": "lucky_orange"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.luckyorange.com",
+            "title": "Status Page",
+            "default": "https://status.luckyorange.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LuckyOrangeServiceStatus",
+        "description": "Safe aggregate status projection for Lucky Orange's fixed status page."
       },
       "Lumen5ServiceStatus": {
         "properties": {
@@ -175637,6 +175994,47 @@
           "file_id"
         ],
         "title": "ReadDocumentRequest"
+      },
+      "ReadMeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "readme_public_documentation_platform_status",
+            "title": "Kind",
+            "default": "readme_public_documentation_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "readme",
+            "title": "Provider",
+            "default": "readme"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.readmestatus.com",
+            "title": "Status Page",
+            "default": "https://www.readmestatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ReadMeServiceStatus",
+        "description": "Safe aggregate status projection for ReadMe's fixed status page."
       },
       "ReadTheDocsProjectResult": {
         "properties": {

@@ -8403,6 +8403,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/iterable/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_iterable_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dochub/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_dochub_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/justworks/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_justworks_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deputy/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_deputy_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lucky-orange/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lucky_orange_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/wasabi/public/status": {
         parameters: {
             query?: never;
@@ -8412,6 +8497,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_wasabi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readme/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_readme_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -45491,6 +45593,43 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * DeputyServiceStatus
+         * @description Safe aggregate status projection for Deputy's fixed status page.
+         */
+        DeputyServiceStatus: {
+            /**
+             * Kind
+             * @default deputy_official_workforce_platform_status
+             * @constant
+             */
+            __kind?: "deputy_official_workforce_platform_status";
+            /**
+             * Provider
+             * @default Deputy
+             * @constant
+             */
+            provider?: "Deputy";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.deputy.com
+             * @constant
+             */
+            status_page?: "https://status.deputy.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** DerivationDocumentCounts */
         DerivationDocumentCounts: {
             /** Pages */
@@ -46798,6 +46937,38 @@ export interface components {
              * @default true
              */
             header?: boolean;
+        };
+        /**
+         * DocHubServiceStatus
+         * @description Safe aggregate status projection for DocHub's fixed status page.
+         */
+        DocHubServiceStatus: {
+            /**
+             * Kind
+             * @default dochub_public_pdf_document_platform_status
+             * @constant
+             */
+            __kind?: "dochub_public_pdf_document_platform_status";
+            /**
+             * Provider
+             * @default DocHub
+             * @constant
+             */
+            provider?: "DocHub";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.dochub.com
+             * @constant
+             */
+            status_page?: "https://status.dochub.com";
         };
         /**
          * Docket
@@ -56058,6 +56229,41 @@ export interface components {
             created?: boolean;
         };
         /**
+         * IterableServiceStatus
+         * @description Safe aggregate status projection for Iterable's fixed status page.
+         */
+        IterableServiceStatus: {
+            /**
+             * Kind
+             * @default iterable_public_service_status
+             * @constant
+             */
+            __kind?: "iterable_public_service_status";
+            /**
+             * Provider
+             * @default iterable
+             * @constant
+             */
+            provider?: "iterable";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.iterable.com
+             * @constant
+             */
+            status_page?: "https://status.iterable.com";
+        };
+        /**
          * IterationAgentConfig
          * @description The portable agent description the Architect Agent emits and that
          *     the runner consumes on every subsequent turn.
@@ -56360,6 +56566,43 @@ export interface components {
             scored_by_authority?: {
                 [key: string]: number;
             };
+        };
+        /**
+         * JustworksServiceStatus
+         * @description Safe aggregate status projection for Justworks' fixed status page.
+         */
+        JustworksServiceStatus: {
+            /**
+             * Kind
+             * @default justworks_official_workforce_platform_status
+             * @constant
+             */
+            __kind?: "justworks_official_workforce_platform_status";
+            /**
+             * Provider
+             * @default Justworks
+             * @constant
+             */
+            provider?: "Justworks";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.justworks.com
+             * @constant
+             */
+            status_page?: "https://status.justworks.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * JwxServiceStatus
@@ -59338,6 +59581,41 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * LuckyOrangeServiceStatus
+         * @description Safe aggregate status projection for Lucky Orange's fixed status page.
+         */
+        LuckyOrangeServiceStatus: {
+            /**
+             * Kind
+             * @default lucky_orange_public_service_status
+             * @constant
+             */
+            __kind?: "lucky_orange_public_service_status";
+            /**
+             * Provider
+             * @default lucky_orange
+             * @constant
+             */
+            provider?: "lucky_orange";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.luckyorange.com
+             * @constant
+             */
+            status_page?: "https://status.luckyorange.com";
         };
         /**
          * Lumen5ServiceStatus
@@ -72105,6 +72383,38 @@ export interface components {
              * @default 0
              */
             start_char?: number;
+        };
+        /**
+         * ReadMeServiceStatus
+         * @description Safe aggregate status projection for ReadMe's fixed status page.
+         */
+        ReadMeServiceStatus: {
+            /**
+             * Kind
+             * @default readme_public_documentation_platform_status
+             * @constant
+             */
+            __kind?: "readme_public_documentation_platform_status";
+            /**
+             * Provider
+             * @default readme
+             * @constant
+             */
+            provider?: "readme";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://www.readmestatus.com
+             * @constant
+             */
+            status_page?: "https://www.readmestatus.com";
         };
         /**
          * ReadTheDocsProjectResult
@@ -105024,6 +105334,106 @@ export interface operations {
             };
         };
     };
+    public_status_iterable_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IterableServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_dochub_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocHubServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_justworks_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JustworksServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_deputy_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeputyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_lucky_orange_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LuckyOrangeServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_wasabi_public_status_get: {
         parameters: {
             query?: never;
@@ -105040,6 +105450,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WasabiServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_readme_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadMeServiceStatus"];
                 };
             };
         };
