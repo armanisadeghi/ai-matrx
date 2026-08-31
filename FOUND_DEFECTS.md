@@ -2709,3 +2709,13 @@ object branches must return `null` when `value === null && fieldSchema.nullable`
 does, with a test that plants a null on a nullable `inline_object` and proves it failing-then-passing.
 The 23 sites above then need no change. Not fixed here because the print-kinds task has no authority
 to release a shared package, and the local mirrors were made honest instead (`json` + a comment).
+
+## 2026-08-30 — context-menu lane coined unregistered entity tokens in backlinks components
+`features/marketing/components/backlinks/{referring-domain-actions.tsx,BacklinkChangesTable.tsx,prospect-actions.tsx}`
+carry `__entity` refs with invented tokens `web_referring_domain`, `web_backlink_change`,
+`web_prospect_domain`. None exist in `platform.entity_types`; the registered tokens for these
+tables DO exist (`seo_referring_domain_profile`, `seo_backlink_change_event`; prospects likely
+`seo_link_gap_domain` — the owning lane should confirm intent). Coining tokens violates the
+vocabulary law and `check:entity-types` catches drift only for the package, not coined strings.
+Left to the owning (active) context-menu lane: repoint to the registered tokens — do NOT register
+the `web_*` names, the entities are seo-schema tables.
