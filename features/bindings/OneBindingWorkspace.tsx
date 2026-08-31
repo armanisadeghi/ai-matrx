@@ -272,7 +272,9 @@ function BindingDraft({
     !data.provisionKey && !data.offer && surfaceState.status === "loading";
   const offeredValues = offer?.values ?? [];
 
-  const offerSourceLine = data.provisionKey
+  const offerSourceLine = offerPending
+    ? "Reading what this job offers…"
+    : data.provisionKey
     ? `Declared by the ${data.provisionKey} provision — the call site supplies these every launch.`
     : offer
       ? "This job's own described inputs. They ARE its provision."
@@ -645,7 +647,7 @@ function BindingDraft({
           mandateKey: data.mandate.mandate_key,
           label: data.mandate.label ?? data.mandate.mandate_key,
           outputKind: data.mandate.output_kind,
-          offeredCount: offeredValues.length,
+          offeredCount: offerPending ? null : offeredValues.length,
           offerSourceLine,
         }}
         ladderLine={ladderLine(data.bindings, rung, userId, organizationId)}

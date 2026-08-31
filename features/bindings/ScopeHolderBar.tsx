@@ -58,7 +58,8 @@ export interface ScopeHolderBarProps {
     mandateKey: string;
     label: string;
     outputKind: string | null;
-    offeredCount: number;
+    /** null while the offer is still being read — never a premature 0. */
+    offeredCount: number | null;
     offerSourceLine: string;
   };
 
@@ -245,7 +246,9 @@ export function ScopeHolderBar({
               {job.outputKind ?? "no declared output kind"}
             </Badge>
             <Badge variant="outline" className="py-0 text-[9.5px]">
-              offers {job.offeredCount}
+              {job.offeredCount === null
+                ? "reading what it offers…"
+                : `offers ${job.offeredCount}`}
             </Badge>
           </div>
           <p className="text-[11px] leading-snug text-muted-foreground">

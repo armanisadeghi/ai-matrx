@@ -48,9 +48,14 @@ export function OfferedInventoryColumn({
           <h3 className="text-[12.5px] font-semibold text-foreground">
             This job offers
           </h3>
-          <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
-            {values.length}
-          </span>
+          {/* A count is a settled fact. While the offer is still being read
+              there IS no count, and printing 0 would be the screen lying for a
+              second — which is the same defect as lying for an hour. */}
+          {status === "ready" ? (
+            <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
+              {values.length}
+            </span>
+          ) : null}
         </div>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           {sourceLine}
