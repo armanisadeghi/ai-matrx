@@ -113,8 +113,9 @@ with `#bind`.
    with an honest sentence. The structural skip is what this build exists to end.
 6. **Nothing dead, nothing silent.** Every empty, loading, unreadable and refused state is a
    sentence with a remedy. Save is disabled only with its reason printed beside it.
-7. **A selection closes before its confirmation opens.** `afterCurrentLayerCloses` separates
-   the rung picker from the dirty-draft AlertDialog so their Radix body locks never overlap.
+7. **A selection closes before its confirmation opens.** `afterCurrentLayerCloses` waits for
+   the rung picker's actual body lock to release before the dirty-draft AlertDialog opens, so
+   their Radix body locks never overlap. A fixed paint delay is not treated as proof of close.
 
 ## The four sources, all four real
 
@@ -222,6 +223,12 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-08-31 — **The Select-to-confirm handoff now observes the real close boundary.** The first
+  producer fix waited one animation frame, but the deployed admin surface reproduced the orphaned
+  body lock when Radix retained the Select lock across later paints. `afterCurrentLayerCloses`
+  now waits until `document.body` is no longer pointer-locked before opening the AlertDialog;
+  `fix4-guards.test.ts` forces a multi-frame close to prevent another timing-based regression.
 
 - 2026-08-31 — **The rung picker closes before its dirty-draft confirm opens.** Both mandate
   routes mount `OneBindingWorkspace`; deferring that shared handoff by one animation frame ends

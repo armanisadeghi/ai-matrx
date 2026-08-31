@@ -191,22 +191,37 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
 });
 
 describe("V1 R2-1 producer — a selection closes before its confirm opens", () => {
-  test("the handoff cannot continue synchronously inside Radix onValueChange", async () => {
-    let scheduled: FrameRequestCallback | null = null;
+  test("the handoff waits for Radix to release its body lock, not merely one frame", async () => {
+    const scheduled: FrameRequestCallback[] = [];
     let continued = false;
+    let layerClosed = false;
 
-    const handoff = afterCurrentLayerCloses((callback) => {
-      scheduled = callback;
-      return 1;
-    }).then(() => {
+    const handoff = afterCurrentLayerCloses(
+      (callback) => {
+        scheduled.push(callback);
+        return scheduled.length;
+      },
+      () => layerClosed,
+    ).then(() => {
       continued = true;
     });
 
     expect(continued).toBe(false);
-    expect(scheduled).not.toBeNull();
+    expect(scheduled).toHaveLength(1);
 
-    const release = scheduled as FrameRequestCallback | null;
-    release?.(0);
+    scheduled.shift()?.(0);
+    await Promise.resolve();
+    expect(continued).toBe(false);
+    expect(scheduled).toHaveLength(1);
+
+    // Radix may commit the Select close several paints after onValueChange.
+    scheduled.shift()?.(16);
+    await Promise.resolve();
+    expect(continued).toBe(false);
+    expect(scheduled).toHaveLength(1);
+
+    layerClosed = true;
+    scheduled.shift()?.(32);
     await handoff;
     expect(continued).toBe(true);
   });
