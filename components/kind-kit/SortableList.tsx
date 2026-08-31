@@ -232,7 +232,7 @@ export function SortableList<T>({
               transform: translate ? `translate3d(0, ${translate}px, 0)` : undefined,
             }}
             className={cn(
-              "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm text-foreground",
+              "group relative flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm text-foreground",
               "transition-transform duration-150 ease-out will-change-transform",
               isDragging
                 ? "border-dashed border-primary/60 bg-primary/5 shadow-inner"
@@ -265,38 +265,57 @@ export function SortableList<T>({
                 ? renderItem(item, { index, isDragging })
                 : defaultRender(item)}
             </div>
-            {!hideArrows && (
-              <div className="flex shrink-0 flex-col items-center justify-center">
-                <button
-                  type="button"
-                  aria-label="Move up"
-                  disabled={!canInteract || index === 0}
-                  onClick={() => move(index, index - 1)}
-                  className="flex h-3.5 w-5 items-center justify-center rounded-sm text-muted-foreground/70 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-6 pointer-coarse:w-7"
-                >
-                  <ChevronUp className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Move down"
-                  disabled={!canInteract || index === items.length - 1}
-                  onClick={() => move(index, index + 1)}
-                  className="flex h-3.5 w-5 items-center justify-center rounded-sm text-muted-foreground/70 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-6 pointer-coarse:w-7"
-                >
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            {onRemove && (
-              <button
-                type="button"
-                aria-label="Remove"
-                disabled={!canInteract}
-                onClick={() => onRemove(item, index)}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-destructive disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-7 pointer-coarse:w-7"
+            {(!hideArrows || onRemove) && (
+              /*
+               * Zero-footprint controls: on hover-capable devices the cluster
+               * floats over the row's top-right corner and occupies NO layout
+               * width — it appears on row hover or keyboard focus. On coarse
+               * pointers (no hover) it sits inline, always visible.
+               */
+              <div
+                className={cn(
+                  "absolute right-1 top-1 z-10 flex items-center gap-px rounded-md border border-border bg-card px-0.5 py-0.5 shadow-sm",
+                  "pointer-events-none opacity-0 transition-opacity duration-100",
+                  "group-hover:pointer-events-auto group-hover:opacity-100",
+                  "group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+                  "pointer-coarse:static pointer-coarse:shrink-0 pointer-coarse:border-0 pointer-coarse:bg-transparent pointer-coarse:p-0 pointer-coarse:shadow-none pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
+                  isDragging && "opacity-0",
+                )}
               >
-                <X className="h-3.5 w-3.5" />
-              </button>
+                {!hideArrows && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Move up"
+                      disabled={!canInteract || index === 0}
+                      onClick={() => move(index, index - 1)}
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-7 pointer-coarse:w-7"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Move down"
+                      disabled={!canInteract || index === items.length - 1}
+                      onClick={() => move(index, index + 1)}
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-7 pointer-coarse:w-7"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
+                {onRemove && (
+                  <button
+                    type="button"
+                    aria-label="Remove"
+                    disabled={!canInteract}
+                    onClick={() => onRemove(item, index)}
+                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-destructive disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-7 pointer-coarse:w-7"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             )}
           </li>
         );
