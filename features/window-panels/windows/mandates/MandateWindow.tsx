@@ -34,10 +34,13 @@
  *   • it records the surface it was opened from onto any note written here.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { BrainCircuit, Loader2, Search, ShieldCheck, UserRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BrainCircuit, ExternalLink, Loader2, Search, ShieldCheck, UserRound } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { mandateRoute } from "@/features/mandates/browse/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
@@ -182,6 +185,46 @@ function MandateWindowInner({
   // returns a different set can never leave the window pointing at nothing.
   const selected =
     rows.find((row) => row.mandateKey === selectedKey) ?? rows[0] ?? null;
+
+  // Minimal inline menu for the `mandate` entity token — same pattern
+  // SeoOperationsClient's Mandates panel already uses (SECTIONS.md:
+  // "mandate" is a registered-but-inline identity; extracting a shared
+  // builder off `useMandateRowActions` is future work, not this touch).
+  const clickedMandateRow = useRef<MandateRow | null>(null);
+  const mandateMenuFor = (row: MandateRow | null) => {
+    const href = row ? mandateRoute({ mandate_key: row.mandateKey }) : "#";
+    return {
+      id: "mandate-row",
+      label: row?.label ?? row?.mandateKey ?? "Mandate",
+      items: [
+        {
+          kind: "link" as const,
+          id: "mandate-open-page",
+          label: "Open page",
+          icon: ExternalLink,
+          href,
+          disabled: !row,
+        },
+        {
+          kind: "link" as const,
+          id: "mandate-open-new-tab",
+          label: "Open in new tab",
+          icon: ExternalLink,
+          href,
+          target: "_blank",
+          disabled: !row,
+        },
+        {
+          kind: "link" as const,
+          id: "mandate-view-agent",
+          label: "View current agent",
+          icon: UserRound,
+          href: row?.agentId ? `/agents/${row.agentId}` : "#",
+          disabled: !row?.agentId,
+        },
+      ],
+    };
+  };
 
   const canSeeAdmin = isSuperAdmin;
   const effectiveView: MandateWindowView =
