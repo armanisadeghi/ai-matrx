@@ -18844,6 +18844,48 @@
         }
       }
     },
+    "/mailersend/public/status": {
+      "get": {
+        "tags": [
+          "MailerSend Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mailersend_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailerSendServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buttercms/public/status": {
+      "get": {
+        "tags": [
+          "ButterCMS Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_buttercms_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ButterCmsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prismic/public/status": {
       "get": {
         "tags": [
@@ -18984,6 +19026,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AirmeetStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bizzabo/public/status": {
+      "get": {
+        "tags": [
+          "Bizzabo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_bizzabo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BizzaboStatusResult"
                 }
               }
             }
@@ -38390,66 +38453,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -83408,6 +83411,56 @@
         "title": "BitbucketPublicRepository",
         "description": "A deliberately small projection of public repository metadata."
       },
+      "BizzaboStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bizzabo_official_service_status",
+            "title": "Kind",
+            "default": "bizzabo_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "bizzabo",
+            "title": "Provider",
+            "default": "bizzabo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.bizzabo.com",
+            "title": "Status Url",
+            "default": "https://status.bizzabo.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "BizzaboStatusResult",
+        "description": "Safe projection of Bizzabo's high-level service status."
+      },
       "BlockStageRequest": {
         "properties": {
           "organization_id": {
@@ -89016,6 +89069,47 @@
           "failed"
         ],
         "title": "BulkVerdictResponse"
+      },
+      "ButterCmsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "buttercms_public_content_platform_status",
+            "title": "Kind",
+            "default": "buttercms_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ButterCMS",
+            "title": "Provider",
+            "default": "ButterCMS"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.buttercms.com",
+            "title": "Status Page",
+            "default": "https://status.buttercms.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ButterCmsServiceStatus",
+        "description": "Safe aggregate status projection for ButterCMS's fixed status page."
       },
       "ButtondownServiceStatus": {
         "properties": {
@@ -112118,61 +112212,6 @@
         ],
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -144280,6 +144319,51 @@
         ],
         "title": "MailerLiteServiceStatus",
         "description": "Safe aggregate status projection for MailerLite's fixed status page."
+      },
+      "MailerSendServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mailersend_public_service_status",
+            "title": "Kind",
+            "default": "mailersend_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mailersend",
+            "title": "Provider",
+            "default": "mailersend"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mailersend.com/",
+            "title": "Status Page",
+            "default": "https://status.mailersend.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MailerSendServiceStatus",
+        "description": "Safe aggregate status projection for MailerSend's fixed status page."
       },
       "MailjetServiceStatus": {
         "properties": {

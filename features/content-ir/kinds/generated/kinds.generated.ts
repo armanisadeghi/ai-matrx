@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 503 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 508 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "7b1a4e0b0162";
+export const KIND_REGISTRY_FINGERPRINT = "e35c71173378";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2526,6 +2526,446 @@ export interface Locus {
    * The registered kind this payload is an instance of.
    */
   __kind: "locus";
+}
+
+/**
+ * One orderable Lulu product: its SKU, page window, geometry and list price.
+ *  *
+ *  * From kind `lulu_print_product_matches`.
+ */
+export interface LuluCatalogProduct {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Binding option.
+   */
+  binding?: string | null;
+  /**
+   * Trim-size segment of the SKU.
+   */
+  trim_sku?: string | null;
+  /**
+   * Lulu's product family name.
+   */
+  book_type?: string | null;
+  /**
+   * Cover finish / lamination.
+   */
+  lamination?: string | null;
+  /**
+   * Paper stock.
+   */
+  paper_type?: string | null;
+  /**
+   * Paper weight (gsm).
+   */
+  paper_weight?: number | null;
+  /**
+   * Print quality option.
+   */
+  print_quality?: string | null;
+  /**
+   * Trim width in inches.
+   */
+  trim_width_in?: string | null;
+  /**
+   * Interior colour option.
+   */
+  interior_color?: string | null;
+  /**
+   * Most interior pages allowed.
+   */
+  max_page_count?: number | null;
+  /**
+   * Fewest interior pages allowed.
+   */
+  min_page_count?: number | null;
+  /**
+   * The SKU a quote or print job is placed against.
+   */
+  pod_package_id: string;
+  /**
+   * Trim height in inches.
+   */
+  trim_height_in?: string | null;
+  /**
+   * Published list base price — an ESTIMATE, never the quote.
+   */
+  list_price_base?: string | null;
+  /**
+   * Currency of the list prices.
+   */
+  list_price_currency?: string | null;
+  /**
+   * Published per-page list price — an ESTIMATE, never the quote.
+   */
+  list_price_per_page?: string | null;
+}
+
+/**
+ * A bulk-tier (or other) discount Lulu applied to one line.
+ *  *
+ *  * Shared by 2 kinds (lulu_print_cost_calculation, lulu_print_job).
+ */
+export interface LuluCostDiscount {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Discount amount, decimal string.
+   */
+  amount: string;
+  /**
+   * Why Lulu applied it, in its own words.
+   */
+  description: string;
+}
+
+/**
+ * A named fee line (``HANDLING_FEE``, ``FULFILLMENT_FEE``, …).
+ *  *
+ *  * From kind `lulu_print_cost_calculation`.
+ */
+export interface LuluCostFee {
+  /**
+   * Fee SKU, when Lulu names one.
+   */
+  sku?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Currency of this fee.
+   */
+  currency?: string | null;
+  /**
+   * Lulu's fee type key.
+   */
+  fee_type?: string | null;
+  /**
+   * Tax rate applied to the fee.
+   */
+  tax_rate?: string | null;
+  /**
+   * Tax on the fee.
+   */
+  total_tax?: string | null;
+  /**
+   * Fee excluding tax.
+   */
+  total_cost_excl_tax?: string | null;
+  /**
+   * Fee including tax.
+   */
+  total_cost_incl_tax?: string | null;
+}
+
+/**
+ * One cost bucket of a quote: shipping & handling, or fulfillment.
+ *  *
+ *  * Shared by 2 kinds (lulu_print_cost_calculation, lulu_print_job).
+ */
+export interface LuluCostGroup {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Tax rate applied to this bucket.
+   */
+  tax_rate?: string | null;
+  /**
+   * Tax on this bucket.
+   */
+  total_tax?: string | null;
+  /**
+   * Bucket total excluding tax.
+   */
+  total_cost_excl_tax?: string | null;
+  /**
+   * Bucket total including tax.
+   */
+  total_cost_incl_tax?: string | null;
+}
+
+/**
+ * Lulu's cost breakdown for ONE line item of a quote.
+ *  *
+ *  * Shared by 2 kinds (lulu_print_cost_calculation, lulu_print_job).
+ */
+export interface LuluCostLine {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Copies priced on this line.
+   */
+  quantity: number;
+  /**
+   * Tax rate applied to this line.
+   */
+  tax_rate?: string | null;
+  /**
+   * Real, applied discounts — must be shown, never summarized away.
+   */
+  discounts?: LuluCostDiscount[];
+  /**
+   * Tax on this line.
+   */
+  total_tax?: string | null;
+  /**
+   * Unit cost at the applied bulk tier.
+   */
+  unit_tier_cost?: string | null;
+  /**
+   * Unit cost before discounts.
+   */
+  cost_excl_discounts?: string | null;
+  /**
+   * Line total excluding tax.
+   */
+  total_cost_excl_tax?: string | null;
+  /**
+   * Line total including tax.
+   */
+  total_cost_incl_tax?: string | null;
+  /**
+   * Line total before discounts.
+   */
+  total_cost_excl_discounts?: string | null;
+}
+
+/**
+ * What Lulu charges the platform account for this job.
+ *  *
+ *  * From kind `lulu_print_job`.
+ */
+export interface LuluPrintJobCosts {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Total tax on the job.
+   */
+  total_tax?: string | null;
+  /**
+   * Shipping bucket.
+   */
+  shipping_cost?: LuluCostGroup | null;
+  /**
+   * Per-line costs; null until Lulu prices the job.
+   */
+  line_item_costs?: LuluCostLine[] | null;
+  /**
+   * Job total excluding tax.
+   */
+  total_cost_excl_tax?: string | null;
+  /**
+   * Job total including tax.
+   */
+  total_cost_incl_tax?: string | null;
+}
+
+/**
+ * Lulu's estimated dispatch and arrival window, ISO 8601 strings.
+ *  *
+ *  * From kind `lulu_print_job`.
+ */
+export interface LuluPrintJobDates {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Latest arrival.
+   */
+  arrival_max?: string | null;
+  /**
+   * Earliest arrival.
+   */
+  arrival_min?: string | null;
+  /**
+   * Latest dispatch.
+   */
+  dispatch_max?: string | null;
+  /**
+   * Earliest dispatch.
+   */
+  dispatch_min?: string | null;
+}
+
+/**
+ * One line of a print job as Lulu now holds it, tracking included.
+ *  *
+ *  * From kind `lulu_print_job`.
+ */
+export interface LuluPrintJobLine {
+  /**
+   * Lulu's line-item id.
+   */
+  id?: number | null;
+  /**
+   * Book title on this line.
+   */
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * This line's own status.
+   */
+  status?: LuluPrintJobLineStatus | null;
+  /**
+   * Copies on this line.
+   */
+  quantity?: number | null;
+  /**
+   * Interior pages Lulu measured.
+   */
+  page_count?: number | null;
+  /**
+   * Our id for this line, if we sent one.
+   */
+  external_id?: string | null;
+  /**
+   * Carrier tracking number.
+   */
+  tracking_id?: string | null;
+  /**
+   * Lulu's normalized printable id.
+   */
+  printable_id?: string | null;
+  /**
+   * Carrier tracking links; null until shipped.
+   */
+  tracking_urls?: string[] | null;
+  /**
+   * The SKU being printed.
+   */
+  pod_package_id?: string | null;
+}
+
+/**
+ * A line item's own processing status — where file normalization lands.
+ *  *
+ *  * From kind `lulu_print_job`.
+ */
+export interface LuluPrintJobLineStatus {
+  /**
+   * Line-item status name.
+   */
+  name?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Lulu's per-line messages. NESTED on a rejected job (``{"printable_normalization": {"interior": ["…"]}}``), so readers dig.
+   */
+  messages?: Record<string, unknown>;
+}
+
+/**
+ * A print job's status: the name, when it changed, and why.
+ *  *
+ *  * From kind `lulu_print_job`.
+ */
+export interface LuluPrintJobStatusInfo {
+  /**
+   * CREATED | UNPAID | IN_PRODUCTION | SHIPPED | REJECTED | …
+   */
+  name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * When it last changed, ISO 8601.
+   */
+  changed?: string | null;
+  /**
+   * Lulu's explanation, when it gives one.
+   */
+  message?: string | null;
+}
+
+/**
+ * One shipping level Lulu will actually ship this order with.
+ *  *
+ *  * From kind `lulu_shipping_options`.
+ */
+export interface LuluShippingOptionRow {
+  /**
+   * Lulu's shipping-option id.
+   */
+  id: number;
+  /**
+   * Shipping level key — MAIL, GROUND, EXPRESS, …
+   */
+  level: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Currency of the cost.
+   */
+  currency?: string | null;
+  /**
+   * Residential addresses only.
+   */
+  home_only?: boolean;
+  /**
+   * Carries tracking.
+   */
+  traceable?: boolean;
+  /**
+   * May deliver to a PO box.
+   */
+  postbox_ok?: boolean;
+  /**
+   * Carrier transit days.
+   */
+  transit_time?: number | null;
+  /**
+   * Business addresses only.
+   */
+  business_only?: boolean;
+  /**
+   * Shipping cost excluding tax.
+   */
+  cost_excl_tax?: string | null;
+  /**
+   * Production + transit, slowest.
+   */
+  total_days_max?: number | null;
+  /**
+   * Production + transit, fastest.
+   */
+  total_days_min?: number | null;
+  /**
+   * Latest delivery, ISO 8601.
+   */
+  max_delivery_date?: string | null;
+  /**
+   * Latest dispatch, ISO 8601.
+   */
+  max_dispatch_date?: string | null;
+  /**
+   * Earliest delivery, ISO 8601.
+   */
+  min_delivery_date?: string | null;
+  /**
+   * Earliest dispatch, ISO 8601.
+   */
+  min_dispatch_date?: string | null;
 }
 
 /**
@@ -9740,6 +10180,261 @@ export interface LotDetection {
   unit_type?: string;
   folded_from?: string | null;
   quantity_estimate?: QuantityRange | null;
+}
+
+/**
+ * The full-wrap cover canvas for a book at a given interior page count.
+ *
+ * 🚨 ``width`` is the WHOLE WRAP — back cover + spine + front cover + bleed —
+ * and there is deliberately NO separate spine field: the spine is what the
+ * width grows by as ``interior_page_count`` grows, and Lulu owns the paper
+ * caliper maths. The live 100-page US Letter check: ``2 × 8.5 (covers) +
+ * 0.285 (spine) + 0.25 (bleed) = 17.535 inch``. A consumer that needs a spine
+ * number derives it from two calls, never from a field that does not exist.
+ *  *
+ *  * Kind `lulu_cover_dimensions` (registry v2).
+ */
+export interface LuluCoverDimensions {
+  /**
+   * Unit the two values are expressed in: pt | mm | inch.
+   */
+  unit: string;
+  /**
+   * Full wrap width (back + spine + front + bleed), decimal string.
+   */
+  width: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "lulu_cover_dimensions";
+  /**
+   * Full wrap height including bleed, decimal string.
+   */
+  height: string;
+  /**
+   * Print provider.
+   */
+  provider?: "lulu";
+}
+
+/**
+ * A full print quote: product, tax, shipping, fulfillment and fees.
+ *
+ * Live-verified against Lulu's sandbox 2026-08-30 (US Letter, 100pp, perfect
+ * bound BW, qty 1, MAIL to Washington DC) — the example above is that call.
+ * ``line_item_costs`` is ``null`` until Lulu has priced the basket, which is a
+ * real state and not an error.
+ *  *
+ *  * Kind `lulu_print_cost_calculation` (registry v2).
+ */
+export interface LuluPrintCostCalculation {
+  /**
+   * Named fee lines.
+   */
+  fees?: LuluCostFee[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "lulu_print_cost_calculation";
+  /**
+   * Currency every amount is in.
+   */
+  currency?: string | null;
+  /**
+   * Print provider.
+   */
+  provider?: "lulu";
+  /**
+   * Total tax.
+   */
+  total_tax?: string | null;
+  /**
+   * Shipping & handling bucket.
+   */
+  shipping_cost?: LuluCostGroup | null;
+  /**
+   * Per-line breakdown; null until Lulu prices the basket.
+   */
+  line_item_costs?: LuluCostLine[] | null;
+  /**
+   * Fulfillment bucket.
+   */
+  fulfillment_cost?: LuluCostGroup | null;
+  /**
+   * Grand total excluding tax.
+   */
+  total_cost_excl_tax?: string | null;
+  /**
+   * Grand total including tax — the number a buyer pays.
+   */
+  total_cost_incl_tax?: string | null;
+  /**
+   * Total discounts applied.
+   */
+  total_discount_amount?: string | null;
+}
+
+/**
+ * A real print job — the thing that spends money and ships physical books.
+ *
+ * ``production_due_time`` IS the cancellation deadline: a job may be
+ * cancelled only while it sits in the ``production_delay`` window (60–2880
+ * minutes), and only from ``CREATED`` / ``UNPAID`` / ``PRODUCTION_DELAYED``.
+ * After that the money is spent and the books are being made.
+ *
+ * The stateless lane writes no row, so ``id`` is the ONLY handle to the
+ * order — a workflow that drops it has lost the order.
+ *  *
+ *  * Kind `lulu_print_job` (registry v2).
+ */
+export interface LuluPrintJob {
+  /**
+   * Lulu's print-job id — the only handle.
+   */
+  id?: number | null;
+  /**
+   * What Lulu charges us.
+   */
+  costs?: LuluPrintJobCosts | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "lulu_print_job";
+  /**
+   * The job's status.
+   */
+  status?: LuluPrintJobStatusInfo | null;
+  /**
+   * Lulu's order id.
+   */
+  order_id?: string | null;
+  /**
+   * Print provider.
+   */
+  provider?: "lulu";
+  /**
+   * Every line of the job, with its own status.
+   */
+  line_items?: LuluPrintJobLine[];
+  /**
+   * Our id for the job, if we sent one.
+   */
+  external_id?: string | null;
+  /**
+   * Country the job is taxed in.
+   */
+  tax_country?: string | null;
+  /**
+   * When the job was created.
+   */
+  date_created?: string | null;
+  /**
+   * Where Lulu sends job mail.
+   */
+  contact_email?: string | null;
+  /**
+   * When the job last changed.
+   */
+  date_modified?: string | null;
+  /**
+   * Shipping level the job ships at.
+   */
+  shipping_level?: string | null;
+  /**
+   * Minutes before production starts — the cancel window's width.
+   */
+  production_delay?: number | null;
+  /**
+   * When production starts — the cancel deadline, ISO 8601.
+   */
+  production_due_time?: string | null;
+  /**
+   * Estimated dispatch/arrival window.
+   */
+  estimated_shipping_dates?: LuluPrintJobDates | null;
+}
+
+/**
+ * The products in Lulu's catalog that satisfy a set of filters.
+ *
+ * A SUBSET of ``lulu_print_catalog`` (the whole constraint graph), not the
+ * catalog itself — which is why it is its own shape. ``list_price_*`` is the
+ * spec sheet's published list pricing: good enough to render an instant
+ * estimate while a form is being filled, and NEVER the authoritative number.
+ * The authority is always ``lulu.price_quote``, which is what applies bulk
+ * tiers, tax, shipping and fees.
+ *  *
+ *  * Kind `lulu_print_product_matches` (registry v2).
+ */
+export interface LuluPrintProductMatches {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "lulu_print_product_matches";
+  /**
+   * The matching products.
+   */
+  products?: LuluCatalogProduct[];
+  /**
+   * Print provider.
+   */
+  provider?: "lulu";
+  /**
+   * True when matches were cut by the limit — the caller must narrow, not guess.
+   */
+  truncated: boolean;
+  /**
+   * How many products matched the filters in total.
+   */
+  match_count: number;
+  /**
+   * Where the catalog document came from.
+   */
+  catalog_source: string;
+  /**
+   * How many are in ``products`` after the limit.
+   */
+  returned_count: number;
+  /**
+   * When the catalog was last ingested, ISO 8601.
+   */
+  catalog_retrieved_at: string;
+}
+
+/**
+ * The shipping levels available for ONE destination and ONE line item.
+ *
+ * Lulu prices a concrete line item even for this "minimal input" endpoint, so
+ * the answer is always destination-AND-product specific — never a generic
+ * rate card.
+ *  *
+ *  * Kind `lulu_shipping_options` (registry v2).
+ */
+export interface LuluShippingOptions {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "lulu_shipping_options";
+  /**
+   * Every level Lulu will ship this with.
+   */
+  options?: LuluShippingOptionRow[];
+  /**
+   * Currency the options are priced in.
+   */
+  currency?: string;
+  /**
+   * Print provider.
+   */
+  provider?: "lulu";
+  /**
+   * Destination state/province — required for the ~35 countries that have one.
+   */
+  state_code?: string | null;
+  /**
+   * ISO 3166-1 alpha-2 destination country.
+   */
+  country_code: string;
 }
 
 /**
@@ -20399,6 +21094,11 @@ export type GeneratedKindSlug =
   | "local_place"
   | "loop_iteration_result"
   | "lot_detection"
+  | "lulu_cover_dimensions"
+  | "lulu_print_cost_calculation"
+  | "lulu_print_job"
+  | "lulu_print_product_matches"
+  | "lulu_shipping_options"
   | "map_result"
   | "mapped_list_result"
   | "markdown"
@@ -20905,6 +21605,11 @@ export interface KindPayloadBySlug {
   "local_place": LocalPlace;
   "loop_iteration_result": LoopIterationResult;
   "lot_detection": LotDetection;
+  "lulu_cover_dimensions": LuluCoverDimensions;
+  "lulu_print_cost_calculation": LuluPrintCostCalculation;
+  "lulu_print_job": LuluPrintJob;
+  "lulu_print_product_matches": LuluPrintProductMatches;
+  "lulu_shipping_options": LuluShippingOptions;
   "map_result": MapResult;
   "mapped_list_result": MappedListResult;
   "markdown": Markdown;
@@ -21415,6 +22120,11 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "local_place",
   "loop_iteration_result",
   "lot_detection",
+  "lulu_cover_dimensions",
+  "lulu_print_cost_calculation",
+  "lulu_print_job",
+  "lulu_print_product_matches",
+  "lulu_shipping_options",
   "map_result",
   "mapped_list_result",
   "markdown",

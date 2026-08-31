@@ -467,6 +467,11 @@ export type FeSynthesizedBlockType =
   | "listing_draft"
   | "review_verdict"
   | "publish_preflight"
+  | "lulu_print_cost_calculation"
+  | "lulu_shipping_options"
+  | "lulu_cover_dimensions"
+  | "lulu_print_job"
+  | "lulu_print_product_matches"
   | "data_table"
   | "source_ref"
   | "retrieved_chunk"
@@ -625,6 +630,11 @@ export type ShapeBlockType =
   | "listing_draft"
   | "review_verdict"
   | "publish_preflight"
+  | "lulu_print_cost_calculation"
+  | "lulu_shipping_options"
+  | "lulu_cover_dimensions"
+  | "lulu_print_job"
+  | "lulu_print_product_matches"
   | "data_table"
   | "source_ref"
   | "retrieved_chunk"
@@ -2137,6 +2147,22 @@ const SHAPE_BLOCK_DISPATCH = {
   listing_draft: searchKindEntry(BlockComponents.ListingDraftBlock),
   review_verdict: searchKindEntry(BlockComponents.ReviewVerdictBlock),
   publish_preflight: searchKindEntry(BlockComponents.PublishPreflightBlock),
+
+  // Kind-routed Lulu print lane family: same uniform `{ value, isComplete }`
+  // bridge, so the SAME three-branch entry serves it.
+  lulu_print_cost_calculation: searchKindEntry(
+    BlockComponents.LuluPrintCostBlock,
+  ),
+  lulu_shipping_options: searchKindEntry(
+    BlockComponents.LuluShippingOptionsBlock,
+  ),
+  lulu_cover_dimensions: searchKindEntry(
+    BlockComponents.LuluCoverDimensionsBlock,
+  ),
+  lulu_print_job: searchKindEntry(BlockComponents.LuluPrintJobBlock),
+  lulu_print_product_matches: searchKindEntry(
+    BlockComponents.LuluPrintProductMatchesBlock,
+  ),
 
   // Kind-routed tabular primitive (Table Kinds Run): same uniform
   // `{ value, isComplete }` bridge, so the SAME three-branch entry serves it.

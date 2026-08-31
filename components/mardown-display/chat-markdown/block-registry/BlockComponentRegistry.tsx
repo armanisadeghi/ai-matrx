@@ -106,6 +106,14 @@ import {
   ReviewVerdictBlock as ReviewVerdictBlockImpl,
   ValueAssessmentBlock as ValueAssessmentBlockImpl,
 } from "../../blocks/commerce-kinds/commerce-kind-blocks";
+// Lulu print lane kind family — one canonical renderer per shape.
+import {
+  LuluCoverDimensionsBlock as LuluCoverDimensionsBlockImpl,
+  LuluPrintCostBlock as LuluPrintCostBlockImpl,
+  LuluPrintJobBlock as LuluPrintJobBlockImpl,
+  LuluPrintProductMatchesBlock as LuluPrintProductMatchesBlockImpl,
+  LuluShippingOptionsBlock as LuluShippingOptionsBlockImpl,
+} from "../../blocks/print-kinds/print-kind-blocks";
 // RAG retrieval + citation kind family (RAG Kinds Run). `source_ref` is a
 // SYSTEM-WIDE primitive — the platform's cited-source shape — and is nested by
 // every other family that says "here is where this came from". The chunk
@@ -827,6 +835,43 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <PublishPreflightBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Lulu print lane family — quote, shipping levels, cover canvas, job, catalog
+  // matches. One canonical renderer per shape.
+  LuluPrintCostBlock: (
+    props: React.ComponentProps<typeof LuluPrintCostBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <LuluPrintCostBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LuluShippingOptionsBlock: (
+    props: React.ComponentProps<typeof LuluShippingOptionsBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <LuluShippingOptionsBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LuluCoverDimensionsBlock: (
+    props: React.ComponentProps<typeof LuluCoverDimensionsBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <LuluCoverDimensionsBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LuluPrintJobBlock: (
+    props: React.ComponentProps<typeof LuluPrintJobBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <LuluPrintJobBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LuluPrintProductMatchesBlock: (
+    props: React.ComponentProps<typeof LuluPrintProductMatchesBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <LuluPrintProductMatchesBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   // RAG retrieval + citation kind family (RAG Kinds Run).
