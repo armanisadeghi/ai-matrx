@@ -290,6 +290,22 @@ commit time.
 
 ## Change Log
 
+- 2026-08-31 — **The two missing sources, the promise, and the example.**
+  A mandate consumption map now carries all three storable sources, not one:
+  `direct_value` (a literal on the binding) and `prompt_user` (a question the mandate's
+  input surface serves as a REAL named field, `origin: "binding_prompt"`, so the ask
+  actually happens and the answer arrives under the holder input's own name) join
+  `offered_value`. `ConsumptionEntry` widened to those three branches of the shared
+  `ValueMapping`; `parseConsumptionMap`, `consumptionMapProblems` and
+  `consumptionMapForApi` each speak all three. `mandate.binding.auto_run` (nullable)
+  closes the auto-run inversion, refused-down-to-false at both write and resolve when
+  the map still asks. `OfferedValue` and `DraftInput` gained a static `example` (D2) —
+  an illustration at the moment of choice, never read at run time.
+  **Two class defects fixed on the way through:** `compareConsumptionAgainstOffer` read
+  a `direct_value`'s literal as an offered-value NAME, failing binding health on valid
+  bindings; and `admin/pin-refusal.ts` + its test were DELETED as orphans (their only
+  consumer was the rebind editor deleted with `OverrideFlow`) — the rule they held is
+  no longer reachable from any screen.
 - 2026-08-31 — **THE INPUT SURFACE IS SERVED, and "user text only" became a measurement.**
   Every reader derived a mandate's inputs from the two things only CODE declares (a
   Provision, or the promoted `required_variables`), so a mandate a PERSON authored —
