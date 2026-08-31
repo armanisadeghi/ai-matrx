@@ -14,8 +14,11 @@ import {
   CopyIcon,
   PencilIcon,
 } from "lucide-react";
-import { useMediaLoadRecovery } from "@ai-matrx/media/core";
-import { useMediaResolution } from "@ai-matrx/media/core";
+import {
+  useMediaBlob,
+  useMediaLoadRecovery,
+  useMediaResolution,
+} from "@ai-matrx/media/core";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 
@@ -41,20 +44,30 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
   // A URL we don't recognise (a genuinely external image) yields no match, the
   // handler is called with `null`, and `srcProp` passes through untouched.
   const ourFile = recognizeOurFileUrl(srcProp);
-  const resolvedFromIdentity =
-    useMediaResolution(fileSourceToMediaRef(ourFile?.source)).resolution?.src ??
-    null;
-  const effectiveSrc = resolvedFromIdentity ?? srcProp;
+  const mediaRef = fileSourceToMediaRef(ourFile?.source);
+  const { resolution } = useMediaResolution(mediaRef);
+  const needsBlob = resolution?.transport === "blob";
+  const authenticatedBlob = useMediaBlob(needsBlob ? mediaRef : null);
+  const resolvedFromIdentity = needsBlob
+    ? authenticatedBlob.url
+    : (resolution?.src ?? null);
+  // The resolver's transport verdict is authoritative. In particular, a
+  // private image endpoint must never fall back to a direct <img src> while
+  // its bearer-authenticated blob is still loading.
+  const effectiveSrc = mediaRef ? resolvedFromIdentity : srcProp;
   // Session-cookie self-heal still applies on top: the identity-resolved URL is
   // durable, so a load failure means the file session needs re-establishing.
   const src = effectiveSrc ?? "";
+  const renderSrc = effectiveSrc ?? undefined;
   const {
     retryKey,
     onLoadError: handleImageError,
   } = useMediaLoadRecovery(effectiveSrc ?? null, {
     recoverable:
-      !!ourFile?.fileId ||
-      (!!effectiveSrc && recognizeOurFileUrl(effectiveSrc) !== null),
+      !needsBlob &&
+      (!!ourFile?.fileId ||
+        (!!effectiveSrc && recognizeOurFileUrl(effectiveSrc) !== null)),
+    failureRef: mediaRef,
   });
   // Our own media has a recoverable file_id → offer the "Edit" escape hatch
   // (open the real image editor); external/unknown URLs simply don't show it.
@@ -184,7 +197,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
       <img
         key={retryKey}
         ref={imageRef}
-        src={src}
+        src={renderSrc}
         alt={alt}
         onDoubleClick={handleExpand}
         onError={handleImageError}
@@ -347,7 +360,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
         >
           <img
             key={retryKey}
-            src={src}
+            src={renderSrc}
             alt={alt}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={handleCloseExpanded}

@@ -134,6 +134,11 @@ Then confirm the service is up: `curl https://files.matrxserver.com/files-servic
 
 ## Change log
 
+- **2026-08-30** — **Legacy rich-image blocks obey the resolver transport.**
+  `ImageBlock` now keeps authenticated file endpoints off `<img src>` and waits
+  for the bearer-authenticated blob when `MediaClient.resolve()` returns
+  `transport: "blob"`; the forcing test covers both loading and loaded states.
+
 - **2026-08-30** — **`@ai-matrx/media` 0.3.0 diagnostics port bound to the Error
   Inspector.** The package now captures every terminal media failure itself (the
   2026-08-30 private-image outage class: honest panel, zero error rows); the host
