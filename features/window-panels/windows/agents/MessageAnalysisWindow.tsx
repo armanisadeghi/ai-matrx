@@ -19,6 +19,7 @@ import { RequestStatsPanel } from "@/features/agents/components/run-controls/pan
 import { SessionStatsPanel } from "@/features/agents/components/run-controls/panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "@/features/agents/components/run-controls/panels/ClientMetricsPanel";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 type TabId = "request" | "client" | "session";
 
@@ -110,6 +111,22 @@ function MessageAnalysisWindowInner({
           No conversation selected.
         </div>
       ) : (
+        // Identity reuses the registered `cx_request` / `conversation` tokens
+        // from the CX dashboard's shared builder (SECTIONS.md "CX dashboard
+        // record") — same record, a single-target debug window rather than a
+        // table row, so `useCxRowMenu`'s `data-row-id` row-list contract
+        // doesn't apply directly; this constructs the same entity shape by
+        // hand instead of forking a second identity for the same record.
+        // context-menu-exempt: surfaceName — no registered surface manifest for this window
+        <NonEditableContextMenu
+          sourceFeature="agent-builder"
+          contentSource={{ type: "raw" }}
+          entity={
+            requestId
+              ? { type: "cx_request", id: requestId, title: `Iteration — ${requestId.slice(0, 8)}…` }
+              : { type: "conversation", id: conversationId, title: "Conversation" }
+          }
+        >
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeTab === "request" && (
             <RequestStatsPanel
@@ -127,6 +144,7 @@ function MessageAnalysisWindowInner({
             <SessionStatsPanel conversationId={conversationId} />
           )}
         </div>
+        </NonEditableContextMenu>
       )}
     </WindowPanel>
   );

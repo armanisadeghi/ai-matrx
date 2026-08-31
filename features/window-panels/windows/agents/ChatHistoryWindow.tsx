@@ -46,6 +46,7 @@ import {
   AI_RESULTS_SURFACE_NAME,
   createAiResultsScope,
 } from "@/features/surfaces/manifests/ai-results.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const SURFACE_KEY = "ai-results-window";
 const WORKSPACE_INPUT_SURFACE_KEY = "ai-results-workspace";
@@ -384,7 +385,22 @@ function ChatHistoryWindowInner({
         }
         isEditable={false}
       >
-        <ChatHistoryMain selectedId={b.selectedId} />
+        {/* The sidebar list (`ConversationHistorySidebar`, out of scope here)
+            already carries its own row menu via `buildConversationMenu`; this
+            wraps the MAIN pane, whose identity is the selected conversation
+            being viewed — a real record, not a raw fragment. */}
+        <NonEditableContextMenu
+          sourceFeature="agent-builder"
+          surfaceName={AI_RESULTS_SURFACE_NAME}
+          contentSource={{ type: "raw" }}
+          entity={
+            b.selectedId
+              ? { type: "conversation", id: b.selectedId, title: selectedItem?.title ?? "Conversation" }
+              : undefined
+          }
+        >
+          <ChatHistoryMain selectedId={b.selectedId} />
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </WindowPanel>
   );

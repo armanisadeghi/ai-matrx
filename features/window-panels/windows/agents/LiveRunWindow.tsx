@@ -36,6 +36,7 @@ import {
 } from "@/features/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 /**
  * 🚨 THE SIZING RULE — the reading column must match `/chat`, exactly.
@@ -159,6 +160,22 @@ export default function LiveRunWindow({
           thing the user came for (the model's own output) was never shown.
           When a run has both, the stages ride on top as a compact strip and
           the output owns the rest of the body. */}
+      {/* 🚨 STREAMING SURFACE — this wraps the OUTER frame only. It never
+          touches `LiveRunDisplay`/`RunSetDisplay`'s own rendering pipeline
+          (MarkdownStream → kind registry), never re-renders the stream, and
+          resolves its content from the DOM (selection-first) like every other
+          read-only menu, not from a parsed copy of the run. Minimal and
+          read-only is the honest answer here. */}
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={
+          conversationId
+            ? { type: "conversation", id: conversationId, title: label ?? "AI run" }
+            : undefined
+        }
+      >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {progress ? (
           <div
@@ -187,6 +204,7 @@ export default function LiveRunWindow({
           </div>
         )}
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

@@ -33,6 +33,11 @@ import {
 } from "@/features/agents/components/inputs/resources/attach-resource";
 import { cn } from "@/lib/utils";
 import type { Resource } from "@/features/agents/resources/types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectInstanceAgentId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 const OVERLAY_ID = "runControlsWindow" as const;
 
@@ -60,6 +65,11 @@ function RunControlsWindowInner({
   const attachResource = useAttachResource(conversationId);
   const detachResource = useDetachResource(conversationId);
   const close = () => dispatch(closeOverlay({ overlayId: OVERLAY_ID }));
+  const agentId = useAppSelector(selectInstanceAgentId(conversationId));
+  const agentName = useAppSelector((s) =>
+    agentId ? (selectAgentName(s, agentId) ?? null) : null,
+  );
+  const agentSection = useAgentMenuSection({ agentId: agentId ?? "", agentName });
   const handleResourceSelected = async (resource: Resource) => {
     return attachResource(resource);
   };
@@ -145,14 +155,28 @@ function RunControlsWindowInner({
         </nav>
       }
     >
-      <RunControlsTabPanel
-        {...rc.panelProps}
-        activeTab={activeTab}
-        fill
-        onResourceSelected={handleResourceSelected}
-        onResourceDeselected={detachResource}
-        onClose={close}
-      />
+      {/* "Chat Options" spans many tabs (attach/context/document/overrides/
+          tools/skills/sandbox/settings/preferences/creator) — each tab's row
+          identity (an attached resource, a tool, a skill) lives in
+          `RunControlsTabPanel`'s own per-tab state, out of scope to reach
+          from this shell. The entity below is this window's actual subject:
+          the agent running this conversation. */}
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={agentId ? agentEntityRef(agentId, agentName) : undefined}
+        extraSections={agentId ? [agentSection] : []}
+      >
+        <RunControlsTabPanel
+          {...rc.panelProps}
+          activeTab={activeTab}
+          fill
+          onResourceSelected={handleResourceSelected}
+          onResourceDeselected={detachResource}
+          onClose={close}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

@@ -17,6 +17,7 @@ import {
   selectAgentAssistantMarkdownDraftState,
   type AgentAssistantMarkdownDraftEntry,
 } from "@/features/agents/redux/agent-assistant-markdown-draft.slice";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface AgentAssistantMarkdownDebugWindowProps {
   isOpen: boolean;
@@ -106,8 +107,23 @@ export default function AgentAssistantMarkdownDebugWindow({
         </div>
       }
     >
+      {/* A debug sink dump of in-memory drafts — no db record behind either
+          column, so entity is genuinely absent. resolveContextOnOpen picks
+          which side was clicked so Copy/Export acts on the right column. */}
+      {/* context-menu-exempt: entity — an in-memory debug draft, not a stored record */}
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: draftMarkdown || baseMarkdown }}
+        resolveContextOnOpen={(target) => {
+          const pane = target?.closest<HTMLElement>("[data-debug-pane]")?.getAttribute("data-debug-pane");
+          const content = pane === "source" ? baseMarkdown : pane === "sink" ? draftMarkdown : draftMarkdown || baseMarkdown;
+          return { content };
+        }}
+      >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 min-h-0 divide-y md:divide-y-0 md:divide-x divide-border">
-          <div className="flex flex-col min-h-0 min-w-0">
+          <div className="flex flex-col min-h-0 min-w-0" data-debug-pane="source">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-3 py-1 border-b border-border bg-muted/40 shrink-0">
               Source (conversation) — read-only preview
             </div>
@@ -124,7 +140,7 @@ export default function AgentAssistantMarkdownDebugWindow({
               )}
             </div>
           </div>
-          <div className="flex flex-col min-h-0 min-w-0">
+          <div className="flex flex-col min-h-0 min-w-0" data-debug-pane="sink">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-3 py-1 border-b border-border bg-muted/40 shrink-0">
               Debug sink (accumulated edits) — MarkdownStream
             </div>
@@ -145,6 +161,7 @@ export default function AgentAssistantMarkdownDebugWindow({
             </div>
           </div>
         </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
