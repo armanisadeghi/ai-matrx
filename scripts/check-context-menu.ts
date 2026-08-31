@@ -67,6 +67,7 @@ const ONLY = (ARGV.find((a) => a.startsWith("--population="))?.split("=")[1] ??
 type Population =
   | "tables"
   | "editables"
+  | "form-fields"
   | "windows"
   | "overlays"
   | "bespoke"
@@ -152,6 +153,48 @@ function exportedComponents(src: string): string[] {
 
 const IS_TABLE = /<MatrxDataTable[\s<>]/;
 const IS_EDITABLE = /<textarea[\s>]|<Textarea[\s>]|<ProTextarea[\s>]|contentEditable/;
+
+/**
+ * 🚨 NOT EVERY TEXTAREA IS A CONTENT SURFACE.
+ *
+ * A first pass lumped 395 files together and the sample was a mixed bag: a real
+ * SQL editor beside a one-line invite field in a sheet, a shared form-control
+ * PRIMITIVE, and a clipboard-fallback dialog whose entire job is displaying
+ * text to copy. Sending a fleet at that list produces menus on invite fields to
+ * satisfy a counter — padding, not coverage, and on a shared primitive it would
+ * put a menu inside every consumer and nest them.
+ *
+ * So the population splits. A CONTENT SURFACE holds a body worth acting on: an
+ * editor, a document, a composer, a pad, a note. It genuinely wants
+ * `EditableContextMenu`, and gets the WidgetHandle with it. A FORM FIELD is a
+ * short input collecting a value inside a dialog — it is tracked, reported, and
+ * NOT wave-one work.
+ *
+ * The split is a heuristic and says so; a worker who opens a "form-field" file
+ * and finds a real editor should wire it and say the classifier was wrong.
+ */
+const CONTENT_SURFACE_NAME =
+  /(editor|composer|pad|document|note|markdown|code|transcript|workspace|canvas|writer|draft|body|content)/i;
+const FORM_SHELL_NAME = /(dialog|sheet|modal|form|picker|prompt|invite|control|input|field)/i;
+
+/** Roughly how many editable regions the file mounts. */
+function editableCount(src: string): number {
+  return [...src.matchAll(/<textarea[\s>]|<Textarea[\s>]|<ProTextarea[\s>]|contentEditable/g)]
+    .length;
+}
+
+/**
+ * A content surface, or a form field? Name first (it is what the author called
+ * it), then weight of evidence: several editable regions, or an explicit
+ * ProTextarea (the Tier-2 rich field), reads as a real surface.
+ */
+function isContentSurface(path: string, src: string): boolean {
+  const base = basename(path);
+  if (CONTENT_SURFACE_NAME.test(base)) return true;
+  if (FORM_SHELL_NAME.test(base) && editableCount(src) <= 1) return false;
+  if (/<ProTextarea[\s>]/.test(src)) return true;
+  return editableCount(src) > 1;
+}
 const IS_BESPOKE = /onContextMenu\s*=/;
 
 function classify(path: string, src: string): Population | null {
@@ -159,7 +202,8 @@ function classify(path: string, src: string): Population | null {
     return "overlays";
   if (/^features\/window-panels\/windows\/.*Window\.tsx$/.test(path)) return "windows";
   if (IS_TABLE.test(src)) return "tables";
-  if (IS_EDITABLE.test(src)) return "editables";
+  if (IS_EDITABLE.test(src))
+    return isContentSurface(path, src) ? "editables" : "form-fields";
   return null;
 }
 
@@ -590,6 +634,7 @@ function report(findings: Finding[], covered: Finding[]) {
     "tables",
     "editables",
     "windows",
+    "form-fields",
     "overlays",
     "bespoke",
     "density",
@@ -601,7 +646,7 @@ function report(findings: Finding[], covered: Finding[]) {
     if (!rows.length) continue;
     const tag = WAVE_ONE.includes(p)
       ? "WAVE ONE"
-      : p === "overlays"
+      : p === "overlays" || p === "form-fields"
         ? "tracked — not wave one"
         : p === "density" || p === "registry" || p === "attribution"
           ? "LAW"

@@ -89,6 +89,8 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
 import {
   Copy,
   Check,
@@ -233,6 +235,17 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    */
   surfaceName?: string;
   /**
+   * Mount a right-click menu on the field. Default true.
+   *
+   * 🚨 THIS IS A FLOOR, NOT AN OVERRIDE. It only takes effect when NO ancestor
+   * already mounts a v3 menu — a surface that wires its own (with its entity,
+   * surfaceName and extraSections) always wins, and never has to know this
+   * exists. See `features/context-menu-v3/menu-presence.tsx`.
+   *
+   * Set false only where a right-click menu is genuinely wrong for the field.
+   */
+  enableContextMenu?: boolean;
+  /**
    * Conversation provenance for embedded agent runs. Defaults from `surfaceName`
    * via `sourceFeatureFromSurfaceName`. Prefer setting `surfaceName`; pass this
    * only when the host product feature differs from the surface mapping.
@@ -323,6 +336,7 @@ export const ProTextarea = React.forwardRef<
       customAgentId,
       customAgentContextItems,
       surfaceName,
+      enableContextMenu = true,
       sourceFeature: sourceFeatureProp,
       getApplicationScope,
       surfaceContextItems,
@@ -861,7 +875,23 @@ export const ProTextarea = React.forwardRef<
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
     const labelFloated = isFocused || valueAsString.length > 0;
 
-    return (
+    /**
+     * 🚨 THE FLOOR, NOT AN OVERRIDE (2026-08-26). ProTextarea has ~387
+     * consumers and 361 of them mount no right-click menu at all — the largest
+     * single coverage gap in the app, and every one is also a field agents
+     * cannot stream edits into, since `EditableContextMenu` is what registers
+     * the WidgetHandle.
+     *
+     * But ~26 consumers already wrap their field in a carefully-wired menu, and
+     * v3's rule is THE INNERMOST WINS — so a menu mounted here would SHADOW
+     * theirs, replacing a surface-specific menu with a generic one on exactly
+     * the screens someone wired properly. `useIsInsideContextMenu` is how this
+     * primitive stands down when a surface has already spoken.
+     */
+    const insideAncestorMenu = useIsInsideContextMenu();
+    const mountOwnMenu = enableContextMenu && !insideAncestorMenu && !disabled;
+
+    const field = (
       <div
         className={cn("relative group", wrapperClassName)}
         onMouseEnter={() => setIsHovered(true)}
@@ -1307,6 +1337,21 @@ export const ProTextarea = React.forwardRef<
           )}
         </div>
       </div>
+    );
+
+    if (!mountOwnMenu) return field;
+
+    return (
+      <EditableContextMenu
+        sourceFeature={resolvedSourceFeature}
+        surfaceName={surfaceName}
+        getApplicationScope={getApplicationScope}
+        getTextarea={() => textareaRef.current}
+        onTextReplace={pushToTextarea}
+        contextData={{ content: valueAsString }}
+      >
+        {field}
+      </EditableContextMenu>
     );
   },
 );

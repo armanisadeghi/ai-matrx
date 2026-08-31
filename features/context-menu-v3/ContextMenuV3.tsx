@@ -61,6 +61,7 @@ import {
   resolveEffectiveEntity,
   sniffEntityFromDom,
 } from "./utils/per-row-entity";
+import { MenuPresenceProvider } from "./menu-presence";
 
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
@@ -705,7 +706,7 @@ export function ContextMenuV3({
       children.type !== React.Fragment;
 
     return (
-      <>
+      <MenuPresenceProvider value={true}>
         {canSlot ? (
           <Slot ref={setSelectionOwner} {...mobileTriggerProps}>
             {children}
@@ -751,12 +752,12 @@ export function ContextMenuV3({
             )}
           </DrawerContent>
         </Drawer>
-      </>
+      </MenuPresenceProvider>
     );
   }
 
   return (
-    <>
+    <MenuPresenceProvider value={true}>
       <ContextMenu
         onOpenChange={(open) => {
           onMenuOpenChange?.(open);
@@ -826,6 +827,6 @@ export function ContextMenuV3({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-    </>
+    </MenuPresenceProvider>
   );
 }
