@@ -15,6 +15,7 @@ import {
   createTaskCreateScope,
   type TaskCreateDraftScope,
 } from "@/features/surfaces/manifests/task-create.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface TaskQuickCreateWindowProps {
   isOpen: boolean;
@@ -140,16 +141,27 @@ function TaskQuickCreateWindowInner({
         onClose={onClose}
         footerRight={<div ref={setFooterHost} className="flex items-center" />}
       >
-        <div className="h-full min-h-0 p-3">
-          <TaskCreatePanel
-            source={source}
-            prePopulate={prePopulate}
-            onSaved={handleSaved}
-            onCancel={onClose}
-            footerHost={footerHost}
-            surfaceDraftRef={draftRef}
-          />
-        </div>
+        {/*
+         * No task id exists until Create is pressed, so there is no "task"
+         * entity to attach yet — contentSource stays "raw". Copy / Export /
+         * AI still resolve from the live DOM.
+         */}
+        <NonEditableContextMenu
+          sourceFeature="tasks"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: prePopulate?.description ?? "" }}
+        >
+          <div className="h-full min-h-0 p-3">
+            <TaskCreatePanel
+              source={source}
+              prePopulate={prePopulate}
+              onSaved={handleSaved}
+              onCancel={onClose}
+              footerHost={footerHost}
+              surfaceDraftRef={draftRef}
+            />
+          </div>
+        </NonEditableContextMenu>
       </WindowPanel>
     </SurfaceRuntimeProvider>
   );
