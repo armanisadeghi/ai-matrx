@@ -1,0 +1,113 @@
+{
+  "surfaceName": "matrx-user/settings",
+  "checklistVersion": 2,
+  "ruleVersion": "2026-08-30.2",
+  "commit": "b625a83fc69d8c6f1324c49aa1310f098718c1fe",
+  "worker": "agent:surface-check/settings-integrations",
+  "workerResult": "candidate-pass",
+  "verificationDepth": "live",
+  "sections": {
+    "S1": {
+      "status": "fixed",
+      "note": "Synced the settings manifest and live mirror; the v3 menu identifies matrx-user/settings.",
+      "evidence": ["verification-notes.md", "context-menu.png"]
+    },
+    "S2": {
+      "status": "fixed",
+      "note": "Added catalog, filters, GitHub connection, Google connections, and descendant scope contributions; live inspector reports contract honored.",
+      "evidence": ["verification-notes.md", "context-menu.png"]
+    },
+    "S3": {
+      "status": "pass",
+      "note": "The existing settings write targets remain canonical; the real theme write path was exercised and restored. Connection mutations were inspected through consequence-first confirms and canceled to preserve live data.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S4": {
+      "status": "pass",
+      "note": "The runtime has one registered settings root with descendant contributions and no shadow settings surface.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S5": {
+      "status": "na",
+      "note": "This settings surface has no fixed AI worker or page-specific mandate.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S6": {
+      "status": "fixed",
+      "note": "Wired the canonical v3 context menu on desktop and mobile. Rich-document export/copy is not applicable to this settings/data-grid surface.",
+      "evidence": ["context-menu.png", "mobile-long-press.png", "verification-notes.md"]
+    },
+    "S7": {
+      "status": "pass",
+      "note": "The mobile search control is 44 px high with 16 px text; no textarea or chat composer is present.",
+      "evidence": ["mobile-light.png", "verification-notes.md"]
+    },
+    "S8": {
+      "status": "pass",
+      "note": "Desktop and mobile normal states were exercised with real connected-account data.",
+      "evidence": ["desktop-light.png", "mobile-light.png", "verification-notes.md"]
+    },
+    "S9": {
+      "status": "fixed",
+      "note": "Stacked account identity and actions on mobile, repaired the settings drawer and breadcrumb tap targets, and eliminated horizontal overflow.",
+      "evidence": ["mobile-light.png", "mobile-dark.png", "verification-notes.md"]
+    },
+    "S10": {
+      "status": "pass",
+      "note": "Light/dark desktop/mobile matrix passed and the focused theme-integrity scan found zero violations.",
+      "evidence": ["desktop-light.png", "desktop-dark.png", "mobile-light.png", "mobile-dark.png", "verification-notes.md"]
+    },
+    "S11": {
+      "status": "fixed",
+      "note": "Replaced route-wide blank loading and the bare integrations spinner with contextual skeleton/loading states; settled Error Inspector and console are clean.",
+      "evidence": ["desktop-light.png", "verification-notes.md"]
+    },
+    "S12": {
+      "status": "pass",
+      "note": "Named integrations expose canonical detail, provider-management, website, and documentation doors; no named internal record is stranded.",
+      "evidence": ["desktop-light.png", "verification-notes.md"]
+    },
+    "S13": {
+      "status": "fixed",
+      "note": "Added transition-aware navigation feedback, official tap controls, compact responsive hierarchy, and canonical confirmation dialogs.",
+      "evidence": ["desktop-light.png", "mobile-light.png", "verification-notes.md"]
+    },
+    "S14": {
+      "status": "fixed",
+      "note": "Added the route favicon/metadata configuration and passed the strict route metadata check.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S15": {
+      "status": "pass",
+      "note": "Canonical connector/GitHub services remain the data path; type-check, focused tests, and surface drift/impact gates passed.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S16": {
+      "status": "pass",
+      "note": "The authenticated settings gate and existing connection authorization boundaries remain intact; focused access/error checks found no new issue.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S17": {
+      "status": "na",
+      "note": "The integrations settings surface does not launch or render AI work.",
+      "evidence": ["verification-notes.md"]
+    },
+    "S18": {
+      "status": "fixed",
+      "note": "Updated feature/surface documentation, added regression tests, and produced this complete durable S1-S18 candidate with live artifacts.",
+      "evidence": ["candidate.json", "verification-notes.md"]
+    }
+  },
+  "liveProof": {
+    "desktopLight": "desktop-light.png",
+    "desktopDark": "desktop-dark.png",
+    "mobileLight": "mobile-light.png",
+    "mobileDark": "mobile-dark.png",
+    "contextMenu": "context-menu.png",
+    "longPress": "mobile-long-press.png",
+    "console": "clean at 2026-08-31T22:05:27Z",
+    "errorInspector": "clean at 2026-08-31T22:05:27Z",
+    "target": "http://localhost:3001/user-settings/integrations with the authenticated admin fixture and live connected integrations"
+  },
+  "notes": "The reported mobile GitHub card collapse is repaired without mutating live connections.\nThe full desktop/mobile and light/dark matrix passed on the managed preview.\nAwaiting a fresh independent verifier before ledger promotion."
+}
