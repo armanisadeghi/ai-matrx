@@ -87,6 +87,15 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
 import type { RunPlacementRow } from "./data";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { siteEntityRef, siteMenuSection, type SiteMenuRow } from "./site-menu";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 
 function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -526,6 +535,12 @@ function TopicPlacementConsole({
   const [queue, setQueue] = useState<string[]>([]);
   const [outcomes, setOutcomes] = useState<RunOutcome[]>([]);
   const [cap, setCap] = useState<number | null>(null);
+  // KI right-click rollout: the brand row's context menu needs the clicked
+  // row in STATE (never a ref) because its items are `link`s whose `href`
+  // must be correct at render time — see `site-menu.tsx`.
+  const [contextBrandRow, setContextBrandRow] = useState<SiteMenuRow | null>(
+    null,
+  );
 
   const knobs = useQuery({
     queryKey: ["seo", "run-console", "knobs", engine.knobFeature],
@@ -884,24 +899,53 @@ function TopicPlacementConsole({
                 Could not read the brand list.
               </p>
             ) : (
-              <MatrxDataTable<BrandTableRow>
-                data={brandRows}
-                columns={brandColumns}
-                getRowId={(r) => r.site.id}
-                isLoading={sites.isLoading}
-                toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
-                selectedId={focusedSiteId}
-                onRowOpen={(r) => setFocusedSiteId(r.site.id)}
-                selection={{
-                  selectedIds: selected,
-                  onSelectedIdsChange: setSelected,
-                  noun: "brand",
+              <NonEditableContextMenu
+                sourceFeature="marketing"
+                contentSource={{ type: "raw" }}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={(target) => {
+                  const id = target
+                    ?.closest("[data-row-id]")
+                    ?.getAttribute("data-row-id");
+                  const row =
+                    (id && brandRows.find((r) => r.site.id === id)) || null;
+                  const siteRow: SiteMenuRow | null = row
+                    ? {
+                        id: row.site.id,
+                        name: row.site.name,
+                        brandId: row.site.brand_id,
+                      }
+                    : null;
+                  setContextBrandRow(siteRow);
+                  if (!siteRow) return null;
+                  return {
+                    content: `${siteRow.name}`,
+                    [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef(siteRow),
+                  };
                 }}
-                pageSize={0}
-                zebra
-                emptyState={{ title: "No brands match your search." }}
-                className="h-full"
-              />
+                extraSections={
+                  contextBrandRow ? [siteMenuSection(contextBrandRow)] : []
+                }
+              >
+                <MatrxDataTable<BrandTableRow>
+                  data={brandRows}
+                  columns={brandColumns}
+                  getRowId={(r) => r.site.id}
+                  isLoading={sites.isLoading}
+                  toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
+                  selectedId={focusedSiteId}
+                  onRowOpen={(r) => setFocusedSiteId(r.site.id)}
+                  selection={{
+                    selectedIds: selected,
+                    onSelectedIdsChange: setSelected,
+                    noun: "brand",
+                  }}
+                  pageSize={0}
+                  zebra
+                  emptyState={{ title: "No brands match your search." }}
+                  className="h-full"
+                />
+              </NonEditableContextMenu>
             )}
           </div>
             </TabsContent>
@@ -1141,6 +1185,26 @@ function RunDecisions({
       listRunPlacements(siteId, since, confidenceFloor, signal),
     staleTime: 10 * 1000,
   });
+  // KI right-click rollout — the canonical v3 keyword menu, resolved lazily at
+  // select time (a ref is safe here: unlike `site-menu.tsx`'s `link` items,
+  // every item below is an `onSelect` action, not an href that must be correct
+  // at render time — same pattern as `RanksWorkspace`).
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () => void decisions.refetch(),
+  });
+  const clickedKeywordRow = useRef<RunPlacementRow | null>(null);
+  const keywordSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    brandId,
+    surfaces: keywordSurfaces,
+    getRow: () => {
+      const row = clickedKeywordRow.current;
+      if (!row) return null;
+      return { phrase: row.phrase, keywordId: row.keywordId };
+    },
+  });
 
   if (decisions.isPending)
     return (
@@ -1230,15 +1294,40 @@ function RunDecisions({
   ];
 
   return (
-    <MatrxDataTable<RunPlacementRow>
-      data={rows}
-      columns={columns}
-      getRowId={(row) => row.keywordId}
-      toolbar={{ search: true, searchPlaceholder: "Find a keyword" }}
-      pageSize={0}
-      zebra
-      className="h-full"
-      tableClassName="text-[11px]"
-    />
+    <div className="flex flex-col gap-1.5">
+      {keywordSurfaces.node}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = (id && rows.find((r) => r.keywordId === id)) || null;
+          clickedKeywordRow.current = row;
+          if (!row) return null;
+          return {
+            content: `${row.phrase} — placed under ${row.offering}`,
+            [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+              phrase: row.phrase,
+              keywordId: row.keywordId,
+            }),
+          };
+        }}
+        extraSections={[keywordSection]}
+      >
+        <MatrxDataTable<RunPlacementRow>
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.keywordId}
+          toolbar={{ search: true, searchPlaceholder: "Find a keyword" }}
+          pageSize={0}
+          zebra
+          className="h-full"
+          tableClassName="text-[11px]"
+        />
+      </NonEditableContextMenu>
+    </div>
   );
 }
