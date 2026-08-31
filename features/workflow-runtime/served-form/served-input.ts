@@ -69,8 +69,19 @@ export interface ServedInput {
     | "variable"
     | "provision"
     | "mandate_input"
-    | "holder";
+    | "holder"
+    /** The BINDING asks for this one: a `prompt_user` source in the winning
+     * binding's consumption map is served as a real named field, because a
+     * question nobody asks is a promise nobody keeps. */
+    | "binding_prompt";
   nodeId: string | null;
+  /**
+   * D2 — ONE STATIC EXAMPLE of what this input's value looks like, declared
+   * with the provision. An ILLUSTRATION shown at the moment somebody chooses
+   * (UI-STANDARD P5), never a default and never a fallback: nothing reads it at
+   * run time. `""` means the declaration gave none.
+   */
+  example: string;
   /** The input's own value contract (drives the derived-default component). */
   jsonSchema: Record<string, unknown>;
   required: boolean;
@@ -123,6 +134,7 @@ const ORIGINS: ReadonlySet<string> = new Set([
   "provision",
   "mandate_input",
   "holder",
+  "binding_prompt",
 ]);
 
 /**
@@ -155,6 +167,7 @@ export function parseServedInput(raw: unknown): ServedInput | null {
       ? (raw.origin as ServedInput["origin"])
       : "field",
     nodeId: typeof raw.node_id === "string" ? raw.node_id : null,
+    example: str(raw.example),
     jsonSchema: isRecord(raw.json_schema) ? raw.json_schema : {},
     required: raw.required === true || sourcing !== "optional",
     pinned: raw.pinned === true,

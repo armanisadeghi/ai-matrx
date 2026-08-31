@@ -550,6 +550,12 @@ export type ValueMapping =
       mapType: "direct_value";
       /** The literal value (string, number, boolean, object, array). */
       target: unknown;
+      /** Delivery channel — see `offered_value`. A SURFACE binding never sets
+       * it (a surface mapping always feeds the named variable/slot directly);
+       * a MANDATE consumption map does, because the channel is a property of
+       * the TARGET and every source feeding one target must agree on it.
+       * Absent = `variable`, which is the pre-existing behaviour. */
+      deliver?: "variable" | "context";
     }
   | {
       mapType: "prompt_user";
@@ -559,6 +565,8 @@ export type ValueMapping =
       defaultValue?: unknown;
       /** If true, the user cannot cancel; submit is the only way out. */
       required?: boolean;
+      /** Delivery channel — see `direct_value`. */
+      deliver?: "variable" | "context";
     }
   | {
       mapType: "unmapped";

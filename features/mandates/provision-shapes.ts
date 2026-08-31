@@ -131,12 +131,58 @@ export function parseOfferedValues(raw: Json | unknown): OfferedValue[] {
 
 // ── Consumption map (the binding's zero-code rewiring surface) ───────────────
 
-/** One consumed offered value — the neutral `offered_value` branch of the
- * shared `ValueMapping` union (`features/surfaces/types.ts`). */
+/**
+ * ONE SOURCE feeding one holder input — the three branches of the shared
+ * `ValueMapping` union a job binding can STORE.
+ *
+ * 🚨 THE FOUR SOURCES, and where the fourth went. The shared row component
+ * offers `Holder Default | Offered Value | Direct Value | Prompt User`. Three
+ * of them are stored here; "holder default" is simply ABSENCE from the map —
+ * there is nothing to write, because a job binding has no auto-name-match pass
+ * to suppress.
+ *
+ * Until 2026-08-31 the server accepted `offered_value` alone, so the two others
+ * were refused in the UI with a stand-in message. That stopgap is DELETED:
+ * `aidream/services/mandates/provisions.py` validates and materializes all
+ * three (a literal is the binding's own content; a `prompt_user` target is
+ * served as a real named field on the mandate's input surface, so the run form
+ * asks the question and the answer arrives by that name).
+ */
 export type ConsumptionEntry = Extract<
   ValueMapping,
-  { mapType: "offered_value" }
+  { mapType: "offered_value" | "direct_value" | "prompt_user" }
 >;
+
+/** Narrow to the branch that consumes something the JOB offers. */
+export function isOfferedSource(
+  entry: ConsumptionEntry,
+): entry is Extract<ValueMapping, { mapType: "offered_value" }> {
+  return entry.mapType === "offered_value";
+}
+
+/** The delivery channel of any source — absent reads as `variable`, which is
+ * what every consumer already assumed. */
+export function sourceChannel(
+  entry: ConsumptionEntry,
+): "variable" | "context" {
+  return entry.deliver === "context" ? "context" : "variable";
+}
+
+/** One line naming what this source IS, in the reader's words — never the DSL.
+ * The ONE place a stored source becomes a sentence, so the offered rail, the
+ * strip and the auto-run bar cannot describe the same entry differently. */
+export function describeSource(entry: ConsumptionEntry): string {
+  switch (entry.mapType) {
+    case "offered_value":
+      return `the offered value "${entry.target}"`;
+    case "direct_value":
+      return typeof entry.target === "string"
+        ? `a fixed value: "${entry.target}"`
+        : `a fixed value: ${JSON.stringify(entry.target)}`;
+    case "prompt_user":
+      return `an answer from the person: "${entry.prompt}"`;
+  }
+}
 
 /**
  * HOLDER INPUT name (variable / context-policy key) → the ORDERED sources that
@@ -198,6 +244,39 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
         continue;
       }
       const mapType = entry.mapType;
+      const deliver = entry.deliver === "context" ? "context" : "variable";
+      if (mapType === "direct_value") {
+        // A literal written on the binding. `null`/absent is not a literal —
+        // it feeds nothing, and storing it would be an invisible empty answer.
+        if (entry.target === undefined || entry.target === null) {
+          console.error(
+            `[provisions] consumption_map entry ${name} is a fixed value with nothing in it — dropping`,
+          );
+          continue;
+        }
+        sources.push({ mapType: "direct_value", target: entry.target, deliver });
+        continue;
+      }
+      if (mapType === "prompt_user") {
+        // A question with no words is a blank box nobody can answer.
+        const prompt = typeof entry.prompt === "string" ? entry.prompt : "";
+        if (!prompt.trim()) {
+          console.error(
+            `[provisions] consumption_map entry ${name} asks the person with no question — dropping`,
+          );
+          continue;
+        }
+        sources.push({
+          mapType: "prompt_user",
+          prompt,
+          deliver,
+          ...(entry.required === true ? { required: true } : {}),
+          ...(entry.defaultValue !== undefined && entry.defaultValue !== null
+            ? { defaultValue: entry.defaultValue }
+            : {}),
+        });
+        continue;
+      }
       if (mapType !== "offered_value" && mapType !== "code_value") {
         console.error(
           `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
@@ -205,11 +284,13 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
         continue;
       }
       const target = typeof entry.target === "string" ? entry.target : name;
-      const deliver = entry.deliver === "context" ? "context" : "variable";
       const whenAbsent =
         typeof entry.when_absent === "string" &&
         WHEN_ABSENT_VALUES.has(entry.when_absent)
-          ? (entry.when_absent as ConsumptionEntry["when_absent"])
+          ? (entry.when_absent as Extract<
+              ConsumptionEntry,
+              { mapType: "offered_value" }
+            >["when_absent"])
           : undefined;
       sources.push({
         mapType: "offered_value",
@@ -369,8 +450,34 @@ export function consumptionMapProblems(
     const multi = sources.length > 1;
     const channels = new Set<string>();
     for (const entry of sources) {
+      channels.add(sourceChannel(entry));
+      // ── The binding's OWN content: a literal, or an answer it will ask for.
+      // Neither is looked up in the offer — they are not offered values — but
+      // both obey the same two rules every source obeys: a thing with no text
+      // form cannot ride a variable, and cannot be joined with other things.
+      if (entry.mapType === "direct_value") {
+        const structured =
+          typeof entry.target === "object" && entry.target !== null;
+        if (structured && multi) {
+          problems.push(
+            `"${name}" has a structured fixed value, which has no text form — it can't be joined with other values; give it an input of its own`,
+          );
+        } else if (structured && sourceChannel(entry) === "variable") {
+          problems.push(
+            `"${name}" has a structured fixed value — deliver it as context, never as a blob variable`,
+          );
+        }
+        continue;
+      }
+      if (entry.mapType === "prompt_user") {
+        if (!entry.prompt.trim()) {
+          problems.push(
+            `"${name}" asks the person for this input but has no question — write what the run form should say`,
+          );
+        }
+        continue;
+      }
       const source = entry.target || name;
-      channels.add(entry.deliver ?? "variable");
       const value = offered.get(source);
       if (!value) {
         problems.push(
