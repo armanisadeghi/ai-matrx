@@ -124,6 +124,24 @@
       },
       "previousEventHash": "ab326b1e713e6710eac64fa3b420d4dfb227f418ae106dcd166afae1e9683a52",
       "eventHash": "b0654321a3a4932f3f16bd06e36101a83d11cc1555e4ddaae8e211eb93a83d5e"
+    },
+    {
+      "sequence": 9,
+      "state": "delivered",
+      "at": "2026-08-31T09:00:46.925Z",
+      "actor": "p1-controller",
+      "summary": "Corrected certified wave 2 candidate is an ancestor of origin/main",
+      "evidence": [
+        "origin/main badec453152 contains exact candidate 44a351bc608"
+      ],
+      "delivery": {
+        "candidateSha": "44a351bc6086d3091c2e4fc9182f90d6d82b7a93",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260831T083803Z",
+        "integratedSha": "badec453152004f35391ef8a343e6f36270a37ec",
+        "release": "release-queued"
+      },
+      "previousEventHash": "b0654321a3a4932f3f16bd06e36101a83d11cc1555e4ddaae8e211eb93a83d5e",
+      "eventHash": "82d6c81f26ef9fd98195768814e2c3e42372636adb5eedfd1d4f6611b30e5b31"
     }
   ]
 }
