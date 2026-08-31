@@ -25,6 +25,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AdminUserRef } from "./AdminUserRef";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { adminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { cn } from "@/lib/utils";
 import {
@@ -53,6 +55,7 @@ function DriftDashboard() {
   const [loading, setLoading] = useState(true);
   const [healing, setHealing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clickedRow, setClickedRow] = useState<DriftRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -200,6 +203,25 @@ function DriftDashboard() {
           </p>
         </div>
       ) : report && report.rows.length > 0 ? (
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id
+              ? (report.rows.find((r) => r.user_id === id) ?? null)
+              : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return { content: `Drifted fields: ${row.drifted_fields}` };
+          }}
+          extraSections={[
+            adminUserMenuSection(clickedRow ? { id: clickedRow.user_id } : null),
+          ]}
+        >
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className={cn("text-sm", MOBILE_TABLE)}>
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
@@ -225,6 +247,7 @@ function DriftDashboard() {
               {report.rows.map((r) => (
                 <tr
                   key={`${r.user_id}:${r.organization_id}`}
+                  data-row-id={r.user_id}
                   className="border-t border-border"
                 >
                   {/* Main added the mobile frozen/wrapping classes; this
@@ -288,6 +311,7 @@ function DriftDashboard() {
             </tbody>
           </table>
         </div>
+        </NonEditableContextMenu>
       ) : null}
     </div>
   );
@@ -417,6 +441,22 @@ function UserPreferencesView({ userId }: { userId: string }) {
         </div>
       ) : (
         <div className="min-h-0 flex-1">
+          {/* Preference module (e.g. "chat_preferences") — a settings blob
+             page-local to this view; no other surface names a module row.
+             Wrapped for Copy/Export/AI only, no extraSections. */}
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id ? (rows.find((r) => r.module === id) ?? null) : null;
+              if (!row) return null;
+              return { content: `${row.module}: ${row.summary}` };
+            }}
+          >
           <MatrxDataTable
             urlState={{ id: "user-preferences" }}
             data={rows}
@@ -443,6 +483,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
               agentRow: (r) => ({ module: r.module, value: r.value }),
             }}
           />
+          </NonEditableContextMenu>
         </div>
       )}
     </div>
