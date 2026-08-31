@@ -23,6 +23,7 @@ import type {
   CodeFile,
 } from "@/features/code-editor/agent-code-editor/types";
 import { useSmartCodeEditorEmitter } from "./useSmartCodeEditorEmitter";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 export interface SmartCodeEditorWindowProps {
   windowInstanceId: string;
@@ -121,24 +122,41 @@ export function SmartCodeEditorWindow({
       onCollectData={collectData}
       bodyClassName="p-0 overflow-hidden"
     >
-      <SmartCodeEditor
-        agents={agents}
-        defaultPickerMandateKey={defaultPickerMandateKey}
-        initialCode={initialCode}
-        language={language}
-        onCodeChange={handleCodeChange}
-        files={files}
-        initialActiveFilePath={initialActiveFilePath}
-        filePath={filePath}
-        selection={selection}
-        diagnostics={diagnostics}
-        workspaceName={workspaceName}
-        workspaceFolders={workspaceFolders}
-        gitBranch={gitBranch}
-        gitStatus={gitStatus}
-        agentSkills={agentSkills}
-        title={title ?? undefined}
-      />
+      {/*
+       * Monaco owns its own right-click menu inside the buffer itself (find,
+       * format, etc.) — this wrap covers the rest of the window (file tabs,
+       * agent picker, history panel, chrome) so a right-click there doesn't
+       * fall through to whatever page hosts the floating window. No
+       * getTextarea/onTextReplace are wired (Monaco isn't a native textarea
+       * and isn't exposed by SmartCodeEditor), so no text-mutation action
+       * can appear here — nothing that could corrupt code.
+       */}
+      <EditableContextMenu
+        sourceFeature="code-editor"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: codeRef.current }}
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <SmartCodeEditor
+            agents={agents}
+            defaultPickerMandateKey={defaultPickerMandateKey}
+            initialCode={initialCode}
+            language={language}
+            onCodeChange={handleCodeChange}
+            files={files}
+            initialActiveFilePath={initialActiveFilePath}
+            filePath={filePath}
+            selection={selection}
+            diagnostics={diagnostics}
+            workspaceName={workspaceName}
+            workspaceFolders={workspaceFolders}
+            gitBranch={gitBranch}
+            gitStatus={gitStatus}
+            agentSkills={agentSkills}
+            title={title ?? undefined}
+          />
+        </div>
+      </EditableContextMenu>
     </WindowPanel>
   );
 }
