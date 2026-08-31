@@ -30,7 +30,7 @@ export function RunRow({ run, task = null }: Props) {
         <button
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "grid min-h-11 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-2 py-2 text-left hover:bg-accent/30 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-3 sm:px-3",
+            "grid min-h-11 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-2 py-2 text-left hover:bg-accent/30 sm:gap-3 sm:px-3",
           )}
         >
           {open ? (
@@ -59,11 +59,12 @@ export function RunRow({ run, task = null }: Props) {
               </span>
             )}
           </div>
-          <div className="col-start-2 min-w-0 sm:col-auto">
-            <OutputRefLink outputRef={run.output_ref} />
-          </div>
         </button>
-        {/* Sibling of the expand button, never nested inside it. */}
+        {/* Interactive entity doors and copy controls are siblings of the
+            expand button; nested buttons are invalid HTML and hydrate badly. */}
+        <div className="shrink-0 self-center">
+          <OutputRefLink outputRef={run.output_ref} />
+        </div>
         <CopyButtons
           size="xs"
           label={`Run ${run.status}`}

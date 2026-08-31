@@ -46,4 +46,17 @@ describe("schedule surface context-menu contract", () => {
     expect(form).toContain("getApplicationScope={getSchedulesScope}");
     expect(form).toContain("context-menu-exempt: entity");
   });
+
+  it("keeps run-row entity doors outside the expand button", () => {
+    const runRow = source(
+      "features/scheduling/components/detail/RunRow.tsx",
+    );
+
+    expect(runRow).toMatch(
+      /<\/button>[\s\S]*?<OutputRefLink outputRef=\{run\.output_ref\} \/>/,
+    );
+    expect(runRow).not.toMatch(
+      /<button[\s\S]*?<OutputRefLink outputRef=\{run\.output_ref\} \/>[\s\S]*?<\/button>/,
+    );
+  });
 });
