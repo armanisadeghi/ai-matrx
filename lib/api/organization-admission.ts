@@ -20,13 +20,17 @@
  * finished with NO selection (or the bounded wait expires — SSR/tests/no
  * store). It never guesses and never picks an organization.
  *
- * First consumer: `lib/python-client.ts`. `features/files/media-client` has an
- * earlier private copy of the same wait — consolidate it onto this module when
- * next touched (tracked in features/files/FEATURE.md).
+ * Consumers: `lib/python-client.ts` and `features/files/media-client` (whose
+ * private copy of this wait was consolidated onto this module on 2026-08-31).
+ *
+ * The store is read through `getStoreSingleton`, the canonical accessor — the
+ * `getStore` migration alias is not used here: transports mock the canonical
+ * name, and reading through the alias made this kernel invisible to every one
+ * of those mocks (it broke `media-client/client.test.ts` on arrival).
  */
 
 import type { RootState } from "@/lib/redux/store";
-import { getStore } from "@/lib/redux/store-singleton";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
@@ -45,13 +49,13 @@ function readAdmission(state: RootState): OrganizationAdmission | null {
 
 /** The currently selected organization id, or null. Never waits. */
 export function peekSelectedOrganizationId(): string | null {
-  const store = getStore();
+  const store = getStoreSingleton();
   if (!store) return null;
   return selectOrganizationId(store.getState() as RootState) ?? null;
 }
 
 export function waitForOrganizationAdmission(): Promise<OrganizationAdmission> {
-  const store = getStore();
+  const store = getStoreSingleton();
   if (!store) return Promise.resolve("unresolved");
 
   const immediate = readAdmission(store.getState() as RootState);

@@ -49,8 +49,6 @@ const fakeStore = () => ({
 });
 jest.mock("@/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => fakeStore(),
-  // `lib/api/organization-admission` reads the store through this alias.
-  getStore: () => fakeStore(),
 }));
 jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectAccessToken: () => accessToken,

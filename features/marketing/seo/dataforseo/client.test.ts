@@ -1,4 +1,19 @@
 import { TextDecoder as NodeTextDecoder } from "node:util";
+
+// Every request in `client.ts` is organization-admitted (fail-closed) — these
+// command tests are about the NDJSON envelope, so they run with an
+// organization selected. The admission contract itself is proven in
+// `client.organization-context.test.ts`.
+const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
+
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({ getState: () => ({}) }),
+}));
+
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+  selectOrganizationId: () => ORGANIZATION_ID,
+}));
+
 import { enrichSiteBacklinks, refreshSiteBacklinks } from "./client";
 
 function ndjsonResponse(payload: Record<string, unknown>): Response {

@@ -48,19 +48,25 @@ let selectedOrganizationId: string | null = null;
 let orgBootstrapResolved = true;
 const storeListeners = new Set<() => void>();
 
-jest.mock("@/lib/redux/store-singleton", () => ({
-  getStore: () => ({
-    getState: () => ({
-      appContext: {
-        organization_id: selectedOrganizationId,
-        orgBootstrapResolved,
-      },
-    }),
-    subscribe: (listener: () => void) => {
-      storeListeners.add(listener);
-      return () => storeListeners.delete(listener);
+// Both accessor names resolve to the SAME fake: `python-client` still reads
+// the store through the `getStore` migration alias, while the admission kernel
+// reads the canonical `getStoreSingleton`.
+const fakeStore = () => ({
+  getState: () => ({
+    appContext: {
+      organization_id: selectedOrganizationId,
+      orgBootstrapResolved,
     },
   }),
+  subscribe: (listener: () => void) => {
+    storeListeners.add(listener);
+    return () => storeListeners.delete(listener);
+  },
+});
+
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStore: () => fakeStore(),
+  getStoreSingleton: () => fakeStore(),
 }));
 
 import { getJson, postJson, buildHeaders } from "@/lib/python-client";
