@@ -91,6 +91,34 @@ export function buildEntry({
   return entry;
 }
 
+/**
+ * Point an EXISTING offered source at a (possibly different) value, and
+ * re-decide its absence answer against THAT value's guarantee.
+ *
+ * Batch mode's whole job is carrying one decision to many places, and a value
+ * guaranteed at one place may be optional at the next — so P9's answer travels
+ * with the VALUE, not with the mapping. `""` is a real argument: it is the
+ * "cleared, now pick one" state the grid paints red.
+ *
+ * Lives here because this is THE ONE WRITER: nothing outside this file builds
+ * or rewrites a `ConsumptionEntry`, batch mode included.
+ */
+export function retargetSource(
+  entry: OfferedSource,
+  sourceName: string,
+  offered: OfferedValue | undefined,
+): OfferedSource {
+  const next: OfferedSource = { ...entry, target: sourceName };
+  if (!sourceName || !offered) return next;
+  if (offered.guaranteed) {
+    delete next.when_absent;
+    delete next.default;
+    return next;
+  }
+  if (!next.when_absent) next.when_absent = "skip";
+  return next;
+}
+
 /** Append a source. The same value twice would be the same paragraph twice. */
 export function addSource(
   map: ConsumptionMap,

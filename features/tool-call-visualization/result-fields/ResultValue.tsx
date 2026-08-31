@@ -160,6 +160,38 @@ export const ResultValue: React.FC<ResultValueProps> = ({
             case "file":
                 return <ResultFile file={shape.file} density={density} />;
 
+            case "attachmentList":
+                return (
+                    <div className="space-y-2">
+                        <div className="flex flex-wrap items-start gap-2">
+                            {shape.items.map((item, index) =>
+                                item.kind === "media" ? (
+                                    <ResultMedia
+                                        key={`${item.ref.file_id ?? item.ref.url ?? "media"}-${index}`}
+                                        refValue={item.ref}
+                                        alt={item.alt}
+                                        density={density}
+                                    />
+                                ) : (
+                                    <ResultFile
+                                        key={`${item.file.file_id ?? item.file.url ?? item.file.file_name ?? "file"}-${index}`}
+                                        file={item.file}
+                                        density={density}
+                                    />
+                                ),
+                            )}
+                        </div>
+                        {shape.metadata ? (
+                            <KeyValueGrid
+                                value={shape.metadata}
+                                density={density}
+                                depth={depth + 1}
+                                embedMedia={embedMedia}
+                            />
+                        ) : null}
+                    </div>
+                );
+
             case "text":
                 return shape.markdown ? (
                     <ResultMarkdown content={shape.value} density={density} />

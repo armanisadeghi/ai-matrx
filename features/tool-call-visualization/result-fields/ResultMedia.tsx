@@ -7,6 +7,7 @@
  */
 
 import React from "react";
+import { ExternalLink } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,9 @@ function pickElement(ref: MediaRef): "img" | "video" | "audio" {
 export const ResultMedia: React.FC<ResultMediaProps> = ({ refValue, alt, density = "inline", className }) => {
     const as = pickElement(refValue);
     const size = density === "full" ? "fill" : "xl";
+    const viewerHref = refValue.file_id
+        ? `/files/f/${encodeURIComponent(refValue.file_id)}`
+        : null;
 
     return (
         <div
@@ -51,6 +55,19 @@ export const ResultMedia: React.FC<ResultMediaProps> = ({ refValue, alt, density
                 alt={alt ?? "Tool result media"}
                 fallback="icon"
             />
+            {viewerHref ? (
+                <a
+                    href={viewerHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    aria-label="View in Files"
+                    className="flex items-center justify-center gap-1.5 border-t border-border px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Open</span>
+                </a>
+            ) : null}
         </div>
     );
 };

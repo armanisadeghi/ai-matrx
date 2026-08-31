@@ -45,6 +45,10 @@ export interface ResultFileRef {
     download_url?: string;
 }
 
+export type ResultAttachment =
+    | { kind: "media"; ref: MediaRef; alt?: string }
+    | { kind: "file"; file: ResultFileRef };
+
 export type ResultShape =
     | { kind: "empty" }
     | { kind: "scalar"; value: string | number | boolean; type: "string" | "number" | "boolean" }
@@ -54,6 +58,8 @@ export type ResultShape =
     | { kind: "media"; ref: MediaRef; alt?: string }
     /** A non-media file (document, spreadsheet, archive) — rendered as a download card. */
     | { kind: "file"; file: ResultFileRef }
+    /** A canonical tool-result attachment collection — rendered item-by-item, never as a metadata table. */
+    | { kind: "attachmentList"; items: ResultAttachment[]; metadata?: Record<string, unknown> }
     | { kind: "list"; items: Array<string | number | boolean | null> }
     /** An array that is entirely UUIDs — NEVER listed out; rendered as a count + copy-all. */
     | { kind: "idList"; ids: string[] }
@@ -411,6 +417,43 @@ export function coerceFileRef(value: unknown): ResultFileRef | null {
     return ref;
 }
 
+function coerceAttachment(value: unknown): ResultAttachment | null {
+    const media = coerceMediaRef(value);
+    if (media) {
+        const alt = isPlainObject(value) && typeof value.alt === "string"
+            ? value.alt
+            : isPlainObject(value) && typeof value.title === "string"
+              ? value.title
+              : undefined;
+        return { kind: "media", ref: media, alt };
+    }
+    const file = coerceFileRef(value);
+    return file ? { kind: "file", file } : null;
+}
+
+function coerceAttachmentList(value: unknown): Extract<ResultShape, { kind: "attachmentList" }> | null {
+    const source = Array.isArray(value)
+        ? value
+        : isPlainObject(value) &&
+            (value.kind === "image_ref_list" || value.kind === "media_ref_list") &&
+            Array.isArray(value.items)
+          ? value.items
+          : null;
+    if (!source || source.length === 0) return null;
+
+    const items = source.map(coerceAttachment);
+    if (items.some((item) => item === null)) return null;
+
+    const metadata = isPlainObject(value) && !Array.isArray(value)
+        ? Object.fromEntries(Object.entries(value).filter(([key]) => key !== "items"))
+        : undefined;
+    return {
+        kind: "attachmentList",
+        items: items as ResultAttachment[],
+        ...(metadata && Object.keys(metadata).length > 0 ? { metadata } : {}),
+    };
+}
+
 // ─── The classifier ─────────────────────────────────────────────────────────
 
 /**
@@ -454,6 +497,13 @@ export function detectResultShape(
     if (typeof value === "string" && isBlankString(value)) return { kind: "empty" };
     if (Array.isArray(value) && value.length === 0) return { kind: "empty" };
     if (isPlainObject(value) && Object.keys(value).length === 0) return { kind: "empty" };
+
+    // Canonical media/file collections must render as the attachments they
+    // carry. Without this, image_ref_list/media_ref_list outputs and plain
+    // attachment arrays degrade into a metadata table whose nested refs are
+    // hidden behind toggles.
+    const attachments = coerceAttachmentList(value);
+    if (attachments) return attachments;
 
     // 2. Media (object form) — check before generic object so image payloads
     //    render as images, not key/value grids.

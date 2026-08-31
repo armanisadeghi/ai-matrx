@@ -86,6 +86,48 @@ describe("our own file URLs never render as a link", () => {
     if (shape.kind !== "media") return;
     expect(shape.ref.file_id).toBe(FILE_ID);
   });
+
+  test("a canonical image_ref_list stays a media collection instead of a metadata table", () => {
+    const secondId = "3e177acc-85ff-4076-893f-1e852fd569ae";
+    const shape = detectResultShape({
+      kind: "image_ref_list",
+      items: [
+        { kind: "image_ref", media_ref: { file_id: FILE_ID, mime_type: "image/png" } },
+        { kind: "image_ref", media_ref: { file_id: secondId, mime_type: "image/png" } },
+      ],
+      count: 2,
+      details: { viewport: "desktop" },
+    });
+    expect(shape.kind).toBe("attachmentList");
+    if (shape.kind !== "attachmentList") return;
+    expect(shape.items).toEqual([
+      { kind: "media", ref: { file_id: FILE_ID, mime_type: "image/png" }, alt: undefined },
+      { kind: "media", ref: { file_id: secondId, mime_type: "image/png" }, alt: undefined },
+    ]);
+    expect(shape.metadata).toEqual({
+      kind: "image_ref_list",
+      count: 2,
+      details: { viewport: "desktop" },
+    });
+  });
+
+  test("a plain non-media file array renders as attachment cards", () => {
+    const shape = detectResultShape([
+      { file_id: FILE_ID, mime_type: "application/pdf", file_name: "report.pdf" },
+    ]);
+    expect(shape.kind).toBe("attachmentList");
+    if (shape.kind !== "attachmentList") return;
+    expect(shape.items).toEqual([
+      {
+        kind: "file",
+        file: {
+          file_id: FILE_ID,
+          mime_type: "application/pdf",
+          file_name: "report.pdf",
+        },
+      },
+    ]);
+  });
 });
 
 describe("URLs that are NOT ours keep their link rendering", () => {

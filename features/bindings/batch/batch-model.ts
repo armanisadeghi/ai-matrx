@@ -32,7 +32,11 @@ import {
   type ConsumptionMap,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
-import { sourcesFor, setSources } from "../consumption-writer";
+import {
+  retargetSource,
+  setSources,
+  sourcesFor,
+} from "../consumption-writer";
 
 /** One place in the batch: a job this holder would be bound to. */
 export interface PlaceRow {
@@ -256,7 +260,9 @@ export function reconcilePlaceMap({
       );
       if (verdict.action === "keep" && !alreadyJoined) {
         if (entry.target) kept.push(entry.target);
-        rebuilt.push(withAbsenceAnswer(entry, offeredByName.get(entry.target)));
+        rebuilt.push(
+          retargetSource(entry, entry.target, offeredByName.get(entry.target)),
+        );
         return;
       }
       if (verdict.action === "keep") {
@@ -266,8 +272,9 @@ export function reconcilePlaceMap({
       if (verdict.action === "rebind") {
         rebound.push(target.label ?? target.name);
         rebuilt.push(
-          withAbsenceAnswer(
-            { ...entry, target: verdict.target },
+          retargetSource(
+            entry,
+            verdict.target,
             offeredByName.get(verdict.target),
           ),
         );
@@ -276,7 +283,7 @@ export function reconcilePlaceMap({
       // clear
       if (index === 0) {
         cleared.push(target.label ?? target.name);
-        rebuilt.push({ ...entry, target: "" });
+        rebuilt.push(retargetSource(entry, "", undefined));
       } else {
         cleared.push(target.label ?? target.name);
       }
@@ -285,28 +292,6 @@ export function reconcilePlaceMap({
   }
 
   return { map: next, kept, rebound, cleared };
-}
-
-/**
- * P9 travels with the value, not with the place. A value guaranteed at one
- * place may be optional at the next, so the absence answer is re-decided here:
- * an optional source without one gets `skip` (the same pre-answer the middle
- * makes on selection), and a guaranteed one drops an answer it cannot use.
- */
-function withAbsenceAnswer(
-  entry: Extract<ConsumptionEntry, { mapType: "offered_value" }>,
-  offered: OfferedValue | undefined,
-): ConsumptionEntry {
-  if (!entry.target) return entry;
-  if (!offered) return entry;
-  if (offered.guaranteed) {
-    if (entry.when_absent === undefined) return entry;
-    const next = { ...entry };
-    delete next.when_absent;
-    delete next.default;
-    return next;
-  }
-  return entry.when_absent ? entry : { ...entry, when_absent: "skip" };
 }
 
 /** One line naming what reconciling did — never silent (law 4). */
