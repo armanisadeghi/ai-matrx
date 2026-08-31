@@ -85,6 +85,12 @@ rather than write something the save would 422 on. `aidream/services/mandates/
 provisions.py` now validates AND materializes all three stored sources, so the
 stand-in is **deleted, not disabled**.
 
+**One asymmetry, stated rather than hidden:** a literal or a question can be
+source **0** of a target (the shared row owns that pick), and the server will happily
+join either into a many-to-one target. The "also feed this input…" picker offers only
+OFFERED values, so sources 1..n are offered values today. Nothing on screen claims
+otherwise and nothing is dead — it is simply not offered yet.
+
 ## Auto-run (P14)
 
 `mandate.binding.auto_run` (added 2026-08-31, nullable) closes the auto-run
