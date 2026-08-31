@@ -18,7 +18,9 @@ with operational status and the categorized tool registry.
 ## Surface contract
 
 - One `NonEditableContextMenu` wraps the hub pane and receives the live scope at
-  trigger time. The hub is raw catalogue content, not an attachable entity.
+  trigger time. Its `content` is the complete labelled route catalogue, so
+  Copy, AI, and export actions remain real without using the DOM fallback. The
+  hub is raw catalogue content, not an attachable entity.
 - Tool count, default schema, catalogue, and console section have Locate
   anchors. No credentials or connection material enter the scope.
 - Navigation keeps 44px targets below `lg`; desktop resumes compact admin
@@ -32,4 +34,5 @@ with operational status and the categorized tool registry.
 - 2026-08-30 — Surface certification repair: canonical context menu, Locate
   anchors, contextual navigation loading, compact one-title hierarchy, and the
   shared mobile/tablet touch floor; restored the two catalogue doors declared
-  by the surface contract.
+  by the surface contract and supplied resolvable catalogue content so the
+  menu cannot open inert.

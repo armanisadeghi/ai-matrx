@@ -16,6 +16,7 @@ describe("database admin surface contract", () => {
     expect(hub).toContain("surfaceName={ADMIN_DATABASE_SURFACE_NAME}");
     expect(hub).toContain("getApplicationScope={getSurfaceScope}");
     expect(hub).toContain('contentSource={{ type: "raw" }}');
+    expect(hub).toContain("content: databaseToolCatalogueText");
   });
 
   it("keeps database navigation controls at the shared touch floor", () => {
