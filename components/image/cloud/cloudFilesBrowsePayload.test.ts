@@ -8,10 +8,7 @@ describe("buildCloudFilesBrowsePayload", () => {
         { id: "thumb", fileName: "thumb.jpg" },
       ],
       activeFileId: "thumb",
-      resolveUrl: async (fileId) => ({
-        url: `https://cdn.example.com/${fileId}.jpg`,
-        expiresAt: null,
-      }),
+      resolveUrl: async (fileId) => `https://cdn.example.com/${fileId}.jpg`,
     });
 
     expect(payload).toEqual({
@@ -33,12 +30,9 @@ describe("buildCloudFilesBrowsePayload", () => {
       activeFileId: "thumb",
       resolveUrl: async (fileId) => {
         if (fileId === "thumb") {
-          throw new Error("signed URL failed");
+          throw new Error("durable URL failed");
         }
-        return {
-          url: `https://cdn.example.com/${fileId}.jpg`,
-          expiresAt: null,
-        };
+        return `https://cdn.example.com/${fileId}.jpg`;
       },
     });
 

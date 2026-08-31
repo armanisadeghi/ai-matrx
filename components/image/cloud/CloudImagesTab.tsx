@@ -20,7 +20,7 @@
  * Browse-mode click resolves only the *clicked* file's URL (not every
  * visible image's URL) and opens it in the floating ImageViewerWindow.
  * Resolving every image up-front was wasteful and pushed
- * `ResolvedCloudUrl` objects instead of strings into the viewer, which
+ * resolver objects instead of strings into the viewer, which
  * is why the window appeared empty.
  */
 
@@ -396,9 +396,9 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     //
     // Earlier this helper resolved every visible file in parallel via
     // `Promise.all(imageFiles.map(...))`, then pushed each
-    // `ResolvedCloudUrl` object straight into the viewer's `images: string[]`
+    // resolver object straight into the viewer's `images: string[]`
     // contract — so the viewer rendered `<img src="[object Object]">` and
-    // also fired N signed-URL requests on every single click. Both are
+    // also fired N URL resolutions on every single click. Both are
     // gone: one click, one resolve, one image.
     if (selectionMode === "none") {
       if (!resolutionGateRef.current.tryStart(file.id)) return;
@@ -406,7 +406,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         setResolvingId(file.id);
         const resolved = await resolveCloudFileUrl(store, file.id);
         browse({
-          images: [resolved.url],
+          images: [resolved],
           alts: [file.fileName],
           initialIndex: 0,
           title: file.fileName,

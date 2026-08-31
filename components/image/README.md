@@ -1,6 +1,6 @@
 # Image Management System
 
-> **Primary hub doc:** [`features/image-manager/FEATURE.md`](../../features/image-manager/FEATURE.md). The components in this directory power both the modal `<ImageManager>` and the full-page `/image-manager` route. For overall architecture, registry layout, selection modes, and how to add a new tab, read the FEATURE doc first.
+> **Primary hub doc:** [`features/image-manager/FEATURE.md`](../../features/image-manager/FEATURE.md). The components in this directory power both the modal `<ImageManager>` and the `/images/*` route tree. For overall architecture, registry layout, selection modes, and how to add a new tab, read the FEATURE doc first.
 
 This system provides a full-screen image picker plus a small set of helper components for displaying, selecting, and persisting images across the application. As of the cloud-files rebuild it is a first-class consumer of the `features/files` system — every upload lands in the user's cloud account, and "Your Cloud" / "All Files" / "Image Studio" all surface live cloud-files data.
 
@@ -129,11 +129,9 @@ The `ImagePreviewRow` component supports 5 size variants: `xs`, `s`, `m`, `lg`, 
 
 - `single`: Only one image can be selected at a time
 - `multiple`: Multiple images can be selected
-- `none`: Browse mode — selection state is hidden, clicks fall through to the host's `onClick` handler (used by `SelectableImageCard`). The `/image-manager` route uses this for "browse" semantics.
+- `none`: Browse mode — selection state is hidden and image clicks open the canonical image viewer. The `/images/*` route tree uses this for browse semantics.
 
 Set via `setSelectionMode` from `useSelectedImages`.
-
-> Some current cloud tabs (`CloudImagesTab`, `CloudFilesTab`) still hardcode toggle-on-click and don't honor `none` yet — this is on the roadmap. See the route's section-mode notes in `app/(a)/image-manager/_components/ImageManagerPageShell.tsx`.
 
 ## Image Data Structure
 
@@ -150,18 +148,16 @@ interface ImageSource {
     fileId?: string; // present when type === "cloud-file"
     mimeType?: string;
     fileSize?: number;
-    urlExpiresAt?: number | null; // null = permanent CDN URL
+    urlExpiresAt?: number | null; // deprecated compatibility field; new URLs are durable
     [key: string]: any;
   };
 }
 ```
 
-For cloud files, the URL is pre-resolved at selection time:
-
-- `publicUrl` (CDN) → permanent URL, `urlExpiresAt: null`.
-- Private files → 1-hour signed URL via `getSignedUrl`. Refresh by re-resolving with `metadata.fileId`.
-
-The resolver lives at `components/image/cloud/resolveCloudFileUrl.ts`.
+For cloud files, `components/image/cloud/resolveCloudFileUrl.ts` resolves the
+durable URL from `metadata.fileId` through the universal file handler. Public
+files use their CDN URL; private files use the durable authenticated download
+route. Load recovery refreshes `mx_files_session` and retries the same URL.
 
 ## Deprecated Files
 

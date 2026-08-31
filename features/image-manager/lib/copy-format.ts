@@ -5,11 +5,11 @@
  * record, and the list copy never drift (agent-copy doctrine: add the shared
  * summary once, never duplicate it across files).
  *
- * MEDIA RULES (see lib/media/agent-payload.ts): image rows are the worst
- * offenders for signed URLs — a `CloudFile` carries `url`/`signedUrl`/
- * `downloadUrl` (all expiring) plus `filePath` (a raw storage path). Every
- * agent shape here goes through `mediaSafe` and leads with `agentFileRef`, so
- * the agent gets a durable `file_id` instead of a link that dies in days.
+ * MEDIA RULES (see lib/media/agent-payload.ts): legacy image rows were frequent
+ * signed-URL offenders, and `filePath` is a raw storage location. Neither
+ * belongs in agent context. Every agent shape goes through `mediaSafe` and
+ * leads with `agentFileRef`; the compatibility sanitizer still strips retired
+ * URL-shaped fields if an old row reaches it.
  */
 
 import type { CloudFile } from "@/features/files/types";

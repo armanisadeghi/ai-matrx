@@ -21,7 +21,7 @@ export interface ImageSource {
     mimeType?: string;
     /** File size in bytes (cloud files + uploads). */
     fileSize?: number;
-    /** When the resolved URL expires (epoch ms). null = permanent CDN URL. */
+    /** @deprecated Compatibility only. Canonical file URLs are durable. */
     urlExpiresAt?: number | null;
     [key: string]: unknown;
   };
