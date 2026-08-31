@@ -122,6 +122,37 @@ describe("kind-kit", () => {
     expect(rows[0]?.className).toContain("transition-transform");
   });
 
+  it("SortableList row controls stay IN FLOW — never a floating hover cluster", () => {
+    // Regression guard. The controls have been moved twice: an inline column,
+    // then (2026-08-30) an `absolute ... group-hover:opacity-100` cluster sold
+    // as "zero-footprint". A control that costs no layout width must land on
+    // top of whatever the row draws in that corner and, being the layer above,
+    // wins every click there — it covered the live "Copy for AI" and "Edit
+    // book" buttons on `artisan_demo_reading_list`. Rows own their trailing
+    // controls; the kit takes its own width instead of borrowing the row's.
+    act(() => {
+      root.render(
+        <SortableList items={["a", "b"]} onReorder={() => {}} onRemove={() => {}} />,
+      );
+    });
+    const row = container.querySelector("li")!;
+    const controls = row
+      .querySelector('[aria-label="Move up"]')!
+      .closest("div")!.parentElement!;
+
+    // Not lifted out of flow, and not gated behind hover/opacity.
+    expect(controls.className).not.toContain("absolute");
+    expect(controls.className).not.toContain("opacity-0");
+    expect(controls.className).not.toContain("group-hover:");
+    expect(controls.className).not.toContain("pointer-events-none");
+    // The row needs no positioning context, because nothing is positioned.
+    expect(row.className).not.toContain("relative");
+    // Every control is reachable without hovering first.
+    for (const label of ["Move up", "Move down", "Remove"]) {
+      expect(row.querySelector(`[aria-label="${label}"]`)).toBeTruthy();
+    }
+  });
+
   it("SortableList drop commits the pointer-derived landing slot", () => {
     const onReorder = jest.fn();
     act(() => {
