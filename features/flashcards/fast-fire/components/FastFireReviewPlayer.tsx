@@ -16,8 +16,10 @@
 
 "use client";
 
+import { useRef, useState } from "react";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { playCard, stopPlayback } from "../redux/fastFireSlice";
 
 export function FastFireReviewPlayer({
@@ -29,20 +31,40 @@ export function FastFireReviewPlayer({
 }) {
   const dispatch = useAppDispatch();
   const src = useMediaResolution(fileId ?? null).resolution?.src ?? null;
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useMediaElementPlaybackSession({
+    elementRef: audioRef,
+    isPlaying,
+    source: "other",
+    label: "Fast Fire answer recording",
+    trackKey: fileId ?? undefined,
+  });
 
   if (!fileId) return null;
 
   return (
     <audio
+      ref={audioRef}
       src={src ?? undefined}
       controls
       preload="none"
       className="mt-2 w-full"
       // Keep Redux's active-row marker in sync with the native transport so the
       // surrounding Play/Pause affordance reflects real playback state.
-      onPlay={() => dispatch(playCard({ cardId }))}
-      onPause={() => dispatch(stopPlayback())}
-      onEnded={() => dispatch(stopPlayback())}
+      onPlay={() => {
+        setIsPlaying(true);
+        dispatch(playCard({ cardId }));
+      }}
+      onPause={() => {
+        setIsPlaying(false);
+        dispatch(stopPlayback());
+      }}
+      onEnded={() => {
+        setIsPlaying(false);
+        dispatch(stopPlayback());
+      }}
     />
   );
 }

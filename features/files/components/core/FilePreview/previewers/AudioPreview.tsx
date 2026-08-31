@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 
 export interface AudioPreviewProps {
   url: string | null;
@@ -123,6 +124,14 @@ function AudioPreviewSession({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
+
+  useMediaElementPlaybackSession({
+    elementRef: audioRef,
+    isPlaying: playing,
+    source: "file-media",
+    label: fileName || "Audio preview",
+    trackKey: url ?? undefined,
+  });
 
   // Keep playback state in sync with the underlying <audio>.
   useEffect(() => {

@@ -2,13 +2,13 @@
 
 // features/education/study/components/SessionAudio.tsx
 //
-// A durable native <audio> for a study artifact (a per-attempt response clip or a
-// full-session recording). Resolves the src from a durable file_id via useFileSrc
-// (re-mints per the media-durability rules — never a stored expiring URL). Always
-// mounted with native controls so iOS plays on the user's tap (no off-gesture
-// .play()). Mode-agnostic — used by any study mode's session views.
+// Durable playback for a study artifact (a per-attempt response clip or a
+// full-session recording). InlineMediaRef re-mints from file_id and joins the
+// host playback port, so study audio cannot overlap a podcast, video, or TTS.
+// Native controls remain visible so iOS playback begins in the user's gesture.
 
-import { useMediaResolution } from "@ai-matrx/media/core";
+import { useState } from "react";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 
 export function SessionAudio({
   fileId,
@@ -17,16 +17,27 @@ export function SessionAudio({
   fileId: string | null | undefined;
   className?: string;
 }) {
-  const src = useMediaResolution(fileId ?? null).resolution?.src ?? null;
+  const [failedFileId, setFailedFileId] = useState<string | null>(null);
   if (!fileId) return null;
+
+  if (failedFileId === fileId) {
+    return (
+      <p className="text-xs text-destructive" role="alert">
+        This study audio could not be loaded. Try again.
+      </p>
+    );
+  }
+
   return (
-    <audio
-      src={src ?? undefined}
+    <InlineMediaRef
+      ref={fileId}
+      as="audio"
       controls
       preload="none"
+      playbackLabel="Study session audio"
+      onError={() => setFailedFileId(fileId)}
+      errorFallback={null}
       className={className ?? "mt-1 h-8 w-full"}
-    >
-      <track kind="captions" />
-    </audio>
+    />
   );
 }
