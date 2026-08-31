@@ -124,7 +124,9 @@ function NoteInfoWindowInner({
         }}
         extraSections={[sections]}
       >
-        <NoteInfoPanel noteId={noteId} />
+        <div className="min-h-full">
+          <NoteInfoPanel noteId={noteId} />
+        </div>
       </NonEditableContextMenu>
     </WindowPanel>
   );
