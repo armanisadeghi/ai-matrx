@@ -27,6 +27,9 @@ import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Separator } from "@/components/ui/separator";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   useAddDiscoveredPublisher,
   useListingPublishers,
@@ -190,6 +193,7 @@ export function EndowmentPortfolioPanel({
   const addPublisher = useAddDiscoveredPublisher();
   const [platformState, setPlatformState] = useState<Record<string, RowState>>({});
   const [artifactState, setArtifactState] = useState<Record<string, RowState>>({});
+  const [clickedMatch, setClickedMatch] = useState<RegistryMatch | null>(null);
 
   // The cached registry LABELS rows ("already tracked"); it never DECIDES.
   // `addDiscoveredPublisher` re-runs the dedup against a complete read at write
@@ -280,6 +284,70 @@ export function EndowmentPortfolioPanel({
     }
   };
 
+  // Right-click: ONE menu for the platform table, resolved per row via
+  // `data-row-id` + STATE. This identity — a candidate publishing platform
+  // matched against the shared publisher registry — is page-local (a grep
+  // for `RegistryMatch` across features/ and app/ turns up only this file),
+  // so its actions are an inline `extraSections`, not a shared builder.
+  const resolvePlatformContext = (target: HTMLElement | null) => {
+    const id = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const match = (id && matches.find((m) => m.platform.domain === id)) || null;
+    setClickedMatch(match);
+    if (!match) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: match.existing
+        ? { type: "web_listing_publisher" as const, id: match.existing.id, title: match.platform.name }
+        : undefined,
+      content: [
+        `Platform: ${match.platform.name} (${match.platform.domain})`,
+        `Endowment: ${ENDOWMENT_LABELS[match.platform.endowment]}`,
+        `Tier: ${PUBLISHER_TIER_LABELS[match.platform.tier]}`,
+        match.existing ? "Already tracked in the registry" : "Not tracked yet",
+      ].join("\n"),
+    };
+  };
+  const platformItems: ContextMenuExtraItem[] = clickedMatch
+    ? [
+        {
+          kind: "link",
+          id: "platform-open-site",
+          label: "Open platform site",
+          icon: ArrowUpRight,
+          href: `https://${clickedMatch.platform.domain}`,
+          target: "_blank",
+        },
+        clickedMatch.existing
+          ? {
+              kind: "item",
+              id: "platform-already-tracked",
+              label: "Already in the registry",
+              icon: Check,
+              onSelect: () => {},
+              disabled: true,
+              description: "No action needed",
+            }
+          : {
+              kind: "item",
+              id: "platform-add-registry",
+              label: "Add to registry",
+              icon: Plus,
+              onSelect: () => void handleAddPlatform(clickedMatch.platform),
+              disabled: !canWriteRegistry,
+              description: canWriteRegistry
+                ? undefined
+                : "The shared registry is super-admin writable",
+            },
+      ]
+    : [];
+  const platformSection = {
+    id: "endowment-platform-actions",
+    label: "Platform",
+    icon: Plus,
+    items: platformItems,
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {portfolio.business_read ? (
@@ -317,6 +385,13 @@ export function EndowmentPortfolioPanel({
           {/* P26 — ONE table. The portfolio picks which columns show; the
               canonical table decides that every one of them sorts and filters,
               which is what makes a 40-platform verdict list usable. */}
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={resolvePlatformContext}
+            extraSections={clickedMatch ? [platformSection] : []}
+          >
           <MatrxDataTable<RegistryMatch>
             data={matches}
             columns={platformColumns}
@@ -343,6 +418,7 @@ export function EndowmentPortfolioPanel({
                 `${match.platform.name} (${match.platform.domain}) — ${ENDOWMENT_LABELS[match.platform.endowment]}, ${PUBLISHER_TIER_LABELS[match.platform.tier]}${match.existing ? ", already in the registry" : ""}`,
             }}
           />
+          </NonEditableContextMenu>
         </section>
       ) : null}
 

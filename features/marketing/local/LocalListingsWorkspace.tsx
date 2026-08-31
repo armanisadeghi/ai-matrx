@@ -86,6 +86,9 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
   critical: "bg-primary/15 text-primary",
@@ -779,6 +782,7 @@ function ListingsMatrix({
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [checkingGoogle, setCheckingGoogle] = useState(false);
+  const [clickedRow, setClickedRow] = useState<ListingMatrixRow | null>(null);
 
   const handleGoogleCheck = async () => {
     setCheckingGoogle(true);
@@ -1031,9 +1035,98 @@ function ListingsMatrix({
     },
   ];
 
+  // Right-click: ONE menu for the whole publisher matrix, resolved per row
+  // via `data-row-id` + STATE. The identity here — a publisher × location
+  // pairing (a `web.location_listing` once one exists) — is page-local (a
+  // grep for `ListingMatrixRow` across features/ and app/ turns up only this
+  // file), so its actions are an inline `extraSections`, not a shared
+  // builder.
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && matrix.find((r) => r.publisher.id === id)) || null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: row.listing
+        ? { type: "web_location_listing" as const, id: row.listing.id, title: row.publisher.name }
+        : undefined,
+      content: [
+        `Publisher: ${row.publisher.name}`,
+        `Status: ${LISTING_STATUS_LABELS[rowStatus(row)]}`,
+        row.listing?.listing_url ? `URL: ${row.listing.listing_url}` : "No URL saved",
+      ].join("\n"),
+    };
+  };
+  const listingItems: ContextMenuExtraItem[] = [];
+  if (clickedRow) {
+    if (clickedRow.publisher.manage_url) {
+      listingItems.push({
+        kind: "link",
+        id: "listing-open-manager",
+        label: "Open listing manager",
+        icon: ArrowUpRight,
+        href: clickedRow.publisher.manage_url,
+        target: "_blank",
+      });
+    } else {
+      listingItems.push({
+        kind: "item",
+        id: "listing-open-manager",
+        label: "Open listing manager",
+        icon: ArrowUpRight,
+        onSelect: () => {},
+        disabled: true,
+        description: "No listing manager URL on file",
+      });
+    }
+    if (clickedRow.listing?.listing_url) {
+      listingItems.push({
+        kind: "link",
+        id: "listing-open-live",
+        label: "Open live listing",
+        icon: ArrowUpRight,
+        href: clickedRow.listing.listing_url,
+        target: "_blank",
+      });
+    } else {
+      listingItems.push({
+        kind: "item",
+        id: "listing-open-live",
+        label: "Open live listing",
+        icon: ArrowUpRight,
+        onSelect: () => {},
+        disabled: true,
+        description: "No listing URL saved yet",
+      });
+    }
+    if (clickedRow.publisher.slug === GOOGLE_PUBLISHER_SLUG) {
+      listingItems.push({
+        kind: "item",
+        id: "listing-check-google",
+        label: checkingGoogle ? "Checking…" : "Fetch live data",
+        icon: Check,
+        onSelect: () => void handleGoogleCheck(),
+        disabled: checkingGoogle,
+      });
+    }
+  }
+  const listingSection = {
+    id: "location-listing-actions",
+    label: "Listing",
+    icon: ArrowUpRight,
+    items: listingItems,
+  };
+
   return (
     <SectionCard title="Listings by publisher" anchor="local-listings-matrix">
       <div className="p-3">
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={resolveRowContext}
+          extraSections={clickedRow ? [listingSection] : []}
+        >
         <MatrxDataTable<ListingMatrixRow>
           data={matrix}
           columns={columns}
@@ -1052,6 +1145,7 @@ function ListingsMatrix({
               `${row.publisher.name} — ${LISTING_STATUS_LABELS[rowStatus(row)]}${row.listing?.listing_url ? ` (${row.listing.listing_url})` : ""}`,
           }}
         />
+        </NonEditableContextMenu>
       </div>
       <p className="px-3 pb-3 text-xs text-muted-foreground">
         Impact is each publisher&apos;s relative citation weight (0–100).
