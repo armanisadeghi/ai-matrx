@@ -20,6 +20,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  ExternalLink,
   Loader2,
   Search,
   ShieldAlert,
@@ -49,6 +50,8 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import type { Database } from "@/types/database.types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Admins & Levels (/administration/users/admins)";
@@ -179,6 +182,16 @@ function AdminsManagementPageContent() {
 
   // Per-row update state
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
+
+  // Right-click context, per table — read-only navigation only. This page is
+  // a protected resource (admin.admins / admin_audit_log): the menu never
+  // promotes, revokes, or edits an admin — every existing mutation stays on
+  // its own dedicated control (Level select / Revoke button), which is the
+  // single path of resistance this surface enforces (see the
+  // protected-resources skill). The menu contributes Copy + "Open account"
+  // doors only.
+  const [clickedAdmin, setClickedAdmin] = useState<AdminRow | null>(null);
+  const [clickedAudit, setClickedAudit] = useState<AuditEntry | null>(null);
 
   // The whole body is guarded, not just the !res.ok branch: a rejected fetch
   // (offline, DNS) or a malformed body throws, and an unguarded throw would
@@ -630,6 +643,44 @@ function AdminsManagementPageContent() {
             />
           )}
           <div className="h-[480px]">
+            {/* A PLAIN DOM CHILD, not the table itself — MatrxDataTable
+                forwards neither the ref nor onContextMenu Radix clones onto
+                its trigger. Read-only menu: see the note by `clickedAdmin`. */}
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id
+                  ? (admins.find((r) => r.user_id === id) ?? null)
+                  : null;
+                setClickedAdmin(row);
+                if (!row) return null;
+                return { content: adminSummary(row) };
+              }}
+              extraSections={[
+                {
+                  id: "admin-row",
+                  label: "This admin",
+                  anchor: "after-compare",
+                  items: [
+                    {
+                      kind: "link",
+                      id: "admin-open-account",
+                      label: "Open account",
+                      icon: ExternalLink,
+                      href: clickedAdmin
+                        ? accountHrefFor(clickedAdmin.user_id)
+                        : "#",
+                      disabled: !clickedAdmin,
+                    },
+                  ] satisfies ContextMenuExtraItem[],
+                },
+              ]}
+            >
             <MatrxDataTable
               urlState={{ id: "admins" }}
               data={admins}
@@ -726,6 +777,7 @@ function AdminsManagementPageContent() {
                 );
               }}
             />
+            </NonEditableContextMenu>
           </div>
         </section>
 
@@ -749,6 +801,58 @@ function AdminsManagementPageContent() {
             />
           )}
           <div className="h-[440px]">
+            {/* Read-only navigation only — same protected-resource rule as
+                the admins table above; the audit log is immutable by design
+                and this menu never writes to it. */}
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id
+                  ? (audit.find((e) => e.id === id) ?? null)
+                  : null;
+                setClickedAudit(row);
+                if (!row) return null;
+                return {
+                  content: `${formatDate(row.created_at)} · ${row.action} · actor: ${row.actor_email ?? "system"} · target: ${row.target_email ?? row.target_user_id} · ${auditChange(row)}`,
+                };
+              }}
+              extraSections={[
+                {
+                  id: "admin-audit-row",
+                  label: "This entry",
+                  anchor: "after-compare",
+                  items: [
+                    {
+                      kind: "link",
+                      id: "admin-audit-open-target",
+                      label: "Open target account",
+                      icon: ExternalLink,
+                      href: clickedAudit
+                        ? accountHrefFor(clickedAudit.target_user_id)
+                        : "#",
+                      disabled: !clickedAudit,
+                    },
+                    {
+                      kind: "link",
+                      id: "admin-audit-open-actor",
+                      label: "Open actor account",
+                      icon: ExternalLink,
+                      href:
+                        clickedAudit?.actor_user_id
+                          ? accountHrefFor(clickedAudit.actor_user_id)
+                          : "#",
+                      disabled: !clickedAudit?.actor_user_id,
+                      description: "System / service-role change — no actor account",
+                    },
+                  ] satisfies ContextMenuExtraItem[],
+                },
+              ]}
+            >
             <MatrxDataTable
               urlState={{ id: "admin-audit" }}
               data={audit}
@@ -790,6 +894,7 @@ function AdminsManagementPageContent() {
                 description: (e) => formatDate(e.created_at),
               }}
             />
+            </NonEditableContextMenu>
           </div>
         </section>
       </div>
