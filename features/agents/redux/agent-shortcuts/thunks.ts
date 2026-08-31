@@ -22,6 +22,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { toGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { assignField } from "@/features/agents/redux/shared/field-flags";
@@ -641,7 +643,16 @@ export const createShortcut = createAsyncThunk<
 
   if (error) throw pgErrorToError(error);
 
-  const newShortcut = dbRowToAgentShortcut(data);
+  // This insert goes straight to the table, so the returned row carries the
+  // SYSTEM org for a global write. Every client scope read means "no tenant
+  // owner" by global (features/agents/redux/shared/scope.ts), so a raw row
+  // would land in the store owned by an organization and vanish from the very
+  // list the creator is looking at. Same rule the API routes apply on their
+  // wire — lib/organizations/globalOwnership.ts.
+  const newShortcut = toGlobalOwnershipRecord(
+    dbRowToAgentShortcut(data),
+    await resolveSystemOrgId(),
+  );
   dispatch(upsertShortcut(newShortcut));
   return newShortcut.id;
 });

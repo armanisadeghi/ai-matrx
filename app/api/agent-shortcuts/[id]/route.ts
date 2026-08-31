@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { shortcutTable } from "@/lib/supabase/shortcutStorage";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
 
 const SHORTCUT_UPDATE_FIELDS = [
   "category_id",
@@ -83,7 +85,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data });
+    // A system-org row IS global — lib/organizations/globalOwnership.ts.
+    return NextResponse.json({
+      data: toGlobalOwnershipWire(
+        data as { organization_id?: string | null },
+        await resolveSystemOrgId(supabase),
+      ),
+    });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcuts/[id]:", error);
     return NextResponse.json(
@@ -151,7 +159,13 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({ data });
+    // A system-org row IS global — lib/organizations/globalOwnership.ts.
+    return NextResponse.json({
+      data: toGlobalOwnershipWire(
+        data as { organization_id?: string | null },
+        await resolveSystemOrgId(supabase),
+      ),
+    });
   } catch (error) {
     console.error("Error in PATCH /api/agent-shortcuts/[id]:", error);
     return NextResponse.json(

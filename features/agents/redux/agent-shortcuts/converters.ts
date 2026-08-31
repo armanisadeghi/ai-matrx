@@ -556,8 +556,14 @@ export function agentShortcutToUpdate(
   if (partial.userId !== undefined) update.created_by = partial.userId;
   if (partial.organizationId !== undefined) {
     if (partial.organizationId === null) {
+      // The column is NOT NULL, and since the storage flip a null organization
+      // means GLOBAL, not "no organization" — the system org owns global rows.
+      // A scope change is a deliberate write through
+      // `resolveShortcutWriteScope` / `fromGlobalOwnershipRecord`, never a null
+      // slipping in from a record that was read through the global-ownership
+      // rule (lib/organizations/globalOwnership.ts).
       throw new Error(
-        "[agent-shortcuts] cannot clear a shortcut's organization",
+        "[agent-shortcuts] a shortcut's organization cannot be cleared — a global write resolves the system org through resolveShortcutWriteScope({scope:'global'})",
       );
     }
     update.organization_id = partial.organizationId;

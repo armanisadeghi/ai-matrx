@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
@@ -92,9 +93,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // A system-org row IS global — say so in the shape the client's scope
+    // model reads (lib/organizations/globalOwnership.ts).
+    const systemOrgId = await resolveSystemOrgId(supabase);
+
     return NextResponse.json({
       data: (data ?? []).map((row) =>
-        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(row)),
+        toGlobalOwnershipWire(
+          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(row)),
+          systemOrgId,
+        ),
       ),
     });
   } catch (error) {
@@ -190,7 +198,12 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)) },
+      {
+        data: toGlobalOwnershipWire(
+          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+          await resolveSystemOrgId(supabase),
+        ),
+      },
       { status: 201 },
     );
   } catch (error) {

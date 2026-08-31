@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
@@ -168,7 +170,11 @@ export async function POST(
 
     return NextResponse.json(
       {
-        data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+        // A system-org row IS global — lib/organizations/globalOwnership.ts.
+        data: toGlobalOwnershipWire(
+          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+          await resolveSystemOrgId(supabase),
+        ),
       },
       { status: 201 },
     );

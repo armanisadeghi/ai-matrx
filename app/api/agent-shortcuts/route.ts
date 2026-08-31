@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { shortcutTable } from "@/lib/supabase/shortcutStorage";
+import { toGlobalOwnershipWire, toGlobalOwnershipWireList } from "@/lib/organizations/globalOwnership";
 
 const SHORTCUT_FIELDS = [
   "id",
@@ -139,7 +140,14 @@ export async function GET(request: NextRequest) {
       ? await filterByPlacementType(supabase, data ?? [], placementType)
       : (data ?? []);
 
-    return NextResponse.json({ data: filtered });
+    // A system-org row IS global — say so in the shape the client's scope
+    // model reads (lib/organizations/globalOwnership.ts).
+    return NextResponse.json({
+      data: toGlobalOwnershipWireList(
+        filtered as { organization_id?: string | null }[],
+        await resolveSystemOrgId(supabase),
+      ),
+    });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcuts:", error);
     return NextResponse.json(
@@ -243,7 +251,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data }, { status: 201 });
+    return NextResponse.json(
+      {
+        data: toGlobalOwnershipWire(
+          data as { organization_id?: string | null },
+          await resolveSystemOrgId(supabase),
+        ),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Error in POST /api/agent-shortcuts:", error);
     return NextResponse.json(

@@ -8,6 +8,10 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { AgentShortcut } from "../types";
 import type { ShortcutFormData } from "@/features/agent-shortcuts/types";
 import { agentShortcutToInsert, dbRowToAgentShortcut } from "../converters";
+import {
+  fromGlobalOwnershipRecord,
+  toGlobalOwnershipRecord,
+} from "@/lib/organizations/globalOwnership";
 import { upsertShortcuts } from "../slice";
 import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
@@ -45,6 +49,11 @@ export const bulkCreateShortcuts = createAsyncThunk<
         );
       }
 
+      // `category.organizationId` is already null for a global category (the
+      // API wire and the store both apply lib/organizations/globalOwnership.ts),
+      // so this reads the shared scope rule rather than re-deriving it. The
+      // system-org comparison stays as a BELT for a record that reached the
+      // store by some path this census missed — never as the primary rule.
       const scope = category.userId
         ? "user"
         : category.projectId
@@ -83,7 +92,12 @@ export const bulkCreateShortcuts = createAsyncThunk<
     .select();
   if (error) throw pgErrorToError(error);
 
-  const created = (data ?? []).map(dbRowToAgentShortcut);
+  // Straight-to-table write: a global row comes back owned by the SYSTEM org,
+  // which every client scope read counts as an organization. One rule, applied
+  // wherever a raw row enters the store — lib/organizations/globalOwnership.ts.
+  const created = (data ?? []).map((row) =>
+    toGlobalOwnershipRecord(dbRowToAgentShortcut(row), systemOrgId),
+  );
   if (created.length > 0) dispatch(upsertShortcuts(created));
   return created.map((s) => s.id);
 });
@@ -102,9 +116,13 @@ export const bulkUpdateShortcuts = createAsyncThunk<
   ThunkApi
 >("agentShortcut/bulkUpdate", async (fullRows, { dispatch }) => {
   if (fullRows.length === 0) return [];
+  const systemOrgId = await resolveSystemOrgId();
 
+  // These are records READ through the global-ownership rule, so a global one
+  // carries `organizationId: null` — and the column is NOT NULL. Put the system
+  // org back before writing (lib/organizations/globalOwnership.ts).
   const rows = fullRows.map((r) => ({
-    ...agentShortcutToInsert(r),
+    ...agentShortcutToInsert(fromGlobalOwnershipRecord(r, systemOrgId)),
     id: r.id,
   }));
 
@@ -124,13 +142,15 @@ export const bulkUpdateShortcuts = createAsyncThunk<
     saved = results
       .map((r) => r.data)
       .filter((d): d is NonNullable<typeof d> => Boolean(d))
-      .map(dbRowToAgentShortcut);
+      .map((row) => toGlobalOwnershipRecord(dbRowToAgentShortcut(row), systemOrgId));
   } else {
     const { data, error } = await shortcutTable(supabase)
       .upsert(rows, { onConflict: "id" })
       .select();
     if (error) throw pgErrorToError(error);
-    saved = (data ?? []).map(dbRowToAgentShortcut);
+    saved = (data ?? []).map((row) =>
+      toGlobalOwnershipRecord(dbRowToAgentShortcut(row), systemOrgId),
+    );
   }
   if (saved.length > 0) dispatch(upsertShortcuts(saved));
   return saved;

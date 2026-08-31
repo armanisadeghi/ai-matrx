@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import type { Database } from "@/types/database.types";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
@@ -53,7 +55,11 @@ export async function GET(
     }
 
     return NextResponse.json({
-      data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+      // A system-org row IS global — see lib/organizations/globalOwnership.ts.
+      data: toGlobalOwnershipWire(
+        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+        await resolveSystemOrgId(supabase),
+      ),
     });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcut-categories/[id]:", error);
@@ -191,7 +197,11 @@ export async function PATCH(
     }
 
     return NextResponse.json({
-      data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+      // A system-org row IS global — see lib/organizations/globalOwnership.ts.
+      data: toGlobalOwnershipWire(
+        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+        await resolveSystemOrgId(supabase),
+      ),
     });
   } catch (error) {
     console.error("Error in PATCH /api/agent-shortcut-categories/[id]:", error);
