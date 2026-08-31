@@ -16,7 +16,7 @@
  * the user chose, so it can attach them to the message.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ExternalLink,
   FileText,
@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { GoogleDrive } from "@/components/icons/brand-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
@@ -96,6 +97,7 @@ function GoogleConnectWindowBody({
   const connectGoogle = useConnectGoogle();
   const inventory = useGoogleConnectionInventory();
   const [busy, setBusy] = useState<string | null>(null);
+  const [clickedFileId, setClickedFileId] = useState<string | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(() => initialConnectionId ?? preferredGoogleConnectionId("workspace"));
@@ -247,6 +249,48 @@ function GoogleConnectWindowBody({
       position="center"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
+      {/*
+       * OAuth connect flow — doors only. The menu never carries a token,
+       * connection id, or account email; the one door it adds is "Open in
+       * Google" for an already-registered file's own web_view_link, which
+       * previously only had an icon-only inline anchor.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="files"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const el = target?.closest<HTMLElement>("[data-row-id]");
+          const id = el?.getAttribute("data-row-id") ?? null;
+          setClickedFileId(id);
+          const file = id ? (files.find((f) => f.id === id) ?? null) : null;
+          return { content: file?.display_name ?? "" };
+        }}
+        extraSections={(() => {
+          const file = files.find((f) => f.id === clickedFileId) ?? null;
+          const link =
+            typeof file?.metadata?.web_view_link === "string"
+              ? file.metadata.web_view_link
+              : null;
+          if (!file) return [];
+          return [
+            {
+              id: "google-file",
+              label: file.display_name,
+              items: [
+                {
+                  kind: "link" as const,
+                  id: "google-file-open",
+                  label: "Open in Google",
+                  icon: ExternalLink,
+                  href: link ?? "#",
+                  disabled: !link,
+                },
+              ],
+            },
+          ];
+        })()}
+      >
       <div className="flex flex-col gap-3 p-3">
         {inventory.isLoading ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
@@ -316,6 +360,7 @@ function GoogleConnectWindowBody({
                   return (
                     <div
                       key={file.id}
+                      data-row-id={file.id}
                       className="flex items-center gap-2 border-b border-border/60 px-2.5 py-1.5 last:border-b-0"
                     >
                       <Icon
@@ -373,6 +418,7 @@ function GoogleConnectWindowBody({
           </div>
         )}
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
