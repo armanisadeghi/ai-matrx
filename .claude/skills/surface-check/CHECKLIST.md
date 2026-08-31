@@ -188,6 +188,7 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 ## S15 · Data flow & correctness — CLAUDE.md "Data flow" + `supabase-realtime` + `type-safety`
 
 - MUST: reads/writes go React → Supabase directly (no Next API middle tier, no Python as DB gateway); one canonical path per operation; complete lists via `readAllRows`; guarded read-modify-write via `guardedUpdate`; any `.channel(` follows `supabase-realtime`; no `any`/casts (`type-safety`); paginated ORDER BY ends in a unique column.
+- MUST (**CANONICAL-PATH CENSUS**): when the feature, its docs, or a shared helper claims ONE path for a semantic operation, search the entire focused feature for every sibling caller of that operation and inspect each one. A green exemplar proves only itself. Certification fails if any caller still hand-rolls the launch/read/write/parse path, bypasses the canonical helper, or contradicts a completed migration claim. Add a focused regression that pins the canonical boundary and the absence of the retired path. Live terminal evidence must exercise the real caller selected for this surface, not a helper bench in isolation.
 - Check: `pnpm check:unbounded-reads` · `pnpm check:backend-boundaries` · `pnpm type-check` · `pnpm check:hatches <path>` (must not rise).
 
 ## S16 · Access & sharing — `features/access-gate/FEATURE.md` + `protected-resources` + SHARE_LEVELS
