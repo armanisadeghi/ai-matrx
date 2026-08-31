@@ -45,6 +45,18 @@ import {
   type UiSurfaceRow,
 } from "@/features/surfaces/services/surfaces.service";
 import { SurfaceAdminDetailPage } from "@/features/surfaces/admin-detail/SurfaceAdminDetailPage";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { toast } from "@/lib/toast";
+// context-menu-exempt: entity — the "values" view inspects one declared
+// SurfaceValue at a time, a manifest field, not a record; the "settings" view
+// attaches the real `surface` entity once its DB row is loaded (see
+// `entitySection` below) — this inspector reads the surface system, never
+// alters how surface context resolves
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -570,6 +582,74 @@ function SurfaceContextInspectorWindowInner({
     copy(JSON.stringify(scope, null, 2), "__all__");
   }, [copy, scope]);
 
+  const activeItem = tabs.activeTabId
+    ? model.itemById.get(tabs.activeTabId)
+    : undefined;
+  const activeItemName = activeItem
+    ? activeItem.kind === "declared"
+      ? activeItem.value.name
+      : activeItem.name
+    : null;
+
+  const debugSection: ContextMenuExtraSection = {
+    id: "surface-context-inspector",
+    label: "Surface context",
+    icon: Braces,
+    items: [
+      {
+        kind: "item",
+        id: "sci-copy-active-value",
+        label: "Copy active value as JSON",
+        icon: Copy,
+        disabled: !activeItemName,
+        description: activeItemName ? undefined : "Select a value first",
+        onSelect: () => {
+          if (!activeItemName) return;
+          void copyToClipboard(
+            JSON.stringify(scope[activeItemName], null, 2),
+            {
+              formatJson: false,
+              onSuccess: () => toast.success("Value copied"),
+              onError: () => toast.error("Could not copy value"),
+            },
+          );
+        },
+      },
+      {
+        kind: "item",
+        id: "sci-copy-full-scope",
+        label: "Copy full scope as JSON",
+        icon: Copy,
+        onSelect: () => {
+          void copyToClipboard(JSON.stringify(scope, null, 2), {
+            formatJson: false,
+            onSuccess: () => toast.success("Scope copied"),
+            onError: () => toast.error("Could not copy scope"),
+          });
+        },
+      },
+      {
+        kind: "item",
+        id: "sci-copy-manifest",
+        label: "Copy authored manifest as JSON",
+        icon: Copy,
+        disabled: !surfaceName,
+        description: surfaceName ? undefined : "No surface name resolved",
+        onSelect: () => {
+          if (!surfaceName) return;
+          void copyToClipboard(
+            JSON.stringify(getRawManifest(surfaceName), null, 2),
+            {
+              formatJson: false,
+              onSuccess: () => toast.success("Manifest copied"),
+              onError: () => toast.error("Could not copy manifest"),
+            },
+          );
+        },
+      },
+    ],
+  };
+
   useEffect(() => {
     if (view !== "settings" || !surfaceName || surface?.name === surfaceName)
       return;
@@ -785,31 +865,54 @@ function SurfaceContextInspectorWindowInner({
         ) : undefined
       }
     >
-      {view === "values" ? (
-        <InspectorBody
-          openTabIds={tabs.openTabIds}
-          activeTabId={tabs.activeTabId}
-          itemById={model.itemById}
-          scope={scope}
-          copiedKey={copiedKey}
-          onActivate={tabs.setActiveTabId}
-          onClose={tabs.closeTab}
-          onCopy={copy}
-        />
-      ) : surface?.name === surfaceName ? (
-        <SurfaceAdminDetailPage initialSurface={surface} embedded />
-      ) : surfaceError ? (
-        <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-destructive">
-          <ShieldAlert className="h-8 w-8" />
-          <p className="text-sm font-medium">Surface settings unavailable</p>
-          <p className="max-w-md text-xs">{surfaceError}</p>
-        </div>
-      ) : (
-        <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading manifest and
-          editable settings…
-        </div>
-      )}
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content:
+            view === "values"
+              ? activeItemName
+                ? asDisplayString(scope[activeItemName])
+                : ""
+              : "",
+          ...(view === "settings" && surface?.name === surfaceName
+            ? {
+                [CONTEXT_MENU_ENTITY_KEY]: {
+                  type: "surface",
+                  id: surface.id,
+                  title: friendlySurfaceName,
+                },
+              }
+            : {}),
+        }}
+        extraSections={[debugSection]}
+      >
+        {view === "values" ? (
+          <InspectorBody
+            openTabIds={tabs.openTabIds}
+            activeTabId={tabs.activeTabId}
+            itemById={model.itemById}
+            scope={scope}
+            copiedKey={copiedKey}
+            onActivate={tabs.setActiveTabId}
+            onClose={tabs.closeTab}
+            onCopy={copy}
+          />
+        ) : surface?.name === surfaceName ? (
+          <SurfaceAdminDetailPage initialSurface={surface} embedded />
+        ) : surfaceError ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-destructive">
+            <ShieldAlert className="h-8 w-8" />
+            <p className="text-sm font-medium">Surface settings unavailable</p>
+            <p className="max-w-md text-xs">{surfaceError}</p>
+          </div>
+        ) : (
+          <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading manifest and
+            editable settings…
+          </div>
+        )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
