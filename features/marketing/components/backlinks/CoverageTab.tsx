@@ -652,7 +652,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           if (!row) return null;
           return {
             [CONTEXT_MENU_ENTITY_KEY]: {
-              type: "web_coverage_mention",
+              type: "seo_coverage_mention",
               id: row.id,
               title: row.domain,
             },

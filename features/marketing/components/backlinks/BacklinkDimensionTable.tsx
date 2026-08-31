@@ -639,7 +639,11 @@ export function BacklinkDimensionTable({
           [CONTEXT_MENU_ENTITY_KEY]:
             kind === "referring_domain"
               ? referringDomainEntityRef({ domain: label, displayDomain: label })
-              : { type: `web_backlink_${kind}`, id: row.id, title: label },
+              : {
+                  type: "seo_backlink_dimension_snapshot",
+                  id: row.id,
+                  title: label,
+                },
           content: humanDimensionRow(row),
         };
       }}

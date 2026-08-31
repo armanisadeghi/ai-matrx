@@ -41,7 +41,7 @@ export function referringDomainEntityRef(
 ): ContextMenuEntityRef | null {
   if (!row?.domain) return null;
   return {
-    type: "web_referring_domain",
+    type: "seo_referring_domain_profile",
     id: row.domainId ?? row.domain,
     title: row.displayDomain ?? row.domain,
   };

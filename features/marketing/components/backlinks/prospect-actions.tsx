@@ -33,6 +33,8 @@ export interface ProspectDomainMenuRow {
   normalizedDomain: string;
   displayDomain: string;
   reviewStatus: string;
+  /** Which table this row IS, so the entity ref names the right record. */
+  source: "link-gap" | "serp";
   /** The CRM party this prospect already resolved to, once approved+folded. */
   partyId?: string | null;
 }
@@ -44,7 +46,11 @@ export function prospectDomainEntityRef(
 ): ContextMenuEntityRef | null {
   if (!row) return null;
   if (row.partyId) return { type: "party", id: row.partyId, title: row.displayDomain };
-  return { type: "web_prospect_domain", id: row.id, title: row.displayDomain };
+  return {
+    type: row.source === "serp" ? "seo_serp_opportunity" : "seo_link_gap_domain",
+    id: row.id,
+    title: row.displayDomain,
+  };
 }
 
 export function useProspectDomainMenuSection(opts: {

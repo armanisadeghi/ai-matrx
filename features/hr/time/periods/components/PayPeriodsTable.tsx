@@ -133,7 +133,7 @@ export function PayPeriodsTable({ rows, isLoading, hrefFor }: PayPeriodsTablePro
 
   return (
     <NonEditableContextMenu
-      sourceFeature="hr"
+      sourceFeature="admin"
       contentSource={{ type: "raw" }}
       contextData={{ content: "" }}
       resolveContextOnOpen={(target) => {

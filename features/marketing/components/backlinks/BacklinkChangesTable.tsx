@@ -629,7 +629,7 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
           if (!row) return null;
           return {
             [CONTEXT_MENU_ENTITY_KEY]: {
-              type: "web_backlink_change",
+              type: "seo_backlink_change_event",
               id: row.id,
               title: changeVerdict(row).headline,
             },

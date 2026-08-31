@@ -255,6 +255,53 @@ export function VerificationsSurface() {
       onRetry={refresh}
     >
       <div className="flex h-full min-h-0 flex-col p-4 sm:p-6">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const rowId = target
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = rowId
+              ? ((rows ?? []).find((r) => r.id === rowId) ?? null)
+              : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "hr_verification_letter_request",
+                id: row.id,
+                title: row.subject_name ?? "Verification request",
+              },
+              content: [
+                `About: ${row.subject_name ?? "Employee on this request"}`,
+                `Covers: ${HR_VERIFICATION_KIND_LABELS[row.verification_kind as HrVerificationKind] ?? row.verification_kind}`,
+                `State: ${HR_VERIFICATION_STATE_LABELS[toVerificationState(String(row.state))]}`,
+              ].join("\n"),
+            };
+          }}
+          extraSections={[
+            {
+              id: "verification-letter-actions",
+              label: "Verification",
+              items: [
+                {
+                  kind: "item",
+                  id: "verification-generate",
+                  label: "Generate letter",
+                  disabled:
+                    !clickedRow ||
+                    !canGenerate ||
+                    busyId === clickedRow?.id,
+                  onSelect: () => {
+                    if (clickedRow) void generate(clickedRow);
+                  },
+                },
+              ],
+            },
+          ]}
+        >
         <MatrxDataTable<HrVerificationLetterRow>
           data={rows ?? []}
           columns={columns}
@@ -292,6 +339,7 @@ export function VerificationsSurface() {
               "Requests from employees, lenders and agencies appear here, along with every letter this organization has asserted.",
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       {creating ? (

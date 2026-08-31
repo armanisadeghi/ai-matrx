@@ -56,6 +56,11 @@ import { useHrContext } from "../../shared/useHrContext";
 import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrDeductionCode, HrEarningCode } from "../types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 
 /** The three switches, with the sentence that keeps them from being flipped together. */
 const INCLUSION_SWITCHES = [
@@ -247,6 +252,44 @@ function EarningCodesSection({
   organizationId: string | null;
   onSaved: () => void;
 }) {
+  /** Right-clicked row — STATE (not a ref) so the menu reads the row that
+   *  was actually clicked. */
+  const [clickedCode, setClickedCode] = useState<HrEarningCode | null>(null);
+
+  const resolveContextOnOpen = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && codes.find((c) => c.id === id)) || null;
+    setClickedCode(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "hr_earning_code" as const,
+        id: row.id,
+        title: `${row.code} — ${row.name}`,
+      },
+      content: `${row.code} — ${row.name}\nstatus=${row.is_active ? "enabled" : row.is_seeded ? "seeded, not enabled" : "disabled"}`,
+    };
+  };
+
+  const earningCodeMenuSection: ContextMenuExtraSection = {
+    id: "earning-code-row",
+    label: clickedCode ? clickedCode.code : "This code",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "item",
+        id: "earning-code-copy",
+        label: "Copy code",
+        disabled: !clickedCode,
+        onSelect: () => {
+          if (!clickedCode) return;
+          void navigator.clipboard.writeText(clickedCode.code);
+          toast.success("Code copied");
+        },
+      },
+    ],
+  };
+
   const columns: MatrxColumnDef<HrEarningCode>[] = [
     {
       id: "code",
@@ -341,6 +384,12 @@ function EarningCodesSection({
       ) : null}
 
       <div className="p-4">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveContextOnOpen}
+          extraSections={[earningCodeMenuSection]}
+        >
         <MatrxDataTable
           data={codes}
           columns={columns}
@@ -364,6 +413,7 @@ function EarningCodesSection({
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </section>
   );

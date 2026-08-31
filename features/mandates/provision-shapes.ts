@@ -138,12 +138,36 @@ export type ConsumptionEntry = Extract<
   { mapType: "offered_value" }
 >;
 
-/** HOLDER INPUT name (variable / context-policy key) → how it is fed.
- * `entry.target` names the SOURCE offered value (defaults to the key) — the
- * map is target-centric on the wire; docs claiming "keyed by offered value"
- * were corrected 2026-08-26 (the parse below always resolved
- * `entry.target || name` as the source). */
-export type ConsumptionMap = Record<string, ConsumptionEntry>;
+/**
+ * HOLDER INPUT name (variable / context-policy key) → the ORDERED sources that
+ * feed it. `entry.target` names the SOURCE offered value (defaults to the key)
+ * — the map is target-centric on the wire; docs claiming "keyed by offered
+ * value" were corrected 2026-08-26.
+ *
+ * 🚨 D18.2 — MANY-TO-ONE (Arman, 2026-08-30). A provision may offer fifty
+ * values while the bound agent has two variables, so a target's value is a
+ * LIST: several offered values are concatenated into that input's text, in
+ * this order, separated by a blank line (`MULTI_SOURCE_JOINER`). The shape is
+ * a list even for one source so no consumer has to branch; the WIRE keeps
+ * emitting a bare object for a single source (`consumptionMapForApi`), which
+ * is why every binding written before 2026-08-31 keeps its exact meaning.
+ */
+export type ConsumptionMap = Record<string, ConsumptionEntry[]>;
+
+/**
+ * The separator D18.2 names: "joined with a blank line". A constant, never a
+ * knob — a knob would let two deployments disagree about what one stored
+ * mapping means. Mirror of aidream `provisions.MULTI_SOURCE_JOINER`.
+ */
+export const MULTI_SOURCE_JOINER = "\n\n";
+
+/** The ordered sources feeding one target — [] when nothing feeds it. */
+export function sourcesFor(
+  map: ConsumptionMap,
+  targetName: string,
+): ConsumptionEntry[] {
+  return map[targetName] ?? [];
+}
 
 const WHEN_ABSENT_VALUES = new Set(["skip", "use_default", "fail"]);
 
@@ -163,35 +187,43 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
     return {};
   }
   const out: ConsumptionMap = {};
-  for (const [name, entry] of Object.entries(raw)) {
-    if (!isJsonObject(entry)) {
-      console.error("[provisions] dropping malformed consumption entry", name);
-      continue;
+  for (const [name, raws] of Object.entries(raw)) {
+    // D18.2 — a target's value is a LIST of ordered sources, and a bare object
+    // is the one-source form every pre-2026-08-31 row was written in.
+    const elements = Array.isArray(raws) ? raws : [raws];
+    const sources: ConsumptionEntry[] = [];
+    for (const entry of elements) {
+      if (!isJsonObject(entry)) {
+        console.error("[provisions] dropping malformed consumption entry", name);
+        continue;
+      }
+      const mapType = entry.mapType;
+      if (mapType !== "offered_value" && mapType !== "code_value") {
+        console.error(
+          `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
+        );
+        continue;
+      }
+      const target = typeof entry.target === "string" ? entry.target : name;
+      const deliver = entry.deliver === "context" ? "context" : "variable";
+      const whenAbsent =
+        typeof entry.when_absent === "string" &&
+        WHEN_ABSENT_VALUES.has(entry.when_absent)
+          ? (entry.when_absent as ConsumptionEntry["when_absent"])
+          : undefined;
+      sources.push({
+        mapType: "offered_value",
+        target,
+        deliver,
+        ...(entry.required === true ? { required: true } : {}),
+        ...(whenAbsent ? { when_absent: whenAbsent } : {}),
+        ...(entry.default !== undefined && entry.default !== null
+          ? { default: entry.default }
+          : {}),
+      });
     }
-    const mapType = entry.mapType;
-    if (mapType !== "offered_value" && mapType !== "code_value") {
-      console.error(
-        `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
-      );
-      continue;
-    }
-    const target = typeof entry.target === "string" ? entry.target : name;
-    const deliver = entry.deliver === "context" ? "context" : "variable";
-    const whenAbsent =
-      typeof entry.when_absent === "string" &&
-      WHEN_ABSENT_VALUES.has(entry.when_absent)
-        ? (entry.when_absent as ConsumptionEntry["when_absent"])
-        : undefined;
-    out[name] = {
-      mapType: "offered_value",
-      target,
-      deliver,
-      ...(entry.required === true ? { required: true } : {}),
-      ...(whenAbsent ? { when_absent: whenAbsent } : {}),
-      ...(entry.default !== undefined && entry.default !== null
-        ? { default: entry.default }
-        : {}),
-    };
+    // A target whose every source was junk feeds nothing — it is not a target.
+    if (sources.length > 0) out[name] = sources;
   }
   return out;
 }
@@ -333,30 +365,55 @@ export function consumptionMapProblems(
 ): string[] {
   const offered = new Map(offer.values.map((v) => [v.name, v]));
   const problems: string[] = [];
-  for (const [name, entry] of Object.entries(map)) {
-    const source = entry.target || name;
-    const value = offered.get(source);
-    if (!value) {
-      problems.push(
-        `"${name}" consumes "${source}", which this provision does not offer`,
-      );
-      continue;
+  for (const [name, sources] of Object.entries(map)) {
+    const multi = sources.length > 1;
+    const channels = new Set<string>();
+    for (const entry of sources) {
+      const source = entry.target || name;
+      channels.add(entry.deliver ?? "variable");
+      const value = offered.get(source);
+      if (!value) {
+        problems.push(
+          `"${name}" consumes "${source}", which this job does not offer`,
+        );
+        continue;
+      }
+      if (!value.guaranteed && !entry.when_absent) {
+        problems.push(
+          `"${name}" takes "${source}", which is optional — choose what happens when it is absent (skip, use a default, or fail)`,
+        );
+      }
+      if (entry.when_absent === "use_default" && entry.default == null) {
+        problems.push(
+          `"${name}" says "use a default" for "${source}" but no default is set`,
+        );
+      }
+      if (
+        (entry.deliver ?? "variable") === "variable" &&
+        !SCALAR_VALUE_KINDS.has(value.kind) &&
+        !MEDIA_VALUE_KINDS.has(value.kind)
+      ) {
+        problems.push(
+          `"${name}" has structured kind "${value.kind}" — deliver it as context, never as a blob variable`,
+        );
+      }
+      // D18.2 — MANY-TO-ONE IS A TEXT OPERATION. Several values become one
+      // input by being joined with a blank line, so every source in a
+      // multi-source target must have a text form. A media ref has none (it
+      // becomes a turn block) and a structured shape has none either.
+      if (multi && MEDIA_VALUE_KINDS.has(value.kind)) {
+        problems.push(
+          `"${source}" is a file and can't be joined with other values — give it an input of its own`,
+        );
+      } else if (multi && !SCALAR_VALUE_KINDS.has(value.kind)) {
+        problems.push(
+          `"${source}" is structured ("${value.kind}") and can't be joined with other values — give it an input of its own`,
+        );
+      }
     }
-    if (!value.guaranteed && !entry.when_absent) {
+    if (channels.size > 1) {
       problems.push(
-        `"${name}" is optional — choose what happens when it is absent (skip, use a default, or fail)`,
-      );
-    }
-    if (entry.when_absent === "use_default" && entry.default == null) {
-      problems.push(`"${name}" says "use a default" but no default is set`);
-    }
-    if (
-      (entry.deliver ?? "variable") === "variable" &&
-      !SCALAR_VALUE_KINDS.has(value.kind) &&
-      !MEDIA_VALUE_KINDS.has(value.kind)
-    ) {
-      problems.push(
-        `"${name}" has structured kind "${value.kind}" — deliver it as context, never as a blob variable`,
+        `"${name}" has sources going to different places — everything feeding one input lands the same way`,
       );
     }
   }

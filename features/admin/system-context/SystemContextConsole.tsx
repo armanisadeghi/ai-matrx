@@ -23,6 +23,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -185,6 +187,7 @@ export function SystemContextConsole() {
     "all",
   );
   const [editing, setEditing] = useState<SystemContextItem | null>(null);
+  const [clickedRow, setClickedRow] = useState<SystemContextItem | null>(null);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -423,6 +426,56 @@ export function SystemContextConsole() {
           />
         </div>
 
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const rowId = target
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "system_context_item",
+                id: row.id,
+                title: row.key,
+              },
+              content: itemSummary(row),
+            };
+          }}
+          extraSections={[
+            {
+              id: "system-context-item-actions",
+              label: "System context item",
+              items: [
+                {
+                  kind: "item",
+                  id: "sc-edit",
+                  label: "Edit item",
+                  disabled: !clickedRow || clickedRow.is_computed,
+                  description:
+                    clickedRow?.is_computed ? "Computed at runtime" : undefined,
+                  onSelect: () => {
+                    if (clickedRow) setEditing(clickedRow);
+                  },
+                },
+                {
+                  kind: "item",
+                  id: "sc-delete",
+                  label: "Delete item",
+                  destructive: true,
+                  disabled: !clickedRow || clickedRow.is_computed,
+                  onSelect: () => {
+                    if (clickedRow) void handleDeleteItem(clickedRow);
+                  },
+                },
+              ],
+            },
+          ]}
+        >
         <div className="min-h-0 flex-1">
           <MatrxDataTable
             urlState={{ id: "system-context" }}
@@ -545,6 +598,7 @@ export function SystemContextConsole() {
             window={{ title: (row) => row.key }}
           />
         </div>
+        </NonEditableContextMenu>
       </div>
 
       {editing && (

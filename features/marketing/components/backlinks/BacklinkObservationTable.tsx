@@ -86,7 +86,10 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useState } from "react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -595,7 +598,9 @@ export function BacklinkObservationTable({
     },
   ];
 
-  const resolveRowContext = (target: HTMLElement | null) => {
+  const resolveRowContext = (
+    target: HTMLElement | null,
+  ): ResolvedContextMenuContext | null => {
     const rowId = target
       ?.closest("[data-row-id]")
       ?.getAttribute("data-row-id");
@@ -604,7 +609,7 @@ export function BacklinkObservationTable({
     if (!row) return null;
     return {
       [CONTEXT_MENU_ENTITY_KEY]: {
-        type: "web_backlink",
+        type: "seo_backlink_observation",
         id: row.id,
         title: `Link from ${row.source_domain ?? "another website"}`,
       },

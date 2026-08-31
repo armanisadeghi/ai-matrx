@@ -273,7 +273,7 @@ export function HrPayGroupsPanel() {
 
           <div className="p-4">
             <NonEditableContextMenu
-              sourceFeature="hr"
+              sourceFeature="admin"
               contentSource={{ type: "raw" }}
               contextData={{ content: "" }}
               resolveContextOnOpen={(target) => {
