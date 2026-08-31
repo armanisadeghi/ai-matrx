@@ -53,6 +53,13 @@ created under each lease. If a worker is interrupted or cannot clean up, the
 coordinator closes those recorded campaign tabs before the next grant, without
 touching tabs that predated the campaign.
 
+The Browser and the machine-wide managed preview are one exclusive live lane.
+The same active claim holder owns both or owns neither. A static/code worker may
+prepare a clean worktree but cannot start or retain the managed preview. Before
+each grant, stop/release the prior campaign preview, start only the repository's
+canonical managed preview from the recorded checkout, and record its checkout
+SHA/root beside the tab inventory. Parallel/raw dev servers are not evidence.
+
 **There are no routine blockers.** Missing login state, stale tokens, broken
 preview, missing fixtures, failing tests, server/tool failures, deployment lag,
 unfamiliar code, and dirty unrelated files are problems to investigate and
