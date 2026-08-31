@@ -68,7 +68,6 @@ export function ImageStudioTab({
               title: `${result.filenameBase} (${presetId})`,
               description: `Image Studio variant: ${presetId}`,
               mimeType: inferMimeFromUrl(url),
-              urlExpiresAt: null,
             },
           });
         }
@@ -90,7 +89,6 @@ export function ImageStudioTab({
             mimeType:
               file?.mimeType ?? inferMimeFromUrl(result.primary.publicUrl),
             fileSize: file?.fileSize ?? undefined,
-            urlExpiresAt: null,
           },
         });
       }

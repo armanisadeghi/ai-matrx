@@ -14,7 +14,7 @@
  * this surface NEVER declares or emits a raw signed URL (`?X-Amz-…`) or an S3
  * `storage_uri`. Signed URLs expire; `storage_uri` is not available to the
  * client at all. Images are identified by DURABLE refs only: `file_id`
- * (preferred — always re-mintable through `fileHandler` / `useFileSrc`) and,
+ * (preferred — always resolvable through `fileHandler`) and,
  * for public files, the permanent CDN URL, emitted ONLY after `isSignedUrl()`
  * from `@/lib/media/signed-url` confirms it is not a signed URL in disguise.
  * Any agent or tool needing bytes resolves them from an image id.
@@ -55,7 +55,8 @@ const groups: SurfaceValueGroup[] = [
     key: "library_status",
     label: "Library status",
     sortOrder: 400,
-    description: "Load state of the underlying cloud-files tree and in-flight bulk work.",
+    description:
+      "Load state of the underlying cloud-files tree and in-flight bulk work.",
   },
 ];
 

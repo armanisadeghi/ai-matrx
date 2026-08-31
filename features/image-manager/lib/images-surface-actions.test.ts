@@ -37,6 +37,28 @@ describe("Images surface action guards", () => {
     }
   });
 
+  it("keeps image-manager cloud resolution on the durable string boundary", () => {
+    const resolver = readFileSync(
+      resolve(process.cwd(), "components/image/cloud/resolveCloudFileUrl.ts"),
+      "utf8",
+    );
+    const browsePayload = readFileSync(
+      resolve(
+        process.cwd(),
+        "components/image/cloud/cloudFilesBrowsePayload.ts",
+      ),
+      "utf8",
+    );
+
+    expect(resolver).toMatch(/Promise<string>/);
+    expect(resolver).not.toMatch(/interface ResolvedCloudUrl/);
+    expect(resolver).not.toMatch(/expiresAt/);
+    expect(browsePayload).toMatch(
+      /resolveUrl: \(fileId: string\) => Promise<string>/,
+    );
+    expect(browsePayload).not.toMatch(/\.url\b/);
+  });
+
   it("normalizes a complete visible selection without changing order", () => {
     expect(
       parseVisibleImageSelection(

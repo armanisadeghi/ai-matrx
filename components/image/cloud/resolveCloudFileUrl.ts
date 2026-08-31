@@ -34,21 +34,10 @@ function getCloudFile(
   return state.cloudFiles?.filesById?.[fileId];
 }
 
-export interface ResolvedCloudUrl {
-  url: string;
-  /**
-   * Epoch ms when the URL expires. `null` for permanent CDN URLs.
-   * Informational only — the handler's lazy URL cache re-mints
-   * transparently the next time anyone asks for this file's URL after
-   * expiry, so most callers can ignore this field.
-   */
-  expiresAt: number | null;
-}
-
 export async function resolveCloudFileUrl(
   store: AppStore,
   fileId: string,
-): Promise<ResolvedCloudUrl> {
+): Promise<string> {
   const file = getCloudFile(store, fileId);
   if (!file) {
     // access-errors: ok — existence check against the browser-local cloudFiles Redux cache, not a DB read; the id is verifiably absent from the local store
@@ -60,11 +49,7 @@ export async function resolveCloudFileUrl(
   if (!url) {
     throw new Error(`Could not resolve renderable URL for file: ${fileId}`);
   }
-  return {
-    url,
-    // Durable URLs never expire.
-    expiresAt: null,
-  };
+  return url;
 }
 
 /**
@@ -74,11 +59,11 @@ export async function resolveCloudFileUrl(
  */
 export function buildCloudImageSource(
   file: Pick<CloudFileRecord, "id" | "fileName" | "mimeType" | "fileSize">,
-  resolved: ResolvedCloudUrl,
+  resolvedUrl: string,
 ): ImageSource {
   return {
     type: "cloud-file",
-    url: resolved.url,
+    url: resolvedUrl,
     id: `cloud:${file.id}`,
     metadata: {
       title: file.fileName,
@@ -86,7 +71,6 @@ export function buildCloudImageSource(
       fileId: file.id,
       mimeType: file.mimeType ?? undefined,
       fileSize: file.fileSize ?? undefined,
-      urlExpiresAt: resolved.expiresAt,
     },
   };
 }

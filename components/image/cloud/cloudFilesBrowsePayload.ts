@@ -1,5 +1,3 @@
-import type { ResolvedCloudUrl } from "@/components/image/cloud/resolveCloudFileUrl";
-
 interface BrowsePayloadFile {
   id: string;
   fileName: string;
@@ -18,7 +16,7 @@ export async function buildCloudFilesBrowsePayload({
 }: {
   imageRows: BrowsePayloadFile[];
   activeFileId: string;
-  resolveUrl: (fileId: string) => Promise<ResolvedCloudUrl>;
+  resolveUrl: (fileId: string) => Promise<string>;
 }): Promise<CloudFilesBrowsePayload> {
   const resolved = await Promise.all(
     imageRows.map((file) => resolveUrl(file.id).catch(() => null)),
@@ -35,7 +33,7 @@ export async function buildCloudFilesBrowsePayload({
       initialIndex = images.length;
       activeResolved = true;
     }
-    images.push(resolvedUrl.url);
+    images.push(resolvedUrl);
     alts.push(imageRows[i].fileName);
   }
 

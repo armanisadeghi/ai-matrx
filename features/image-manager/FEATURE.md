@@ -159,7 +159,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 ### Browse-mode click
 
 1. Tab calls `useBrowseAction()` and gets a `browse(payload)` function.
-2. On click, the tab resolves cloud-file references through `resolveCloudFileUrl` (which delegates to `fileHandler.use(source).as({ kind: "html_src" })`, registering signed URLs with the handler's expiry-wheel) and dispatches `browse({ images, alts, initialIndex, title })`.
+2. On click, the tab resolves cloud-file identity through `resolveCloudFileUrl` (which delegates to `fileHandler.use(source).as({ kind: "html_src" })`) and dispatches the returned durable URL string through `browse({ images, alts, initialIndex, title })`.
 3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `ImageViewerWindow.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
 4. `OverlayController` mounts `ImageViewerWindow` with the payload spread as props.
 
@@ -181,7 +181,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 - **`/images/upload` uses `ImageAssetUploader` in cloud mode, not `FileUploadDropzone`.** Keep `FileUploadDropzone` in `features/files` for generic files and overlay upload surfaces; Image Manager uses the official image-first uploader for visual consistency.
 - **Server-only Unsplash key.** `NEXT_PUBLIC_UNSPLASH_ACCESS_KEY` was removed. Every Unsplash call goes through `/api/unsplash` via `hooks/images/unsplashClient.ts` (or the GET form for `PublicImageSearch`). Don't reintroduce a `NEXT_PUBLIC_*` Unsplash key.
 - **`ImageManagerContent` is a deprecated alias** of `<ImageManager>` — kept for legacy callers. New code imports `ImageManager` directly.
-- **Cloud-file image URLs must resolve through the universal handler.** Use `resolveCloudFileUrl()` (or `fileHandler.use(source).as({ kind: "html_src" })` directly) instead of calling `/files/{id}/url` from image-manager UI. Viewer payloads must pass plain URL strings, never resolver objects.
+- **Cloud-file image URLs resolve through the universal handler.** Use `resolveCloudFileUrl()` (or `fileHandler.use(source).as({ kind: "html_src" })` directly), never a hand-built file endpoint. The resolver returns the durable URL string; authorization recovery refreshes `mx_files_session`, never the URL.
 - **Cloud-file thumbnails pass only the durable `file_id` to `MediaThumbnail`.** Never pass stored `thumbnailUrl` metadata alongside a durable ref; stale foreign/object URLs bypass the canonical resolver and can emit terminal media failures instead of recovering through the file client.
 - **Gallery filters are one pure projection.** `selectVisibleCloudImages()` drives both rendering and filter-change selection pruning; pruning against the old visible set lets hidden image IDs reappear when a filter is broadened.
 - **Asset-envelope GETs survive one dropped connection.** The canonical `python-client.getJson()` transport retries one `TypeError` network rejection before capture, so a transient read failure does not blank a tile or enter the repair queue; HTTP failures and caller aborts still fail immediately.
@@ -209,6 +209,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-08-31` — codex: **Image-manager resolution now exposes only the durable URL string.** Removed the retired resolver object/expiry shape, migrated every caller, and added a structural S15 guard so viewer payloads cannot regress to object URLs or signed-URL re-minting.
 - `2026-08-30` — codex: **Public image cards derive load/error state per URL instead of synchronizing it in an effect.** Desktop and mobile cards now use the rendered image's own terminal load/error events for dimensions and status, immediately show an honest unavailable state for a missing source, and reset a prior failure when a reused card receives a different URL. Focused regressions pin missing-source and failed-to-new-URL transitions on both layouts.
 - `2026-08-30` — codex: **Cloud-file thumbnails now resolve only through durable file identity.** The full `MediaThumbnail` caller census removed direct stored `thumbnailUrl` bypasses from image-manager, Files, capture, and resource-picker callers; research favicons remain a deliberately different remote-URL API. A structural regression pins every durable caller to `file_id` and rejects the retired bypass after a real `/images/my-cloud` load exposed a terminal foreign/object-URL failure in Error Inspector.
 - `2026-08-30` — codex: **Images rule 2026-08-30.2 static preparation is React-pure and filter-safe.** The Recents cutoff is captured only by its initiating event, post-confirmation image selection reads the latest committed visible set, URL resolution has a synchronous one-operation gate, and both UI/agent filter changes prune bulk selection against the next rendered result so hidden IDs cannot reappear when filters broaden. Focused regression tests cover filter projection, stale selection rejection, and concurrent resolution.
