@@ -1,6 +1,9 @@
 import { categoryRowToDef } from "./converters";
 import { compareCategoryOrder } from "./selectors";
-import type { CategoryApiRow } from "./types";
+import type {
+  AgentShortcutCategoryRecord,
+  CategoryApiRow,
+} from "./types";
 
 const apiRow = (label: string | null): CategoryApiRow => ({
   id: label ?? "missing-name",
@@ -28,6 +31,8 @@ describe("shortcut category missing-name boundary", () => {
   });
 
   it("keeps shared category ordering total for stale pre-normalized state", () => {
+    // Deliberately shaped like a STALE record from before the null-label
+    // normalization, so the cast is the point of the fixture, not a shortcut.
     const missing = {
       ...categoryRowToDef(apiRow("temporary")),
       label: null,
@@ -37,8 +42,8 @@ describe("shortcut category missing-name boundary", () => {
       _loadedFields: {},
       _loading: false,
       _error: null,
-    };
-    const named = {
+    } as unknown as AgentShortcutCategoryRecord;
+    const named: AgentShortcutCategoryRecord = {
       ...missing,
       id: "named",
       label: "Named",

@@ -39,7 +39,7 @@ export function categoryDefToRowPatch(
   if (patch.color !== undefined) out.color = patch.color;
   if (patch.sortOrder !== undefined) out.sort_order = patch.sortOrder;
   if (patch.placementType !== undefined)
-    out.placement_type = patch.placementType;
+    out.placement_type = patch.placementType ?? undefined;
   if (patch.parentCategoryId !== undefined)
     out.parent_category_id = patch.parentCategoryId;
   if (patch.enabledFeatures !== undefined)

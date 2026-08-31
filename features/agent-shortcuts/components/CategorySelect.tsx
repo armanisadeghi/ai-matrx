@@ -37,7 +37,11 @@ import {
   DynamicIcon,
   getIconComponent,
 } from "@ai-matrx/icons";
-import { getPlacementTypeMeta, type PlacementType } from "../constants";
+import {
+  getPlacementTypeMeta,
+  placementGroupKey,
+  type PlacementType,
+} from "../constants";
 import type { AgentShortcutCategory } from "../types";
 
 export interface CategorySelectProps {
@@ -185,20 +189,24 @@ export function CategorySelect({
     } else {
       if (allowedPlacementTypes && allowedPlacementTypes.length > 0) {
         const allow = new Set<string>(allowedPlacementTypes);
-        pool = pool.filter((c) => allow.has(c.placementType));
+        pool = pool.filter((c) => allow.has(placementGroupKey(c.placementType)));
       }
       if (excludedPlacementTypes && excludedPlacementTypes.length > 0) {
         const block = new Set<string>(excludedPlacementTypes);
-        pool = pool.filter((c) => !block.has(c.placementType));
+        pool = pool.filter(
+          (c) => !block.has(placementGroupKey(c.placementType)),
+        );
       }
     }
 
+    // Never key a group by a raw (nullable) placement type — see constants.ts.
     const byPlacement = new Map<string, AgentShortcutCategory[]>();
     for (const c of pool) {
-      if (!byPlacement.has(c.placementType)) {
-        byPlacement.set(c.placementType, []);
+      const key = placementGroupKey(c.placementType);
+      if (!byPlacement.has(key)) {
+        byPlacement.set(key, []);
       }
-      byPlacement.get(c.placementType)!.push(c);
+      byPlacement.get(key)!.push(c);
     }
 
     return Array.from(byPlacement.entries())

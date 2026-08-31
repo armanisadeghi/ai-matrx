@@ -86,6 +86,7 @@ import type {
   RichDocumentActionContext,
 } from "@/features/rich-document/types";
 import {
+  placementGroupKey,
   PLACEMENT_TYPES,
   PLACEMENT_TYPE_META,
 } from "@/features/agent-shortcuts/constants";
@@ -196,7 +197,9 @@ export function groupsByPlacement(
 ): Record<string, AgentMenuCategoryGroup[]> {
   const map: Record<string, AgentMenuCategoryGroup[]> = {};
   for (const g of groups) {
-    (map[g.category.placementType] ??= []).push(g);
+    // Nullable in storage — key by the shared group key so an unplaced
+    // category groups instead of throwing (agent-shortcuts/constants.ts).
+    (map[placementGroupKey(g.category.placementType)] ??= []).push(g);
   }
   return map;
 }

@@ -26,7 +26,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { DynamicIcon } from "@ai-matrx/icons";
-import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
+import {
+  getPlacementTypeMeta,
+  placementGroupKey,
+  PLACEMENT_TYPES,
+} from "../constants";
 import type { AgentShortcutCategory, ScopeProps } from "../types";
 
 export interface CategoryTreeProps extends ScopeProps {
@@ -117,12 +121,17 @@ export function CategoryTree({
         },
       ];
     }
+    // A category with NO placement type is grouped under the named "No
+    // placement" bucket, never used as a raw null Map key — a single such row
+    // (`Saved requests`) crashed this whole page through `a.localeCompare(b)`
+    // the moment global categories became visible. See constants.ts.
     const byPlacement = new Map<string, AgentShortcutCategory[]>();
     filteredCategories.forEach((c) => {
-      if (!byPlacement.has(c.placementType)) {
-        byPlacement.set(c.placementType, []);
+      const key = placementGroupKey(c.placementType);
+      if (!byPlacement.has(key)) {
+        byPlacement.set(key, []);
       }
-      byPlacement.get(c.placementType)!.push(c);
+      byPlacement.get(key)!.push(c);
     });
     return Array.from(byPlacement.entries())
       .sort(([a], [b]) => a.localeCompare(b))

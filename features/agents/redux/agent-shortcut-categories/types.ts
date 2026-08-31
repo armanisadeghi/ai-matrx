@@ -8,7 +8,10 @@ export interface AgentShortcutCategoryDef {
   iconName: string | null;
   color: string | null;
   sortOrder: number;
-  placementType: string;
+  // NULLABLE in storage, and there are live rows with no placement. Grouping /
+  // sorting must go through `placementGroupKey` — a bare null key crashed the
+  // Categories page (see features/agent-shortcuts/constants.ts).
+  placementType: string | null;
   parentCategoryId: string | null;
   enabledFeatures: string[] | null;
   metadata: Record<string, unknown> | null;
@@ -55,7 +58,8 @@ export interface CategoryApiRow {
   icon_name: string | null;
   color: string | null;
   sort_order: number;
-  placement_type: string;
+  // NULLABLE in platform.categories, and live rows carry null.
+  placement_type: string | null;
   parent_category_id: string | null;
   enabled_features: string[] | null;
   metadata: Record<string, unknown> | null;

@@ -81,7 +81,9 @@ export function DuplicateCategoryModal({
   useEffect(() => {
     if (!isOpen || !category) return;
     setLabel(`${category.label} (Copy)`);
-    setPlacementType(category.placementType);
+    // A category with no placement copies as one with no placement chosen —
+    // the picker then makes the person choose, instead of inheriting a null.
+    setPlacementType(category.placementType ?? "");
     setParentCategoryId(category.parentCategoryId ?? ROOT_VALUE);
     setError(null);
     setSaving(false);

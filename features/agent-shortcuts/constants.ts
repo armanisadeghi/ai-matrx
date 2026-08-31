@@ -58,11 +58,46 @@ export const PLACEMENT_TYPE_META = {
   { label: string; description: string; icon: string }
 >;
 
-export function getPlacementTypeMeta(placementType: string) {
+/**
+ * The bucket a category with NO placement type belongs to.
+ *
+ * 🚨 `platform.categories.placement_type` is NULLABLE and there are live rows
+ * with no placement (`Saved requests`, in the system org). Grouping and sorting
+ * code used a bare `category.placementType` as a Map key and then
+ * `a.localeCompare(b)` over those keys, so ONE such row threw
+ * `TypeError: Cannot read properties of null (reading 'localeCompare')` and
+ * took the whole Categories page down with a GlobalError. It only became
+ * reachable when global categories started rendering at all — a row that is
+ * invisible cannot crash the sort that would have found it.
+ *
+ * A row with no placement is not an error and must not be dropped: it is shown,
+ * named, and says what to do about it. Always key a group by
+ * `placementGroupKey(category.placementType)`, never by the raw value.
+ */
+export const UNPLACED_PLACEMENT_KEY = "__unplaced__" as const;
+
+/** A non-null, sortable group key for a possibly-unplaced category. */
+export function placementGroupKey(placementType: string | null | undefined) {
+  return placementType && placementType.length > 0
+    ? placementType
+    : UNPLACED_PLACEMENT_KEY;
+}
+
+export function getPlacementTypeMeta(
+  placementType: string | null | undefined,
+) {
+  if (!placementType || placementType === UNPLACED_PLACEMENT_KEY) {
+    return {
+      label: "No placement",
+      description:
+        "These categories have no placement type, so nothing in them is offered anywhere. Edit a category to give it one.",
+      icon: "HelpCircle",
+    };
+  }
   const meta = PLACEMENT_TYPE_META[placementType as PlacementType];
   if (!meta) {
     return {
-      label: placementType || "Undefined",
+      label: placementType,
       description: "No description available",
       icon: "HelpCircle",
     };

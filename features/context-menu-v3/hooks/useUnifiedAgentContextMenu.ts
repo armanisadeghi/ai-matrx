@@ -11,6 +11,7 @@ import type { AgentShortcutCategoryRecord } from "@/features/agents/redux/agent-
 import type { AgentContentBlockRecord } from "@/features/agent-connections/redux/skl/content-block-compat";
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
+import { placementGroupKey } from "@/features/agent-shortcuts/constants";
 import { decideOffer, requirementsOf } from "../model/requirement-gate";
 
 export type AgentMenuEntry =
@@ -169,7 +170,11 @@ export function buildCategoryGroups(
   const placementSet = new Set(placementTypes);
 
   const scopedCategories = categories
-    .filter((c) => c.isActive !== false && placementSet.has(c.placementType))
+    .filter(
+      (c) =>
+        c.isActive !== false &&
+        placementSet.has(placementGroupKey(c.placementType)),
+    )
     .map((c) => ({ ...c, scopeLevel: resolveRowScope(c) }));
   const scopedShortcuts = shortcuts
     .filter((s) => s.isActive !== false)
