@@ -28,6 +28,7 @@ function entry(
     hasLocal: false,
     supportsMcpApps: false,
     serverStatus: "active",
+    connectionReady: true,
     connectionId: null,
     connectionStatus: null,
     connectedAt: null,
@@ -63,6 +64,18 @@ describe("live chat connector catalogue", () => {
     ).toBe(false);
   });
 
+  it("fails closed for a disconnected provider whose connection path is unproven", () => {
+    expect(
+      isLiveChatMcpConnector(
+        entry({
+          slug: "figma",
+          name: "Figma",
+          connectionReady: false,
+        }),
+      ),
+    ).toBe(false);
+  });
+
   it("keeps a connected live provider even when setup was manual", () => {
     expect(
       isLiveChatMcpConnector(
@@ -71,6 +84,7 @@ describe("live chat connector catalogue", () => {
           name: "Manual",
           authStrategy: "api_key",
           connectionStatus: "connected",
+          connectionReady: false,
         }),
       ),
     ).toBe(true);

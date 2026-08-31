@@ -43,6 +43,8 @@ export interface McpCatalogEntry {
   hasLocal: boolean;
   supportsMcpApps: boolean;
   serverStatus: McpServerStatus;
+  /** True only after this provider's web connection path is proven usable. */
+  connectionReady: boolean;
   connectionId: string | null;
   connectionStatus: McpConnectionStatus | null;
   connectedAt: string | null;
@@ -72,6 +74,7 @@ export function catalogEntryFromRpc(row: CatalogRpcRow): McpCatalogEntry {
     hasLocal: row.has_local,
     supportsMcpApps: row.supports_mcp_apps,
     serverStatus: row.server_status,
+    connectionReady: row.connection_ready,
     connectionId: row.connection_id || null,
     connectionStatus: row.connection_status || null,
     connectedAt: row.connected_at || null,
@@ -85,8 +88,7 @@ export function catalogEntryFromRpc(row: CatalogRpcRow): McpCatalogEntry {
 // Server config — stdio setup variants from tool_mcp_config table
 // ---------------------------------------------------------------------------
 
-type ServerConfigRow =
-  Database["tool"]["Tables"]["mcp_config"]["Row"];
+type ServerConfigRow = Database["tool"]["Tables"]["mcp_config"]["Row"];
 
 export interface McpServerConfigEntry {
   id: string;

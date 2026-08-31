@@ -168,4 +168,17 @@ describe("MCP DCR persistence boundary", () => {
       'tokenBody.set("resource", session.resource)',
     );
   });
+
+  it("never falls back to a URL-shaped client id without explicit provider support", () => {
+    const startRoute = readFileSync(
+      join(process.cwd(), "app/api/mcp/oauth/start/route.ts"),
+      "utf8",
+    );
+
+    expect(startRoute).toContain("if (!clientId && supportsCimd)");
+    expect(startRoute).toContain("Its OAuth client registration is not ready");
+    expect(startRoute).not.toContain(
+      "if (!clientId) {\n      clientId = clientMetadataUrl",
+    );
+  });
 });

@@ -81,6 +81,7 @@ export function isLiveChatMcpConnector(entry: McpCatalogEntry): boolean {
   if (FIRST_PARTY_IDS.has(entry.slug)) return false;
   if (!LIVE_SERVER_STATUSES.has(entry.serverStatus)) return false;
   if (entry.connectionStatus === "connected") return true;
+  if (!entry.connectionReady) return false;
   if (!entry.endpointUrl || entry.transport === "stdio") return false;
 
   const route = mcpConnectionRouteFor(entry);

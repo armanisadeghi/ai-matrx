@@ -12,6 +12,7 @@ import {
   generateState,
 } from "@/features/agents/services/mcp-oauth/pkce";
 import { validateSupabaseScopedMcpEndpointOverride } from "@/features/agents/services/mcp-oauth/endpoint";
+import { supportsClientIdMetadataDocument } from "@/features/agents/services/mcp-oauth/client-registration";
 
 const CALLBACK_PATH = "/api/mcp/oauth/callback";
 const CLIENT_METADATA_PATH = "/api/mcp/oauth/client-metadata";
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
     .schema("tool")
     .from("mcp_server")
     .select(
-      "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes, metadata",
+      "endpoint_url, slug, auth_strategy, name, oauth_client_id, oauth_scopes, metadata, status",
     )
     .eq("id", serverId)
     .single();
@@ -58,6 +59,14 @@ export async function GET(req: NextRequest) {
       req,
       returnUrl,
       `${server.name} does not use OAuth — use the credential form instead`,
+    );
+  }
+
+  if (server.status === "coming_soon") {
+    return errorRedirect(
+      req,
+      returnUrl,
+      `${server.name} is not available for new connections yet.`,
     );
   }
 
@@ -101,6 +110,7 @@ export async function GET(req: NextRequest) {
   // Static auth endpoints stored in metadata (used as primary or fallback for
   // servers like Canva that use traditional OAuth without MCP discovery).
   const staticMeta = (server.metadata ?? {}) as Record<string, string>;
+  const supportsCimd = supportsClientIdMetadataDocument(server.metadata);
   const staticAuthEndpoint = staticMeta["oauth_auth_endpoint"] as
     string | undefined;
   const staticTokenEndpoint = staticMeta["oauth_token_endpoint"] as
@@ -237,22 +247,30 @@ export async function GET(req: NextRequest) {
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
       } catch (dcrErr) {
         console.warn(
-          `[MCP OAuth] DCR failed (will try CIMD fallback):`,
+          `[MCP OAuth] DCR failed${supportsCimd ? " (will try declared CIMD fallback)" : ""}:`,
           dcrErr instanceof Error ? dcrErr.message : dcrErr,
         );
       }
     }
 
     // Strategy 3: Use CIMD (Client ID Metadata Document)
-    // Only works with vendors that support the Nov 2025 MCP spec (e.g., Asana,
-    // Cloudflare, Supabase). Falls back to this when no pre-registered ID and
-    // DCR didn't work.
-    if (!clientId) {
+    // This is provider opt-in behavior. Never infer support merely because a
+    // server uses OAuth: URL-shaped client IDs are rejected by providers that
+    // require a registered client (Figma is one concrete example).
+    if (!clientId && supportsCimd) {
       clientId = clientMetadataUrl;
       if (!authServer.token_endpoint_auth_methods_supported?.length) {
         tokenEndpointAuthMethod = "none";
       }
       console.log(`[MCP OAuth] Using CIMD client_id: ${clientId}`);
+    }
+
+    if (!clientId) {
+      return errorRedirect(
+        req,
+        returnUrl,
+        `${server.name} is not currently connectable from AI Matrx. Its OAuth client registration is not ready.`,
+      );
     }
 
     const codeVerifier = generateCodeVerifier();
