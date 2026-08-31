@@ -244,6 +244,26 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   schedule no longer returns a fresh array for identical Redux state or emits
   the `useTaskRuns` selector-stability warning.
 
+- **2026-08-30** — Context-menu rollout: the four admin scheduling tables
+  (Tasks, Runs, System jobs, Orphan leases) each mount ONE canonical v3
+  context menu over their `MatrxDataTable` pane. Tasks and (Runs +
+  Orphan-leases) share two new registered builders —
+  `useScheduledTaskMenuSection` / `useScheduledRunMenuSection` in
+  `features/scheduling/components/shared/scheduling-menu-sections.tsx`
+  (registered in `features/context-menu-v3/SECTIONS.md`) — since a
+  `scheduler.sch_task` / `sch_run` row is the same identity on every surface
+  that shows one; Runs and Orphan-leases previously showed the exact same row
+  shape with no shared menu at all. Growth: the task menu adds "Disable
+  schedule…" (delegates to the existing `disableTaskAdmin` RPC, previously
+  unreachable from this console), and the run menu adds "Mark run as
+  failed…" to the Runs table (previously only a row button on Orphan
+  leases, now the same door everywhere a run appears — same
+  `markRunFailedAdmin` RPC). System jobs' two identities (aidream system
+  tasks, pg_cron jobs) are page-local — their menus are inline `extraSections`
+  that delegate to the same enable/disable/edit/run-now handlers as the
+  existing row-button column. `scanner-health/page.tsx` names `sch_task` too
+  and should adopt `useScheduledTaskMenuSection` on its next touch.
+
 - **2026-08-30** — codex: Surface certification closed two honesty gaps on `/schedules`. The duplicate guard's advisory read still cannot replace a working roster with a fatal page, but failure is no longer silent: both user and admin lists show an explicit Retry warning and capture the backend failure in Error Inspector. The create/edit form's Description and Prompt `ProTextarea` menus now receive the same live `matrx-user/schedules` scope as the page surface, and list/detail/form each mount one canonical v3 context menu over that same trigger-time scope; the list delegates row content by schedule id instead of mounting one menu per row. Compact mobile-only controls meet the 44px interaction floor, and Locate anchors cover the roster/load state, editor draft fields, open record, target configuration, trigger, timing, and run history. Status pills, duplicate warnings, failure detail, and trigger callouts now use the shared semantic intent tokens instead of owning raw light/dark palette pairs. Prompt keeps its existing dedicated 10,000-character counter rather than stacking a second text-stats footer; Description deliberately has no metric footer because it is a short metadata field.
 
 - **2026-08-29** — Replaced the temporary handwritten `DbJob*` HTTP wire
