@@ -236,10 +236,10 @@ export function AgentTextarea({
   );
 
   // ── Auto-resize ─────────────────────────────────────────────────────────────
-  // Sync, pre-paint layout. No transitions, no wrapper animation, no timeouts —
-  // the textarea grows directly from its own scrollHeight. This is the key to
-  // stability: any attempt to animate height on each keystroke produces flicker
-  // as overlapping 300ms transitions stack on top of each other.
+  // Sync, pre-paint layout — the textarea grows directly from its own
+  // scrollHeight; no wrapper animation, no timeouts. The element's fast
+  // `transition-[height]` smooths the resulting height writes, but it must be
+  // suspended for the measurement itself (see below).
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -263,8 +263,24 @@ export function AgentTextarea({
     // freshly-mounted composers opened at the 200px cap despite an empty draft.
     // Zeroing first makes scrollHeight describe content only; the inline
     // min-height below still supplies the compact empty-state floor.
+    //
+    // The zero-measure MUST run with the height transition suspended. Unlike
+    // `auto`, `Npx → 0px` is animatable, so with `transition-[height]` live the
+    // forced reflow inside this effect catches the transition at t=0 — the
+    // computed height is still the OLD height, and scrollHeight never reports
+    // less than that mid-transition client height. The measurement became a
+    // ratchet: the box could grow but never shrink, so any draft that shrank in
+    // place (send after a long paste/dictation, undo, deleted lines) left an
+    // empty composer stuck at the largest height it had ever reached. Restoring
+    // the pre-measure height before re-enabling keeps the class-driven
+    // grow/collapse animation running from the exact rendered height.
+    const startHeight = el.offsetHeight;
+    el.style.transitionProperty = "none";
     el.style.height = "0px";
     const natural = Math.max(minH, Math.min(el.scrollHeight, 200));
+    el.style.height = `${startHeight}px`;
+    void el.offsetHeight; // commit the untransitioned restore before re-enabling
+    el.style.transitionProperty = "";
     el.style.height = `${natural}px`;
   }, [visibleText, isExpanded, singleRow, compact]);
 
