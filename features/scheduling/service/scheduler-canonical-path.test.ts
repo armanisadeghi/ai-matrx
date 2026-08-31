@@ -15,10 +15,8 @@ function withoutComments(source: string): string {
 }
 
 describe("scheduling canonical write path", () => {
-  it("keeps user-facing writes behind Redux thunks and schedulerClient", () => {
+  it("keeps every user-surface write caller behind Redux thunks and schedulerClient", () => {
     const thunks = read("redux/tasks/thunks.ts");
-    const form = read("components/form/ScheduleForm.tsx");
-    const detail = read("components/detail/ScheduleDetail.tsx");
 
     expect(thunks).toContain('import * as scheduler from "../../service/schedulerClient"');
     expect(thunks).toMatch(/scheduler\.createTask\(/);
@@ -29,7 +27,29 @@ describe("scheduling canonical write path", () => {
     expect(thunks).toMatch(/scheduler\.runNow\(/);
     expect(thunks).not.toMatch(/\.schema\(["']scheduler["']\)|\.from\(["']sch_/);
 
-    for (const source of [form, detail].map(withoutComments)) {
+    const componentsRoot = path.join(schedulingRoot, "components");
+    const writeCallers = fs
+      .readdirSync(componentsRoot, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name))
+      .map((entry) => path.join(entry.parentPath, entry.name))
+      .filter((file) =>
+        /\b(?:createScheduledTask|updateScheduledTask|deleteScheduledTask|toggleTaskEnabled|runTaskNowThunk)\b/.test(
+          withoutComments(fs.readFileSync(file, "utf8")),
+        ),
+      );
+
+    expect(
+      writeCallers.map((file) => path.relative(schedulingRoot, file)).sort(),
+    ).toEqual([
+      "components/detail/ScheduleDetail.tsx",
+      "components/form/ScheduleForm.tsx",
+      "components/list/DuplicateScheduleBanner.tsx",
+      "components/list/ScheduleRow.tsx",
+    ]);
+
+    for (const file of writeCallers) {
+      const source = withoutComments(fs.readFileSync(file, "utf8"));
+      expect(source).toMatch(/redux\/tasks\/thunks/);
       expect(source).toMatch(/dispatch\(/);
       expect(source).not.toMatch(
         /schedulerClient|\.schema\(["']scheduler["']\)|\.from\(["']sch_/,
