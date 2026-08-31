@@ -91,6 +91,15 @@ may unblock diagnosis but is not certification evidence. Publish and adopt the
 package (or use the released API), perform a clean install/preview, and rerun the
 entire live matrix. Otherwise settle `retry` with the exact package boundary.
 
+The preview must also prove it is serving that checkout, not merely answer on
+the expected port. Before treating a route response as evidence, record the
+preview checkout SHA, confirm Next's inferred workspace root is that checkout,
+and confirm the generated app-path manifest contains the target. A parent
+directory's unrelated lockfile can make Next infer the wrong root and return a
+confident 404 for a real route. Move the clean checkout outside that poisoned
+parent or repair the managed preview; never count the 404 or the repaired reload
+until the served root and SHA match.
+
 ## Step 4 — Submit a certification candidate
 
 ```json

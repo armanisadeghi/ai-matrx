@@ -202,6 +202,9 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
   independent verifier logs final `ui.ui_surface.last_checked_at /
   last_checked_by / last_check` — see the skill's submission step.
 - MUST: commit as you go, push, tree clean; `pnpm type-check` clean for your files.
+- MUST: live evidence records the preview checkout SHA and confirms Next's
+  inferred workspace root plus generated app-path manifest belong to that same
+  checkout; a responding port or route-looking 404 is not served-commit proof.
 
 ---
 
