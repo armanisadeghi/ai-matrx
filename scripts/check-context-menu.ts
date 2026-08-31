@@ -193,12 +193,53 @@ function exemptSlots(src: string): Set<string> {
   return out;
 }
 
-function gradeMenu(src: string): string {
+/**
+ * 🚨 A SHARED BUILDER SUPPLIES SLOTS ON THE CONSUMER'S BEHALF.
+ *
+ * A file that ADOPTS a registered section builder (the behaviour this whole
+ * rollout exists to produce) gets its `entity` from that builder, not from its
+ * own text. Grading only the consuming file therefore marked every correct
+ * adopter a SHELL — penalising the right answer and rewarding inlining, which
+ * is precisely backwards. If the fleet optimised for the grade it would stop
+ * adopting builders. So: follow the import, and credit what the builder gives.
+ */
+function slotsFromImportedBuilders(
+  src: string,
+  files: Map<string, string>,
+): Set<string> {
+  const provided = new Set<string>();
+  // Local imports whose module name looks like a menu/action builder.
+  for (const m of src.matchAll(
+    /import\s+\{([^}]*)\}\s+from\s+["']([^"']+)["']/g,
+  )) {
+    const spec = m[2];
+    const named = m[1];
+    if (!/(menu|action)/i.test(spec) && !/(MenuSection|RowMenu|EntityRef)/.test(named))
+      continue;
+    const rel = spec.replace(/^@\//, "");
+    for (const [path, body] of files) {
+      const noExt = path.replace(/\.tsx?$/, "");
+      if (noExt !== rel && !noExt.endsWith(`/${rel.split("/").pop()}`)) continue;
+      if (!/(menu|action)/i.test(path)) continue;
+      if (/entity[=:]|CONTEXT_MENU_ENTITY_KEY|EntityRef/.test(body))
+        provided.add("entity");
+      if (/surfaceName[=:]/.test(body)) provided.add("surfaceName");
+      if (/contentSource[=:]/.test(body)) provided.add("contentSource");
+      provided.add("extraSections");
+    }
+  }
+  return provided;
+}
+
+function gradeMenu(src: string, files?: Map<string, string>): string {
   const has = (re: RegExp) => (re.test(src) ? 1 : 0);
+  const fromBuilder = files
+    ? slotsFromImportedBuilders(src, files)
+    : new Set<string>();
   const waived = exemptSlots(src);
   const parts: string[] = [];
   const need = (slot: string, present: number) => {
-    if (present || waived.has(slot)) return;
+    if (present || waived.has(slot) || fromBuilder.has(slot)) return;
     parts.push(`no ${slot}`);
   };
   // THE PLUMBING — without these the menu opens and every verb is dark.
@@ -211,7 +252,10 @@ function gradeMenu(src: string): string {
   // CORRECT to omit it — and grading that as a shell pushes agents to invent a
   // menu item purely to satisfy the counter, which is padding, not coverage.
   // So it is reported, never counted as a shell.
-  const noExtras = !has(/extraSections[=:]/) && !waived.has("extraSections");
+  const noExtras =
+    !has(/extraSections[=:]/) &&
+    !waived.has("extraSections") &&
+    !fromBuilder.has("extraSections");
 
   if (parts.length > 0) return `shell — ${parts.join(", ")}`;
   const notes: string[] = [];
@@ -330,7 +374,7 @@ function main() {
     const hasRightWrapper = needsEditable ? MOUNTS_EDITABLE_MENU.test(src) : ownMenu;
 
     if (hasRightWrapper) {
-      covered.push({ population, file: path, detail: "own menu", grade: gradeMenu(src) });
+      covered.push({ population, file: path, detail: "own menu", grade: gradeMenu(src, files) });
       continue;
     }
     if (INHERITS_MENU.test(src)) {
