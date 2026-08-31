@@ -42,7 +42,7 @@ import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
  * hotlinked card/web image) hides gracefully instead of rendering the
  * broken-image glyph.
  */
-function DurableMarkdownImg({
+export function DurableMarkdownImg({
   src,
   alt,
   className,
