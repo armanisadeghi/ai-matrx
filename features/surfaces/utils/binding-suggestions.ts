@@ -105,6 +105,16 @@ export interface BindingSuggestion {
   /** Agent variable name or context-mandate key. */
   target: string;
   mapping: ValueMapping;
+  /**
+   * 🚨 D18.2 — MANY-TO-ONE. Extra source names, in order, that are joined into
+   * this SAME input after `mapping` (blank line between them). Empty unless the
+   * caller asked for many-to-one AND the model proposed a combination.
+   *
+   * A surface binding takes one value per input, so the surface call site never
+   * asks for this and any extra the model emits is discarded WITH A REPORT —
+   * the same discard-and-report contract every other invention gets (P12).
+   */
+  alsoFrom: string[];
   confidence: SuggestionConfidence;
   reason: string;
 }
@@ -139,6 +149,13 @@ export function parseMapperResult(args: {
   validTargets: ReadonlySet<string>;
   validSurfaceValues: ReadonlySet<string>;
   validWriteTargets: ReadonlySet<string>;
+  /**
+   * D18.2 — may several values feed ONE input (joined with a blank line)?
+   * A mandate consumption map says yes; a surface binding says no, and every
+   * extra source the model proposes is discarded and reported rather than
+   * silently dropped or silently applied.
+   */
+  allowManyToOne?: boolean;
 }): MapperProposal | null {
   const extracted = extractFirstJson(args.raw, { allowFuzzy: true });
   const root = extracted?.value;
@@ -166,13 +183,38 @@ export function parseMapperResult(args: {
     }
 
     let mapping: ValueMapping | null = null;
+    let alsoFrom: string[] = [];
     if (mapType === "surface_value") {
-      const sv = typeof m.surface_value === "string" ? m.surface_value : null;
-      if (!sv || !args.validSurfaceValues.has(sv)) {
-        discarded.push(
-          `"${target}" pointed at unknown page value "${m.surface_value ?? ""}"`,
-        );
+      // D18.2 — the model may answer with ONE `surface_value` or an ORDERED
+      // `surface_values` list. Both funnel here: element 0 is the row's own
+      // source, the rest are the joined extras.
+      const listed = Array.isArray(m.surface_values)
+        ? m.surface_values.filter((v): v is string => typeof v === "string")
+        : [];
+      const named = typeof m.surface_value === "string" ? [m.surface_value] : [];
+      const proposed = listed.length > 0 ? listed : named;
+      const known: string[] = [];
+      for (const name of proposed) {
+        if (args.validSurfaceValues.has(name)) known.push(name);
+        else
+          discarded.push(
+            `"${target}" pointed at unknown page value "${name}"`,
+          );
+      }
+      const sv = known[0] ?? null;
+      if (!sv) {
+        if (proposed.length === 0) {
+          discarded.push(`"${target}" named no page value to take`);
+        }
         continue;
+      }
+      const extras = known.slice(1);
+      if (extras.length > 0) {
+        if (args.allowManyToOne) alsoFrom = extras;
+        else
+          discarded.push(
+            `"${target}" asked for ${extras.length + 1} values at once (${known.join(" + ")}) — a binding here takes one value per input, so only "${sv}" was kept`,
+          );
       }
       mapping = {
         mapType: "surface_value",
@@ -207,6 +249,7 @@ export function parseMapperResult(args: {
     suggestions.push({
       target,
       mapping,
+      alsoFrom,
       confidence: isConfidence(m.confidence) ? m.confidence : "low",
       reason: typeof m.reason === "string" ? m.reason : "",
     });
@@ -255,7 +298,11 @@ export function suggestionsToMappings(
 export function describeSuggestion(s: BindingSuggestion): string {
   switch (s.mapping.mapType) {
     case "surface_value":
-      return `From page value "${s.mapping.target}"${s.mapping.required ? " (required)" : ""}`;
+      return s.alsoFrom.length > 0
+        ? // D18.2 — say the whole combination and the order, because the order
+          // IS the delivered text.
+          `From ${[s.mapping.target, ...s.alsoFrom].map((n) => `"${n}"`).join(" + ")}, joined in that order`
+        : `From page value "${s.mapping.target}"${s.mapping.required ? " (required)" : ""}`;
     case "direct_value":
       return `Fixed value: ${typeof s.mapping.target === "string" ? `"${s.mapping.target}"` : JSON.stringify(s.mapping.target)}`;
     case "prompt_user":
