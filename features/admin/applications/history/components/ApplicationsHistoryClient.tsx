@@ -24,6 +24,8 @@ import { DiffViewer } from "@ai-matrx/diff/react";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
 import {
   APPLICATIONS_ADMIN_LOCATION,
@@ -80,6 +82,9 @@ export function ApplicationsHistoryClient({
     useState<ApplicationsHistoryEntry[]>(initialEntries);
   const [fetchLimit, setFetchLimit] = useState(limit);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [clickedRow, setClickedRow] = useState<ApplicationsHistoryEntry | null>(
+    null,
+  );
 
   // "Load more" widens the per-source cap and rebuilds the merged timeline —
   // the prior-snapshot pairing must be recomputed over the wider window.
@@ -245,6 +250,57 @@ export function ApplicationsHistoryClient({
         </p>
 
         <div className="min-h-0 flex-1">
+          {/* No entity: a merged timeline row is a synthetic rollup pairing
+              a snapshot with its predecessor, not one DB record with a
+              registered EntityTypeToken — see AppConfigHistoryPanel /
+              CatalogHistoryPanel for the underlying per-record identities. */}
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id
+                ? entries.find((r) => r.rowId === id)
+                : undefined;
+              setClickedRow(row ?? null);
+              if (!row) return null;
+              return {
+                content: [
+                  `${row.source} · ${row.app} · ${row.target}`,
+                  `op=${row.op} at=${row.changedAt} by=${whoLabel(row.changedBy)}`,
+                  row.snapshotJson,
+                ].join("\n"),
+              };
+            }}
+            extraSections={[
+              {
+                id: "applications-history-row",
+                label: "This entry",
+                anchor: "after-compare",
+                items: [
+                  {
+                    kind: "item",
+                    id: "applications-history-open-record",
+                    label: "Open record",
+                    icon: ExternalLink,
+                    disabled: !clickedRow,
+                    description: "Open the configuration or catalog record",
+                    onSelect: () => {
+                      if (!clickedRow) return;
+                      window.open(
+                        recordHref(clickedRow),
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    },
+                  },
+                ] satisfies ContextMenuExtraItem[],
+              },
+            ]}
+          >
           <MatrxDataTable
             urlState={{ id: "applications-history" }}
             data={entries}
@@ -338,6 +394,7 @@ export function ApplicationsHistoryClient({
               }),
             }}
           />
+          </NonEditableContextMenu>
         </div>
       </div>
     </SurfaceRuntimeProvider>
