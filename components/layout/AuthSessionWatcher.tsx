@@ -165,33 +165,58 @@ export default function AuthSessionWatcher() {
         dispatch(clearContext());
         dispatch(scopesActions.scopesReset());
         dispatch(contextValuesActions.contextValuesReset());
+        // Same conditional flush for the Content-IR registries: a session that
+        // loaded kinds while signed in holds the previous user's private
+        // schemas/components in memory. Reload as the now-anon identity so
+        // only public data survives; a session that never demanded a kind
+        // still fetches nothing (THE ZERO-PREFETCH LAW).
+        void import("@/features/content-ir/registry/kind-registry").then(
+          (m) => {
+            if (m.kindRegistry.hasBeenDemanded()) void m.kindRegistry.refresh(0);
+          },
+        );
+        void import("@/features/content-ir/registry/component-registry").then(
+          (m) => {
+            if (m.componentRegistry.hasBeenDemanded()) {
+              void m.componentRegistry.refresh(0);
+            }
+          },
+        );
       }
       if (
         event === "SIGNED_IN" ||
         event === "USER_UPDATED" ||
         (event === "INITIAL_SESSION" && session)
       ) {
-        // THE AUTH-HYDRATION RE-KICK (2026-08-31). A fresh tab's first
-        // content-ir registry loads can fire BEFORE this session hydrates —
-        // the reads run as `anon`, RLS answers 42501, and every kind on the
-        // page renders as raw JSON / the generic floor while its component
-        // sits one authenticated read away. The moment auth is real, re-kick
-        // both registries: ensureWarm() is a no-op when the first load
-        // already succeeded (deduped promise) and a retry-now when it failed,
-        // so this costs nothing on the healthy path and heals the race
-        // deterministically on the broken one. The kind repaint seam
-        // (useContentIrKindVersion) upgrades every mounted block in place.
+        // THE AUTH-HYDRATION RE-KICK (2026-08-31), rewritten same day under
+        // 🚨 THE ZERO-PREFETCH LAW (Arman): a session that never met a
+        // `__kind` fetches NOTHING Content-IR — not on page load, not on auth
+        // events, not the light catalog. So this re-kick is CONDITIONAL: it
+        // fires only when a kind was already demanded this session
+        // (hasBeenDemanded), and then it must FORCE (refresh(0)), not
+        // ensureWarm — because since the public-parent anon lane (aidream
+        // 0581) a pre-hydration load SUCCEEDS as anon with the public rows,
+        // and the old "no-op when the first load succeeded" posture would
+        // have silently skipped loading the user's own and org shapes for
+        // the whole session. The kind repaint seam (useContentIrKindVersion)
+        // upgrades every mounted block in place when the refresh lands.
         //
         // Dynamic imports on purpose: this file is the thin always-mounted
         // shell, and a static edge into the registry cluster would pull the
         // entire compiled-kind graph into every route's first load (THE
-        // FRAGMENTATION LAW). Any page that renders kinds has these modules
-        // in flight already, so this resolves to the same instances.
+        // FRAGMENTATION LAW). importing the module alone fetches nothing —
+        // module init performs no IO; only demanded sessions refresh.
         void import("@/features/content-ir/registry/kind-registry").then(
-          (m) => m.kindRegistry.ensureWarm(),
+          (m) => {
+            if (m.kindRegistry.hasBeenDemanded()) void m.kindRegistry.refresh(0);
+          },
         );
         void import("@/features/content-ir/registry/component-registry").then(
-          (m) => m.componentRegistry.ensureWarm(),
+          (m) => {
+            if (m.componentRegistry.hasBeenDemanded()) {
+              void m.componentRegistry.refresh(0);
+            }
+          },
         );
       }
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {

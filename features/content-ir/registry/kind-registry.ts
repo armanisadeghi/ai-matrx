@@ -86,6 +86,8 @@ class KindRegistry {
   private readonly misses = new Map<string, number>();
   private warmPromise: Promise<void> | null = null;
   private lastWarmAt = 0;
+  /** True once any fetch was demanded this session (THE ZERO-PREFETCH LAW). */
+  private demanded = false;
   /**
    * Monotonic registry version — bumps whenever definitions change (warm
    * ingest, cold arrival, upsert). The render seam's repaint hook
@@ -269,8 +271,20 @@ class KindRegistry {
     for (const listener of this.versionListeners) listener();
   }
 
+  /**
+   * THE ZERO-PREFETCH LAW's witness (Arman, 2026-08-31): true once ANY
+   * Content-IR fetch was demanded this session — a kind was actually sighted
+   * (or a kind surface deliberately loaded). The auth watcher consults it so
+   * an auth transition refreshes ONLY sessions where kinds already appeared;
+   * a session that never met a `__kind` fetches nothing, ever, on any event.
+   */
+  hasBeenDemanded(): boolean {
+    return this.demanded;
+  }
+
   /** One LIGHT catalog fetch per app session (slugs + loading slugs only). */
   ensureWarm(): Promise<void> {
+    this.demanded = true;
     if (!this.warmPromise) {
       this.warmPromise = this.loadWarm();
     }
@@ -286,6 +300,7 @@ class KindRegistry {
    * actually tries again. `maxAgeMs = 0` forces.
    */
   refresh(maxAgeMs = 10_000): Promise<void> {
+    this.demanded = true;
     if (this.warmPromise && Date.now() - this.lastWarmAt < maxAgeMs) {
       return this.warmPromise;
     }
@@ -338,6 +353,7 @@ class KindRegistry {
 
   /** Cold fetch, fire-and-forget (the parser's SchemaResolver.request). */
   requestSchema(kind: string): void {
+    this.demanded = true;
     // Already carrying DB truth for this kind — nothing to fetch. A COMPILED
     // schema is only the bootstrap floor, not truth: under the lazy design
     // the DB override that the bulk warm sweep used to deliver arrives

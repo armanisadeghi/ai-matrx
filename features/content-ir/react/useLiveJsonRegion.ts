@@ -75,14 +75,31 @@ export function useLiveJsonRegion(
       openedRef.current = identity;
       fedLenRef.current = 0;
       startedRef.current = false;
-      void kindRegistry.ensureWarm();
-      void componentRegistry.ensureWarm();
+      // 🚨 THE ZERO-PREFETCH LAW (Arman, 2026-08-31): warm only on a kind
+      // SIGNAL — a caller-declared expected kind counts as one; otherwise the
+      // parser's own kind_identified event is the trigger. A kindless region
+      // fetches nothing.
+      if (expectedRootKind) {
+        void kindRegistry.ensureWarm();
+        void componentRegistry.ensureWarm();
+      }
       try {
         openParseSession({
           identity,
           schemas: kindRegistry.resolver(),
           expectedRootKind,
           onSchemaArrived: (deliver) => kindRegistry.onSchemaArrived(deliver),
+          onEvent: (event) => {
+            if (
+              event.type === "kind_identified" ||
+              event.type === "pending_schema"
+            ) {
+              void kindRegistry.ensureWarm();
+              void componentRegistry.ensureWarm();
+              kindRegistry.requestSchema(event.kind);
+              componentRegistry.requestComponent(event.kind, "web", "output");
+            }
+          },
         });
       } catch {
         // A writer already exists for this identity (fast remount) — this

@@ -1221,12 +1221,6 @@ export class StreamBlockAccumulator {
   private irOpenRegion(): void {
     const identity = `${this.requestId}:${this.currentBlockId}`;
     try {
-      // Warm BOTH registries once per app session (memoized, non-blocking):
-      // schemas alone can't render a db/cloud kind — without the component
-      // rows, `resolveComponent` answers null and the db flip never fires
-      // on the streaming path (the "shows as JSON" bug).
-      void kindRegistry.ensureWarm();
-      void componentRegistry.ensureWarm();
       this.irSession = openParseSession({
         identity,
         schemas: kindRegistry.resolver(),
@@ -1243,6 +1237,15 @@ export class StreamBlockAccumulator {
             event.type === "kind_identified" ||
             event.type === "pending_schema"
           ) {
+            // 🚨 THE ZERO-PREFETCH LAW (Arman, 2026-08-31): nothing Content-IR
+            // is fetched until a kind SIGNAL is observed — a `__kind` key or a
+            // registered detection surface resolving a slug. A JSON region
+            // alone is NOT a signal (this used to warm at region open, which
+            // fetched for every plain ```json fence). The hardcoded loading
+            // components cover the wait; the fetch is per-slug, with the light
+            // catalog warmed beside it for loading-slug overrides.
+            void kindRegistry.ensureWarm();
+            void componentRegistry.ensureWarm();
             kindRegistry.requestSchema(event.kind);
             componentRegistry.requestComponent(event.kind, "web", "output");
           }

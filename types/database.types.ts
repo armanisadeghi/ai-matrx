@@ -56580,6 +56580,7 @@ export type Database = {
           base_tier: number
           category: string | null
           client_excluded_columns: string[] | null
+          component_anon_read_via_public_parent: boolean
           content_role: string | null
           default_auto_ingest: boolean
           default_members_can_add: boolean
@@ -56624,6 +56625,7 @@ export type Database = {
           base_tier?: number
           category?: string | null
           client_excluded_columns?: string[] | null
+          component_anon_read_via_public_parent?: boolean
           content_role?: string | null
           default_auto_ingest?: boolean
           default_members_can_add?: boolean
@@ -56670,6 +56672,7 @@ export type Database = {
           base_tier?: number
           category?: string | null
           client_excluded_columns?: string[] | null
+          component_anon_read_via_public_parent?: boolean
           content_role?: string | null
           default_auto_ingest?: boolean
           default_members_can_add?: boolean

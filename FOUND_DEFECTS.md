@@ -2791,3 +2791,20 @@ unwrapped mode is a place agents cannot stream edits into.
 Also unwired, same wave: `features/files/components/core/FileList/`
 (FileList / FileListRow / FileTree) never wire `FileRightClickMenu`, though
 `PreviewPane` uses it for just the filename label.
+
+## 2026-08-31 — hr.job_title deployed read policy admits 5 rows the access kernel denies (gained=5, leak direction)
+
+Found by `aidream scripts/_verify_entity_read_equivalence.py` (60-row smoke, 3 sampled
+users) while re-proving the entity-read mirror for migration 0580: **271 of 272
+comparable tables identical; `hr.job_title` alone reports `lost=0 gained=5`** — its
+deployed `std_select` admits 5 rows `iam.has_access` denies for a sampled user. The
+table is `entity` variant with `suppress_platform_admin_lane=true` (the HR privacy
+wall) and HAS `created_by` + `visibility`, so this is NOT caused by the 2026-08-30
+ownerless-org kernel probe (unreachable there) — it predates it, and most likely the
+walled kernel path denies a lane (platform-staff or org arm) the pre-wall-generated
+policy text still carries. `gained` is the leak direction, which db-rules §6a weighs
+as seriously as a denial. **Do NOT re-run `iam.apply_rls` on hr.job_title as a "fix"
+without diagnosing first** — regeneration under the current mirror may either close
+or mask it; the repair belongs to the HR privacy-wall lane with the prover re-run as
+proof (`--table hr.job_title --full`). Recorded in aidream migration
+`0580_rerecord_kernel_fingerprint_after_ownerless_org_probe.sql`.

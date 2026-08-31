@@ -149,6 +149,9 @@ function reportUnroutableRole(
  * bound, plus the `refreshKindComponents` alias every call site here uses.
  */
 export class ComponentRegistry extends ComponentResolver {
+  /** True once any fetch was demanded this session (THE ZERO-PREFETCH LAW). */
+  private demanded = false;
+
   constructor(entries: () => SystemComponentEntry[]) {
     super({
       compiledEntries: entries,
@@ -184,6 +187,30 @@ export class ComponentRegistry extends ComponentResolver {
   /** Historical name for the package's `refresh` — kept so call sites read the same. */
   refreshKindComponents(maxAgeMs?: number): Promise<void> {
     return this.refresh(maxAgeMs);
+  }
+
+  /** See kindRegistry.hasBeenDemanded — the auth watcher's gate. */
+  hasBeenDemanded(): boolean {
+    return this.demanded;
+  }
+
+  override ensureWarm(): Promise<void> {
+    this.demanded = true;
+    return super.ensureWarm();
+  }
+
+  override refresh(maxAgeMs?: number): Promise<void> {
+    this.demanded = true;
+    return super.refresh(maxAgeMs);
+  }
+
+  override requestComponent(
+    kind: string,
+    platform: string,
+    role: ComponentRole,
+  ): void {
+    this.demanded = true;
+    super.requestComponent(kind, platform, role);
   }
 }
 

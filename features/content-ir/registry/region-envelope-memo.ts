@@ -121,11 +121,6 @@ export function memoizedRegionEnvelope(
   const cached = memo.get(source);
   if (cached) return cached;
 
-  // Kick the warm tiers once (memoized, non-blocking) — under the LAZY
-  // registry these are the cheap slug catalogs, not bulk reads.
-  void kindRegistry.ensureWarm();
-  void componentRegistry.ensureWarm();
-
   // `existing` is the persisted-envelope fast path: when a seeded envelope's
   // fingerprint exactly matches this region source, normalizeJsonRegion
   // returns it BY REFERENCE (reuseEnvelopeIfCurrent) — nothing parses.
@@ -136,6 +131,19 @@ export function memoizedRegionEnvelope(
     schemas: kindRegistry.resolver(),
     existing: seededEnvelopeFor(source),
   });
+
+  // 🚨 THE ZERO-PREFETCH LAW (Arman, 2026-08-31): the warm tiers are kicked
+  // ONLY after this region actually identified a kind — a `__kind` key or a
+  // registered root-key surface (both resolved by the parser from compiled
+  // data, zero fetch). A kindless JSON object in someone's markdown fetches
+  // NOTHING. This used to warm unconditionally for every complete JSON
+  // region, which is exactly the fetch-before-need this law bans; the
+  // resolver's own per-slug cold fetch (fired inside the parse on a `__kind`
+  // miss) was already lawful and is unchanged.
+  if (envelope.root.kind) {
+    void kindRegistry.ensureWarm();
+    void componentRegistry.ensureWarm();
+  }
 
   // Never memoize an envelope whose root kind's SCHEMA is still unknown —
   // caching it froze a pre-warm parse as this source's permanent answer
