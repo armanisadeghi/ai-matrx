@@ -46,6 +46,7 @@ import { selectInstance } from "@/features/agents/redux/execution-system/convers
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,
   createObservationalMemoryScope,
@@ -498,14 +499,29 @@ function ObservationalMemoryWindowInner({
         }
         isEditable={false}
       >
-        {selectedConversationId ? (
-          <ObservationalMemoryCore
-            conversationId={selectedConversationId}
-            layout="split"
-          />
-        ) : (
-          <EmptyPane />
-        )}
+        {/* The sidebar's own rows already carry doors (`EntityRef`/`EntityDoorControls`
+            — see `SidebarRow`); this wraps the MAIN pane. One `chat.observational_memory`
+            row exists per conversation, so the conversationId IS the row id. */}
+        {/* context-menu-exempt: entity — EmptyPane has no conversation selected yet */}
+        <NonEditableContextMenu
+          sourceFeature="agent-builder"
+          surfaceName={OBSERVATIONAL_MEMORY_SURFACE_NAME}
+          contentSource={{ type: "raw" }}
+          entity={
+            selectedConversationId
+              ? { type: "cx_observational_memory", id: selectedConversationId, title: "Observational memory" }
+              : undefined
+          }
+        >
+          {selectedConversationId ? (
+            <ObservationalMemoryCore
+              conversationId={selectedConversationId}
+              layout="split"
+            />
+          ) : (
+            <EmptyPane />
+          )}
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </WindowPanel>
   );

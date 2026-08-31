@@ -18907,6 +18907,27 @@
         }
       }
     },
+    "/bettermode/public/status": {
+      "get": {
+        "tags": [
+          "Bettermode Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_bettermode_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BettermodeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/buttercms/public/status": {
       "get": {
         "tags": [
@@ -18963,6 +18984,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KalturaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zype/public/status": {
+      "get": {
+        "tags": [
+          "Zype Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_zype_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZypeServiceStatus"
                 }
               }
             }
@@ -38579,66 +38621,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -82884,6 +82866,51 @@
         "title": "BeautifulAIStatusResult",
         "description": "Safe projection of Beautiful.ai's high-level service status."
       },
+      "BettermodeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bettermode_public_service_status",
+            "title": "Kind",
+            "default": "bettermode_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "bettermode",
+            "title": "Provider",
+            "default": "bettermode"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.bettermode.com",
+            "title": "Status Page",
+            "default": "https://status.bettermode.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BettermodeServiceStatus",
+        "description": "Safe aggregate status projection for Bettermode's fixed status page."
+      },
       "BgRemoveParams": {
         "properties": {
           "model": {
@@ -112483,61 +112510,6 @@
         ],
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -217218,6 +217190,47 @@
         ],
         "title": "ZulipServerResult",
         "description": "Safe bounded projection of the public Zulip Community server."
+      },
+      "ZypeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zype_public_media_platform_status",
+            "title": "Kind",
+            "default": "zype_public_media_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Zype",
+            "title": "Provider",
+            "default": "Zype"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.zype.com",
+            "title": "Status Page",
+            "default": "https://status.zype.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ZypeServiceStatus",
+        "description": "Safe aggregate status projection for Zype's fixed status page."
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {

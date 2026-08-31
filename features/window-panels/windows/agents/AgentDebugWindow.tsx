@@ -18,12 +18,15 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 // ─── Agent definition selectors ───────────────────────────────────────────────
 import {

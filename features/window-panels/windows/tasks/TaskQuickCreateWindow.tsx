@@ -144,10 +144,13 @@ function TaskQuickCreateWindowInner({
         {/*
          * No task id exists until Create is pressed, so there is no "task"
          * entity to attach yet — contentSource stays "raw". Copy / Export /
-         * AI still resolve from the live DOM.
+         * AI still resolve from the live DOM. surfaceName is the manifest
+         * this window's own SurfaceRuntimeProvider (above) already publishes.
+         * context-menu-exempt: entity — draft has no task id until Create
          */}
         <NonEditableContextMenu
           sourceFeature="tasks"
+          surfaceName={TASK_CREATE_SURFACE_NAME}
           contentSource={{ type: "raw" }}
           contextData={{ content: prePopulate?.description ?? "" }}
         >

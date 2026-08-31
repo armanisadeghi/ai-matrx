@@ -16,7 +16,7 @@ import { AgentMemorySidebar } from "@/features/agents/components/memory/componen
 import { AgentMemoryBody } from "@/features/agents/components/memory/components/AgentMemoryBody";
 import { AgentMemoryFooter } from "@/features/agents/components/memory/components/AgentMemoryFooter";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
 import { displayTitleForMemory } from "@/features/agents/components/memory/types";
 
@@ -123,7 +123,7 @@ export default function AgentMemoryWindow({
           selected
             ? {
                 content: `${displayTitleForMemory(selected)}\n\n${selected.content}`,
-                __entity: { type: "cx_agent_memory", id: selected.id, title: displayTitleForMemory(selected) },
+                [CONTEXT_MENU_ENTITY_KEY]: { type: "cx_agent_memory", id: selected.id, title: displayTitleForMemory(selected) },
               }
             : null
         }

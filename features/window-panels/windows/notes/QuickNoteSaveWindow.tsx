@@ -166,10 +166,13 @@ function QuickNoteSaveWindowInner({
          * window, so right-clicking the live textarea yields to the native
          * browser menu (cut/copy/paste still work there) — this menu covers
          * everything else: the title/folder form, the preview pane, blank
-         * space.
+         * space. surfaceName is the manifest this window's own
+         * SurfaceRuntimeProvider (above) already publishes.
+         * context-menu-exempt: entity — draft has no note id until Save
          */}
         <NonEditableContextMenu
           sourceFeature="notes"
+          surfaceName={QUICK_NOTE_SAVE_SURFACE_NAME}
           contentSource={{ type: "raw" }}
           contextData={{ content: initialContent }}
         >

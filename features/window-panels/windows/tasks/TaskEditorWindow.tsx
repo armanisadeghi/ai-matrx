@@ -31,7 +31,10 @@ import {
 } from "@/features/tasks/components/editor/TaskWindowChrome";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { createTasksExtraSections } from "@/features/tasks/agent-context/buildTasksContextData";
+import {
+  createTasksExtraSections,
+  TASKS_CONTEXT_MENU_PROPS,
+} from "@/features/tasks/agent-context/buildTasksContextData";
 
 const OVERLAY_ID = "taskEditorWindow";
 
@@ -88,6 +91,7 @@ export default function TaskEditorWindow({
           // to whatever page hosts this floating window.
           <NonEditableContextMenu
             sourceFeature="tasks"
+            surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
             contentSource={{ type: "raw" }}
             contextData={{ content: controller.effective.description ?? "" }}
             entity={{

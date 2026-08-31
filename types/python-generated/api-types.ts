@@ -8250,23 +8250,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chili-piper/public/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public Status */
-        get: operations["public_status_chili_piper_public_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/beautiful-ai/public/status": {
         parameters: {
             query?: never;
@@ -16294,30 +16277,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -38083,43 +38042,6 @@ export interface components {
              */
             min_confidence?: number;
         };
-        /**
-         * ChiliPiperStatusResult
-         * @description Safe projection of Chili Piper's high-level service status.
-         */
-        ChiliPiperStatusResult: {
-            /**
-             * Kind
-             * @default chili_piper_official_service_status
-             * @constant
-             */
-            __kind?: "chili_piper_official_service_status";
-            /**
-             * Provider
-             * @default chili_piper
-             * @constant
-             */
-            provider?: "chili_piper";
-            /**
-             * Access
-             * @default public_no_auth
-             * @constant
-             */
-            access?: "public_no_auth";
-            /**
-             * Status Url
-             * @default https://status.chilipiper.com
-             * @constant
-             */
-            status_url?: "https://status.chilipiper.com";
-            /**
-             * Indicator
-             * @enum {string}
-             */
-            indicator: "none" | "minor" | "major" | "critical";
-            /** Operational */
-            operational: boolean;
-        };
         /** ChunkDetail */
         ChunkDetail: {
             /** Chunk Id */
@@ -44998,33 +44920,6 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -102871,26 +102766,6 @@ export interface operations {
             };
         };
     };
-    public_status_chili_piper_public_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChiliPiperStatusResult"];
-                };
-            };
-        };
-    };
     public_status_beautiful_ai_public_status_get: {
         parameters: {
             query?: never;
@@ -116056,41 +115931,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
