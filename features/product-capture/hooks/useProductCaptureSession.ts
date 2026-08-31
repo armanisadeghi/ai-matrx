@@ -137,6 +137,17 @@ export function useProductCaptureSession(
   const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ensureItemPromiseRef = useRef<Promise<CaptureItem> | null>(null);
   const qrTransitionRef = useRef<Promise<unknown>>(Promise.resolve());
+  // QR decoding can begin as soon as the camera has a frame, while restoring
+  // the persisted current item deliberately happens on the next tick. Keep a
+  // one-shot barrier at the session boundary so an early decode cannot create
+  // a new row that the later restore then visually replaces.
+  const [resumeReady] = useState(() => {
+    let resolve!: () => void;
+    const promise = new Promise<void>((settle) => {
+      resolve = settle;
+    });
+    return { promise, resolve };
+  });
   const previewUrlsRef = useRef(new Map<string, string>());
   const artifactSeqRef = useRef(0);
   // Artifact count for the empty-item test without re-subscribing state.
@@ -357,20 +368,26 @@ export function useProductCaptureSession(
       try {
         stored = window.localStorage.getItem(resumeKey(organizationId));
       } catch {
+        resumeReady.resolve();
         return;
       }
     }
-    if (!stored) return;
+    if (!stored) {
+      resumeReady.resolve();
+      return;
+    }
     const storedId = stored;
     // Deferred a tick: resume swaps several pieces of state at once and must
     // never run synchronously inside this effect (cascading-render lint).
     const timer = setTimeout(() => {
-      void resumeItem(storedId).catch((err: unknown) => {
-        console.error("[product-capture] resume failed", err);
-      });
+      void resumeItem(storedId)
+        .catch((err: unknown) => {
+          console.error("[product-capture] resume failed", err);
+        })
+        .finally(resumeReady.resolve);
     }, 0);
     return () => clearTimeout(timer);
-  }, [organizationId, resumeItem, initialItemId]);
+  }, [organizationId, resumeItem, initialItemId, resumeReady]);
 
   // ── Codes ─────────────────────────────────────────────────────────────────
 
@@ -424,6 +441,10 @@ export function useProductCaptureSession(
       // item installed by the scan before it, and failures never poison later
       // transitions.
       const transition = qrTransitionRef.current.then(async () => {
+        // Camera readiness can beat the persisted-item restore on mount. The
+        // restore must win first; otherwise the QR row is created correctly
+        // but the UI is rebound to the previous item moments later.
+        await resumeReady.promise;
         // An untouched current item just takes the code — the scan-first flow.
         if (isCurrentItemEmpty()) {
           await applyCode(code, "qr");
@@ -442,7 +463,13 @@ export function useProductCaptureSession(
       );
       return transition;
     },
-    [isCurrentItemEmpty, applyCode, ensureItem, finishCurrentItem],
+    [
+      isCurrentItemEmpty,
+      applyCode,
+      ensureItem,
+      finishCurrentItem,
+      resumeReady,
+    ],
   );
 
   // ── Artifacts ─────────────────────────────────────────────────────────────

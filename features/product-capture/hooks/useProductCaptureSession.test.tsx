@@ -2,6 +2,7 @@ import { renderHook } from "@/test-utils/renderHook";
 
 const mockCreateItem = jest.fn();
 const mockCloseItem = jest.fn();
+const mockLoadItem = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-q28",
@@ -30,7 +31,7 @@ jest.mock("../service", () => ({
   closeItem: (...args: unknown[]) => mockCloseItem(...args),
   createItem: (...args: unknown[]) => mockCreateItem(...args),
   listItemFiles: jest.fn().mockResolvedValue([]),
-  loadItem: jest.fn(),
+  loadItem: (...args: unknown[]) => mockLoadItem(...args),
   reopenItem: jest.fn(),
   setItemCode: jest.fn(),
   setItemNotes: jest.fn(),
@@ -62,6 +63,42 @@ describe("useProductCaptureSession QR adoption", () => {
     jest.clearAllMocks();
     window.localStorage.clear();
     mockCloseItem.mockImplementation(async (value: CaptureItem) => value);
+  });
+
+  it("waits for the persisted current item before applying a decoded QR", async () => {
+    let resolveStored!: (value: CaptureItem) => void;
+    mockLoadItem.mockReturnValueOnce(
+      new Promise<CaptureItem>((resolve) => {
+        resolveStored = resolve;
+      }),
+    );
+    mockCreateItem.mockResolvedValueOnce(item("item-new", "QR-Q28-NEW"));
+    window.localStorage.setItem(
+      "product-capture:current-item:org-q28",
+      "item-stored",
+    );
+
+    const hook = await renderHook(() => useProductCaptureSession());
+    let scan!: Promise<"assigned" | "switched">;
+    await hook.act(async () => {
+      scan = hook.current.onQrCode("QR-Q28-NEW");
+      await Promise.resolve();
+    });
+
+    expect(mockCreateItem).not.toHaveBeenCalled();
+
+    await hook.act(async () => {
+      resolveStored(item("item-stored", "QR-Q28-STORED"));
+      await scan;
+    });
+
+    expect(mockCloseItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "item-stored", code: "QR-Q28-STORED" }),
+    );
+    expect(hook.current.currentItem).toEqual(
+      expect.objectContaining({ id: "item-new", code: "QR-Q28-NEW" }),
+    );
+    await hook.unmount();
   });
 
   it("serializes sequential scans and leaves the latest created item current", async () => {

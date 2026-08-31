@@ -101,6 +101,11 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 ## Change log
 
+- 2026-08-31 — Q28 live re-verification repair: QR decoding now waits for the
+  persisted current-item restore to settle before it can create or switch an
+  item, preventing a valid decoded row from being visually overwritten by the
+  older resumed item during camera startup.
+
 - 2026-08-30 — Q28 verifier repair: serialized decoder delivery through current-item adoption, gated Next at both UI and session boundaries on uploading/uploaded artifacts, and made the deterministic image-stream seam honestly QR-only with disabled capture controls.
 
 - 2026-08-30 — Added development-only `__qa_camera=denied|image` acceptance inputs; image fixtures still traverse a real `<video>` stream and the production QR decoder.
