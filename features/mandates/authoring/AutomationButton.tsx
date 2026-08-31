@@ -7,7 +7,8 @@
 // naming the exact key to create — a tooltip is not words on the screen, and a
 // dead button teaches nothing. The moment that mandate exists (Arman creates
 // it, no deploy) it just runs. Never a hardcoded agent id, never a silent
-// no-op.
+// no-op. Expected unavailability is informational readiness, never an error
+// toast: the shared toast boundary persists error/warning as system_error.
 
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,12 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
+
+export function notifyMissingAutomationMandate(mandateKey: string): void {
+  toast.info(
+    `Not yet — this needs the mandate "${mandateKey}", which does not exist. Create it and this runs.`,
+  );
+}
 
 export function AutomationButton({
   mandateKey,
@@ -46,9 +53,7 @@ export function AutomationButton({
       disabled={running || loading}
       onClick={() => {
         if (!available) {
-          toast.error(
-            `Not yet — this needs the mandate "${mandateKey}", which does not exist. Create it and this runs.`,
-          );
+          notifyMissingAutomationMandate(mandateKey);
           return;
         }
         onRun();

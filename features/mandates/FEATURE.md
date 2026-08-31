@@ -381,8 +381,14 @@ commit time.
   constraints — via `POST /mandates` (origin='user'; the server key validator's message
   renders verbatim). Two automation slots (`authoring/AutomationButton.tsx`) run mandates
   BY KEY (`authoring/constants.ts`: `mandates.goal_writer`, `mandates.kind_converter`) and
-  render honestly disabled naming the key until those mandates exist. The window host
+  refuse visibly with an informational readiness toast naming the key until those mandates
+  exist. Expected absence never uses `toast.error`/`toast.warning`, because the shared toast
+  boundary persists those severities as `system_error`. The window host
   links "Open full page".
+
+- 2026-08-30 — Optional authoring automations classify an absent Holder as informational
+  readiness, not an error toast; `AutomationButton.test.tsx` proves the expected refusal
+  cannot enter `system_error` through the captured-toast boundary.
 
 - 2026-08-29 — **The Mandate browse RPC follows the completed 1W storage cutover.** `mnd_list_scoped` now reads `mandate.definition` / `mandate.provision` / `mandate.binding`, derives latest from a null Holder version, and ignores non-Agent bindings in its Agent-shaped result instead of querying the graveyarded `agent.mandate_binding`. A source-contract test refuses every retired table and Holder-column name.
 
