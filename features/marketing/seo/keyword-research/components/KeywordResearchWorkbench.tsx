@@ -47,6 +47,15 @@ import {
 } from "@/components/ui/select";
 import { Globe2 } from "lucide-react";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 
 import { useKeywordResearch } from "../useKeywordResearch";
 import {
@@ -448,6 +457,39 @@ export default function KeywordResearchWorkbench() {
       map.set(site.id, site.name ?? site.domain ?? "Untitled site");
     return map;
   }, [siteOptions.data]);
+
+  // THE CANONICAL v3 KEYWORD MENU (adopted, not reinvented — SECTIONS.md).
+  // This table's rows are the whole org-wide library, so a keyword may not be
+  // tracked on ANY site yet: the class/service/dimension/level/why/pages items
+  // all write or read SITE-SCOPED facts, so they stay VISIBLE but disabled
+  // until a site is picked above (THE CONSISTENCY STEP), never dropped.
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId: selectedSiteId ?? "",
+    onChanged: () => reloadKeywords(),
+  });
+  const clickedKeywordRow = useRef<KeywordWithMarket | null>(null);
+  const noSiteReason = selectedSiteId
+    ? undefined
+    : unavailableHere("selecting a site above");
+  const keywordSection = useKeywordMenuSection({
+    siteId: selectedSiteId ?? "",
+    surfaces: keywordSurfaces,
+    getRow: () => {
+      const row = clickedKeywordRow.current;
+      return row ? { phrase: row.phrase, keywordId: row.id } : null;
+    },
+    // Tracked-on-a-site is exactly what THIS table is for, so it always works
+    // here — re-read site membership so the "Sites" column reflects it.
+    onTracked: () => reloadSiteMemberships(),
+    unavailable: {
+      "kw-set-class": noSiteReason,
+      "kw-set-service": noSiteReason,
+      "kw-set-dimension": noSiteReason,
+      "kw-pin-level": noSiteReason,
+      "kw-why": noSiteReason,
+      "kw-pages": noSiteReason,
+    },
+  });
 
   /** Track the given keywords on a site — the bulk assign path. */
   const assignRowsToSite = useCallback(
@@ -1098,6 +1140,29 @@ export default function KeywordResearchWorkbench() {
           {loadError ? (
             <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
           ) : (
+            <>
+              {keywordSurfaces.node}
+              <NonEditableContextMenu
+                sourceFeature="marketing"
+                contentSource={{ type: "raw" }}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={(target) => {
+                  const id = target
+                    ?.closest("[data-row-id]")
+                    ?.getAttribute("data-row-id");
+                  const row = (id && sorted.find((r) => r.id === id)) || null;
+                  clickedKeywordRow.current = row;
+                  if (!row) return null;
+                  return {
+                    content: row.phrase,
+                    [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+                      phrase: row.phrase,
+                      keywordId: row.id,
+                    }),
+                  };
+                }}
+                extraSections={[keywordSection]}
+              >
             <MatrxDataTable
               urlState={{
                 id: "keyword-research",
@@ -1240,6 +1305,8 @@ export default function KeywordResearchWorkbench() {
                   "Research a primary keyword above to seed the universe.",
               }}
             />
+              </NonEditableContextMenu>
+            </>
           )}
         </div>
       </div>
