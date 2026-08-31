@@ -154,6 +154,17 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-08-31** — `/auth/callback` now diagnoses a failed PKCE exchange
+  instead of looping on a generic error (2026-08-31 mobile Google OAuth
+  outage: iPhones with pre-cutover cookie jars never returned the
+  `sb-matrx-auth-v2-code-verifier` cookie, so supabase-js failed the exchange
+  client-side with zero server trace while desktop worked). On failure the
+  route logs LOUD with the auth-cookie names present, redirects an
+  already-authenticated user onward to their preserved destination, and on a
+  missing verifier expires every auth cookie at both scopes (host +
+  `.aimatrx.com`) so the retry starts from a clean jar, with an honest error
+  message. Destination is preserved on every path, unchanged.
+
 - **2026-08-30** — Added the pending-confirmation state: signup and unconfirmed
   login now route to `/check-email`, with resend, expired-link recovery,
   short-lived server-only email display, and destination preservation.
