@@ -16,6 +16,7 @@ import {
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface EntitlementRow {
   capability: string;
@@ -201,6 +202,25 @@ export function EntitlementsTableClient() {
         </div>
       ) : null}
       <div className="min-h-0 flex-1">
+        {/* Capability registry row — page-local (this `EntitlementRow` is a
+           capability/usage aggregate, not the org-scoped grant row of the
+           same name in AccessExplorerTab). Wrapped for Copy/Export/AI only;
+           read-only registry has no per-row actions. */}
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (rows.find((r) => r.capability === id) ?? null) : null;
+            if (!row) return null;
+            return {
+              content: `${row.label} (${row.capability}) enforced=${row.enforced} period=${row.period} free=${row.free_limits}`,
+            };
+          }}
+        >
         <MatrxDataTable
           urlState={{ id: "user-entitlements" }}
           data={rows}
@@ -232,6 +252,7 @@ export function EntitlementsTableClient() {
             }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
