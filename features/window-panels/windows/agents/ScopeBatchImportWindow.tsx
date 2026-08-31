@@ -11,6 +11,11 @@
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScopeBatchImportBody } from "@/features/agents/components/scope-batch-import/ScopeBatchImportBody";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 interface ScopeBatchImportWindowProps {
   isOpen: boolean;
@@ -26,6 +31,14 @@ export default function ScopeBatchImportWindow({
   onClose,
   agentId,
 }: ScopeBatchImportWindowProps) {
+  const dispatch = useAppDispatch();
+  const agentName = useAppSelector((s) => selectAgentName(s, agentId) ?? null);
+  const agentSection = useAgentMenuSection({
+    agentId,
+    agentName,
+    onRefresh: () => dispatch(fetchFullAgent(agentId)),
+  });
+
   if (!isOpen) return null;
 
   return (
@@ -43,7 +56,15 @@ export default function ScopeBatchImportWindow({
       {/* No onDone→close: a user typically repeats this for several scope types
           in one sitting, so a successful batch resets selection but leaves the
           window open. They close it explicitly when done. */}
-      <ScopeBatchImportBody agentId={agentId} />
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={agentEntityRef(agentId, agentName)}
+        extraSections={[agentSection]}
+      >
+        <ScopeBatchImportBody agentId={agentId} />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

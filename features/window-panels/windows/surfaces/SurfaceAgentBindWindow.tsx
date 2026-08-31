@@ -9,6 +9,7 @@
 import { useRef } from "react";
 import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceAgentBindPanel } from "@/features/surfaces/components/bind/SurfaceAgentBindPanel";
 import {
   emitSurfaceAgentBindEvent,
@@ -68,23 +69,36 @@ export function SurfaceAgentBindWindow({
       minHeight={420}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <SurfaceAgentBindPanel
-        surfaceName={surfaceName}
-        initialAgentId={initialAgentId}
-        onBound={(result) => {
-          lastBoundRef.current = true;
-          emitSurfaceAgentBindEvent(callbackGroupId, {
-            type: "bound",
-            instanceId,
-            bindingId: result.bindingId,
-            agentId: result.agentId,
-            surfaceName: result.surfaceName,
-          });
-          onClose();
-        }}
-        onCancel={handleClose}
-        className="h-full"
-      />
+      {/*
+       * Surface-system UI — doors only, never touching the bind flow itself.
+       * No entity: this panel PICKS an agent to bind, it does not show one
+       * fixed record, so the menu offers only the standard raw-content
+       * actions (copy / attach the selected text) rather than a fabricated
+       * "surface" or "agent" identity.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="surfaces"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: surfaceName }}
+      >
+        <SurfaceAgentBindPanel
+          surfaceName={surfaceName}
+          initialAgentId={initialAgentId}
+          onBound={(result) => {
+            lastBoundRef.current = true;
+            emitSurfaceAgentBindEvent(callbackGroupId, {
+              type: "bound",
+              instanceId,
+              bindingId: result.bindingId,
+              agentId: result.agentId,
+              surfaceName: result.surfaceName,
+            });
+            onClose();
+          }}
+          onCancel={handleClose}
+          className="h-full"
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
