@@ -37,7 +37,7 @@ importers:
         version: 0.6.3(@supabase/supabase-js@2.108.2)(react@19.2.7)
       '@ai-matrx/design-system':
         specifier: latest
-        version: 0.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.4.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/diff':
         specifier: latest
         version: 0.2.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -872,8 +872,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/design-system@0.4.1':
-    resolution: {integrity: sha512-XDZS54qgB6XgzQaDEWfMmcXaFHIfOJh9c+24aKbRtBHd4mrTy14qwsW9zKDYNvQVte1S6DcMJGSheON0l5JZEQ==}
+  '@ai-matrx/design-system@0.4.2':
+    resolution: {integrity: sha512-AdWwuYE422ObyNDEKM3ZJejznb9l0L4pvz85fyATB7edC5/qPcoF3BFEtjxqvHBlI0471InkcWPINFQ/DU9bdg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13152,7 +13152,7 @@ snapshots:
 
   '@ai-matrx/associations@0.7.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@ai-matrx/design-system': 0.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ai-matrx/design-system': 0.4.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     optionalDependencies:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
@@ -13190,7 +13190,7 @@ snapshots:
       - '@supabase/supabase-js'
       - react-native
 
-  '@ai-matrx/design-system@0.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/design-system@0.4.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/kit': 0.7.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
