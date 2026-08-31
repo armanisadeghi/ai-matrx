@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 502 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 503 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "1e1b010f5cf9";
+export const KIND_REGISTRY_FINGERPRINT = "7b1a4e0b0162";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5863,6 +5863,36 @@ export interface AgentInputQmeReport {
    * Paste the full text of the QME report here. The more complete the text, the more precise the analysis will be.
    */
   qme_report?: string;
+}
+
+/**
+ * Kind `agent_mandate_specification` (registry v2).
+ */
+export interface AgentMandateSpecification {
+  goal: {
+    role?: string;
+    __kind: "agent_goal";
+    objective?: string;
+    constraints?: string[];
+    deliverable?: string;
+    failure_modes?: ({
+    name?: string;
+    __kind: "failure_mode";
+    description?: string;
+  })[];
+    success_criteria?: ({
+    gate?: boolean;
+    name?: string;
+    __kind: "success_criterion";
+    anchor?: string;
+    weight?: number;
+    criterion?: string;
+  })[];
+    operating_context?: string;
+  };
+  __kind: "agent_mandate_specification";
+  charge: string;
+  questions?: string[];
 }
 
 /**
@@ -20216,6 +20246,7 @@ export type GeneratedKindSlug =
   | "agent_definition"
   | "agent_function_spec"
   | "agent_input_qme_report"
+  | "agent_mandate_specification"
   | "agent_react_result"
   | "agent_result"
   | "aggregate_group"
@@ -20721,6 +20752,7 @@ export interface KindPayloadBySlug {
   "agent_definition": AgentDefinition;
   "agent_function_spec": AgentFunctionSpec;
   "agent_input_qme_report": AgentInputQmeReport;
+  "agent_mandate_specification": AgentMandateSpecification;
   "agent_react_result": AgentReactResult;
   "agent_result": AgentResult;
   "aggregate_group": AggregateGroup;
@@ -21230,6 +21262,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "agent_definition",
   "agent_function_spec",
   "agent_input_qme_report",
+  "agent_mandate_specification",
   "agent_react_result",
   "agent_result",
   "aggregate_group",
