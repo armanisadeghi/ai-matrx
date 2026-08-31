@@ -34,6 +34,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { ServerNotes } from "@/components/official/ServerNotes";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { goalOfMandate } from "@/lib/supabase/mandateStorage";
@@ -319,13 +320,11 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
   }
   if (surface.inputs.length === 0) {
     return (
-      <ul className="space-y-1">
-        {surface.notes.map((note) => (
-          <li key={note} className="text-[12.5px] text-amber-700 dark:text-amber-400">
-            {note}
-          </li>
-        ))}
-      </ul>
+      <ServerNotes
+        heading="What the server could not read"
+        notes={surface.notes}
+        testId="holder-inputs-notes"
+      />
     );
   }
   return (

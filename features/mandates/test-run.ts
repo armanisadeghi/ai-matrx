@@ -29,6 +29,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import type { components } from "@/types/python-generated/api-types";
+import { usableServerNotes } from "@/components/official/ServerNotes";
 
 /** Bench transport shapes — aidream's generated OpenAPI contract. */
 export type MandateTestCandidate = components["schemas"]["MandateCandidate"];
@@ -80,6 +81,127 @@ export function readMandateRunHolder(result: unknown): MandateRunHolder {
         ? result.workflow_id
         : null,
   };
+}
+
+/**
+ * ── A REFUSAL IS A RESULT, NOT AN ACCIDENT ───────────────────────────────────
+ *
+ * 🚨 THE DEFECT THIS EXISTS FOR (V3 round 4 § honesty). A refused run —
+ * `409 mandate_unfulfilled` (bind a Holder / fix the binding) or
+ * `422 mandate_inputs_rejected` (fix the call), the two answers
+ * `aidream/api/routers/mandate_errors.py` is the ONE source of — reached the
+ * run panels as `new Error(message)`. Every caller caught it, fired a toast and
+ * cleared the result panel, so the server's carefully-written sentence lived
+ * for a few seconds inside a disappearing bubble and the panel below it went
+ * blank. A person who blinked could not read what refused, why, or what to do,
+ * and had to run it again to try to catch the toast.
+ *
+ * So the throw carries the whole refusal — status, machine code, the server's
+ * sentence verbatim, any notes it wrote and the request id — and the panels
+ * KEEP it on screen until the next run replaces it. The toast, if any, is a
+ * courtesy; the panel is the record.
+ */
+export class MandateRunRefusal extends Error {
+  /** HTTP status, or null when the failure never reached an HTTP answer
+   * (a dead socket, an unreadable body). */
+  readonly status: number | null;
+  /** The machine code the door named (`mandate_unfulfilled`,
+   * `mandate_inputs_rejected`, …) — null when the body carried none. */
+  readonly code: string | null;
+  /** The server's own sentences about the refusal, verbatim. */
+  readonly notes: string[];
+  /** For support: the id the request was logged under. */
+  readonly requestId: string | null;
+
+  constructor(init: {
+    message: string;
+    status?: number | null;
+    code?: string | null;
+    notes?: readonly unknown[];
+    requestId?: string | null;
+  }) {
+    super(init.message);
+    this.name = "MandateRunRefusal";
+    this.status = init.status ?? null;
+    this.code = init.code ?? null;
+    this.notes = usableServerNotes(init.notes ?? []);
+    this.requestId = init.requestId ?? null;
+  }
+}
+
+/** The machine code a refusal body names. aidream's mandate mapper writes
+ * `code`; the global envelope writes `error` — read both rather than guess. */
+function refusalCode(serverDetail: unknown): string | null {
+  if (!isJsonObject(serverDetail)) return null;
+  for (const key of ["code", "error"] as const) {
+    const value = serverDetail[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  const nested = serverDetail.detail;
+  if (isJsonObject(nested)) {
+    for (const key of ["code", "error"] as const) {
+      const value = nested[key];
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  }
+  return null;
+}
+
+/** Sentences a refusal body carried alongside its message. */
+function refusalNotes(serverDetail: unknown): unknown[] {
+  if (!isJsonObject(serverDetail)) return [];
+  if (Array.isArray(serverDetail.notes)) return serverDetail.notes;
+  const nested = serverDetail.detail;
+  if (isJsonObject(nested) && Array.isArray(nested.notes)) return nested.notes;
+  return [];
+}
+
+/**
+ * ANY thrown failure of a run, read as something a panel can print. Never
+ * invents a sentence: a non-refusal error contributes its own message and
+ * nothing else, so "the network died" cannot be mistaken for a server verdict.
+ */
+export interface MandateRunFailure {
+  /** The sentence to print, verbatim. */
+  sentence: string;
+  status: number | null;
+  code: string | null;
+  notes: string[];
+  requestId: string | null;
+  /** True when the SERVER refused — as opposed to a transport/shape failure. */
+  refused: boolean;
+}
+
+export function describeMandateRunFailure(error: unknown): MandateRunFailure {
+  if (error instanceof MandateRunRefusal) {
+    return {
+      sentence: error.message,
+      status: error.status,
+      code: error.code,
+      notes: error.notes,
+      requestId: error.requestId,
+      refused: error.status != null && error.status >= 400 && error.status < 500,
+    };
+  }
+  return {
+    sentence: error instanceof Error ? error.message : String(error),
+    status: null,
+    code: null,
+    notes: [],
+    requestId: null,
+    refused: false,
+  };
+}
+
+/** What a refusal IS, in this product's words — printed above the server's own
+ * sentence, never instead of it. Unknown statuses say so rather than guess. */
+export function mandateRefusalHeadline(failure: MandateRunFailure): string {
+  if (failure.status === 409) return "Refused — nothing fulfils this job yet";
+  if (failure.status === 422) return "Refused — the values this run sent";
+  if (failure.status === 404) return "Refused — no job by that key";
+  if (failure.status === 403) return "Refused — you may not run this";
+  if (failure.status != null) return `Refused — HTTP ${failure.status}`;
+  return "The run never reached the server";
 }
 
 function structuralVerdictValidationErrors(value: unknown): string[] {
@@ -190,9 +312,24 @@ export async function runMandateAdHocTest(
       totalTimeoutMs: null,
     }),
   );
-  if (response.error) throw new Error(response.error.message);
+  if (response.error) {
+    // The WHOLE refusal travels — a caller that only got a string could not
+    // keep the server's verdict on screen, which is the defect this closes.
+    throw new MandateRunRefusal({
+      message: response.error.message,
+      status: response.error.status ?? null,
+      code: response.error.code ?? refusalCode(response.error.serverDetail),
+      notes: refusalNotes(response.error.serverDetail),
+      requestId: response.requestId ?? null,
+    });
+  }
   if (!isMandateTestResult(response.data)) {
-    throw new Error("Agent mandate bench returned an invalid run result.");
+    throw new MandateRunRefusal({
+      message: `The server answered 200 with something that is not a run result: ${mandateTestResultValidationErrors(
+        response.data,
+      ).join("; ")}`,
+      requestId: response.requestId ?? null,
+    });
   }
   return response.data;
 }

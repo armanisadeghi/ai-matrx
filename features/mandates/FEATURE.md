@@ -290,6 +290,8 @@ commit time.
 
 ## Change Log
 
+- 2026-08-31 — **A run says what it did, and a refusal stays on the screen.** `MandateTestResult.notes` (the `mandate_consumption_map_no_op` scream among them) arrives in the body of a 200 and used to be rendered nowhere; every run surface — the workspace's Run-this-job panel, the admin "Try it now" panel and each batch-bench cell — now prints it through the ONE counted amber block, `components/official/ServerNotes` (the binding-save notes block of v0.4.1567, extracted so the treatments cannot drift). And a 409/422 from the run door no longer collapses into a toast that clears the panel: `runMandateAdHocTest` throws `MandateRunRefusal` carrying status, machine code, notes and request id, and the panels keep it on screen in `RunFailureCard` until the next run replaces it. Pinned by `features/mandates/__tests__/run-honesty.test.tsx` and `features/mandates/workspace/__tests__/run-panel-honesty.test.tsx` (all three panel cases proven failing against the pre-fix component).
+
 - 2026-08-31 — **The mandate workspace authenticates before protected reads.** `useMandateWorkspaceData` now establishes the browser user before constructing its `mandate.definition` query, so route/session hydration gaps fail locally instead of reaching PostgREST as anon. `workspace-auth.test.ts` pins both refusal and authenticated passage.
 
 - 2026-08-31 — **Mandate resolution authenticates before protected reads.**

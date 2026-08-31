@@ -54,9 +54,13 @@ import { MEDIA_VALUE_KINDS, SCALAR_VALUE_KINDS } from "../provision-shapes";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
 import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
 import { Section } from "./Section";
+import { ServerNotes } from "@/components/official/ServerNotes";
+import { RunFailureCard } from "../RunFailureCard";
 import {
+  describeMandateRunFailure,
   readMandateRunHolder,
   runMandateAdHocTest,
+  type MandateRunFailure,
   type MandateTestResponse,
 } from "../test-run";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
@@ -161,6 +165,10 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
   const [userInput, setUserInput] = useState("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MandateTestResponse | null>(null);
+  // 🚨 A REFUSAL IS PANEL STATE, NOT A TOAST. A 409/422 used to clear the panel
+  // and flash the sentence past the person; it now lands here and stays until
+  // the next run replaces it.
+  const [failure, setFailure] = useState<MandateRunFailure | null>(null);
   // THE SERVED SURFACE — asked before the super-admin gate because a hook may
   // never sit behind an early return. It is one authenticated GET; a
   // non-admin's request simply never renders anything.
@@ -234,6 +242,7 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
     }
     setRunning(true);
     setResult(null);
+    setFailure(null);
     try {
       const response = await runMandateAdHocTest(dispatch, data.mandate.mandate_key, {
         variables,
@@ -251,10 +260,13 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
       setResult(response);
       if (response.error) toast.error(`The run failed: ${response.error}`);
     } catch (error: unknown) {
-      // Verbatim, never softened — a failed run that reads as "something went
-      // wrong" is a run nobody can fix.
-      toast.error(`Couldn't run this job: ${describeError(error)}`);
+      // 🚨 THE REFUSAL STAYS IN THE PANEL. It used to be cleared to nothing and
+      // announced only in a toast, so the server's sentence — the one thing
+      // that says what refused and what to do about it — had to be caught mid
+      // flight. The toast is now the courtesy; the panel is the record.
+      setFailure(describeMandateRunFailure(error));
       setResult(null);
+      toast.error(`Couldn't run this job: ${describeError(error)}`);
     } finally {
       setRunning(false);
     }
@@ -270,14 +282,12 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
 
       {/* WHAT THE SERVER COULD NOT READ, in its own words — never swallowed
           into a shorter, calmer, wrong sentence. */}
-      {surface && surface.notes.length > 0 ? (
-        <ul className="space-y-1">
-          {surface.notes.map((note) => (
-            <li key={note} className="text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-              {note}
-            </li>
-          ))}
-        </ul>
+      {surface ? (
+        <ServerNotes
+          heading="What the server could not read"
+          notes={surface.notes}
+          testId="run-surface-notes"
+        />
       ) : null}
 
       {surfaceState.status === "loading" ? (
@@ -400,6 +410,7 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
         {running ? "Running…" : "Run it"}
       </Button>
 
+      {failure ? <RunFailureCard failure={failure} /> : null}
       {result ? <RunResult result={result} /> : null}
     </div>
     </Section>
@@ -446,6 +457,18 @@ function RunResult({ result }: { result: MandateTestResponse }) {
           </Badge>
         ) : null}
       </div>
+
+      {/* 🚨 WHAT THIS RUN DID THAT NOBODY ASKED FOR — the server's own
+          sentences off `MandateTestResult.notes`, which arrive in the body of a
+          200 and so turn nothing red. The `mandate_consumption_map_no_op`
+          scream is one of them: until 2026-08-31 it reached this browser on
+          every affected run and appeared nowhere on this screen (V3 round 4 §
+          honesty). */}
+      <ServerNotes
+        heading="What this run did"
+        notes={result.notes ?? []}
+        testId="mandate-run-notes"
+      />
 
       {/* THE WORKFLOW LEG — a workflow holder produced a real child run, and a
           run the UI names must open (no dead ends). */}

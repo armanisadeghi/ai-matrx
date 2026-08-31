@@ -29,6 +29,7 @@
 import { Zap } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
+import { ServerNotes } from "@/components/official/ServerNotes";
 import { cn } from "@/lib/utils";
 import {
   evaluateBindingAutoRun,
@@ -162,21 +163,15 @@ export function AutoRunBar({
       {/* WHAT THE SAVE ACTUALLY DID, in the server's words. Amber, because
           every sentence that lands here is the write telling you it did not do
           what you asked — never decoration. */}
-      {serverNotes.length > 0 ? (
-        <div className="mt-1.5 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
-            What the save did
-          </p>
-          {serverNotes.map((note) => (
-            <p
-              key={note}
-              className="text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400"
-            >
-              {note}
-            </p>
-          ))}
-        </div>
-      ) : null}
+      {/* The shared primitive (`components/official/ServerNotes`) — this block
+          was its birthplace in v0.4.1567 and is now one of its callers, so the
+          run panels and this bar cannot drift apart. */}
+      <ServerNotes
+        heading="What the save did"
+        notes={serverNotes}
+        className="mt-1.5"
+        testId="binding-save-notes"
+      />
       {/* P15 — an unavailable control carries its own reason, and the reason is
           never the control being greyed out. */}
       {!eligibility.eligible ? (

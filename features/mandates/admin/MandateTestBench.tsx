@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { ServerNotes } from "@/components/official/ServerNotes";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { Badge } from "@/components/ui/badge";
@@ -267,6 +268,16 @@ function ResultRow({
             />
           </div>
         )}
+
+        {/* Every cell of the batch bench is a run, and a run's own account of
+            what it did that nobody asked for (`MandateTestResult.notes`) rides
+            a 200 — so it turns nothing red and would otherwise be invisible
+            here exactly as it was on the Run panel. */}
+        <ServerNotes
+          heading="What this run did"
+          notes={result.notes ?? []}
+          testId="bench-cell-run-notes"
+        />
 
         {result.error ? (
           <div className="rounded bg-destructive/10 p-2 text-[11px] text-destructive">

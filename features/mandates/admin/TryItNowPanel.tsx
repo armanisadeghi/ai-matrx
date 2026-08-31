@@ -54,9 +54,13 @@ import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { OutputPreview } from "./bench-output-preview";
 import {
+  describeMandateRunFailure,
   runMandateAdHocTest,
+  type MandateRunFailure,
   type MandateTestResponse,
 } from "@/features/mandates/test-run";
+import { RunFailureCard } from "@/features/mandates/RunFailureCard";
+import { ServerNotes } from "@/components/official/ServerNotes";
 import {
   fetchVersionVariableDefinitions,
   saveAdHocResultAsExemplar,
@@ -135,6 +139,10 @@ export function TryItNowPanel({
   const [userInput, setUserInput] = useState("");
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState<CompletedRun | null>(null);
+  // 🚨 A REFUSAL IS PANEL STATE, NOT A TOAST (V3 round 4 § honesty) — a 409/422
+  // from the test door left this panel empty and put the server's sentence in a
+  // bubble the admin had to race. It stays until the next run.
+  const [failure, setFailure] = useState<MandateRunFailure | null>(null);
   const [saveLabel, setSaveLabel] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -247,6 +255,7 @@ export function TryItNowPanel({
     }
     setRunning(true);
     setCompleted(null);
+    setFailure(null);
     try {
       const result = await runMandateAdHocTest(dispatch, mandate.mandate_key, {
         variables,
@@ -266,6 +275,9 @@ export function TryItNowPanel({
         toast.success("Ran once. Keep it as a test case if the output is right.");
       }
     } catch (error: unknown) {
+      // The refusal stays on screen — the toast is the courtesy, the panel is
+      // the record.
+      setFailure(describeMandateRunFailure(error));
       toast.error(`Couldn't run the mandate: ${describeError(error)}`);
     } finally {
       setRunning(false);
@@ -409,6 +421,8 @@ export function TryItNowPanel({
         Run once
       </Button>
 
+      {failure && <RunFailureCard failure={failure} />}
+
       {result && (
         <div
           className={`space-y-2 rounded-md border p-2 ${
@@ -442,6 +456,16 @@ export function TryItNowPanel({
               />
             )}
           </div>
+
+          {/* 🚨 What the run did that nobody asked for — the server's own
+              sentences off `MandateTestResult.notes`, which ride a 200 and turn
+              nothing red (the `mandate_consumption_map_no_op` scream among
+              them). */}
+          <ServerNotes
+            heading="What this run did"
+            notes={result.notes ?? []}
+            testId="try-it-now-run-notes"
+          />
 
           {result.error ? (
             <div className="rounded bg-destructive/10 p-2 text-[11px] text-destructive">
