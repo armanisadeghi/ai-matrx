@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { User } from "lucide-react";
 import { UserData } from "@/utils/userDataMapper";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShouldPromptForOrganization } from "@/lib/redux/slices/appContextSlice";
+import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
 
 interface UserMenuTriggerProps {
   userData: UserData;
@@ -37,19 +37,10 @@ export default function UserMenuTrigger({
         ].join(" ")}
       >
         {userData?.userMetadata?.avatarUrl ? (
-          <Image
+          <ShellUserAvatarImage
             src={userData?.userMetadata.avatarUrl}
             alt={userData?.userMetadata.name || "User"}
-            fill
-            className="object-cover"
             sizes="32px"
-            unoptimized
-            // Always-visible header avatar: often the above-the-fold LCP
-            // element on sparse routes. Make every browser-facing priority
-            // signal explicit; `priority` is deprecated in Next 16.
-            preload
-            loading="eager"
-            fetchPriority="high"
           />
         ) : userData?.userMetadata.name ? (
           <span className="text-xs font-semibold text-foreground leading-none">

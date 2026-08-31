@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { UserData } from "@/utils/userDataMapper";
+import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
 
 interface UserProfileHeaderProps {
   userData: UserData;
@@ -17,13 +17,10 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
       >
         {userData.userMetadata.avatarUrl ? (
           <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full">
-            <Image
+            <ShellUserAvatarImage
               src={userData.userMetadata.avatarUrl}
               alt={displayName}
-              fill
-              className="object-cover"
               sizes="28px"
-              unoptimized
             />
           </span>
         ) : (
