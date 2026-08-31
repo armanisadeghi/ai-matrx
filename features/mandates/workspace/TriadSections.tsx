@@ -22,7 +22,7 @@
 // (aidream 304fe1848), so an ungated pencil here would just be a 403 waiting
 // to happen.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowDown,
   Check,
@@ -119,7 +119,30 @@ export function TriadInputSection({
     }
   };
 
-  const runConvert = async () => {
+  /**
+   * What this screen holds for the CONVERTER, by served input name. That job
+   * does not exist yet (`constants.ts` says so, and the button renders honestly
+   * disabled naming it) — so these names are this screen's best offer and the
+   * seam matches whatever the job declares WHEN somebody creates it. Anything
+   * it serves that is not here is either asked of the person inline or reported
+   * as gone-without; nothing is guessed and nothing fails silently.
+   */
+  const convertValues = useMemo(
+    () => ({
+      task_overview: [
+        `Job: ${data.mandate.label ?? data.mandate.mandate_key}`,
+        `Key: ${data.mandate.mandate_key}`,
+        `Goal: ${goalOfMandate(data.mandate) ?? "(none written yet)"}`,
+      ].join("\n"),
+      inputs: draftInputs
+        .map((i) => [i.description, i.name ? `(${i.name})` : ""].filter(Boolean).join(" "))
+        .join("\n"),
+      draft_inputs: JSON.stringify(draftInputs),
+    }),
+    [data.mandate, draftInputs],
+  );
+
+  const runConvert = async (variables: Record<string, string>) => {
     setConverting(true);
     try {
       const text = await convert.run<string>({
@@ -128,11 +151,8 @@ export function TriadInputSection({
         sourceFeature: "agent-builder",
         expect: "text",
         initiation: "user",
-        variables: {
-          mandate_key: data.mandate.mandate_key,
-          mandate_goal: goalOfMandate(data.mandate) ?? "",
-          draft_inputs: JSON.stringify(draftInputs),
-        },
+        // Served names only — see `convertValues`.
+        variables,
       });
       toast.success("Structure proposal ready — review below.");
       setDraft(applyConversion(draftInputs, text));
@@ -235,7 +255,8 @@ export function TriadInputSection({
                 label="Convert to structure"
                 runningLabel="Converting…"
                 running={converting}
-                onRun={() => void runConvert()}
+                knownValues={convertValues}
+                onRun={(variables) => void runConvert(variables)}
               />
             ) : null}
           </div>
@@ -391,7 +412,62 @@ export function TriadGoalSection({
     }
   };
 
-  const runRefine = async () => {
+  /**
+   * 🚨 WHAT THIS SCREEN HOLDS ABOUT THE MANDATE BEING REFINED, keyed by the
+   * GOAL WRITER'S OWN SERVED INPUT NAMES (Arman, live, 2026-08-31).
+   *
+   * The old call passed `mandate_key` / `mandate_label` / `current_goal` /
+   * `description` — four names this screen invented. The goal writer declares
+   * `task_overview`, `inputs`, `outputs`, `system_prompt` and
+   * `full_agent_object`, so every run was refused: *"required agent value does
+   * not exist in the calling code path"*. Names are the SURFACE's to give;
+   * `AutomationButton` matches these against what the server actually serves
+   * and sends only what that job asked for, so a key it does not serve costs
+   * nothing and a key it gains later starts arriving with no deploy.
+   *
+   * `system_prompt` and `full_agent_object` are deliberately absent: this
+   * screen does not read the bound holder's definition, and the surface marks
+   * them optional, so the button prints what the run is going without rather
+   * than sending an empty string dressed as an answer.
+   */
+  const refineValues = useMemo(() => {
+    const described = parseDraftInputs(
+      (data.mandate as { draft_inputs?: unknown }).draft_inputs,
+    );
+    const outputs = [
+      data.mandate.output_kind
+        ? `Output kind: ${data.mandate.output_kind}`
+        : "No declared output kind.",
+      data.contract.requiredOutputKeys.length > 0
+        ? `Required output keys: ${data.contract.requiredOutputKeys.join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    return {
+      task_overview: [
+        `Job: ${data.mandate.label ?? data.mandate.mandate_key}`,
+        `Key: ${data.mandate.mandate_key}`,
+        data.mandate.description ? `Description: ${data.mandate.description}` : "",
+        `Goal so far: ${goal?.trim() || "(none written yet)"}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      inputs:
+        described.length > 0
+          ? described
+              .map((i) =>
+                [i.description, i.name ? `(${i.name})` : "", i.kind ? `[${i.kind}]` : ""]
+                  .filter(Boolean)
+                  .join(" "),
+              )
+              .join("\n")
+          : "This job describes no inputs yet.",
+      outputs,
+    };
+  }, [data.mandate, data.contract.requiredOutputKeys, goal]);
+
+  const runRefine = async (variables: Record<string, string>) => {
     setRefining(true);
     try {
       const text = await refine.run<string>({
@@ -400,12 +476,9 @@ export function TriadGoalSection({
         sourceFeature: "agent-builder",
         expect: "text",
         initiation: "user",
-        variables: {
-          mandate_key: data.mandate.mandate_key,
-          mandate_label: data.mandate.label,
-          current_goal: goal ?? "",
-          description: data.mandate.description ?? "",
-        },
+        // The served names, plus whatever the person answered inline. This
+        // screen adds nothing of its own — see `refineValues`.
+        variables,
       });
       setDraft(text.trim() || (goal ?? ""));
       setEditing(true);
@@ -475,7 +548,8 @@ export function TriadGoalSection({
                 label="Refine with AI"
                 runningLabel="Refining…"
                 running={refining}
-                onRun={() => void runRefine()}
+                knownValues={refineValues}
+                onRun={(variables) => void runRefine(variables)}
               />
             </div>
           </>

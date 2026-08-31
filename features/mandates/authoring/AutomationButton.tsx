@@ -6,36 +6,55 @@
 // moment that mandate exists (Arman creates it, no deploy) it just runs. Never
 // a hardcoded agent id, never a silent no-op.
 //
-// 🚨 WHAT AN UNRESOLVABLE KEY LOOKS LIKE (Arman, live, 2026-08-31).
+// ── 1. WHAT AN UNRESOLVABLE KEY LOOKS LIKE (Arman, live, 2026-08-31) ─────────
 //
 // This used to leave the button fully ENABLED when the key resolved to nothing,
-// with the explanation in a TOOLTIP and a toast fired on click. Two things were
-// wrong with that, and Arman hit both: the button was indistinguishable from a
-// working one until he pressed it, and what he got back was a toast reading
-// "…which does not exist" — a screen that looked alive, promised a run, and
-// then said the thing behind it is missing. `constants.ts` had described the
-// intended behaviour correctly the whole time ("renders honestly disabled
-// naming the missing key"); the component did something else.
+// with the explanation in a TOOLTIP and a toast fired on click. The button was
+// indistinguishable from a working one until he pressed it, and what came back
+// was "…which does not exist". `constants.ts` had described the intended
+// behaviour correctly the whole time ("renders honestly disabled naming the
+// missing key"); the component did something else.
 //
 // So: ABSENT OR HONEST. When the key does not resolve the control is visibly
-// disabled AND the reason is printed BESIDE IT, on the screen, naming the exact
-// key to create — because a tooltip is not words on the screen, and a disabled
-// button with no sentence teaches nothing. The toast survives as the belt for
-// any caller that still routes a click here.
+// disabled AND the reason is printed BESIDE IT, naming the exact key to create
+// — a tooltip is not words on the screen, and a disabled button with no
+// sentence teaches nothing. "Does not resolve" covers every dead state the
+// resolver knows — no row, a SOFT-DELETED row, a disabled row, a holderless or
+// version-pinned one — and they are all one fact to a person.
 //
-// "Does not resolve" covers every dead state the resolver knows, and they are
-// all the same fact to a person: no row, a SOFT-DELETED row, a disabled row, a
-// row with no Holder, a version-pinned row. `resolveMandate` refuses each of
-// them (it filters `deleted_at`, throws on `is_enabled = false`, and throws on
-// a holderless or pinned definition), and `useMandate({ optional: true })`
-// reports that as `mandate === null` — which is exactly the state this renders.
-// Expected unavailability is informational readiness, never an error toast: the
-// shared toast boundary persists error/warning as system_error.
+// ── 2. THE CALLER MUST SUPPLY THE JOB'S ACTUAL INPUTS (Arman, live, same day) ─
+//
+// 🚨 With the key fixed, Refine-with-AI still failed on every mandate:
+// *"required agent value does not exist in the calling code path"*. The caller
+// passed four variables it had INVENTED (`mandate_key`, `mandate_label`,
+// `current_goal`, `description`) and the job declares five quite different ones
+// plus a person-answered question from its binding. Nothing was broken on
+// either side; the two sides had never been introduced.
+//
+// A call site does not get to name a job's inputs. The SERVED SURFACE names
+// them, the call site says what it HOLDS by those names (`knownValues`), and
+// `planInvocation` decides the rest: what to send, what a PERSON must answer
+// (asked INLINE, right here, before the run), and what is going unsent and why.
+// A job that changes its inputs must never require a client deploy, and a
+// caller that guesses names is the defect this seam removes.
+//
+// This lives on the shared button on purpose. Every place code invokes a
+// mandate inherits it, so this is THE pattern for the class rather than a fix
+// for the one call site that exposed it.
 
+import { useMemo, useState } from "react";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { ProTextarea } from "@/components/ui/pro-textarea";
 import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
+import { useMandateInputSurface } from "../input-surface";
+import {
+  planInvocation,
+  skippedSentence,
+  type KnownValues,
+} from "../invoke/supplied-values";
 
 export function notifyMissingAutomationMandate(mandateKey: string): void {
   toast.info(
@@ -55,34 +74,74 @@ export function AutomationButton({
   runningLabel,
   running,
   onRun,
+  knownValues = {},
 }: {
   mandateKey: string;
   /** Tight copy — two or three words ("Refine with AI"). */
   label: string;
   runningLabel: string;
   running: boolean;
-  onRun: () => void;
+  /**
+   * Run it, with the variables THIS JOB ACTUALLY DECLARES — served names only,
+   * the person's inline answers merged in. The caller passes them straight to
+   * the run; it never adds names of its own.
+   */
+  onRun: (variables: Record<string, string>) => void;
+  /**
+   * What this screen HOLDS, keyed by SERVED INPUT NAME. A key nothing serves is
+   * simply never sent — a caller that knows more than the job asked for is
+   * fine; a caller that guesses names is not.
+   */
+  knownValues?: KnownValues;
 }) {
   // optional: an absent automation mandate is the expected starting state —
   // the screen says so; it is not a console error.
   const { mandate, loading } = useMandate(mandateKey, { optional: true });
   const available = mandate !== null;
 
+  // Only read the surface once the key resolves — a dead key has no inputs to
+  // ask about, and reading them would be a request about nothing.
+  const surfaceState = useMandateInputSurface(available ? mandateKey : null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const plan = useMemo(
+    () =>
+      surfaceState.status === "ready"
+        ? planInvocation({
+            inputs: surfaceState.surface.inputs,
+            known: knownValues,
+            answers,
+          })
+        : null,
+    [surfaceState, knownValues, answers],
+  );
+
+  const unanswered = plan?.asks.filter((a) => !answers[a.name]?.trim()) ?? [];
+  const surfacePending = available && surfaceState.status === "loading";
+  const surfaceBroken = available && surfaceState.status === "error";
+
   const button = (
     <Button
       variant="outline"
       size="sm"
       className="h-7 gap-1.5 text-[12px]"
-      // The control cannot do what it offers, so it does not offer it. The
-      // sentence below carries the reason; the toast covers a programmatic
-      // click that somehow gets past the disabled attribute.
-      disabled={running || loading || !available}
+      // The control cannot do what it offers, so it does not offer it. Every
+      // blocked state has its own sentence below; none of them is silence.
+      disabled={
+        running ||
+        loading ||
+        !available ||
+        surfacePending ||
+        surfaceBroken ||
+        unanswered.length > 0
+      }
       onClick={() => {
         if (!available) {
           notifyMissingAutomationMandate(mandateKey);
           return;
         }
-        onRun();
+        if (!plan) return;
+        onRun(plan.variables);
       }}
     >
       {running ? (
@@ -94,13 +153,78 @@ export function AutomationButton({
     </Button>
   );
 
-  if (available || loading) return button;
+  if (loading) return button;
+
+  if (!available) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {button}
+        <span className="text-[11px] leading-snug text-muted-foreground">
+          {missingAutomationMandateLine(mandateKey)}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {button}
-      <span className="text-[11px] leading-snug text-muted-foreground">
-        {missingAutomationMandateLine(mandateKey)}
-      </span>
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {button}
+        {surfacePending ? (
+          <span className="text-[11px] text-muted-foreground">
+            Reading what this job needs…
+          </span>
+        ) : null}
+        {/* A surface that cannot be read is a REFUSAL with its reason, never a
+            run fired hopefully into a job whose inputs are unknown. */}
+        {surfaceBroken ? (
+          <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+            {surfaceState.status === "error" ? surfaceState.message : ""} Until
+            it can be read, this cannot run — nothing else on this page is
+            blocked by it.
+          </span>
+        ) : null}
+        {plan && plan.skipped.length > 0 && unanswered.length === 0 ? (
+          <span className="text-[11px] leading-snug text-muted-foreground">
+            {skippedSentence(plan)}
+          </span>
+        ) : null}
+      </div>
+
+      {/* 🚨 THE BINDING'S OWN QUESTIONS, ASKED. Whoever bound this job chose to
+          be asked; before this seam that choice made the run fail instead. */}
+      {plan && plan.asks.length > 0 ? (
+        <div className="space-y-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            This job asks {plan.asks.length === 1 ? "one thing" : `${plan.asks.length} things`} before it runs.
+          </p>
+          {plan.asks.map((ask) => (
+            <div key={ask.name} className="space-y-1">
+              <Label
+                htmlFor={`ask-${mandateKey}-${ask.name}`}
+                className="text-[11.5px] font-medium"
+              >
+                {ask.label || ask.name}
+              </Label>
+              {ask.help ? (
+                <p className="text-[10.5px] leading-snug text-muted-foreground">
+                  {ask.help}
+                </p>
+              ) : null}
+              <ProTextarea
+                id={`ask-${mandateKey}-${ask.name}`}
+                value={answers[ask.name] ?? ""}
+                onChange={(e) =>
+                  setAnswers((prev) => ({ ...prev, [ask.name]: e.target.value }))
+                }
+                rows={2}
+                placeholder={ask.placeholder || ""}
+                className="text-[12px]"
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
