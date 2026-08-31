@@ -7505,6 +7505,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/demodesk/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_demodesk_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/otter-ai/public/status": {
         parameters: {
             query?: never;
@@ -7565,6 +7582,57 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_contentstudio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/captivate/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_captivate_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/streamyard/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_streamyard_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gather/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_gather_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -35470,6 +35538,41 @@ export interface components {
             applied?: boolean;
         };
         /**
+         * CaptivateServiceStatus
+         * @description Safe aggregate status projection for Captivate.fm's fixed status page.
+         */
+        CaptivateServiceStatus: {
+            /**
+             * Kind
+             * @default captivate_public_service_status
+             * @constant
+             */
+            __kind?: "captivate_public_service_status";
+            /**
+             * Provider
+             * @default captivate
+             * @constant
+             */
+            provider?: "captivate";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "operational" | "degraded" | "under_maintenance";
+            /**
+             * Status Page
+             * @default https://status.captivate.fm
+             * @constant
+             */
+            status_page?: "https://status.captivate.fm";
+        };
+        /**
          * CaptureHealth
          * @description Capture-failure counter over the alarm window.
          */
@@ -43297,6 +43400,43 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * DemodeskStatusResult
+         * @description Safe projection of Demodesk's high-level service status.
+         */
+        DemodeskStatusResult: {
+            /**
+             * Kind
+             * @default demodesk_official_service_status
+             * @constant
+             */
+            __kind?: "demodesk_official_service_status";
+            /**
+             * Provider
+             * @default demodesk
+             * @constant
+             */
+            provider?: "demodesk";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.demodesk.com
+             * @constant
+             */
+            status_url?: "https://status.demodesk.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** DerivationDocumentCounts */
         DerivationDocumentCounts: {
             /** Pages */
@@ -49714,6 +49854,43 @@ export interface components {
             table_name?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * GatherStatusResult
+         * @description Safe projection of Gather's high-level service status.
+         */
+        GatherStatusResult: {
+            /**
+             * Kind
+             * @default gather_official_service_status
+             * @constant
+             */
+            __kind?: "gather_official_service_status";
+            /**
+             * Provider
+             * @default gather
+             * @constant
+             */
+            provider?: "gather";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.gather.town
+             * @constant
+             */
+            status_url?: "https://status.gather.town";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * GbifPublicOccurrence
@@ -77355,6 +77532,38 @@ export interface components {
              */
             status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
         };
+        /**
+         * StreamYardServiceStatus
+         * @description Safe aggregate status projection for StreamYard's fixed status page.
+         */
+        StreamYardServiceStatus: {
+            /**
+             * Kind
+             * @default streamyard_public_media_platform_status
+             * @constant
+             */
+            __kind?: "streamyard_public_media_platform_status";
+            /**
+             * Provider
+             * @default StreamYard
+             * @constant
+             */
+            provider?: "StreamYard";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.streamyard.com/
+             * @constant
+             */
+            status_page?: "https://status.streamyard.com/";
+        };
         /** StripMetadataRequest */
         StripMetadataRequest: {
             /** Output Mode */
@@ -99563,6 +99772,26 @@ export interface operations {
             };
         };
     };
+    public_status_demodesk_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemodeskStatusResult"];
+                };
+            };
+        };
+    };
     public_status_otter_ai_public_status_get: {
         parameters: {
             query?: never;
@@ -99639,6 +99868,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentStudioServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_captivate_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptivateServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_streamyard_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamYardServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_gather_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GatherStatusResult"];
                 };
             };
         };
