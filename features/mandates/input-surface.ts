@@ -30,7 +30,10 @@ import { useEffect, useState } from "react";
 
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import {
   parseServedInput,
   type ServedInput,
@@ -128,13 +131,33 @@ export function useMandateInputSurface(
   // fails permanently with no retry. Depending on the id re-runs it the moment
   // context lands.
   const organizationId = useAppSelector(selectOrganizationId);
+  // 🚨 H2 / V3 F4 — "NO ORG YET" IS NOT "STILL READING".
+  // `callApi` refuses every request until an organization is active, and this
+  // effect used to simply `return` on that condition — so with no org selected
+  // the state stayed `loading` FOREVER and the column printed "Reading what
+  // this job offers…" with no remedy (measured at 20s by the correctness
+  // adversary, on a page that knew the real reason the whole time and printed
+  // it only after a write). Once the bootstrap has RESOLVED and there is still
+  // no org, that is a settled fact about this session, and it is said out loud
+  // with the action that fixes it. Before the bootstrap resolves, "loading" is
+  // the truth and no error flashes.
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
   const [state, setState] = useState<MandateInputSurfaceState>({
     status: "loading",
   });
 
   useEffect(() => {
-    if (!organizationId) return;
     if (!mandateKey) return;
+    if (!organizationId) {
+      if (orgResolved) {
+        setState({
+          status: "error",
+          message:
+            "No organization is selected, so this job's inputs cannot be read — choose one from the organization picker in the header and this fills in.",
+        });
+      }
+      return;
+    }
     let live = true;
     setState({ status: "loading" });
     void (async () => {
@@ -163,7 +186,7 @@ export function useMandateInputSurface(
     return () => {
       live = false;
     };
-  }, [dispatch, mandateKey, organizationId]);
+  }, [dispatch, mandateKey, organizationId, orgResolved]);
 
   return state;
 }

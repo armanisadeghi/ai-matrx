@@ -182,6 +182,8 @@ export function PlacesBatchGrid({
                       `${health.unmapped} ${health.unmapped === 1 ? "input is" : "inputs are"} waiting for you to pick which offered value feeds ${health.unmapped === 1 ? "it" : "them"}.`,
                     ]
                   : []),
+                // H3 — an unread place says so, and says nothing else.
+                ...(health.unknown ? [health.unknown] : []),
                 ...health.blockers,
                 ...health.problems,
                 ...health.unfedRequired.map(

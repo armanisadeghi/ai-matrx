@@ -17,19 +17,29 @@ import { AlertTriangle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import type { ConsumptionEntry } from "@/features/mandates/provision-shapes";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import { feedSentence, isFed } from "./words";
+import { RAIL_MAX_HEIGHT } from "./rail-height";
 import type { HolderInputs } from "./useHolderInputs";
 
 export interface HolderInputsColumnProps {
   inputs: HolderInputs;
-  /** Holder input name → how many offered values feed it right now. */
-  fedCount: ReadonlyMap<string, number>;
+  /**
+   * Holder input name → the ORDERED SOURCES feeding it right now.
+   *
+   * 🚨 Sources, never a count. The rail states what feeds an input, and a count
+   * cannot know a KIND — that is exactly how it came to print "Fed by 1 offered
+   * value." over a stored literal, over a question, and over a pick nobody had
+   * made yet (V1 F2). `feedSentence` reads the sources themselves.
+   */
+  fedBy: ReadonlyMap<string, readonly ConsumptionEntry[]>;
   holderKind: "agent" | "workflow";
 }
 
 export function HolderInputsColumn({
   inputs,
-  fedCount,
+  fedBy,
   holderKind,
 }: HolderInputsColumnProps) {
   const variables = inputs.targets.filter((t) => !inputs.contextKeys.has(t.name));
@@ -38,7 +48,12 @@ export function HolderInputsColumn({
   );
 
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <section
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card",
+        RAIL_MAX_HEIGHT,
+      )}
+    >
       <header className="shrink-0 border-b border-border px-3 py-2">
         <div className="flex items-baseline gap-2">
           <h3 className="text-[12.5px] font-semibold text-foreground">
@@ -79,13 +94,13 @@ export function HolderInputsColumn({
             title="Variables"
             emptyWords="None — this holder takes everything as context."
             items={variables}
-            fedCount={fedCount}
+            fedBy={fedBy}
           />
           <InputGroup
             title="Context policies"
             emptyWords="None — this holder has no context slots."
             items={contextSlots}
-            fedCount={fedCount}
+            fedBy={fedBy}
           />
         </div>
       )}
@@ -97,12 +112,12 @@ function InputGroup({
   title,
   emptyWords,
   items,
-  fedCount,
+  fedBy,
 }: {
   title: string;
   emptyWords: string;
   items: readonly BindingTarget[];
-  fedCount: ReadonlyMap<string, number>;
+  fedBy: ReadonlyMap<string, readonly ConsumptionEntry[]>;
 }) {
   return (
     <div className="space-y-1.5">
@@ -113,13 +128,14 @@ function InputGroup({
         <p className="text-[11px] text-muted-foreground/70">{emptyWords}</p>
       ) : (
         items.map((item) => {
-          const fed = fedCount.get(item.name) ?? 0;
+          const sources = fedBy.get(item.name);
+          const fed = isFed(sources);
           return (
             <div
               key={item.name}
               className={cn(
                 "rounded-md border px-2 py-1.5",
-                fed > 0 ? "border-primary/40 bg-primary/5" : "border-border",
+                fed ? "border-primary/40 bg-primary/5" : "border-border",
               )}
             >
               <div className="flex flex-wrap items-baseline gap-1.5">
@@ -135,12 +151,8 @@ function InputGroup({
               <p className="font-mono text-[10px] text-muted-foreground">
                 {item.name}
               </p>
-              <p className="mt-0.5 text-[10.5px] text-muted-foreground/80">
-                {fed === 0
-                  ? "Nothing feeds this — the holder's own default applies."
-                  : fed === 1
-                    ? "Fed by 1 offered value."
-                    : `Fed by ${fed} offered values, joined in order.`}
+              <p className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground/80">
+                {feedSentence(sources)}
               </p>
             </div>
           );

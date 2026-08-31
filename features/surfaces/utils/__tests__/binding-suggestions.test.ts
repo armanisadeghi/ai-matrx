@@ -11,6 +11,7 @@ import {
   buildMapperVariables,
   describeSuggestion,
   parseMapperResult,
+  suggestionSourceKeys,
 } from "@/features/surfaces/utils/binding-suggestions";
 
 
@@ -102,5 +103,69 @@ describe("many-to-one proposals", () => {
       combinationRule: "Several values MAY be joined into one input",
     });
     expect(vars.combination_rule).toContain("MAY be joined");
+  });
+});
+
+// ── G5a — THE PROPOSAL READS LIKE THE EDITOR TWO INCHES AWAY ────────────────
+//
+// 🚨 The review row used to print RAW STORAGE KEYS while the manual mapping
+// editor beside it printed human labels for the same things: `From
+// "system_prompt"` next to "System Prompt". Two names for one thing on one
+// screen is a lie about one of them, and the raw one reads as a different, more
+// technical system than the one the person is actually using. Both sides now go
+// through `formatVariableDisplayName` — the manual side's own helper.
+
+describe("the proposal's names", () => {
+  const one = (surfaceValue: string) =>
+    parseMapperResult({
+      raw: JSON.stringify({
+        mappings: [
+          {
+            target: "rulebook_document",
+            map_type: "surface_value",
+            surface_value: surfaceValue,
+            required: false,
+            confidence: "high",
+            reason: "",
+          },
+        ],
+        write_policy_suggestions: [],
+        overall_notes: "",
+      }),
+      validTargets: new Set(["rulebook_document"]),
+      validSurfaceValues: new Set([surfaceValue]),
+      validWriteTargets: new Set<string>(),
+    })!.suggestions[0];
+
+  it("says the SOURCE the way a person reads it, not the way it is stored", () => {
+    expect(describeSuggestion(one("system_prompt"))).toBe(
+      'From "System Prompt"',
+    );
+  });
+
+  it("keeps the raw keys reachable for the row's mono line — nothing is hidden", () => {
+    expect(suggestionSourceKeys(one("system_prompt"))).toEqual([
+      "system_prompt",
+    ]);
+    // A decision that takes nothing from the inventory has no source keys.
+    const asked = parseMapperResult({
+      raw: JSON.stringify({
+        mappings: [
+          {
+            target: "tone",
+            map_type: "prompt_user",
+            prompt: "Which tone?",
+            confidence: "high",
+            reason: "",
+          },
+        ],
+        write_policy_suggestions: [],
+        overall_notes: "",
+      }),
+      validTargets: new Set(["tone"]),
+      validSurfaceValues: new Set<string>(),
+      validWriteTargets: new Set<string>(),
+    })!.suggestions[0];
+    expect(suggestionSourceKeys(asked)).toEqual([]);
   });
 });

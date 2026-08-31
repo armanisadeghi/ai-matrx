@@ -48,11 +48,31 @@ export type SettingsFields = Pick<
 
 const HIDDEN_PANEL_STYLE = "__hidden__" as const;
 
+/**
+ * THE SECTION'S OWN WORDS. The mechanic is one; the nouns belong to whoever
+ * hosts it. This panel is mounted by the Gen-A shortcut editor AND by the one
+ * binding UI's OPTIONS drawer, where "shortcut" is simply the wrong word for
+ * what the person is looking at. Same prop pattern the shared binding row and
+ * the AI-map tab already use (`SurfaceVariableBinding.sourceLabels`,
+ * `BindingSuggestionsTab.words`) — a second call site, never a second
+ * component. Defaults are the shortcut wording verbatim, so the shortcut
+ * editor passes nothing and renders exactly what it always rendered.
+ */
+export interface SettingsSectionWords {
+  /** What fires the run, in the host's noun. */
+  autoRunHint: string;
+}
+
+export const SHORTCUT_SETTINGS_WORDS: SettingsSectionWords = {
+  autoRunHint: "Submit the agent automatically when the shortcut fires.",
+};
+
 export function SettingsSection({
   value,
   onChange,
   disabled,
   omitAutoRun = false,
+  words,
 }: {
   value: SettingsFields;
   onChange: <K extends keyof SettingsFields>(
@@ -60,6 +80,8 @@ export function SettingsSection({
     next: SettingsFields[K],
   ) => void;
   disabled?: boolean;
+  /** This host's nouns. Omit for the shortcut wording. */
+  words?: Partial<SettingsSectionWords>;
   /**
    * Hide the auto-run row AND its gate cascade, for a host that already owns
    * that promise elsewhere on the same screen.
@@ -73,6 +95,7 @@ export function SettingsSection({
    */
   omitAutoRun?: boolean;
 }) {
+  const w = { ...SHORTCUT_SETTINGS_WORDS, ...words };
   // Variable Panel Style derives from two underlying fields. "Hide"
   // collapses showVariablePanel=false; any other value flips it on.
   const panelStyleSelectValue: VariablesPanelStyle | typeof HIDDEN_PANEL_STYLE =
@@ -92,7 +115,7 @@ export function SettingsSection({
       {!omitAutoRun && (
         <ToggleRow
           title="Auto run"
-          hint="Submit the agent automatically when the shortcut fires."
+          hint={w.autoRunHint}
           checked={value.autoRun}
           onChange={(v) => onChange("autoRun", v)}
           disabled={disabled}

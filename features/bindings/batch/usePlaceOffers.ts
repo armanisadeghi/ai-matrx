@@ -22,7 +22,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { fetchProvision } from "@/features/mandates/provisions";
 import { parseMandateInputSurface } from "@/features/mandates/input-surface";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
@@ -40,11 +43,33 @@ export function usePlaceOffers(
   // the active organization has hydrated, and a fetch fired before then fails
   // permanently with no retry.
   const organizationId = useAppSelector(selectOrganizationId);
+  // 🚨 H2 / V3 F4, the same class as `useMandateInputSurface`: with no active
+  // organization `callApi` refuses everything, and returning here left every
+  // place saying "Reading this place…" forever while the grid went on to
+  // assert facts about maps it had never read. Once the bootstrap has resolved
+  // and there is still no org, each place says the real reason and the remedy.
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
   const [byKey, setByKey] = useState<Record<string, PlaceOfferState>>({});
   const startedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!organizationId) return;
+    if (!organizationId) {
+      if (!orgResolved) return;
+      setByKey((prev) => {
+        const next = { ...prev };
+        for (const place of places) {
+          const key = place.mandate_key;
+          if (next[key]?.status === "ready") continue;
+          next[key] = {
+            status: "error",
+            message:
+              "No organization is selected, so this place's offer cannot be read — choose one from the organization picker in the header.",
+          };
+        }
+        return next;
+      });
+      return;
+    }
     let live = true;
     for (const place of places) {
       const key = place.mandate_key;
@@ -115,7 +140,7 @@ export function usePlaceOffers(
     return () => {
       live = false;
     };
-  }, [places, organizationId, dispatch]);
+  }, [places, organizationId, orgResolved, dispatch]);
 
   return (key: string) => byKey[key] ?? LOADING;
 }

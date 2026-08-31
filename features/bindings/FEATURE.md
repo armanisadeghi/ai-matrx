@@ -219,6 +219,26 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-08-31 — **V2 G1 + G5 — the drawer stopped speaking the old system, and the
+  AI map stopped speaking snake_case.** `SettingsSection` and `AdvancedSection`
+  each gained a `words` prop with the SHORTCUT copy as its default (the pattern
+  `SurfaceVariableBinding.sourceLabels` and `BindingSuggestionsTab.words` already
+  set), so the drawer supplies the job's nouns from `features/bindings/words.ts`
+  (`JOB_ADVANCED_WORDS`, `JOB_SETTINGS_WORDS`) and the shortcut editor's rendered
+  copy is byte-identical to what it always was. Advanced's four ad-hoc wording
+  props (`heading`/`hint`/`activeTitle`/`activeHint`) folded into that one prop —
+  one mechanism, not two. `AdvancedSection.showLucideSources={false}` drops the
+  outbound `lucide.dev` developer site from the job's icon field; the in-app icon
+  gallery lists every name that works, so the picker still picks. Guard:
+  `__tests__/options-drawer-words.test.ts` walks the shipped defaults and fails
+  on any old-system noun the job words do not answer. The shared
+  `BindingSuggestionsTab` now reads every input, source and write target through
+  `formatVariableDisplayName` — the manual editor's own helper — with the raw
+  keys kept on a mono sub-line and the target no longer truncated, and its failure
+  state carries the run's ACTUAL reason plus both remedies on screen (the
+  headless primitive gained `errorDetail` / `HeadlessAgentRunError.detail`,
+  because it used to capture the reason and return nothing).
+
 - 2026-08-31 — **Step 7 — the OPTIONS drawer, and the reader that makes it mean
   something.** `BindingOptionsDrawer` is `WidgetPicker` + `SettingsSection` +
   `CategoryPicker` + `WritePolicyEditor` + `AdvancedSection` at a fifth call

@@ -227,6 +227,23 @@ export interface HeadlessAgentJsonResult {
   fullResponse: string;
   /** User-facing failure message when `success` is false. */
   error?: string;
+  /**
+   * 🚨 THE TECHNICAL REASON, when one actually exists (V2 finding G5b).
+   *
+   * `error` is the feature's own copy — deliberately generic, because a
+   * transport message ("Failed to fetch", "Request failed with status 404")
+   * tells a Subject Matter Expert nothing on its own. But this primitive used
+   * to CAPTURE that text and return nothing, so no surface could ever show the
+   * reason even as a secondary line: an HTTP 404 downgrade that succeeded on
+   * retry reached the user as "The agent failed before returning a result."
+   * and nothing else.
+   *
+   * So the reason travels. It is never a substitute for `error` and it is never
+   * invented: it is undefined exactly when the run genuinely handed us no
+   * reason, and a surface that shows it must say so plainly in that case rather
+   * than filling the gap.
+   */
+  errorDetail?: string;
   requestId?: string;
   conversationId?: string;
 }
@@ -386,6 +403,7 @@ export async function adoptHeadlessAgentJson(
       data: null,
       fullResponse: selectLatestAnswerText(opts.conversationId)(getState()),
       error: msgs.streamError,
+      errorDetail: detail,
       requestId: opts.requestId,
       conversationId: opts.conversationId,
     };
@@ -557,6 +575,7 @@ async function launchAndWait(
       data: null,
       fullResponse,
       error: msgs.streamError,
+      errorDetail: detail,
       conversationId: conversationId ?? undefined,
     };
   } finally {
@@ -762,10 +781,20 @@ async function waitForExtraction(
         // failure so soft consumers (hints, tips) can still use it.
         const reqError = selectRequestError(requestId)(state);
         const { data } = resolveRunData(getState, requestId, conversationId);
+        // The technical half travels beside the human half — never instead of
+        // it, and only when the failed request actually carries one.
+        const technical = [
+          reqError?.error_type,
+          reqError?.code,
+          reqError?.message,
+        ]
+          .filter((part): part is string => Boolean(part))
+          .join(" · ");
         return {
           success: false,
           data,
           error: reqError?.user_message ?? reqError?.message ?? msgs.streamError,
+          ...(technical ? { errorDetail: technical } : {}),
           ...base(),
         };
       }

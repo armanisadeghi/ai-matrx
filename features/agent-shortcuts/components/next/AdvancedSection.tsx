@@ -54,15 +54,55 @@ export type AdvancedFields = Pick<
   | "jsonExtraction"
 >;
 
+/**
+ * THE FOLD'S OWN WORDS — every user-visible string in here that names the thing
+ * being edited, in ONE place.
+ *
+ * 🚨 The mechanic is fixed; the vocabulary is the host domain's. This fold is
+ * mounted by the Gen-A shortcut editor AND by the one binding UI's OPTIONS
+ * drawer, and the word "shortcut" (or "the surface") on a mandate screen is the
+ * exact leak Arman rejected B1's first ship for. Same prop pattern the shared
+ * binding row and the AI-map tab already use — `SurfaceVariableBinding
+ * .sourceLabels`, `BindingSuggestionsTab.words`: a wording PROP at a second call
+ * site, never a second component. Every default below is the shortcut wording
+ * verbatim, so the shortcut editor passes nothing and is unchanged.
+ */
+export interface AdvancedSectionWords {
+  heading: string;
+  hint: string;
+  activeTitle: string;
+  activeHint: string;
+  descriptionPlaceholder: string;
+  iconHint: string;
+  iconPlaceholder: string;
+  contextOverridesHint: string;
+  llmOverridesHint: string;
+  jsonExtractionHint: string;
+}
+
+export const SHORTCUT_ADVANCED_WORDS: AdvancedSectionWords = {
+  heading: "Advanced",
+  hint: "Power-user knobs you rarely need to touch.",
+  activeTitle: "Active",
+  activeHint: "Inactive shortcuts are hidden from menus but kept in the DB.",
+  descriptionPlaceholder: "What this shortcut does",
+  iconHint: "Pick from the curated gallery or enter a Lucide icon name.",
+  iconPlaceholder: "e.g. Sparkles, Flame, svg:icons/Home",
+  contextOverridesHint:
+    "Per-key values that override what the surface ships into context policies.",
+  llmOverridesHint:
+    'Override LLM parameters for this shortcut. Example: { "temperature": 0.2, "max_output_tokens": 1500 }',
+  jsonExtractionHint:
+    "Streaming JSON extraction config. NULL = off. See JsonExtractionConfig.",
+};
+
 export function AdvancedSection({
   value,
   onChange,
   disabled,
   omit,
-  heading = "Advanced",
-  hint = "Power-user knobs you rarely need to touch.",
-  activeTitle = "Active",
-  activeHint = "Inactive shortcuts are hidden from menus but kept in the DB.",
+  words,
+  showLucideSources = true,
 }: {
   value: AdvancedFields;
   onChange: <K extends keyof AdvancedFields>(
@@ -78,13 +118,22 @@ export function AdvancedSection({
    * edit that would be silently dropped. The shortcut editor omits nothing.
    */
   omit?: readonly (keyof AdvancedFields)[];
-  /** The fold's own words — the mechanic is fixed, the vocabulary is the
-   * domain's (the same rule `BatchGridParts` follows). */
-  heading?: string;
-  hint?: string;
-  activeTitle?: string;
-  activeHint?: string;
+  /** This host's nouns. Omit any key to keep the shortcut wording. */
+  words?: Partial<AdvancedSectionWords>;
+  /**
+   * May the icon field send the person OUT to Lucide — the "Search Lucide"
+   * site frame and the `lucide.dev` anchor?
+   *
+   * 🚨 A no-code surface says NO. Our user is a Subject Matter Expert who has
+   * never heard of an icon library; an outbound developer site is a dead end
+   * dressed as help. The in-app curated gallery lists every bundled Lucide
+   * name, registry icon and `svg:…` asset, so nothing is lost by refusing —
+   * the picker still picks. The shortcut editor is a builder surface and keeps
+   * the default.
+   */
+  showLucideSources?: boolean;
 }) {
+  const w = { ...SHORTCUT_ADVANCED_WORDS, ...words };
   const [open, setOpen] = useState(false);
   const hidden = (field: keyof AdvancedFields) => omit?.includes(field) ?? false;
 
@@ -98,9 +147,9 @@ export function AdvancedSection({
         <ChevronDown
           className={cn("h-4 w-4 transition-transform", !open && "-rotate-90")}
         />
-        {heading}
+        {w.heading}
         <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-          {hint}
+          {w.hint}
         </span>
       </button>
 
@@ -108,8 +157,8 @@ export function AdvancedSection({
         <div className="space-y-1 rounded-xl border border-border bg-muted/30 p-4">
           {!hidden("isActive") && (
             <ToggleRow
-              title={activeTitle}
-              hint={activeHint}
+              title={w.activeTitle}
+              hint={w.activeHint}
               checked={value.isActive}
               onChange={(v) => onChange("isActive", v)}
               disabled={disabled}
@@ -125,7 +174,7 @@ export function AdvancedSection({
                 value={value.description ?? ""}
                 onChange={(e) => onChange("description", e.target.value || null)}
                 rows={2}
-                placeholder="What this shortcut does"
+                placeholder={w.descriptionPlaceholder}
                 disabled={disabled}
                 className="text-sm resize-none"
                 style={{ fontSize: "16px" }}
@@ -133,16 +182,13 @@ export function AdvancedSection({
             </FieldRow>
           )}
 
-          <FieldRow
-            title="Icon"
-            hint="Pick from the curated gallery or enter a Lucide icon name."
-          >
+          <FieldRow title="Icon" hint={w.iconHint}>
             <IconInputWithValidation
               value={value.iconName ?? ""}
               onChange={(next) => onChange("iconName", next || null)}
-              placeholder="e.g. Sparkles, Flame, svg:icons/Home"
+              placeholder={w.iconPlaceholder}
               disabled={disabled}
-              showLucideLink
+              showLucideLink={showLucideSources}
               showCuratedIconGallery
             />
           </FieldRow>
@@ -246,7 +292,7 @@ export function AdvancedSection({
 
           <JsonFieldRow
             title="Context overrides"
-            hint="Per-key values that override what the surface ships into context policies."
+            hint={w.contextOverridesHint}
             value={value.contextOverrides}
             onChange={(v) =>
               onChange(
@@ -260,7 +306,7 @@ export function AdvancedSection({
 
           <JsonFieldRow
             title="LLM overrides"
-            hint='Override LLM parameters for this shortcut. Example: { "temperature": 0.2, "max_output_tokens": 1500 }'
+            hint={w.llmOverridesHint}
             value={value.llmOverrides}
             onChange={(v) =>
               onChange("llmOverrides", v as AgentShortcut["llmOverrides"])
@@ -271,7 +317,7 @@ export function AdvancedSection({
 
           <JsonFieldRow
             title="JSON extraction"
-            hint="Streaming JSON extraction config. NULL = off. See JsonExtractionConfig."
+            hint={w.jsonExtractionHint}
             value={value.jsonExtraction}
             onChange={(v) =>
               onChange("jsonExtraction", v as AgentShortcut["jsonExtraction"])

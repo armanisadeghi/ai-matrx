@@ -17,6 +17,7 @@ import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
+import { RAIL_MAX_HEIGHT, scrollHint } from "./rail-height";
 
 export interface OfferedInventoryColumnProps {
   values: readonly OfferedValue[];
@@ -42,7 +43,12 @@ export function OfferedInventoryColumn({
   const pinned = new Set(pinnedContext);
 
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <section
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card",
+        RAIL_MAX_HEIGHT,
+      )}
+    >
       <header className="shrink-0 border-b border-border px-3 py-2">
         <div className="flex items-baseline gap-2">
           <h3 className="text-[12.5px] font-semibold text-foreground">
@@ -60,6 +66,14 @@ export function OfferedInventoryColumn({
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           {sourceLine}
         </p>
+        {/* P1 — the rail is CAPPED so both inventories stay on screen together
+            (V2 G4: 27 values used to stretch the workspace to 4,502px). A
+            scrollbar alone would be a silent limit, so the count says it. */}
+        {status === "ready" && scrollHint(values.length) ? (
+          <p className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground/70">
+            {scrollHint(values.length)}
+          </p>
+        ) : null}
       </header>
 
       {status === "loading" ? (

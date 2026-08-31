@@ -29,6 +29,37 @@ import {
   type HeadlessAgentJsonResult,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 
+/**
+ * What `run()` throws. It carries the run's TECHNICAL reason (when the run
+ * actually produced one) alongside the user-facing message, so a surface can
+ * print both — a remedy the person can act on, and the reason underneath.
+ *
+ * 🚨 Before this existed the reason was captured and dropped, and every
+ * headless surface could only say the generic sentence (V2 finding G5b). A
+ * caller reads `detail` and, when it is undefined, says plainly that no reason
+ * came back — it never invents one.
+ */
+export class HeadlessAgentRunError extends Error {
+  readonly detail?: string;
+  readonly requestId?: string;
+  readonly conversationId?: string;
+
+  constructor(
+    message: string,
+    info: {
+      detail?: string;
+      requestId?: string;
+      conversationId?: string;
+    } = {},
+  ) {
+    super(message);
+    this.name = "HeadlessAgentRunError";
+    this.detail = info.detail;
+    this.requestId = info.requestId;
+    this.conversationId = info.conversationId;
+  }
+}
+
 export interface HeadlessAgentJsonRunOptions<T>
   extends HeadlessAgentJsonOptions {
   /**
@@ -90,7 +121,13 @@ export function useHeadlessAgentJson(): UseHeadlessAgentJson {
         },
       });
       if (!result.success) {
-        throw new Error(result.error ?? "The agent run failed");
+        throw new HeadlessAgentRunError(result.error ?? "The agent run failed", {
+          ...(result.errorDetail ? { detail: result.errorDetail } : {}),
+          ...(result.requestId ? { requestId: result.requestId } : {}),
+          ...(result.conversationId
+            ? { conversationId: result.conversationId }
+            : {}),
+        });
       }
       return opts.coerce
         ? opts.coerce(result.data, result)

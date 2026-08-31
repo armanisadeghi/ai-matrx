@@ -243,13 +243,37 @@ const WHEN_ABSENT_VALUES = new Set(["skip", "use_default", "fail"]);
  * mapType is not consumable and is dropped loudly.
  */
 export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
-  if (raw == null) return {};
+  return parseConsumptionMapWithDrops(raw).map;
+}
+
+/**
+ * The same parse, plus WHAT IT THREW AWAY, in sentences a person can read.
+ *
+ * 🚨 The loud-patches law, pointed at this function (V2 finding G6): every drop
+ * below screams into the console — 79 times in one of the adversary's sessions
+ * — and the SCREEN said nothing. Stored mapping data was being discarded on
+ * load with no red cell, no notice, no "this place had a mapping this screen
+ * cannot read". A stand-in that screams only where no user will ever look is
+ * the law inverted. The console stays (it is for us); the reasons now travel
+ * to whoever renders the map, so the person can be told too.
+ */
+export function parseConsumptionMapWithDrops(raw: Json | unknown): {
+  map: ConsumptionMap;
+  dropped: string[];
+} {
+  const dropped: string[] = [];
+  if (raw == null) return { map: {}, dropped };
   if (!isJsonObject(raw)) {
     console.error(
       "[provisions] consumption_map is not an object — data defect on agent.mandate_binding",
       raw,
     );
-    return {};
+    return {
+      map: {},
+      dropped: [
+        "This binding's stored mapping is not readable at all — the whole map was ignored.",
+      ],
+    };
   }
   const out: ConsumptionMap = {};
   for (const [name, raws] of Object.entries(raw)) {
@@ -260,6 +284,7 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
     for (const entry of elements) {
       if (!isJsonObject(entry)) {
         console.error("[provisions] dropping malformed consumption entry", name);
+        dropped.push(`${name}: one stored source is malformed and was ignored.`);
         continue;
       }
       const mapType = entry.mapType;
@@ -270,6 +295,9 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
         if (entry.target === undefined || entry.target === null) {
           console.error(
             `[provisions] consumption_map entry ${name} is a fixed value with nothing in it — dropping`,
+          );
+          dropped.push(
+            `${name}: a fixed value with nothing in it was ignored.`,
           );
           continue;
         }
@@ -282,6 +310,9 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
         if (!prompt.trim()) {
           console.error(
             `[provisions] consumption_map entry ${name} asks the person with no question — dropping`,
+          );
+          dropped.push(
+            `${name}: a question with no words was ignored — nobody could have answered it.`,
           );
           continue;
         }
@@ -299,6 +330,9 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
       if (mapType !== "offered_value" && mapType !== "code_value") {
         console.error(
           `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
+        );
+        dropped.push(
+          `${name}: a stored source of kind "${String(mapType)}" is not something this screen can feed an input, and was ignored.`,
         );
         continue;
       }
@@ -325,7 +359,7 @@ export function parseConsumptionMap(raw: Json | unknown): ConsumptionMap {
     // A target whose every source was junk feeds nothing — it is not a target.
     if (sources.length > 0) out[name] = sources;
   }
-  return out;
+  return { map: out, dropped };
 }
 
 // ── Wave-1 mandate / binding columns (runtime-narrowed off `select("*")`) ────
@@ -430,6 +464,12 @@ export interface BindingWave1Fields {
    * the auto-run inversion, in which a binding could never say "run it".
    */
   autoRun: boolean | null;
+  /**
+   * G6 — stored sources this parse could NOT use, one readable sentence each.
+   * Empty on every healthy row. Whoever renders the map must put these on the
+   * screen: data was discarded, and only the console knew.
+   */
+  droppedSources: string[];
 }
 
 /** Narrow the wave-1 binding columns off a full `select("*")` row. */
@@ -441,11 +481,13 @@ export function parseBindingWave1(row: object | null): BindingWave1Fields {
       holderVersionId: null,
       consumptionMap: {},
       autoRun: null,
+      droppedSources: [],
     };
   }
   const raw: Record<string, unknown> = { ...row };
   const uuidish = (value: unknown): string | null =>
     typeof value === "string" && value.length > 0 ? value : null;
+  const parsed = parseConsumptionMapWithDrops(raw.consumption_map);
   return {
     holderType:
       typeof raw.holder_type === "string" && raw.holder_type.length > 0
@@ -453,8 +495,9 @@ export function parseBindingWave1(row: object | null): BindingWave1Fields {
         : "agent",
     holderId: uuidish(raw.holder_id),
     holderVersionId: uuidish(raw.holder_version_id),
-    consumptionMap: parseConsumptionMap(raw.consumption_map),
+    consumptionMap: parsed.map,
     autoRun: typeof raw.auto_run === "boolean" ? raw.auto_run : null,
+    droppedSources: parsed.dropped,
   };
 }
 

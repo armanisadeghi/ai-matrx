@@ -82,6 +82,9 @@ import {
   BindingSuggestionsTab,
   type SuggestionWords,
 } from "@/features/surfaces/components/bind/BindingSuggestionsTab";
+import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
+import { getManifest } from "@/features/surfaces/manifests/registry";
+import type { WritePolicyMap } from "@/features/surfaces/types";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import {
@@ -114,6 +117,7 @@ import {
 } from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
 import { BatchMode } from "./batch/BatchMode";
+import { unfedRequiredTargets } from "./batch/batch-model";
 import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
@@ -260,6 +264,16 @@ function BindingDraft({
     () => new Set<string>(),
   );
   const [seededFor, setSeededFor] = useState<string | null>(null);
+  // F1 — the system rung's awareness gate, mounted between save() and the
+  // write exactly as the surface bind panel mounts it.
+  const [globalGuardOpen, setGlobalGuardOpen] = useState(false);
+  // F4 — the job's own surface, reported UPWARD by the OPTIONS drawer that
+  // already reads it, so there is exactly one read of the treatment row.
+  const [jobSurfaceName, setJobSurfaceName] = useState<string | null>(null);
+  // F4 — write policies the AI map proposed, handed DOWN to the same editor
+  // the manual path uses. They are never saved from here.
+  const [proposedPolicies, setProposedPolicies] =
+    useState<WritePolicyMap | null>(null);
 
   const storedOverrides = useMemo(
     () =>
@@ -497,6 +511,18 @@ function BindingDraft({
     offer && holderChosen
       ? consumptionMapProblems(offer, withoutUnpicked(draftMap))
       : [];
+  // 🚨 H1, at its class and in BOTH modes (P17 — batch is the middle
+  // transposed, so a map that cannot be written in one may not be written in
+  // the other). A required input nothing feeds, on a holder with no default of
+  // its own, produces a binding the run door refuses outright; the row has
+  // always said so and the Save used to write it anyway.
+  const unfedRequired =
+    holderChosen && holderInputs.status === "ready"
+      ? unfedRequiredTargets({
+          targets: holderInputs.targets,
+          map: withoutUnpicked(draftMap),
+        })
+      : [];
   const rungReady = rung !== "org" || Boolean(organizationId);
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
@@ -514,7 +540,9 @@ function BindingDraft({
             ? "One input is still waiting for you to pick which offered value feeds it."
             : mapProblems.length > 0
               ? "Fix the mapping problems named on the rows above."
-              : null;
+              : unfedRequired.length > 0
+                ? `${unfedRequired.map((n) => `"${n}"`).join(", ")} ${unfedRequired.length === 1 ? "is required and nothing feeds it" : "are required and nothing feeds them"}, and the holder has no default of its own — written like that, this job cannot run. Feed ${unfedRequired.length === 1 ? "it" : "them"} above.`
+                : null;
 
   const storedAgentId = binding ? agentHolderOfBinding(binding).holderId : null;
   const holderChanged =
@@ -524,7 +552,15 @@ function BindingDraft({
     storedAgentId !== null &&
     agentId !== storedAgentId;
 
-  async function writeBinding() {
+  /**
+   * `bindAgentId` overrides the drafted holder for THIS write only — the one
+   * caller is the global guard's "Use system version", which binds the linked
+   * system twin instead of the personal agent that was drafted. An override
+   * always binds the agent itself (latest), never a pinned version of it: the
+   * twin has its own version history and this draft's pin does not name it.
+   */
+  async function writeBinding(bindAgentId?: string | null) {
+    const overriding = bindAgentId != null && bindAgentId !== agentId;
     const captured = overridesReady
       ? selectSettingsOverridesForApi(overridesId)(store.getState())
       : undefined;
@@ -532,11 +568,17 @@ function BindingDraft({
       holder:
         holder.kind === "workflow"
           ? { kind: "workflow", workflowId: holder.workflowId as string }
-          : {
-              agentId: holder.useLatest ? agentId : null,
-              agentVersionId: holder.useLatest ? null : holder.agentVersionId,
-              useLatest: holder.useLatest,
-            },
+          : overriding
+            ? {
+                agentId: bindAgentId,
+                agentVersionId: null,
+                useLatest: true,
+              }
+            : {
+                agentId: holder.useLatest ? agentId : null,
+                agentVersionId: holder.useLatest ? null : holder.agentVersionId,
+                useLatest: holder.useLatest,
+              },
       hasOffer: Boolean(offer),
       // An unfinished pick never reaches the wire — Save is refused while one
       // stands, so this is a belt on top of the braces, not a silent drop.
@@ -584,25 +626,53 @@ function BindingDraft({
     },
   });
 
+  /**
+   * 🚨 F1 — THE SYSTEM RUNG DOES NOT WRITE A PERSONAL AGENT IN SILENCE.
+   *
+   * Both surface-side references intercept exactly this write
+   * (`SurfaceAgentBindPanel.tsx:310-313`, `BindingColumn.tsx:317-321`) and open
+   * `GlobalBindAgentGuard`: it audits the agent's lineage, offers its linked
+   * system twin, offers Linked Agent Sync when there is none, and prints a
+   * destructive warning when the agent's card visibility is not public — the
+   * half that matters most here, because an invisible holder set as THE SYSTEM
+   * ANSWER is invisible to precisely the people a system answer exists for.
+   *
+   * The mandate system rung has a LARGER blast radius than a global surface
+   * binding — it is the answer every user of the platform gets for a named job
+   * — and it had no guard at all: a super-admin got an enabled button and a
+   * direct write. This is a reuse of the same component at a fifth call site,
+   * never a second gate. Builtin agents pass through with no dialog (the guard
+   * fires `onProceed` itself), so nothing routine gets a new click.
+   */
   async function save() {
     if (saveRefusal) {
       toast.error(saveRefusal);
       return;
     }
+    if (rung === "global" && holder.kind === "agent" && agentId) {
+      setGlobalGuardOpen(true);
+      return;
+    }
+    await doSave(null);
+  }
+
+  async function doSave(bindAgentId: string | null) {
     setBusy(true);
     setSaveError(null);
     try {
-      if (holderChanged && agentId) {
+      const writingAgentId = bindAgentId ?? agentId;
+      if (holderChanged && writingAgentId) {
         await requestRebind({
-          agentId,
-          agentName: data.agentsById[agentId]?.name ?? "the selected agent",
-          versionId: holder.useLatest ? null : holder.agentVersionId,
-          useLatest: holder.useLatest,
+          agentId: writingAgentId,
+          agentName:
+            data.agentsById[writingAgentId]?.name ?? "the selected agent",
+          versionId: bindAgentId ? null : holder.useLatest ? null : holder.agentVersionId,
+          useLatest: bindAgentId ? true : holder.useLatest,
           successMessage: savedWords(rung),
         });
         return;
       }
-      await writeBinding();
+      await writeBinding(bindAgentId);
       toast.success(savedWords(rung));
       onChanged();
     } catch (err) {
@@ -648,6 +718,48 @@ function BindingDraft({
     }
   }
 
+  // ── F3 — MOVING THE RUNG NEVER DESTROYS WORK IN SILENCE ───────────────────
+  //
+  // The rung is deliberately a control (D1), and the draft is KEYED by the row
+  // it edits, so moving rung remounts it — which is right (the org answer must
+  // never start from the user answer's draft) and was, until now, completely
+  // unannounced: the adversary set a holder at Global, moved to Organization
+  // and back, and found the holder and everything mapped under it simply gone.
+  // No confirm, no toast, no sentence.
+  //
+  // The better reference is `BindingColumn`, which refuses the move outright
+  // WITH THE REASON ON SCREEN. A mandate binding must be able to move, so the
+  // rule here is the other honest one: say it before it happens, and say it
+  // while it is true. Both — a confirm at the moment of the move, and a
+  // standing sentence in the rung cell whenever there is work to lose.
+  const storedDraft = useMemo(() => parseBindingWave1(binding), [binding]);
+  const dirty =
+    JSON.stringify(holder) !== JSON.stringify(holderDraftOf(binding)) ||
+    JSON.stringify(withoutUnpicked(draftMap)) !==
+      JSON.stringify(storedDraft.consumptionMap) ||
+    autoRun !== storedDraft.autoRun;
+
+  async function requestRungChange(
+    nextRung: BindingRung,
+    nextOrgId: string | null,
+  ) {
+    if (nextRung === rung && (nextRung !== "org" || nextOrgId === organizationId)) {
+      onRungChange(nextRung, nextOrgId);
+      return;
+    }
+    if (dirty) {
+      const ok = await confirm({
+        title: `Move to ${rungWords(nextRung).noun}?`,
+        description: `${rungWords(nextRung).noun[0].toUpperCase()}${rungWords(nextRung).noun.slice(1)} starts from its OWN stored answer, so the unsaved changes you have made here are discarded. Save first if you want to keep them.`,
+        confirmLabel: "Move and discard",
+        cancelLabel: "Stay here",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+    onRungChange(nextRung, nextOrgId);
+  }
+
   // ── Derived facts the two inventories need ────────────────────────────────
   const consumedBy = useMemo(() => {
     const out = new Map<string, string[]>();
@@ -665,10 +777,12 @@ function BindingDraft({
     return out;
   }, [draftMap]);
 
-  const fedCount = useMemo(() => {
-    const out = new Map<string, number>();
+  // F2 — the rail is handed THE SOURCES, never a count. A count cannot know a
+  // kind, and the rail's sentence is about kinds.
+  const fedBy = useMemo(() => {
+    const out = new Map<string, readonly ConsumptionEntry[]>();
     for (const target of holderInputs.targets) {
-      out.set(target.name, sourcesFor(draftMap, target.name).length);
+      out.set(target.name, sourcesFor(draftMap, target.name));
     }
     return out;
   }, [draftMap, holderInputs.targets]);
@@ -732,6 +846,25 @@ function BindingDraft({
   const holderDescription = useAppSelector((state) =>
     agentId ? selectAgentDescription(state, agentId) : null,
   );
+  /**
+   * 🚨 F4 — THE AI MAP CAN PROPOSE WRITE ACCESS, on the jobs that have it.
+   *
+   * This was `writeTargets={[]}`, unconditionally — so on a job whose surface
+   * declares write targets the OPTIONS drawer's Write access section (the
+   * reference's own `WritePolicyEditor`) could set policy and the AI path was
+   * structurally blind to it. Half a capability, and no deferral recorded.
+   *
+   * The targets come from the SAME source that section uses: this job's stored
+   * treatment names a surface, and the surface manifest declares the targets.
+   * The drawer already reads that row and now reports the surface upward, so
+   * there is exactly ONE read of the treatment and the two paths can never
+   * disagree about what this job may drive.
+   */
+  const jobWriteTargets = useMemo(
+    () => (jobSurfaceName ? (getManifest(jobSurfaceName)?.writeTargets ?? []) : []),
+    [jobSurfaceName],
+  );
+
   const canProposeMap =
     holderInputs.status === "ready" &&
     holderInputs.targets.length > 0 &&
@@ -743,9 +876,19 @@ function BindingDraft({
         rung={rung}
         organizationId={organizationId}
         allowGlobal={allowGlobal}
-        onRungChange={onRungChange}
+        onRungChange={(nextRung, nextOrgId) =>
+          void requestRungChange(nextRung, nextOrgId)
+        }
+        unsavedNote={
+          dirty
+            ? "You have unsaved changes here. Moving rung starts from that rung's own stored answer and discards them — you will be asked first."
+            : null
+        }
         holder={holder}
         onHolderChange={setHolder}
+        holderName={
+          holderName ?? (agentId ? data.agentsById[agentId]?.name : null) ?? null
+        }
         job={{
           mandateKey: data.mandate.mandate_key,
           label: data.mandate.label ?? data.mandate.mandate_key,
@@ -923,12 +1066,12 @@ function BindingDraft({
                           contextPolicies: mapperContextPolicies,
                         }}
                         availableSurfaceValues={offeredSurfaceValues}
-                        writeTargets={[]}
+                        writeTargets={jobWriteTargets}
                         targetNames={holderInputs.targets.map((t) => t.name)}
                         disabled={disabled}
                         manyToOne
                         words={MANDATE_MAP_WORDS}
-                        onAccept={(_mappings, _policies, suggestions) => {
+                        onAccept={(_mappings, policies, suggestions) => {
                           // P11 — accepting FILLS the manual editor and switches to
                           // it. Nothing is saved, nothing is applied blind: every
                           // line is still editable, and the same pre-flight that
@@ -950,8 +1093,19 @@ function BindingDraft({
                             }),
                           );
                           setMapTab("manual");
+                          // F4 — accepted WRITE policies go to the one editor
+                          // that owns them (OPTIONS › Write access, over
+                          // `mandate.treatment.config.write_policies`), and the
+                          // person is told where they landed and that they are
+                          // not saved yet. A proposal that vanished into a
+                          // store nobody names is the silent half of the same
+                          // defect.
+                          const policyCount = Object.keys(policies).length;
+                          if (policyCount > 0) setProposedPolicies(policies);
                           toast.success(
-                            "Filled in below — change any line before you save.",
+                            policyCount > 0
+                              ? `Filled in below — change any line before you save. ${policyCount} write-access ${policyCount === 1 ? "proposal is" : "proposals are"} in OPTIONS › Write access, and save there separately.`
+                              : "Filled in below — change any line before you save.",
                           );
                         }}
                       />
@@ -975,7 +1129,7 @@ function BindingDraft({
               <div className="order-3 min-w-0 @5xl:order-none">
                 <HolderInputsColumn
                   inputs={holderInputs}
-                  fedCount={fedCount}
+                  fedBy={fedBy}
                   holderKind={holder.kind}
                 />
               </div>
@@ -1044,6 +1198,13 @@ function BindingDraft({
                 visibility: data.mandate.visibility,
               }}
               autoRun={autoRun === true}
+              // F4 — ONE read of the treatment row, and it lives here. The
+              // drawer reports the surface it read; the workspace hands the AI
+              // map its real write targets and hands accepted proposals back
+              // into this same editor.
+              onSurfaceRead={setJobSurfaceName}
+              proposedWritePolicies={proposedPolicies}
+              onProposalsTaken={() => setProposedPolicies(null)}
               organizationName={
                 organizations.find(
                   (o) => o.id === data.mandate.organization_id,
@@ -1051,6 +1212,39 @@ function BindingDraft({
               }
               disabled={disabled}
             />
+          ) : null}
+
+          {/* 🚨 G6 — WHAT THE LOAD THREW AWAY, ON THE SCREEN. The parse drops
+          stored sources it cannot feed an input with (a legacy `surface_value`,
+          a fixed value with nothing in it, a question with no words) and used
+          to say so only in the console — 79 times in one adversarial session,
+          while the person looked at a map that was quietly missing rows and
+          would silently overwrite the stored one on the next save. Counted,
+          named, and with the remedy. */}
+          {storedDraft.droppedSources.length > 0 ? (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 px-3 py-2">
+              <p className="flex items-start gap-1.5 text-[12px] font-medium leading-relaxed text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {storedDraft.droppedSources.length === 1
+                  ? "1 stored source of this binding could not be read, and is not shown below."
+                  : `${storedDraft.droppedSources.length} stored sources of this binding could not be read, and are not shown below.`}
+              </p>
+              <ul className="mt-1 space-y-0.5 pl-5">
+                {storedDraft.droppedSources.map((line) => (
+                  <li
+                    key={line}
+                    className="font-mono text-[10.5px] leading-snug text-amber-700/90 dark:text-amber-400/90"
+                  >
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 pl-5 text-[11px] leading-snug text-muted-foreground">
+                Saving from this screen REPLACES the stored map, so whatever is
+                listed here is lost when you save. Re-map those inputs below
+                first if they still matter.
+              </p>
+            </div>
           ) : null}
 
           {/* The server's refusal, kept ON THE PAGE — its words name the exact
@@ -1098,6 +1292,38 @@ function BindingDraft({
       )}
 
       {rebindDialog}
+
+      {/* F1 — the system rung's awareness gate. Mounted only while the write it
+          guards is the one being attempted, and only for an agent holder: a
+          workflow holder has no card visibility and no linked system twin, so
+          the guard would have nothing to audit and would be a dialog that
+          exists to say nothing. */}
+      {holder.kind === "agent" && agentId ? (
+        <GlobalBindAgentGuard
+          open={globalGuardOpen}
+          agentId={agentId}
+          onProceed={(id) => {
+            setGlobalGuardOpen(false);
+            void doSave(id === agentId ? null : id);
+          }}
+          onUseSystemTwin={(twin) => {
+            setGlobalGuardOpen(false);
+            // The DRAFT follows the write: binding the twin while the holder
+            // cell still names the personal agent would leave the screen
+            // describing a binding that does not exist.
+            setHolder({
+              kind: "agent",
+              agentId: twin.id,
+              agentVersionId: null,
+              useLatest: true,
+              workflowId: null,
+            });
+            toast.info(`Setting the system answer to "${twin.name}" instead.`);
+            void doSave(twin.id);
+          }}
+          onCancel={() => setGlobalGuardOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

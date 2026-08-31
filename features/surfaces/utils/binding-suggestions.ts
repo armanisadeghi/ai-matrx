@@ -18,6 +18,7 @@
  */
 
 import { extractFirstJson } from "@/utils/json/extract-json";
+import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type {
   SurfaceValue,
@@ -308,15 +309,37 @@ export function suggestionsToMappings(
   return out;
 }
 
-/** Human summary of one suggestion's decision, for the review row. */
+/**
+ * The raw storage keys a suggestion reads from, in delivery order. Empty for a
+ * decision that takes nothing from the inventory. The review row prints these
+ * on its own mono line — the human label is what a person READS, the key is
+ * what they match against the manual editor and the agent's contract.
+ */
+export function suggestionSourceKeys(s: BindingSuggestion): string[] {
+  return s.mapping.mapType === "surface_value" ||
+    s.mapping.mapType === "offered_value"
+    ? [String(s.mapping.target), ...s.alsoFrom]
+    : [];
+}
+
+/**
+ * Human summary of one suggestion's decision, for the review row.
+ *
+ * 🚨 NAMES READ AS THE MANUAL EDITOR PRINTS THEM (V2 finding G5a). The proposal
+ * sits two inches from the manual mapping editor, which renders every input and
+ * every value through `formatVariableDisplayName` — so a proposal saying
+ * `From "system_prompt"` while the editor beside it says "System Prompt" reads
+ * as a different, more technical system. Same helper, same words; the raw keys
+ * are still shown by the row itself, on their own line.
+ */
 export function describeSuggestion(s: BindingSuggestion): string {
   switch (s.mapping.mapType) {
     case "surface_value":
       return s.alsoFrom.length > 0
         ? // D18.2 — say the whole combination and the order, because the order
           // IS the delivered text.
-          `From ${[s.mapping.target, ...s.alsoFrom].map((n) => `"${n}"`).join(" + ")}, joined in that order`
-        : `From "${s.mapping.target}"${s.mapping.required ? " (required)" : ""}`;
+          `From ${[s.mapping.target, ...s.alsoFrom].map((n) => `"${formatVariableDisplayName(n)}"`).join(" + ")}, joined in that order`
+        : `From "${formatVariableDisplayName(s.mapping.target)}"${s.mapping.required ? " (required)" : ""}`;
     case "direct_value":
       return `Fixed value: ${typeof s.mapping.target === "string" ? `"${s.mapping.target}"` : JSON.stringify(s.mapping.target)}`;
     case "prompt_user":
@@ -326,6 +349,6 @@ export function describeSuggestion(s: BindingSuggestion): string {
     case "offered_value":
       // Mandate consumption entries never appear in surface suggestions —
       // present, not silently absent, if data ever routes one here.
-      return `Mandate consumption entry for "${s.mapping.target}" (not a surface mapping)`;
+      return `Mandate consumption entry for "${formatVariableDisplayName(String(s.mapping.target))}" (not a surface mapping)`;
   }
 }

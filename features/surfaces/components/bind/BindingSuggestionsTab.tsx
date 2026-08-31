@@ -17,13 +17,18 @@ import { CheckCheck, Loader2, Route, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useMandate } from "@/features/mandates/useMandate";
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import {
+  HeadlessAgentRunError,
+  useHeadlessAgentJson,
+} from "@/features/agents/hooks/useHeadlessAgentJson";
 import { selectAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
+import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import {
   buildMapperVariables,
   describeSuggestion,
   parseMapperResult,
+  suggestionSourceKeys,
   suggestionsToMappings,
   type BindingSuggestion,
   type MapperAgentInfo,
@@ -133,7 +138,19 @@ export function BindingSuggestionsTab({
     activeRequestId ? selectAnswerText(activeRequestId)(state).length : 0,
   );
   const [proposal, setProposal] = useState<MapperProposal | null>(null);
-  const [runError, setRunError] = useState<string | null>(null);
+  /**
+   * 🚨 A FAILURE IS A REASON PLUS A REMEDY (P15, V2 finding G5b). This used to
+   * be one string, and on a thrown run that string was the primitive's generic
+   * "The agent failed before returning a result." — no reason, no next step,
+   * on a run whose real cause was an HTTP 404 downgrade that then succeeded on
+   * retry. So the state carries both halves: `message` is what happened, and
+   * `detail` is the reason the run ACTUALLY gave. `detail` is never invented —
+   * when it is absent the panel says so in those words.
+   */
+  const [runFailure, setRunFailure] = useState<{
+    message: string;
+    detail?: string;
+  } | null>(null);
 
   const valueNames = useMemo(
     () => new Set(availableSurfaceValues.map((v) => v.name)),
@@ -146,7 +163,7 @@ export function BindingSuggestionsTab({
   const validTargets = useMemo(() => new Set(targetNames), [targetNames]);
 
   const handleSuggest = async () => {
-    setRunError(null);
+    setRunFailure(null);
     setProposal(null);
     try {
       const raw = await runMandate<string>({
@@ -178,16 +195,24 @@ export function BindingSuggestionsTab({
         allowManyToOne: manyToOne,
       });
       if (!parsed) {
-        setRunError(
-          "The mapping helper answered, but its answer could not be read. Try again, or map values manually.",
-        );
+        setRunFailure({
+          message: "The mapping helper answered, but its answer could not be read.",
+          detail:
+            "It replied with something this panel could not turn into mappings — no valid input names came back.",
+        });
         return;
       }
       setProposal(parsed);
     } catch (e) {
-      setRunError(
-        e instanceof Error ? e.message : "The mapping helper could not run.",
-      );
+      // Nothing is swallowed: the run's own message is what the person is
+      // told, and whatever technical reason came back with it rides underneath.
+      setRunFailure({
+        message:
+          e instanceof Error ? e.message : "The mapping helper could not run.",
+        ...(e instanceof HeadlessAgentRunError && e.detail
+          ? { detail: e.detail }
+          : {}),
+      });
     }
   };
 
@@ -258,11 +283,39 @@ export function BindingSuggestionsTab({
         </div>
       )}
 
-      {runError && (
-        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-xs text-destructive">
-          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {runError}
-        </p>
+      {runFailure && (
+        <div className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2">
+          <p className="flex items-start gap-1.5 text-xs text-destructive">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {runFailure.message}
+          </p>
+          {/* THE REASON — the run's own, or the honest absence of one. Never a
+              guess dressed as a diagnosis. */}
+          <p className="pl-5 text-[10px] leading-snug text-muted-foreground">
+            {runFailure.detail
+              ? `Reason: ${runFailure.detail}`
+              : "The run came back without a reason, so there is nothing more to tell you about why — it is often a momentary connection failure that succeeds on a second attempt."}
+          </p>
+          {/* THE REMEDY — both of them, on screen, not in a toast. */}
+          <div className="flex flex-wrap items-center gap-2 pl-5 pt-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void handleSuggest()}
+              disabled={disabled || running}
+            >
+              {running ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              Try again
+            </Button>
+            <span className="text-[10px] text-muted-foreground">
+              or map the values yourself on the manual tab — it is always
+              available, and nothing here is blocked by this.
+            </span>
+          </div>
+        </div>
       )}
 
       {proposal && (
@@ -273,22 +326,37 @@ export function BindingSuggestionsTab({
                 key={s.target}
                 className="rounded-md border border-border bg-card px-2.5 py-2"
               >
-                <div className="flex items-center gap-2">
+                {/* 🚨 THE PRIMARY READING IS THE HUMAN LABEL (G5a). This row
+                    used to print the raw storage key — `rulebook_document`,
+                    `From "system_prompt"` — two inches from the manual editor
+                    printing "Rulebook Document". Same helper as the manual
+                    side now, and no truncation: this panel has the room, and a
+                    clipped input name is the one thing a reviewer must read in
+                    full before accepting. The keys are not lost — they get
+                    their own mono line below, where they are genuinely useful
+                    for matching against the agent's contract. */}
+                <div className="flex items-start gap-2">
                   <span
                     aria-label={`${s.confidence} confidence`}
                     title={`${s.confidence} confidence`}
                     className={cn(
-                      "h-2 w-2 shrink-0 rounded-full",
+                      "mt-1 h-2 w-2 shrink-0 rounded-full",
                       CONFIDENCE_DOT[s.confidence] ?? CONFIDENCE_DOT.low,
                     )}
                   />
-                  <p className="min-w-0 flex-1 truncate text-xs font-medium">
-                    {s.target}
+                  <p className="min-w-0 flex-1 break-words text-xs font-medium">
+                    {formatVariableDisplayName(s.target)}
                   </p>
                   <p className="shrink-0 text-[10px] text-muted-foreground">
                     {describeSuggestion(s)}
                   </p>
                 </div>
+                <p className="mt-0.5 pl-4 font-mono text-[10px] leading-snug text-muted-foreground/80 break-all">
+                  {s.target}
+                  {suggestionSourceKeys(s).length > 0
+                    ? ` ← ${suggestionSourceKeys(s).join(" + ")}`
+                    : ""}
+                </p>
                 {s.reason && (
                   <p className="mt-1 pl-4 text-[10px] leading-snug text-muted-foreground">
                     {s.reason}
@@ -309,8 +377,13 @@ export function BindingSuggestionsTab({
                   className="rounded-md border border-border bg-card px-2.5 py-1.5"
                 >
                   <p className="text-xs">
-                    <span className="font-medium">{p.target}</span>
+                    <span className="font-medium">
+                      {formatVariableDisplayName(p.target)}
+                    </span>
                     <span className="text-muted-foreground"> — {p.policy}</span>
+                  </p>
+                  <p className="font-mono text-[10px] leading-snug text-muted-foreground/80 break-all">
+                    {p.target}
                   </p>
                   {p.reason && (
                     <p className="text-[10px] leading-snug text-muted-foreground">

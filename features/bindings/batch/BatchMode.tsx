@@ -60,6 +60,7 @@ import type { BindingRung, HolderDraft } from "../ScopeHolderBar";
 import { applyRowMapping, seedAutoBinds } from "../consumption-writer";
 import {
   applyRefusal,
+  batchScopeSentence,
   placeHealth,
   reconcilePlaceMap,
   reconcileSentence,
@@ -376,6 +377,9 @@ export function BatchMode({
         offered: offer.status === "ready" ? offer.offered : [],
         map: effectiveMaps[key] ?? {},
         blockers: blockersFor(row),
+        // H3 — the health is told whether the offer it is judging is REAL.
+        offerStatus: offer.status,
+        offerMessage: offer.status === "error" ? offer.message : null,
       });
     }
     return out;
@@ -601,8 +605,11 @@ export function BatchMode({
             The places
           </h3>
           <p className="text-[11px] leading-snug text-muted-foreground">
-            Every job picked here gets the rung and holder chosen above. The one
-            you opened is already in.
+            {batchScopeSentence({
+              selectedCount: selectedKeys.length,
+              openedIn: selectedKeys.includes(currentMandateKey),
+              openedKey: currentMandateKey,
+            })}
           </p>
         </div>
         <PlacesSelector
@@ -780,6 +787,7 @@ const EMPTY_HEALTH: PlaceHealth = {
   problems: [],
   blockers: [],
   unfedRequired: [],
+  unknown: null,
   tone: "green",
 };
 

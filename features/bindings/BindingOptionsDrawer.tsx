@@ -75,6 +75,7 @@ import {
   writePresentation,
   type PresentationOwner,
 } from "./treatment-writer";
+import { JOB_ADVANCED_WORDS, JOB_SETTINGS_WORDS } from "./words";
 
 type LoadState =
   | { status: "idle" }
@@ -91,6 +92,21 @@ export interface BindingOptionsDrawerProps {
   autoRun: boolean;
   /** The organization's name, for the sentence about who these options cover. */
   organizationName: string | null;
+  /**
+   * F4 — the surface this job's stored treatment names, reported UPWARD the
+   * moment it is read. This drawer is the one reader of that row, so the AI map
+   * tab above gets its write targets from here rather than reading the row a
+   * second time and risking two answers to one question.
+   */
+  onSurfaceRead?: (surfaceName: string | null) => void;
+  /**
+   * F4 — write policies the AI map proposed and the person accepted. They land
+   * in the SAME editor the manual path uses, unsaved, so every line is still
+   * reviewable and the drawer's own Save is what commits them.
+   */
+  proposedWritePolicies?: WritePolicyMap | null;
+  /** Fired once the proposals above have been taken into the draft. */
+  onProposalsTaken?: () => void;
   disabled?: boolean;
 }
 
@@ -98,6 +114,9 @@ export function BindingOptionsDrawer({
   owner,
   autoRun,
   organizationName,
+  onSurfaceRead,
+  proposedWritePolicies = null,
+  onProposalsTaken,
   disabled = false,
 }: BindingOptionsDrawerProps) {
   const dispatch = useAppDispatch();
@@ -143,6 +162,8 @@ export function BindingOptionsDrawer({
         setEnabled(!stored.disabled);
         setSavedEnabled(!stored.disabled);
         setLoad({ status: "ready" });
+        // F4 — the one read answers for the whole workspace.
+        onSurfaceRead?.(stored.presentation.surfaceName);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -157,7 +178,25 @@ export function BindingOptionsDrawer({
     return () => {
       cancelled = true;
     };
+    // The latch is the ref; `onSurfaceRead` is a setter and re-running on its
+    // identity would re-open the trap this effect's comment describes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [owner.mandateId]);
+
+  // F4 — accepted AI write-access proposals merge into THIS draft, and the
+  // drawer opens so the person sees what landed. They are never saved from
+  // here; the drawer's own Save is the one door, exactly as for a policy the
+  // person set by hand.
+  useEffect(() => {
+    if (!proposedWritePolicies) return;
+    if (Object.keys(proposedWritePolicies).length === 0) return;
+    setDraft((prev) => ({
+      ...prev,
+      writePolicies: { ...prev.writePolicies, ...proposedWritePolicies },
+    }));
+    setOpen(true);
+    onProposalsTaken?.();
+  }, [proposedWritePolicies, onProposalsTaken]);
 
   // Categories — the same three scopes the shortcut editor loads, for the same
   // reason: a single-scope fetch misses two-thirds of what a person may pick.
@@ -377,6 +416,7 @@ export function BindingOptionsDrawer({
                   }}
                   disabled={disabled || busy}
                   omitAutoRun
+                  words={JOB_SETTINGS_WORDS}
                 />
                 {!autoRun ? (
                   <p className="text-[11px] leading-snug text-muted-foreground">
@@ -427,9 +467,11 @@ export function BindingOptionsDrawer({
                 }}
                 disabled={disabled || busy}
                 omit={["description"]}
-                hint="Rarely needed, never lost."
-                activeTitle="Offer this job's own options"
-                activeHint="Off keeps everything here stored but unused — the job falls back to the platform's default presentation."
+                words={JOB_ADVANCED_WORDS}
+                // A no-code job screen never hands its user off to an icon
+                // LIBRARY's developer site. The in-app icon gallery lists
+                // every name that works here, so nothing is lost.
+                showLucideSources={false}
               />
 
               {saveError ? (

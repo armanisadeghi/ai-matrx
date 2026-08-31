@@ -67,6 +67,16 @@ export interface PlaceHealth {
   blockers: readonly string[];
   /** Required inputs nothing feeds, where the holder has no default either. */
   unfedRequired: readonly string[];
+  /**
+   * 🚨 H3 / V3 F4 — WHY THIS PLACE CANNOT BE JUDGED AT ALL, or `null`.
+   *
+   * The grid used to be handed `offered: []` for a place whose offer was still
+   * being read (or had failed) and went on to state, as fact, that a mapped
+   * required input "is required and nothing feeds it". It did not know that.
+   * A place whose offer is unread has NO health — it has a reason, and the
+   * reason is what the row and the Apply gate print.
+   */
+  unknown: string | null;
   tone: "green" | "amber" | "red";
 }
 
@@ -76,8 +86,34 @@ const EMPTY_HEALTH: PlaceHealth = {
   problems: [],
   blockers: [],
   unfedRequired: [],
+  unknown: null,
   tone: "green",
 };
+
+/**
+ * REQUIRED INPUTS NOTHING FEEDS, where the holder has no default of its own —
+ * the one rule, shared by batch's row health and map mode's Save refusal (H1).
+ * Written like that a binding cannot run: the agent's required value simply
+ * never arrives, which is the exact server refusal the correctness adversary
+ * hit. Both modes must therefore say the same thing about the same map.
+ */
+export function unfedRequiredTargets({
+  targets,
+  map,
+}: {
+  targets: readonly BindingTarget[];
+  map: ConsumptionMap;
+}): string[] {
+  const out: string[] = [];
+  for (const target of targets) {
+    if (target.required !== true) continue;
+    const sources = sourcesFor(map, target.name);
+    if (sources.length > 0) continue;
+    if (hasHolderDefault(target.defaultValue)) continue;
+    out.push(target.label ?? target.name);
+  }
+  return out;
+}
 
 function hasHolderDefault(value: unknown): boolean {
   if (value === null || value === undefined) return false;
@@ -100,13 +136,38 @@ export function placeHealth({
   offered,
   map,
   blockers = [],
+  offerStatus = "ready",
+  offerMessage = null,
 }: {
   targets: readonly BindingTarget[];
   offered: readonly OfferedValue[];
   map: ConsumptionMap;
   /** Reasons this place cannot be written, from the requirement gate. */
   blockers?: readonly string[];
+  /**
+   * Whether `offered` is the place's REAL offer. `"ready"` (the default) means
+   * the caller has it; anything else means this place cannot be judged and
+   * nothing may be asserted about what feeds it (H3).
+   */
+  offerStatus?: "loading" | "ready" | "error";
+  /** The read's own failure words, when `offerStatus` is `"error"`. */
+  offerMessage?: string | null;
 }): PlaceHealth {
+  if (offerStatus !== "ready") {
+    return {
+      unmapped: 0,
+      requiredUnmapped: 0,
+      problems: [],
+      blockers,
+      unfedRequired: [],
+      unknown:
+        offerStatus === "loading"
+          ? "Still reading what this place offers — nothing can be judged about its map yet."
+          : (offerMessage ??
+            "This place's offer could not be read, so its map cannot be judged."),
+      tone: offerStatus === "error" ? "red" : "amber",
+    };
+  }
   if (targets.length === 0 && blockers.length === 0) return EMPTY_HEALTH;
 
   let unmapped = 0;
@@ -150,6 +211,7 @@ export function placeHealth({
     problems,
     blockers,
     unfedRequired,
+    unknown: null,
     tone,
   };
 }
@@ -179,6 +241,12 @@ export function applyRefusal(
   if (unmapped > 0) {
     return `${unmapped} ${unmapped === 1 ? "input is" : "inputs are"} still waiting for you to pick which offered value feeds ${unmapped === 1 ? "it" : "them"}. Fix the red cells first.`;
   }
+  // 🚨 H3 — a place nobody has read yet cannot be written. The gate says which
+  // state it is in rather than treating "unknown" as "fine".
+  const unread = healths.filter((h) => h.unknown !== null);
+  if (unread.length > 0) {
+    return `${unread.length} ${unread.length === 1 ? "place has" : "places have"} not been read yet — ${unread[0].unknown}`;
+  }
   const blocked = healths.filter((h) => h.blockers.length > 0).length;
   if (blocked > 0) {
     return `${blocked} ${blocked === 1 ? "place" : "places"} cannot take this holder — the red rows say why. Remove them from the batch, or fix the holder.`;
@@ -187,7 +255,100 @@ export function applyRefusal(
   if (broken > 0) {
     return `${broken} ${broken === 1 ? "place has" : "places have"} a mapping problem named on the row. Fix the red rows first.`;
   }
+  // 🚨 H1 / V3 F3 — THE AMBER HOLE. This branch did not exist, so a place whose
+  // required input has nothing feeding it and whose holder has no default of
+  // its own was stated on the row IN WORDS, counted in "N need attention", and
+  // then written anyway by an ENABLED Apply — the adversary's click stored a
+  // binding with `consumption_map = {}` while the screen went on complaining
+  // about the very inputs it had just failed to feed. A gate that states the
+  // problem and performs the action anyway is worse than no gate. Every stated
+  // problem is now a refusal; nothing the grid says in red or amber can be
+  // written past.
+  const unfed = healths.reduce((acc, h) => acc + h.unfedRequired.length, 0);
+  if (unfed > 0) {
+    const places = healths.filter((h) => h.unfedRequired.length > 0).length;
+    return `${unfed} required ${unfed === 1 ? "input" : "inputs"} across ${places} ${places === 1 ? "place" : "places"} ${unfed === 1 ? "has" : "have"} nothing feeding ${unfed === 1 ? "it" : "them"} and the holder has no default of its own — written like that, the job cannot run. Feed ${unfed === 1 ? "it" : "them"}, or remove ${places === 1 ? "that place" : "those places"} from the batch.`;
+  }
   return null;
+}
+
+// ── What the batch says about ITSELF: the picker's words and its algebra ─────
+
+/**
+ * The label on the picker's bulk button. A bulk control that says "these" while
+ * taking 683 rows is a lie the size of the list, so the label carries the real
+ * NUMBER and the real SCOPE (every job, or only the ones the search matched) at
+ * the moment it is read.
+ */
+export function bulkSelectionLabel({
+  matching,
+  filtered,
+  allMatchingSelected,
+}: {
+  /** How many rows the button would act on right now. */
+  matching: number;
+  /** True when a search is narrowing the list — the scope is the matches. */
+  filtered: boolean;
+  /** True when every one of those rows is already in the batch. */
+  allMatchingSelected: boolean;
+}): string {
+  const noun = filtered
+    ? matching === 1
+      ? "match"
+      : "matches"
+    : matching === 1
+      ? "job"
+      : "jobs";
+  const quantifier = matching === 1 ? "the 1" : `all ${matching}`;
+  return `${allMatchingSelected ? "Clear" : "Select"} ${quantifier} ${noun}`;
+}
+
+/**
+ * The bulk button's effect, scoped to what it says. Selecting adds the matching
+ * rows to the batch; clearing removes ONLY those rows — a search that hides a
+ * pick must never silently drop it.
+ */
+export function applyBulkSelection({
+  selected,
+  matchingKeys,
+  add,
+}: {
+  selected: readonly string[];
+  matchingKeys: readonly string[];
+  add: boolean;
+}): string[] {
+  if (!add) {
+    const drop = new Set(matchingKeys);
+    return selected.filter((key) => !drop.has(key));
+  }
+  const have = new Set(selected);
+  return [...selected, ...matchingKeys.filter((key) => !have.has(key))];
+}
+
+/**
+ * The sentence above the picker. It used to promise "the one you opened is
+ * already in" forever, which the bulk clear made false. It now reads the batch
+ * it describes, in every state, and says what to do when the opened job is out.
+ */
+export function batchScopeSentence({
+  selectedCount,
+  openedIn,
+  openedKey,
+}: {
+  selectedCount: number;
+  openedIn: boolean;
+  openedKey: string;
+}): string {
+  const head = "Every job picked here gets the rung and holder chosen above.";
+  if (selectedCount === 0) {
+    return `${head} Nothing is picked — not even the one you opened (${openedKey}), so Apply has nothing to write. Tick a job below.`;
+  }
+  if (openedIn) {
+    const others = selectedCount - 1;
+    if (others === 0) return `${head} Only the one you opened is in.`;
+    return `${head} The one you opened is in, with ${others} other${others === 1 ? "" : "s"}.`;
+  }
+  return `${head} ${selectedCount} picked, and the one you opened (${openedKey}) is not one of them — tick it below to put it back.`;
 }
 
 // ── The copied-mapping rule, over a whole map (P17.2) ────────────────────────

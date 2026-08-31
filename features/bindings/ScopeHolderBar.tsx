@@ -49,9 +49,25 @@ export interface ScopeHolderBarProps {
   /** Super-admin authority — the system rung is theirs alone (server 403s). */
   allowGlobal: boolean;
   onRungChange: (rung: BindingRung, organizationId: string | null) => void;
+  /**
+   * F3 — the standing sentence about what moving the rung costs, printed
+   * whenever there IS something to lose. `null` when the draft is clean, so it
+   * is a fact about right now and never decorative noise.
+   */
+  unsavedNote?: string | null;
 
   holder: HolderDraft;
   onHolderChange: (next: HolderDraft) => void;
+  /**
+   * The holder agent's REAL NAME, resolved by the workspace.
+   *
+   * 🚨 V2 finding G2: without it `EntityRef` falls back to `id.slice(0,8)…`,
+   * so the loudest thing in the HOLDER cell was the raw UUID prefix
+   * `8cfa8351…` with the human name truncated beneath it. A name is never a
+   * UUID when a name exists; `null` means it genuinely is not read yet, and
+   * the cell says so rather than printing an id as if it were an identity.
+   */
+  holderName?: string | null;
 
   /** The job being bound — identity, what it answers in, what it offers. */
   job: {
@@ -91,8 +107,10 @@ export function ScopeHolderBar({
   organizationId,
   allowGlobal,
   onRungChange,
+  unsavedNote = null,
   holder,
   onHolderChange,
+  holderName = null,
   job,
   ladderLine,
   disabled = false,
@@ -103,12 +121,19 @@ export function ScopeHolderBar({
         <h3 className="text-[12.5px] font-semibold text-foreground">
           Who this is for, and what runs
         </h3>
-        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-          {ladderLine}
-        </p>
       </header>
 
-      <div className="grid gap-4 p-3 lg:grid-cols-3">
+      {/* 🚨 THREE CELLS, PROPORTIONED TO WHAT THEY HOLD (V2 finding G3, a
+          re-occurrence of a class Arman rejected by name). Equal thirds gave
+          the HOLDER — a name, a version control and its consequence sentence —
+          the same 240px the RUNG's one select gets, so the holder overflowed
+          while the RUNG cell sat 62% empty and the JOB cell 73%. The holder now
+          takes the width it needs and the two reference cells compress first,
+          exactly as the match's own grid template already does with its rails.
+          The ladder sentence moved OUT of the header and INTO the rung cell:
+          it is a fact about the rung, so it belongs where the rung is chosen —
+          which fills that cell with meaning instead of padding. */}
+      <div className="grid gap-4 p-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)]">
         {/* ── RUNG ── */}
         <div className="space-y-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -126,13 +151,21 @@ export function ScopeHolderBar({
           />
           {/* THE RUNG EXPLAINS ITSELF IN ITS OWN CELL — who it covers and what
               it overrides — instead of a lone select in dead space. */}
+          {/* `ladderLine` OPENS with this rung's own `covers` sentence and then
+              names which rungs are answered today — one paragraph, not two, so
+              the cell is filled with the ladder rather than with a repeat. */}
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {rungWords(rung).covers}
+            {ladderLine}
           </p>
           {!allowGlobal ? (
             <p className="text-[10.5px] leading-snug text-muted-foreground/80">
               The system rung — the answer everybody gets — is a super-admin
               decision, so it is not offered here.
+            </p>
+          ) : null}
+          {unsavedNote ? (
+            <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+              {unsavedNote}
             </p>
           ) : null}
           {rung === "org" && !organizationId ? (
@@ -201,12 +234,28 @@ export function ScopeHolderBar({
               {/* The holder's IDENTITY gets a full line of its own. It used to
                   sit in a flex row beside the version panel and rendered as
                   "Agent G…" / "Specializes i…" — a name nobody could read. */}
+              {/* 🚨 THE NAME, WHOLE (V2 G2). Two defects lived in these six
+                  lines: `EntityRef` with no `name` prints `id.slice(0,8)…`, so
+                  a raw UUID prefix was the loudest thing in the cell; and its
+                  default `truncate` clipped "Masterwork Method Interrog…" at
+                  1280. `name` gives it the identity and `wrap` gives it the
+                  whole line — a holder is the answer to "what runs this", and
+                  half of that answer is not an answer. */}
               <div className="min-w-0 rounded-md border border-border px-2 py-1.5">
-                <EntityRef
-                  token="agent"
-                  id={holder.agentId}
-                  className="block w-full text-[12.5px] font-medium"
-                />
+                {holderName ? (
+                  <EntityRef
+                    token="agent"
+                    id={holder.agentId}
+                    name={holderName}
+                    wrap
+                    fill
+                    className="block w-full text-[12.5px] font-medium"
+                  />
+                ) : (
+                  <p className="text-[12px] text-muted-foreground">
+                    Reading this agent&apos;s name…
+                  </p>
+                )}
               </div>
               <AgentVersionPicker
                 subjectNoun="job"

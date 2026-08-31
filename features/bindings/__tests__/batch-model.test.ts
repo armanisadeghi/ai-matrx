@@ -18,7 +18,10 @@ import type {
 } from "@/features/mandates/provision-shapes";
 import { reconcileCopiedTarget } from "@/features/agent-shortcuts/components/batch/BatchBindingCell";
 import {
+  applyBulkSelection,
   applyRefusal,
+  batchScopeSentence,
+  bulkSelectionLabel,
   placeHealth,
   reconcilePlaceMap,
   reconcileSentence,
@@ -298,5 +301,266 @@ describe("applyRefusal — the words, with the count", () => {
 
   it("refuses an empty batch rather than pretending to write nothing", () => {
     expect(applyRefusal([], 0)).toContain("Nothing left to apply");
+  });
+});
+
+/**
+ * THE PICKER'S WORDS AND ITS ALGEBRA.
+ *
+ * A bulk control that says "these" while taking every filtered row, and a
+ * sentence that promises the opened job is in after the batch was cleared, are
+ * the same defect: the screen saying something that is not true right now.
+ */
+describe("bulkSelectionLabel", () => {
+  it("states the real number and the real scope for every job", () => {
+    expect(
+      bulkSelectionLabel({
+        matching: 683,
+        filtered: false,
+        allMatchingSelected: false,
+      }),
+    ).toBe("Select all 683 jobs");
+  });
+
+  it("says matches, not jobs, while a search narrows the list", () => {
+    expect(
+      bulkSelectionLabel({
+        matching: 12,
+        filtered: true,
+        allMatchingSelected: false,
+      }),
+    ).toBe("Select all 12 matches");
+  });
+
+  it("names the inverse with the same number and scope", () => {
+    expect(
+      bulkSelectionLabel({
+        matching: 683,
+        filtered: false,
+        allMatchingSelected: true,
+      }),
+    ).toBe("Clear all 683 jobs");
+  });
+
+  it("does not say 'all 1'", () => {
+    expect(
+      bulkSelectionLabel({
+        matching: 1,
+        filtered: true,
+        allMatchingSelected: false,
+      }),
+    ).toBe("Select the 1 match");
+  });
+});
+
+describe("applyBulkSelection", () => {
+  it("adds the matching rows without disturbing picks outside the search", () => {
+    expect(
+      applyBulkSelection({
+        selected: ["a", "z"],
+        matchingKeys: ["a", "b", "c"],
+        add: true,
+      }),
+    ).toEqual(["a", "z", "b", "c"]);
+  });
+
+  it("clears ONLY the matching rows — a hidden pick survives", () => {
+    expect(
+      applyBulkSelection({
+        selected: ["a", "z"],
+        matchingKeys: ["a", "b"],
+        add: false,
+      }),
+    ).toEqual(["z"]);
+  });
+});
+
+describe("batchScopeSentence", () => {
+  it("stops claiming the opened job is in once it has been cleared out", () => {
+    const sentence = batchScopeSentence({
+      selectedCount: 3,
+      openedIn: false,
+      openedKey: "education.quiz_generate",
+    });
+    expect(sentence).toContain("is not one of them");
+    expect(sentence).toContain("education.quiz_generate");
+    expect(sentence).not.toContain("The one you opened is in");
+  });
+
+  it("says the batch is empty rather than implying Apply would do something", () => {
+    expect(
+      batchScopeSentence({
+        selectedCount: 0,
+        openedIn: false,
+        openedKey: "education.quiz_generate",
+      }),
+    ).toContain("Apply has nothing to write");
+  });
+
+  it("counts the others when the opened job is in", () => {
+    expect(
+      batchScopeSentence({
+        selectedCount: 1,
+        openedIn: true,
+        openedKey: "k",
+      }),
+    ).toContain("Only the one you opened is in.");
+    expect(
+      batchScopeSentence({ selectedCount: 4, openedIn: true, openedKey: "k" }),
+    ).toContain("with 3 others");
+  });
+});
+
+/**
+ * 🚨 THE AMBER HOLE — V3 finding F3 (H1), pinned.
+ *
+ * The correctness adversary watched the grid print, in words, that a required
+ * input had nothing feeding it, count it in "1 need attention", and then let an
+ * ENABLED `Apply 2` write both places — one of them landing with
+ * `consumption_map = {}` while the screen went on complaining about the very
+ * inputs it had failed to feed.
+ *
+ * Why the two build lanes recorded this as proven: BOTH of their proofs used a
+ * RED row (a cell mid-pick, and the requirement gate's blocker), and both of
+ * those already had an `applyRefusal` branch. The AMBER class — required, unfed,
+ * no holder default — never had one. The rule these tests hold is the general
+ * one, so no class of stated problem can slip through again: anything the grid
+ * says about a row, in red or in amber, refuses Apply with a sentence.
+ */
+describe("H1 — every stated problem refuses Apply", () => {
+  const REQUIRED_NO_DEFAULT: BindingTarget = {
+    name: "instructions",
+    label: "Instructions",
+    required: true,
+  };
+
+  it("refuses a required input nothing feeds, where the holder has no default", () => {
+    const health = placeHealth({
+      targets: [REQUIRED_NO_DEFAULT],
+      offered: [CLEANED],
+      map: {},
+    });
+    expect(health.unfedRequired).toEqual(["Instructions"]);
+    expect(health.tone).toBe("amber");
+    const refusal = applyRefusal([health], 1);
+    expect(refusal).not.toBeNull();
+    expect(refusal).toContain("nothing feeding it");
+    expect(refusal).toContain("cannot run");
+  });
+
+  it("does NOT refuse when the holder has a default of its own", () => {
+    const health = placeHealth({
+      targets: [{ ...REQUIRED_NO_DEFAULT, defaultValue: "do the thing" }],
+      offered: [CLEANED],
+      map: {},
+    });
+    expect(health.unfedRequired).toEqual([]);
+    expect(applyRefusal([health], 1)).toBeNull();
+  });
+
+  it("THE GENERAL RULE: any row that states a problem refuses Apply", () => {
+    const states: ReturnType<typeof placeHealth>[] = [
+      // mid-pick (red)
+      placeHealth({
+        targets: [WORKING_TEXT],
+        offered: [CLEANED],
+        map: {
+          working_text: [
+            { mapType: "offered_value", target: "", deliver: "variable" },
+          ],
+        },
+      }),
+      // a map the server would refuse (red)
+      placeHealth({
+        targets: [WORKING_TEXT],
+        offered: [],
+        map: {
+          working_text: [
+            {
+              mapType: "offered_value",
+              target: "not_offered_here",
+              deliver: "variable",
+            },
+          ],
+        },
+      }),
+      // the requirement gate (red)
+      placeHealth({
+        targets: [WORKING_TEXT],
+        offered: [CLEANED],
+        map: {},
+        blockers: ["This holder cannot produce what the job promises."],
+      }),
+      // required, unfed, no default (amber) — the class that leaked
+      placeHealth({
+        targets: [REQUIRED_NO_DEFAULT],
+        offered: [CLEANED],
+        map: {},
+      }),
+    ];
+    for (const health of states) {
+      const stated =
+        health.unmapped +
+        health.problems.length +
+        health.blockers.length +
+        health.unfedRequired.length;
+      expect(stated).toBeGreaterThan(0);
+      expect(applyRefusal([health], 1)).not.toBeNull();
+    }
+  });
+});
+
+/**
+ * H3 / V3 F4 — a place whose offer has not been read asserts NOTHING about
+ * what feeds it. The grid used to be handed `offered: []` while the read was in
+ * flight and stated, as fact, that a mapped required input was unfed.
+ */
+describe("H3 — an unread place has a reason, not a verdict", () => {
+  const REQUIRED: BindingTarget = {
+    name: "instructions",
+    label: "Instructions",
+    required: true,
+  };
+  const MAPPED: ConsumptionMap = {
+    instructions: [
+      { mapType: "offered_value", target: "cleaned_transcript", deliver: "variable" },
+    ],
+  };
+
+  it("claims nothing while the offer is still being read", () => {
+    const health = placeHealth({
+      targets: [REQUIRED],
+      offered: [],
+      map: MAPPED,
+      offerStatus: "loading",
+    });
+    expect(health.unfedRequired).toEqual([]);
+    expect(health.problems).toEqual([]);
+    expect(health.unknown).toContain("Still reading");
+    expect(applyRefusal([health], 1)).toContain("not been read yet");
+  });
+
+  it("carries the read's own failure words when it failed", () => {
+    const health = placeHealth({
+      targets: [REQUIRED],
+      offered: [],
+      map: MAPPED,
+      offerStatus: "error",
+      offerMessage: "No organization is selected, so this place's offer cannot be read.",
+    });
+    expect(health.tone).toBe("red");
+    expect(health.unknown).toContain("No organization is selected");
+    expect(health.problems).toEqual([]);
+  });
+
+  it("judges normally once the offer is real", () => {
+    const health = placeHealth({
+      targets: [REQUIRED],
+      offered: [CLEANED],
+      map: MAPPED,
+      offerStatus: "ready",
+    });
+    expect(health.unknown).toBeNull();
+    expect(health.tone).toBe("green");
   });
 });
