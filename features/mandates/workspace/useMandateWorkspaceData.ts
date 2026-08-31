@@ -82,6 +82,22 @@ export interface UseMandateWorkspaceData {
   refresh: () => void;
 }
 
+type MandateAuthClient = Pick<ReturnType<typeof createClient>, "auth">;
+
+/** Establish identity before constructing a protected mandate query. */
+export async function requireMandateWorkspaceUser(
+  client: MandateAuthClient,
+): Promise<string> {
+  const { data, error } = await client.auth.getUser();
+  const userId = data.user?.id;
+  if (error || !userId) {
+    throw new Error("Opening a mandate requires an authenticated session.", {
+      cause: error ?? undefined,
+    });
+  }
+  return userId;
+}
+
 function message(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -103,6 +119,10 @@ export function useMandateWorkspaceData(
 
     (async () => {
       const supabase = createClient();
+
+      // The route guard may finish before the browser client hydrates. Never
+      // let that transient state become an anon read of mandate.definition.
+      await requireMandateWorkspaceUser(supabase);
 
       // 1. The mandate — by uuid (EntityRef doors) or by key (humans, doors).
       const mandateQuery = mandateDefinitions(supabase)
