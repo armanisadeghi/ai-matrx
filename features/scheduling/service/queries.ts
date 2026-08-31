@@ -13,6 +13,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { TaskDetailResponse } from "./schedulerApi.types";
 import type {
   AgendaTask,
@@ -153,16 +154,22 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
   // aidream /scheduler/tasks router and the partial index
   // sch_task_user_id_active_idx.
   // VIEW LAW: container-scoped via RLS (sch_task rows are user-scoped by policy)
-  const { data, error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_task")
-    .select(SELECT_AGENT_TASK)
-    .eq("kind", "agent")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .returns<JoinedAgentTaskRow[]>();
+  const rows = await readAllRows<JoinedAgentTaskRow>(
+    ({ from, to }) =>
+      schedulerDb(supabase)
+        .schema("scheduler")
+        .from("sch_task")
+        .select(SELECT_AGENT_TASK, { count: "exact" })
+        .eq("kind", "agent")
+        .is("deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to)
+        .returns<JoinedAgentTaskRow[]>(),
+    { label: "scheduler.sch_task user schedule roster" },
+  );
 
-  if (error) throw pgErrorToError(error);
-  return (data ?? []).map(rowToAgendaTask);
+  return rows.map(rowToAgendaTask);
 }
 
 export async function getAgentTask(id: string): Promise<AgendaTask | null> {

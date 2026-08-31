@@ -4,7 +4,7 @@ Cross-repo work order: `/Users/armanisadeghi/code/common-docs/projects/productio
 
 > **Status:** Active (v1)
 > **Tier:** 1
-> **Last updated:** 2026-05-16
+> **Last updated:** 2026-08-31
 
 User and admin surfaces for the platform-wide scheduling spine (`sch_*`
 tables). Lets users create scheduled agent tasks, observe runs live, and
@@ -24,12 +24,12 @@ Execution happens on:
 
 ## Entry points
 
-- **User routes:** `app/(authenticated)/schedules/`
+- **User routes:** `app/(core)/schedules/`
   - `page.tsx` — list view (Redux-hydrated, list-realtime subscribed)
   - `new/page.tsx` — create form
   - `[id]/page.tsx` — detail view
   - `[id]/edit/page.tsx` — edit form
-- **Admin routes:** `app/(authenticated)/(admin-auth)/administration/automation/scheduling/`
+- **Admin routes:** `app/(admin)/administration/automation/scheduling/`
   - `page.tsx` — overview tiles + live health stats
   - `tasks/page.tsx` — all-user tasks (filterable)
   - `runs/page.tsx` — all-user runs (status/surface filters)
@@ -58,7 +58,9 @@ Execution happens on:
     `rowToAgendaTask` / `taskDetailToAgendaTask` reshapes. Also holds
     the single residual write (`updateAgentTaskFields`) until the
     backend exposes a PATCH for `sch_agent_task`. ONLY place that
-    calls `.from('sch_*')`.
+    calls `.from('sch_*')`. The full user schedule roster pages through
+    `readAllRows` under a stable `updated_at, id` order; it never trusts
+    PostgREST's 1,000-row cap as a complete list.
   - `lib/services/scheduling-admin-service.ts` — admin cross-user
     reads/writes using `is_super_admin()` RLS escape hatch. Stays on
     Supabase: `/scheduler/*` is RLS-scoped to the caller, so admins
@@ -214,6 +216,12 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-31** — Independent rule `.2` verification repaired the canonical
+  schedule roster read: `listAgentTasks` now pages to the exact count with
+  `readAllRows` and a stable `updated_at, id` order, while the S15 source-census
+  regression pins the complete-read boundary. Entry-point paths now match the
+  live `(core)` and `(admin)` route groups.
 
 - **2026-08-30** — Rule `.2` certification pins the user-facing write boundary:
   every form, detail, row, and duplicate-action caller dispatches the scheduling
