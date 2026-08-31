@@ -215,6 +215,11 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-30** — Surface-write replacement of draft variables now
+  reconciles the Variables editor's private incomplete-row state with the
+  canonical form object. The write result and visible editor can no longer
+  disagree after `schedule_draft_variables` reports success.
+
 - **2026-08-30** — The duplicate-schedule advisory now waits for the explicit
   organization selection to hydrate before calling the strict scheduler
   transport, then re-runs immediately when that selection arrives. A cold

@@ -148,6 +148,12 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
   const [form, setForm] = useState<FormState>(() =>
     makeDefault(task, initialAgentId, initialPrompt),
   );
+  // VariablesEditor intentionally owns incomplete key/value rows while the
+  // human types (an empty key cannot live in the canonical object yet). An
+  // external surface write replaces the canonical object in one operation,
+  // so remount only for that path to reconcile its private draft rows without
+  // interrupting ordinary keystrokes.
+  const [variablesEditorRevision, setVariablesEditorRevision] = useState(0);
   const [tagInput, setTagInput] = useState("");
 
   const patch = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -324,6 +330,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
           "schedule_draft_variables expects a flat key/value object (replaces the full set).",
         );
       patch("variables", value as Record<string, unknown>);
+      setVariablesEditorRevision((revision) => revision + 1);
     },
     schedule_draft_tags: (value: unknown) => {
       if (
@@ -448,6 +455,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
           </Field>
           <Field label="Variables" optional>
             <VariablesEditor
+              key={variablesEditorRevision}
               value={form.variables}
               onChange={(v) => patch("variables", v)}
             />
