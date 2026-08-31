@@ -8896,6 +8896,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sitefinity/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sitefinity_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sanity/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sanity_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hotjar/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hotjar_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/survicate/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_survicate_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skedulo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_skedulo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uservoice/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_uservoice_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mem/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mem_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wire-cloud/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_wire_cloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files-com/public/status": {
         parameters: {
             query?: never;
@@ -54827,6 +54963,38 @@ export interface components {
              */
             status_page?: "https://status.hootsuite.com";
         };
+        /** HotjarServiceStatus */
+        HotjarServiceStatus: {
+            /**
+             * Kind
+             * @default hotjar_public_service_status
+             * @constant
+             */
+            __kind?: "hotjar_public_service_status";
+            /**
+             * Provider
+             * @default Hotjar
+             * @constant
+             */
+            provider?: "Hotjar";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.hotjar.com
+             * @constant
+             */
+            status_page?: "https://status.hotjar.com";
+        };
         /**
          * HuggingFaceModelResult
          * @description Safe bounded projection of one public Hugging Face model repository.
@@ -62205,6 +62373,43 @@ export interface components {
         MediaUpdate: {
             /** Is Relevant */
             is_relevant?: boolean | null;
+        };
+        /**
+         * MemServiceStatus
+         * @description Safe aggregate status projection for Mem's fixed status page.
+         */
+        MemServiceStatus: {
+            /**
+             * Kind
+             * @default mem_official_knowledge_productivity_platform_status
+             * @constant
+             */
+            __kind?: "mem_official_knowledge_productivity_platform_status";
+            /**
+             * Provider
+             * @default Mem
+             * @constant
+             */
+            provider?: "Mem";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.mem.ai/
+             * @constant
+             */
+            status_page?: "https://status.mem.ai/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** MemberBatchRemoveRequest */
         MemberBatchRemoveRequest: {
@@ -77524,6 +77729,35 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** SanityServiceStatus */
+        SanityServiceStatus: {
+            /**
+             * Kind
+             * @default sanity_public_content_platform_status
+             * @constant
+             */
+            __kind?: "sanity_public_content_platform_status";
+            /**
+             * Provider
+             * @default Sanity
+             * @constant
+             */
+            provider?: "Sanity";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://www.sanity-status.com
+             * @constant
+             */
+            status_page?: "https://www.sanity-status.com";
+        };
         /** SaveAsTemplateRequest */
         SaveAsTemplateRequest: {
             /**
@@ -80522,6 +80756,72 @@ export interface components {
             /** Gsc Impressions */
             gsc_impressions: number;
         };
+        /** SitefinityServiceStatus */
+        SitefinityServiceStatus: {
+            /**
+             * Kind
+             * @default sitefinity_public_content_platform_status
+             * @constant
+             */
+            __kind?: "sitefinity_public_content_platform_status";
+            /**
+             * Provider
+             * @default Sitefinity
+             * @constant
+             */
+            provider?: "Sitefinity";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.sitefinity.com
+             * @constant
+             */
+            status_page?: "https://status.sitefinity.com";
+        };
+        /**
+         * SkeduloServiceStatus
+         * @description Safe aggregate status projection for Skedulo's fixed status page.
+         */
+        SkeduloServiceStatus: {
+            /**
+             * Kind
+             * @default skedulo_official_workforce_scheduling_platform_status
+             * @constant
+             */
+            __kind?: "skedulo_official_workforce_scheduling_platform_status";
+            /**
+             * Provider
+             * @default Skedulo
+             * @constant
+             */
+            provider?: "Skedulo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.skedulo.com/
+             * @constant
+             */
+            status_page?: "https://status.skedulo.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SkillCreate */
         SkillCreate: {
             /**
@@ -83178,6 +83478,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** SurvicateServiceStatus */
+        SurvicateServiceStatus: {
+            /**
+             * Kind
+             * @default survicate_public_service_status
+             * @constant
+             */
+            __kind?: "survicate_public_service_status";
+            /**
+             * Provider
+             * @default Survicate
+             * @constant
+             */
+            provider?: "Survicate";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.survicate.com/
+             * @constant
+             */
+            status_page?: "https://status.survicate.com/";
         };
         /** SweepRequest */
         SweepRequest: {
@@ -87702,6 +88034,38 @@ export interface components {
              */
             kind: "video";
         });
+        /** UserVoiceServiceStatus */
+        UserVoiceServiceStatus: {
+            /**
+             * Kind
+             * @default uservoice_public_service_status
+             * @constant
+             */
+            __kind?: "uservoice_public_service_status";
+            /**
+             * Provider
+             * @default UserVoice
+             * @constant
+             */
+            provider?: "UserVoice";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.uservoice.com
+             * @constant
+             */
+            status_page?: "https://status.uservoice.com";
+        };
         /** UserYouTubeMediaPart */
         UserYouTubeMediaPart: {
             /** Metadata */
@@ -90488,6 +90852,43 @@ export interface components {
             height: number;
             /** Mime Type */
             mime_type: string;
+        };
+        /**
+         * WireCloudServiceStatus
+         * @description Safe aggregate status projection for Wire Cloud's fixed status page.
+         */
+        WireCloudServiceStatus: {
+            /**
+             * Kind
+             * @default wire_cloud_official_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "wire_cloud_official_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Wire Cloud
+             * @constant
+             */
+            provider?: "Wire Cloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.wire.com/
+             * @constant
+             */
+            status_page?: "https://status.wire.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** WireReplayArmIn */
         WireReplayArmIn: {
@@ -106996,6 +107397,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JahiaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_sitefinity_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitefinityServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_sanity_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SanityServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_hotjar_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HotjarServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_survicate_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurvicateServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_skedulo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkeduloServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_uservoice_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserVoiceServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_mem_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_wire_cloud_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WireCloudServiceStatus"];
                 };
             };
         };

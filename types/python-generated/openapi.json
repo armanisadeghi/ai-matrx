@@ -20020,6 +20020,174 @@
         }
       }
     },
+    "/sitefinity/public/status": {
+      "get": {
+        "tags": [
+          "Sitefinity Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sitefinity_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitefinityServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sanity/public/status": {
+      "get": {
+        "tags": [
+          "Sanity Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sanity_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SanityServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hotjar/public/status": {
+      "get": {
+        "tags": [
+          "Hotjar Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hotjar_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HotjarServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/survicate/public/status": {
+      "get": {
+        "tags": [
+          "Survicate Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_survicate_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurvicateServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/skedulo/public/status": {
+      "get": {
+        "tags": [
+          "Skedulo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_skedulo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkeduloServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uservoice/public/status": {
+      "get": {
+        "tags": [
+          "UserVoice Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_uservoice_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserVoiceServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mem/public/status": {
+      "get": {
+        "tags": [
+          "Mem Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mem_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wire-cloud/public/status": {
+      "get": {
+        "tags": [
+          "Wire Cloud Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_wire_cloud_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireCloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files-com/public/status": {
       "get": {
         "tags": [
@@ -134192,6 +134360,50 @@
         "title": "HootsuiteServiceStatus",
         "description": "Safe aggregate status projection for Hootsuite's fixed status page."
       },
+      "HotjarServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hotjar_public_service_status",
+            "title": "Kind",
+            "default": "hotjar_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Hotjar",
+            "title": "Provider",
+            "default": "Hotjar"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.hotjar.com",
+            "title": "Status Page",
+            "default": "https://status.hotjar.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "HotjarServiceStatus"
+      },
       "HuggingFaceModelResult": {
         "properties": {
           "__kind": {
@@ -151814,6 +152026,56 @@
         },
         "type": "object",
         "title": "MediaUpdate"
+      },
+      "MemServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mem_official_knowledge_productivity_platform_status",
+            "title": "Kind",
+            "default": "mem_official_knowledge_productivity_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Mem",
+            "title": "Provider",
+            "default": "Mem"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mem.ai/",
+            "title": "Status Page",
+            "default": "https://status.mem.ai/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MemServiceStatus",
+        "description": "Safe aggregate status projection for Mem's fixed status page."
       },
       "MemberBatchRemoveRequest": {
         "properties": {
@@ -187519,6 +187781,46 @@
         "title": "SandboxEnvResponse",
         "description": "Decrypted env dict for the current user's next sandbox.\n\nFree-form key/value because user-secret keys are user-chosen\nidentifiers (already validated against `^[A-Za-z_][A-Za-z0-9_]*$`).\nValues are plaintext — only ever transmitted on the authenticated\nserver-to-server hop (Next.js sandbox route → aidream); never lands\nin the browser DOM."
       },
+      "SanityServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sanity_public_content_platform_status",
+            "title": "Kind",
+            "default": "sanity_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Sanity",
+            "title": "Provider",
+            "default": "Sanity"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.sanity-status.com",
+            "title": "Status Page",
+            "default": "https://www.sanity-status.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SanityServiceStatus"
+      },
       "SaveAsTemplateRequest": {
         "properties": {
           "organization_id": {
@@ -194622,6 +194924,96 @@
         ],
         "title": "SiteTrafficPerformancePage"
       },
+      "SitefinityServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sitefinity_public_content_platform_status",
+            "title": "Kind",
+            "default": "sitefinity_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Sitefinity",
+            "title": "Provider",
+            "default": "Sitefinity"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.sitefinity.com",
+            "title": "Status Page",
+            "default": "https://status.sitefinity.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SitefinityServiceStatus"
+      },
+      "SkeduloServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "skedulo_official_workforce_scheduling_platform_status",
+            "title": "Kind",
+            "default": "skedulo_official_workforce_scheduling_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Skedulo",
+            "title": "Provider",
+            "default": "Skedulo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.skedulo.com/",
+            "title": "Status Page",
+            "default": "https://status.skedulo.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SkeduloServiceStatus",
+        "description": "Safe aggregate status projection for Skedulo's fixed status page."
+      },
       "SkillCreate": {
         "properties": {
           "organization_id": {
@@ -200565,6 +200957,50 @@
         ],
         "title": "SurveyMonkeyStatusResult",
         "description": "Safe projection of SurveyMonkey's high-level service status."
+      },
+      "SurvicateServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "survicate_public_service_status",
+            "title": "Kind",
+            "default": "survicate_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Survicate",
+            "title": "Provider",
+            "default": "Survicate"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.survicate.com/",
+            "title": "Status Page",
+            "default": "https://status.survicate.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SurvicateServiceStatus"
       },
       "SweepRequest": {
         "properties": {
@@ -212042,6 +212478,50 @@
         ],
         "title": "UserVideoMediaPart"
       },
+      "UserVoiceServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "uservoice_public_service_status",
+            "title": "Kind",
+            "default": "uservoice_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "UserVoice",
+            "title": "Provider",
+            "default": "UserVoice"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.uservoice.com",
+            "title": "Status Page",
+            "default": "https://status.uservoice.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "UserVoiceServiceStatus"
+      },
       "UserYouTubeMediaPart": {
         "properties": {
           "metadata": {
@@ -218582,6 +219062,56 @@
         ],
         "title": "WikimediaCommonsFileMetadata",
         "description": "Safe factual projection of one public Commons file."
+      },
+      "WireCloudServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wire_cloud_official_collaboration_platform_status",
+            "title": "Kind",
+            "default": "wire_cloud_official_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wire Cloud",
+            "title": "Provider",
+            "default": "Wire Cloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.wire.com/",
+            "title": "Status Page",
+            "default": "https://status.wire.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WireCloudServiceStatus",
+        "description": "Safe aggregate status projection for Wire Cloud's fixed status page."
       },
       "WireReplayArmIn": {
         "properties": {
