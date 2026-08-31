@@ -1,0 +1,205 @@
+---
+name: context-menu-rollout
+description: >-
+  Wire ONE assigned surface to the v3 right-click menu as part of the
+  mass rollout — the fleet worker's contract. Use when you have been handed a
+  file (or a short list) from `pnpm check:context-menu` and told to give it a
+  menu, or when told to "wire the menu on X", "do your assigned rows", or
+  "clear your shard". Covers the adoption protocol (reuse a shared section,
+  grow it, disable what cannot work here), THE DENSITY LAW, the exact props,
+  and the acceptance evidence that cannot be faked. NOT for designing the menu
+  system itself (that is `context-menu-v3` + features/context-menu-v3/FEATURE.md)
+  and NOT for a full surface audit (that is `surface-check`).
+---
+
+# Context-menu rollout — the fleet worker's contract
+
+You have been assigned one or more files. Your job for each: **the user can
+right-click the thing this surface shows, and the menu that opens is the SAME
+menu that identity gets everywhere else in the app.**
+
+Read [`.claude/skills/context-menu-v3/SKILL.md`](../context-menu-v3/SKILL.md)
+once for the wrapper mechanics. This file is the assembly line.
+
+## Your assignment is disjoint — do not wander
+
+You own exactly the files you were given. Another agent owns the next file.
+
+- **Never** edit a file outside your assignment, even to "fix something small".
+  If you find a defect elsewhere, name it in your report; do not touch it.
+- **Never** run tree-wide git commands. `git add <your exact paths>` and
+  `git commit --only <your exact paths>`, always. Dozens of agents and a human
+  share this checkout; `git add -A` steals their in-flight work.
+- Commit each file as you finish it. Do not batch to the end.
+- If your file no longer exists or already has a menu, say so and move on. That
+  is a legitimate outcome, not a failure.
+
+## The seven steps, per file
+
+### 1. Find the PANE and name the IDENTITY
+
+Open the file. Answer two questions before writing anything:
+
+- **What is the pane?** The one element wrapping the whole list/table/editor.
+  ONE menu goes around it — never one per row (nested Radix triggers open two
+  menus and the inner one always wins, so per-row wrappers silently break the
+  pane menu).
+- **What does a row NAME?** A keyword? a page? a contact? a rule? a class? That
+  is the *identity*, and it decides everything in step 2.
+
+### 2. 🚨 CHECK THE REGISTRY — this is the step that makes the rollout worth doing
+
+Open [`features/context-menu-v3/SECTIONS.md`](../../../features/context-menu-v3/SECTIONS.md).
+
+| What you find | What you do |
+|---|---|
+| The identity **has a registered builder** | **Use it.** Import it, pass `getRow`, spread its section into `extraSections`. Never re-implement its items. |
+| No builder, but the identity appears on **2+ surfaces** | **Extract** a shared builder (copy the shape of `useKeywordMenuSection`), register it in SECTIONS.md, use it. |
+| No builder, identity is **genuinely page-local** | Inline `extraSections` is correct. Do not register a one-off. |
+
+Then, if you adopted an existing builder, do **THE GROWTH STEP** — the most
+valuable thing you will do today:
+
+> List every action a user would reasonably want for this identity **on this
+> surface**. Compare against what the builder offers. It will almost always be
+> missing some. **Add them to the shared builder**, so every surface that
+> already uses it gains them too. Never bolt a private section next to the
+> shared one for the same identity — that is the fork this whole system exists
+> to prevent.
+
+And **THE CONSISTENCY STEP** — for anything the shared section offers that
+genuinely cannot work here:
+
+```ts
+import { unavailableHere, needs } from "@/features/context-menu-v3/utils/availability";
+
+useKeywordMenuSection({
+  …,
+  unavailable: {
+    "kw-pages": unavailableHere("the Keyword Workbench"),
+    "kw-intel": needs("a library keyword"),
+  },
+});
+```
+
+The row stays **visible, in place, disabled**, with the reason as its tooltip.
+**Never delete a row to make it fit your surface.** A missing row teaches
+nothing; a disabled row naming where it works is a direction.
+
+### 3. Wrap the pane
+
+```tsx
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+```
+
+`EditableContextMenu` for a textarea/editor (it also auto-registers the
+WidgetHandle, so agents can stream edits in). `NonEditableContextMenu` for
+everything else. A surface with both modes uses both, one per mode.
+
+```tsx
+<NonEditableContextMenu
+  sourceFeature="<feature>"        // REQUIRED
+  contentSource={{ type: "raw" }}  // or the real source: note / chat-message / …
+  contextData={{ content: "" }}
+  resolveContextOnOpen={(target) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && rows.find((r) => r.id === id)) || null;
+    setClickedRow(row);            // STATE, not a ref — see the trap below
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: { type: "<entity_token>", id: row.id, title: row.name },
+      content: [/* the row, as plain lines a human would read */].join("\n"),
+    };
+  }}
+  extraSections={[section]}
+>
+  {/* the pane, untouched */}
+</NonEditableContextMenu>
+```
+
+**Shortcut**: if the row element is yours to edit, you can skip
+`resolveContextOnOpen`'s entity entirely by putting
+`data-entity-type` / `data-entity-id` / `data-entity-title` on the row —
+the shell reads them and Attach To targets that record. Explicit resolver
+answers always win over the DOM.
+
+`surfaceName` ONLY if the surface has a real manifest whose declared
+`alwaysAvailable` values this pane actually emits. **Passing a `surfaceName`
+you cannot back is worse than passing none** — the value-mapping guard will
+scream, correctly.
+
+### 4. 🚨 THE DENSITY LAW
+
+A menu item is a **short verb phrase**. `Edit rule…` · `See its keywords` ·
+`Open page workspace`.
+
+**No `description` / subtext. Ever.** The single exception is a `disabled`
+item, whose `description` is the reason it is off. If macOS would not put it in
+a menu, neither do we. Machine-checked — a violation fails the build gate.
+
+Labels must also *fit*: a label that renders as `Review in Keyword Workbe…` is
+a defect. Keep them short enough to read whole.
+
+### 5. Type-check
+
+```bash
+pnpm type-check
+```
+
+Errors in **your** files are yours. Errors in files you did not touch belong to
+another session — isolate them in your report with exact paths, do not fix them.
+
+### 6. Prove it with the detector
+
+```bash
+pnpm check:context-menu --json
+```
+
+Your file must now be **absent from its population** and, if it appears in the
+shell list, must not be graded a shell for a slot it could fill. An empty slot
+is legitimate only when the surface genuinely has no such thing (a chart has no
+attachable record) — say which and why in your report.
+
+### 7. Commit
+
+```bash
+git add <your exact paths> && git commit --only <your exact paths> -m "…"
+```
+
+## The traps that will get you
+
+- **`resolveContextOnOpen` must write STATE, not a ref**, if any label or
+  availability depends on the row. It runs during the event that opens the
+  menu, and the lazy menu reads state during that same render — a ref does not
+  re-render and your labels go stale.
+- **It is called twice** on a plain right-click (mousedown, then contextmenu).
+  Keep it cheap and idempotent.
+- **`className` on the wrapper styles the POPUP, not your pane.** Never put
+  layout classes there. Style the child you wrap.
+- **A read-only menu yields inside live text fields** by design — right-clicking
+  an `<input>` inside a `NonEditableContextMenu` shows the browser menu. Not a
+  bug.
+- **Nested menus: the innermost wins.** A pane menu wrapped around rows that
+  mount their own menus will never open on those rows.
+- **An overlay/window must mount its OWN menu.** Without one, a right-click
+  inside it is answered by the page underneath, handing the user that page's
+  surface and agents — silently wrong, and it looks like it works.
+- **`getApplicationScope` and `contextData` both feed the scope** (live wins per
+  key), but if you pass a live builder make sure it reads the same clicked-row
+  state your resolver writes.
+
+## Your report
+
+Per file, five lines. No prose essays.
+
+```
+<path>
+  identity:  <what a row names>
+  registry:  adopted <builder> | extracted <builder> (registered) | inline (page-local, because …)
+  grew:      <actions added to the shared builder>  | none
+  disabled:  <items + reason>  | none
+  evidence:  type-check clean · check:context-menu: gone from <population> · commit <sha>
+```
+
+Then, separately: anything you found and did **not** touch.
