@@ -30,6 +30,8 @@ import type { SystemAnnouncement } from "@/types/feedback.types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { announcementMenuSection } from "./announcement-menu-section";
 
 const TYPE_CLASS: Record<string, string> = {
   info: "text-sky-600 border-sky-500/40 bg-sky-500/10",
@@ -43,6 +45,7 @@ export function AnnouncementsTableClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [clickedRow, setClickedRow] = useState<SystemAnnouncement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -161,6 +164,28 @@ export function AnnouncementsTableClient() {
         </div>
       ) : null}
       <div className="min-h-0 flex-1">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              content: `${row.title} [${row.announcement_type}${row.is_active ? ", active" : ""}]\n${row.message}`,
+            };
+          }}
+          extraSections={[
+            announcementMenuSection(clickedRow, {
+              onToggleActive: (r) => void toggleActive(r as SystemAnnouncement),
+              onDelete: (r) => void remove(r as SystemAnnouncement),
+            }),
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "user-announcements" }}
           data={rows}
@@ -245,6 +270,7 @@ export function AnnouncementsTableClient() {
             </>
           )}
         />
+        </NonEditableContextMenu>
       </div>
 
       <CreateAnnouncementDialog
