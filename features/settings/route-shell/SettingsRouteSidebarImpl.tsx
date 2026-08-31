@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Link from "next/link";
+import React, { useState } from "react";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -33,25 +33,23 @@ interface Props {
  */
 export function SettingsRouteSidebarImpl({ basePath }: Props) {
   const isAdmin = useAppSelector(selectIsAdmin);
-  const nodes = useMemo<SettingsTreeNode[]>(
-    () => getTabTreeNodes(isAdmin),
-    [isAdmin],
-  );
+  const nodes: SettingsTreeNode[] = getTabTreeNodes(isAdmin);
 
   const pathname = usePathname();
-  const activeTabId = useMemo<string | null>(() => {
-    if (!pathname.startsWith(basePath)) return null;
+  let activeTabId: string | null = null;
+  if (pathname.startsWith(basePath)) {
     const rest = pathname.slice(basePath.length).replace(/^\//, "");
-    if (!rest) return null;
-    return rest.split("/").filter(Boolean).join(".");
-  }, [pathname, basePath]);
+    if (rest) activeTabId = rest.split("/").filter(Boolean).join(".");
+  }
 
   const [query, setQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
   const matches = query ? searchTree(nodes, query) : null;
   const visibleSet = matches ? withAncestors(nodes, matches) : null;
-  const activeAncestors = activeTabId ? findAncestorPath(nodes, activeTabId) : [];
+  const activeAncestors = activeTabId
+    ? findAncestorPath(nodes, activeTabId)
+    : [];
 
   // While searching: expand ancestors of matches so they're visible.
   // Outside search: keep user-toggled folders + auto-expand the active branch.
@@ -86,7 +84,7 @@ export function SettingsRouteSidebarImpl({ basePath }: Props) {
             placeholder="Search all settings…"
             aria-label="Search all settings"
             className={cn(
-              "w-full h-8 pl-7 pr-7 text-xs rounded-md",
+              "h-11 w-full rounded-md pl-8 pr-12 text-base sm:h-8 sm:pl-7 sm:pr-7 sm:text-xs",
               "bg-background border border-border",
               "text-foreground placeholder:text-muted-foreground/70",
               "focus:outline-none focus:ring-1 focus:ring-ring",
@@ -97,7 +95,7 @@ export function SettingsRouteSidebarImpl({ basePath }: Props) {
               type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted/60 hover:text-foreground sm:right-1.5 sm:h-5 sm:w-5"
             >
               <X className="h-3 w-3" />
             </button>
@@ -168,7 +166,7 @@ function TreeRow({
           onClick={() => toggleExpanded(node.id)}
           aria-expanded={isExpanded}
           className={cn(
-            "w-full flex items-center gap-1.5 text-xs text-left rounded-md py-1.5 transition-colors",
+            "flex min-h-11 w-full items-center gap-1.5 rounded-md py-2.5 text-left text-sm transition-colors sm:min-h-0 sm:py-1.5 sm:text-xs",
             "text-muted-foreground hover:text-foreground hover:bg-muted/50",
           )}
           style={{ paddingLeft, paddingRight: 8 }}
@@ -182,7 +180,7 @@ function TreeRow({
           <span className="flex-1 truncate font-medium">{node.label}</span>
         </button>
         {isExpanded &&
-          node.children!.map((child) => (
+          node.children?.map((child) => (
             <TreeRow
               key={child.id}
               node={child}
@@ -204,20 +202,42 @@ function TreeRow({
       prefetch
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-md text-sm py-1.5 transition-colors",
+        "flex min-h-11 items-center gap-2 rounded-md py-2.5 text-sm transition-colors sm:min-h-0 sm:py-1.5",
         isActive
           ? "bg-accent text-foreground"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
       )}
       style={{ paddingLeft: paddingLeft + 14, paddingRight: 8 }}
     >
+      <SettingsLeafContent icon={Icon} label={node.label} />
+    </Link>
+  );
+}
+
+function SettingsLeafContent({
+  icon: Icon,
+  label,
+}: {
+  icon?: SettingsTreeNode["icon"];
+  label: string;
+}) {
+  const { pending } = useLinkStatus();
+
+  return (
+    <>
       {Icon ? (
         <Icon className="h-3.5 w-3.5 shrink-0" />
       ) : (
         <span className="w-3.5 shrink-0" />
       )}
-      <span className="flex-1 truncate">{node.label}</span>
-    </Link>
+      <span className="flex-1 truncate">{label}</span>
+      {pending ? (
+        <Loader2
+          className="h-3.5 w-3.5 shrink-0 animate-spin"
+          aria-label={`Opening ${label}`}
+        />
+      ) : null}
+    </>
   );
 }
 

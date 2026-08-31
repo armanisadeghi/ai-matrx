@@ -120,6 +120,13 @@ const groups: SurfaceValueGroup[] = [
     description: "Autosave / preference-sync status of the settings store.",
   },
   {
+    key: "integrations",
+    label: "Integrations directory",
+    sortOrder: 350,
+    description:
+      "Sanitized MCP, GitHub, and Google connection state shown only while the Integrations tab is mounted. Credentials and private endpoints are never emitted.",
+  },
+  {
     key: "preferences",
     label: "Agent-writable preferences",
     sortOrder: 400,
@@ -235,6 +242,52 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "sync_state",
   },
 
+  // ── Integrations tab (descendant-owned, sanitized) ───────────────────
+  {
+    name: "integration_catalog",
+    label: "MCP integration catalog",
+    description:
+      "The MCP server cards visible on the Integrations tab. Each entry contains only public/sanitized display data: slug, name, vendor, description, category, transport, auth_strategy, server_status, connection_status, connection_ready, is_official, is_featured, website_url, and docs_url. Endpoint URLs, connection ids, token expiry, and credentials are excluded. Absent outside the Integrations tab.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 12000,
+    sortOrder: 550,
+    group: "integrations",
+  },
+  {
+    name: "integration_filters",
+    label: "Integration filters",
+    description:
+      "Current Integrations directory view: { search, view_filter, category, total_count, visible_count, connected_count, category_counts }. Absent outside the Integrations tab.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 350,
+    sortOrder: 560,
+    group: "integrations",
+  },
+  {
+    name: "github_connection",
+    label: "GitHub connection",
+    description:
+      "GitHub account card state: { connected, status, account_login, repository_count }. Contains only the account name and repository count already shown on the page; no repository names, installation ids, or credentials. Absent outside the Integrations tab and while the card is loading.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 140,
+    sortOrder: 570,
+    group: "integrations",
+  },
+  {
+    name: "google_connections",
+    label: "Google connections",
+    description:
+      "Google directory cards as { id, name, description, status, account_email }, where status is connected, reconnect, or not_connected. Contains only the account email already shown on the page and never OAuth tokens or scopes. Absent outside the Integrations tab and while status is loading or unavailable.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 650,
+    sortOrder: 580,
+    group: "integrations",
+  },
+
   // ── Agent-writable preferences (read twins of the write targets) ──────
   // Each of these is the READ half of a `writeTargets` entry below — the
   // evidence loop: the agent sees the current value, changes it, and sees
@@ -243,8 +296,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "theme_mode",
     label: "Color mode",
-    description:
-      `Current app color mode: ${THEME_MODE_ENUM_TEXT}. Applied before first paint and synced across the user's devices.`,
+    description: `Current app color mode: ${THEME_MODE_ENUM_TEXT}. Applied before first paint and synced across the user's devices.`,
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 5,
@@ -286,8 +338,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "language_defaults",
     label: "Language defaults",
-    description:
-      `Per-feature language defaults as one object, keyed by feature: { ${LANGUAGE_DEFAULT_KEYS_TEXT} }. There is no single global app language — each feature carries its own.`,
+    description: `Per-feature language defaults as one object, keyed by feature: { ${LANGUAGE_DEFAULT_KEYS_TEXT} }. There is no single global app language — each feature carries its own.`,
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 80,
@@ -309,7 +360,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "voice_persona",
     label: "Voice persona",
     description:
-      "Spoken-reply persona as one object: { emotion, wake_word }. `emotion` is a free-text delivery hint (\"cheerful\", \"calm\"); `wake_word` is the phrase that activates the assistant. Either may be empty.",
+      'Spoken-reply persona as one object: { emotion, wake_word }. `emotion` is a free-text delivery hint ("cheerful", "calm"); `wake_word` is the phrase that activates the assistant. Either may be empty.',
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 60,

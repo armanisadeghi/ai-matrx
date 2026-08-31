@@ -6,6 +6,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { isJsonObject } from "@/types/json";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useGitHubConnection } from "./useGitHubConnection";
 
 export function GitHubConnectionCard({
@@ -25,6 +26,22 @@ export function GitHubConnectionCard({
   const accountUrl = accountLogin
     ? `https://github.com/${encodeURIComponent(accountLogin)}`
     : "https://github.com/settings/installations";
+
+  useSurfaceScopeContribution(
+    "matrx-user/settings",
+    "github-account-card",
+    () =>
+      github.loading
+        ? {}
+        : {
+            github_connection: {
+              connected,
+              status: connection?.status ?? "not_connected",
+              account_login: accountLogin ?? null,
+              repository_count: github.inventory.repositories.length,
+            },
+          },
+  );
 
   const handleDisconnect = async () => {
     const confirmed = await confirm({

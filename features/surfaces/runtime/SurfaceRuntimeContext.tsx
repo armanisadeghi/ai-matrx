@@ -90,11 +90,18 @@ export interface SurfaceRuntimeValue {
   getWriteHandlers?: () => SurfaceWriteHandlers;
 }
 
+type SurfaceScopeContribution = {
+  id: number;
+  owner: string;
+  getScope: () => SurfaceScopePayload;
+};
+
 type RegistryEntry = { id: number; depth: number; value: SurfaceRuntimeValue };
 
 let nextId = 0;
 let stack: RegistryEntry[] = [];
 const listeners = new Set<() => void>();
+const scopeContributions = new Map<string, SurfaceScopeContribution[]>();
 
 function emit() {
   for (const l of listeners) l();
@@ -105,6 +112,73 @@ function subscribe(listener: () => void): () => void {
   return () => {
     listeners.delete(listener);
   };
+}
+
+/**
+ * Register a live partial scope owned by a descendant of the page provider.
+ * This is the READ twin of `useSurfaceWriteHandlers`: complex surfaces often
+ * keep tab/card state below the component that owns the single provider.
+ */
+export function registerSurfaceScopeContribution(
+  surfaceName: string,
+  owner: string,
+  getScope: () => SurfaceScopePayload,
+): () => void {
+  const entry = { id: ++nextId, owner, getScope };
+  const current = scopeContributions.get(surfaceName) ?? [];
+  scopeContributions.set(surfaceName, [...current, entry]);
+  return () => {
+    const remaining = (scopeContributions.get(surfaceName) ?? []).filter(
+      (candidate) => candidate.id !== entry.id,
+    );
+    if (remaining.length === 0) scopeContributions.delete(surfaceName);
+    else scopeContributions.set(surfaceName, remaining);
+  };
+}
+
+/**
+ * Merge descendant-owned scope fragments. Duplicate value names are a loud
+ * contract error: two UI regions cannot both claim to be the source of truth
+ * for one Surface Value.
+ */
+export function getRegisteredSurfaceScopeContributions(
+  surfaceName: string,
+): SurfaceScopePayload {
+  const merged: SurfaceScopePayload = {};
+  const owners = new Map<string, string>();
+  for (const contribution of scopeContributions.get(surfaceName) ?? []) {
+    const fragment = contribution.getScope();
+    for (const [name, value] of Object.entries(fragment)) {
+      const priorOwner = owners.get(name);
+      if (priorOwner) {
+        throw new Error(
+          `[surfaces] scope value "${name}" for "${surfaceName}" is emitted by both "${priorOwner}" and "${contribution.owner}"`,
+        );
+      }
+      owners.set(name, contribution.owner);
+      merged[name] = value;
+    }
+  }
+  return merged;
+}
+
+/** Register a descendant's latest scope fragment without re-registering it. */
+export function useSurfaceScopeContribution(
+  surfaceName: string | null,
+  owner: string,
+  getScope: () => SurfaceScopePayload,
+): void {
+  const getScopeRef = useRef(getScope);
+  useEffect(() => {
+    getScopeRef.current = getScope;
+  });
+
+  useEffect(() => {
+    if (!surfaceName) return;
+    return registerSurfaceScopeContribution(surfaceName, owner, () =>
+      getScopeRef.current(),
+    );
+  }, [surfaceName, owner]);
 }
 
 /**

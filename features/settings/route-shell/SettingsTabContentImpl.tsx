@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { findTab, getTabTreeNodes } from "@/features/settings/registry";
 import { SettingsTabHost } from "@/features/settings/components/SettingsTabHost";
 import { flattenLeaves } from "@/components/official/settings/tree/types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  getRegisteredSurfaceScopeContributions,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSettingsScope } from "@/features/surfaces/manifests/settings.manifest";
 import {
   getSliceBinding,
@@ -131,12 +134,15 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
   const isAdmin = useAppSelector(selectIsAdmin);
+  const [isNavigationPending, startNavigation] = useTransition();
 
-  const treeNodes = useMemo(() => getTabTreeNodes(isAdmin), [isAdmin]);
-  const activeTab = useMemo(
-    () => (tabId ? (findTab(tabId) ?? null) : null),
-    [tabId],
-  );
+  const treeNodes = getTabTreeNodes(isAdmin);
+  const activeTab = tabId ? (findTab(tabId) ?? null) : null;
+
+  const navigate = (id: string | null) => {
+    const href = id ? tabIdToHref(basePath, id) : basePath;
+    startNavigation(() => router.push(href));
+  };
 
   const getScope = () => {
     // Read the flush flag imperatively so the Run-time scope is live without
@@ -152,7 +158,7 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
     const display = state.userPreferences.display;
     const textGeneration = state.userPreferences.textGeneration;
     const voice = state.userPreferences.voice;
-    return createSettingsScope({
+    const baseScope = createSettingsScope({
       settings_sections: flattenLeaves(treeNodes).map((leaf) => ({
         id: leaf.id,
         label: leaf.label,
@@ -200,6 +206,17 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
           }
         : {}),
     });
+    const contributedScope = getRegisteredSurfaceScopeContributions(
+      "matrx-user/settings",
+    );
+    for (const name of Object.keys(contributedScope)) {
+      if (name in baseScope) {
+        throw new Error(
+          `[settings] descendant scope contribution attempted to replace provider-owned value "${name}"`,
+        );
+      }
+    }
+    return { ...baseScope, ...contributedScope };
   };
 
   // ── Agent write targets (matrx-user/settings) ──────────────────────────
@@ -342,7 +359,8 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
       <SettingsTabHost
         activeTab={activeTab}
         treeNodes={treeNodes}
-        onNavigate={(id) => router.push(tabIdToHref(basePath, id))}
+        onNavigate={navigate}
+        navigationPending={isNavigationPending}
       />
     </SurfaceRuntimeProvider>
   );

@@ -71,6 +71,7 @@ import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnec
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -215,6 +216,38 @@ export default function IntegrationsPage() {
   const connectedCount = catalog.filter(
     (entry) => entry.connectionStatus === "connected",
   ).length;
+
+  useSurfaceScopeContribution(
+    "matrx-user/settings",
+    "integrations-directory",
+    () => ({
+      integration_catalog: catalog.map((entry) => ({
+        slug: entry.slug,
+        name: entry.name,
+        vendor: entry.vendor,
+        description: entry.description,
+        category: entry.category,
+        transport: entry.transport,
+        auth_strategy: entry.authStrategy,
+        server_status: entry.serverStatus,
+        connection_status: entry.connectionStatus,
+        connection_ready: entry.connectionReady,
+        is_official: entry.isOfficial,
+        is_featured: entry.isFeatured,
+        website_url: entry.websiteUrl,
+        docs_url: entry.docsUrl,
+      })),
+      integration_filters: {
+        search,
+        view_filter: viewFilter,
+        category: activeCategory,
+        total_count: catalog.length,
+        visible_count: sorted.length,
+        connected_count: connectedCount,
+        category_counts: categoryCounts,
+      },
+    }),
+  );
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 

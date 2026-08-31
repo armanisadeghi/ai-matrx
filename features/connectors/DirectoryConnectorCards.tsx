@@ -27,6 +27,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ConnectorMark } from "./ConnectorMark";
 import { connectorsFor } from "./registry";
@@ -49,6 +50,36 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
 
   const connectors = connectorsFor("directory").filter((connector) =>
     isGoogleConnectorId(connector.id),
+  );
+  const rows = inventory.data?.connections ?? [];
+
+  useSurfaceScopeContribution(
+    "matrx-user/settings",
+    "google-directory-cards",
+    () =>
+      inventory.isLoading || inventory.isError
+        ? {}
+        : {
+            google_connections: connectors.map((connector) => {
+              const id = connector.id as GoogleConnectorId;
+              const connection = googleConnectionFor(id, rows);
+              const stale = connection
+                ? undefined
+                : googleStaleConnectionFor(id, rows);
+              return {
+                id,
+                name: connector.name,
+                description: connector.blurb,
+                status: connection
+                  ? "connected"
+                  : stale
+                    ? "reconnect"
+                    : "not_connected",
+                account_email:
+                  connection?.account_email ?? stale?.account_email ?? null,
+              };
+            }),
+          },
   );
   if (connectors.length === 0) return null;
 
@@ -80,8 +111,6 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
       </div>
     );
   }
-
-  const rows = inventory.data?.connections ?? [];
 
   return (
     <div

@@ -8,10 +8,21 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 const SettingsTabContentImplLazy = dynamic(
-  () => import("./SettingsTabContentImpl").then((m) => ({ default: m.SettingsTabContentImpl })),
-  { ssr: false, loading: () => null },
+  () =>
+    import("./SettingsTabContentImpl").then((m) => ({
+      default: m.SettingsTabContentImpl,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-40 items-center justify-center p-6">
+        <SuspenseLoader size="sm" message="Loading settings section…" />
+      </div>
+    ),
+  },
 );
 
 export function SettingsTabContent(

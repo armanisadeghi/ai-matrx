@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, Component, type ReactNode } from "react";
-import { Loader2, AlertTriangle, Settings as SettingsIcon } from "lucide-react";
+import { AlertTriangle, Settings as SettingsIcon } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsBreadcrumb } from "@/components/official/settings/tree/SettingsBreadcrumb";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
@@ -15,6 +16,8 @@ type SettingsTabHostProps = {
   onNavigate?: (id: string | null) => void;
   /** Whether to show the breadcrumb row in the header. Default true. */
   showBreadcrumb?: boolean;
+  /** True while a breadcrumb navigation is changing the active route. */
+  navigationPending?: boolean;
 };
 
 /**
@@ -26,6 +29,7 @@ export function SettingsTabHost({
   treeNodes,
   onNavigate,
   showBreadcrumb = true,
+  navigationPending = false,
 }: SettingsTabHostProps) {
   if (!activeTab) {
     return <EmptyState />;
@@ -36,17 +40,18 @@ export function SettingsTabHost({
   return (
     <div className="flex flex-col h-full min-h-0">
       {showBreadcrumb && (
-        <div className="shrink-0 border-b border-border/50 px-4 h-10 flex items-center">
+        <div className="flex min-h-11 shrink-0 items-center border-b border-border/50 px-3 sm:h-10 sm:min-h-0 sm:px-4">
           <SettingsBreadcrumb
             nodes={treeNodes}
             activeId={activeTab.id}
             onNavigate={onNavigate}
+            navigationPending={navigationPending}
           />
         </div>
       )}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <TabErrorBoundary tabLabel={activeTab.label}>
-          <Suspense fallback={<TabLoading />}>
+          <Suspense fallback={<TabLoading tabLabel={activeTab.label} />}>
             <TabComponent />
           </Suspense>
         </TabErrorBoundary>
@@ -73,10 +78,10 @@ function EmptyState() {
   );
 }
 
-function TabLoading() {
+function TabLoading({ tabLabel }: { tabLabel: string }) {
   return (
     <div className="flex h-full items-center justify-center py-12">
-      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <SuspenseLoader size="sm" message={`Loading ${tabLabel} settings…`} />
     </div>
   );
 }

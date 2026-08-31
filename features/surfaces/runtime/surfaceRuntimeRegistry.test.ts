@@ -10,7 +10,9 @@
 import {
   getSurfaceRuntime,
   getSurfaceRuntimeForName,
+  getRegisteredSurfaceScopeContributions,
   registerSurfaceRuntime,
+  registerSurfaceScopeContribution,
 } from "./SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
@@ -78,5 +80,52 @@ describe("surface runtime registry — depth beats registration order", () => {
 
     offOverlay();
     offPage();
+  });
+});
+
+describe("surface runtime registry — composable scope contributions", () => {
+  it("merges descendant-owned value fragments and removes only the unmounted owner", () => {
+    const offFilters = registerSurfaceScopeContribution(
+      "matrx-user/settings",
+      "integration-filters",
+      () => ({ integration_filters: { search: "github" } }),
+    );
+    const offGitHub = registerSurfaceScopeContribution(
+      "matrx-user/settings",
+      "github-account",
+      () => ({ github_connection: { connected: true } }),
+    );
+
+    expect(
+      getRegisteredSurfaceScopeContributions("matrx-user/settings"),
+    ).toEqual({
+      integration_filters: { search: "github" },
+      github_connection: { connected: true },
+    });
+
+    offFilters();
+    expect(
+      getRegisteredSurfaceScopeContributions("matrx-user/settings"),
+    ).toEqual({ github_connection: { connected: true } });
+    offGitHub();
+  });
+
+  it("refuses duplicate value ownership instead of silently overwriting", () => {
+    const offA = registerSurfaceScopeContribution(
+      "matrx-user/settings",
+      "owner-a",
+      () => ({ integration_filters: { search: "a" } }),
+    );
+    const offB = registerSurfaceScopeContribution(
+      "matrx-user/settings",
+      "owner-b",
+      () => ({ integration_filters: { search: "b" } }),
+    );
+
+    expect(() =>
+      getRegisteredSurfaceScopeContributions("matrx-user/settings"),
+    ).toThrow(/owner-a.*owner-b/);
+    offB();
+    offA();
   });
 });
