@@ -17,8 +17,11 @@
  */
 
 import React, { useSyncExternalStore } from "react";
+import { ExternalLink } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { SiteCommandFeed } from "@/features/marketing/components/crawls/SiteCommandFeed";
 import {
   getSiteCommandRun,
@@ -83,6 +86,31 @@ export default function SiteCommandRunWindow({
         ? `${copy.doneLabel} — failed`
         : `${copy.doneLabel} — done`;
 
+  // Page-local by design: the feed's rows are transient stream messages, not
+  // a durable identity with its own entity token (see CrawlLogsTable, which
+  // draws the same line for the persisted `web.crawl_event` it shows
+  // instead). The one real door this window can offer is the session itself.
+  const sessionHref = run?.sessionId
+    ? marketingRoutes.site(brandId, siteId, `/crawls/${run.sessionId}`)
+    : null;
+  const extraSections: ContextMenuExtraSection[] = sessionHref
+    ? [
+        {
+          id: "site-command-run",
+          label: copy.doneLabel,
+          items: [
+            {
+              kind: "link",
+              id: "site-command-open-session",
+              label: "Open crawl session",
+              icon: ExternalLink,
+              href: sessionHref,
+            },
+          ],
+        },
+      ]
+    : [];
+
   return (
     <WindowPanel
       id={`site-command-run-window-${windowInstanceId}`}
@@ -95,27 +123,26 @@ export default function SiteCommandRunWindow({
       onClose={onClose}
     >
       {/* ONE layer: the frame is the chrome, the feed brings its own card. */}
-      <div className="h-full min-h-0 overflow-hidden">
-        {run ? (
-          <SiteCommandFeed
-            run={run}
-            sessionHref={
-              run.sessionId
-                ? marketingRoutes.site(
-                    brandId,
-                    siteId,
-                    `/crawls/${run.sessionId}`,
-                  )
-                : null
-            }
-            className="h-full"
-          />
-        ) : (
-          <p className="px-3 py-8 text-center text-xs text-muted-foreground">
-            {copy.startingMessage}
-          </p>
-        )}
-      </div>
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: copy.doneLabel }}
+        extraSections={extraSections}
+      >
+        <div className="h-full min-h-0 overflow-hidden">
+          {run ? (
+            <SiteCommandFeed
+              run={run}
+              sessionHref={sessionHref}
+              className="h-full"
+            />
+          ) : (
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+              {copy.startingMessage}
+            </p>
+          )}
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
