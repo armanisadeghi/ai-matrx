@@ -43,6 +43,14 @@ import type {
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import {
   getLocationKeywords,
   getLocationSummary,
@@ -237,6 +245,7 @@ function LocationKeywords({
     impressionsMax: null,
   });
   const openWhy = useOpenGscWhyScoreWindow();
+  const [clickedRow, setClickedRow] = useState<LocationKeywordRow | null>(null);
 
   const keywords = useQuery({
     queryKey: locationKeywordsQueryKey(siteId, locationId, bucket, start, end, view),
@@ -245,6 +254,39 @@ function LocationKeywords({
     queryFn: ({ signal }) =>
       getLocationKeywords(siteId, locationId, bucket, start, end, view, signal),
   });
+
+  // Right-click: the SAME keyword actions every other keyword surface offers
+  // (Set class / Set service / Set level / …) — `useKeywordMenuSection` is the
+  // registered builder for this identity (SECTIONS.md "Keyword / query").
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () => void keywords.refetch(),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    surfaces: keywordSurfaces,
+    getRow: (): KeywordMenuRow | null =>
+      clickedRow
+        ? { phrase: clickedRow.keyword, keywordId: clickedRow.keyword_id }
+        : null,
+  });
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = keywords.data?.rows.find((r) => r.keyword_id === id) ?? null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+        phrase: row.keyword,
+        keywordId: row.keyword_id,
+      }),
+      content: [
+        `Keyword: ${row.keyword}`,
+        `Clicks: ${formatCount(Number(row.clicks))}`,
+        `Impressions: ${formatCount(Number(row.impressions))}`,
+      ].join("\n"),
+    };
+  };
 
   if (keywords.isError) {
     return (
@@ -341,7 +383,7 @@ function LocationKeywords({
     },
   ];
 
-  return (
+  const table = (
     <MatrxDataTable<LocationKeywordRow>
       data={rows}
       columns={columns}
@@ -391,6 +433,21 @@ function LocationKeywords({
             : "No search in this window lands on this row.",
       }}
     />
+  );
+
+  return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={resolveRowContext}
+      extraSections={[keywordMenuSection]}
+    >
+      <div className="flex flex-col gap-2">
+        {keywordSurfaces.isOpen ? <div className="shrink-0">{keywordSurfaces.node}</div> : null}
+        {table}
+      </div>
+    </NonEditableContextMenu>
   );
 }
 
