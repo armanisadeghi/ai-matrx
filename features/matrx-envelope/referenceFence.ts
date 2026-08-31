@@ -52,7 +52,7 @@ function tryParseJson(raw: string): unknown {
  *
  * THE ONE PLACE THE CLIENT MINTS A FENCE. Every copy-shortcut builder in this
  * feature funnels here, so the wire shape is decided once: the two-key Kind
- * Directive shell with `__kind` FIRST
+ * Directive shell with `__kind` FIRST, serialized as one minified JSON line
  * (`{"__kind":"directive_v1_reference_<noun>","items":[…]}`). The retired 4-key
  * shell is never emitted again — it is only ever READ, by the decoder's shim.
  *
@@ -68,7 +68,7 @@ export function buildReferenceFence(args: {
     buildDirectiveSlug("reference", args.type),
     args.items,
   );
-  return `${FENCE_OPEN}\n${JSON.stringify(shell, null, 2)}\n${FENCE_CLOSE}`;
+  return `${FENCE_OPEN}\n${JSON.stringify(shell)}\n${FENCE_CLOSE}`;
 }
 
 /**

@@ -90,7 +90,8 @@ render through the SAME live chip renderer.
   BUILT by the grammar, so an unparseable registration is unconstructable.
 - `referenceFence.ts` — the **reference-fence serializer + reader**:
   `buildReferenceFence({type,items})` / `buildPicklistItemFence(...)` emit the canonical
-  ` ```matrx ` `kind:"reference"` fence with FLAT items (`{ list_id, item_id, label? }` — no
+  ` ```matrx ` fence with its directive shell minified onto one JSON line and FLAT items
+  (`{ list_id, item_id, label? }` — no
   `purpose`/`slot`/`ref`/`display`); `parseReferenceFence(value)` reads it back (tolerant of a
   missing ``` wrapper). `readPicklistSelection(value)` → `{ refs, otherText, labels }` reads the
   fence — the ONLY picklist encoding (`legacyTranslate.ts` + the `picklist_ref` dual-read were
@@ -228,6 +229,10 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-08-30 — **Reference copy fences emit minified JSON.** The shared
+  `buildReferenceFence` serializer now writes the two-key directive shell on one line, so
+  every bookmark/reference button copies the compact canonical envelope. The Content IR
+  suite pins the exact `directive_v1_reference_agent` clipboard artifact and its parse round-trip.
 - 2026-08-26 — **A-10.2 closed: `url` is a REGISTERED server shape + a parity guard.** The
   messaging attach flow mints `directive_v1_reference_url` live, and the server registry had
   no such shape — aidream now registers `UrlRef {url, label?}` + `resolve_url` (renders the
