@@ -60,9 +60,15 @@ describe("Q4 playback surfaces use the canonical arbitration boundary", () => {
 
   it("routes the recovered public audio-study episode through the shared element", () => {
     const source = managedSurface(
-      "features/education/media/audio/components/AudioStudyDetail.tsx",
+      "features/education/media/audio/components/AudioPlayback.tsx",
     );
     expect(source).toContain("<SessionMediaElement");
     expect(source).toContain('as="audio"');
+
+    const detail = managedSurface(
+      "features/education/media/audio/components/AudioStudyDetail.tsx",
+    );
+    expect(detail).toContain('import { AudioPlayback } from "./AudioPlayback"');
+    expect(detail).toContain("<AudioPlayback");
   });
 });
