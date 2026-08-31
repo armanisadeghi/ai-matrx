@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Cog,
+  ExternalLink,
   FileText,
   Loader2,
   RefreshCw,
@@ -30,11 +31,14 @@ import { Label } from "@/components/ui/label";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_REPORTING_SURFACE_NAME,
   createAdminReportingScope,
 } from "@/features/surfaces/manifests/admin-reporting.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 interface ActivityRow {
   id: number;
@@ -53,6 +57,17 @@ const FILTERS = [
   { label: "Webhooks", value: "webhook.", prefix: "webhook.", icon: Webhook },
   { label: "Files", value: "file.", prefix: "file.", icon: FileText },
 ] as const;
+
+function eventRowContent(r: ActivityRow): string {
+  return [
+    `Event #${r.id} — ${r.action}`,
+    `Occurred: ${r.occurred_at}`,
+    `Entity: ${r.entity_type ?? "—"} ${r.entity_id ?? ""}`.trim(),
+    `Actor: ${r.actor_id ?? "—"}`,
+    `Org: ${r.organization_id ?? "—"}`,
+    `Metadata: ${JSON.stringify(r.metadata)}`,
+  ].join("\n");
+}
 
 function actionColor(action: string): string {
   if (action.endsWith(".completed") || action.endsWith(".created"))
@@ -73,6 +88,7 @@ export default function AdminEventsPage() {
   const [error, setError] = useState<string | null>(null);
   const [prefix, setPrefix] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [clickedRow, setClickedRow] = useState<ActivityRow | null>(null);
 
   const load = useCallback(async () => {
     setFetching(true);
@@ -212,6 +228,61 @@ export default function AdminEventsPage() {
       )}
 
       <div className="min-h-0 flex-1">
+        {/* A PLAIN DOM CHILD, not the table itself — MatrxDataTable forwards
+            neither the ref nor onContextMenu Radix clones onto its trigger. */}
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (rows.find((r) => String(r.id) === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return { content: eventRowContent(row) };
+          }}
+          extraSections={[
+            {
+              id: "activity-event-row",
+              label: "This event",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "link",
+                  id: "activity-event-open-entity",
+                  label: "Open its entity",
+                  icon: ExternalLink,
+                  href:
+                    clickedRow?.entity_type && clickedRow?.entity_id
+                      ? (tryGetEntityInfo(clickedRow.entity_type)?.hrefFor?.(
+                          clickedRow.entity_id,
+                        ) ?? "#")
+                      : "#",
+                  target: "_blank",
+                  disabled:
+                    !clickedRow?.entity_type ||
+                    !clickedRow?.entity_id ||
+                    !tryGetEntityInfo(clickedRow.entity_type)?.hrefFor,
+                  description: "No linkable entity on this event",
+                },
+                {
+                  kind: "link",
+                  id: "activity-event-open-org",
+                  label: "Open its organization",
+                  icon: ExternalLink,
+                  href: clickedRow?.organization_id
+                    ? `/organizations/${clickedRow.organization_id}`
+                    : "#",
+                  target: "_blank",
+                  disabled: !clickedRow?.organization_id,
+                  description: "This event has no organization",
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "reporting-events" }}
           data={rows}
@@ -282,15 +353,7 @@ export default function AdminEventsPage() {
             location: "/administration/reporting/events",
             rowKind: "activity-event",
             listKind: "activity-events",
-            humanRow: (r) =>
-              [
-                `Event #${r.id} — ${r.action}`,
-                `Occurred: ${r.occurred_at}`,
-                `Entity: ${r.entity_type ?? "—"} ${r.entity_id ?? ""}`.trim(),
-                `Actor: ${r.actor_id ?? "—"}`,
-                `Org: ${r.organization_id ?? "—"}`,
-                `Metadata: ${JSON.stringify(r.metadata)}`,
-              ].join("\n"),
+            humanRow: eventRowContent,
             rowAttributes: (r) => ({ id: r.id, action: r.action }),
           }}
           detail={{
@@ -367,6 +430,7 @@ export default function AdminEventsPage() {
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
     </SurfaceRuntimeProvider>
