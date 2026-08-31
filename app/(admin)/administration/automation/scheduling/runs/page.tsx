@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { StatusPill } from "@/features/scheduling/components/shared/StatusPill";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import {
@@ -35,6 +36,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
+import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 
 const STATUSES: RunStatus[] = [
   "queued",
@@ -82,6 +84,20 @@ export default function AdminRunsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // ONE right-click menu for the whole pane, shared with orphan-leases (same
+  // row shape — `useScheduledRunMenuSection` is the identity's ONE builder).
+  const rowMenu = useScheduledRunMenuSection<AdminRunRow>({
+    rows: () => rows,
+    content: (r) =>
+      [
+        `Run: ${r.id}`,
+        `Task: ${r.task_title ?? "(title unavailable)"} (${r.task_id})`,
+        `Status: ${r.status}`,
+        `Surface: ${r.surface ?? "—"}`,
+      ].join("\n"),
+    onMarkedFailed: () => void load(),
+  });
 
   const columns = useMemo((): MatrxColumnDef<AdminRunRow>[] => {
     return [
@@ -158,6 +174,13 @@ export default function AdminRunsPage() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="min-h-0 flex-1" data-surface-value="run_row_count">
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          getApplicationScope={rowMenu.getApplicationScope}
+          resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+          extraSections={rowMenu.sections}
+        >
         <MatrxDataTable
           urlState={{ id: "scheduling-runs" }}
           data={rows}
@@ -264,6 +287,7 @@ export default function AdminRunsPage() {
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
