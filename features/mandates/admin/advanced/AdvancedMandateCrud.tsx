@@ -19,6 +19,7 @@ import type {
   MatrxColumnDef,
 } from "@/components/official/matrx-data-table/types";
 import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -255,6 +256,26 @@ export function AdvancedMandateCrud() {
       )}
 
       <div className="min-h-0 flex-1 overflow-hidden px-4 py-3">
+        {/* No entity: this X-ray browses whichever raw relation is selected
+            (ADVANCED_RELATIONS), so there is no single registered
+            EntityTypeToken for "a row here" — the identity changes with
+            `relKey`. Copy/AI act on the raw row content only. */}
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id
+              ? (rows.find((r) => (pk ? String(r[pk]) : JSON.stringify(r)) === id) ??
+                null)
+              : null;
+            if (!row) return null;
+            return { content: JSON.stringify(row, null, 2) };
+          }}
+        >
         <MatrxDataTable<Row>
           data={rows}
           columns={tableColumns}
@@ -342,6 +363,7 @@ export function AdvancedMandateCrud() {
               : undefined
           }
         />
+        </NonEditableContextMenu>
       </div>
 
       {sql && (
