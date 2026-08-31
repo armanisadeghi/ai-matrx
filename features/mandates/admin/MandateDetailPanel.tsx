@@ -25,6 +25,7 @@ import {
   FileCode2,
   GitCompareArrows,
   History,
+  Info,
   Loader2,
   Pin,
   ShieldCheck,
@@ -63,6 +64,7 @@ import {
 import { MandateTestBench } from "./MandateTestBench";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateContextGate } from "./MandateContextGate";
+import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import {
   buildRebindFixBrief,
   codeTruthRebindImpact,
@@ -1018,6 +1020,29 @@ function StatusBanner({
           </Button>
         </div>
       );
+    // 🚨 THE CALM STATE (V2-2). A mandate nobody has bound yet is not broken,
+    // and this banner used to be the rose "unresolved pin" alert on every
+    // mandate a person had just created. Neutral chrome, the true fact, and
+    // the door to the one binding UI — never a remedy for a problem that does
+    // not exist.
+    case "no holder yet":
+      return (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
+          <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="font-medium text-foreground">No holder yet</span>
+          <span className="text-muted-foreground">
+            {HEALTH_HINT["no holder yet"]}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={onOpenRebind}
+          >
+            Choose a holder
+          </Button>
+        </div>
+      );
     case "unresolved pin":
       return <UnresolvedPinPanel row={row} onSaved={onSaved} />;
   }
@@ -1224,6 +1249,18 @@ function FactsPanel({
       <Fact label="Context">
         <MandateContextGate row={row} onSaved={onSaved} />
       </Fact>
+      {/* 🚨 ONE SENTENCE, ONE AUTHORITY (V2-2). This fact used to be rendered
+          from `code_truth.passes_user_input` inside the code block below —
+          a fact about the CALLING CODE, printed as a verdict about the
+          mandate, and contradicting the user host on the same mandate in the
+          same minute. The served input surface is the authority for both. */}
+      <Fact label="User text">
+        <MandateUserTextLine
+          mandateKey={row.mandateKey}
+          showIcon={false}
+          className="text-xs"
+        />
+      </Fact>
       {row.codeTruth && (
         <>
           <Fact label="Code declaration">
@@ -1273,10 +1310,13 @@ function FactsPanel({
               <span className="font-medium text-rose-600">no variables</span>
             )}
           </Fact>
-          <Fact label="User text">
+          {/* A fact about the CALLING CODE, labelled as one. Whether the
+              mandate itself accepts free text is the served surface's answer,
+              rendered once, above. */}
+          <Fact label="Code passes user text">
             {row.codeTruth.passes_user_input
-              ? "This Mandate accepts user text"
-              : "This Mandate forbids user text"}
+              ? "Yes — the call site forwards what the person typed"
+              : "No — the call site sends named variables only"}
           </Fact>
           <Fact label="Call sites">
             {row.codeTruth.call_sites?.length ? (

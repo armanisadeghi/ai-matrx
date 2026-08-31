@@ -27,7 +27,6 @@ import {
   ArrowDown,
   Check,
   Lock,
-  MessageSquareText,
   Package,
   Pencil,
   X,
@@ -53,6 +52,7 @@ import {
 import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import { Section } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -262,10 +262,13 @@ export function TriadInputSection({
           </div>
         ) : null}
 
-        <p className="flex items-center gap-1.5 border-t border-border/40 pt-2 text-[11.5px] text-muted-foreground/80">
-          <MessageSquareText className="h-3 w-3" />
-          Free text from the caller is accepted (platform default).
-        </p>
+        {/* 🚨 ONE SENTENCE, ONE AUTHORITY — see MandateUserTextLine. This was
+            a hardcoded "accepted (platform default)" while the admin panel
+            said the opposite about the same mandate. */}
+        <MandateUserTextLine
+          mandateKey={data.mandate.mandate_key}
+          className="border-t border-border/40 pt-2 text-[11.5px] text-muted-foreground/80"
+        />
         {Object.keys(data.pins).length > 0 ? (
           <p className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground/80">
             <Lock className="h-3 w-3" />

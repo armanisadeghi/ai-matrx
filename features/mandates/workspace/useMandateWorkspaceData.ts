@@ -22,6 +22,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
+import {
+  loadFailedFailure,
+  noSuchMandateFailure,
+  notAnAddressFailure,
+  readMandateAddress,
+  type MandateLoadFailure,
+} from "../mandate-address";
 import type { Database } from "@/types/database.types";
 import { fetchProvision, type ProvisionOffer } from "../provisions";
 import {
@@ -79,6 +86,13 @@ export interface UseMandateWorkspaceData {
    * The raw response still travels as `cause` for the Error Inspector.
    */
   error: string | null;
+  /**
+   * 🚨 WHY it failed, so the screen can offer only controls that can work
+   * (V2-6). `error` above stays the sentence for every existing reader; this
+   * carries the verdict — a wrong address, a mandate nothing answers to, or a
+   * read that genuinely broke. Only the last one is retryable.
+   */
+  failure: MandateLoadFailure | null;
   refresh: () => void;
 }
 
@@ -98,6 +112,16 @@ export async function requireMandateWorkspaceUser(
   return userId;
 }
 
+/** A well-formed address nothing answers to — NOT a broken read. */
+class MandateNotFound extends Error {
+  readonly address: string;
+  constructor(address: string) {
+    super(`No mandate is registered under "${address}".`);
+    this.name = "MandateNotFound";
+    this.address = address;
+  }
+}
+
 function message(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -107,7 +131,7 @@ export function useMandateWorkspaceData(
 ): UseMandateWorkspaceData {
   const [data, setData] = useState<MandateWorkspaceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<MandateLoadFailure | null>(null);
   const [generation, setGeneration] = useState(0);
 
   const refresh = useCallback(() => setGeneration((g) => g + 1), []);
@@ -115,7 +139,20 @@ export function useMandateWorkspaceData(
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setFailure(null);
+
+    // A segment that cannot name a mandate never reaches the database. This
+    // is the shortcut routes' rule (FIX-6 item 4) applied to the mandate
+    // routes: `/mandates/new` and friends used to be told their mandate had
+    // been retired.
+    if (readMandateAddress(mandateKeyOrId) === "not-an-address") {
+      setData(null);
+      setFailure(notAnAddressFailure(mandateKeyOrId));
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     (async () => {
       const supabase = createClient();
@@ -135,11 +172,7 @@ export function useMandateWorkspaceData(
         : await mandateQuery.eq("mandate_key", mandateKeyOrId).limit(1);
       if (mandateError) throw operationFailed("open this mandate", mandateError);
       const mandate = mandateRows?.[0];
-      if (!mandate) {
-        throw new Error(
-          `No mandate "${mandateKeyOrId}" — it may have been retired, or the link is stale.`,
-        );
-      }
+      if (!mandate) throw new MandateNotFound(mandateKeyOrId);
 
       const wave1 = parseMandateWave1(mandate);
 
@@ -234,11 +267,15 @@ export function useMandateWorkspaceData(
       .then((next) => {
         if (cancelled) return;
         setData(next);
-        setError(null);
+        setFailure(null);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(message(err));
+        setFailure(
+          err instanceof MandateNotFound
+            ? noSuchMandateFailure(err.address)
+            : loadFailedFailure(message(err)),
+        );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -259,5 +296,5 @@ export function useMandateWorkspaceData(
   }, [data]);
   void parsed;
 
-  return { data, loading, error, refresh };
+  return { data, loading, error: failure?.message ?? null, failure, refresh };
 }

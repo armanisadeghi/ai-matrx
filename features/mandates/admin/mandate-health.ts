@@ -29,9 +29,17 @@ export type MandateHealth =
   | "agent archived"
   | "code ↔ contract drift"
   | "version drift"
+  | "no holder yet"
   | "ok";
 
-/** Stable worst-first order for both primary-health selection and table rows. */
+/**
+ * Stable worst-first order for both primary-health selection and table rows.
+ *
+ * 🚨 `no holder yet` IS NOT A DEFECT and sorts beside `ok`, not with the red
+ * states. See `buildRow`'s `hasPin` note: a mandate that was never pinned used
+ * to be reported as `unresolved pin` — a rose alert offering to replace an
+ * agent that had never been chosen, on EVERY mandate a person creates.
+ */
 export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   "code ↔ agent drift": 0,
   "code truth import failed": 1,
@@ -40,7 +48,8 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   "agent archived": 4,
   "code ↔ contract drift": 5,
   "version drift": 6,
-  ok: 7,
+  "no holder yet": 7,
+  ok: 8,
 };
 
 /**
@@ -214,13 +223,27 @@ export function buildRow(
     archived = Boolean(agent?.isArchived);
   }
 
+  // 🚨 NO PIN IS NOT A BROKEN PIN (V2-2, walked on production 2026-08-31).
+  // A mandate that has never been bound carries neither a holder id nor a
+  // version id, so `agentId` is null — and every agent-derived verdict below
+  // read that null as "the pinned agent could not be read". Every newly
+  // created mandate therefore opened its admin panel on a rose alert claiming
+  // "The pinned agent no longer exists", about a pin that never existed, two
+  // inches under the workspace correctly saying "No holder yet". The state is
+  // real and calm, and it now has its own name.
+  const hasPin = Boolean(holder.versionId || holder.holderId);
+
   // An agent the console could not resolve is NEVER "ok" — it means the pin
   // points at a row this admin can't read (personal agent under another
   // owner's RLS) or at a deleted record. Silently reporting green there is
-  // exactly the kind of dead end this console exists to prevent.
-  const unresolved = agentId == null || agentType == null;
+  // exactly the kind of dead end this console exists to prevent. It requires
+  // a pin to exist in the first place.
+  const unresolved = hasPin && (agentId == null || agentType == null);
 
+  // Code ↔ AGENT drift compares the code declaration to the BOUND agent. With
+  // nothing bound there is no second side, so the comparison cannot be made.
   const codeAgentDrift =
+    hasPin &&
     codeTruth?.resolution === "code_declaration_found" &&
     codeTruth.bound_agent_drift != null &&
     codeTruth.bound_agent_drift !== "match";
@@ -244,7 +267,9 @@ export function buildRow(
               ? "code ↔ contract drift"
               : drift
                 ? "version drift"
-                : "ok";
+                : hasPin
+                  ? "ok"
+                  : "no holder yet";
 
   // The contract is the mandate's factual I/O declaration — the Inputs and
   // Output columns render THIS, never the bare input_kind/output_kind
@@ -317,6 +342,9 @@ export function buildRow(
 
 export const HEALTH_CLASS: Record<MandateHealth, string> = {
   ok: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
+  // Neutral on purpose — this is the true resting state of a new mandate,
+  // not a problem. Nothing red, nothing amber.
+  "no holder yet": "text-muted-foreground border-border bg-muted/40",
   "code ↔ agent drift": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "code truth import failed":
     "text-amber-600 border-amber-500/40 bg-amber-500/10",
@@ -342,6 +370,8 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
   "not a system agent":
     "This mandate serves every user, but its default is a personal agent only some of them can see.",
   "agent archived": "The pinned agent is archived — rebind before it breaks.",
+  "no holder yet":
+    "Nothing is bound to this mandate yet, which is where every new mandate starts. Choose a holder above whenever the intelligence exists.",
 };
 
 // ── Drift remedy — which "newest" is real, and which button can reach it ─────

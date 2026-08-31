@@ -647,9 +647,11 @@ export function MandatesConsole() {
       code_agent_drift: 0,
       code_contract_drift: 0,
       code_truth_import_failed: 0,
+      no_holder_yet: 0,
     };
     for (const r of rows) {
       if (r.health === "ok") health.ok += 1;
+      else if (r.health === "no holder yet") health.no_holder_yet += 1;
       else if (r.health === "code ↔ agent drift") health.code_agent_drift += 1;
       else if (r.health === "code ↔ contract drift")
         health.code_contract_drift += 1;

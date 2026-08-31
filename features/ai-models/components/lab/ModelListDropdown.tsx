@@ -101,7 +101,25 @@ import {
 } from "@/features/ai-models/constants/service-label";
 
 const PANEL_HEIGHT = 440;
-const LIST_MAX_HEIGHT = "min(440px, 70dvh)";
+/**
+ * 🚨 THE PICKER STAYS ON SCREEN (V2-5, production walk 2026-08-31).
+ *
+ * The popover asked for a FIXED 440px of height. Radix's collision handling
+ * flips a popper to the other side but does NOT shift it along the side axis,
+ * so on a short window (measured at 757px of viewport) with no room either way
+ * the content rendered at `top: -79.5px` — the search input and the whole
+ * sort/filter row above the top of the screen, unreachable, leaving a
+ * 144-model catalogue to be found by scrolling. Reproduced in both themes.
+ *
+ * Radix publishes the space it actually has as `--radix-popper-available-height`
+ * on the content element, so the panel takes the SMALLER of its ideal height
+ * and that. It then never exceeds the room on the chosen side, so the popper
+ * has nothing to overflow and the search row stays in the viewport. The
+ * `70dvh` in the fallback is only for the first paint before the variable is
+ * written; the columns inside are `h-full` for the same reason — a fixed inner
+ * height would have re-introduced the overflow one level down.
+ */
+const LIST_MAX_HEIGHT = `min(${PANEL_HEIGHT}px, var(--radix-popper-available-height, 70dvh))`;
 // Fixed column widths — the popover width is their sum per variant.
 const LIST_WIDTH = 448; // widened for the Points column (the user currency)
 const DETAIL_WIDTH = 360; // widened so modality/capability rows never wrap
@@ -1966,19 +1984,21 @@ export function ModelListDropdown({
           width: popoverWidth,
           maxWidth: "calc(100vw - 24px)",
           height: PANEL_HEIGHT,
+          // See LIST_MAX_HEIGHT — this clamp is what keeps the search row on
+          // screen at an 800px-tall window.
           maxHeight: LIST_MAX_HEIGHT,
         }}
       >
         <div className="flex h-full">
           <div
-            className="flex shrink-0 flex-col border-r border-border"
+            className="flex h-full min-h-0 shrink-0 flex-col border-r border-border"
             style={{ width: LIST_WIDTH }}
           >
             {listPanel}
           </div>
           <div
-            className="flex shrink-0 flex-col overflow-hidden"
-            style={{ width: DETAIL_WIDTH, height: PANEL_HEIGHT }}
+            className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
+            style={{ width: DETAIL_WIDTH }}
           >
             {rightPanel === "filters" ? (
               <FiltersPanel
@@ -2019,8 +2039,8 @@ export function ModelListDropdown({
           {/* Admin extension column — the LARGE total-transparency section. */}
           {variant === "admin" && (
             <div
-              className="flex shrink-0 flex-col overflow-hidden border-l border-border"
-              style={{ width: ADMIN_PANEL_WIDTH, height: PANEL_HEIGHT }}
+              className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l border-border"
+              style={{ width: ADMIN_PANEL_WIDTH }}
             >
               {adminPanelModel ? (
                 <AdminOfferingsSection model={adminPanelModel} />

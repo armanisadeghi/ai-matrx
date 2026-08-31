@@ -120,6 +120,28 @@ export function isUserTextOnly(surface: MandateInputSurface): boolean {
   return surface.inputs.length === 0 && surface.notes.length === 0;
 }
 
+/**
+ * 🚨 THE ONE SENTENCE ABOUT FREE USER TEXT — every host renders THIS, from
+ * THIS authority (V2-2, walked on production 2026-08-31).
+ *
+ * Two screens used to answer the same question about the same mandate in the
+ * same minute, in opposite directions: the user host printed a hardcoded
+ * "Free text from the caller is accepted (platform default)." that asked
+ * nothing, and the admin panel printed "This Mandate forbids user text" from
+ * `code_truth.passes_user_input` — a fact about what the CALLING CODE passes,
+ * relabelled as a fact about the mandate, and false for every mandate with no
+ * code declaration at all.
+ *
+ * The served input surface's `accepts_user_input` is the mandate's own answer
+ * and the only one the run door honours, so it is the only one either screen
+ * is allowed to say. Rendered through `<MandateUserTextLine>`, never re-derived.
+ */
+export function userTextSentence(surface: MandateInputSurface): string {
+  return surface.acceptsUserInput
+    ? "Free text from the caller is accepted, on top of whatever this job declares."
+    : "Free text from the caller is not accepted — this job runs on its declared inputs only.";
+}
+
 /** `GET /mandates/{mandate_key}/input-surface`, resolved for the caller (their
  * own override's Holder is the one that informs the form). */
 export function useMandateInputSurface(

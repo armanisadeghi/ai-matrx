@@ -36,6 +36,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   Building2,
   ChevronDown,
   CircleCheck,
@@ -75,6 +76,7 @@ import {
   type MandateBindingRowDb,
   type MandateWorkspaceData,
 } from "./useMandateWorkspaceData";
+import { loadFailedFailure } from "../mandate-address";
 
 /**
  * Which principal a HOST speaks for. It PRE-SELECTS the rung in the binding
@@ -178,7 +180,8 @@ export function MandateWorkspace({
   host,
   principal = { kind: "user" },
 }: MandateWorkspaceProps) {
-  const { data, loading, error, refresh } = useMandateWorkspaceData(mandateKeyOrId);
+  const { data, loading, failure, refresh } =
+    useMandateWorkspaceData(mandateKeyOrId);
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
   const orgIds = useMemo(
@@ -193,13 +196,35 @@ export function MandateWorkspace({
       </div>
     );
   }
-  if (error || !data) {
+  if (failure || !data) {
+    // 🚨 ONLY THE CONTROL THAT CAN WORK (V2-6). A wrong address and a mandate
+    // nothing answers to are not failed reads: retrying them re-runs a query
+    // whose answer cannot change. Retry survives for the one state where it
+    // can succeed. Both other states get the door that can — the list.
+    const verdict = failure ?? loadFailedFailure("Unknown error.");
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-24 text-center">
-        <p className="text-sm text-destructive">{error ?? "Unknown error."}</p>
-        <Button variant="outline" size="sm" onClick={refresh}>
-          Retry
-        </Button>
+        <p
+          className={
+            verdict.kind === "load-failed"
+              ? "text-sm text-destructive"
+              : "text-sm text-muted-foreground"
+          }
+        >
+          {verdict.message}
+        </p>
+        {verdict.retryable ? (
+          <Button variant="outline" size="sm" onClick={refresh}>
+            Retry
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={host === "admin-route" ? "/administration/mandates" : "/mandates"}>
+              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+              All mandates
+            </Link>
+          </Button>
+        )}
       </div>
     );
   }
