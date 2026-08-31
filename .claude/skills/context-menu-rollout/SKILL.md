@@ -116,6 +116,33 @@ The row stays **visible, in place, disabled**, with the reason as its tooltip.
 **Never delete a row to make it fit your surface.** A missing row teaches
 nothing; a disabled row naming where it works is a direction.
 
+### 2b. THE THIN-WRAPPER CASE — when the rows are not in your file
+
+Many windows and route pages are a **thin shell around a workspace component**
+that actually renders the rows, and that component is in someone else's shard.
+You cannot give those rows a per-row identity from your file alone.
+
+Do this, in order:
+
+1. **Mount the pane menu anyway.** A window without its own menu answers
+   right-clicks with the page underneath — that is the harm, and mounting fixes
+   it even with no per-row entity.
+2. **Do NOT reach into the child.** It belongs to another agent.
+3. **Report the exact child file and what it needs.** Almost always one line
+   per row — the DOM sniffer means the child needs no resolver at all:
+
+   ```tsx
+   <tr data-entity-type="task" data-entity-id={row.id} data-entity-title={row.title}>
+   ```
+
+4. Grade yourself honestly as a shell and say WHY: "rows live in
+   `ProjectsWorkspace.tsx`, out of shard".
+
+⚠️ **A child that already mounts its own menu needs nothing from you.** If the
+component you render wraps itself (e.g. `ChatThread`), adding an outer wrapper
+creates a dead nest — the innermost trigger wins and yours never opens. Leave
+it, and say so.
+
 ### 3. Wrap the pane
 
 ```tsx
