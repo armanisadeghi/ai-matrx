@@ -26,7 +26,13 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Download,
   FolderInput,
@@ -211,7 +217,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const browse = useBrowseAction();
 
   const [query, setQuery] = useState("");
-  const [showRecentsOnly, setShowRecentsOnly] = useState(false);
+  const [recentsCutoff, setRecentsCutoff] = useState<number | null>(null);
+  const showRecentsOnly = recentsCutoff !== null;
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const resolutionGateRef = useRef(createExclusiveOperationGate());
   const [metadataFile, setMetadataFile] = useState<CloudFileRecord | null>(
@@ -245,7 +252,6 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   }, [userId, treeStatus, dispatch]);
 
   const imageFiles = useMemo(() => {
-    const cutoff = showRecentsOnly ? Date.now() - RECENTS_WINDOW_MS : 0;
     const q = query.trim().toLowerCase();
     return allFiles
       .filter((file) => {
@@ -258,7 +264,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             : file.createdAt
               ? new Date(file.createdAt).getTime()
               : 0;
-          if (ts < cutoff) return false;
+          if (recentsCutoff !== null && ts < recentsCutoff) return false;
         }
         if (
           q &&
@@ -273,22 +279,38 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         const bTs = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return bTs - aTs;
       });
-  }, [allFiles, query, showRecentsOnly]);
+  }, [allFiles, query, recentsCutoff, showRecentsOnly]);
   // applySurfaceWrite resolves a handler before the ask-confirmation dialog.
   // Read the post-confirmation render here so a filter changed while that
   // dialog was open cannot authorize a now-hidden image id.
   const visibleImageFilesRef = useRef(imageFiles);
-  visibleImageFilesRef.current = imageFiles;
-
-  useEffect(() => {
-    const visibleIds = new Set(imageFiles.map((file) => file.id));
-    setBulkSelectedIds((current) => current.filter((id) => visibleIds.has(id)));
+  useLayoutEffect(() => {
+    visibleImageFilesRef.current = imageFiles;
   }, [imageFiles]);
 
+  const visibleBulkSelectedIds = useMemo(() => {
+    const visibleIds = new Set(imageFiles.map((file) => file.id));
+    return bulkSelectedIds.filter((id) => visibleIds.has(id));
+  }, [bulkSelectedIds, imageFiles]);
+
   const selectedBulkFiles = useMemo(
-    () => imageFiles.filter((file) => bulkSelectedIds.includes(file.id)),
-    [imageFiles, bulkSelectedIds],
+    () => imageFiles.filter((file) => visibleBulkSelectedIds.includes(file.id)),
+    [imageFiles, visibleBulkSelectedIds],
   );
+
+  // Filters prune selection as part of the initiating event. Keeping this out
+  // of an effect avoids a transient frame where the toolbar and scope claim a
+  // hidden selection, while still preventing hidden ids from reappearing when
+  // the filter is broadened later.
+  const handleQueryChange = (next: string) => {
+    setBulkSelectedIds(visibleBulkSelectedIds);
+    setQuery(next);
+  };
+
+  const handleRecentsOnlyChange = (next: boolean) => {
+    setBulkSelectedIds(visibleBulkSelectedIds);
+    setRecentsCutoff(next ? new Date().getTime() - RECENTS_WINDOW_MS : null);
+  };
 
   const handleToggleBulkSelected = (fileId: string) => {
     setBulkSelectedIds((current) =>
@@ -470,9 +492,9 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   //
   // The three declared targets on `matrx-user/images`, each landing through
   // the SAME setter this component's own controls call — the search box calls
-  // `setQuery`, the Recents chip calls `setShowRecentsOnly`, a tile checkbox
-  // calls `setBulkSelectedIds`. No parallel write path exists, so an agent
-  // write and a user click are indistinguishable downstream.
+  // `handleQueryChange`, the Recents chip calls `handleRecentsOnlyChange`, and
+  // a tile checkbox calls `setBulkSelectedIds`. No parallel write path exists,
+  // so an agent write and a user click are indistinguishable downstream.
   //
   // Every handler VALIDATES AND THROWS before it mutates anything: the
   // writeback seam turns a throw into a safe error envelope the agent reads
@@ -503,7 +525,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
           `search_query expects a string (pass "" to clear the search) — received ${typeof value}.`,
         );
       }
-      setQuery(value);
+      handleQueryChange(value);
     },
     recents_only: (value: unknown) => {
       // Booleans arrive parsed; tolerate the exact "true"/"false" strings a
@@ -522,7 +544,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
           `recents_only expects a boolean (true to show only the last 30 days, false to show the whole library) — received ${typeof value}.`,
         );
       }
-      setShowRecentsOnly(next);
+      handleRecentsOnlyChange(next);
     },
     image_selection: (value: unknown) => {
       setBulkSelectedIds(
@@ -563,7 +585,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               <div className="min-w-0 flex-1" data-surface-value="search_query">
                 <SearchInput
                   value={query}
-                  onValueChange={setQuery}
+                  onValueChange={handleQueryChange}
                   placeholder="Search your images..."
                   inputClassName="h-9 bg-background text-base"
                   showClearButton={true}
@@ -585,7 +607,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                   type="button"
                   variant={showRecentsOnly ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setShowRecentsOnly((v) => !v)}
+                  onClick={() => handleRecentsOnlyChange(!showRecentsOnly)}
                   className="h-9"
                   data-surface-value="recents_only"
                 >
@@ -673,7 +695,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                     resolvingId={resolvingId}
                     selectionMode={selectionMode}
                     isSelected={(id) => isSelected(`cloud:${id}`)}
-                    bulkSelectedIds={bulkSelectedIds}
+                    bulkSelectedIds={visibleBulkSelectedIds}
                     onToggleBulkSelected={handleToggleBulkSelected}
                     onTileClick={handleTileClick}
                     onShowMetadata={setMetadataFile}
@@ -685,7 +707,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                     resolvingId={resolvingId}
                     selectionMode={selectionMode}
                     isSelected={(id) => isSelected(`cloud:${id}`)}
-                    bulkSelectedIds={bulkSelectedIds}
+                    bulkSelectedIds={visibleBulkSelectedIds}
                     onToggleBulkSelected={handleToggleBulkSelected}
                     onTileClick={handleTileClick}
                     onShowMetadata={setMetadataFile}
@@ -701,7 +723,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               }}
             />
             <FloatingSelectionToolbar
-              selectedCount={bulkSelectedIds.length}
+              selectedCount={visibleBulkSelectedIds.length}
               actions={[
                 {
                   id: "download",
@@ -781,8 +803,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    Delete {bulkSelectedIds.length}{" "}
-                    {bulkSelectedIds.length === 1 ? "image" : "images"}?
+                    Delete {visibleBulkSelectedIds.length}{" "}
+                    {visibleBulkSelectedIds.length === 1 ? "image" : "images"}?
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     These images will move to Trash. You can restore them later
@@ -861,7 +883,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
 
                   <button
                     type="button"
-                    onClick={() => setShowRecentsOnly((v) => !v)}
+                    onClick={() => handleRecentsOnlyChange(!showRecentsOnly)}
                     className={cn(
                       "flex min-h-[48px] w-full items-center gap-3 rounded-xl border border-border bg-card/60 px-3 text-left",
                       showRecentsOnly && "border-primary/40 text-primary",
