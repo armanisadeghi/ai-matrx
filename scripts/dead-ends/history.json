@@ -241,5 +241,14 @@
     "medium": 32,
     "low": 0,
     "filesWithFindings": 60
+  },
+  {
+    "generatedAt": "2026-08-31T09:01:08.607Z",
+    "commit": "badec453152004f35391ef8a343e6f36270a37ec",
+    "findings": 36,
+    "high": 10,
+    "medium": 26,
+    "low": 0,
+    "filesWithFindings": 29
   }
 ]

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T083803Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-31T08:59:40.561Z",
-  "summary": "Certified candidate queued for fast-forward integration to origin/main",
+  "state": "closed",
+  "updatedAt": "2026-08-31T09:00:52.369Z",
+  "summary": "Closed certified wave 2 after integration; unresolved identity and detector-machinery rows remain queued unsuppressed",
   "source": "20260831T083803Z.json",
-  "eventHash": "b0654321a3a4932f3f16bd06e36101a83d11cc1555e4ddaae8e211eb93a83d5e"
+  "eventHash": "5f5cd51a561ab6fe73d0960e081909ac43db992249b5a0203536e9fcce3c7e7b"
 }
