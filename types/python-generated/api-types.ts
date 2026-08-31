@@ -8063,6 +8063,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/loops/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_loops_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/buttercms/public/status": {
         parameters: {
             query?: never;
@@ -8191,6 +8208,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_smugmug_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pixieset/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pixieset_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -58276,6 +58310,41 @@ export interface components {
          */
         LoopStatus: "active" | "blocked" | "paused" | "completed" | "cancelled";
         /**
+         * LoopsServiceStatus
+         * @description Safe aggregate status projection for Loops' fixed status page.
+         */
+        LoopsServiceStatus: {
+            /**
+             * Kind
+             * @default loops_public_service_status
+             * @constant
+             */
+            __kind?: "loops_public_service_status";
+            /**
+             * Provider
+             * @default loops
+             * @constant
+             */
+            provider?: "loops";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.loops.so
+             * @constant
+             */
+            status_page?: "https://status.loops.so";
+        };
+        /**
          * LucidStatusResult
          * @description Safe projection of Lucid Software's high-level service status.
          */
@@ -66387,6 +66456,38 @@ export interface components {
              * @constant
              */
             instance_page?: "https://pixelfed.social/";
+        };
+        /**
+         * PixiesetServiceStatus
+         * @description Safe aggregate status projection for Pixieset's fixed status page.
+         */
+        PixiesetServiceStatus: {
+            /**
+             * Kind
+             * @default pixieset_public_photo_platform_status
+             * @constant
+             */
+            __kind?: "pixieset_public_photo_platform_status";
+            /**
+             * Provider
+             * @default Pixieset
+             * @constant
+             */
+            provider?: "Pixieset";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.pixieset.com
+             * @constant
+             */
+            status_page?: "https://status.pixieset.com";
         };
         /**
          * PlacementPassResult
@@ -103217,6 +103318,26 @@ export interface operations {
             };
         };
     };
+    public_status_loops_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopsServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_buttercms_public_status_get: {
         parameters: {
             query?: never;
@@ -103373,6 +103494,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SmugMugServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pixieset_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PixiesetServiceStatus"];
                 };
             };
         };

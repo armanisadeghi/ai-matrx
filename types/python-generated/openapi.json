@@ -18991,6 +18991,27 @@
         }
       }
     },
+    "/loops/public/status": {
+      "get": {
+        "tags": [
+          "Loops Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_loops_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/buttercms/public/status": {
       "get": {
         "tags": [
@@ -19152,6 +19173,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SmugMugServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pixieset/public/status": {
+      "get": {
+        "tags": [
+          "Pixieset Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pixieset_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PixiesetServiceStatus"
                 }
               }
             }
@@ -145101,6 +145143,51 @@
         "title": "LoopStatus",
         "description": "The LOOP's lifecycle — deliberately coarser than any stage's status."
       },
+      "LoopsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "loops_public_service_status",
+            "title": "Kind",
+            "default": "loops_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "loops",
+            "title": "Provider",
+            "default": "loops"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.loops.so",
+            "title": "Status Page",
+            "default": "https://status.loops.so"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LoopsServiceStatus",
+        "description": "Safe aggregate status projection for Loops' fixed status page."
+      },
       "LucidStatusResult": {
         "properties": {
           "__kind": {
@@ -163621,6 +163708,47 @@
         ],
         "title": "PixelfedInstanceStatistics",
         "description": "Safe factual projection of the fixed Pixelfed public instance."
+      },
+      "PixiesetServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pixieset_public_photo_platform_status",
+            "title": "Kind",
+            "default": "pixieset_public_photo_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pixieset",
+            "title": "Provider",
+            "default": "Pixieset"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pixieset.com",
+            "title": "Status Page",
+            "default": "https://status.pixieset.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PixiesetServiceStatus",
+        "description": "Safe aggregate status projection for Pixieset's fixed status page."
       },
       "PlacementPassResult": {
         "properties": {
