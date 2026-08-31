@@ -129,16 +129,37 @@ function competitorView(raw: string | null): CompetitorView {
  * every bit of context lost. Only the default Run tab appeared to work. The
  * base is now whatever route the workspace is actually mounted on.
  */
+/**
+ * `routed` — the workspace is mounted on a route that OWNS the view
+ * (`…/competitors/review` and its four siblings, the agency-model tree). Then
+ * every tab is a real path, and `?view=` disappears. Left false (the flat
+ * mount and any pre-restructure bookmark), the tabs stay `?view=` links —
+ * exactly what they were.
+ */
 function competitorViewHref(
   view: CompetitorView,
   siteId: string | null,
   basePath: string,
+  routed = false,
 ): string {
   const params = new URLSearchParams();
   if (siteId) params.set("siteId", siteId);
-  if (view !== "run") params.set("view", view);
+  if (!routed && view !== "run") params.set("view", view);
   const query = params.toString();
-  return `${basePath}${query ? `?${query}` : ""}`;
+  const path = routed && view !== "run" ? `${basePath}/${view}` : basePath;
+  return `${path}${query ? `?${query}` : ""}`;
+}
+
+/**
+ * The route the sibling views hang off, when the view came from the ROUTE.
+ * The default view (`run`) sits at the base itself; every other one is one
+ * segment below it, so the base is the pathname with that segment removed.
+ */
+function competitorBasePath(pathname: string, view: CompetitorView): string {
+  if (view === "run") return pathname;
+  return pathname.endsWith(`/${view}`)
+    ? pathname.slice(0, -(view.length + 1))
+    : pathname;
 }
 
 function siteBrandLabel(site: CompetitorSite): string {
@@ -252,16 +273,26 @@ function OpportunityDetail({ row }: { row: CompetitorOpportunityRow }) {
 
 export default function CompetitorAutopsyWorkspace({
   brandId,
+  view: fixedView,
 }: {
   /** Brand scope. Supplied by the brand route so the workspace can never fall
    * back to another client's site — see useCompetitorAutopsy's brandId note. */
   brandId?: string | null;
+  /**
+   * The view fixed by the ROUTE — each competitor screen has its own URL under
+   * the brand (`…/intelligence/competitors/{review,opportunities,competitors,
+   * evidence,history}`, the bare route being Run). Left out, the view still
+   * comes from `?view=`, which is what the flat mount and every
+   * pre-restructure bookmark speak.
+   */
+  view?: string;
 } = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const requestedSiteId = searchParams.get("siteId");
-  const activeView = competitorView(searchParams.get("view"));
+  const routed = fixedView != null;
+  const activeView = competitorView(fixedView ?? searchParams.get("view"));
   const [domains, setDomains] = useState("");
   const [maxCompetitors, setMaxCompetitors] = useState(3);
   const [pagesPerCompetitor, setPagesPerCompetitor] = useState(3);
@@ -271,8 +302,13 @@ export default function CompetitorAutopsyWorkspace({
   const { sites, scopedSites, workspace, run, start, resolvedSiteId } =
     useCompetitorAutopsy(requestedSiteId, brandId);
   // The route this workspace is mounted on — the brand route when brand-scoped,
-  // the flat route otherwise. Every tab href is built from it.
-  const basePath = pathname ?? marketingRoutes.competitors();
+  // the flat route otherwise. Every tab href is built from it. When the route
+  // owns the view, the mounted path is one segment BELOW the base, so the
+  // segment comes back off before the siblings are built from it.
+  const basePath = competitorBasePath(
+    pathname ?? marketingRoutes.competitors(),
+    routed ? activeView : "run",
+  );
 
   const data = workspace.data;
   const completedRun = data?.runs.find((item) => item.status === "completed");
@@ -800,7 +836,7 @@ export default function CompetitorAutopsyWorkspace({
   const headerModes = COMPETITOR_VIEWS.map((view) => ({
     name: view.name,
     icon: view.icon,
-    href: competitorViewHref(view.id, resolvedSiteId, basePath),
+    href: competitorViewHref(view.id, resolvedSiteId, basePath, routed),
   }));
   const headerOptions = availableSites.map((site) => {
     const brandLabel = siteBrandLabel(site);
@@ -809,7 +845,7 @@ export default function CompetitorAutopsyWorkspace({
         (brandSiteCounts.get(brandLabel) ?? 0) > 1
           ? `${brandLabel} · ${site.domain}`
           : brandLabel,
-      href: competitorViewHref(activeView, site.id, basePath),
+      href: competitorViewHref(activeView, site.id, basePath, routed),
       active: site.id === resolvedSiteId,
     };
   });
@@ -854,7 +890,7 @@ export default function CompetitorAutopsyWorkspace({
         }
         entityOptions={headerOptions}
         modes={headerModes}
-        activeModeHref={competitorViewHref(activeView, resolvedSiteId, basePath)}
+        activeModeHref={competitorViewHref(activeView, resolvedSiteId, basePath, routed)}
         actions={[
           {
             label: "Refresh",
@@ -1101,7 +1137,7 @@ export default function CompetitorAutopsyWorkspace({
                 size="sm"
                 className="shrink-0"
                 onClick={() =>
-                  router.push(competitorViewHref("review", resolvedSiteId, basePath))
+                  router.push(competitorViewHref("review", resolvedSiteId, basePath, routed))
                 }
               >
                 Review them

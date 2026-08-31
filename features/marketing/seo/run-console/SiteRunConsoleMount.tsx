@@ -11,10 +11,30 @@
  * here (see `MarketingSiteContext.tsx`'s header comment on why).
  */
 
+import { usePathname } from "next/navigation";
+
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { RunConsole } from "./RunConsole";
+import { runConsoleBasePath } from "./routed-view";
 
-export function SiteRunConsoleMount() {
+export function SiteRunConsoleMount({
+  /**
+   * The result view fixed by the ROUTE — `…/automations/{proposals,unplaced,
+   * history}`, the bare `…/automations` being This run. Left out, the console
+   * keeps its own local tab state.
+   */
+  view,
+}: {
+  view?: string;
+} = {}) {
   const { site } = useMarketingSite();
-  return <RunConsole scope={{ tier: "site", siteId: site.id }} />;
+  const pathname = usePathname();
+  const basePath = pathname ? runConsoleBasePath(pathname, view) : undefined;
+  return (
+    <RunConsole
+      scope={{ tier: "site", siteId: site.id }}
+      view={view}
+      basePath={basePath}
+    />
+  );
 }

@@ -24,7 +24,17 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import CompetitorAutopsyWorkspace from "./CompetitorAutopsyWorkspace";
 
-export function BrandScopedCompetitors() {
+export function BrandScopedCompetitors({
+  view,
+}: {
+  /**
+   * The competitor screen fixed by the ROUTE — the brand tree gives each one
+   * its own URL (`…/intelligence/competitors/{review,opportunities,
+   * competitors,evidence,history}`; the bare route is Run). Left out, the
+   * workspace still reads `?view=` (legacy links).
+   */
+  view?: string;
+} = {}) {
   const brand = useMarketingBrand();
   const sites = useBrandSites(brand.id);
 
@@ -43,5 +53,5 @@ export function BrandScopedCompetitors() {
     );
   }
 
-  return <CompetitorAutopsyWorkspace brandId={brand.id} />;
+  return <CompetitorAutopsyWorkspace brandId={brand.id} view={view} />;
 }

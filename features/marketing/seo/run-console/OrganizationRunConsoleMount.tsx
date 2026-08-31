@@ -18,6 +18,7 @@
  */
 
 import { Building2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -28,6 +29,7 @@ import { OrganizationPickerPanel } from "@/features/organizations/components/Org
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { RunConsole } from "./RunConsole";
+import { runConsoleBasePath } from "./routed-view";
 
 /**
  * No active organization is a real, expected state (a brand-new session, or a
@@ -62,9 +64,26 @@ function OrganizationRequiredNotice() {
   );
 }
 
-export function OrganizationRunConsoleMount() {
+export function OrganizationRunConsoleMount({
+  /**
+   * The result view fixed by the ROUTE — `/marketing/operations/automations/
+   * {proposals,unplaced,history}`, the bare route being This run. Left out,
+   * the console keeps its own local tab state.
+   */
+  view,
+}: {
+  view?: string;
+} = {}) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const pathname = usePathname();
+  const basePath = pathname ? runConsoleBasePath(pathname, view) : undefined;
 
   if (!organizationId) return <OrganizationRequiredNotice />;
-  return <RunConsole scope={{ tier: "organization", organizationId }} />;
+  return (
+    <RunConsole
+      scope={{ tier: "organization", organizationId }}
+      view={view}
+      basePath={basePath}
+    />
+  );
 }

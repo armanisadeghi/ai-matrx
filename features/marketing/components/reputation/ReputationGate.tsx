@@ -12,6 +12,15 @@ const ReputationWorkspace = dynamic(
   },
 );
 
-export function ReputationGate() {
-  return <ReputationWorkspace />;
+export function ReputationGate({
+  /**
+   * The view fixed by the ROUTE — threaded straight through to the workspace
+   * so each reputation screen can own its own URL. Left out, the workspace
+   * reads `?view=` exactly as before.
+   */
+  view,
+}: {
+  view?: string;
+} = {}) {
+  return <ReputationWorkspace view={view} />;
 }

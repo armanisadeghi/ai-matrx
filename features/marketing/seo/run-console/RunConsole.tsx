@@ -29,7 +29,7 @@
  *     window rather than a spinner.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -43,6 +43,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -284,12 +285,43 @@ function buildBrandColumns({
  * mount, the same permission scope and the same schedule cascade; only the
  * body differs, because what "owed work" means differs.
  */
+/**
+ * THE RESULT VIEWS — the four screens on the right of the placement console.
+ * Each stands in for a different page, so each gets its own route wherever the
+ * console is mounted under one (`view` + `basePath` below); `run` is the
+ * default and lives at the base itself.
+ */
+const RESULT_VIEWS = ["run", "proposals", "unplaced", "history"] as const;
+type ResultView = (typeof RESULT_VIEWS)[number];
+
+function resultView(raw: string | null | undefined): ResultView {
+  return RESULT_VIEWS.find((view) => view === raw) ?? "run";
+}
+
+function resultViewHref(basePath: string, view: ResultView): string {
+  return view === "run" ? basePath : `${basePath}/${view}`;
+}
+
 export function RunConsole({
   scope,
   engine: initialEngine = TOPIC_PLACEMENT_ENGINE,
+  view,
+  basePath,
 }: {
   scope: RunConsoleScope;
   engine?: ConsoleEngine;
+  /**
+   * The result view fixed by the ROUTE. Left out, the console keeps its own
+   * local tab state exactly as it always had — the (admin) mount and any host
+   * that has not been given routes.
+   */
+  view?: string;
+  /**
+   * The route the four result views hang off, when they ARE routes. Supplied
+   * by the mount that knows its own path; with it, clicking a tab navigates to
+   * the sibling route instead of only flipping local state.
+   */
+  basePath?: string;
 }) {
   const [engineSlug, setEngineSlug] = useState<string>(initialEngine.slug);
   const engine =
@@ -320,7 +352,13 @@ export function RunConsole({
             {row.slug === SITUATIONAL_REFRESH_ENGINE.slug ? (
               <SituationalEngineView key={row.slug} scope={scope} engine={row} />
             ) : (
-              <TopicPlacementConsole key={row.slug} scope={scope} engine={row} />
+              <TopicPlacementConsole
+                key={row.slug}
+                scope={scope}
+                engine={row}
+                view={view}
+                basePath={basePath}
+              />
             )}
           </TabsContent>
         ))}
@@ -439,9 +477,13 @@ function SituationalEngineView({
 function TopicPlacementConsole({
   scope,
   engine,
+  view,
+  basePath,
 }: {
   scope: RunConsoleScope;
   engine: ConsoleEngine;
+  view?: string;
+  basePath?: string;
 }) {
   // This body only ever drives a streaming aidream command; the registry says
   // so per engine, and a mismatch is a wiring bug worth failing loudly on
@@ -461,6 +503,23 @@ function TopicPlacementConsole({
       surfaceName: runConsoleSurfaceName(scope),
     })),
   );
+
+  const router = useRouter();
+  // THE RESULT VIEW. Routed (a `basePath` was supplied), the URL is the truth
+  // and a tab click is a navigation — so the screen survives a reload, a share
+  // and the back button. Unrouted, it is local state exactly as before.
+  const [localResultView, setLocalResultView] = useState<ResultView>(
+    resultView(view),
+  );
+  const activeResultView = basePath ? resultView(view) : localResultView;
+  const onResultViewChange = (next: string) => {
+    const target = resultView(next);
+    if (basePath) {
+      startTransition(() => router.push(resultViewHref(basePath, target)));
+      return;
+    }
+    setLocalResultView(target);
+  };
 
   const [selected, setSelected] = useState<string[]>([]);
   const [focusedSiteId, setFocusedSiteId] = useState<string | null>(null);
@@ -850,7 +909,11 @@ function TopicPlacementConsole({
         </section>
 
         <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-7">
-          <Tabs defaultValue="run" className="flex min-h-0 flex-1 flex-col">
+          <Tabs
+            value={activeResultView}
+            onValueChange={onResultViewChange}
+            className="flex min-h-0 flex-1 flex-col"
+          >
             <TabsList className="h-8 shrink-0 justify-start rounded-none border-b border-border bg-transparent px-1">
               <TabsTrigger value="run" className="h-6 text-xs">
                 This run

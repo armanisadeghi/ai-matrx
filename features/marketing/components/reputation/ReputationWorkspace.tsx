@@ -557,7 +557,17 @@ function KpiBand({ data }: { data: ReputationWorkspaceData }) {
   );
 }
 
-export function ReputationWorkspace() {
+export function ReputationWorkspace({
+  view: fixedView,
+}: {
+  /**
+   * The view fixed by the ROUTE — each reputation screen has its own URL under
+   * the site (`…/intelligence/reputation/<site>/{cases,publications,narratives,
+   * evidence}`, the bare route being the decision brief). Left out, the view
+   * still comes from `?view=`, the shape pre-restructure links speak.
+   */
+  view?: string;
+} = {}) {
   const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const params = useParams<{ brandId: string }>();
@@ -570,8 +580,10 @@ export function ReputationWorkspace() {
   });
   const updateCase = useUpdateReputationCase(site.id, params.brandId);
   // The five views are declared in `lib/site-subviews.ts` and rendered by the
-  // SITE HEADER, which owns switching. This file only reads which one is active.
-  const view = useMarketingSubView("reputation");
+  // SITE HEADER, which owns switching. This file only reads which one is
+  // active — from the route when the route owns it, from `?view=` otherwise.
+  const queryView = useMarketingSubView("reputation");
+  const view = fixedView ?? queryView;
   const data = workspace.data;
   const brief = analysis.run.result?.brief ?? data?.latestBrief ?? null;
   const running = analysis.run.status === "running";
