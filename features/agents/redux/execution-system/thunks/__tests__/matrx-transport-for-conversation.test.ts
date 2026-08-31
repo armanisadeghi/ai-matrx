@@ -1,9 +1,9 @@
 /**
  * matrx-transport-for-conversation.test.ts — the conversation-scoped
  * `MatrxTransport`: base URL + credentials come from the SAME
- * `resolveBackendForConversation` the execute thunks use, credentials ride on
- * top of the wire headers, and (parity with `runAiStream`) NO
- * `X-Organization-Id` header is added — org travels in the body only.
+ * `resolveBackendForConversation` the execute thunks use, and credentials ride
+ * on top of the wire headers. `X-Organization-Id` is owned by the resolver
+ * (conversation org, app-selection fallback) and passes through untouched.
  */
 
 import type { RootState } from "@/lib/redux/store";
@@ -60,6 +60,7 @@ describe("createMatrxTransportForConversation", () => {
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer conversation-jwt",
+        "X-Organization-Id": "org-42",
       },
     });
     const transport = createMatrxTransportForConversation(getState, "conv-1");
@@ -77,9 +78,9 @@ describe("createMatrxTransportForConversation", () => {
     expect(headers).toMatchObject({
       "Content-Type": "application/json",
       Authorization: "Bearer conversation-jwt",
+      // Organization admission: the resolver's header passes through as-is.
+      "X-Organization-Id": "org-42",
     });
-    // runAiStream parity: conversation calls carry NO org header.
-    expect(headers["X-Organization-Id"]).toBeUndefined();
   });
 
   it("throws loudly when no backend URL is configured", async () => {

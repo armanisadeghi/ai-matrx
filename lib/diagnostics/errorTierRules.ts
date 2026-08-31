@@ -116,6 +116,28 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
   // pinned annotation IS the "critical platform violation" classification.)
   // ══════════════════════════════════════════════════════════════════════
   {
+    id: "organization-admission-refusal",
+    tier: "red",
+    reason:
+      "The server's AuthMiddleware refused the request because the client sent no X-Organization-Id header (organization_required, 2026-08-30 admission gate). This is NEVER user noise — it means a production call site is missing the org header and the user's action died. Fix the caller's wire (conversation lane: resolveBackendForConversation owns the header).",
+    addedAt: "2026-08-30",
+    match: {
+      messageIncludes: "carried an identity but no organization",
+    },
+  },
+  {
+    id: "ai-execution-rejection-is-red",
+    tier: "red",
+    reason:
+      "A rejected AI send/resume thunk is a DEAD USER TURN — the person hit send and nothing happened. The broad redux-rejected-handled rule below must never demote these to a minor dot; slice-side rollback does not make the failure minor, it makes it survivable.",
+    addedAt: "2026-08-30",
+    match: {
+      source: "redux-rejected",
+      relationPattern:
+        "^instances/(smartExecute|execute|executeManual|executeInstance|resume|interruptAndSend|startNewConversationAndExecute|launch)$",
+    },
+  },
+  {
     id: "mirror-fk-to-assoc-critical-violation",
     tier: "red",
     reason:

@@ -9,8 +9,10 @@
  * can never route differently from the conversation's own stream.
  *
  * Parity notes vs the global transport (`lib/api/matrx-transport.ts`):
- *   - NO `X-Organization-Id` header — `runAiStream`'s conversation calls send
- *     the org in the BODY only, and this transport matches that wire exactly.
+ *   - `X-Organization-Id` comes from `resolveBackendForConversation` (the
+ *     conversation's own organization, falling back to the app selection) —
+ *     the same header `runAiStream`'s conversation calls now carry, since the
+ *     server's AuthMiddleware refuses authenticated requests without it.
  *   - Same fetch pipeline otherwise (AI-version path transform, v2→v1
  *     fallback, uncapped total timeout, capture sinks) via
  *     `createMatrxTransportFromTarget`.

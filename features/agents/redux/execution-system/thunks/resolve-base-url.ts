@@ -7,6 +7,7 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   resolveAgentSandboxRef,
   getEffectiveSandboxRef,
@@ -217,6 +218,22 @@ export function resolveBackendForConversation(
     headers["Authorization"] = `Bearer ${accessToken}`;
   } else if (fingerprintId) {
     headers["X-Fingerprint-ID"] = fingerprintId;
+  }
+
+  // Organization admission rides with auth: the server's AuthMiddleware
+  // (matrx-connect, 2026-08-30) refuses any authenticated request that names
+  // no organization via X-Organization-Id — org-in-body-only is no longer an
+  // admitted wire. A persisted conversation's own organization is
+  // authoritative; a not-yet-persisted one uses the app-selected organization
+  // (same precedence as requireExecutionOrganizationId, but non-throwing:
+  // when neither exists the header is omitted and the caller-side guard or
+  // the server's organization_required refusal owns the error message).
+  const conversationOrganizationId =
+    state.conversations?.byConversationId?.[conversationId]?.organizationId ??
+    null;
+  const organizationId = conversationOrganizationId ?? selectOrganizationId(state);
+  if (organizationId) {
+    headers["X-Organization-Id"] = organizationId;
   }
 
   if (overrideUrl) {
