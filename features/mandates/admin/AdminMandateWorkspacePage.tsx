@@ -20,7 +20,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Loader2, Wrench } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { ArrowLeft, ChevronDown, Loader2, Trash2, Wrench } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -34,6 +38,7 @@ import { MandateDetailView } from "./MandateDetailPanel";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
+  softDeleteMandate,
   type MandateCodeTruth,
   type MandateConsoleData,
 } from "./service";
@@ -190,23 +195,95 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                 No mandate row matches {mandateKey}.
               </p>
             ) : (
-              <MandateDetailView
-                key={row.id}
-                row={row}
-                data={data}
-                lineage={
-                  (row.agentId ? lineageIndex[row.agentId] : undefined) ?? {
-                    parent: null,
-                    children: [],
-                    systemTwin: null,
+              <>
+                <MandateDetailView
+                  key={row.id}
+                  row={row}
+                  data={data}
+                  lineage={
+                    (row.agentId ? lineageIndex[row.agentId] : undefined) ?? {
+                      parent: null,
+                      children: [],
+                      systemTwin: null,
+                    }
                   }
-                }
-                onSaved={load}
-              />
+                  onSaved={load}
+                />
+                {/* 🚨 REMOVE — A VISIBLE CONTROL, not only a right-click item
+                    (walk, 2026-08-31). The delete first shipped ONLY into the
+                    console's context menu, and an independent walk could not
+                    find it anywhere on the live surface: a right-click-only
+                    affordance is invisible, and "it is in the context menu" is
+                    not an answer to "a creator can never remove a job". This
+                    is the discoverable one, on the job's own page, where
+                    someone who wants it gone will actually look. */}
+                <RemoveMandate row={row} />
+              </>
             )}
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The job's own REMOVE control. Destructive, confirmed with the consequence
+ * rather than "are you sure?", and honest about what survives — the same
+ * `softDeleteMandate` the console's row menu calls, so the two can never
+ * disagree about what removing a job does.
+ */
+function RemoveMandate({ row }: { row: MandateRow }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const remove = async () => {
+    const ok = await confirm({
+      title: `Remove "${row.mandateKey}"?`,
+      description:
+        `Everywhere that runs this job stops finding it: the console, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
+        `Anything bound to it — every rung's holder and mapping — stops applying with it. ` +
+        `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
+      confirmLabel: "Remove it",
+      cancelLabel: "Keep it",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await softDeleteMandate(row.id);
+      toast.success(`Removed "${row.mandateKey}" — nothing runs it now.`);
+      // The page it was on describes a job that no longer exists; go back to
+      // the list rather than leaving a screen about a removed thing.
+      router.push("/administration/mandates");
+    } catch (error: unknown) {
+      // The service's own sentence (RLS refusal, already removed) reaches the
+      // person; nothing is invented here.
+      toast.error(
+        error instanceof Error ? error.message : "That job was not removed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        className="h-7 gap-1.5 text-[12px]"
+        disabled={busy}
+        onClick={() => void remove()}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        {busy ? "Removing…" : "Remove this job"}
+      </Button>
+      <span className="text-[11px] leading-snug text-muted-foreground">
+        Stops every rung from finding it. Soft — the record is kept and an admin
+        can restore it.
+      </span>
     </div>
   );
 }
