@@ -64,9 +64,12 @@ function findRenderedHeading(
   root: HTMLElement,
   item: NoteOutlineItem,
 ): HTMLElement | null {
+  // Visible elements only — the TUI editor keeps a full hidden twin of the
+  // document (markdown + wysiwyg panes), and scrolling a hidden node's
+  // ancestor is a silent no-op.
   const headings = Array.from(
     root.querySelectorAll<HTMLElement>(HEADING_SELECTOR),
-  );
+  ).filter((el) => el.offsetParent !== null);
   const byIndex = headings[item.headingIndex];
   if (byIndex && (byIndex.textContent ?? "").trim() === item.text) {
     return byIndex;
@@ -76,6 +79,22 @@ function findRenderedHeading(
     byIndex ??
     null
   );
+}
+
+/** Closest ancestor that actually scrolls vertically. */
+function nearestScrollableAncestor(el: HTMLElement): HTMLElement | null {
+  let node = el.parentElement;
+  while (node) {
+    const cs = window.getComputedStyle(node);
+    if (
+      /(auto|scroll)/.test(cs.overflowY) &&
+      node.scrollHeight > node.clientHeight
+    ) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
 }
 
 export function NoteOutlinePanel({
@@ -128,34 +147,29 @@ export function NoteOutlinePanel({
         return;
       }
 
-      if (editorMode === "preview") {
-        const container = previewContainerRef.current;
-        if (!container) return;
-        const el = findRenderedHeading(container, item);
-        if (!el) {
-          toast.info("That section hasn't rendered yet — try again in a moment.");
-          return;
-        }
-        const delta =
-          el.getBoundingClientRect().top -
-          container.getBoundingClientRect().top;
-        container.scrollTo({
-          top: container.scrollTop + delta - JUMP_TOP_PAD_PX,
-          behavior: "smooth",
-        });
-        return;
-      }
-
-      // wysiwyg / markdown-split — TUI renders real heading elements; scroll
-      // the nearest scrollable ancestor via scrollIntoView (the page body is
-      // overflow-hidden, so only the editor's own scroller moves).
-      const root = editorRootRef.current;
+      // preview → the preview container; wysiwyg / markdown-split → the TUI
+      // editor's rendered document inside the editor root. Both paths find the
+      // rendered heading, then scroll ONLY its nearest scrollable ancestor —
+      // never scrollIntoView, which cascades up and drags the page shell too.
+      // Instant, not smooth: something in the preview stack cancels smooth
+      // scroll animations mid-flight (verified live — a plain scrollTo sticks,
+      // `behavior:"smooth"` snaps back to where it started).
+      const root =
+        editorMode === "preview"
+          ? previewContainerRef.current
+          : editorRootRef.current;
       const el = root ? findRenderedHeading(root, item) : null;
       if (!el) {
-        toast.info("Jumping isn't available in this view mode yet.");
+        toast.info("That section hasn't rendered yet — try again in a moment.");
         return;
       }
-      el.scrollIntoView({ block: "start", behavior: "smooth" });
+      const scroller = nearestScrollableAncestor(el);
+      if (!scroller) return;
+      const delta =
+        el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTo({
+        top: scroller.scrollTop + delta - JUMP_TOP_PAD_PX,
+      });
     },
     [editorMode, textareaRef, previewContainerRef, editorRootRef],
   );
