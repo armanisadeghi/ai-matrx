@@ -12,6 +12,7 @@ import { toast } from "@/lib/toast";
 import { BasicContentEditor } from "@/components/content-refine/BasicContentEditor";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { updateResultPayloadField } from "@/features/page-extraction/api/runs";
 import {
   emitExtractionCellEditorEvent,
@@ -131,15 +132,29 @@ export default function ExtractionCellEditorWindow({
       }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-3"
     >
-      <BasicContentEditor
-        content={draft}
-        onChange={setDraft}
-        onChangeFlush={setDraft}
-        initialEditorMode="split"
-        placeholder="Enter cell value…"
-        className="min-h-0 flex-1"
-        resetKey={`${target.rowId}:${target.columnKey}:${target.value.length}`}
-      />
+      {/*
+       * Pane-level fallback — BasicContentEditor's default "split" mode
+       * (MatrxSplit) and its "plain" mode with no surfaceName render with
+       * no context menu of their own; only "preview" (RichDocument) has
+       * one. Without this, right-clicking the cell being edited fell
+       * through to the page underneath this floating window.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="page_extraction"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({ content: draft })}
+      >
+        <BasicContentEditor
+          content={draft}
+          onChange={setDraft}
+          onChangeFlush={setDraft}
+          initialEditorMode="split"
+          placeholder="Enter cell value…"
+          className="min-h-0 flex-1"
+          resetKey={`${target.rowId}:${target.columnKey}:${target.value.length}`}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

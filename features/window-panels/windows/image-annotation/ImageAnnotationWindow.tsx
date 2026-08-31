@@ -17,6 +17,7 @@ import type {
 } from "@/features/image-studio/modes/shared/types";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { emitImageAnnotationEvent } from "@/features/overlays/callbacks/imageAnnotationWindow";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface ImageAnnotationWindowProps {
   isOpen: boolean;
@@ -103,29 +104,38 @@ export default function ImageAnnotationWindow({
       className="image-annotation-window-panel"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      {source ? (
-        <AnnotateModeShell
-          source={source}
-          cloudFileId={sourceFileId}
-          saveFileId={
-            overwriteSource && sourceFileId ? sourceFileId : undefined
-          }
-          defaultFolder={
-            defaultFolder ?? CloudFolders.IMAGES_ANNOTATED
-          }
-          presentation="modal"
-          onSave={handleSave}
-          onCancel={handleClose}
-        />
-      ) : (
-        <ModeImagePicker
-          title="Choose something to mark up"
-          onPick={setPickedSource}
-          enableCapture
-          captureHideSelectors={[".image-annotation-window-panel"]}
-          showLibraryLink={false}
-        />
-      )}
+      <NonEditableContextMenu
+        sourceFeature="image-studio"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({
+          content: sourceFilename ?? title ?? "",
+        })}
+      >
+        {source ? (
+          <AnnotateModeShell
+            source={source}
+            cloudFileId={sourceFileId}
+            saveFileId={
+              overwriteSource && sourceFileId ? sourceFileId : undefined
+            }
+            defaultFolder={
+              defaultFolder ?? CloudFolders.IMAGES_ANNOTATED
+            }
+            presentation="modal"
+            onSave={handleSave}
+            onCancel={handleClose}
+          />
+        ) : (
+          <ModeImagePicker
+            title="Choose something to mark up"
+            onPick={setPickedSource}
+            enableCapture
+            captureHideSelectors={[".image-annotation-window-panel"]}
+            showLibraryLink={false}
+          />
+        )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

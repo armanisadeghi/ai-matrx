@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { entityFromSurfaceKey } from "@/features/agents/utils/surface-key";
@@ -360,9 +361,15 @@ export default function CreatorHubWindow({
         footerRight={<CreatorHubCreatorChip />}
         onCollectData={() => ({ activeTab })}
       >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-          {body}
-        </div>
+        <NonEditableContextMenu
+          sourceFeature="internal"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+        >
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+            {body}
+          </div>
+        </NonEditableContextMenu>
       </WindowPanel>
       {windowPanels}
     </>

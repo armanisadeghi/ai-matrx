@@ -17,6 +17,7 @@
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { SourceInspectorPane } from "@/features/rag/components/source-inspector/SourceInspectorPane";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface SourceInspectorWindowProps {
   isOpen: boolean;
@@ -70,18 +71,27 @@ export default function SourceInspectorWindow({
         href,
       })}
     >
-      <SourceInspectorPane
-        sourceKind={sourceKind}
-        sourceId={sourceId}
-        chunkId={chunkId ?? null}
-        pageNumber={pageNumber ?? null}
-        pageNumbers={pageNumbers ?? null}
-        snippet={snippet ?? null}
-        fileName={fileName ?? null}
-        score={score ?? null}
-        query={query ?? null}
-        href={href ?? null}
-      />
+      <NonEditableContextMenu
+        sourceFeature="rag"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({
+          content: [fileName, snippet].filter(Boolean).join("\n\n"),
+        })}
+      >
+        <SourceInspectorPane
+          sourceKind={sourceKind}
+          sourceId={sourceId}
+          chunkId={chunkId ?? null}
+          pageNumber={pageNumber ?? null}
+          pageNumbers={pageNumbers ?? null}
+          snippet={snippet ?? null}
+          fileName={fileName ?? null}
+          score={score ?? null}
+          query={query ?? null}
+          href={href ?? null}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
