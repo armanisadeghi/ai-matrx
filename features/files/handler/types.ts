@@ -183,6 +183,12 @@ export interface StreamEventSource {
 export interface NormalizedFile {
   /** cld_files UUID — set whenever known. */
   fileId?: string;
+  /**
+   * User-facing logical path for a persisted cloud file. This is never an
+   * object-store key or transport identity; it is retained so canonical
+   * version writers can target the existing row after resolving by fileId.
+   */
+  filePath?: string;
   /** Any URL safe to hand to the browser. */
   url?: string;
   /** Inline base64. Last resort. Always include `meta.mime`. */

@@ -180,7 +180,9 @@ URL (with object-URL lifecycle for `File` sources). `saveEditedImage` wraps
 canvas/dataURL output as a `File` and pushes it through the universal file
 handler (`fileHandler.upload(...)` with `createShareLink: true`) — so every
 mode produces a `cloud_file_id` + persistent share URL on save, no special
-storage code per mode.
+storage code per mode. **A version save resolves its `file_id` through the
+handler before uploading to the existing logical path; it never falls back to
+a folder upload when Redux hydration has not reached that file yet.**
 
 ### Edit mode (Filerobot 5.0.1)
 
@@ -273,6 +275,10 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-31** — Image version saves now resolve the existing logical path
+  from canonical `file_id` even before global file-tree hydration completes;
+  an unresolved target fails loudly instead of creating a sibling while the
+  editor claims it saved a new version.
 - 2026-08-29 — C9 adoption: `BottomSheet`/`TabbedBottomSheet`, `EditableLabel`, `SegmentedControl`, `ScoreRing`, and `useScrollFade` now import from `@ai-matrx/design-system` 0.2.0 (npm); the local originals under `components/official/` and `components/ui/segmented-control.tsx` are deleted. Behavior identical (verbatim ports; host keeps the glass/pb-safe/matrx-scroll-fade CSS contracts in `app/globals.css`).
 - **2026-08-26** — **Preview scratch URLs follow the live ephemeral contract.** Convert preview
   variants now read `ephemeral_url` (the only lawful expiring row-less scratch field) instead of

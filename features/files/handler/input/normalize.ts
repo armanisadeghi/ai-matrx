@@ -236,6 +236,7 @@ export function fromCloudFile(
       pythonFileInlineUrl(cloudFile.id));
   return {
     fileId: cloudFile.id,
+    filePath: cloudFile.filePath,
     url: bestUrl,
     origin: cloudFile.visibility === "public" ? "public" : "owned",
     capabilities: {

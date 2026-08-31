@@ -1,9 +1,6 @@
 "use client";
 
 import { fileHandler } from "@/features/files/handler/handler";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectFileById } from "@/features/files/redux/selectors";
-import type { RootState } from "@/lib/redux/store";
 import type { SaveResult } from "./types";
 
 /**
@@ -41,16 +38,21 @@ export async function saveEditedImage(args: {
 
   let filePath: string | undefined;
   if (args.fileId) {
-    const store = getStoreSingleton();
-    if (store) {
-      const existing = selectFileById(
-        store.getState() as RootState,
-        args.fileId,
+    // Resolve by durable identity instead of reading Redux directly. A newly
+    // generated image can be opened before the global file-tree hydration has
+    // reached the slice; the handler hydrates that one id from the API when
+    // needed. Falling back to folderPath here would silently create a sibling
+    // while the UI claims it saved a new version.
+    const existing = await fileHandler.resolve({
+      kind: "file_id",
+      fileId: args.fileId,
+    });
+    if (!existing.filePath) {
+      throw new Error(
+        `saveEditedImage: could not resolve the existing path for ${args.fileId}`,
       );
-      if (existing?.filePath) {
-        filePath = existing.filePath;
-      }
     }
+    filePath = existing.filePath;
   }
 
   const normalized = await fileHandler.upload(
