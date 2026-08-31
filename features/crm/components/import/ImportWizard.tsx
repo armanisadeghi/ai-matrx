@@ -26,6 +26,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Select,
@@ -101,6 +102,9 @@ export function ImportWizard() {
   const [readingFile, setReadingFile] = useState(false);
   const [mapping, setMapping] = useState<ImportMapping>({});
   const [plan, setPlan] = useState<ImportPlan | null>(null);
+  const [selectedRowNumbers, setSelectedRowNumbers] = useState<Set<number>>(
+    new Set(),
+  );
   const [planning, setPlanning] = useState(false);
   const [progress, setProgress] = useState<{
     done: number;
@@ -183,6 +187,13 @@ export function ImportWizard() {
         orgId: resolvedOrgId,
       });
       setPlan(nextPlan);
+      setSelectedRowNumbers(
+        new Set(
+          nextPlan.rows
+            .filter((row) => row.status === "create" || row.status === "exists")
+            .map((row) => row.rowNumber),
+        ),
+      );
       setStep("preview");
     } catch (e) {
       toast.error(
@@ -195,8 +206,16 @@ export function ImportWizard() {
 
   const runImport = async () => {
     if (!plan) return;
+    const importableRows = plan.rows.filter(
+      (row) => row.status === "create" || row.status === "exists",
+    );
+    const selectedCount = importableRows.filter((row) =>
+      selectedRowNumbers.has(row.rowNumber),
+    ).length;
+    if (selectedCount === 0) return;
+    const fullConnectorSelection = selectedCount === importableRows.length;
     // Commit processes new AND matched rows (D220) — the bar counts both.
-    setProgress({ done: 0, total: plan.counts.create + plan.counts.exists });
+    setProgress({ done: 0, total: selectedCount });
     try {
       const res = await commitImport(
         plan,
@@ -204,13 +223,18 @@ export function ImportWizard() {
         // Provenance: which file (or connector account) each of these contacts
         // came from, stamped on the row as `source_detail`.
         fileName ?? undefined,
+        selectedRowNumbers,
       );
       setResult(res);
       setStep("done");
       // Connector imports: advance the incremental-sync cursor only when the
       // WHOLE commit landed. On any failure the cursor stays put, the next
       // sync re-reads the same delta, and the resolver makes that idempotent.
-      if (plan.connector?.syncToken && res.failed.length === 0) {
+      if (
+        plan.connector?.syncToken &&
+        fullConnectorSelection &&
+        res.failed.length === 0
+      ) {
         try {
           await persistConnectorCursor({
             providerKey: plan.connector.providerKey,
@@ -227,7 +251,11 @@ export function ImportWizard() {
             `Imported, but saving the sync position failed — the next sync will simply re-read the same contacts (nothing is lost). ${e instanceof Error ? e.message : String(e)}`,
           );
         }
-      } else if (plan.connector?.syncToken && res.failed.length > 0) {
+      } else if (
+        plan.connector?.syncToken &&
+        fullConnectorSelection &&
+        res.failed.length > 0
+      ) {
         toast.error(
           "Some rows failed, so the sync position was NOT advanced — the next sync will retry them.",
         );
@@ -250,6 +278,11 @@ export function ImportWizard() {
           `Imported ${fresh}${matchedNote}, ${res.failed.length} failed — details below`,
         );
       }
+      if (plan.connector?.syncToken && !fullConnectorSelection) {
+        toast.success(
+          "Only the selected contacts were imported. The Google sync position was not advanced, so unselected contacts remain available next time.",
+        );
+      }
     } catch (e) {
       toast.error(
         `Import failed: ${e instanceof Error ? e.message : String(e)}`,
@@ -266,6 +299,7 @@ export function ImportWizard() {
     setParsed(null);
     setMapping({});
     setPlan(null);
+    setSelectedRowNumbers(new Set());
     setResult(null);
   };
 
@@ -277,6 +311,22 @@ export function ImportWizard() {
 
   // Fields already assigned to some header (a field feeds at most one column).
   const assigned = new Set(Object.values(mapping).filter(Boolean));
+  const importablePreviewRows =
+    plan?.rows.filter(
+      (row) => row.status === "create" || row.status === "exists",
+    ) ?? [];
+  const selectedPreviewCount = importablePreviewRows.filter((row) =>
+    selectedRowNumbers.has(row.rowNumber),
+  ).length;
+  const allPreviewRowsSelected =
+    importablePreviewRows.length > 0 &&
+    selectedPreviewCount === importablePreviewRows.length;
+  const toggleAllPreviewRows = (checked: boolean) =>
+    setSelectedRowNumbers(
+      checked
+        ? new Set(importablePreviewRows.map((row) => row.rowNumber))
+        : new Set(),
+    );
 
   return (
     // The (core) shell header is transparent glass floating OVER the body, so
@@ -446,7 +496,10 @@ export function ImportWizard() {
                   onClick={() =>
                     // "pasted text" IS the provenance — a NULL here landed
                     // every pasted row with source_detail NULL (D221).
-                    loadParsedData(parseDelimitedText(pastedText), "pasted text")
+                    loadParsedData(
+                      parseDelimitedText(pastedText),
+                      "pasted text",
+                    )
                   }
                 >
                   <ArrowRight className="h-3.5 w-3.5" /> Use pasted text
@@ -585,6 +638,9 @@ export function ImportWizard() {
         {step === "preview" && plan && (
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                {selectedPreviewCount} selected
+              </span>
               <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                 {plan.counts.create} new
               </span>
@@ -624,10 +680,7 @@ export function ImportWizard() {
                   onClick={() => void runImport()}
                   // Matched rows commit too (D220) — a file of pure updates
                   // is a real import, not a disabled button.
-                  disabled={
-                    plan.counts.create + plan.counts.exists === 0 ||
-                    progress !== null
-                  }
+                  disabled={selectedPreviewCount === 0 || progress !== null}
                 >
                   {progress ? (
                     <>
@@ -637,8 +690,8 @@ export function ImportWizard() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Import {plan.counts.create + plan.counts.exists} record
-                      {plan.counts.create + plan.counts.exists === 1 ? "" : "s"}
+                      Import {selectedPreviewCount} selected record
+                      {selectedPreviewCount === 1 ? "" : "s"}
                     </>
                   )}
                 </Button>
@@ -649,7 +702,24 @@ export function ImportWizard() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
-                    <th className="px-2.5 py-1.5 font-medium">#</th>
+                    <th className="px-2.5 py-1.5 font-medium">
+                      <span className="inline-flex items-center gap-2">
+                        <Checkbox
+                          aria-label="Select all importable rows"
+                          checked={
+                            allPreviewRowsSelected
+                              ? true
+                              : selectedPreviewCount > 0
+                                ? "indeterminate"
+                                : false
+                          }
+                          onCheckedChange={(value) =>
+                            toggleAllPreviewRows(value === true)
+                          }
+                        />
+                        #
+                      </span>
+                    </th>
                     <th className="px-2.5 py-1.5 font-medium">Name</th>
                     <th className="px-2.5 py-1.5 font-medium">Contact</th>
                     {plan.kind === "person" && (
@@ -666,7 +736,29 @@ export function ImportWizard() {
                       className="border-b border-border last:border-0"
                     >
                       <td className="px-2.5 py-1.5 text-muted-foreground">
-                        {row.rowNumber}
+                        <span className="inline-flex items-center gap-2">
+                          <Checkbox
+                            aria-label={
+                              "Select row " +
+                              row.rowNumber +
+                              " " +
+                              (row.displayName || "unnamed")
+                            }
+                            checked={selectedRowNumbers.has(row.rowNumber)}
+                            disabled={
+                              row.status !== "create" && row.status !== "exists"
+                            }
+                            onCheckedChange={(value) =>
+                              setSelectedRowNumbers((current) => {
+                                const next = new Set(current);
+                                if (value === true) next.add(row.rowNumber);
+                                else next.delete(row.rowNumber);
+                                return next;
+                              })
+                            }
+                          />
+                          {row.rowNumber}
+                        </span>
                       </td>
                       <td className="px-2.5 py-1.5 font-medium text-foreground">
                         <span className="inline-flex items-center gap-1.5">

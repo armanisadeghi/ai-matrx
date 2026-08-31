@@ -2,7 +2,7 @@
 
 Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-27`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-30`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md` — read it before touching this feature in ANY repo.
 
@@ -375,6 +375,11 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
 - **Nothing writes before the preview is confirmed.** The dry run resolves, per
   row: `create` / `exists` (with a door to the owning record) /
   `duplicate_in_file` (first claim wins) / `invalid` (no name).
+- **Commit is bounded to the rows selected in the preview.** Importable rows
+  start selected for backward-compatible file imports; the header clears or
+  selects the whole eligible set, each eligible row toggles independently, and
+  duplicate/invalid rows cannot be selected. `commitImport` enforces the
+  selection again at the engine boundary.
 - **Dedup identity (preview):** the dry run previews people against normalized
   email/phone values already owned by a live party in the org, and companies
   against exact domain then case-insensitive exact name. This is a PREVIEW
@@ -424,8 +429,10 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
   the resolve call as `externalIds` — the resolver's strongest key, so a second
   sync enriches instead of duplicating. Incremental sync: the server keeps a
   per-(connection, org) sync token; the wizard advances it via `/cursor` ONLY
-  after a fully-successful commit. Source-side deletions are reported in the
-  parse warnings, never applied. Import never sets consent/opt-in state.
+  after a fully-successful commit of every importable row. A partial selected
+  commit deliberately leaves the cursor in place so unselected contacts are
+  offered again. Source-side deletions are reported in the parse warnings,
+  never applied. Import never sets consent/opt-in state.
   🚨 `contacts.readonly` is SENSITIVE and not yet Google-approved — the
   authorize action is super-admin-gated by `import/connectors/campaign.ts`
   until its own verification campaign closes (`lib/googleScopes.ts`).
@@ -823,6 +830,10 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-30 — **Contact imports commit only selected preview rows.** The
+  canonical wizard adds select-all/clear-all plus per-row selection, the engine
+  enforces the bounded set, and partial Google Contacts imports keep the sync
+  cursor unchanged so skipped records remain available.
 - 2026-08-30 — **Notes ride the `@ai-matrx/associations` `cmt_*` chokepoint**
   (0.5.0 W6 adoption): `PartyNotes` repointed onto
   `features/scopes/service/commentsService.ts`; `features/comments/` deleted.

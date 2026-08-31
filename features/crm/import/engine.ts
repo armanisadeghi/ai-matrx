@@ -795,7 +795,8 @@ const RESOLVE_BATCH_SIZE = 100;
 
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  for (let i = 0; i < items.length; i += size)
+    out.push(items.slice(i, i + size));
   return out;
 }
 
@@ -804,13 +805,18 @@ export async function commitImport(
   onProgress?: (done: number, total: number) => void,
   /** The uploaded file name — stamped on every row as `source_detail`. */
   sourceDetail?: string,
+  /** Optional bounded selection from the dry-run preview. Omit to commit every
+   * importable row, preserving the existing file-import contract. */
+  selectedRowNumbers?: ReadonlySet<number>,
 ): Promise<ImportResult> {
   // MATCHED rows go through commit too (D220): the resolver's NULL-only
   // enrichment plus the contact-point/affiliation steps below are exactly what
   // a row matched to an existing party is for. Filtering to "create" silently
   // discarded every field the matched row carried.
   const rows = plan.rows.filter(
-    (p) => p.status === "create" || p.status === "exists",
+    (p) =>
+      (p.status === "create" || p.status === "exists") &&
+      (!selectedRowNumbers || selectedRowNumbers.has(p.rowNumber)),
   );
   const created: RowResult[] = [];
   const failed: RowResult[] = [];
@@ -859,7 +865,8 @@ export async function commitImport(
       // rows that need them fail with the reason instead of quietly importing
       // people whose employer column vanished.
       const message = e instanceof Error ? e.message : String(e);
-      for (const name of namesChunk) companyFailures.set(companyKey(name), message);
+      for (const name of namesChunk)
+        companyFailures.set(companyKey(name), message);
       continue;
     }
     for (const item of results) {
@@ -946,7 +953,9 @@ export async function commitImport(
       let resolvedPartyId: string | undefined;
       try {
         if (!item?.resolved) {
-          throw new Error(item?.error ?? "The server returned no result for this row");
+          throw new Error(
+            item?.error ?? "The server returned no result for this row",
+          );
         }
         resolvedPartyId = item.resolved.partyId;
 
@@ -971,9 +980,7 @@ export async function commitImport(
           // no-op, and a NEW employer for someone already primarily employed
           // lands as a secondary stint — a bare primary insert would trip the
           // one-primary exclusion constraint and fail the row.
-          const employment = await fetchCurrentEmploymentState(
-            resolvedPartyId,
-          );
+          const employment = await fetchCurrentEmploymentState(resolvedPartyId);
           if (!employment.employerIds.has(employer.id)) {
             await addAffiliation({
               partyId: resolvedPartyId,

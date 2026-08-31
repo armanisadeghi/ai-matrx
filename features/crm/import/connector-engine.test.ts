@@ -36,10 +36,7 @@ jest.mock("../service", () => ({
   })),
 }));
 
-import {
-  findExistingMediumOwners,
-  resolvePartiesBatch,
-} from "../service";
+import { findExistingMediumOwners, resolvePartiesBatch } from "../service";
 
 function connectorParsed(
   rows: { name: string; email: string; externalId: string }[],
@@ -73,7 +70,11 @@ describe("connector imports through the shared engine", () => {
   it("carries the external id onto the plan and dedups the feed by it", async () => {
     const plan = await planImport({
       parsed: connectorParsed([
-        { name: "Ada Lovelace", email: "ada@a.example", externalId: "people/c1" },
+        {
+          name: "Ada Lovelace",
+          email: "ada@a.example",
+          externalId: "people/c1",
+        },
         // Same source record listed again with a different email — the id wins.
         { name: "Ada L.", email: "ada@b.example", externalId: "people/c1" },
       ]),
@@ -90,22 +91,33 @@ describe("connector imports through the shared engine", () => {
   });
 
   it("marks a previously-synced contact as existing via the external-id lookup", async () => {
-    jest.mocked(findExistingMediumOwners).mockImplementation(
-      async (args: { channel: string; platformSlug?: string }) =>
-        args.channel === "external_id" && args.platformSlug === "google_contacts"
-          ? new Map([
-              [
-                "people/c1",
-                { id: "p-existing", display_name: "Ada", party_kind: "person" },
-              ],
-            ])
-          : new Map(),
-    );
+    jest
+      .mocked(findExistingMediumOwners)
+      .mockImplementation(
+        async (args: { channel: string; platformSlug?: string }) =>
+          args.channel === "external_id" &&
+          args.platformSlug === "google_contacts"
+            ? new Map([
+                [
+                  "people/c1",
+                  {
+                    id: "p-existing",
+                    display_name: "Ada",
+                    party_kind: "person",
+                  },
+                ],
+              ])
+            : new Map(),
+      );
 
     const plan = await planImport({
       parsed: connectorParsed([
         // No email overlap at all — only the source id links the two syncs.
-        { name: "Ada Lovelace", email: "new@else.example", externalId: "people/c1" },
+        {
+          name: "Ada Lovelace",
+          email: "new@else.example",
+          externalId: "people/c1",
+        },
       ]),
       mapping: MAPPING,
       kind: "person",
@@ -120,7 +132,11 @@ describe("connector imports through the shared engine", () => {
   it("sends the external id to the resolver so the commit is idempotent", async () => {
     const plan = await planImport({
       parsed: connectorParsed([
-        { name: "Ada Lovelace", email: "ada@a.example", externalId: "people/c1" },
+        {
+          name: "Ada Lovelace",
+          email: "ada@a.example",
+          externalId: "people/c1",
+        },
       ]),
       mapping: MAPPING,
       kind: "person",
@@ -138,7 +154,48 @@ describe("connector imports through the shared engine", () => {
       { platform: "google_contacts", value: "people/c1" },
     ]);
     expect(personCall[0].source).toBe("import");
-    expect(personCall[0].sourceDetail).toBe("Google Contacts (test@example.com)");
+    expect(personCall[0].sourceDetail).toBe(
+      "Google Contacts (test@example.com)",
+    );
+  });
+
+  it("commits only the rows selected in the dry-run preview", async () => {
+    const plan = await planImport({
+      parsed: connectorParsed([
+        {
+          name: "Ada Lovelace",
+          email: "ada@example.com",
+          externalId: "people/c1",
+        },
+        {
+          name: "Grace Hopper",
+          email: "grace@example.com",
+          externalId: "people/c2",
+        },
+      ]),
+      mapping: MAPPING,
+      kind: "person",
+      orgId: "org-1",
+    });
+
+    await commitImport(
+      plan,
+      undefined,
+      "Google Contacts (test@example.com)",
+      new Set([2]),
+    );
+
+    const personCall = jest
+      .mocked(resolvePartiesBatch)
+      .mock.calls.at(-1)?.[0] as {
+      displayName: string;
+      externalIds?: { platform: string; value: string }[];
+    }[];
+    expect(personCall).toHaveLength(1);
+    expect(personCall[0]).toMatchObject({
+      displayName: "Grace Hopper",
+      externalIds: [{ platform: "google_contacts", value: "people/c2" }],
+    });
   });
 
   it("file imports (no connector) never send external ids", async () => {
