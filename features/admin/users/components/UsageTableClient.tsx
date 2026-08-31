@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { AdminUserRef } from "./AdminUserRef";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { adminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type { AdminUserUsageRow } from "../types";
 import {
@@ -112,6 +114,7 @@ export function UsageTableClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>("all");
+  const [clickedRow, setClickedRow] = useState<AdminUserUsageRow | null>(null);
 
   const load = useCallback(async (tf: Timeframe) => {
     setLoading(true);
@@ -389,6 +392,29 @@ export function UsageTableClient() {
       ) : null}
 
       <div className="min-h-0 flex-1">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (focused.find((r) => r.user_id === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              content: `${row.email ?? row.user_id}: ${fmtInt.format(row.total_requests)} requests, ${fmtCost(row.total_cost)}`,
+            };
+          }}
+          extraSections={[
+            adminUserMenuSection(
+              clickedRow
+                ? { id: clickedRow.user_id, email: clickedRow.email }
+                : null,
+            ),
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "user-usage" }}
           data={focused}
@@ -454,6 +480,7 @@ export function UsageTableClient() {
             }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
