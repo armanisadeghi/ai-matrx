@@ -65,6 +65,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
 
 const SURFACE_KEY_PREFIX = "agent-widgets-page";
 
@@ -258,6 +259,11 @@ export function AgentWidgetsPage({
   };
 
   const openWithDisplayType = async (displayMode: ResultDisplayMode) => {
+    // DropdownMenu owns a Radix body lock until its close commits. Some display
+    // modes immediately open another modal layer, so handing off synchronously
+    // lets the two lock owners overlap and can leave the whole page inert.
+    await afterCurrentLayerCloses();
+
     launchCounterRef.current += 1;
     const uniqueSurfaceKey = `${SURFACE_KEY_PREFIX}:${agentId}:${displayMode}:${launchCounterRef.current}:${Date.now()}`;
 
