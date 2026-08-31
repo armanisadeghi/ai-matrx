@@ -26,6 +26,9 @@ jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectAccessToken: () => "jwt-token",
   selectFingerprintId: () => null,
 }));
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+  selectOrganizationId: () => "organization-1",
+}));
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: jest.fn(),
 }));
@@ -114,9 +117,9 @@ describe("mediaClient.getBlob — authenticated endpoint URL promotion (F2)", ()
     expect(url).toBe(
       `https://files.matrxserver.com/files/${FILE_ID}/download`,
     );
-    expect(
-      (init.headers as Record<string, string>).Authorization,
-    ).toBe("Bearer jwt-token");
+    const headers = new Headers(init.headers);
+    expect(headers.get("Authorization")).toBe("Bearer jwt-token");
+    expect(headers.get("X-Organization-Id")).toBe("organization-1");
     expect(handle.blob.type).toBe("image/png");
     expect(handle.url.startsWith("blob:")).toBe(true);
   });
@@ -127,5 +130,27 @@ describe("construction", () => {
     // The MediaClient assignment in client.ts is the compile-time proof;
     // at runtime the two names are the same singleton.
     expect(mediaClient).toBe(mediaFilesClient);
+  });
+
+  it("stamps the active organization on every file-session mint", async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, expires_in: 7_200 }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await mediaFilesClient.ensureSession({ force: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const [url, init] of fetchMock.mock.calls as unknown as [
+      string,
+      RequestInit,
+    ][]) {
+      expect(url).toMatch(/\/files\/session$/);
+      const headers = new Headers(init.headers);
+      expect(headers.get("Authorization")).toBe("Bearer jwt-token");
+      expect(headers.get("X-Organization-Id")).toBe("organization-1");
+    }
   });
 });

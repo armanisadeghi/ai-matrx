@@ -295,20 +295,11 @@ async function fetchMenuAgentsFromDb(
     : [];
   const defaultRows = rows.filter((r) => r.surface_name !== surfaceName);
 
-  if (surfaceName && surfaceRows.length === 0) {
-    // Loud empty-state: distinguishes "no binds" from "binds exist only on the
-    // card RLS filtered everything out".
-    console.warn(
-      "[surface-bound-agents] menu_surface returned 0 rows for surface — if you just bound an agent and expected it here, the bind likely never dual-wrote to platform.associations (or agent.card RLS hid it)",
-      {
-        surfaceName,
-        defaultNames,
-        currentUserId,
-        totalRowsIncludingDefaults: rows.length,
-        defaultRowCount: defaultRows.length,
-      },
-    );
-  }
+  // Zero surface rows is the ordinary "no agent is bound here" state. This
+  // read cannot distinguish that from a caller who expected a bind, so an
+  // unconditional warning was both false and Error-Inspector pollution. Bind
+  // mutations own their own post-write verification; actual read failures are
+  // still loud in the error branch above.
 
   const sections = bucketBindingRows(surfaceRows, currentUserId);
 

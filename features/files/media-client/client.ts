@@ -47,6 +47,7 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { fileHandler } from "@/features/files/handler/handler";
 import type { CloudFile, Visibility } from "@/features/files/types";
@@ -79,6 +80,30 @@ const credentials: CredentialsPort = {
     return null;
   },
 };
+
+/**
+ * Organization admission is transport identity, not file metadata. The data
+ * package owns credential headers; the host adds the active organization at
+ * its one injected fetch boundary so session minting, metadata, bytes, shares,
+ * and uploads cannot drift into different admission behavior.
+ *
+ * Guest requests deliberately carry no organization: the server admits the
+ * fingerprint lane without one. Authenticated requests made before the active
+ * organization bootstrap completes remain fail-closed at the server rather
+ * than inventing a personal/default organization here.
+ */
+async function filesFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  const store = getStoreSingleton();
+  if (store) {
+    const organizationId = selectOrganizationId(store.getState());
+    if (organizationId) headers.set("X-Organization-Id", organizationId);
+  }
+  return globalThis.fetch(input, { ...init, headers });
+}
 
 /** The app's diagnostics sinks: Error Inspector capture + console scream. */
 function diagnostics(event: FilesDiagnosticsEvent): void {
@@ -190,6 +215,7 @@ export const mediaFilesClient: MatrxFilesClient<DurableSrc> =
     // Cookies are per-host: the main backend and the standalone files host
     // both serve durable byte URLs, so the session lands on BOTH.
     sessionBases: [() => resolveBaseUrl(), () => resolveFilesBaseUrl()],
+    fetchImpl: filesFetch,
     diagnostics,
     metadata,
     blobCache: { get: getCached, hydrate: hydrateFromIdb, set: setCached },
