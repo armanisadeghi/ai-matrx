@@ -93,6 +93,38 @@ function hasOpenLayer(doc: Document): boolean {
 let repairs = 0;
 
 /**
+ * Radix removes the visible layer before react-remove-scroll releases the
+ * body's inline lock. Treating that brief teardown gap as an orphan produces
+ * a false repair (and a false system_error) on an ordinary Select close.
+ */
+export const ORPHANED_BODY_LOCK_GRACE_MS = 50;
+
+export function createBodyPointerEventsRepairScheduler(
+  repair: () => boolean = () => restoreBodyPointerEventsIfOrphaned(),
+  setTimer: (callback: () => void, delay: number) => number = (callback, delay) =>
+    window.setTimeout(callback, delay),
+  clearTimer: (timer: number) => void = (timer) => window.clearTimeout(timer),
+): { schedule: () => void; cancel: () => void } {
+  let queued: number | null = null;
+  return {
+    schedule() {
+      // Debounce, do not merely deduplicate. Radix's later body-style mutation
+      // proves the apparent orphan was normal teardown and starts a fresh
+      // quiet window in which the lock will already be gone.
+      if (queued !== null) clearTimer(queued);
+      queued = setTimer(() => {
+        queued = null;
+        repair();
+      }, ORPHANED_BODY_LOCK_GRACE_MS);
+    },
+    cancel() {
+      if (queued !== null) clearTimer(queued);
+      queued = null;
+    },
+  };
+}
+
+/**
  * The whole rule, as a pure function so it can be proven failing-then-passing
  * without a MutationObserver, a Radix tree or a browser.
  *
@@ -156,14 +188,8 @@ export function useBodyPointerEventsGuard(): void {
     // coalesced under load, so the one thing standing between a person and a
     // dead page was tied to the clock most likely to stop. A dead page is not
     // a paint — it does not need a frame, it needs a turn of the event loop.
-    let queued = 0;
-    const schedule = () => {
-      if (queued) return;
-      queued = window.setTimeout(() => {
-        queued = 0;
-        restoreBodyPointerEventsIfOrphaned();
-      }, 0);
-    };
+    const repairScheduler = createBodyPointerEventsRepairScheduler();
+    const schedule = repairScheduler.schedule;
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, {
       attributes: true,
@@ -190,7 +216,7 @@ export function useBodyPointerEventsGuard(): void {
       clearInterval(sweep);
       document.removeEventListener("pointerdown", schedule, true);
       document.removeEventListener("visibilitychange", schedule);
-      if (queued) clearTimeout(queued);
+      repairScheduler.cancel();
     };
   }, []);
 }

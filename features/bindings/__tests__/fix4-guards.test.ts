@@ -11,6 +11,8 @@
 import {
   __resetBodyPointerEventsRepairs,
   bodyPointerEventsRepairCount,
+  createBodyPointerEventsRepairScheduler,
+  ORPHANED_BODY_LOCK_GRACE_MS,
   restoreBodyPointerEventsIfOrphaned,
 } from "@/components/dialogs/confirm/body-pointer-events-guard";
 import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
@@ -197,6 +199,46 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
 
   test("not locked: nothing to do", () => {
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+  });
+
+  test("ordinary Radix teardown is quiet, but a stable orphan is repaired", () => {
+    const callbacks = new Map<number, () => void>();
+    const cleared: number[] = [];
+    let nextTimer = 1;
+    const scheduler = createBodyPointerEventsRepairScheduler(
+      () => restoreBodyPointerEventsIfOrphaned(document),
+      (callback, delay) => {
+        expect(delay).toBe(ORPHANED_BODY_LOCK_GRACE_MS);
+        const timer = nextTimer++;
+        callbacks.set(timer, callback);
+        return timer;
+      },
+      (timer) => {
+        cleared.push(timer);
+        callbacks.delete(timer);
+      },
+    );
+
+    // Layer removal exposes a transient lock. Radix's subsequent body-style
+    // mutation supersedes that check; by the quiet-window callback the lock is
+    // gone, so there is no repair and no false system_error.
+    document.body.style.pointerEvents = "none";
+    scheduler.schedule();
+    document.body.style.removeProperty("pointer-events");
+    scheduler.schedule();
+    expect(cleared).toEqual([1]);
+    callbacks.get(2)?.();
+    expect(bodyPointerEventsRepairCount()).toBe(0);
+    expect(console.error).not.toHaveBeenCalled();
+
+    // A genuinely orphaned lock survives the full quiet window and is still
+    // repaired well inside the 1.5-second recovery bar.
+    document.body.style.pointerEvents = "none";
+    scheduler.schedule();
+    callbacks.get(3)?.();
+    expect(document.body.style.pointerEvents).toBe("");
+    expect(bodyPointerEventsRepairCount()).toBe(1);
+    expect(console.error).toHaveBeenCalledTimes(1);
   });
 });
 
