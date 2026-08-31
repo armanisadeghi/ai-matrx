@@ -25,6 +25,7 @@ import {
   placeHealth,
   reconcilePlaceMap,
   reconcileSentence,
+  unfedRequiredTargets,
 } from "@/features/bindings/batch/batch-model";
 
 const CLEANED: OfferedValue = {
@@ -562,5 +563,51 @@ describe("H3 — an unread place has a reason, not a verdict", () => {
     });
     expect(health.unknown).toBeNull();
     expect(health.tone).toBe("green");
+  });
+});
+
+/**
+ * THE OVER-BLOCK THIS GATE MUST NOT CAUSE.
+ *
+ * Caught while building H1's refusal, before it shipped past a walk: "required
+ * and nothing feeds it" is only true if nothing feeds it AT RUN TIME. A mandate
+ * whose own contract declares a variable passes it at launch — that is the very
+ * mechanism V3's `resolve_mandated_agent_start` refusal names — so a binding
+ * that leaves such an input unmapped runs perfectly, and refusing to save it
+ * would be a worse defect than the one the gate exists to stop.
+ */
+describe("H1 — a value the job's caller supplies is not unfed", () => {
+  const CALLER_FED: BindingTarget = {
+    name: "task_overview",
+    label: "Task Overview",
+    required: true,
+  };
+
+  it("does not name a caller-supplied input as unfed", () => {
+    expect(
+      unfedRequiredTargets({
+        targets: [CALLER_FED],
+        map: {},
+        suppliedByCaller: ["task_overview"],
+      }),
+    ).toEqual([]);
+    const health = placeHealth({
+      targets: [CALLER_FED],
+      offered: [CLEANED],
+      map: {},
+      suppliedByCaller: ["task_overview"],
+    });
+    expect(health.tone).toBe("green");
+    expect(applyRefusal([health], 1)).toBeNull();
+  });
+
+  it("still names one the caller does NOT supply", () => {
+    expect(
+      unfedRequiredTargets({
+        targets: [CALLER_FED],
+        map: {},
+        suppliedByCaller: ["something_else"],
+      }),
+    ).toEqual(["Task Overview"]);
   });
 });

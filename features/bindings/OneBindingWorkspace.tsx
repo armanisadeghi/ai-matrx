@@ -521,6 +521,13 @@ function BindingDraft({
       ? unfedRequiredTargets({
           targets: holderInputs.targets,
           map: withoutUnpicked(draftMap),
+          // The job's caller passes these itself — they arrive whether or not
+          // the map feeds them, so they are not missing.
+          suppliedByCaller: [
+            ...data.contract.requiredVariables,
+            ...data.contract.requiredContextPolicyKeys,
+            ...data.contract.spillVariables,
+          ],
         })
       : [];
   const rungReady = rung !== "org" || Boolean(organizationId);

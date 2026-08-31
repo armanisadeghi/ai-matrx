@@ -100,13 +100,26 @@ const EMPTY_HEALTH: PlaceHealth = {
 export function unfedRequiredTargets({
   targets,
   map,
+  suppliedByCaller = [],
 }: {
   targets: readonly BindingTarget[];
   map: ConsumptionMap;
+  /**
+   * 🚨 Holder inputs THE JOB'S OWN CALLER passes at run time — the mandate
+   * contract's `requiredVariables`, `requiredContextPolicyKeys` and
+   * `spillVariables`. A value that arrives from the call site is fed; it simply
+   * is not fed BY THE MAP, and treating it as missing would refuse a binding
+   * that runs perfectly. (Found while gating H1: the refusal is only honest if
+   * "nothing feeds this" is actually true of the whole run, not just of this
+   * screen's half of it.)
+   */
+  suppliedByCaller?: readonly string[];
 }): string[] {
+  const supplied = new Set(suppliedByCaller);
   const out: string[] = [];
   for (const target of targets) {
     if (target.required !== true) continue;
+    if (supplied.has(target.name)) continue;
     const sources = sourcesFor(map, target.name);
     if (sources.length > 0) continue;
     if (hasHolderDefault(target.defaultValue)) continue;
@@ -138,12 +151,15 @@ export function placeHealth({
   blockers = [],
   offerStatus = "ready",
   offerMessage = null,
+  suppliedByCaller = [],
 }: {
   targets: readonly BindingTarget[];
   offered: readonly OfferedValue[];
   map: ConsumptionMap;
   /** Reasons this place cannot be written, from the requirement gate. */
   blockers?: readonly string[];
+  /** Holder inputs this place's own caller passes — see `unfedRequiredTargets`. */
+  suppliedByCaller?: readonly string[];
   /**
    * Whether `offered` is the place's REAL offer. `"ready"` (the default) means
    * the caller has it; anything else means this place cannot be judged and
@@ -172,8 +188,8 @@ export function placeHealth({
 
   let unmapped = 0;
   let requiredUnmapped = 0;
-  const unfedRequired: string[] = [];
   const chosenMap: ConsumptionMap = {};
+  const midPick = new Set<string>();
 
   for (const target of targets) {
     const sources = sourcesFor(map, target.name);
@@ -182,16 +198,18 @@ export function placeHealth({
     );
     if (chosen.length > 0) chosenMap[target.name] = [...chosen];
     if (sources.length > chosen.length) {
+      midPick.add(target.name);
       unmapped += 1;
       if (target.required === true) requiredUnmapped += 1;
-    } else if (
-      target.required === true &&
-      sources.length === 0 &&
-      !hasHolderDefault(target.defaultValue)
-    ) {
-      unfedRequired.push(target.label ?? target.name);
     }
   }
+  // ONE rule for "required and nothing feeds it", shared with map mode's Save
+  // refusal — a mid-pick row is counted above, not twice.
+  const unfedRequired = unfedRequiredTargets({
+    targets: targets.filter((t) => !midPick.has(t.name)),
+    map,
+    suppliedByCaller,
+  });
 
   const problems = consumptionMapProblems({ values: offered }, chosenMap);
   // A source chosen with no value picked is RED whether or not the input is

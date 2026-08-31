@@ -250,6 +250,20 @@ export function BatchMode({
     };
   }, [agentId, selectedRows]);
 
+  /**
+   * Holder inputs THIS PLACE's own caller passes at run time. A job that
+   * declares a variable in its contract delivers it at launch, so the grid must
+   * not call that input unfed and the gate must not refuse over it.
+   */
+  const callerSuppliedFor = useCallback((row: MandateRowDb): string[] => {
+    const contract = parseMandateContract(contractOfMandate(row));
+    return [
+      ...contract.requiredVariables,
+      ...contract.requiredContextPolicyKeys,
+      ...contract.spillVariables,
+    ];
+  }, []);
+
   const blockersFor = useCallback(
     (row: MandateRowDb): string[] => {
       const out: string[] = [];
@@ -380,6 +394,9 @@ export function BatchMode({
         // H3 — the health is told whether the offer it is judging is REAL.
         offerStatus: offer.status,
         offerMessage: offer.status === "error" ? offer.message : null,
+        // Each PLACE has its own caller contract — a variable this job passes
+        // itself is fed at run time and must not be called missing here.
+        suppliedByCaller: callerSuppliedFor(row),
       });
     }
     return out;
