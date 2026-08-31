@@ -107,7 +107,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     container.remove();
   });
 
-  it("does not read anything while it is folded — a closed drawer is not a query", async () => {
+  it("the CLOSED trigger already says what is set — 'empty' and 'unknown' never look alike", async () => {
     readPresentation.mockResolvedValue({
       treatmentId: null,
       presentation: defaultPresentation(),
@@ -116,8 +116,31 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     await act(async () => {
       root.render(drawer());
     });
-    expect(readPresentation).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("Options");
+    expect(readPresentation).toHaveBeenCalledTimes(1);
+    // Folded: the sections are not mounted, but the trigger is not silent.
+    expect(container.querySelector('[data-testid="widget-picker"]')).toBeNull();
+    expect(container.textContent).toContain("All platform defaults");
+  });
+
+  it("counts the answered options ON THE CLOSED TRIGGER, without being opened", async () => {
+    readPresentation.mockResolvedValue({
+      treatmentId: "treatment-1",
+      presentation: { ...defaultPresentation(), displayMode: "sidebar" },
+      disabled: false,
+    });
+    await act(async () => {
+      root.render(drawer());
+    });
+    expect(container.textContent).toContain("1 set");
+    expect(container.querySelector('[data-testid="widget-picker"]')).toBeNull();
+  });
+
+  it("a failed read is said ON THE TRIGGER too — a folded control never hides that it is broken", async () => {
+    readPresentation.mockRejectedValue(new Error("permission denied"));
+    await act(async () => {
+      root.render(drawer());
+    });
+    expect(container.textContent).toContain("Couldn’t read");
   });
 
   it("SETTLES when opened, and reads exactly once", async () => {

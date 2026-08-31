@@ -111,8 +111,14 @@ export function BindingOptionsDrawer({
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // The stored answer is read the first time the drawer is opened, never on
-  // mount: a folded drawer that fetches is a query nobody asked for.
+  // 🚨 THE READ HAPPENS ON MOUNT, NOT ON OPEN — and the walk is why.
+  // It read on open first, which meant the CLOSED trigger could not say how
+  // many options this job has answered: the badge only appeared after you had
+  // already opened the drawer to find out, which is the exact question the
+  // badge exists to answer. A folded control that cannot tell you whether
+  // there is anything behind it is silent, not restrained. The cost of being
+  // honest instead is one single-row read on the partial unique index
+  // `treatment_default_uq` — the same one both resolvers use.
   //
   // 🚨 THE LATCH IS A REF, NOT THE LOAD STATE — and this is not a style choice.
   // Gating on `load.status !== "idle"` with `load.status` in the deps is a trap
@@ -124,7 +130,6 @@ export function BindingOptionsDrawer({
   // asked yet" latch must not be a value the asking itself changes.
   const startedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!open) return;
     if (startedFor.current === owner.mandateId) return;
     startedFor.current = owner.mandateId;
     let cancelled = false;
@@ -152,7 +157,7 @@ export function BindingOptionsDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, owner.mandateId]);
+  }, [owner.mandateId]);
 
   // Categories — the same three scopes the shortcut editor loads, for the same
   // reason: a single-scope fetch misses two-thirds of what a person may pick.
@@ -298,11 +303,24 @@ export function BindingOptionsDrawer({
           Display · Visibility{writeTargetCount > 0 ? " · Write access" : ""} ·
           Advanced
         </span>
-        {answeredCount !== null && answeredCount > 0 ? (
+        {/* WHAT THE CLOSED TRIGGER SAYS. Every state is a word: how many
+            options this job answers, that it answers none, or that the answer
+            could not be read — never nothing, which would leave "empty" and
+            "unknown" looking identical. */}
+        {load.status === "error" ? (
+          <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-destructive">
+            <AlertTriangle className="h-3 w-3" />
+            Couldn&rsquo;t read
+          </span>
+        ) : answeredCount === null ? null : answeredCount > 0 ? (
           <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             {answeredCount} set
           </span>
-        ) : null}
+        ) : (
+          <span className="ml-auto text-[10px] text-muted-foreground">
+            All platform defaults
+          </span>
+        )}
       </button>
 
       {open ? (
