@@ -368,6 +368,12 @@ commits, Esc cancels), and an inline "Add" input.
 
 ## Change log
 
+- 2026-08-30 — `SortableList` row controls compacted: the up/down fallback is
+  now a slim stacked-chevron column and the remove X a small plain button
+  (muted until hover), instead of three full-size 28px icon buttons side by
+  side — the right edge of every sortable row no longer burns ~90px of
+  chrome. Touch devices get larger targets via `pointer-coarse:`. Every
+  DB-authored component using the kit inherits this with no code change.
 - 2026-08-25 — The shared icon slot unwraps module-shaped component imports
   and ignores invalid objects, so imperfect DB-authored icons cannot trigger
   React error #130 across headers, stats, panels, or chips.

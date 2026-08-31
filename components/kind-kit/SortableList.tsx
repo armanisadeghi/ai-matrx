@@ -17,7 +17,6 @@
 import * as React from "react";
 import { ChevronDown, ChevronUp, GripVertical, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 export interface SortableRenderContext {
   index: number;
@@ -267,43 +266,37 @@ export function SortableList<T>({
                 : defaultRender(item)}
             </div>
             {!hideArrows && (
-              <div className="flex shrink-0 items-center">
-                <Button
+              <div className="flex shrink-0 flex-col items-center justify-center">
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
                   aria-label="Move up"
                   disabled={!canInteract || index === 0}
                   onClick={() => move(index, index - 1)}
+                  className="flex h-3.5 w-5 items-center justify-center rounded-sm text-muted-foreground/70 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-6 pointer-coarse:w-7"
                 >
-                  <ChevronUp className="h-3.5 w-3.5" />
-                </Button>
-                <Button
+                  <ChevronUp className="h-3 w-3" />
+                </button>
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
                   aria-label="Move down"
                   disabled={!canInteract || index === items.length - 1}
                   onClick={() => move(index, index + 1)}
+                  className="flex h-3.5 w-5 items-center justify-center rounded-sm text-muted-foreground/70 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-6 pointer-coarse:w-7"
                 >
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </Button>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
               </div>
             )}
             {onRemove && (
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                 aria-label="Remove"
                 disabled={!canInteract}
                 onClick={() => onRemove(item, index)}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-destructive disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-7 pointer-coarse:w-7"
               >
                 <X className="h-3.5 w-3.5" />
-              </Button>
+              </button>
             )}
           </li>
         );
