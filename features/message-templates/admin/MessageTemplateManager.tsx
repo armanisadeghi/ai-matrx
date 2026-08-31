@@ -212,9 +212,9 @@ export function MessageTemplateManager({
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        // Authorization + X-Organization-Id organization admission.
+        ...apiConfig.authHeaders,
       };
-      if (apiConfig.authToken)
-        headers["Authorization"] = `Bearer ${apiConfig.authToken}`;
       const body = JSON.stringify({ content });
 
       try {
@@ -301,7 +301,7 @@ export function MessageTemplateManager({
         setIsProcessing(false);
       }
     },
-    [apiConfig.authToken, apiConfig.baseUrl],
+    [apiConfig.authHeaders, apiConfig.baseUrl],
   );
 
   // Tag management for forms

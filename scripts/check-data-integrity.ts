@@ -51,6 +51,7 @@ function loadEnv(): {
   key: string;
   jwt?: string;
   backend?: string;
+  organizationId?: string;
 } | null {
   const env: Record<string, string> = {};
   // ONE name per value — no second candidate, no fallback chain. Applies to the
@@ -61,6 +62,7 @@ function loadEnv(): {
     "NEXT_PUBLIC_SUPABASE_URL",
     "SUPABASE_SECRET_KEY",
     "MATRX_ADMIN_JWT",
+    "MATRX_ADMIN_ORGANIZATION_ID",
     "NEXT_PUBLIC_BACKEND_URL_PROD",
   ];
   for (const k of want) if (process.env[k]) env[k] = process.env[k] as string;
@@ -92,17 +94,31 @@ function loadEnv(): {
     key,
     jwt: env.MATRX_ADMIN_JWT,
     backend: env.NEXT_PUBLIC_BACKEND_URL_PROD,
+    organizationId: env.MATRX_ADMIN_ORGANIZATION_ID,
   };
 }
 
-function makeProbe(backend: string, jwt: string): FileProbe {
+// Organization admission: the backend's AuthMiddleware refuses a Bearer-JWT
+// request without `X-Organization-Id` (400 organization_required), so the
+// probe carries the admin JWT's organization from MATRX_ADMIN_ORGANIZATION_ID.
+function makeProbe(
+  backend: string,
+  jwt: string,
+  organizationId: string,
+): FileProbe {
   const base = backend.replace(/\/$/, "");
   return async (fileId: string) => {
     const start = Date.now();
     try {
       const res = await fetch(
         `${base}/files/${encodeURIComponent(fileId)}/download?inline=true`,
-        { headers: { Authorization: `Bearer ${jwt}`, Range: "bytes=0-0" } },
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "X-Organization-Id": organizationId,
+            Range: "bytes=0-0",
+          },
+        },
       );
       await res.arrayBuffer().catch(() => undefined);
       return { status: res.status, ms: Date.now() - start };
@@ -143,10 +159,11 @@ async function main(): Promise<number> {
 
   let probe: FileProbe | undefined;
   if (wantProbe) {
-    if (env.jwt && env.backend) probe = makeProbe(env.backend, env.jwt);
+    if (env.jwt && env.backend && env.organizationId)
+      probe = makeProbe(env.backend, env.jwt, env.organizationId);
     else
       console.log(
-        `${TAG.warn}--probe requested but MATRX_ADMIN_JWT / backend URL missing — probe will report skipped`,
+        `${TAG.warn}--probe requested but MATRX_ADMIN_JWT / MATRX_ADMIN_ORGANIZATION_ID / backend URL missing — probe will report skipped (org-less JWT probes are refused by the backend with 400 organization_required)`,
       );
   }
 

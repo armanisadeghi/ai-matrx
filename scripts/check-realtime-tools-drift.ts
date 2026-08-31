@@ -120,7 +120,12 @@ function checkTypeAgainstContract(): DriftIssue[] {
 }
 
 // ── 2. Live endpoint (optional) ───────────────────────────────────────────
-function loadEnv(): { token: string; baseUrl: string; agentId: string } | null {
+function loadEnv(): {
+  token: string;
+  baseUrl: string;
+  agentId: string;
+  organizationId: string;
+} | null {
   // `REALTIME_TOOLS_BASE_URL` is this script's per-run target, alongside its
   // JWT/agent siblings; otherwise probe the one production origin.
   let baseUrl =
@@ -129,6 +134,10 @@ function loadEnv(): { token: string; baseUrl: string; agentId: string } | null {
     "";
   const token = process.env.REALTIME_TOOLS_JWT ?? "";
   const agentId = process.env.REALTIME_TOOLS_AGENT_ID ?? "";
+  // Organization admission: the backend's AuthMiddleware refuses a Bearer-JWT
+  // request without `X-Organization-Id` (400 organization_required), so the
+  // live check needs the JWT's organization alongside its token/agent siblings.
+  const organizationId = process.env.REALTIME_TOOLS_ORGANIZATION_ID ?? "";
 
   if (!baseUrl) {
     for (const f of [".env.local", ".env.production.local", ".env"]) {
@@ -144,21 +153,32 @@ function loadEnv(): { token: string; baseUrl: string; agentId: string } | null {
       if (baseUrl) break;
     }
   }
-  // A live check needs all three; otherwise skip it (offline-safe).
+  // A live check needs all four; otherwise skip it (offline-safe).
   if (!baseUrl || !token || !agentId) return null;
-  return { baseUrl: baseUrl.replace(/\/$/, ""), token, agentId };
+  if (!organizationId) {
+    console.warn(
+      "[check-realtime-tools-drift] REALTIME_TOOLS_JWT is set but " +
+        "REALTIME_TOOLS_ORGANIZATION_ID is not — the backend refuses " +
+        "org-less JWT requests (400 organization_required), so the live " +
+        "check is skipped. Set REALTIME_TOOLS_ORGANIZATION_ID to run it.",
+    );
+    return null;
+  }
+  return { baseUrl: baseUrl.replace(/\/$/, ""), token, agentId, organizationId };
 }
 
 async function checkLiveEndpoint(env: {
   token: string;
   baseUrl: string;
   agentId: string;
+  organizationId: string;
 }): Promise<DriftIssue[]> {
   const url = `${env.baseUrl}/ai/agents/${encodeURIComponent(env.agentId)}/realtime-tools`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.token}`,
+      "X-Organization-Id": env.organizationId,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

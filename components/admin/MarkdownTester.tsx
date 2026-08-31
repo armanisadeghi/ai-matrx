@@ -982,9 +982,9 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        // Authorization + X-Organization-Id organization admission.
+        ...apiConfig.authHeaders,
       };
-      if (apiConfig.authToken)
-        headers["Authorization"] = `Bearer ${apiConfig.authToken}`;
       const body = JSON.stringify({ content });
 
       try {
@@ -1059,7 +1059,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
         setIsProcessing(false);
       }
     },
-    [apiConfig.authToken, apiConfig.baseUrl],
+    [apiConfig.authHeaders, apiConfig.baseUrl],
   );
 
   const handleTabChange = useCallback(

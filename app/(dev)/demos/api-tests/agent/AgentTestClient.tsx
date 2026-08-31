@@ -358,7 +358,7 @@ export default function AgentTestClient() {
     } finally {
       setActiveRunId(null);
     }
-  }, [apiConfig.authToken, apiConfig.baseUrl, promptId, addLog, updateLog]);
+  }, [apiConfig.authHeaders, apiConfig.baseUrl, promptId, addLog, updateLog]);
 
   // ── Shared streaming executor ─────────────────────
   const runStream = useCallback(
@@ -457,7 +457,7 @@ export default function AgentTestClient() {
         setActiveRunId(null);
       }
     },
-    [apiConfig.authToken, apiConfig.baseUrl, dispatch, updateLog],
+    [apiConfig.authHeaders, apiConfig.baseUrl, dispatch, updateLog],
   );
 
   // ── 2. New Conversation ───────────────────────────

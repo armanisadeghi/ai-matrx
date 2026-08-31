@@ -23,6 +23,7 @@
  */
 
 import { startOAuthPopup } from "@/utils/oauth-popup";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 
 export type McpOAuthOutcome =
   | { ok: true; serverId: string }
@@ -44,7 +45,25 @@ export function startMcpOAuthPopup(
   const target =
     returnUrl ??
     (typeof window === "undefined" ? "/" : window.location.pathname);
-  const params = new URLSearchParams({ server_id: serverId, return_url: target });
+  // Organization admission travels the whole OAuth round-trip: the callback
+  // persists tokens to aidream with the caller's JWT, and the backend's
+  // AuthMiddleware refuses org-less JWT requests (400 organization_required).
+  // Resolved HERE, where the person acted — never guessed later. Refusing
+  // without one is loud, with the remedy in the message.
+  const organizationId = peekSelectedOrganizationId();
+  if (!organizationId) {
+    return Promise.resolve({
+      ok: false,
+      cancelled: false,
+      error:
+        "Select an organization before connecting this server — the connection is stored in your active organization.",
+    });
+  }
+  const params = new URLSearchParams({
+    server_id: serverId,
+    return_url: target,
+    organization_id: organizationId,
+  });
   if (endpointOverride) params.set("endpoint_override", endpointOverride);
   const url = `/api/mcp/oauth/start?${params.toString()}`;
 

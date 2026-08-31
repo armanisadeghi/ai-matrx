@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { consumeStream } from "@/lib/api/stream-parser";
 import type { StreamCallbacks } from "@/lib/api/stream-parser";
 import type {
@@ -35,11 +36,20 @@ export async function executeToolTest(
     if (context.task_id) body.task_id = context.task_id;
   }
 
+  // Organization admission rides with the JWT: the backend's AuthMiddleware
+  // (matrx-connect, 2026-08-30) refuses org-less Bearer requests with 400
+  // organization_required. The explicitly resolved test-context organization
+  // wins; otherwise the selected organization is peeked (never a
+  // first/personal fallback). A missing organization surfaces as the server's
+  // own refusal in the demo output — never silently.
+  const organizationId =
+    context?.organization_id ?? peekSelectedOrganizationId();
   const response = await fetch(`${baseUrl}/tools/test/execute`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${authToken}`,
+      ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
     },
     body: JSON.stringify(body),
     signal: abortSignal,

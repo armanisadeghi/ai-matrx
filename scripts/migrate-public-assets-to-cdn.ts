@@ -201,6 +201,9 @@ function avatarEntries(filenames: string[]): AssetEntry[] {
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL_PROD ?? "https://api.matrxserver.com";
 const ADMIN_JWT = process.env.MATRX_ADMIN_JWT;
+// Organization admission: the backend's AuthMiddleware refuses a Bearer-JWT
+// request without `X-Organization-Id` (400 organization_required).
+const ADMIN_ORGANIZATION_ID = process.env.MATRX_ADMIN_ORGANIZATION_ID;
 
 interface UploadedRecord {
   cdn_url: string;
@@ -252,6 +255,9 @@ async function findExisting(
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${ADMIN_JWT}`,
+      ...(ADMIN_ORGANIZATION_ID
+        ? { "X-Organization-Id": ADMIN_ORGANIZATION_ID }
+        : {}),
       "X-Request-Id": randomUUID(),
     },
   });
@@ -291,6 +297,9 @@ async function uploadOne(
     method: "POST",
     headers: {
       Authorization: `Bearer ${ADMIN_JWT}`,
+      ...(ADMIN_ORGANIZATION_ID
+        ? { "X-Organization-Id": ADMIN_ORGANIZATION_ID }
+        : {}),
       "X-Request-Id": randomUUID(),
     },
     body: form,
@@ -356,6 +365,14 @@ async function main() {
   if (!ADMIN_JWT) {
     console.error(
       "MATRX_ADMIN_JWT is not set. See the runbook in the script header.",
+    );
+    process.exit(1);
+  }
+  if (!ADMIN_ORGANIZATION_ID) {
+    console.error(
+      "MATRX_ADMIN_ORGANIZATION_ID is not set — the backend refuses " +
+        "org-less JWT requests (400 organization_required). Set it to the " +
+        "asset-owning user's organization id.",
     );
     process.exit(1);
   }

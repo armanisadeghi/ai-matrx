@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import {
   SERVER_PRESETS,
   STORAGE_KEY_SERVER,
@@ -141,8 +142,18 @@ export function useServerConfig(): UseServerConfigReturn {
 
   const isPreset = SERVER_PRESETS.some((p) => p.url === serverUrl);
 
+  // Organization admission rides with the JWT: the backend's AuthMiddleware
+  // (matrx-connect, 2026-08-30) refuses org-less Bearer requests with 400
+  // organization_required. The selected organization is peeked from the app
+  // store (never a first/personal fallback); when none is selected the header
+  // is omitted and the demo shows the server's own refusal on screen — the
+  // point of a diagnostic surface. Guests (no token) send neither header.
+  const organizationId = peekSelectedOrganizationId();
   const authHeaders: Record<string, string> = authToken
-    ? { Authorization: `Bearer ${authToken}` }
+    ? {
+        Authorization: `Bearer ${authToken}`,
+        ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
+      }
     : {};
 
   return {

@@ -321,9 +321,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        // Authorization + X-Organization-Id organization admission.
+        ...apiConfig.authHeaders,
       };
-      if (apiConfig.authToken)
-        headers["Authorization"] = `Bearer ${apiConfig.authToken}`;
       const body = JSON.stringify({ content: template });
 
       try {
@@ -402,7 +402,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         setIsProcessing(false);
       }
     },
-    [apiConfig.authToken, apiConfig.baseUrl],
+    [apiConfig.authHeaders, apiConfig.baseUrl],
   );
 
   // Re-run when switching to json/stream mode or when template changes while in those modes

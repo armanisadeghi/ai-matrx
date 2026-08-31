@@ -166,6 +166,81 @@ describe("callApi organization context", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("admits the fingerprint guest lane WITHOUT an organization (corrected contract)", async () => {
+    // The server's AuthMiddleware admits the fingerprint lane org-less
+    // (matrx-connect 241750bf6): a guest has no membership to verify, so
+    // callApi must neither refuse nor stamp X-Organization-Id nor inject
+    // organization_id into the body — and must never open the org picker.
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: new Headers(),
+      json: async () => ({ status: "healthy" }),
+    } as Response);
+    global.fetch = fetchMock;
+    const base = requestState(null, null);
+    const state = {
+      ...base,
+      userProfile: {
+        ...(base as unknown as { userProfile: Record<string, unknown> })
+          .userProfile,
+        fingerprintId: "fp-guest-test",
+      },
+    } as unknown as RootState;
+
+    const result = await callApi({
+      path: "/ai/agents/{agent_id}",
+      method: "POST",
+      pathParams: { agent_id: "agent-test" },
+      body: { user_input: "hello" },
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers["X-Fingerprint-ID"]).toBe("fp-guest-test");
+    expect(headers["X-Organization-Id"]).toBeUndefined();
+    expect(JSON.parse(String(init.body))).toEqual({ user_input: "hello" });
+  });
+
+  it("still binds an explicitly resolved organization on the guest lane", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: new Headers(),
+      json: async () => ({ status: "healthy" }),
+    } as Response);
+    global.fetch = fetchMock;
+    const base = requestState(null, null);
+    const state = {
+      ...base,
+      userProfile: {
+        ...(base as unknown as { userProfile: Record<string, unknown> })
+          .userProfile,
+        fingerprintId: "fp-guest-test",
+      },
+    } as unknown as RootState;
+
+    const result = await callApi({
+      path: "/ai/agents/{agent_id}",
+      method: "POST",
+      pathParams: { agent_id: "agent-test" },
+      body: { user_input: "hello" },
+      scopeOverrides: { organization_id: ORGANIZATION_ID },
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toBeUndefined();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toMatchObject({
+      "X-Organization-Id": ORGANIZATION_ID,
+    });
+  });
+
   it("binds the selected organization into the real fetch body and header", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

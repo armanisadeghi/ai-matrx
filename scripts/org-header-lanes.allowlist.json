@@ -1,0 +1,9 @@
+{
+  "$comment": "Allowlist for scripts/check-org-header-lanes.ts. Every entry names a file that hand-builds a Bearer Authorization header toward a python-backend base URL WITHOUT organization admission, and carries the reason that lane is legitimately org-less or handled elsewhere. Adding an entry is a claim reviewed like code — never a way to silence the guard.",
+  "entries": [
+    {
+      "file": "app/api/admin/coolify-logs/route.ts",
+      "reason": "The Bearer token is COOLIFY_API_TOKEN sent to the Coolify control plane (coolify.app.matrxserver.com), not a Supabase JWT to aidream — Coolify has no organization concept and is not behind matrx-connect AuthMiddleware."
+    }
+  ]
+}

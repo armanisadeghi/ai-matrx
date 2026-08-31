@@ -239,7 +239,7 @@ export default function BlockProcessingClient() {
     includeRaw,
     apiMode,
     apiConfig.baseUrl,
-    apiConfig.authToken,
+    apiConfig.authHeaders,
     isRunning,
   ]);
 

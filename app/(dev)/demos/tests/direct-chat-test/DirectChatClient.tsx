@@ -15,6 +15,7 @@ import { get_prompt_sample, TEST_ADMIN_TOKEN } from "./sample-prompt";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import MarkdownStream from "@/components/MarkdownStream";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { isChunkEvent } from "@/types/python-generated/stream-events";
 
@@ -93,11 +94,18 @@ export default function DirectChatClient() {
 
       const url = `${getBaseUrl()}${ENDPOINTS.ai.chat}`;
 
+      // Organization admission rides with the JWT: the backend's
+      // AuthMiddleware (matrx-connect, 2026-08-30) refuses org-less Bearer
+      // requests with 400 organization_required. Peeked from the selected
+      // organization — never a first/personal fallback; a missing selection
+      // shows the server's own refusal in the response pane.
+      const organizationId = peekSelectedOrganizationId();
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
+          ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
         },
         body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,

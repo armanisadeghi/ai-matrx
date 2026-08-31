@@ -10,6 +10,13 @@ import type { RenderBlockPayload } from "@/types/python-generated/stream-events"
 export interface RunServerParserOptions {
   baseUrl: string;
   authToken?: string | null;
+  /**
+   * Full auth header set from `useApiTestConfig().authHeaders` — Authorization
+   * plus the mandatory `X-Organization-Id` organization admission the
+   * backend's AuthMiddleware requires on JWT requests. Preferred over
+   * `authToken`; when provided it wins.
+   */
+  authHeaders?: Record<string, string> | null;
   signal?: AbortSignal;
 }
 
@@ -45,11 +52,12 @@ export async function runServerParser(
   content: string,
   options: RunServerParserOptions,
 ): Promise<ServerParseResult> {
-  const { baseUrl, authToken, signal } = options;
+  const { baseUrl, authToken, authHeaders, signal } = options;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  if (authHeaders) Object.assign(headers, authHeaders);
+  else if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
 
   const res = await fetch(`${baseUrl}${ENDPOINTS.blockProcessing.process}`, {
     method: "POST",

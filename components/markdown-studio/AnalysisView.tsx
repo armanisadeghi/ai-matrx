@@ -98,7 +98,7 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
       const serverStart = performance.now();
       const serverRes = await runServerParser(content, {
         baseUrl: apiConfig.baseUrl,
-        authToken: apiConfig.authToken,
+        authHeaders: apiConfig.authHeaders,
       });
       const serverMs = performance.now() - serverStart;
 

@@ -424,24 +424,37 @@ export default function DynamicApiClient() {
     }
   }, []);
 
-  // Sync auth header from token
+  // Sync auth headers from the server-bar config: Authorization plus the
+  // mandatory X-Organization-Id organization admission (the backend's
+  // AuthMiddleware refuses org-less JWT requests with 400
+  // organization_required). Rows stay editable — this only seeds/refreshes
+  // the managed pair.
   useEffect(() => {
     if (config.authToken) {
       setHeaders((prev) => {
-        const withoutAuth = prev.filter(
-          (h) => h.key.toLowerCase() !== "authorization",
-        );
+        const managed = new Set(["authorization", "x-organization-id"]);
+        const rest = prev.filter((h) => !managed.has(h.key.toLowerCase()));
+        const organizationId = config.authHeaders["X-Organization-Id"];
         return [
           {
             key: "Authorization",
             value: `Bearer ${config.authToken}`,
             enabled: true,
           },
-          ...withoutAuth,
+          ...(organizationId
+            ? [
+                {
+                  key: "X-Organization-Id",
+                  value: organizationId,
+                  enabled: true,
+                },
+              ]
+            : []),
+          ...rest,
         ];
       });
     }
-  }, [config.authToken]);
+  }, [config.authToken, config.authHeaders]);
 
   const stopTimer = () => {
     if (timerRef.current) {

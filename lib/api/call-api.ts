@@ -216,6 +216,17 @@ export interface ResolvedCallScope extends CallScope {
   organization_id: string;
 }
 
+/**
+ * The GUEST lane's resolved scope: the fingerprint lane is admitted org-less
+ * by the server's AuthMiddleware (a guest has no membership to verify —
+ * matrx-connect 241750bf6), so `organization_id` is present only when the
+ * caller explicitly resolved one. JWT requests always resolve the required
+ * `ResolvedCallScope` — never this shape.
+ */
+export interface GuestResolvedCallScope extends CallScope {
+  organization_id?: string;
+}
+
 // ============================================================================
 // SECTION 4 — TEST / DEMO OVERRIDES (Placeholder)
 // ============================================================================
@@ -640,7 +651,17 @@ async function ensureOrganizationContextForCall(
 export function resolveScope(
   state: RootState,
   overrides?: Partial<CallScope>,
-): ResolvedCallScope {
+): ResolvedCallScope;
+export function resolveScope(
+  state: RootState,
+  overrides: Partial<CallScope> | undefined,
+  opts: { guestWithoutOrganization: boolean },
+): GuestResolvedCallScope;
+export function resolveScope(
+  state: RootState,
+  overrides?: Partial<CallScope>,
+  opts?: { guestWithoutOrganization: boolean },
+): GuestResolvedCallScope {
   // user_id: userAuth is the auth-domain slice (Phase 4 split — see
   // lib/redux/slices/userAuthSlice.ts); selectUserId is its canonical selector.
   const userId: string | undefined = selectUserId(state) ?? undefined;
@@ -652,12 +673,17 @@ export function resolveScope(
   const selectedOrganizationId = hasAppContext
     ? selectOrganizationId(state)
     : undefined;
-  const organizationId = requireOrganizationContext(
-    selectedOrganizationId,
-    overrides?.organization_id,
-  );
+  // The JWT lane is fail-closed (an authenticated request MUST name a
+  // verified organization); the guest lane is admitted org-less by the
+  // server and never refused here — see GuestResolvedCallScope.
+  const organizationId = opts?.guestWithoutOrganization
+    ? undefined
+    : requireOrganizationContext(
+        selectedOrganizationId,
+        overrides?.organization_id,
+      );
 
-  const resolved: ResolvedCallScope = {
+  const resolved: GuestResolvedCallScope = {
     user_id: userId,
     organization_id: organizationId,
     project_id: hasAppContext
@@ -710,7 +736,7 @@ const UI_ONLY_BODY_FIELDS = new Set<string>([
  */
 export function buildRequestBody(
   body: unknown,
-  scope: ResolvedCallScope,
+  scope: GuestResolvedCallScope,
 ): unknown {
   // MATRX-EXCEPTION: `body` is optional by design — a caller with no body
   // still gets scope fields injected below, so `{}` (no caller fields) is
@@ -727,6 +753,7 @@ export function buildRequestBody(
 
   const bodyOrganizationId = base.organization_id;
   if (
+    scope.organization_id !== undefined &&
     bodyOrganizationId !== undefined &&
     (typeof bodyOrganizationId !== "string" ||
       bodyOrganizationId.trim() !== scope.organization_id)
@@ -736,14 +763,19 @@ export function buildRequestBody(
       "Request body organization_id must match the request context organization.",
     );
   }
-  if (bodyOrganizationId !== undefined) {
+  if (bodyOrganizationId !== undefined && scope.organization_id !== undefined) {
     base.organization_id = scope.organization_id;
   }
 
-  // organization_id is unconditional. Other optional scope fields are omitted
-  // when absent so endpoints that do not declare them remain unaffected.
+  // organization_id is unconditional on the JWT lane; the org-less guest lane
+  // (scope.organization_id undefined) injects nothing — the server admits
+  // that lane without an organization. Other optional scope fields are
+  // omitted when absent so endpoints that do not declare them remain
+  // unaffected.
   const scopeFields: Record<string, unknown> = {
-    organization_id: scope.organization_id,
+    ...(scope.organization_id !== undefined
+      ? { organization_id: scope.organization_id }
+      : {}),
   };
   if (scope.project_id !== undefined) scopeFields.project_id = scope.project_id;
   if (scope.task_id !== undefined) scopeFields.task_id = scope.task_id;
@@ -1225,20 +1257,45 @@ export function callApi<
       // request that has no organization. Non-interactive contexts (SSR, no
       // picker mounted) re-throw the original error exactly as before — this is
       // never a fallback, and it never picks an organization for anybody.
-      const resolvedOrganizationId = await ensureOrganizationContextForCall(
-        state.appContext?.organization_id,
-        config.scopeOverrides?.organization_id,
-      );
+      // GUEST LANE (fingerprint / no credential): the server's AuthMiddleware
+      // admits this lane org-less (a guest has no membership to verify —
+      // matrx-connect 241750bf6), so a guest is NEVER refused for a missing
+      // organization and never shown the workspace picker. An explicitly
+      // resolved override still binds. The JWT lane below stays fail-closed.
+      // Only the FINGERPRINT guest lane is admitted org-less; a request with
+      // no credential at all cannot be admitted either way and keeps the
+      // fail-closed refusal below.
+      const isGuestLane =
+        auth.mode === "guest" && !!auth.headers["X-Fingerprint-ID"];
+      const guestOverrideOrganizationId =
+        config.scopeOverrides?.organization_id;
+      const isOrganizationlessGuest =
+        isGuestLane && !guestOverrideOrganizationId;
+
+      const resolvedOrganizationId = isOrganizationlessGuest
+        ? undefined
+        : isGuestLane
+          ? requireOrganizationContext(null, guestOverrideOrganizationId)
+          : await ensureOrganizationContextForCall(
+              state.appContext?.organization_id,
+              config.scopeOverrides?.organization_id,
+            );
 
       // ── Step 4: Resolve and validate the complete request context ───────
-      const scope = resolveScope(getState(), {
-        ...config.scopeOverrides,
-        organization_id: resolvedOrganizationId,
-      });
-      assertQueryOrganizationMatchesContext(
-        config.queryParams,
-        scope.organization_id,
+      const scope = resolveScope(
+        getState(),
+        {
+          ...config.scopeOverrides,
+          organization_id: resolvedOrganizationId,
+        },
+        { guestWithoutOrganization: isOrganizationlessGuest },
       );
+      if (scope.organization_id !== undefined) {
+        assertQueryOrganizationMatchesContext(
+          config.queryParams,
+          scope.organization_id,
+        );
+      }
 
       // ── Step 5: Assemble request body ───────────────────────────────────
       const body = buildRequestBody(config.body, scope);
@@ -1254,10 +1311,15 @@ export function callApi<
       }
 
       // ── Step 6: Apply test overrides and bind the same org to middleware ─
-      const headers = applyOrganizationContextHeader(
-        applyTestHeaders(auth.headers, config._testOverrides),
-        scope.organization_id,
-      );
+      // The org-less guest lane sends no X-Organization-Id (server-admitted);
+      // every other request binds the SAME organization the scope resolved.
+      const headers =
+        scope.organization_id === undefined
+          ? applyTestHeaders(auth.headers, config._testOverrides)
+          : applyOrganizationContextHeader(
+              applyTestHeaders(auth.headers, config._testOverrides),
+              scope.organization_id,
+            );
       maybeLogRequest(url, config.method, headers, body, config._testOverrides);
 
       // Short-circuit for mock responses (testing only). Context validation

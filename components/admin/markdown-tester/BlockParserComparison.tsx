@@ -270,7 +270,7 @@ export function BlockParserComparison({
       const serverStart = performance.now();
       const serverRes = await runServerParser(sourceContent, {
         baseUrl: apiConfig.baseUrl,
-        authToken: apiConfig.authToken,
+        authHeaders: apiConfig.authHeaders,
       });
       const serverMs = performance.now() - serverStart;
 

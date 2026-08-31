@@ -15,6 +15,10 @@ import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 interface OAuthSession {
   serverId: string;
   serverSlug: string;
+  /** Organization admission for the aidream persist call (may be absent on a
+   *  stale pre-rollout cookie; the backend then refuses loudly with 400
+   *  organization_required and the error redirect explains it). */
+  organizationId?: string | null;
   codeVerifier: string;
   clientId: string;
   clientSecret: string | null;
@@ -185,6 +189,12 @@ export async function GET(req: NextRequest) {
         method: "POST",
         headers: {
           Authorization: `Bearer ${sbSession.access_token}`,
+          // Mandatory organization admission (AuthMiddleware refuses org-less
+          // JWT requests) — the organization the person held when they
+          // started the flow, carried in the OAuth session cookie.
+          ...(session.organizationId
+            ? { "X-Organization-Id": session.organizationId }
+            : {}),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

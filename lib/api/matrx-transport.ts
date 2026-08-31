@@ -163,19 +163,39 @@ export function createMatrxTransport(
   options: MatrxTransportOptions & { organizationId?: string } = {},
 ): MatrxTransport {
   return createPackageTransport({
-    resolveTarget: () => ({
-      baseUrl: resolveBaseUrl(getState()),
-      channel: "global",
-    }),
-    credentials: credentialsFromState(getState),
-    organizationId: () => {
+    // Org admission rides as a per-request policy header (resolved fresh per
+    // call, like the credentials) instead of the package's `organizationId`
+    // option, because that option is unconditionally fail-closed and would
+    // hold the GUEST lane to the JWT rule. The server admits the fingerprint
+    // lane org-less (a guest has no membership to verify — matrx-connect
+    // 241750bf6): a guest sends no X-Organization-Id unless the caller
+    // explicitly resolved one, while a Bearer request stays fail-closed on
+    // the selected organization — never a first/personal fallback.
+    resolveTarget: () => {
       const state = getState();
+      const isAuthenticated = !!selectAccessToken(state);
       const hasAppContext = !!(state as Partial<RootState>)?.appContext;
-      return requireOrganizationContext(
-        hasAppContext ? selectOrganizationId(state) : undefined,
-        options.organizationId,
-      );
+      let organizationId: string | null = null;
+      if (isAuthenticated) {
+        organizationId = requireOrganizationContext(
+          hasAppContext ? selectOrganizationId(state) : undefined,
+          options.organizationId,
+        );
+      } else if (options.organizationId) {
+        organizationId = requireOrganizationContext(
+          null,
+          options.organizationId,
+        );
+      }
+      return {
+        baseUrl: resolveBaseUrl(state),
+        channel: "global",
+        ...(organizationId
+          ? { policyHeaders: { "X-Organization-Id": organizationId } }
+          : {}),
+      };
     },
+    credentials: credentialsFromState(getState),
     aiApiVersion: () => selectAiApiVersion(getState()),
     diagnostics: diagnosticsFromState(getState),
     ...(options.expectedErrorStatuses

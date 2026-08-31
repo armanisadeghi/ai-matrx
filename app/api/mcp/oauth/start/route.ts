@@ -28,6 +28,9 @@ export async function GET(req: NextRequest) {
   const serverId = searchParams.get("server_id");
   const returnUrl = searchParams.get("return_url");
   const requestedEndpointOverride = searchParams.get("endpoint_override");
+  // Organization admission for the callback's aidream persist call — the
+  // caller's own selection, carried through the OAuth session cookie.
+  const organizationId = searchParams.get("organization_id");
 
   if (!serverId) {
     return errorRedirect(req, returnUrl, "server_id is required");
@@ -280,6 +283,7 @@ export async function GET(req: NextRequest) {
     const sessionPayload = JSON.stringify({
       serverId,
       serverSlug: server.slug,
+      organizationId: organizationId ?? null,
       codeVerifier,
       clientId,
       clientSecret: clientSecret ?? null,
