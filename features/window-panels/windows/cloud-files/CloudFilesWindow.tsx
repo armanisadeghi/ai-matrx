@@ -23,6 +23,7 @@ import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { WindowPanelShell } from "@/features/files/components/surfaces/WindowPanelShell";
 import type { CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface CloudFilesWindowProps {
   isOpen: boolean;
@@ -51,7 +52,21 @@ export default function CloudFilesWindow({
       onCollectData={() => ({ activeTab })}
     >
       <div className="flex h-full w-full flex-col overflow-hidden bg-background">
-        <WindowPanelShell activeTab={activeTab} onTabChange={setActiveTab} />
+        {/*
+         * Pane-level fallback — WindowPanelShell's FileList/FileTree rows
+         * don't wire the canonical per-file menu (`FileRightClickMenu`)
+         * themselves, so without this a right-click here fell through to
+         * whatever page hosts the window. This is a floor, not the fix:
+         * the real fix is each row wrapping itself in `FileRightClickMenu`
+         * (outside this shard — features/files/components/core/FileList).
+         */}
+        <NonEditableContextMenu
+          sourceFeature="files"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+        >
+          <WindowPanelShell activeTab={activeTab} onTabChange={setActiveTab} />
+        </NonEditableContextMenu>
       </div>
     </WindowPanel>
   );

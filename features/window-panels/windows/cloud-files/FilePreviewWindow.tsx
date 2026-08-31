@@ -27,6 +27,7 @@
 import { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PreviewPane } from "@/features/files/components/surfaces/PreviewPane";
+import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { getFileFromState } from "@/features/files/redux/selectors";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -137,13 +138,25 @@ function FilePreviewWindowContent({
           it happens to be open in another tab/route).
           Cloud-files realtime is mounted globally in app/Providers.tsx.
         */}
-        <PreviewPane
-          fileId={fileId}
-          pageNumber={activePage}
-          onPageChange={setActivePage}
-          onClose={onClose}
-          className="h-full w-full"
-        />
+        {/*
+         * Pane-level fallback — PreviewPane only wraps its own filename
+         * label in <FileRightClickMenu>, not the body underneath (the
+         * actual document viewer). Wrapping the whole pane in the SAME
+         * component gives full coverage: a right-click on the label still
+         * resolves to the inner instance (same file, so no drift), and a
+         * right-click anywhere else in the window now gets the file's
+         * canonical menu instead of falling through to the page beneath
+         * this floating window.
+         */}
+        <FileRightClickMenu fileId={fileId}>
+          <PreviewPane
+            fileId={fileId}
+            pageNumber={activePage}
+            onPageChange={setActivePage}
+            onClose={onClose}
+            className="h-full w-full"
+          />
+        </FileRightClickMenu>
       </WindowPanel>
     </SurfaceRuntimeProvider>
   );
