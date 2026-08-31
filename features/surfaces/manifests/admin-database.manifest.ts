@@ -253,17 +253,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 350,
     group: "query_result",
   },
-  {
-    name: "query_timed_out",
-    label: "Query timed out",
-    description:
-      "True when the last execution was aborted by the workbench timeout rather than returning or erroring normally. Absent on the hub landing.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 360,
-    group: "query_result",
-  },
 ];
 
 /**
@@ -393,7 +382,6 @@ export function createAdminDatabaseScope(values: {
   query_result_json?: unknown;
   query_execution_ms?: number;
   query_error?: string;
-  query_timed_out?: boolean;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

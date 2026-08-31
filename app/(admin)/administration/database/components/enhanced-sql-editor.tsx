@@ -15,7 +15,6 @@ import {
   Save,
   Lightbulb,
   Code,
-  StopCircle,
   RefreshCw,
   History,
   Plus,
@@ -57,9 +56,7 @@ const SQL_KILL_IDLE =
 export interface EnhancedSQLEditorProps {
   loading: boolean;
   error: string | null;
-  isTimeout?: boolean;
   onExecuteQuery: (query: string, useCache?: boolean) => Promise<unknown>;
-  onCancelQuery?: () => void;
   onClearCache?: () => void;
   queryCache?: Record<string, unknown>;
   className?: string;
@@ -74,9 +71,7 @@ interface ReplacementPair {
 export const EnhancedSQLEditor = ({
   loading,
   error,
-  isTimeout,
   onExecuteQuery,
-  onCancelQuery,
   onClearCache,
   queryCache = {},
   className,
@@ -241,7 +236,6 @@ export const EnhancedSQLEditor = ({
       query_result_json: queryResult ?? undefined,
       query_execution_ms: executionTime ?? undefined,
       query_error: error || undefined,
-      query_timed_out: isTimeout,
       selection: window.getSelection()?.toString() || undefined,
     });
   };
@@ -252,7 +246,7 @@ export const EnhancedSQLEditor = ({
   // rows call — never a parallel write path — so the staged query is visible
   // and editable the instant it lands, and the admin still presses Execute.
   //
-  // NOTHING here can run a query. `handleExecuteQuery`, `onCancelQuery`,
+  // NOTHING here can run a query. `handleExecuteQuery`,
   // `onClearCache` and `setUseCache` are deliberately absent: execution and
   // cache behaviour stay human-only (see the write-target doctrine block in
   // admin-database.manifest.ts).
@@ -374,16 +368,6 @@ export const EnhancedSQLEditor = ({
             >
               <Copy className="h-4 w-4" />
             </Button>
-            {loading && onCancelQuery && (
-              <Button
-                onClick={onCancelQuery}
-                className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
-                size="sm"
-              >
-                Cancel
-                <StopCircle className="ml-2 h-4 w-4" />
-              </Button>
-            )}
             <Button
               onClick={handleExecuteQuery}
               className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800"
@@ -611,16 +595,6 @@ export const EnhancedSQLEditor = ({
               <pre className="whitespace-pre-wrap font-mono text-sm">
                 {error}
               </pre>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {isTimeout && (
-          <Alert className="border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/20">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <AlertDescription className="text-amber-600 dark:text-amber-400">
-              Query execution took too long and was timed out. Try simplifying
-              your query or adjusting filters.
             </AlertDescription>
           </Alert>
         )}

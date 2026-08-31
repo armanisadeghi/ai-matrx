@@ -1,16 +1,15 @@
 // features/administration/hooks/use-database-admin.ts
-import { useState, useCallback, useRef } from "react";
+import { useState } from "react";
 import {
   getFunctions,
   getPermissions,
   executeSqlQuery,
 } from "@/actions/admin/database";
-import type { ActionResult } from "@/actions/admin/database";
 
 // Type definitions
 interface QueryHistoryItem {
   query: string;
-  result: any;
+  result: unknown;
   timestamp: Date;
   executionTime: number;
 }
@@ -23,18 +22,6 @@ export const useDatabaseAdmin = () => {
   const [queryCache, setQueryCache] = useState<
     Record<string, QueryHistoryItem>
   >({});
-
-  // Add query timeout handling
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isTimeout, setIsTimeout] = useState(false);
-
-  // Clear any existing timeout when component unmounts
-  const clearQueryTimeout = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }, []);
 
   const fetchFunctions = async () => {
     try {
@@ -75,40 +62,22 @@ export const useDatabaseAdmin = () => {
   const executeQuery = async (
     query: string,
     useCache = true,
-    timeoutMs = 30000,
   ) => {
     // Check cache first if enabled
     if (useCache && queryCache[query]) {
       return queryCache[query].result;
     }
 
-    clearQueryTimeout();
-    setIsTimeout(false);
-
     try {
       setLoading(true);
       setError(null);
 
-      // Set up timeout for long-running queries
-      const timeoutPromise = new Promise<ActionResult>((resolve) => {
-        timeoutRef.current = setTimeout(() => {
-          setIsTimeout(true);
-          resolve({
-            data: null,
-            error: `Query execution timed out after ${timeoutMs / 1000} seconds`,
-          });
-        }, timeoutMs);
-      });
-
       const startTime = performance.now();
-
-      // Race between query execution and timeout
-      const result = await Promise.race([
-        executeSqlQuery(query),
-        timeoutPromise,
-      ]);
-
-      clearQueryTimeout();
+      // The privileged Server Action owns the terminal result. Do not race it
+      // with a client timer or expose a fake Cancel control: neither aborts the
+      // PostgreSQL statement, and claiming otherwise can let an admin start a
+      // second query while the first still executes.
+      const result = await executeSqlQuery(query);
 
       if (result.error) {
         setError(result.error);
@@ -145,21 +114,13 @@ export const useDatabaseAdmin = () => {
     setQueryCache({});
   };
 
-  const cancelQuery = () => {
-    clearQueryTimeout();
-    setLoading(false);
-    setError("Query execution cancelled by user");
-  };
-
   return {
     loading,
     error,
-    isTimeout,
     fetchFunctions,
     fetchPermissions,
     executeQuery,
     clearCache,
-    cancelQuery,
     queryCache,
   };
 };

@@ -28,9 +28,14 @@ with operational status and the categorized tool registry.
   pending.
 - The hub has no editable state and registers no write handlers. SQL staging is
   available only on `/administration/database/sql-queries`.
+- SQL execution stays pending until the privileged Server Action returns. The
+  editor exposes no client-only Cancel or timeout claim because neither aborts
+  the PostgreSQL statement.
 
 ## Change log
 
+- 2026-08-30 — Removed false client-only SQL cancellation and timeout states;
+  execution now reaches its real terminal server result before the UI unlocks.
 - 2026-08-30 — Surface certification repair: canonical context menu, Locate
   anchors, contextual navigation loading, compact one-title hierarchy, and the
   shared mobile/tablet touch floor; restored the two catalogue doors declared
