@@ -163,6 +163,8 @@ export interface NotesInstance {
   tabInteractionAt: number | null;
   /** Version-history side panel open in THIS instance (per-instance, persistable). */
   historyOpen: boolean;
+  /** Floating outline panel open in THIS instance. */
+  outlineOpen: boolean;
 }
 
 /**

@@ -374,6 +374,14 @@ export const selectInstanceHistoryOpen = (instanceId: string) =>
     ),
   );
 
+export const selectInstanceOutlineOpen = (instanceId: string) =>
+  cached(`instOutline:${instanceId}`, () =>
+    createSelector(
+      selectInstancesMap,
+      (instances): boolean => instances[instanceId]?.outlineOpen ?? false,
+    ),
+  );
+
 export const selectInstanceTabInteractionAt = (instanceId: string) =>
   cached(`instTabInteractionAt:${instanceId}`, () =>
     createSelector(

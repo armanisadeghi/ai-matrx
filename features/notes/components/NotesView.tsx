@@ -41,6 +41,7 @@ import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   PanelLeftTapButton,
   HistoryTapButton,
+  ListTapButton,
   RetryTapButton,
   LoadingTapButton,
 } from "@ai-matrx/tap-target/buttons";
@@ -78,6 +79,7 @@ import {
   navigateFindMatch,
   closeSplit,
   markTabInteraction,
+  setInstanceOutlineOpen,
 } from "../redux/slice";
 import { orderTabsActiveFirst } from "../utils/tabUrlOrder";
 import {
@@ -92,6 +94,7 @@ import {
   selectInstanceActiveTab,
   selectInstanceTabs,
   selectInstanceSplitNoteId,
+  selectInstanceOutlineOpen,
   selectNoteEditorMode,
   selectNoteLabel,
 } from "../redux/selectors";
@@ -373,6 +376,11 @@ export function NotesView({
     },
     [dispatch, activeTabId],
   );
+
+  const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
+  const toggleOutline = useCallback(() => {
+    dispatch(setInstanceOutlineOpen({ instanceId, open: !outlineOpen }));
+  }, [dispatch, instanceId, outlineOpen]);
 
   // ── Refresh: refetch list + force-refetch every open tab ──────────
   // Mirrors the route-start fetches so the user can pull the latest server
@@ -669,6 +677,13 @@ export function NotesView({
         <TapTargetButtonGroup className="shrink-0 pr-1">
           {activeTabId && (
             <>
+              <ListTapButton
+                variant="group"
+                onClick={toggleOutline}
+                ariaLabel="Outline"
+                tooltip="Document outline"
+                className={outlineOpen ? "text-primary" : undefined}
+              />
               <HistoryTapButton
                 variant="group"
                 onClick={() => setShowHistory((v) => !v)}
@@ -732,6 +747,13 @@ export function NotesView({
                 <TapTargetButtonGroup>
                   {activeTabId && (
                     <>
+                      <ListTapButton
+                        variant="group"
+                        onClick={toggleOutline}
+                        ariaLabel="Outline"
+                        tooltip="Document outline"
+                        className={outlineOpen ? "text-primary" : undefined}
+                      />
                       <HistoryTapButton
                         variant="group"
                         onClick={() => setShowHistory((v) => !v)}

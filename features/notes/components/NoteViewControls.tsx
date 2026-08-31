@@ -14,6 +14,7 @@ import {
   Columns,
   Eye,
   History,
+  ListTree,
   ChevronDown,
   Check,
 } from "lucide-react";
@@ -24,10 +25,15 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { setNoteEditorMode, setInstanceHistoryOpen } from "../redux/slice";
+import {
+  setNoteEditorMode,
+  setInstanceHistoryOpen,
+  setInstanceOutlineOpen,
+} from "../redux/slice";
 import {
   selectInstanceActiveTab,
   selectInstanceHistoryOpen,
+  selectInstanceOutlineOpen,
   selectNoteEditorMode,
 } from "../redux/selectors";
 import { cn } from "@/lib/utils";
@@ -59,6 +65,7 @@ export function NoteViewControls({
   const dispatch = useAppDispatch();
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const historyOpen = useAppSelector(selectInstanceHistoryOpen(instanceId));
+  const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
   const preferredDefault = usePreferredDefaultEditorMode();
   const editorMode = normalizeNoteEditorMode(
     useAppSelector(
@@ -77,6 +84,10 @@ export function NoteViewControls({
   const toggleHistory = useCallback(() => {
     dispatch(setInstanceHistoryOpen({ instanceId, open: !historyOpen }));
   }, [dispatch, instanceId, historyOpen]);
+
+  const toggleOutline = useCallback(() => {
+    dispatch(setInstanceOutlineOpen({ instanceId, open: !outlineOpen }));
+  }, [dispatch, instanceId, outlineOpen]);
 
   if (!activeTabId) return null;
 
@@ -119,6 +130,21 @@ export function NoteViewControls({
       </DropdownMenu>
 
       <NoteCleanupButton noteId={activeTabId} />
+
+      <button
+        type="button"
+        onClick={toggleOutline}
+        title="Outline"
+        className={cn(
+          "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+          outlineOpen
+            ? "bg-accent text-foreground"
+            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+        )}
+      >
+        <ListTree />
+        <span className="sr-only">Outline</span>
+      </button>
 
       <button
         type="button"

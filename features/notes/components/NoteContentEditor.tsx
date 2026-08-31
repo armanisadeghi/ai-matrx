@@ -24,11 +24,13 @@ import {
   markNoteSaved,
   markTabInteraction,
   setNoteEditorMode,
+  setInstanceOutlineOpen,
   resolveNoteConflict,
   upsertNoteFromServer,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
 import {
+  selectInstanceOutlineOpen,
   selectNoteById,
   selectNoteContent,
   selectNoteEditor,
@@ -81,6 +83,13 @@ import { selectFindReplaceState } from "../redux/selectors";
 import { computeMatches } from "../utils/findMatches";
 import { usePreviewFindHighlight } from "../hooks/usePreviewFindHighlight";
 import { getDiffRange, type DiffRange } from "../utils/diffRange";
+
+// Floating outline panel — imports WindowPanel, so it MUST stay behind this
+// lazy boundary (window-panels bundle invariant). Mounted only while open.
+const NoteOutlinePanel = dynamic(
+  () => import("@/features/notes/components/NoteOutlinePanel"),
+  { ssr: false },
+);
 
 const NoteConflictWindow = dynamic(
   () =>
@@ -156,6 +165,18 @@ export function NoteContentEditor({
 
   const findReplaceState = useAppSelector(selectFindReplaceState(instanceId));
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
+  const editorRootRef = useRef<HTMLDivElement | null>(null);
+  const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
+  const handleOutlineClose = useCallback(() => {
+    dispatch(setInstanceOutlineOpen({ instanceId, open: false }));
+  }, [dispatch, instanceId]);
+
+  // TUI modes have no read-only support — degrade to preview. The editor body
+  // and the outline panel's jump logic must agree on the mode actually shown.
+  const effectiveEditorMode =
+    readOnly && (editorMode === "wysiwyg" || editorMode === "markdown-split")
+      ? "preview"
+      : editorMode;
 
   // ── Dialog state ──────────────────────────────────────────────────
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -833,6 +854,7 @@ export function NoteContentEditor({
           redoHint={redoHint}
         >
           <div
+            ref={editorRootRef}
             className="flex-1 flex flex-col min-h-0 min-w-0"
             data-surface-value="current_note"
           >
@@ -871,13 +893,7 @@ export function NoteContentEditor({
               onChange={handleChange}
               onChangeFlush={handleChangeFlush}
               readOnly={readOnly}
-              editorMode={
-                // TUI modes have no read-only support — degrade to preview.
-                readOnly &&
-                (editorMode === "wysiwyg" || editorMode === "markdown-split")
-                  ? "preview"
-                  : editorMode
-              }
+              editorMode={effectiveEditorMode}
               textareaRef={textareaRef}
               surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
               getApplicationScope={getApplicationScope}
@@ -937,6 +953,19 @@ export function NoteContentEditor({
           </div>
         </EditableContextMenu>
       </UnbindSurfaceContext.Provider>
+
+      {outlineOpen && (
+        <NoteOutlinePanel
+          instanceId={instanceId}
+          noteId={noteId}
+          content={localContent}
+          editorMode={effectiveEditorMode}
+          textareaRef={textareaRef}
+          previewContainerRef={previewContainerRef}
+          editorRootRef={editorRootRef}
+          onClose={handleOutlineClose}
+        />
+      )}
 
       <MoveNoteDialog
         open={moveDialogOpen}
