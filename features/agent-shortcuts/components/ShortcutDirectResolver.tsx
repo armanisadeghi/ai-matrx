@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ShortcutDirectoryMode } from "../utils/shortcut-directory-rows";
 import {
+  isShortcutUuid,
   resolveShortcutDirectUrl,
   resolveShortcutEditUrl,
 } from "../utils/shortcut-directory-rows";
@@ -39,6 +40,22 @@ export function ShortcutDirectResolver({
 
     async function resolveShortcut() {
       setError(null);
+
+      // This route sits behind `[shortcutId]`. Reserved/static-looking path
+      // segments and malformed deep links must never reach a UUID predicate:
+      // Postgres rejects them before PostgREST can return an empty result.
+      if (!isShortcutUuid(shortcutId)) {
+        setError(
+          recordUnavailable({
+            entity: "shortcut",
+            reason: "unknown",
+            recordId: shortcutId,
+            relation: "agent.shortcut",
+          }).message,
+        );
+        return;
+      }
+
       const { data, error: fetchError } = await shortcutTable(supabase)
         .select("id, agent_id")
         .eq("id", shortcutId)
