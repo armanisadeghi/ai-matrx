@@ -33,6 +33,13 @@ You own exactly the files you were given. Another agent owns the next file.
 - Commit each file as you finish it. Do not batch to the end.
 - If your file no longer exists or already has a menu, say so and move on. That
   is a legitimate outcome, not a failure.
+- 🚨 **DO THE WORK YOURSELF. Never spawn sub-agents to do your shard.**
+  A worker that re-delegates breaks the two things that make this rollout safe:
+  the coordinator's disjoint partition covers only the agents IT assigned, and
+  nothing guarantees your children read this skill. One wave-2 worker delegated
+  its 11 files to four sub-agents and returned a status update instead of a
+  report — that is a failed shard, however the children turn out. Your shard is
+  a dozen files; read them and edit them.
 
 ## The seven steps, per file
 
