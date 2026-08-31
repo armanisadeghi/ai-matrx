@@ -26,7 +26,7 @@
 // Plan:     common-docs/projects/workflow-mandate-program/PLAN-ONE-BINDING-UI.md
 // Rulings:  common-docs/systems/mandates/DECISIONS.md D18
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CircleCheck, Settings2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,7 @@ import type { ProvisionOffer } from "@/features/mandates/provisions";
 import {
   putMandateBinding,
   removeMandateBinding,
+  type BindingWriteReport,
 } from "@/features/mandates/overrides";
 import { buildBindingSavePayload } from "@/features/mandates/workspace/save-payload";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
@@ -185,6 +186,19 @@ export function OneBindingWorkspace({
   // never skipped.
   const [batchWrote, setBatchWrote] = useState(false);
 
+  // 🚨 THE SERVER'S REPORT ON THE LAST WRITE lives OUT HERE, above the draft's
+  // key, for exactly the reason the rung does: a successful save changes
+  // `binding.updated_at`, which remounts the draft — so a report held inside
+  // would be destroyed by the very write that produced it, and the person would
+  // never read the sentence saying their auto-run promise was refused.
+  //
+  // It is cleared the moment it stops being true: a rung move describes a
+  // different row, and any draft edit describes a mapping the server has not
+  // seen. Never stale, never invented.
+  const [writeReport, setWriteReport] = useState<BindingWriteReport | null>(
+    null,
+  );
+
   const binding = findBinding(data.bindings, rung, userId, organizationId);
   const bindingIdentity = `${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
 
@@ -205,7 +219,11 @@ export function OneBindingWorkspace({
         }
       }}
       onBatchWrote={() => setBatchWrote(true)}
+      writeReport={writeReport}
+      onWrote={setWriteReport}
+      onDraftMoved={() => setWriteReport(null)}
       onRungChange={(nextRung, nextOrgId) => {
+        setWriteReport(null);
         setRung(nextRung);
         setOrganizationId(
           nextRung === "org"
@@ -227,6 +245,9 @@ function BindingDraft({
   mode,
   onModeChange,
   onBatchWrote,
+  writeReport,
+  onWrote,
+  onDraftMoved,
   onRungChange,
   onChanged,
 }: {
@@ -239,6 +260,12 @@ function BindingDraft({
   onModeChange: (next: BindingMode) => void;
   /** A batch wrote rows — the single-place view is stale until it is left. */
   onBatchWrote: () => void;
+  /** What the server said about the last write, or `null` if it has not spoken
+   * about the row on screen. Held above this component's key — see the state. */
+  writeReport: BindingWriteReport | null;
+  onWrote: (report: BindingWriteReport) => void;
+  /** The draft moved away from what was written — the report stops being true. */
+  onDraftMoved: () => void;
   onRungChange: (rung: BindingRung, organizationId: string | null) => void;
   onChanged: () => void;
 }) {
@@ -602,7 +629,10 @@ function BindingDraft({
             : undefined,
       storedOverrides,
     });
-    await putMandateBinding(
+    // The write REPORTS ON ITSELF (`BindingResult.notes` / `.applies_in`), and
+    // the report is the server's prose, kept verbatim: it is the only thing on
+    // this screen that describes the row that now exists rather than the draft.
+    const report = await putMandateBinding(
       dispatch,
       data.mandate.mandate_key,
       rung === "org"
@@ -612,7 +642,27 @@ function BindingDraft({
           : { principalType: "user" },
       payload,
     );
+    onWrote(report);
+    return report;
   }
+
+  /** The save confirmation, carrying whatever the server said it did that you
+   * did not ask for. A note that only reaches the page and not the confirmation
+   * would let the person walk away believing the save was uneventful. */
+  function announceSaved(report: BindingWriteReport | null) {
+    const notes = report?.notes ?? [];
+    if (notes.length === 0) {
+      toast.success(savedWords(rung));
+      return;
+    }
+    toast.warning(savedWords(rung), {
+      description: notes.join(" "),
+      duration: 12_000,
+    });
+  }
+
+  /** The rebind path's write report, handed from `performWrite` to `onSaved`. */
+  const rebindReport = useRef<BindingWriteReport | null>(null);
 
   // THE REBIND GUARD — the same impact check the admin console runs, fired
   // here when a SAVED binding's holder swaps. Loud, never blocking: it names
@@ -624,12 +674,17 @@ function BindingDraft({
   } = useGuardedRebind({
     mandate: data.mandate,
     currentAgentId: storedAgentId,
+    // The guard owns the confirmation for the rebind path, and it fires AFTER
+    // `performWrite` — so the write parks its report on a ref and the
+    // confirmation reads it there. Without that hop the rebind path would be the
+    // one save on this screen that swallows the server's sentences.
     onSaved: () => {
-      toast.success(savedWords(rung));
+      announceSaved(rebindReport.current);
+      rebindReport.current = null;
       onChanged();
     },
     performWrite: async () => {
-      await writeBinding();
+      rebindReport.current = await writeBinding();
     },
   });
 
@@ -679,8 +734,7 @@ function BindingDraft({
         });
         return;
       }
-      await writeBinding(bindAgentId);
-      toast.success(savedWords(rung));
+      announceSaved(await writeBinding(bindAgentId));
       onChanged();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Save failed.";
@@ -745,6 +799,16 @@ function BindingDraft({
     JSON.stringify(withoutUnpicked(draftMap)) !==
       JSON.stringify(storedDraft.consumptionMap) ||
     autoRun !== storedDraft.autoRun;
+
+  // The server's report describes the row it wrote. The instant the draft moves
+  // off that row it is a sentence about something that no longer exists, so it
+  // goes — the same rule the unsaved-work note runs on, in the other direction.
+  useEffect(() => {
+    if (dirty && writeReport) onDraftMoved();
+    // `onDraftMoved` is a plain setter from the parent; re-running on identity
+    // churn would clear a report the draft has not actually moved off.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, writeReport]);
 
   async function requestRungChange(
     nextRung: BindingRung,
@@ -891,6 +955,10 @@ function BindingDraft({
             ? "You have unsaved changes here. Moving rung starts from that rung's own stored answer and discards them — you will be asked first."
             : null
         }
+        // Where the row that was just written actually answers, in the server's
+        // words — the row's own `organization_id` does not say it, and no client
+        // sentence may guess it.
+        appliesIn={writeReport?.appliesIn ?? null}
         holder={holder}
         onHolderChange={setHolder}
         holderName={
@@ -1153,6 +1221,11 @@ function BindingDraft({
               value={autoRun}
               onChange={setAutoRun}
               disabled={disabled}
+              // The bar's own sentence is the PRE-SAVE preview of the draft;
+              // these are the server's sentences about what the write stored —
+              // notably the promise refused down to false. Verbatim, and gone
+              // the moment the draft moves.
+              serverNotes={writeReport?.notes ?? []}
             />
           ) : null}
 

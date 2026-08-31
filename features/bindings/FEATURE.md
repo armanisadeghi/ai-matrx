@@ -25,7 +25,7 @@ Arman's sentence is the spine:
 | `OfferedInventoryColumn.tsx` | The offered side, permanently open. |
 | `HolderInputsColumn.tsx` | The consuming side, permanently open: variables then context policies. |
 | `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
-| `AutoRunBar.tsx` | P14. "Run instantly", live only while the map leaves nothing to ask, narrating the four sentences as the map changes. The FACT is the shared `evaluateBindingAutoRun`; this file owns only the many-source → one-mapping translation. |
+| `AutoRunBar.tsx` | P14. "Run instantly", live only while the map leaves nothing to ask, narrating the four sentences as the map changes. The FACT is the shared `evaluateBindingAutoRun`; this file owns only the many-source → one-mapping translation. Its own sentences are the PRE-SAVE preview; `serverNotes` (`BindingResult.notes`) is what the write actually did, verbatim. |
 | `consumption-writer.ts` | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it. |
 | `offered-adapter.ts` | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory. |
 | `useHolderInputs.ts` | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream. |
@@ -149,7 +149,9 @@ The promise is a FACT about the mapping, never a preference, and it is re-checke
 three points rather than trusted once: the bar refuses to offer it, `set_binding`
 refuses to store it (down to `false`, loudly), and `resolve_mandate` refuses to honour
 it against the map that actually won — because a later layer's map wins outright, so a
-promise can go stale without anyone touching the binding that carries it.
+promise can go stale without anyone touching the binding that carries it. When the middle
+one fires, its refusal comes back as prose on `BindingResult.notes` and the bar prints it
+verbatim — a `logger.warning` is a scream only the server hears.
 
 ## OPTIONS — the folded drawer (P16)
 
@@ -218,6 +220,27 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-08-31 — **The write speaks, and the screen prints what it said.** aidream
+  v0.2.456 added two fields to `BindingResult` that nothing here read, because
+  `putMandateBinding` returned `Promise<void>` and threw the body away. It now
+  returns a `BindingWriteReport` (`features/mandates/overrides.ts`, with the
+  defensive `parseBindingWriteReport` — an older server that says nothing reads
+  as *nothing*, never as an empty sentence). **`notes`** — every refusal,
+  downgrade and reshape the write performed, the auto-run promise refused down
+  to `false` being the loud one — is rendered VERBATIM in the `AutoRunBar`
+  (`serverNotes`) and carried into the save confirmation, which becomes a
+  `toast.warning` with the server's sentences as its description. The bar's own
+  four sentences stay exactly where they were, as what they always were: the
+  PRE-SAVE preview of the draft. **`applies_in`** — the write's own statement of
+  where the row answers, which the row's `organization_id` genuinely does not
+  say — prints in the rung cell (`ScopeHolderBar.appliesIn`) under the ladder
+  sentence. The report lives ABOVE the draft's `key` (beside `mode`), because a
+  successful save changes `updated_at` and remounts the draft — held inside, the
+  report would be destroyed by the write that produced it — and it is cleared
+  the moment it stops being true: on a rung move, and on the first draft edit
+  after the save. Guard: `__tests__/write-report.test.tsx` (parser + the bar
+  printing the refusal beside its own preview).
 
 - 2026-08-31 — **The V-panel fix wave (v0.4.1565).** Ten findings from three adversaries, at
   their class. **The system rung is guarded**: `GlobalBindAgentGuard` is interposed between

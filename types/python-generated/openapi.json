@@ -19138,6 +19138,27 @@
         }
       }
     },
+    "/smartrecruiters/public/status": {
+      "get": {
+        "tags": [
+          "SmartRecruiters Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_smartrecruiters_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartRecruitersServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/frontify/public/status": {
       "get": {
         "tags": [
@@ -19152,6 +19173,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FrontifyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/air-inc/public/status": {
+      "get": {
+        "tags": [
+          "Air Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_air_inc_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brevo/public/status": {
+      "get": {
+        "tags": [
+          "Brevo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_brevo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrevoServiceStatus"
                 }
               }
             }
@@ -78072,6 +78135,47 @@
         "title": "AidreamCollectionCreateRequest",
         "description": "Same body as the standalone app, but organization_id may be omitted —\naidream resolves the caller's personal org (never NULL)."
       },
+      "AirServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "air_inc_public_creative_content_platform_status",
+            "title": "Kind",
+            "default": "air_inc_public_creative_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Air",
+            "title": "Provider",
+            "default": "Air"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.air.inc",
+            "title": "Status Page",
+            "default": "https://status.air.inc"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AirServiceStatus",
+        "description": "Safe aggregate status projection for Air's fixed status page."
+      },
       "AirfocusStatusResult": {
         "properties": {
           "__kind": {
@@ -83861,6 +83965,19 @@
           "created": {
             "type": "boolean",
             "title": "Created"
+          },
+          "applies_in": {
+            "type": "string",
+            "title": "Applies In",
+            "default": ""
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
           }
         },
         "type": "object",
@@ -85797,6 +85914,51 @@
         ],
         "title": "BreakPremiumLine",
         "description": "A statutory meal or rest premium.\n\nAlways **1.0 hours** by statute — a premium is not a measured interval, which is also why\nrounding never touches it (SPEC-TIME §10)."
+      },
+      "BrevoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "brevo_public_service_status",
+            "title": "Kind",
+            "default": "brevo_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "brevo",
+            "title": "Provider",
+            "default": "brevo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.brevo.com/",
+            "title": "Status Page",
+            "default": "https://status.brevo.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BrevoServiceStatus",
+        "description": "Safe aggregate status projection for Brevo's fixed status page."
       },
       "BridgeAccountIdentity": {
         "properties": {
@@ -192960,6 +193122,56 @@
         ],
         "title": "SlidoStatusResult",
         "description": "Safe projection of Slido's high-level service status."
+      },
+      "SmartRecruitersServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "smartrecruiters_official_recruiting_platform_status",
+            "title": "Kind",
+            "default": "smartrecruiters_official_recruiting_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SmartRecruiters",
+            "title": "Provider",
+            "default": "SmartRecruiters"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.smartrecruiters.com",
+            "title": "Status Page",
+            "default": "https://status.smartrecruiters.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SmartRecruitersServiceStatus",
+        "description": "Safe aggregate status projection for SmartRecruiters' fixed status page."
       },
       "SmkPublicArtwork": {
         "properties": {

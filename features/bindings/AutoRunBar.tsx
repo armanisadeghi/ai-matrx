@@ -103,6 +103,21 @@ export interface AutoRunBarProps {
   value: boolean | null;
   onChange: (next: boolean) => void;
   disabled?: boolean;
+  /**
+   * 🚨 THE SERVER'S OWN SENTENCES ABOUT THE LAST WRITE (`BindingResult.notes`,
+   * aidream v0.2.456), rendered VERBATIM.
+   *
+   * The bar's own sentence is a PREVIEW: it describes the draft on screen, and
+   * the draft is not what is stored. The server re-checks the promise at write
+   * time and refuses it down to `false` when the map asks the person something
+   * — and it now says so in prose instead of only in a log line the person
+   * cannot hear. When the server has spoken about the row that exists, its
+   * words win; the preview keeps describing the draft beside them.
+   *
+   * The workspace clears this the moment the draft changes, so these sentences
+   * are never a description of a mapping that has since moved.
+   */
+  serverNotes?: readonly string[];
 }
 
 export function AutoRunBar({
@@ -111,6 +126,7 @@ export function AutoRunBar({
   value,
   onChange,
   disabled = false,
+  serverNotes = [],
 }: AutoRunBarProps) {
   const eligibility = evaluateBindingAutoRun(
     targets.map((t) => ({ name: t.name, required: t.required })),
@@ -143,6 +159,24 @@ export function AutoRunBar({
       <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
         {autoRunSentence(eligibility, on)}
       </p>
+      {/* WHAT THE SAVE ACTUALLY DID, in the server's words. Amber, because
+          every sentence that lands here is the write telling you it did not do
+          what you asked — never decoration. */}
+      {serverNotes.length > 0 ? (
+        <div className="mt-1.5 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1.5">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            What the save did
+          </p>
+          {serverNotes.map((note) => (
+            <p
+              key={note}
+              className="text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400"
+            >
+              {note}
+            </p>
+          ))}
+        </div>
+      ) : null}
       {/* P15 — an unavailable control carries its own reason, and the reason is
           never the control being greyed out. */}
       {!eligibility.eligible ? (

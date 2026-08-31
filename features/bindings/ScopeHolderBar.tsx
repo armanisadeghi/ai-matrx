@@ -55,6 +55,20 @@ export interface ScopeHolderBarProps {
    * is a fact about right now and never decorative noise.
    */
   unsavedNote?: string | null;
+  /**
+   * 🚨 WHERE THE SAVED ROW ACTUALLY ANSWERS — the SERVER'S sentence
+   * (`BindingResult.applies_in`, aidream v0.2.456), printed verbatim under the
+   * rung it describes.
+   *
+   * The three rungs are not symmetric about organizations and the row cannot be
+   * read to find out: a user binding stamps an org that is bookkeeping, not a
+   * scope, and it follows the person into every organization they work in. That
+   * was read as a leak once already (V3-CORRECTNESS F10). The write path is the
+   * only thing that knows, so it says it and this cell shows it — `null` until
+   * a write has spoken, because the alternative is the client inventing a
+   * scope sentence the server never agreed to.
+   */
+  appliesIn?: string | null;
 
   holder: HolderDraft;
   onHolderChange: (next: HolderDraft) => void;
@@ -108,6 +122,7 @@ export function ScopeHolderBar({
   allowGlobal,
   onRungChange,
   unsavedNote = null,
+  appliesIn = null,
   holder,
   onHolderChange,
   holderName = null,
@@ -157,6 +172,17 @@ export function ScopeHolderBar({
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             {ladderLine}
           </p>
+          {/* THE SAVED ROW SAYS WHERE IT ANSWERS, in the server's own words —
+              beneath the ladder sentence, which is about the rung you are
+              choosing, not about the row that exists. */}
+          {appliesIn ? (
+            <p className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">
+                Saved — where this applies:{" "}
+              </span>
+              {appliesIn}
+            </p>
+          ) : null}
           {!allowGlobal ? (
             <p className="text-[10.5px] leading-snug text-muted-foreground/80">
               The system rung — the answer everybody gets — is a super-admin

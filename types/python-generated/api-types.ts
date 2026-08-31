@@ -8182,6 +8182,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/smartrecruiters/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_smartrecruiters_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/frontify/public/status": {
         parameters: {
             query?: never;
@@ -8191,6 +8208,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_frontify_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/air-inc/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_air_inc_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brevo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_brevo_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -31235,6 +31286,38 @@ export interface components {
             force_refresh?: boolean;
         };
         /**
+         * AirServiceStatus
+         * @description Safe aggregate status projection for Air's fixed status page.
+         */
+        AirServiceStatus: {
+            /**
+             * Kind
+             * @default air_inc_public_creative_content_platform_status
+             * @constant
+             */
+            __kind?: "air_inc_public_creative_content_platform_status";
+            /**
+             * Provider
+             * @default Air
+             * @constant
+             */
+            provider?: "Air";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.air.inc
+             * @constant
+             */
+            status_page?: "https://status.air.inc";
+        };
+        /**
          * AirfocusStatusResult
          * @description Safe projection of airfocus's high-level service status.
          */
@@ -33884,6 +33967,16 @@ export interface components {
             is_enabled: boolean;
             /** Created */
             created: boolean;
+            /**
+             * Applies In
+             * @default
+             */
+            applies_in?: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes?: string[];
         };
         /** BingApiKeyConnectionRequest */
         BingApiKeyConnectionRequest: {
@@ -34759,6 +34852,41 @@ export interface components {
             attendance_exception_id?: string | null;
             /** Source Punch Ids */
             source_punch_ids?: string[];
+        };
+        /**
+         * BrevoServiceStatus
+         * @description Safe aggregate status projection for Brevo's fixed status page.
+         */
+        BrevoServiceStatus: {
+            /**
+             * Kind
+             * @default brevo_public_service_status
+             * @constant
+             */
+            __kind?: "brevo_public_service_status";
+            /**
+             * Provider
+             * @default brevo
+             * @constant
+             */
+            provider?: "brevo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.brevo.com/
+             * @constant
+             */
+            status_page?: "https://status.brevo.com/";
         };
         /**
          * BridgeAccountIdentity
@@ -78935,6 +79063,43 @@ export interface components {
             operational: boolean;
         };
         /**
+         * SmartRecruitersServiceStatus
+         * @description Safe aggregate status projection for SmartRecruiters' fixed status page.
+         */
+        SmartRecruitersServiceStatus: {
+            /**
+             * Kind
+             * @default smartrecruiters_official_recruiting_platform_status
+             * @constant
+             */
+            __kind?: "smartrecruiters_official_recruiting_platform_status";
+            /**
+             * Provider
+             * @default SmartRecruiters
+             * @constant
+             */
+            provider?: "SmartRecruiters";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.smartrecruiters.com
+             * @constant
+             */
+            status_page?: "https://status.smartrecruiters.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * SmkPublicArtwork
          * @description Safe bounded projection of one provider-marked public-domain artwork.
          */
@@ -104129,6 +104294,26 @@ export interface operations {
             };
         };
     };
+    public_status_smartrecruiters_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmartRecruitersServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_frontify_public_status_get: {
         parameters: {
             query?: never;
@@ -104145,6 +104330,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrontifyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_air_inc_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_brevo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrevoServiceStatus"];
                 };
             };
         };

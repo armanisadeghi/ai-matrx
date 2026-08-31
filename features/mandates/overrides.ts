@@ -379,15 +379,58 @@ function bindGateMessage(error: {
   return parsed.userMessage;
 }
 
+/**
+ * WHAT THE WRITE ACTUALLY DID, in the SERVER'S OWN WORDS.
+ *
+ * 🚨 A 200 is not agreement. `set_binding` refuses, downgrades and reshapes
+ * things the caller asked for — the auto-run promise refused down to `false`
+ * being the loud one — and until aidream v0.2.456 the only record of that was a
+ * `logger.warning` the caller never heard. `BindingResult` now carries the
+ * refusal back as prose (`notes`) plus one sentence saying where the row it
+ * wrote actually answers (`applies_in`, which the row's `organization_id`
+ * genuinely does NOT say). Both are rendered VERBATIM: the server is the
+ * authority on what it stored, and a client paraphrase of a server refusal is
+ * a second source of truth waiting to disagree.
+ */
+export interface BindingWriteReport {
+  /** Every refusal/downgrade/reshape this write performed. Empty = the row
+   * stored exactly what was sent. */
+  notes: string[];
+  /** Where the row that was just written answers. `null` when the server said
+   * nothing — never a client-invented sentence. */
+  appliesIn: string | null;
+}
+
+/** Read the write's own report off the response body. Defensive because a
+ * server older than v0.2.456 answers without either field, and an absent
+ * sentence must read as absent rather than as an empty promise. */
+export function parseBindingWriteReport(raw: unknown): BindingWriteReport {
+  const record = isJsonObject(raw) ? raw : {};
+  const appliesIn =
+    typeof record.applies_in === "string" && record.applies_in.trim().length > 0
+      ? record.applies_in
+      : null;
+  return {
+    notes: Array.isArray(record.notes)
+      ? record.notes.filter(
+          (note): note is string =>
+            typeof note === "string" && note.trim().length > 0,
+        )
+      : [],
+    appliesIn,
+  };
+}
+
 /** Create or update the principal's binding for a mandate through the ONE bind
  * path (aidream PUT, contract-enforced server-side). Throws with the server's
- * 422 detail verbatim on a contract violation. */
+ * 422 detail verbatim on a contract violation. Returns the write's own report —
+ * see `BindingWriteReport`; a caller with nowhere to print it may ignore it. */
 export async function putMandateBinding(
   dispatch: AppDispatch,
   mandateKey: string,
   principal: MandateBindingPrincipalInput,
   input: MandateBindingInput & { isEnabled?: boolean },
-): Promise<void> {
+): Promise<BindingWriteReport> {
   // The generated request model now carries every field the server accepts
   // (holder_type / holder_id / holder_version_id / consumption_map), so the
   // body is the contract itself — no side-channel object.
@@ -434,6 +477,7 @@ export async function putMandateBinding(
   // `userMessage` (found live 2026-08-31) — see bindGateMessage.
   if (result.error) throw new Error(bindGateMessage(result.error));
   invalidateMandateCache(mandateKey);
+  return parseBindingWriteReport(result.data);
 }
 
 /** Remove the principal's binding — back to the layer below (org default or
