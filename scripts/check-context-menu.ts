@@ -435,6 +435,27 @@ function main() {
     for (const m of src.matchAll(/<([A-Z]\w*)[\s/>]/g)) renderedUnderAMenu.add(m[1]);
   }
 
+  /**
+   * 🚨 A DOMAIN WRAPPER IS STILL A MENU.
+   *
+   * Features legitimately wrap v3 once and re-export it under their own name —
+   * `FileRightClickMenu` is the files feature's per-file wrapper, and a window
+   * that adopts it is CORRECTLY wired. Recognising only the two literal v3
+   * component names reported those files as having no menu at all, which sends
+   * the next agent to add a SECOND, nested one — and the inner trigger wins, so
+   * the outer never opens. The detector's false negative would have manufactured
+   * the exact defect it exists to prevent.
+   *
+   * So: any component exported by a file that itself mounts v3 and is named
+   * like a menu counts as carrying one.
+   */
+  const menuCarriers = new Set<string>();
+  for (const [path, src] of files) {
+    if (!MOUNTS_MENU.test(src)) continue;
+    for (const name of exportedComponents(src))
+      if (/menu/i.test(name) || /menu/i.test(path)) menuCarriers.add(name);
+  }
+
   const findings: Finding[] = [];
   const covered: Finding[] = [];
 
@@ -463,6 +484,14 @@ function main() {
 
     if (hasRightWrapper) {
       covered.push({ population, file: path, detail: "own menu", grade: gradeMenu(src, files) });
+      continue;
+    }
+    if ([...menuCarriers].some((n) => new RegExp(`<${n}[\\s/>]`).test(src))) {
+      covered.push({
+        population,
+        file: path,
+        detail: "wrapped by a domain menu component that mounts v3",
+      });
       continue;
     }
     if (INHERITS_MENU.test(src)) {

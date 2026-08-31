@@ -2768,3 +2768,24 @@ Two-part fix; the second part is a product call:
    candidates are `"files"` (it is a file-capture flow) or `"image-studio"` —
    which one is correct is an attribution decision for Arman, not a guess an
    agent should make, so it is logged rather than changed.
+
+## Editors whose DEFAULT mode has no context menu — 2026-08-26
+
+Two shared editors wrap only *some* of their modes in a menu, and the modes
+they miss include the default one — so a file can look "covered" while the
+mode users actually see has no right-click at all.
+
+- `components/official/content-editor/ContentEditor.tsx` — wraps only `plain`
+  and `preview`. Its DEFAULT `matrx-split`, plus `wysiwyg` and `markdown`, have
+  none.
+- `features/notes/components/NoteEditorCore.tsx` — same class: `preview` is
+  wrapped; `plain` (no `surfaceName`) and `split` (MatrxSplit) are not.
+
+Found during the windows wave by a worker that could not fix them (out of
+shard). These matter more than an ordinary gap: both are EDITABLE surfaces, so
+`EditableContextMenu` would also auto-register the WidgetHandle — every
+unwrapped mode is a place agents cannot stream edits into.
+
+Also unwired, same wave: `features/files/components/core/FileList/`
+(FileList / FileListRow / FileTree) never wire `FileRightClickMenu`, though
+`PreviewPane` uses it for just the filename label.
