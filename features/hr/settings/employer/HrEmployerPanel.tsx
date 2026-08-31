@@ -34,6 +34,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Building2,
@@ -69,6 +70,9 @@ import type {
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 // ── Applicability derivation ────────────────────────────────────────────────
 
@@ -656,6 +660,8 @@ function EstablishmentsSection({
   locationEstablishmentIds: Set<string>;
   orgRef: string | null;
 }) {
+  const router = useRouter();
+  const [clickedRow, setClickedRow] = useState<HrEstablishment | null>(null);
   const columns: MatrxColumnDef<HrEstablishment>[] = [
     {
       id: "name",
@@ -723,6 +729,45 @@ function EstablishmentsSection({
         </div>
       </header>
       <div className="p-4">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = (id && establishments.find((r) => r.id === id)) || null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              content: `${row.name}${row.is_headquarters ? " (headquarters)" : ""}`,
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "hr_establishment",
+                id: row.id,
+                title: row.name,
+              },
+            };
+          }}
+          extraSections={[
+            {
+              id: "hr-establishment-row",
+              label: "This establishment",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "item",
+                  id: "hr-establishment-see-locations",
+                  label: "See locations",
+                  icon: Factory,
+                  disabled: !clickedRow || !locationEstablishmentIds.has(clickedRow.id),
+                  description: "No location currently points at this establishment",
+                  onSelect: () => {
+                    router.push(hrSettingsHref("structure", { org: orgRef }));
+                  },
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
         <MatrxDataTable
           data={establishments}
           columns={columns}
@@ -736,6 +781,7 @@ function EstablishmentsSection({
               "An employer with one site does not need one. Add them when EEO-1 or OSHA reporting asks you to report per site.",
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </section>
   );
