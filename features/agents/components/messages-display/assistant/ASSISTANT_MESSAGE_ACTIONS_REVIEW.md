@@ -2,57 +2,58 @@
 
 Scope: inline **Action Bar** + **⋯ Message options** menu on committed, non-failed assistant turns (`messageId` required). Bar hidden while streaming or on failed turns.
 
-| Name | Opens / triggers | Notes | Arman Feedback | STATUS |
-|------|------------------|-------|----------------|--------|
-| **Like message** *(action bar)* | Local UI toggle only | No Redux/API; resets dislike | | Needs Review |
-| **Dislike message** *(action bar)* | Local UI toggle only | No Redux/API; resets like | | Needs Review |
-| **Copy message** *(action bar)* | Clipboard | Uses aggregated text when `AssistantTurnGroup` passes `groupMessageIds` | | Needs Review |
-| **Speak** *(action bar)* | `StreamingSpeakerButton` → TTS stream | Same aggregated text as copy | | Needs Review |
-| **Edit message** *(action bar)* | `fullScreenEditor` overlay (`mode: "assistant-message"`) | Save → `editMessage` thunk via bridge | | Needs Review |
-| **More options** *(action bar, ⋯)* | `MessageOptionsMenu` (`role="assistant"`) | Gated by `selectShowAssistantMessageOptions`; lazy-loaded | | Needs Review |
-| **Edit content** *(options → Edit)* | `fullScreenEditor` overlay (`mode: "free"`) | Duplicate edit path vs bar pencil — different mode | | Needs Review |
-| **Edit history (N)** *(options → Edit)* | `EditHistoryDialog` | Hidden when `contentHistoryCount === 0` | | Needs Review |
-| **Fork at this message** *(options → Edit)* | `forkConversation` → **Branch created** modal | Stay here / Go to new branch via `promptForkOutcome` | | Needs Review |
-| **Delete message** *(options → Edit)* | `DeleteMessageDialog` | See delete sub-flow rows below | | Needs Review |
-| **Note** *(options → Save as)* | `quickNoteSaveWindow` window panel | Folder: **Chat Saves**; title: `{conversation title} Message {n}` when labeled; amber **N** icon | | Needs Review |
-| **Analyze response** *(options → Creator)* | `messageAnalysisWindow` overlay | Agent owner only (`isCreator`) | | Needs Review |
-| **Debug stream** *(options → Creator)* | `streamDebug` overlay | Owner only; `streamRequestId` often null after reload | | Needs Review |
-| **Copy text** *(options → Copy)* | Clipboard | Plain markdown text | | Needs Review |
-| **Copy for Google Docs** *(options → Copy)* | Clipboard | `formatForGoogleDocs: true` | | Needs Review |
-| **Copy for Word** *(options → Copy)* | Clipboard | Same formatter as Docs | | Needs Review |
-| **Copy with thinking** *(options → Copy)* | Clipboard | `includeThinking: true` (assistant-only) | | Needs Review |
-| **HTML preview** *(options → Export)* | `htmlPreview` overlay | Can save back via `editMessage` when ids present | | Needs Review |
-| **Copy HTML page** *(options → Export)* | Clipboard (+ optional HTML preview) | WordPress-style HTML | | Needs Review |
-| **Email to me** *(options → Export)* | `/api/chat/email-response` POST or `emailDialog` overlay | Unauthed → email dialog | | Needs Review |
-| **Print / Save PDF** *(options → Export)* | Browser print dialog | `printMarkdownContent` — text only | | Needs Review |
-| **Full Print (all blocks)** *(options → Export)* | DOM capture PDF (`useDomCapturePrint`) | Only when host passes `onFullPrint`; includes tool/media blocks | | Needs Review |
-| **Save to Scratch** *(options → Actions)* | Direct `NotesAPI.create` → Scratch folder | Unauthed → `authGate` + sessionStorage resume | | Needs Review |
-| **Save code to Scratch** *(options → Actions)* | Direct `CodeFilesAPI.create` | First fenced code block only | | Needs Review |
-| **Save to Code** *(options → Actions)* | `saveToCode` overlay | Extracts first code block | | Needs Review |
-| **Save as file** *(options → Actions)* | Browser download `.md` | `message-{timestamp}.md` blob | | Needs Review |
-| **Create task from message** *(options → Actions)* | `setPendingSource` Redux (task UI seed) | Does not open overlay directly | | FIXED 2026-07-05 (see fix wave below) |
-| **Convert to broker** *(options → Actions)* | `toast.info("Coming soon")` | **Stub — not implemented** | | Needs Review |
-| **Save to Document** *(options → Actions)* | `pushMarkdownToDocument` (Univer) | Lazy import; toast with Open link | | Needs Review |
-| **Fork at this message (server)** *(options → Server API test)* | Python `forkConversationServer` | Super-admin only | | Needs Review |
-| **Fork BEFORE this message (server)** *(options → Server API test)* | Same, `exclusive: true` | Super-admin only | | Needs Review |
-| **Hide this from model (server)** *(options → Server API test)* | `hideMessages` thunk | Super-admin only | | Needs Review |
-| **Delete this message (server)** *(options → Server API test)* | `ConfirmDialog` → `batchDeleteMessages` | Hard delete + reload; super-admin | | Needs Review |
-| **Delete this + everything after (server)** *(options → Server API test)* | Confirm → truncate via server | Super-admin only | | Needs Review |
-| **Dry-run: delete this + after (server)** *(options → Server API test)* | Info toast with would-delete IDs | No mutation | | Needs Review |
-| **Replace this with a summary… (server)** *(options → Server API test)* | `fullScreenEditor` → `replaceMessages` | Admin test path | | Needs Review |
-| **Restore compaction (server)** *(options → Server API test)* | `restoreCompaction` thunk | Only when message has compaction metadata | | Needs Review |
-| **Submit feedback** *(options → App)* | `feedbackDialog` overlay | | | Needs Review |
-| **Announcements** *(options → App)* | `announcements` overlay | | | Needs Review |
-| **Preferences** *(options → App)* | `userPreferences` overlay | Label in menu is "Preferences" | | Needs Review |
+| Name                                                                      | Opens / triggers                                         | Notes                                                                                                                            | Arman Feedback | STATUS                                |
+| ------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------------------------------- |
+| **Like message** _(action bar)_                                           | Local UI toggle only                                     | No Redux/API; resets dislike                                                                                                     |                | Needs Review                          |
+| **Dislike message** _(action bar)_                                        | Local UI toggle only                                     | No Redux/API; resets like                                                                                                        |                | Needs Review                          |
+| **Copy message** _(action bar)_                                           | Clipboard                                                | Uses aggregated text when `AssistantTurnGroup` passes `groupMessageIds`                                                          |                | Needs Review                          |
+| **Speak** _(action bar)_                                                  | `StreamingSpeakerButton` → TTS stream                    | Same aggregated text as copy                                                                                                     |                | Needs Review                          |
+| **Edit message** _(action bar)_                                           | `fullScreenEditor` overlay (`mode: "assistant-message"`) | Save → `editMessage` thunk via bridge                                                                                            |                | Needs Review                          |
+| **Continue in chat mode** _(action bar)_                                  | `/chat/{conversationId}` in a new tab                    | Hidden on every `/chat` route; Builder manual turns resolve the durable wire conversation ID instead of the local test-panel key |                | Needs Review                          |
+| **More options** _(action bar, ⋯)_                                        | `MessageOptionsMenu` (`role="assistant"`)                | Gated by `selectShowAssistantMessageOptions`; lazy-loaded                                                                        |                | Needs Review                          |
+| **Edit content** _(options → Edit)_                                       | `fullScreenEditor` overlay (`mode: "free"`)              | Duplicate edit path vs bar pencil — different mode                                                                               |                | Needs Review                          |
+| **Edit history (N)** _(options → Edit)_                                   | `EditHistoryDialog`                                      | Hidden when `contentHistoryCount === 0`                                                                                          |                | Needs Review                          |
+| **Fork at this message** _(options → Edit)_                               | `forkConversation` → **Branch created** modal            | Stay here / Go to new branch via `promptForkOutcome`                                                                             |                | Needs Review                          |
+| **Delete message** _(options → Edit)_                                     | `DeleteMessageDialog`                                    | See delete sub-flow rows below                                                                                                   |                | Needs Review                          |
+| **Note** _(options → Save as)_                                            | `quickNoteSaveWindow` window panel                       | Folder: **Chat Saves**; title: `{conversation title} Message {n}` when labeled; amber **N** icon                                 |                | Needs Review                          |
+| **Analyze response** _(options → Creator)_                                | `messageAnalysisWindow` overlay                          | Agent owner only (`isCreator`)                                                                                                   |                | Needs Review                          |
+| **Debug stream** _(options → Creator)_                                    | `streamDebug` overlay                                    | Owner only; `streamRequestId` often null after reload                                                                            |                | Needs Review                          |
+| **Copy text** _(options → Copy)_                                          | Clipboard                                                | Plain markdown text                                                                                                              |                | Needs Review                          |
+| **Copy for Google Docs** _(options → Copy)_                               | Clipboard                                                | `formatForGoogleDocs: true`                                                                                                      |                | Needs Review                          |
+| **Copy for Word** _(options → Copy)_                                      | Clipboard                                                | Same formatter as Docs                                                                                                           |                | Needs Review                          |
+| **Copy with thinking** _(options → Copy)_                                 | Clipboard                                                | `includeThinking: true` (assistant-only)                                                                                         |                | Needs Review                          |
+| **HTML preview** _(options → Export)_                                     | `htmlPreview` overlay                                    | Can save back via `editMessage` when ids present                                                                                 |                | Needs Review                          |
+| **Copy HTML page** _(options → Export)_                                   | Clipboard (+ optional HTML preview)                      | WordPress-style HTML                                                                                                             |                | Needs Review                          |
+| **Email to me** _(options → Export)_                                      | `/api/chat/email-response` POST or `emailDialog` overlay | Unauthed → email dialog                                                                                                          |                | Needs Review                          |
+| **Print / Save PDF** _(options → Export)_                                 | Browser print dialog                                     | `printMarkdownContent` — text only                                                                                               |                | Needs Review                          |
+| **Full Print (all blocks)** _(options → Export)_                          | DOM capture PDF (`useDomCapturePrint`)                   | Only when host passes `onFullPrint`; includes tool/media blocks                                                                  |                | Needs Review                          |
+| **Save to Scratch** _(options → Actions)_                                 | Direct `NotesAPI.create` → Scratch folder                | Unauthed → `authGate` + sessionStorage resume                                                                                    |                | Needs Review                          |
+| **Save code to Scratch** _(options → Actions)_                            | Direct `CodeFilesAPI.create`                             | First fenced code block only                                                                                                     |                | Needs Review                          |
+| **Save to Code** _(options → Actions)_                                    | `saveToCode` overlay                                     | Extracts first code block                                                                                                        |                | Needs Review                          |
+| **Save as file** _(options → Actions)_                                    | Browser download `.md`                                   | `message-{timestamp}.md` blob                                                                                                    |                | Needs Review                          |
+| **Create task from message** _(options → Actions)_                        | `setPendingSource` Redux (task UI seed)                  | Does not open overlay directly                                                                                                   |                | FIXED 2026-07-05 (see fix wave below) |
+| **Convert to broker** _(options → Actions)_                               | `toast.info("Coming soon")`                              | **Stub — not implemented**                                                                                                       |                | Needs Review                          |
+| **Save to Document** _(options → Actions)_                                | `pushMarkdownToDocument` (Univer)                        | Lazy import; toast with Open link                                                                                                |                | Needs Review                          |
+| **Fork at this message (server)** _(options → Server API test)_           | Python `forkConversationServer`                          | Super-admin only                                                                                                                 |                | Needs Review                          |
+| **Fork BEFORE this message (server)** _(options → Server API test)_       | Same, `exclusive: true`                                  | Super-admin only                                                                                                                 |                | Needs Review                          |
+| **Hide this from model (server)** _(options → Server API test)_           | `hideMessages` thunk                                     | Super-admin only                                                                                                                 |                | Needs Review                          |
+| **Delete this message (server)** _(options → Server API test)_            | `ConfirmDialog` → `batchDeleteMessages`                  | Hard delete + reload; super-admin                                                                                                |                | Needs Review                          |
+| **Delete this + everything after (server)** _(options → Server API test)_ | Confirm → truncate via server                            | Super-admin only                                                                                                                 |                | Needs Review                          |
+| **Dry-run: delete this + after (server)** _(options → Server API test)_   | Info toast with would-delete IDs                         | No mutation                                                                                                                      |                | Needs Review                          |
+| **Replace this with a summary… (server)** _(options → Server API test)_   | `fullScreenEditor` → `replaceMessages`                   | Admin test path                                                                                                                  |                | Needs Review                          |
+| **Restore compaction (server)** _(options → Server API test)_             | `restoreCompaction` thunk                                | Only when message has compaction metadata                                                                                        |                | Needs Review                          |
+| **Submit feedback** _(options → App)_                                     | `feedbackDialog` overlay                                 |                                                                                                                                  |                | Needs Review                          |
+| **Announcements** _(options → App)_                                       | `announcements` overlay                                  |                                                                                                                                  |                | Needs Review                          |
+| **Preferences** _(options → App)_                                         | `userPreferences` overlay                                | Label in menu is "Preferences"                                                                                                   |                | Needs Review                          |
 
 ### Sub-flows (not top-level menu items)
 
-| Name | Opens / triggers | Notes | Arman Feedback | STATUS |
-|------|------------------|-------|----------------|--------|
-| **Delete here** *(delete dialog)* | `deleteMessage` thunk | In-place soft delete + tool cascade | | Needs Review |
-| **Fork without this message** *(delete dialog)* | Fork at prior position → delete copy on fork → optional surface nav | Hidden when `canFork` false (first message) | | Needs Review |
-| **Compare with current** *(edit history dialog)* | `diffViewerWindow` overlay | Per archived version | | Needs Review |
-| **Restore this version** *(edit history dialog)* | `editMessage` + optional `setRequestEditedText` | Current text archived first (reversible) | | Needs Review |
+| Name                                             | Opens / triggers                                                    | Notes                                       | Arman Feedback | STATUS       |
+| ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------- | -------------- | ------------ |
+| **Delete here** _(delete dialog)_                | `deleteMessage` thunk                                               | In-place soft delete + tool cascade         |                | Needs Review |
+| **Fork without this message** _(delete dialog)_  | Fork at prior position → delete copy on fork → optional surface nav | Hidden when `canFork` false (first message) |                | Needs Review |
+| **Compare with current** _(edit history dialog)_ | `diffViewerWindow` overlay                                          | Per archived version                        |                | Needs Review |
+| **Restore this version** _(edit history dialog)_ | `editMessage` + optional `setRequestEditedText`                     | Current text archived first (reversible)    |                | Needs Review |
 
 ---
 
@@ -66,20 +67,20 @@ Scope: inline **Action Bar** + **⋯ Message options** menu on committed, non-fa
 
 ### Key files
 
-| File | Role |
-|------|------|
-| `features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx` | Message shell; passes `onFullPrint`, retry, provider retry |
-| `features/agents/components/messages-display/assistant/AssistantActionBar.tsx` | Inline bar + menu host + delete/edit-history dialogs |
-| `features/agents/components/messages-display/message-options/MessageOptionsMenu.tsx` | Overflow menu shell; creator/admin detection |
-| `features/agents/components/messages-display/message-options/messageActionRegistry.ts` | All menu item factories |
-| `features/window-panels/windows/notes/QuickNoteSaveWindow.tsx` | Save-as-Note window panel (`90vw` × `85dvh`) |
-| `components/branding/RouteFaviconIcon.tsx` | Route letter badge icons (Notes = amber N) |
-| `features/agents/redux/execution-system/messages/messages.selectors.ts` | `extractFlatText` — answer-only by default; strips thinking |
-| `features/agents/components/messages-display/message-options/DeleteMessageDialog.tsx` | Delete vs fork-without |
-| `features/agents/components/messages-display/message-options/EditHistoryDialog.tsx` | Version list, compare, restore |
-| `features/agents/components/messages-display/message-options/promptForkOutcome.ts` | Post-fork Stay / Go modal |
-| `features/overlays/OverlayController.tsx` | Renders overlays opened from actions |
-| `.claude/skills/message-actions-overlay-system/SKILL.md` | Overlay wiring docs |
+| File                                                                                   | Role                                                        |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx`      | Message shell; passes `onFullPrint`, retry, provider retry  |
+| `features/agents/components/messages-display/assistant/AssistantActionBar.tsx`         | Inline bar + menu host + delete/edit-history dialogs        |
+| `features/agents/components/messages-display/message-options/MessageOptionsMenu.tsx`   | Overflow menu shell; creator/admin detection                |
+| `features/agents/components/messages-display/message-options/messageActionRegistry.ts` | All menu item factories                                     |
+| `features/window-panels/windows/notes/QuickNoteSaveWindow.tsx`                         | Save-as-Note window panel (`90vw` × `85dvh`)                |
+| `components/branding/RouteFaviconIcon.tsx`                                             | Route letter badge icons (Notes = amber N)                  |
+| `features/agents/redux/execution-system/messages/messages.selectors.ts`                | `extractFlatText` — answer-only by default; strips thinking |
+| `features/agents/components/messages-display/message-options/DeleteMessageDialog.tsx`  | Delete vs fork-without                                      |
+| `features/agents/components/messages-display/message-options/EditHistoryDialog.tsx`    | Version list, compare, restore                              |
+| `features/agents/components/messages-display/message-options/promptForkOutcome.ts`     | Post-fork Stay / Go modal                                   |
+| `features/overlays/OverlayController.tsx`                                              | Renders overlays opened from actions                        |
+| `.claude/skills/message-actions-overlay-system/SKILL.md`                               | Overlay wiring docs                                         |
 
 ### Likely problem areas
 
@@ -155,20 +156,20 @@ The ⋯ menu now has this structure (same for assistant + user messages, modulo 
 
 ### Related (not in bar/menu)
 
-| Name | Where | Notes |
-|------|-------|-------|
-| **Retry** | `AssistantError` on failed turn | Last recoverable failure only (`canRetry`) |
-| **Retry now / Cancel** | `ProviderRetryCard` | Provider busy state during stream |
-| **Message file strip / Revert** | `MessageFilesStrip` | Code-edit history on message |
-| **Right-click context menu** | `AgentConversationDisplay` / context-menu-v2 | Separate from ⋯ menu — selection actions, quick actions, run agents |
+| Name                            | Where                                        | Notes                                                               |
+| ------------------------------- | -------------------------------------------- | ------------------------------------------------------------------- |
+| **Retry**                       | `AssistantError` on failed turn              | Last recoverable failure only (`canRetry`)                          |
+| **Retry now / Cancel**          | `ProviderRetryCard`                          | Provider busy state during stream                                   |
+| **Message file strip / Revert** | `MessageFilesStrip`                          | Code-edit history on message                                        |
+| **Right-click context menu**    | `AgentConversationDisplay` / context-menu-v2 | Separate from ⋯ menu — selection actions, quick actions, run agents |
 
 ### Visibility gates (quick reference)
 
-| Gate | Affects |
-|------|---------|
-| `selectShowAssistantMessageOptions` | ⋯ button + menu |
-| `isCreator` | Creator section (2 items) |
-| `selectIsSuperAdmin` | Server API (test) section |
-| `contentHistoryCount > 0` | Edit history menu item |
-| `showFullPrint && onFullPrint` | Full Print menu item |
-| `onRequestDelete` wired | Delete message menu item |
+| Gate                                | Affects                   |
+| ----------------------------------- | ------------------------- |
+| `selectShowAssistantMessageOptions` | ⋯ button + menu           |
+| `isCreator`                         | Creator section (2 items) |
+| `selectIsSuperAdmin`                | Server API (test) section |
+| `contentHistoryCount > 0`           | Edit history menu item    |
+| `showFullPrint && onFullPrint`      | Full Print menu item      |
+| `onRequestDelete` wired             | Delete message menu item  |

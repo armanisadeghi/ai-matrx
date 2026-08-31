@@ -16,15 +16,11 @@
  * Edit & Resubmit (a user-message-only flow) is hidden.
  */
 
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  lazy,
-  Suspense,
-  useMemo,
-} from "react";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import React, { useState, useCallback, lazy, Suspense, useMemo } from "react";
+import {
+  TapTargetButtonForGroup,
+  TapTargetButtonGroup,
+} from "@ai-matrx/tap-target";
 import {
   ThumbsUpTapButton,
   ThumbsDownTapButton,
@@ -63,6 +59,14 @@ import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import { MessageTimestamp } from "../MessageTimestamp";
+import { ArrowUpRight, MessageCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { selectReservedConversationId } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  isChatRoutePath,
+  resolveContinueInChatConversationId,
+} from "./continue-in-chat";
 
 // The canonical convert-source dialog (features/education/convert — the ONE
 // dispatch for "turn this content into study artifacts"). Heavy (entitlement
@@ -121,6 +125,17 @@ const MessageOptionsMenu = lazy(() =>
   })),
 );
 
+const conversationHrefFor = getEntityInfo("conversation").hrefFor;
+
+function ContinueInChatIcon() {
+  return (
+    <span className="relative inline-flex h-4 w-4" aria-hidden="true">
+      <MessageCircle className="h-4 w-4" />
+      <ArrowUpRight className="absolute right-px top-px h-2.5 w-2.5 stroke-[2.5]" />
+    </span>
+  );
+}
+
 export interface AssistantActionBarProps {
   /** Server `cx_message.id`. */
   messageId: string;
@@ -159,19 +174,25 @@ export function AssistantActionBar({
 }: AssistantActionBarProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const pathname = usePathname();
   const [isCopied, setIsCopied] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
+  const [moreOptionsAnchor, setMoreOptionsAnchor] =
+    useState<HTMLDivElement | null>(null);
   // True once the user has opened Convert at least once — gates BOTH mount and
   // the dynamic chunk load (never pay for the education convert stack until a
   // convert is actually requested).
   const [convertOpen, setConvertOpen] = useState(false);
   const [convertMounted, setConvertMounted] = useState(false);
-  const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
-
   // Single subscription to the message record. Everything below derives.
   const record = useAppSelector(selectMessageById(conversationId, messageId));
+  const reservedConversationId = useAppSelector(
+    record?._streamRequestId
+      ? selectReservedConversationId(record._streamRequestId)
+      : () => null,
+  );
   const messagePosition = useAppSelector(
     selectMessagePosition(conversationId, messageId),
   );
@@ -186,6 +207,13 @@ export function AssistantActionBar({
     selectConversationTitle(conversationId),
   );
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
+  const continueInChatConversationId = resolveContinueInChatConversationId(
+    conversationId,
+    reservedConversationId,
+  );
+  const continueInChatHref = conversationHrefFor?.(
+    continueInChatConversationId,
+  );
 
   // Inspectable content — the raw-faithful view. For text-bearing messages
   // this IS the flat text; for structured payloads (e.g. a media-block array
@@ -306,7 +334,6 @@ export function AssistantActionBar({
       toast.success("Message deleted");
     } catch (err) {
       const { logPayload, message } = serializeSaveError(err);
-      // eslint-disable-next-line no-console
       console.error(
         "[AssistantActionBar] delete failed",
         JSON.stringify(logPayload, null, 2),
@@ -358,7 +385,6 @@ export function AssistantActionBar({
       toast.success("Forked without this message");
     } catch (err) {
       const { logPayload, message } = serializeSaveError(err);
-      // eslint-disable-next-line no-console
       console.error(
         "[AssistantActionBar] fork-and-delete failed",
         JSON.stringify(logPayload, null, 2),
@@ -455,8 +481,21 @@ export function AssistantActionBar({
               className="text-muted-foreground"
             />
 
+            {!isChatRoutePath(pathname) && continueInChatHref && (
+              <TapTargetButtonForGroup
+                href={continueInChatHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                prefetch={false}
+                ariaLabel="Continue in chat mode"
+                tooltip="Continue in chat mode"
+                icon={<ContinueInChatIcon />}
+                className="text-muted-foreground"
+              />
+            )}
+
             {showOptions && (
-              <div ref={moreOptionsButtonRef}>
+              <div ref={setMoreOptionsAnchor}>
                 <MoreHorizontalTapButton
                   variant="group"
                   onClick={() => setShowOptionsMenu(true)}
@@ -505,7 +544,7 @@ export function AssistantActionBar({
             editTarget={editTarget}
             conversationId={conversationId}
             metadata={metadata}
-            anchorElement={moreOptionsButtonRef.current}
+            anchorElement={moreOptionsAnchor}
             showFullPrint={!!onFullPrint}
             onFullPrint={onFullPrint}
             isCapturing={isCapturing}
