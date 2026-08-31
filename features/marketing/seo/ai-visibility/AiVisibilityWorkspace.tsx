@@ -18,6 +18,12 @@ import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -512,9 +518,46 @@ export function AiVisibilityWorkspace({
     latestResponses.length || AI_VISIBILITY_ENGINES.length;
   const compactComposer = responses.length > 0 || run.status !== "idle";
 
+  /** One right-click resolver for every evidence table below — the row's own
+   *  entity token + a readable line, so Attach To / Share / Copy-as all
+   *  target the exact claim/citation/signal/response, not the pane. */
+  function resolveEvidenceRowContext<T extends { id: string }>(
+    target: HTMLElement | null,
+    rows: T[],
+    entityType: EntityTypeToken,
+    titleOf: (row: T) => string,
+    contentOf: (row: T) => string,
+  ): ResolvedContextMenuContext | null {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? rows.find((r) => r.id === id) : undefined;
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: entityType,
+        id: row.id,
+        title: titleOf(row),
+      },
+      content: contentOf(row),
+    };
+  }
+
   const renderEvidenceTable = (view: AiVisibilityEvidenceView) => {
     if (view === "claims") {
       return (
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={(target) =>
+            resolveEvidenceRowContext(
+              target,
+              claimRows,
+              "seo_ai_visibility_claim",
+              (row) => row.subject,
+              (row) =>
+                `${row.subject}\n${row.claim_text}\nverification=${row.verification_status}`,
+            )
+          }
+        >
         <MatrxDataTable
           data={claimRows}
           columns={claimColumns}
@@ -561,10 +604,24 @@ export function AiVisibilityWorkspace({
               "Run an exact query to see which facts, caveats, and unsupported claims influenced each answer.",
           }}
         />
+        </NonEditableContextMenu>
       );
     }
     if (view === "sources") {
       return (
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={(target) =>
+            resolveEvidenceRowContext(
+              target,
+              citationRows,
+              "seo_ai_visibility_citation",
+              (row) => row.title || row.domain || row.url,
+              (row) => `${row.title || row.url}\n${row.url}\ncited_for=${row.cited_for}`,
+            )
+          }
+        >
         <MatrxDataTable
           data={citationRows}
           columns={citationColumns}
@@ -614,10 +671,24 @@ export function AiVisibilityWorkspace({
               "Sources appear as providers cite them; every eligible page is captured through the shared crawl cache.",
           }}
         />
+        </NonEditableContextMenu>
       );
     }
     if (view === "signals") {
       return (
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={(target) =>
+            resolveEvidenceRowContext(
+              target,
+              signalRows,
+              "seo_ai_visibility_signal",
+              (row) => row.signal,
+              (row) => `${row.signal}\ncategory=${row.category}\n${row.evidence_text}`,
+            )
+          }
+        >
         <MatrxDataTable
           data={signalRows}
           columns={signalColumns}
@@ -658,9 +729,24 @@ export function AiVisibilityWorkspace({
               "The specialist identifies the evidence, wording, authority, familiarity, rankings, and other signals behind each answer.",
           }}
         />
+        </NonEditableContextMenu>
       );
     }
     return (
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        resolveContextOnOpen={(target) =>
+          resolveEvidenceRowContext(
+            target,
+            responses,
+            "seo_ai_visibility_response",
+            (row) => row.query,
+            (row) =>
+              `${row.query}\nmentioned=${row.target_mentioned} cited=${row.target_cited}`,
+          )
+        }
+      >
       <MatrxDataTable
         data={responses}
         columns={responseColumns}
@@ -703,6 +789,7 @@ export function AiVisibilityWorkspace({
             "Your first completed query will be stored here with every provider answer and evidence record.",
         }}
       />
+      </NonEditableContextMenu>
     );
   };
 
