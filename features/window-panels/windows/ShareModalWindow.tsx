@@ -28,6 +28,8 @@ import {
   SHARE_SURFACE_NAME,
   createShareScope,
 } from "@/features/surfaces/manifests/share.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ExternalLink } from "lucide-react";
 
 export interface ShareModalWindowProps {
   isOpen: boolean;
@@ -206,6 +208,36 @@ export default function ShareModalWindow({
         }
         isEditable={false}
       >
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+          this, a right-click here is answered by whatever page sits
+          underneath. THE SHARING SYSTEM'S OWN UI — doors only, no changes to
+          sharing logic/permissions: the one extra action opens the shared
+          resource itself via the same `getResourceSharePath` resolver this
+          window already uses to build the email/copy link, never a new
+          write path. No `entity` — `resourceType` is the sharing registry's
+          own vocabulary, not a registered `EntityTypeToken`, and Share-on-
+          the-Share-window would be circular. */}
+      <NonEditableContextMenu
+        sourceFeature="system"
+        surfaceName={SHARE_SURFACE_NAME}
+        contentSource={{ type: "raw" }}
+        extraSections={[
+          {
+            id: "share-resource-door",
+            items: [
+              {
+                kind: "link",
+                id: "share-open-resource",
+                label: `Open ${resourceLabel.toLowerCase()}`,
+                icon: ExternalLink,
+                href: getShareUrl() ?? "#",
+                target: "_blank",
+                disabled: !getShareUrl(),
+              },
+            ],
+          },
+        ]}
+      >
       <div className="flex flex-col h-full bg-background overflow-hidden p-4">
         {/* Tabs Section */}
         <Tabs
@@ -311,6 +343,7 @@ export default function ShareModalWindow({
           </div>
         )}
       </div>
+      </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </WindowPanel>
   );

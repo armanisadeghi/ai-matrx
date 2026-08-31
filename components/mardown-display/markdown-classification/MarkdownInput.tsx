@@ -49,15 +49,28 @@ const MarkdownInput: React.FC<MarkdownInputProps> = ({
                 onPointerDown={(e) => e.stopPropagation()}
             >
                 <ResizablePanel defaultSize={50} minSize={10}>
-                    <textarea
-                        ref={textareaRef}
-                        value={markdown}
-                        onChange={handleTextareaChange}
-                        placeholder="Paste your Markdown here..."
-                        className="h-full w-full p-4 font-mono text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none border-0 resize-none"
-                        aria-label="Markdown input"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                    {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL) —
+                        this is the actual textarea owner (ref + the real
+                        `onMarkdownChange` setter), so the editable menu is
+                        wired here rather than at a distant ancestor. */}
+                    <EditableContextMenu
+                        sourceFeature="system"
+                        contentSource={{ type: "raw" }}
+                        getTextarea={() => textareaRef.current}
+                        onTextReplace={onMarkdownChange}
+                        onTextInsertBefore={(text) => onMarkdownChange(text + markdown)}
+                        onTextInsertAfter={(text) => onMarkdownChange(markdown + text)}
+                    >
+                        <textarea
+                            ref={textareaRef}
+                            value={markdown}
+                            onChange={handleTextareaChange}
+                            placeholder="Paste your Markdown here..."
+                            className="h-full w-full p-4 font-mono text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none border-0 resize-none"
+                            aria-label="Markdown input"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </EditableContextMenu>
                 </ResizablePanel>
                 
                 <ResizableHandle withHandle />

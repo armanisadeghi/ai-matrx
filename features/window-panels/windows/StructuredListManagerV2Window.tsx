@@ -8,6 +8,7 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { StructuredListManagerV2 } from "@/features/structured-lists/StructuredListManagerV2";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface StructuredListManagerV2WindowProps extends Omit<
   WindowPanelProps,
@@ -51,7 +52,29 @@ export default function StructuredListManagerV2Window({
       overlayId="structuredListManagerV2Window"
       {...windowProps}
     >
-      <StructuredListManagerV2 forcedListId={forcedListId ?? undefined} />
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+          this, a right-click here is answered by whatever page sits
+          underneath. Reuses the `structured_list` entity token already
+          registered by the v3 engine's own row menu
+          (`features/structured-lists/structured-list-manager-v3.tsx`); in
+          browse mode (no `forcedListId`) the pane shows many lists via its
+          own switcher, so no single entity applies. */}
+      <NonEditableContextMenu
+        sourceFeature="udt"
+        contentSource={{ type: "raw" }}
+        entity={
+          forcedListId
+            ? {
+                type: "structured_list",
+                id: forcedListId,
+                title: resolvedTitle,
+                resourceType: "structured_list",
+              }
+            : undefined
+        }
+      >
+        <StructuredListManagerV2 forcedListId={forcedListId ?? undefined} />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

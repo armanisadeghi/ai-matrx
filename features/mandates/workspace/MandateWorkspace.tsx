@@ -20,7 +20,10 @@
 //      binding (latest vs pinned + DRIFT), view it / duplicate it.
 //   §3 Organization context — one line, collapsed. This surface is PERSONAL;
 //      org editing lives on the org route.
-//   §4 Your override — the stepwise flow (OverrideFlow).
+//   §4 Who fulfils this job — THE ONE BINDING UI (features/bindings/
+//      OneBindingWorkspace): the rung as a control, the holder cell, and the
+//      two-sides-and-a-middle mapping over the shared row component. It
+//      replaced the four-step OverrideFlow wizard on 2026-08-31.
 // Plus, ON THE ADMIN ROUTE ONLY (Arman, 2026-08-29 — mandate MANAGEMENT is
 // admin-side; the user route is browse + their own override):
 //   · goal editing and draft-input editing (§1)
@@ -30,7 +33,7 @@
 //
 // No prose paragraphs. Sections state facts; the data does the talking.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -64,7 +67,7 @@ import {
   isFloatingBinding,
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
-import { OverrideFlow, type WorkspacePrincipal } from "./OverrideFlow";
+import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
 import { RunThisJobSection } from "./RunThisJobSection";
 import { Section } from "./Section";
 import {
@@ -72,6 +75,15 @@ import {
   type MandateBindingRowDb,
   type MandateWorkspaceData,
 } from "./useMandateWorkspaceData";
+
+/**
+ * Which principal a HOST speaks for. It PRE-SELECTS the rung in the binding
+ * section; it no longer decides it. The rung is a control on the screen
+ * (UI-STANDARD P13, D1 resolved 2026-08-31) — the routes stay as entry points.
+ */
+export type WorkspacePrincipal =
+  | { kind: "user" }
+  | { kind: "org"; orgId: string };
 
 export interface MandateWorkspaceProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
@@ -269,20 +281,16 @@ export function MandateWorkspace({
           />
         ) : null}
 
-        {/* §4 — the stepwise override flow (choose → validate → map → settings).
-            PERSONAL only — org bindings are edited on the org route. */}
-        <Section
-          title={
-            principal.kind === "org" ? "Organization override" : "Your override"
-          }
-        >
-          <OverrideFlow
-            data={data}
-            userId={userId}
-            principal={principal}
-            onChanged={refresh}
-          />
-        </Section>
+        {/* §4 — THE ONE BINDING UI. One screen, every rung, both holder types:
+            the job's offered inventory on one side, the holder's inputs on the
+            other, the match in the middle by the shared row component. The
+            four-step wizard it replaces is deleted, not deprecated. */}
+        <BindingSection
+          data={data}
+          principal={principal}
+          authoring={authoring}
+          onChanged={refresh}
+        />
 
         <MandateNotesPanel
           mandateId={data.mandate.id}
@@ -296,6 +304,55 @@ export function MandateWorkspace({
           }
         />
       </div>
+    </div>
+  );
+}
+
+// ── §4 The binding ───────────────────────────────────────────────────────────
+//
+// The workspace's own section around `OneBindingWorkspace`. Two things live
+// here rather than inside the workspace component, because they are the HOST's
+// concerns: which rung the route pre-selects, and the "Bind an agent to this
+// job" jump. That button (and the `matrx:open-mandate-pin` event any surface
+// may fire) now scrolls to THIS section — the one place a holder is chosen.
+
+function BindingSection({
+  data,
+  principal,
+  authoring,
+  onChanged,
+}: {
+  data: MandateWorkspaceData;
+  principal: WorkspacePrincipal;
+  authoring: boolean;
+  onChanged: () => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const jump = () =>
+      requestAnimationFrame(() =>
+        ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    window.addEventListener("matrx:open-mandate-pin", jump);
+    return () => window.removeEventListener("matrx:open-mandate-pin", jump);
+  }, []);
+
+  return (
+    <div ref={ref}>
+      <Section title="Who fulfils this job">
+        <OneBindingWorkspace
+          data={data}
+          initialRung={principal.kind === "org" ? "org" : "user"}
+          initialOrganizationId={
+            principal.kind === "org" ? principal.orgId : null
+          }
+          // The admin door offers the system rung; the server's super-admin
+          // gate is the authority and the workspace re-checks it too.
+          allowGlobal={authoring}
+          onChanged={onChanged}
+        />
+      </Section>
     </div>
   );
 }

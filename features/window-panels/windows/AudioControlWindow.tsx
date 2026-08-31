@@ -58,6 +58,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useGlobalRecordingOptional } from "@/providers/GlobalRecordingProvider";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CameraControlTab } from "@/features/media-capture/components/CameraControlTab";
 import { AudioLevelIndicator } from "@/features/audio/components/AudioLevelIndicator";
 import { useAudioPlayback } from "@/features/audio/playback/useAudioPlayback";
@@ -93,7 +94,14 @@ export default function AudioControlWindow({
       height={540}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <AudioControlBody />
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+          this, a right-click here is answered by whatever page sits
+          underneath. Page-local — live playback/recording/camera session
+          state (`audioSessionRegistry` + `mediaCaptureDiagnostics`), no DB
+          record to attach/share. */}
+      <NonEditableContextMenu sourceFeature="system" contentSource={{ type: "raw" }}>
+        <AudioControlBody />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

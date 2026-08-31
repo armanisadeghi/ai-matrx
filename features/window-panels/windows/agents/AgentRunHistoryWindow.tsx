@@ -34,6 +34,7 @@ import { buildConversationMenu } from "@/features/agents/components/conversation
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_RUN_HISTORY_SURFACE_NAME } from "@/features/surfaces/manifests/agent-run-history.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   buildAgentRunHistoryScope,
   readSelectedRunTranscript,
@@ -387,13 +388,23 @@ function RunHistoryBody({
     );
   }
 
+  // The sidebar's own rows already carry their menu (`ItemRow` +
+  // `buildConversationMenu` — see `VersionConversationRow`); this wraps the
+  // MAIN pane, whose identity is the selected run's conversation.
+  // context-menu-exempt: surfaceName — AGENT_RUN_HISTORY_SURFACE_NAME's declared values are agent-scoped, not this transcript
   return (
-    <div
-      className="h-full min-h-0"
-      data-surface-value="selected_run_transcript"
+    <NonEditableContextMenu
+      sourceFeature="agent-builder"
+      contentSource={{ type: "raw" }}
+      entity={{ type: "conversation", id: selectedConversationId, title: "Run" }}
     >
-      <AgentConversationDisplay conversationId={selectedConversationId} />
-    </div>
+      <div
+        className="h-full min-h-0"
+        data-surface-value="selected_run_transcript"
+      >
+        <AgentConversationDisplay conversationId={selectedConversationId} />
+      </div>
+    </NonEditableContextMenu>
   );
 }
 

@@ -26,10 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  selectAgentLineageIndex,
-  selectBuiltinAgents,
-} from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import { buildRow, type MandateRow } from "./mandate-health";
@@ -75,26 +72,14 @@ export function AdminMandateWorkspacePage({
 function AdminControls({ mandateKey }: { mandateKey: string }) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
 
   const [open, setOpen] = useState(false);
-  // "Bind an agent to this job" (the holderless workspace button) opens this
-  // panel AND the pin section — the one action a new mandate needs is never
-  // two folds deep.
-  const [pinSignal, setPinSignal] = useState(0);
+  // "Bind an agent to this job" used to open THIS fold, because the rebind
+  // editor lived in it. It no longer does: the one binding UI is a section of
+  // the workspace above, and it listens for `matrx:open-mandate-pin` itself.
+  // This panel keeps only the depth the console owns.
   const panelRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const onOpenPin = () => {
-      setOpen(true);
-      setPinSignal((n) => n + 1);
-      requestAnimationFrame(() =>
-        panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      );
-    };
-    window.addEventListener("matrx:open-mandate-pin", onOpenPin);
-    return () => window.removeEventListener("matrx:open-mandate-pin", onOpenPin);
-  }, []);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<
     Record<string, MandateCodeTruth>
@@ -152,11 +137,6 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
       cancelled = true;
     };
   }, [dispatch, isSuperAdmin, open]);
-
-  const builtinAgentsById = useMemo<ReadonlyMap<string, string>>(
-    () => new Map(builtinAgents.map((a) => [a.id, a.name ?? a.id])),
-    [builtinAgents],
-  );
 
   const row = useMemo<MandateRow | null>(() => {
     if (!data) return null;
@@ -218,9 +198,7 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                     systemTwin: null,
                   }
                 }
-                builtinAgentsById={builtinAgentsById}
                 onSaved={load}
-                forcePinSignal={pinSignal}
               />
             )}
           </div>

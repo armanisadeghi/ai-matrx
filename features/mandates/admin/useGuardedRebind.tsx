@@ -68,11 +68,21 @@ export function useGuardedRebind({
   currentAgentId,
   codeTruth,
   onSaved,
+  performWrite,
 }: {
   mandate: MandateDefinitionRow;
   currentAgentId: string | null;
   codeTruth?: MandateCodeTruth | null;
   onSaved: () => void;
+  /**
+   * What "rebind" MEANS at this call site. The admin console rebinds the
+   * mandate's own default holder (the default below), so it needs no override.
+   * The one binding UI rebinds a BINDING — a user's, an org's, or the system
+   * rung's row — and hands the guard its own save. The guard is the IMPACT
+   * CHECK, not the writer: which variables stop flowing is the same question
+   * either way, and it must be asked wherever a holder swaps.
+   */
+  performWrite?: (request: RebindRequest) => Promise<void>;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -87,6 +97,12 @@ export function useGuardedRebind({
     async (request: RebindRequest) => {
       setSaving(true);
       try {
+        if (performWrite) {
+          await performWrite(request);
+          setPending(null);
+          onSaved();
+          return;
+        }
         // THE REBIND WRITE. An admin rebind always names an AGENT Holder —
         // this console binds agents, and the workflow/orchestra Holder path is
         // the binding editor, not the mandate default. `useLatest` decides
@@ -111,7 +127,7 @@ export function useGuardedRebind({
         setSaving(false);
       }
     },
-    [onSaved, mandate.id],
+    [onSaved, mandate.id, performWrite],
   );
 
   /**

@@ -31,11 +31,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { mandatePinRefusal } from "./pin-refusal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type {
   AgentLineage,
@@ -43,7 +40,6 @@ import type {
 } from "@/features/agents/redux/agent-definition/selectors";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
@@ -67,7 +63,6 @@ import {
 import { MandateTestBench } from "./MandateTestBench";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateContextGate } from "./MandateContextGate";
-import { useGuardedRebind } from "./useGuardedRebind";
 import {
   buildRebindFixBrief,
   codeTruthRebindImpact,
@@ -1317,215 +1312,6 @@ function FactsPanel({
   );
 }
 
-// ── Rebind editor ─────────────────────────────────────────────────────────────
-
-function MandateEditor({
-  mandate,
-  data,
-  builtinAgentsById,
-  currentAgentId,
-  codeTruth,
-  onSaved,
-}: {
-  mandate: MandateDefinitionRow;
-  data: MandateConsoleData;
-  builtinAgentsById: ReadonlyMap<string, string>;
-  /** The agent bound today — the baseline THE REBIND GUARD compares against. */
-  currentAgentId: string | null;
-  codeTruth: MandateRow["codeTruth"];
-  onSaved: () => void;
-}) {
-  const {
-    requestRebind,
-    dialog: rebindDialog,
-    checking,
-    saving: rebindSaving,
-  } = useGuardedRebind({ mandate, currentAgentId, codeTruth, onSaved });
-  const storedHolder = holderOfMandate(mandate);
-  const pinnedVersion = storedHolder.versionId
-    ? data.versionsById[storedHolder.versionId]
-    : undefined;
-  const initialAgentId = storedHolder.holderId ?? pinnedVersion?.agentId ?? null;
-  const [agentId, setAgentId] = useState<string | null>(initialAgentId);
-  const [useLatest, setUseLatest] = useState<boolean>(
-    isFloatingMandate(mandate),
-  );
-  const [versionId, setVersionId] = useState<string | null>(
-    storedHolder.versionId,
-  );
-  // Versions keyed by the agent they were fetched for — "loading" is DERIVED
-  // (requested agent ≠ loaded agent), so the effect never sets state
-  // synchronously (react-hooks/set-state-in-effect).
-  const [loadedVersions, setLoadedVersions] = useState<{
-    agentId: string;
-    rows: MandateVersionInfo[];
-  } | null>(null);
-  const saving = rebindSaving || checking;
-  const versions =
-    loadedVersions?.agentId === agentId ? loadedVersions.rows : [];
-  const loadingVersions =
-    !useLatest && agentId != null && loadedVersions?.agentId !== agentId;
-
-  useEffect(() => {
-    if (!agentId || useLatest) return;
-    let cancelled = false;
-    fetchAgentVersions(agentId)
-      .then((rows) => {
-        if (cancelled) return;
-        setLoadedVersions({ agentId, rows });
-        setVersionId((prev) =>
-          rows.some((r) => r.id === prev) ? prev : (rows[0]?.id ?? null),
-        );
-      })
-      .catch((error: unknown) => {
-        toast.error(`Failed to load versions: ${describeError(error)}`);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [agentId, useLatest]);
-
-  // 🚨 THE DEAD SELECT (found live by Arman, 2026-08-31; the fix is the class,
-  // not the instance).
-  //
-  // He picked an agent here and NOTHING HAPPENED. The mechanism: this editor
-  // treated `builtinAgentsById` — the console's own copy of the system-agent
-  // catalogue, which is EMPTY until `fetchAgentsListFull()` lands and drops
-  // any agent that copy does not hold — as a VETO on the selection. An id it
-  // did not hold was nulled out (`selectableAgentId`), the trigger reverted to
-  // "Select a system agent", and Save answered "Choose a system agent before
-  // saving this mandate" — blaming the admin for a list that had not loaded.
-  //
-  // THE RULE now: the dropdown is the authority on WHAT WAS PICKED; the
-  // catalogue only DESCRIBES it. A pick is always reflected, and every refusal
-  // is in words, on the page, naming the remedy — never a silent revert.
-  const liveAgents = useAppSelector(selectLiveAgents);
-  const pickedAgent = agentId
-    ? (liveAgents.find((candidate) => candidate.id === agentId) ?? null)
-    : null;
-  const catalogueLoaded = builtinAgentsById.size > 0;
-  const pickedIsSystem = agentId ? builtinAgentsById.has(agentId) : false;
-  const pickedName =
-    (agentId ? builtinAgentsById.get(agentId) : undefined) ??
-    pickedAgent?.name ??
-    (agentId ? "the selected agent" : null);
-
-  /** Why this pick cannot be saved — in words, or null when it can. The rule
-   * itself lives in `pin-refusal.ts` so a test can hold it. */
-  const refusal = mandatePinRefusal({
-    agentId,
-    pickedName,
-    catalogueLoaded,
-    pickedIsSystem,
-  });
-
-  const save = async () => {
-    if (!agentId) {
-      toast.error("Pick an agent first.");
-      return;
-    }
-    if (refusal) {
-      // The same words that are already on the page — never a shorter, vaguer
-      // toast that leaves the reader with nothing to do.
-      toast.error(refusal);
-      return;
-    }
-    if (!useLatest && !versionId) {
-      toast.error("Pick a version to pin, or switch to latest.");
-      return;
-    }
-    // Routed through THE REBIND GUARD — a manual rebind is the same swap the
-    // one-click remedies perform, and gets the same variable check.
-    await requestRebind({
-      agentId,
-      agentName: pickedName ?? "the selected agent",
-      versionId: useLatest ? null : versionId,
-      useLatest,
-      successMessage: `${mandate.mandate_key} rebound.`,
-    });
-  };
-
-  // The trigger always shows WHAT IS PICKED. An unknown-to-the-catalogue pick
-  // shows its id rather than pretending nothing was chosen.
-  const selectedAgentName = agentId
-    ? (pickedName ?? agentId)
-    : "Select a system agent";
-
-  return (
-    <div className="space-y-3 p-3">
-      <div>
-        <div className="mb-1 text-xs font-medium text-muted-foreground">
-          Agent
-        </div>
-        {/* The canonical agent dropdown, constrained to system agents because
-            a mandate default serves every user. The full catalogue exists only
-            while the admin opens the dropdown. */}
-        <AgentListDropdown
-          consumerId={`agent-mandate-rebind-${mandate.id}`}
-          onSelect={setAgentId}
-          activeAgentId={agentId}
-          label={selectedAgentName}
-          initialTab="system"
-          visibleTabs={["system"]}
-          systemTabLabel="System"
-          resolveAgentHref={(agent) => agentHref(agent.id, agent.agentType)}
-          showPinnedAgent={Boolean(agentId)}
-          contentSide="left"
-          className="h-9 w-full"
-        />
-        {/* EVERY REFUSAL IN WORDS, on the page — the pick is never silently
-            discarded, and the remedy is always named. */}
-        {refusal ? (
-          <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {refusal}
-          </p>
-        ) : null}
-      </div>
-      <label className="flex items-center gap-2 text-sm">
-        <Switch checked={useLatest} onCheckedChange={setUseLatest} />
-        <span>
-          Track latest{" "}
-          <span className="text-muted-foreground">
-            (picks up every new version; pin one version for stability)
-          </span>
-        </span>
-      </label>
-      {!useLatest && (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Pin version:</span>
-          {loadingVersions ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : versions.length === 0 ? (
-            <span className="text-muted-foreground">
-              No saved versions for this agent — save a version first, or track
-              latest.
-            </span>
-          ) : (
-            <select
-              className="rounded-md border border-border bg-background px-2 py-1 text-sm"
-              value={versionId ?? ""}
-              onChange={(e) => setVersionId(e.target.value || null)}
-            >
-              {versions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  v{v.versionNumber}
-                  {v.name ? ` — ${v.name}` : ""}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
-      {rebindDialog}
-      <Button size="sm" onClick={() => void save()} disabled={saving}>
-        {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-        Save pin
-      </Button>
-    </div>
-  );
-}
-
 // ── Overrides roll-up (read-only; editing happens in MandateOverridePanel) ──────
 
 function OverridesList({
@@ -1710,18 +1496,14 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
  * test / overrides as collapsible sections. Used by both the side panel and
  * the WindowPanel Edit tab. */
 export function MandateDetailView({
-  forcePinSignal = 0,
   row,
   data,
   lineage,
-  builtinAgentsById,
   onSaved,
 }: {
-  forcePinSignal?: number;
   row: MandateRow;
   data: MandateConsoleData;
   lineage: AgentLineage;
-  builtinAgentsById: ReadonlyMap<string, string>;
   onSaved: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -1745,10 +1527,17 @@ export function MandateDetailView({
   // Bumped by the drift panel's "Test old vs new first" — the bench scrolls
   // itself into view and arms the pinned-vs-latest comparison.
   const [benchFocus, setBenchFocus] = useState(0);
-  useEffect(() => {
-    if (forcePinSignal > 0) setPinOpen(true);
-  }, [forcePinSignal]);
   const benchRef = useRef<HTMLDivElement | null>(null);
+
+  // ONE door to the one binding UI. `matrx:open-mandate-pin` is the platform
+  // event every surface already fires to say "let me bind this job"; the
+  // binding workspace at the top of this page listens for it and scrolls
+  // itself into view. Opening this fold too keeps the pointer visible for
+  // anyone who came here looking for the old editor.
+  const openTheBindingUi = () => {
+    setPinOpen(true);
+    window.dispatchEvent(new CustomEvent("matrx:open-mandate-pin"));
+  };
 
   useEffect(() => {
     const truth = row.codeTruth;
@@ -1830,25 +1619,31 @@ export function MandateDetailView({
           setTestOpen(true);
           setBenchFocus((n) => n + 1);
         }}
-        onOpenRebind={() => setPinOpen(true)}
+        onOpenRebind={openTheBindingUi}
       />
 
+      {/* 🚨 THE REBIND EDITOR IS GONE (2026-08-31). Choosing who fulfils a job
+          happens in ONE place now — the binding workspace at the top of this
+          page — at whichever rung you mean, with both inventories on screen and
+          the mapping beside the choice. This section is a DOOR to it, never a
+          second editor: two editors for one decision is exactly the divergence
+          that produced a dead agent select nobody could save through. */}
       <Section
-        title="Change pinned agent"
+        title="Who fulfils this job"
         meta={row.pinLabel}
         open={pinOpen}
         onToggle={setPinOpen}
       >
-        {/* key: MandateEditor seeds local state from props — remount per mandate */}
-        <MandateEditor
-          key={row.id}
-          mandate={row.mandate}
-          data={data}
-          builtinAgentsById={builtinAgentsById}
-          currentAgentId={row.agentId}
-          codeTruth={row.codeTruth}
-          onSaved={onSaved}
-        />
+        <div className="space-y-2 p-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            The holder, the rung it applies at, and the value mapping are all
+            chosen together in <strong>Who fulfils this job</strong> above — one
+            screen, three rungs (system, organization, just you).
+          </p>
+          <Button size="sm" variant="outline" onClick={openTheBindingUi}>
+            Open it
+          </Button>
+        </div>
       </Section>
 
       <div ref={benchRef}>

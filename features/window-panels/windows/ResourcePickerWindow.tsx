@@ -2,6 +2,7 @@
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
 import type { Resource } from "@/features/agents/resources/types";
@@ -58,15 +59,21 @@ export function ResourcePickerWindow({
       minHeight={300}
       overlayId="resourcePickerWindow"
     >
-      <ResourcePickerMenu
-        onResourceSelected={onResourceSelected}
-        onResourceDeselected={onResourceDeselected}
-        onClose={onClose}
-        attachmentCapabilities={attachmentCapabilities}
-        onSettingsClick={onSettingsClick}
-        onDebugClick={onDebugClick}
-        showDebugActive={showDebugActive}
-      />
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+          this, a right-click here is answered by whatever page sits
+          underneath. Page-local — this is a category-navigation picker
+          (Notes/Tasks/Files/Tables/…), not a single content record. */}
+      <NonEditableContextMenu sourceFeature="system" contentSource={{ type: "raw" }}>
+        <ResourcePickerMenu
+          onResourceSelected={onResourceSelected}
+          onResourceDeselected={onResourceDeselected}
+          onClose={onClose}
+          attachmentCapabilities={attachmentCapabilities}
+          onSettingsClick={onSettingsClick}
+          onDebugClick={onDebugClick}
+          showDebugActive={showDebugActive}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

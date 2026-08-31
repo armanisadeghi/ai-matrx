@@ -62,6 +62,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { useOpenImageAnnotationWindow } from "@/features/overlays/openers/imageAnnotationWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
@@ -1027,16 +1028,30 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
 
       {/* Description */}
       <div className="space-y-1">
-        <VoiceTextarea
-          ref={textareaRef}
-          className="w-full h-28 px-3 py-2 text-xs leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-xs placeholder:text-muted-foreground/50 focus:border-ring focus:bg-background"
-          style={{ fontSize: "16px" }}
-          placeholder="Describe the issue, feature request, or suggestion..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isSubmitting}
-        />
+        {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+            this, a right-click here is answered by whatever page sits
+            underneath. Editable — this textarea is the feedback description
+            itself, so it gets `EditableContextMenu` (auto-registers the
+            WidgetHandle too). */}
+        <EditableContextMenu
+          sourceFeature="system"
+          contentSource={{ type: "raw" }}
+          getTextarea={() => textareaRef.current}
+          onTextReplace={setDescription}
+          onTextInsertBefore={(text) => setDescription(text + description)}
+          onTextInsertAfter={(text) => setDescription(description + text)}
+        >
+          <VoiceTextarea
+            ref={textareaRef}
+            className="w-full h-28 px-3 py-2 text-xs leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-xs placeholder:text-muted-foreground/50 focus:border-ring focus:bg-background"
+            style={{ fontSize: "16px" }}
+            placeholder="Describe the issue, feature request, or suggestion..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isSubmitting}
+          />
+        </EditableContextMenu>
         <p className="text-[10px] text-muted-foreground">
           Ctrl+Enter to submit · Ctrl+V to paste screenshots
         </p>
