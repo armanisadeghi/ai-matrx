@@ -45,6 +45,13 @@ const SECTION_ICONS: Record<DatabaseToolSection, React.ReactNode> = {
   schema: <SlidersHorizontal className="h-5 w-5" />,
 };
 
+const databaseToolCatalogueText = databaseToolPages
+  .map(
+    (page) =>
+      `${databaseToolLabel(page)} — ${page.description} (${page.path})`,
+  )
+  .join("\n");
+
 function ToolCard({ page }: { page: DatabaseToolPage }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -135,6 +142,7 @@ export function DatabaseHubLanding() {
         section: p.section,
       })),
       database_tool_count: totalTools,
+      content: databaseToolCatalogueText,
       selection: window.getSelection()?.toString() || undefined,
     });
 

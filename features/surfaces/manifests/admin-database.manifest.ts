@@ -378,6 +378,7 @@ export function createAdminDatabaseScope(values: {
   default_schema: string;
   // alwaysAvailable: false → optional
   selection?: string;
+  content?: string;
   context?: Record<string, unknown>;
   database_tool_pages?: AdminDatabaseToolEntry[];
   database_tool_count?: number;
