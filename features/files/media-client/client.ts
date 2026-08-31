@@ -47,7 +47,10 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { fileHandler } from "@/features/files/handler/handler";
 import type { CloudFile, Visibility } from "@/features/files/types";
@@ -88,9 +91,9 @@ const credentials: CredentialsPort = {
  * and uploads cannot drift into different admission behavior.
  *
  * Guest requests deliberately carry no organization: the server admits the
- * fingerprint lane without one. Authenticated requests made before the active
- * organization bootstrap completes remain fail-closed at the server rather
- * than inventing a personal/default organization here.
+ * fingerprint lane without one. Authenticated requests never guess an
+ * organization; the session mint WAITS for the active-organization bootstrap
+ * (see `ensureSession` below) instead of burning refused requests at the gate.
  */
 async function filesFetch(
   input: RequestInfo | URL,
@@ -206,22 +209,135 @@ async function uploadMany(
   return { uploaded, failed, cancelled };
 }
 
+// --- organization admission for the session mint ---------------------------
+
+/**
+ * How long the mint waits for the active-organization bootstrap before giving
+ * up. The bootstrap is a rehydrate (IDB/localStorage) plus, on a cold boot, an
+ * idle-scheduled remote reconcile — seconds, not minutes. A wait that outlives
+ * this window is a broken bootstrap, and the mint says so rather than hanging
+ * forever or hammering a gate that will refuse it.
+ */
+const ORGANIZATION_ADMISSION_TIMEOUT_MS = 30_000;
+
+type OrganizationAdmission = "ready" | "unresolved";
+
+/**
+ * Resolve as soon as the active organization exists, or once the bootstrap has
+ * authoritatively resolved WITHOUT one. `null` means "still booting" — the
+ * caller keeps waiting rather than treating a hollow pre-hydration read as an
+ * answer.
+ */
+function readOrganizationAdmission(
+  state: unknown,
+): OrganizationAdmission | null {
+  const appContextState = state as Parameters<typeof selectOrganizationId>[0];
+  if (selectOrganizationId(appContextState)) return "ready";
+  if (selectOrgBootstrapResolved(appContextState)) return "unresolved";
+  return null;
+}
+
+function waitForOrganizationAdmission(): Promise<OrganizationAdmission> {
+  const store = getStoreSingleton();
+  if (!store) return Promise.resolve("unresolved");
+
+  const immediate = readOrganizationAdmission(store.getState());
+  if (immediate) return Promise.resolve(immediate);
+
+  return new Promise<OrganizationAdmission>((resolve) => {
+    let settled = false;
+    let unsubscribe: (() => void) | null = null;
+    const finish = (verdict: OrganizationAdmission) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      unsubscribe?.();
+      resolve(verdict);
+    };
+    const timer = setTimeout(
+      () => finish("unresolved"),
+      ORGANIZATION_ADMISSION_TIMEOUT_MS,
+    );
+    unsubscribe = store.subscribe(() => {
+      const verdict = readOrganizationAdmission(store.getState());
+      if (verdict) finish(verdict);
+    });
+    // The bootstrap can land between the first read and the subscription.
+    const raced = readOrganizationAdmission(store.getState());
+    if (raced) finish(raced);
+  });
+}
+
+/** The unresolved-organization report is once-per-transition, not per call:
+ * a media grid retrying its private pixels must not fan one condition into
+ * hundreds of identical screams. */
+let reportedUnresolvedOrganization = false;
+
+/**
+ * The file-session mint, deferred until this tab has an admission identity.
+ *
+ * The mint fires at boot (`AuthSessionWatcher`, the moment an authenticated
+ * identity exists) and again from every private-media retry — all before the
+ * app-context organization has hydrated. Sending those requests anyway is how
+ * a single user produced ~511 `[AUTH][REJECT] POST /files/session` rejections
+ * in ~35 minutes on 2026-08-31: refused at the gate, retried, refused again.
+ *
+ * So: guests mint immediately (the fingerprint lane carries no organization),
+ * and an authenticated mint waits for the organization to hydrate. If the
+ * bootstrap authoritatively resolves with NO organization, the mint is skipped
+ * and announced — never guessed, never burned against the gate.
+ */
+async function ensureSessionAfterOrganizationAdmission(
+  client: MatrxFilesClient<DurableSrc>,
+  opts?: { force?: boolean | undefined },
+): Promise<void> {
+  const credential = await credentials.get();
+  if (credential?.kind === "user") {
+    const admission = await waitForOrganizationAdmission();
+    if (admission !== "ready") {
+      if (!reportedUnresolvedOrganization) {
+        reportedUnresolvedOrganization = true;
+        diagnostics({
+          source: "files-session",
+          context: "organization-admission",
+          message:
+            "skipped the file-session mint: this tab has an authenticated " +
+            "identity but no active organization to be admitted under",
+          detail:
+            "Private media stays unavailable until an organization is " +
+            "selected; the mint re-runs the moment one is.",
+        });
+      }
+      return;
+    }
+    reportedUnresolvedOrganization = false;
+  }
+  await client.ensureSession(opts);
+}
+
 // --- the ONE client --------------------------------------------------------
 
-export const mediaFilesClient: MatrxFilesClient<DurableSrc> =
-  createMatrxFilesClient<DurableSrc>({
-    credentials,
-    filesBaseUrl: () => resolveFilesBaseUrl(),
-    // Cookies are per-host: the main backend and the standalone files host
-    // both serve durable byte URLs, so the session lands on BOTH.
-    sessionBases: [() => resolveBaseUrl(), () => resolveFilesBaseUrl()],
-    fetchImpl: filesFetch,
-    diagnostics,
-    metadata,
-    blobCache: { get: getCached, hydrate: hydrateFromIdb, set: setCached },
-    largeUploadTransport,
-    uploadMany,
-  });
+const filesClient = createMatrxFilesClient<DurableSrc>({
+  credentials,
+  filesBaseUrl: () => resolveFilesBaseUrl(),
+  // Cookies are per-host: the main backend and the standalone files host
+  // both serve durable byte URLs, so the session lands on BOTH.
+  sessionBases: [() => resolveBaseUrl(), () => resolveFilesBaseUrl()],
+  fetchImpl: filesFetch,
+  diagnostics,
+  metadata,
+  blobCache: { get: getCached, hydrate: hydrateFromIdb, set: setCached },
+  largeUploadTransport,
+  uploadMany,
+});
+
+/** The package client with ONE host override: the session mint waits for
+ * organization admission (above). Every other door is the package's. */
+export const mediaFilesClient: MatrxFilesClient<DurableSrc> = {
+  ...filesClient,
+  ensureSession: (opts) =>
+    ensureSessionAfterOrganizationAdmission(filesClient, opts),
+};
 
 /** The same instance through `@ai-matrx/media`'s port — the assignment is the
  * compile-time proof; no cast, no adapter body. */

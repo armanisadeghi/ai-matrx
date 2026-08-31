@@ -46,6 +46,7 @@ import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
 import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { mediaFilesClient } from "@/features/files/media-client/client";
 
 const AuthSessionWatcherImpl = dynamic(
@@ -91,15 +92,22 @@ export default function AuthSessionWatcher() {
   // deliberately NOT updated on later changes: a later change IS the defect.
   const bootedIdRef = useRef<string | null>(null);
   const userAuthId = useAppSelector((state) => state.userAuth.id);
+  // App context hydrates after the first client render, and the file-session
+  // mint is organization-admitted: minting before it lands is refused at the
+  // server gate. The client waits for hydration on its own; re-running here
+  // when the selection arrives (or changes) covers a bootstrap slower than
+  // that wait and an in-session organization switch.
+  const organizationId = useAppSelector(selectOrganizationId);
   useEffect(() => {
     if (!bootedIdRef.current && userAuthId) {
       bootedIdRef.current = userAuthId;
-      // Establish the durable-file-URL session cookie as soon as this tab has
-      // an authenticated identity (app load with an existing session). Fire
-      // and forget — private media renders retry via force on error.
-      void mediaFilesClient.ensureSession();
     }
-  }, [userAuthId]);
+    if (!userAuthId) return;
+    // Establish the durable-file-URL session cookie as soon as this tab has
+    // an authenticated identity (app load with an existing session). Fire
+    // and forget — private media renders retry via force on error.
+    void mediaFilesClient.ensureSession();
+  }, [userAuthId, organizationId]);
 
   const checkIdentity = useCallback(async () => {
     const booted = bootedIdRef.current;

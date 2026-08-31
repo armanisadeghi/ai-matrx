@@ -105,6 +105,17 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-31 — The file-session mint waits for organization admission.** `POST /files/session`
+  is organization-admitted, but the mint fires at boot (`AuthSessionWatcher`, the moment an
+  authenticated identity exists) and again on every private-media retry — all before app context
+  hydrates. One user produced ~511 `[AUTH][REJECT] POST /files/session` rejections in ~35 minutes
+  (server app_log family `40b5275c-812c-426a-bf73-d8debb43dd78`, 2026-08-31T00:37–01:11Z).
+  `media-client/client.ts` now defers an authenticated mint until the active organization hydrates
+  (guests mint immediately — the fingerprint lane carries no organization), and skips it with one
+  loud diagnostic when the bootstrap authoritatively resolves with no organization. Nothing is
+  guessed; the posture stays fail-closed, minus the burned requests. `AuthSessionWatcher` re-mints
+  when the selection arrives or changes. Covered by
+  `media-client/client.organization-context.test.ts`.
 - **2026-08-30 — Google Picker stays interactive above Files windows.** The provider injects its
   modal at z-index 1000/1001, below Matrx floating windows; global picker-layer overrides now place
   its scrim and dialog at the application ceiling so ordinary clicks reach Drive items and actions.
