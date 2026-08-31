@@ -213,7 +213,25 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
   contextOverridesHint:
     "Per-key values that override what this job supplies into context policies.",
   llmOverridesHint:
-    'Override the model settings for this job. Example: { "temperature": 0.2, "max_output_tokens": 1500 }',
+    "Which model runs this job, and the settings it runs with. Left alone, the holder's own model and settings are used.",
   jsonExtractionHint:
     "How this job pulls a structured result out of the answer while it is still being written. Leave empty for off.",
+};
+
+/**
+ * 🚨 THE OVERRIDES PANEL, TOLD WHERE IT IS (VISION-RECONCILIATION B14).
+ *
+ * `RunConfigOverrides` is the canonical settings-override editor and it is
+ * mounted here unchanged — but it was mounted with ITS host's words, so a
+ * binding screen printed *"Overrides apply to this conversation only"* about a
+ * row that is stored and applies to every run of this job, for everybody the
+ * rung covers. Arman found it; the sentence was simply false. Same wording-prop
+ * discipline as everything else in this file.
+ */
+export const JOB_OVERRIDE_WORDS = {
+  heading: "Model settings for this binding",
+  scopeNote:
+    "These are stored on this binding and apply to every run of this job, for everyone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
+  noModelNote:
+    "No model resolved for this holder yet — its settings appear once it is read.",
 };

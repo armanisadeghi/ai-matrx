@@ -16,6 +16,14 @@ import { cn } from "@/styles/themes/utils";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
+import type { RunConfigOverridesWords } from "@/features/agents/components/run-controls/RunConfigOverrides";
+
+/** The stored blob, or null when it is absent / not an object. */
+const asJsonObject = (value: unknown): Record<string, unknown> | null =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 
 /**
  * Bottom-of-page Advanced fold. Covers every `agx_shortcut` column
@@ -30,10 +38,19 @@ import { ProTextarea } from "@/components/official/ProTextarea";
  *   • Default user input           (text)
  *   • Response density             (enum)
  *   • Bypass gate seconds          (int, only when the gate is enabled)
- *   • Default variables            (jsonb)
- *   • Context overrides            (jsonb)
- *   • LLM overrides                (jsonb)
- *   • JSON extraction              (jsonb)
+ *   • Model & settings             (jsonb `llm_overrides`, edited through THE
+ *                                   canonical model picker + settings panel —
+ *                                   never a JSON textarea)
+ *   • Default variables            (jsonb, behind the raw-JSON fold)
+ *   • Context overrides            (jsonb, behind the raw-JSON fold)
+ *   • JSON extraction              (jsonb, behind the raw-JSON fold)
+ *
+ * 🚨 RAW JSON IS NEVER THE PRIMARY EDITOR (Arman, 2026-08-31): *"users are not
+ * expected to enter objects and we should, at no time, force them to do such a
+ * thing."* The model — the one of the four that has a canonical control — gets
+ * that control. The three that do not are kept, functional and unlosable,
+ * behind a fold that says out loud what they are and that they are not
+ * required.
  */
 
 export type AdvancedFields = Pick<
@@ -103,6 +120,8 @@ export function AdvancedSection({
   omit,
   words,
   showLucideSources = true,
+  overridesInstanceKey,
+  overridesWords,
 }: {
   value: AdvancedFields;
   onChange: <K extends keyof AdvancedFields>(
@@ -132,9 +151,19 @@ export function AdvancedSection({
    * the default.
    */
   showLucideSources?: boolean;
+  /**
+   * A stable id naming the RECORD being edited (`shortcut-<id>`,
+   * `mandate-<id>`, …). It keys the scratch override draft that
+   * `StoredModelOverridesField` uses to drive the canonical settings panel, so
+   * two editors open at once never share one.
+   */
+  overridesInstanceKey: string;
+  /** The overrides panel's own words, in the host's domain. */
+  overridesWords?: Partial<RunConfigOverridesWords>;
 }) {
   const w = { ...SHORTCUT_ADVANCED_WORDS, ...words };
   const [open, setOpen] = useState(false);
+  const [rawOpen, setRawOpen] = useState(false);
   const hidden = (field: keyof AdvancedFields) => omit?.includes(field) ?? false;
 
   return (
@@ -276,55 +305,95 @@ export function AdvancedSection({
             </FieldRow>
           )}
 
-          <JsonFieldRow
-            title="Default variables"
-            hint={`Pre-filled values for the agent variables — overrides each variable's built-in default. Example: { "language": "en" }`}
-            value={value.defaultVariables}
-            onChange={(v) =>
-              onChange(
-                "defaultVariables",
-                v as AgentShortcut["defaultVariables"],
-              )
+          {/* 🚨 THE MODEL IS CHOSEN, NOT TYPED (Arman, 2026-08-31;
+              VISION-RECONCILIATION B15/B16). This was a raw monospace textarea
+              you entered `{"model": "…", "temperature": 0.2}` into — and on the
+              one binding UI it was the ONLY way to pick a model at all. It is
+              now the canonical model picker plus the canonical settings panel,
+              both mounted unchanged. */}
+          <StoredModelOverridesField
+            instanceKey={`${overridesInstanceKey}-llm`}
+            value={asJsonObject(value.llmOverrides)}
+            onChange={(next) =>
+              onChange("llmOverrides", next as AgentShortcut["llmOverrides"])
             }
-            disabled={disabled}
-            placeholder="{}"
-          />
-
-          <JsonFieldRow
-            title="Context overrides"
-            hint={w.contextOverridesHint}
-            value={value.contextOverrides}
-            onChange={(v) =>
-              onChange(
-                "contextOverrides",
-                v as AgentShortcut["contextOverrides"],
-              )
-            }
-            disabled={disabled}
-            placeholder="{}"
-          />
-
-          <JsonFieldRow
-            title="LLM overrides"
             hint={w.llmOverridesHint}
-            value={value.llmOverrides}
-            onChange={(v) =>
-              onChange("llmOverrides", v as AgentShortcut["llmOverrides"])
-            }
+            words={overridesWords}
             disabled={disabled}
-            placeholder="{}"
           />
 
-          <JsonFieldRow
-            title="JSON extraction"
-            hint={w.jsonExtractionHint}
-            value={value.jsonExtraction}
-            onChange={(v) =>
-              onChange("jsonExtraction", v as AgentShortcut["jsonExtraction"])
-            }
-            disabled={disabled}
-            placeholder="null"
-          />
+          {/* 🚨 RAW JSON IS A DEVELOPER'S BACK DOOR, NEVER THE PRIMARY EDITOR.
+              Three fields still have no control of their own, and the honest
+              thing is to say so rather than to present typing an object as the
+              normal way to answer a question. They stay fully functional —
+              nothing stored is lost — behind a fold that names what they are
+              and what is missing. The model settings, which DO have a control,
+              are above and are not repeated here. */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setRawOpen((v) => !v)}
+              className="flex w-full items-center gap-2 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform",
+                  !rawOpen && "-rotate-90",
+                )}
+              />
+              Raw JSON — for developers
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
+                Three settings that do not have a control yet. Nothing here is
+                required.
+              </span>
+            </button>
+
+            {rawOpen && (
+              <div className="space-y-1 rounded-lg border border-dashed border-border bg-background/60 px-3">
+                <JsonFieldRow
+                  title="Default variables"
+                  hint={`Pre-filled values for the agent variables — overrides each variable's built-in default. Example: { "language": "en" }`}
+                  value={value.defaultVariables}
+                  onChange={(v) =>
+                    onChange(
+                      "defaultVariables",
+                      v as AgentShortcut["defaultVariables"],
+                    )
+                  }
+                  disabled={disabled}
+                  placeholder="{}"
+                />
+
+                <JsonFieldRow
+                  title="Context overrides"
+                  hint={w.contextOverridesHint}
+                  value={value.contextOverrides}
+                  onChange={(v) =>
+                    onChange(
+                      "contextOverrides",
+                      v as AgentShortcut["contextOverrides"],
+                    )
+                  }
+                  disabled={disabled}
+                  placeholder="{}"
+                />
+
+                <JsonFieldRow
+                  title="JSON extraction"
+                  hint={w.jsonExtractionHint}
+                  value={value.jsonExtraction}
+                  onChange={(v) =>
+                    onChange(
+                      "jsonExtraction",
+                      v as AgentShortcut["jsonExtraction"],
+                    )
+                  }
+                  disabled={disabled}
+                  placeholder="null"
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

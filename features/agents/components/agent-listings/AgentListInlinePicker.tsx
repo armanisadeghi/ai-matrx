@@ -92,6 +92,9 @@ export function AgentListInlinePicker({
     activeAgentIdOverride: activeAgentId,
     initialTab,
     includeSystemInAll,
+    // The restriction has to reach the CORE, not just the tab strip — see
+    // `AgentListCoreOptions.visibleTabs`.
+    visibleTabs,
     excludeAgentIds,
   });
 

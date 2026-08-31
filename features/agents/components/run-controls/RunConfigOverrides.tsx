@@ -23,7 +23,10 @@
  * does not declare surface in an amber caution strip (never silently hidden),
  * each with its own reset.
  *
- * Scoped to THIS conversation — never edits the stored agent.
+ * Scoped to the HOST that mounts it — never edits the stored agent. What the
+ * override actually covers is the host's fact and is said in the host's words
+ * (`RunConfigOverridesWords`): per-conversation under the Smart Input, per
+ * stored binding on a binding screen.
  */
 
 import { useEffect } from "react";
@@ -53,11 +56,43 @@ import { cn } from "@/lib/utils";
 const deepEqual = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
 
+/**
+ * 🚨 THIS PANEL'S OWN WORDS — a wording PROP at a second call site, never a
+ * fork (the same discipline as `AdvancedSectionWords` / `SettingsSectionWords`
+ * / `SurfaceVariableBinding.sourceLabels`).
+ *
+ * The mechanic is fixed; what an override MEANS is the host's fact. Mounted
+ * under the Smart Input this really is per-conversation. Mounted on a BINDING
+ * screen it configures a stored row that runs every time the job runs — and it
+ * was printing *"Overrides apply to this conversation only"* there, on a screen
+ * with no conversation on it (Arman, 2026-08-31; VISION-RECONCILIATION B14). A
+ * screen that says something untrue is the fourth law's exact target.
+ */
+export interface RunConfigOverridesWords {
+  /** The small caps header above the rows. */
+  heading: string;
+  /** WHAT THESE OVERRIDES COVER — the sentence under the rows. */
+  scopeNote: string;
+  /** Said when no model has been resolved for this host yet. */
+  noModelNote: string;
+}
+
+export const CONVERSATION_OVERRIDE_WORDS: RunConfigOverridesWords = {
+  heading: "Advanced settings",
+  scopeNote:
+    "Overrides apply to this conversation only. Resetting a value returns it to the agent default.",
+  noModelNote: "No model resolved for this conversation yet.",
+};
+
 export function RunConfigOverrides({
   conversationId,
+  words,
 }: {
   conversationId: string;
+  /** Omit any key to keep the per-conversation wording. */
+  words?: Partial<RunConfigOverridesWords>;
 }) {
+  const w = { ...CONVERSATION_OVERRIDE_WORDS, ...words };
   const dispatch = useAppDispatch();
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
@@ -159,7 +194,7 @@ export function RunConfigOverrides({
     <div className="border-t border-border">
       <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Advanced settings
+          {w.heading}
         </span>
         {overriddenCount > 0 && (
           <span className="rounded-full bg-primary/15 px-1.5 text-[9px] font-semibold text-primary">
@@ -203,7 +238,7 @@ export function RunConfigOverrides({
             <p className="text-[11px] text-muted-foreground">
               {effectiveModelId
                 ? "This model doesn't declare adjustable settings."
-                : "No model resolved for this conversation yet."}
+                : w.noModelNote}
             </p>
           ) : (
             groups.map((group) => (
@@ -237,8 +272,7 @@ export function RunConfigOverrides({
           )}
 
           <p className="text-[10px] leading-snug text-muted-foreground">
-            Overrides apply to this conversation only. Resetting a value
-            returns it to the agent default.
+            {w.scopeNote}
           </p>
       </div>
     </div>

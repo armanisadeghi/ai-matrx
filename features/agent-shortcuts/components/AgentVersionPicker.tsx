@@ -47,8 +47,18 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import { CopyableUuid } from "./CopyableUuid";
 
 interface AgentVersionPickerProps {
-  /** Live-agent UUID the shortcut points at. May be null while the caller is still selecting an agent. */
-  agentId: string | null;
+  /**
+   * Live-agent UUID this pin is about.
+   *
+   * 🚨 NON-NULLABLE, DELIBERATELY (Arman, 2026-08-31; VISION-RECONCILIATION B6):
+   * *"that question may only be asked AFTER an intelligence is selected."* The
+   * version question is meaningless without an agent, so the caller gates the
+   * whole block instead of mounting this with `null` and letting it print
+   * empty-case copy. The type is what stops that state coming back — every call
+   * site (`ScopeHolderBar`, `ShortcutForm`, `ShortcutQuickCreateBody`) renders
+   * this only once an agent is chosen.
+   */
+  agentId: string;
   /** The currently pinned version id, or null when `useLatest` is true. */
   agentVersionId: string | null;
   /** When true, the shortcut follows the agent's live version at runtime. */
@@ -129,9 +139,7 @@ export function AgentVersionPicker({
 }: AgentVersionPickerProps) {
   const dispatch = useAppDispatch();
 
-  const agent = useAppSelector((state) =>
-    agentId ? selectAgentById(state, agentId) : undefined,
-  );
+  const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const liveVersionNumber = agent?.version ?? null;
 
   // Folded by default WHEN foldable; a non-collapsible call site is always
@@ -150,13 +158,6 @@ export function AgentVersionPicker({
   const autoPinnedForAgent = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!agentId) {
-      setVersions([]);
-      setFetchError(null);
-      fetchedForAgent.current = null;
-      autoPinnedForAgent.current = null;
-      return;
-    }
     if (fetchedForAgent.current === agentId) return;
 
     fetchedForAgent.current = agentId;
@@ -187,7 +188,6 @@ export function AgentVersionPicker({
   // upward so the form state matches the UI (dropdown shows the right entry
   // and the DB write is already correct).
   useEffect(() => {
-    if (!agentId) return;
     if (disabled) return;
     if (useLatest) return;
     if (agentVersionId) return;
@@ -243,21 +243,20 @@ export function AgentVersionPicker({
   /**
    * THE FOLD'S OWN SENTENCE. A collapsed control must answer the question it
    * hides, or it is just a thing to click: every state — latest, pinned, still
-   * reading, nothing chosen — has a word here, and none of them is silence.
+   * reading — has a word here, and none of them is silence. "Nothing chosen"
+   * is no longer among them: this control is not mounted before an agent is.
    */
-  const pinSummary = !agentId
-    ? "No agent chosen yet"
-    : useLatest
-      ? "Follows the latest version"
-      : selectedVersion
-        ? `Pinned to v${selectedVersion.version_number}${
-            formatChangedAt(selectedVersion.changed_at)
-              ? ` · ${formatChangedAt(selectedVersion.changed_at)}`
-              : ""
-          }`
-        : loading
-          ? "Reading this agent's versions…"
-          : "No version pinned";
+  const pinSummary = useLatest
+    ? "Follows the latest version"
+    : selectedVersion
+      ? `Pinned to v${selectedVersion.version_number}${
+          formatChangedAt(selectedVersion.changed_at)
+            ? ` · ${formatChangedAt(selectedVersion.changed_at)}`
+            : ""
+        }`
+      : loading
+        ? "Reading this agent's versions…"
+        : "No version pinned";
 
   if (collapsible && !expanded) {
     return (
@@ -321,7 +320,7 @@ export function AgentVersionPicker({
           )}
         </div>
         <div className="shrink-0 pt-0.5">
-          <CopyableUuid value={agentId ?? null} label="id" />
+          <CopyableUuid value={agentId} label="id" />
         </div>
       </div>
 
@@ -342,20 +341,14 @@ export function AgentVersionPicker({
         <Select
           value={selectValue || undefined}
           onValueChange={handleSelectChange}
-          disabled={disabled || useLatest || !agentId}
+          disabled={disabled || useLatest}
         >
           <SelectTrigger
             id="agent-version-pick"
             className={cn("h-9", useLatest && "opacity-60")}
           >
             <SelectValue
-              placeholder={
-                !agentId
-                  ? "Select an agent first"
-                  : loading
-                    ? "Loading versions…"
-                    : "Choose a version"
-              }
+              placeholder={loading ? "Loading versions…" : "Choose a version"}
             />
           </SelectTrigger>
           <SelectContent>
@@ -387,9 +380,7 @@ export function AgentVersionPicker({
             })}
             {versions.length === 0 && !loading && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                {agentId
-                  ? "No versions recorded yet."
-                  : "Select an agent to see its versions."}
+                No versions recorded yet.
               </div>
             )}
           </SelectContent>
@@ -445,7 +436,7 @@ export function AgentVersionPicker({
           id="use-latest"
           checked={useLatest}
           onCheckedChange={handleUseLatestToggle}
-          disabled={disabled || !agentId}
+          disabled={disabled}
         />
       </div>
 

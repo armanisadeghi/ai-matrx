@@ -53,6 +53,26 @@ export interface AgentListCoreOptions {
    * keeping them to their own tab. See `makeSelectFilteredAgents`.
    */
   includeSystemInAll?: boolean;
+  /**
+   * 🚨 THE OWNERSHIP TABS THIS CALL SITE MAY REACH — a HARD restriction, not a
+   * default.
+   *
+   * `AgentListTabs` already hides the buttons this list omits, but hiding a
+   * button never emptied the list behind it: the active tab lives in the
+   * consumer's REMEMBERED redux state, and `initialTab` is applied exactly once
+   * per mount (`defaultTabAppliedRef`). So a person who had been on "Mine" and
+   * then moved a control that narrows the picker got the personal catalogue
+   * with the tab bar removed — the forbidden list, and no way to see that it
+   * was forbidden. That is the defect Arman named on the mandate binding
+   * screen's global rung (VISION-RECONCILIATION D2, 2026-08-31: the picker
+   * opened on "Mine · 40").
+   *
+   * Given here, the tab is COERCED into the allowed set on every change of it,
+   * not just at mount — so a restriction that arrives later is enforced later.
+   * The tab it lands on is `initialTab` when that is itself allowed, otherwise
+   * the first allowed tab.
+   */
+  visibleTabs?: readonly AgentTab[];
   /** Hide records that are invalid for this call site (for example, a seed
    * member cannot also be chosen as an Orchestra conductor). */
   excludeAgentIds?: readonly string[];
@@ -67,6 +87,24 @@ export interface AgentListCoreOptions {
  */
 export const HOVER_GRACE_MS = 900;
 
+/**
+ * THE RULE, ALONE AND TESTABLE: which tab a restricted picker must land on.
+ *
+ * Returns `null` when the current tab is already allowed (nothing to do), and
+ * otherwise the tab to switch to — `initialTab` when that is itself allowed,
+ * else the first allowed tab. See `AgentListCoreOptions.visibleTabs` for the
+ * defect this closes.
+ */
+export function coerceVisibleTab(
+  current: AgentTab,
+  allowed: readonly AgentTab[],
+  initialTab?: AgentTab,
+): AgentTab | null {
+  if (allowed.length === 0) return null;
+  if (allowed.includes(current)) return null;
+  return initialTab && allowed.includes(initialTab) ? initialTab : allowed[0];
+}
+
 export function useAgentListCore({
   consumerId,
   onSelect,
@@ -74,6 +112,7 @@ export function useAgentListCore({
   activeAgentIdOverride,
   initialTab,
   includeSystemInAll = false,
+  visibleTabs,
   excludeAgentIds = [],
 }: AgentListCoreOptions) {
   const dispatch = useAppDispatch();
@@ -176,6 +215,24 @@ export function useAgentListCore({
     consumer.tab,
     consumer.setTab,
   ]);
+
+  // 🚨 THE RESTRICTION IS ENFORCED, NOT DECORATED. A hidden tab whose rows are
+  // still the ones being listed is worse than an offered one: the person sees a
+  // catalogue this call site forbids and no control that explains why. The tab
+  // is therefore coerced into the allowed set whenever it falls outside it —
+  // including long after mount, when a control elsewhere on the page narrows
+  // what this picker may reach. Keyed by the joined list so an inline array
+  // literal does not re-fire this every render.
+  const allowedTabsKey = visibleTabs ? visibleTabs.join(",") : "";
+  useEffect(() => {
+    if (!allowedTabsKey) return;
+    const next = coerceVisibleTab(
+      consumer.tab,
+      allowedTabsKey.split(",") as AgentTab[],
+      initialTab,
+    );
+    if (next) consumer.setTab(next);
+  }, [allowedTabsKey, initialTab, consumer.tab, consumer.setTab]);
 
   useEffect(() => {
     ensureLoaded();

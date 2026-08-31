@@ -118,7 +118,7 @@ import {
   sourcesFor,
 } from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
-import { coverageLine, isFed } from "./words";
+import { coverageLine, isFed, JOB_OVERRIDE_WORDS } from "./words";
 import { writeReportStillDescribesDraft } from "./write-report-life";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { BatchMode } from "./batch/BatchMode";
@@ -1380,7 +1380,13 @@ function BindingDraft({
               {settingsOpen ? (
                 overridesReady ? (
                   <div className="mt-2 space-y-2">
-                    <RunConfigOverrides conversationId={overridesId} />
+                    <RunConfigOverrides
+                      conversationId={overridesId}
+                      // B14 — the canonical panel, told where it is. Its
+                      // default sentence ("this conversation only") is a lie
+                      // on a screen that stores a binding.
+                      words={JOB_OVERRIDE_WORDS}
+                    />
                     <EffectiveConfigLayers
                       pins={data.pins}
                       bindingOverrides={storedOverrides}

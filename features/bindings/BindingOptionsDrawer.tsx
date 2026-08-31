@@ -75,7 +75,11 @@ import {
   writePresentation,
   type PresentationOwner,
 } from "./treatment-writer";
-import { JOB_ADVANCED_WORDS, JOB_SETTINGS_WORDS } from "./words";
+import {
+  JOB_ADVANCED_WORDS,
+  JOB_OVERRIDE_WORDS,
+  JOB_SETTINGS_WORDS,
+} from "./words";
 
 type LoadState =
   | { status: "idle" }
@@ -473,6 +477,8 @@ export function BindingOptionsDrawer({
                 disabled={disabled || busy}
                 omit={["description"]}
                 words={JOB_ADVANCED_WORDS}
+                overridesInstanceKey={`mandate-treatment-${owner.mandateId}`}
+                overridesWords={JOB_OVERRIDE_WORDS}
                 // A no-code job screen never hands its user off to an icon
                 // LIBRARY's developer site. The in-app icon gallery lists
                 // every name that works here, so nothing is lost.

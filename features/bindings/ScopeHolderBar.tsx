@@ -20,13 +20,18 @@
 // (`agent.mandate_binding.principal_type`) and has no project or task rung:
 // offering one would be a control that cannot be saved.
 
-import { Workflow as WorkflowIcon } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { AlertTriangle, Workflow as WorkflowIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import { AgentVersionPicker } from "@/features/agent-shortcuts/components/AgentVersionPicker";
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
 import { AGENT_SCOPES, type AgentScope } from "@/features/agent-shortcuts/constants";
@@ -124,6 +129,60 @@ function scopeToRung(scope: AgentScope): BindingRung {
   return "user";
 }
 
+/**
+ * 🚨 WHAT MAY HOLD THIS JOB AT THIS RUNG — a HARD restriction on the picker,
+ * never a warning after the fact.
+ *
+ * Arman, 2026-08-31: *"why would anything allow me to connect anything other
+ * than system agents?"* — and he rejected warn-and-allow by name. Before this,
+ * `AgentListDropdown` was mounted here with NO restriction props at all, so the
+ * system rung opened on **Mine · 40** of the admin's own personal agents and the
+ * only protection was `GlobalBindAgentGuard` refusing at save time.
+ *
+ * The correct behaviour was already in this repo and is reused verbatim —
+ * `ShortcutForm`'s global-scope branch (`initialTab="system"`, the sentence,
+ * the destructive alert on a non-system pin). `GlobalBindAgentGuard` stays as
+ * the BELT for the API path; this is the door.
+ *
+ * The ladder, said as a rule about who breaks:
+ *   · **system rung** — everybody on the platform runs this, so only a SYSTEM
+ *     agent may hold it. A personal agent breaks every user the moment its
+ *     owner renames, un-shares or archives it.
+ *   · **org rung** — everyone in one organization runs this, so a personal
+ *     agent is the same defect at organization size. Shared and system agents
+ *     only.
+ *   · **user rung** — your own answer, your own agents. Unrestricted, and
+ *     correctly so (VISION-RECONCILIATION D3).
+ */
+function holderRestriction(rung: BindingRung): {
+  visibleTabs?: readonly AgentTab[];
+  initialTab?: AgentTab;
+  includeSystemInAll?: boolean;
+  /** The sentence printed beside the picker. `null` at the unrestricted rung. */
+  sentence: string | null;
+} {
+  switch (rung) {
+    case "global":
+      return {
+        visibleTabs: ["system"],
+        initialTab: "system",
+        includeSystemInAll: true,
+        sentence:
+          "The system rung runs for every user on the platform, so only system agents can be bound here.",
+      };
+    case "org":
+      return {
+        visibleTabs: ["shared", "system"],
+        initialTab: "shared",
+        includeSystemInAll: true,
+        sentence:
+          "An organization's answer runs for everyone in it, so only agents shared with the organization — or system agents — can be bound here.",
+      };
+    default:
+      return { sentence: null };
+  }
+}
+
 export function ScopeHolderBar({
   rung,
   organizationId,
@@ -138,6 +197,33 @@ export function ScopeHolderBar({
   ladderLine,
   disabled = false,
 }: ScopeHolderBarProps) {
+  const dispatch = useAppDispatch();
+  const restriction = holderRestriction(rung);
+
+  // The system catalogue is only in the slice after a FULL list fetch, and the
+  // restriction below is what makes it the only catalogue offered at the system
+  // rung — so fetch it exactly when that rung is standing, the same trigger
+  // `ShortcutForm` uses for the same reason.
+  const restricted = restriction.sentence !== null;
+  useEffect(() => {
+    if (!restricted) return;
+    dispatch(fetchAgentsListFull());
+  }, [restricted, dispatch]);
+
+  // 🚨 THE BELT ON A PIN THAT ALREADY EXISTS. Restricting the picker stops a
+  // new bad choice; it says nothing about a row bound before the restriction
+  // existed, or through the API. `ShortcutForm` prints exactly this alert, and
+  // a screen that shows a forbidden holder without saying so is the lie the
+  // fourth law forbids. Silent until the catalogue is actually read — an empty
+  // list is "not loaded", never "not a system agent".
+  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const systemHolderViolation = useMemo(() => {
+    if (rung !== "global") return false;
+    if (holder.kind !== "agent" || !holder.agentId) return false;
+    if (builtinAgents.length === 0) return false;
+    return !builtinAgents.some((a) => a.id === holder.agentId);
+  }, [rung, holder.kind, holder.agentId, builtinAgents]);
+
   return (
     <section className="rounded-xl border border-border bg-card">
       <header className="border-b border-border px-3 py-2">
@@ -215,10 +301,23 @@ export function ScopeHolderBar({
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             Holder
           </p>
+          {/* WHO MAY HOLD THIS, SAID BEFORE THE PICKER IS OPENED — the rule,
+              not an apology after a refusal. `holderRestriction()` carries the
+              reason and the props that enforce it together, so the sentence
+              can never drift from what the list does. */}
+          {restriction.sentence ? (
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              {restriction.sentence}
+            </p>
+          ) : null}
           <div className="flex flex-wrap items-center gap-1.5">
             <AgentListDropdown
               consumerId={`one-binding-holder-${job.mandateKey}`}
               activeAgentId={holder.kind === "agent" ? holder.agentId : null}
+              visibleTabs={restriction.visibleTabs}
+              initialTab={restriction.initialTab}
+              includeSystemInAll={restriction.includeSystemInAll}
+              systemTabLabel="System"
               label={
                 holder.kind === "agent" && holder.agentId
                   ? "Change agent"
@@ -329,6 +428,15 @@ export function ScopeHolderBar({
               come back when the intelligence exists.
             </p>
           )}
+
+          {systemHolderViolation ? (
+            <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-[11px] leading-relaxed text-destructive">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              This holder is NOT a system agent, and the system rung runs for
+              every user on the platform. Duplicate it into a system agent
+              through the system-agents admin, then bind the copy.
+            </p>
+          ) : null}
         </div>
 
         {/* ── THE JOB ── */}

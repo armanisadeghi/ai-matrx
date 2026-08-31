@@ -702,6 +702,12 @@ export function ShortcutForm({
               }}
               activeAgentId={formData.agentId}
               initialTab="system"
+              // 🚨 HARD, not a default. `initialTab` alone is applied once per
+              // mount and loses to the consumer's remembered tab, so the
+              // forbidden catalogue was still one click (or one remembered
+              // session) away — the same hole VISION-RECONCILIATION D2 found on
+              // the mandate binding screen's system rung.
+              visibleTabs={["system"]}
               includeSystemInAll
               autoFocusSearch={false}
               className="h-80 rounded-md border border-border bg-card"
@@ -717,16 +723,28 @@ export function ShortcutForm({
             )}
           </div>
         )}
-        <AgentVersionPicker
-          agentId={formData.agentId}
-          agentVersionId={formData.agentVersionId}
-          useLatest={formData.useLatest}
-          onAgentVersionIdChange={(next) =>
-            handleChange("agentVersionId", next)
-          }
-          onUseLatestChange={(next) => handleChange("useLatest", next)}
-          disabled={saving}
-        />
+        {/* 🚨 THE VERSION QUESTION IS ASKED AFTER THE INTELLIGENCE IS CHOSEN,
+            NEVER BEFORE (Arman, 2026-08-31; VISION-RECONCILIATION B6). This
+            block used to render unconditionally, so the form asked "pin a
+            version or follow the latest?" about nothing — and the picker had
+            grown empty-case copy ("No agent chosen yet", "Select an agent to
+            see its versions") to paper over a state it should never have been
+            in. STRUCTURALLY gated, exactly as `ScopeHolderBar` already gates it
+            on the mandate binding screen; the empty-case copy is deleted, and
+            `AgentVersionPicker.agentId` is now non-nullable so no call site can
+            reintroduce the state. */}
+        {formData.agentId ? (
+          <AgentVersionPicker
+            agentId={formData.agentId}
+            agentVersionId={formData.agentVersionId}
+            useLatest={formData.useLatest}
+            onAgentVersionIdChange={(next) =>
+              handleChange("agentVersionId", next)
+            }
+            onUseLatestChange={(next) => handleChange("useLatest", next)}
+            disabled={saving}
+          />
+        ) : null}
       </div>
 
       <Separator />

@@ -134,6 +134,9 @@ export function AgentListDropdown({
     activeAgentIdOverride: activeAgentIdProp,
     initialTab,
     includeSystemInAll,
+    // The restriction has to reach the CORE, not just the tab strip — see
+    // `AgentListCoreOptions.visibleTabs`.
+    visibleTabs,
     excludeAgentIds,
   });
 
