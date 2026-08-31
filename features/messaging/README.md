@@ -199,6 +199,7 @@ import {
 The authenticated layout includes:
 
 - `<MessagingInitializer />` - Loads only after Redux has identity + access token; the canonical conversation reader also re-resolves the Supabase session and retries once if the authenticated RPC still reaches PostgREST as `anon`
+- Realtime detail refreshes pause quietly when the shared reader proves the browser session is unavailable; this expected auth-lifecycle state never enters the red console-error capture lane, while genuine refresh failures still do.
 - `<MessagingSideSheet />` - Side panel UI
 
 The header includes:
@@ -577,6 +578,7 @@ sequenceDiagram
 
 ## Change Log
 
+- **2026-08-31 — session expiry no longer manufactures a messaging system error.** The canonical reader still refuses anonymous requests and retries recoverable auth gaps; `MessagingInitializer` now classifies its deliberate `SessionUnavailableError` as an auth-lifecycle pause instead of emitting `console.error`. Genuine conversation-refresh failures remain in the red capture lane, with a forcing regression test for both branches.
 - **2026-08-25 — surface context and failure states now stay truthful at the point of action.** The route passes its live `matrx-user/messages` scope into the one list and thread context menu; the focused conversation/message overlays its exact identity, sender, body, and timestamp so actions no longer run against only generic pane text. Initial conversation-load failures are now visible and retryable, mark-as-read failures no longer disappear, mobile composer/list controls meet the 44px target, raw theme branches were replaced in the touched route UI, and conversation-menu navigation uses a real link instead of `window.location.assign`. `/messages/admin` now inventories the Tier 1 route, windows, components, and Redux owner.
 - **2026-08-25 — effective actors no longer borrow the audit principal's identity.** Agent-mediated messages render their `metadata.actor_label` instead of the authenticated sender's profile; Codex review labels are humanized as `Codex · <task id>` so the originating task remains findable. Agent bubbles never use Arman's avatar, and human review messages are treated as the current user's messages only when `sender_id` also matches.
 - **2026-08-25 — messaging recovers the real Supabase session boundary.** `LazyMessagingInitializer` waits for Redux identity + access token, and `conversationsWithDetails.ts` uses `runWithSessionRetry` for both first-page and paginated reads. If PostgREST still sees `anon`, the ONE reader re-resolves the browser session and retries exactly once; ordinary permission denials are not retried.

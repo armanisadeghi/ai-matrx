@@ -20,6 +20,7 @@ import {
   fetchConversationsWithDetails,
   nextConversationsCursor,
 } from "@/features/messaging/data/conversationsWithDetails";
+import { reportConversationRefreshFailure } from "@/features/messaging/lib/conversation-refresh-failure";
 import type { ConversationWithDetails, Message } from "../types";
 import {
   playNotificationSound,
@@ -134,10 +135,7 @@ export function MessagingInitializer() {
 
         return toConversationWithDetails(row, userId);
       } catch (error) {
-        console.error(
-          "[Messaging] Failed to fetch conversation details:",
-          error,
-        );
+        reportConversationRefreshFailure(error);
         return null;
       }
     },
