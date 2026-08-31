@@ -44,6 +44,12 @@ preauthorized test identity, repair fixtures/tooling, and verify live.
 Use the isolated in-app Browser for application testing. Never use the user's
 browser. Close every tab you create.
 
+On a shared Browser host, Browser ownership is valid only while the same holder
+owns an `in_progress` Work Loop lease. Settling, releasing, losing, or
+interrupting that claim releases the Browser lane immediately; a pending,
+deferred, failed, or succeeded item can never reserve it. The coordinator must
+reconcile durable claim state before every Browser handoff.
+
 **There are no routine blockers.** Missing login state, stale tokens, broken
 preview, missing fixtures, failing tests, server/tool failures, deployment lag,
 unfamiliar code, and dirty unrelated files are problems to investigate and

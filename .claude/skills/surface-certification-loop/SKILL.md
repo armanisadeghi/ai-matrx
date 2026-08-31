@@ -59,6 +59,11 @@ facts and exceptions. Never launch one schedule per surface.
    evidence captured while another pilot worker owned or used the Browser is
    invalid and must be rerun. This makes the existing no-shared-browser rule
    operational; it does not reduce Work Loop claim concurrency.
+   Browser ownership exists only while the same holder owns the matching active
+   Work Loop lease. Settlement, retry, defer, lease loss, or task interruption
+   releases the lane immediately. A pending, deferred, failed, succeeded, or
+   unleased item can never retain it. Reconcile durable lease state before each
+   grant; never trust a stale task message as ownership.
 4. Heartbeat active claims before half the lease elapses. Ownership loss stops
    writes immediately.
 5. Settle each worker through `complete`, `retry`, or `defer`, then refill the
