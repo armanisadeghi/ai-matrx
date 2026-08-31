@@ -15,30 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D294 — every frontend release is blocked: a live entity type was never published to @ai-matrx/associations
-
-Found 2026-08-31 while shipping the one binding UI. `./ship.sh` (any target) dies
-at a **non-skippable** gate — it is deliberately outside `--no-gates`:
-
-```
-✗ Installed @ai-matrx/associations vocabulary (656 tokens) is OUT OF SYNC with
-  platform.entity_types (657 live tokens).
-  Live but not installed: commerce_certified_printer
-```
-
-`scripts/release.sh:407` hard-`fail`s, so NOTHING ships from this repo until it
-is cleared. npm `@ai-matrx/associations` latest is `0.6.1` and genuinely lacks
-the token, so `pnpm up` cannot fix it — somebody added
-`commerce_certified_printer` to `platform.entity_types` without the package half.
-
-**The fix (owner: whoever added the entity type):** `aidream/apps/shared/associations`
-→ `pnpm gen:entity-types`, patch-release `@ai-matrx/associations`, then
-`pnpm up @ai-matrx/associations` here. There is no local regeneration path —
-the vocabulary ships in the package.
-
-Not filed as mine to fix: publishing a shared package to npm for another lane's
-entity type is a side-effectful action on infrastructure I do not own.
-
 ### D293 — no calc fixture has ever been checked against the response model it claims to assert
 
 Found 2026-08-30 fixing the E-03 contradiction (`hr_calc_overtime.edge2` asserted
@@ -2493,6 +2469,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D295** (filed 2026-08-31 as "D294", renumbered — that id names the resolved dangling-id RPC defect below) — every frontend release was refused by the entity-vocabulary gate: `@ai-matrx/associations` 0.6.1 carried 656 tokens vs 657 live (`commerce_certified_printer` migrated into `platform.entity_types` without the package publish). **RESOLVED 2026-08-31**: vocabulary regenerated (657, clean single-token diff), 0.6.2 published via the sanctioned CI flow (`publish-all-ts-packages.mjs`, OIDC, `npm dist-tags.latest`=0.6.2, aidream a2ba9f7ef, tag npm/associations/v0.6.2), frontend lockfile bumped, gate green, release v0.4.1552 cut. **The gate was CORRECT — the defect is publish ordering**, and this was the second identical outage in two days (0.6.1/commerce_print_order on 08-30). The class fix is tracked separately: a migration adding an entity token must publish the vocabulary in the same wave. 2026-08-31.
 
 - **D293** — `agx_duplicate_shortcut` / `agx_promote_shortcut_to_global` and both `_m` mirrors omitted `value_mappings` from their INSERT column lists (verified live on all four), so a duplicate or promotion was born with an empty consumption map — and post-wave-B, a missing `write_policies` too. **FIXED 2026-08-30 by migration `d293_duplicate_promote_carry_consumption_map`**: all four now carry `value_mappings`; the `_m` pair also carries `write_policies` (first-class on the view). **Proving it surfaced D294** (below), so the behavioral proof ran after both fixes: in a rolled-back transaction as the real admin claims, legacy duplicate's map is byte-identical to its source, mirror duplicate's returned id resolves to a real view row whose `value_mappings` AND `write_policies` match the source. Grants re-verified intact after the replaces; ddl_guard_log unacked backlog 0. 2026-08-30.
 
