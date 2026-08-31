@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Trash2, Play, Clock, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 import { getUserQuizSessions, deleteQuizSession, type QuizSession } from '@/actions/quiz.actions';
 import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
+import { EntityRef } from '@/components/official/entity-ref/EntityRef';
 import { toast } from '@/lib/toast';
 import { formatTime } from './quiz-utils';
 
@@ -109,7 +110,12 @@ export const QuizSessionList: React.FC<QuizSessionListProps> = ({
                       <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     )}
                     <h3 className="font-semibold text-gray-800 dark:text-gray-100">
-                      {session.title || `Quiz ${session.id.substring(0, 8)}`}
+                      <EntityRef
+                        token="quiz_session"
+                        id={session.id}
+                        name={session.title || `Quiz ${session.id.substring(0, 8)}`}
+                        showIcon={false}
+                      />
                     </h3>
                   </div>
                   {session.category && (
@@ -172,4 +178,3 @@ export const QuizSessionList: React.FC<QuizSessionListProps> = ({
 };
 
 export default QuizSessionList;
-

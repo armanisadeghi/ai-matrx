@@ -682,6 +682,8 @@ function BindingRow({
   onDelete: () => void;
   onCreateShortcut: (binding: AgentSurfaceBinding) => void;
 }) {
+  const openScopeAssignments = () => onEdit();
+
   const { scope, label } = scopeFromBinding(binding);
   const mappingCount = Object.keys(binding.valueMappings).length;
   // Live custom scope tags from the canonical scopes module. `autoFetch` is
@@ -706,9 +708,16 @@ function BindingRow({
         {mappingCount} mapping{mappingCount === 1 ? "" : "s"}
       </Badge>
       {scopeTags.length > 0 && (
-        <Badge variant="secondary" className="text-[10px]">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={openScopeAssignments}
+          className="h-5 px-1.5 text-[10px] font-normal"
+          aria-label={`Edit ${scopeTags.length} scope ${scopeTags.length === 1 ? "assignment" : "assignments"} for ${label}`}
+        >
           {scopeTags.length} scope{scopeTags.length === 1 ? "" : "s"}
-        </Badge>
+        </Button>
       )}
       <div className="ml-auto flex items-center gap-0.5">
         <Button

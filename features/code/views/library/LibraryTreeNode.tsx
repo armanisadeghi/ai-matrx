@@ -21,6 +21,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
@@ -344,6 +345,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           tabIndex={0}
           onClick={toggle}
           onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return;
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               toggle();
@@ -373,7 +375,14 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           ) : (
             <Folder size={14} className="shrink-0 text-blue-500" />
           )}
-          <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+          <EntityRef
+            token="code_folder"
+            id={folder.id}
+            name={folder.name}
+            showIcon={false}
+            fill
+            className="min-w-0 flex-1"
+          />
           <Button
             type="button"
             variant="ghost"

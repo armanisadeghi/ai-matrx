@@ -29,6 +29,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -210,9 +211,14 @@ export function RunSkillPicker({
                       <span className="self-center text-muted-foreground">
                         <TierIcon className="h-3 w-3" />
                       </span>
-                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                        {skill?.label ?? skill?.skillId ?? id}
-                      </span>
+                      <EntityRef
+                        token="skill"
+                        id={id}
+                        name={skill?.label ?? skill?.skillId ?? id}
+                        showIcon={false}
+                        fill
+                        className="min-w-0 flex-1 font-medium text-foreground"
+                      />
                       {meta && (
                         <span className="shrink-0 text-[11px] text-muted-foreground/60">
                           {meta.label}
@@ -335,9 +341,14 @@ function SkillRowItem({
         >
           {selected && <Check className="h-2.5 w-2.5" />}
         </span>
-        <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-          {skill.label}
-        </span>
+        <EntityRef
+          token="skill"
+          id={skill.id}
+          name={skill.label}
+          showIcon={false}
+          fill
+          className="min-w-0 flex-1 text-xs font-medium text-foreground"
+        />
         {agentTier && !selected && (
           <span className="shrink-0 text-[11px] text-muted-foreground/60">
             agent:{agentTier}

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Tooltip,
   TooltipContent,
@@ -493,12 +494,19 @@ export default function ToolTestingClient() {
             {scopeOverride.organization_id && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className="h-5 text-[10px] px-1.5 font-mono cursor-default"
-                  >
-                    org: {scopeOverride.organization_id.slice(0, 8)}…
-                  </Badge>
+                  <span className="inline-flex">
+                    <EntityRef
+                      token="organization"
+                      id={scopeOverride.organization_id}
+                      name={scopeOverride.organization_id}
+                      openInNewTab
+                      alwaysShowActions
+                      className="h-5 rounded-md bg-secondary px-1.5 font-mono text-[10px] text-secondary-foreground"
+                      labelClassName="max-w-[7rem] select-text"
+                    >
+                      org: {scopeOverride.organization_id}
+                    </EntityRef>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent className="font-mono text-xs break-all">
                   organization_id: {scopeOverride.organization_id}
@@ -508,12 +516,19 @@ export default function ToolTestingClient() {
             {scopeOverride.project_id && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className="h-5 text-[10px] px-1.5 font-mono cursor-default"
-                  >
-                    proj: {scopeOverride.project_id.slice(0, 8)}…
-                  </Badge>
+                  <span className="inline-flex">
+                    <EntityRef
+                      token="project"
+                      id={scopeOverride.project_id}
+                      name={scopeOverride.project_id}
+                      openInNewTab
+                      alwaysShowActions
+                      className="h-5 rounded-md bg-secondary px-1.5 font-mono text-[10px] text-secondary-foreground"
+                      labelClassName="max-w-[7rem] select-text"
+                    >
+                      proj: {scopeOverride.project_id}
+                    </EntityRef>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent className="font-mono text-xs break-all">
                   project_id: {scopeOverride.project_id}
@@ -523,12 +538,19 @@ export default function ToolTestingClient() {
             {scopeOverride.task_id && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className="h-5 text-[10px] px-1.5 font-mono cursor-default"
-                  >
-                    task: {scopeOverride.task_id.slice(0, 8)}…
-                  </Badge>
+                  <span className="inline-flex">
+                    <EntityRef
+                      token="task"
+                      id={scopeOverride.task_id}
+                      name={scopeOverride.task_id}
+                      openInNewTab
+                      alwaysShowActions
+                      className="h-5 rounded-md bg-secondary px-1.5 font-mono text-[10px] text-secondary-foreground"
+                      labelClassName="max-w-[7rem] select-text"
+                    >
+                      task: {scopeOverride.task_id}
+                    </EntityRef>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent className="font-mono text-xs break-all">
                   task_id: {scopeOverride.task_id}
