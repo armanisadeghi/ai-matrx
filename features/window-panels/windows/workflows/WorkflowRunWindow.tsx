@@ -32,9 +32,19 @@ import { ExternalLink } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun";
-import { selectRunStatus } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
+import {
+  selectRunDefinitionId,
+  selectRunStatus,
+} from "@/features/workflow-runtime/redux/workflow-runs.selectors";
 import { RunStatusChip } from "@/features/workflow-runtime/run-status";
 import { FloatingRunBody } from "@/features/workflow-runtime/floating/FloatingRunBody";
+import {
+  runEntityRef,
+  runMenuContent,
+  useWorkflowRunMenuSection,
+} from "@/features/workflow-runtime/run-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 /**
  * Narrower and shorter than the chat-matched `LiveRunWindow`: this body is a
@@ -74,8 +84,22 @@ export default function WorkflowRunWindow({
   // replays the durable log from the slice's cursor and goes live again.
   useWorkflowRun(runId);
   const status = useAppSelector(selectRunStatus(runId));
+  const definitionId = useAppSelector(selectRunDefinitionId(runId));
+
+  const runRow = { runId, definitionId, workflowName };
+  const runSection = useWorkflowRunMenuSection({ getRow: () => runRow });
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="workflow_run"
+      contentSource={{ type: "raw" }}
+      contextData={{
+        [CONTEXT_MENU_ENTITY_KEY]: runEntityRef(runRow),
+        content: runMenuContent(runRow),
+      }}
+      entity={runEntityRef(runRow) ?? undefined}
+      extraSections={[runSection]}
+    >
     <WindowPanel
       id={`workflow-run-window-${windowInstanceId}`}
       title={workflowName ?? "Workflow run"}
@@ -100,5 +124,6 @@ export default function WorkflowRunWindow({
     >
       <FloatingRunBody runId={runId} stepLabels={stepLabels ?? undefined} />
     </WindowPanel>
+    </NonEditableContextMenu>
   );
 }
