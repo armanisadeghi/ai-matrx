@@ -58,6 +58,9 @@ import { selectUserInputEntryExists } from "@/features/agents/redux/execution-sy
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 
@@ -446,21 +449,60 @@ function AgentRunBody({
   }
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-      <DebugSessionActivator />
-      <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
-        <AgentConversationColumn
-          conversationId={renderedConversationId}
-          surfaceKey={surfaceKey}
-          constrainWidth
-          edgeToEdgeScroll
-          smartInputProps={{
-            sendButtonVariant: "blue",
-            showSubmitOnEnterToggle: true,
-          }}
-        />
+    <AgentRunBodyMenu agentId={agentId} conversationId={renderedConversationId}>
+      <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
+        <DebugSessionActivator />
+        <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
+          <AgentConversationColumn
+            conversationId={renderedConversationId}
+            surfaceKey={surfaceKey}
+            constrainWidth
+            edgeToEdgeScroll
+            smartInputProps={{
+              sendButtonVariant: "blue",
+              showSubmitOnEnterToggle: true,
+            }}
+          />
+        </div>
       </div>
-    </div>
+    </AgentRunBodyMenu>
+  );
+}
+
+/**
+ * The pane's OWN menu — a sibling of whatever per-message menus already live
+ * inside `AgentConversationColumn` (ONE MENU PER PANE: nested Radix triggers
+ * on a message win over this one, which is correct — this only answers a
+ * right-click on empty space / the column background). Entity is the running
+ * conversation; the agent identity (SECTIONS.md "Agent") rides alongside it.
+ */
+function AgentRunBodyMenu({
+  agentId,
+  conversationId,
+  children,
+}: {
+  agentId: string;
+  conversationId: string;
+  children: React.ReactNode;
+}) {
+  const dispatch = useAppDispatch();
+  const agentName = useAppSelector((state: RootState) => selectAgentName(state, agentId) ?? null);
+  const agentSection = useAgentMenuSection({
+    agentId,
+    agentName,
+    onRefresh: () => dispatch(fetchFullAgent(agentId)),
+  });
+
+  return (
+    // context-menu-exempt: surfaceName — no registered surface manifest carries this window's values
+    <NonEditableContextMenu
+      sourceFeature="agent-builder"
+      contentSource={{ type: "raw" }}
+      entity={{ type: "conversation", id: conversationId, title: agentName ?? "Run" }}
+      extraSections={[agentSection]}
+    >
+      {children}
+    </NonEditableContextMenu>
   );
 }
 

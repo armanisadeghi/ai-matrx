@@ -105,20 +105,26 @@ export default function AgentMemoryWindow({
       sidebarMinSize={180}
       footer={<AgentMemoryFooter state={state} />}
     >
-      {/* No `EntityTypeToken` is registered for `chat.agent_memory` (checked
-          the generated `@ai-matrx/associations` vocabulary — the nearest
-          tokens, `cx_agent_memory` and `user_memory`, point at different
-          tables). Attach-To/Share stay dark honestly rather than mislabeling
-          this row under a token that isn't actually it. */}
-      {/* context-menu-exempt: entity — no EntityTypeToken registered for chat.agent_memory */}
+      {/* Entity token is `cx_agent_memory` — despite the `cx_` prefix this one
+          maps to schema "chat" table "agent_memory" (verified against the
+          generated `@ai-matrx/associations` vocabulary), which is exactly
+          this row. */}
       {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
       <NonEditableContextMenu
         sourceFeature="agent-builder"
         contentSource={{ type: "raw" }}
         contextData={{ content: selected ? `${displayTitleForMemory(selected)}\n\n${selected.content}` : "" }}
+        entity={
+          selected
+            ? { type: "cx_agent_memory", id: selected.id, title: displayTitleForMemory(selected) }
+            : undefined
+        }
         resolveContextOnOpen={() =>
           selected
-            ? { content: `${displayTitleForMemory(selected)}\n\n${selected.content}` }
+            ? {
+                content: `${displayTitleForMemory(selected)}\n\n${selected.content}`,
+                __entity: { type: "cx_agent_memory", id: selected.id, title: displayTitleForMemory(selected) },
+              }
             : null
         }
         extraSections={[memorySection]}

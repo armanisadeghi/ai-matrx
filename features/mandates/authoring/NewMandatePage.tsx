@@ -66,9 +66,15 @@ export function NewMandatePage() {
         outputConstraints,
         draftInputs,
       });
-      toast.success(`${created.mandateKey} created.`);
+      toast.success(`${created.mandateKey} created — now choose who fulfils it.`);
+      // THE CREATION HANDOFF (PLAN-ONE-BINDING-UI §3). This page keeps its one
+      // job — name, described inputs, goal, output kind — and hands straight
+      // into the one binding UI with the rung and holder cells empty. The
+      // workspace's own honest line takes it from here ("No holder yet — pick
+      // one to start mapping, or come back when the intelligence exists"); the
+      // `#bind` fragment is what scrolls it into view on arrival.
       startTransition(() => {
-        router.push(adminMandateHref(created.mandateKey));
+        router.push(`${adminMandateHref(created.mandateKey)}#bind`);
       });
     } catch (error: unknown) {
       setServerError(error instanceof Error ? error.message : String(error));

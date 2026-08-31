@@ -43,7 +43,6 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentLineageIndex,
-  selectBuiltinAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   fetchMandateConsoleData,
@@ -89,7 +88,6 @@ function MandateWindowInner({
 }: MandateWindowProps) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
 
   const [data, setData] = useState<MandateConsoleData | null>(null);
@@ -158,10 +156,6 @@ function MandateWindowInner({
     };
   }, [dispatch, isSuperAdmin]);
 
-  const builtinAgentsById = useMemo<ReadonlyMap<string, string>>(
-    () => new Map(builtinAgents.map((a) => [a.id, a.name ?? a.id])),
-    [builtinAgents],
-  );
 
   const rows = useMemo<MandateRow[]>(() => {
     if (!data) return [];
@@ -323,7 +317,6 @@ function MandateWindowInner({
                   systemTwin: null,
                 }
               }
-              builtinAgentsById={builtinAgentsById}
               onSaved={load}
             />
           ) : (

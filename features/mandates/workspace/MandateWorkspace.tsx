@@ -335,11 +335,14 @@ function BindingSection({
         ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
       );
     window.addEventListener("matrx:open-mandate-pin", jump);
+    // The creation handoff (`NewMandatePage` → `…/mandates/<key>#bind`) lands
+    // a brand-new mandate here, on the one thing it still needs.
+    if (window.location.hash === "#bind") jump();
     return () => window.removeEventListener("matrx:open-mandate-pin", jump);
   }, []);
 
   return (
-    <div ref={ref}>
+    <div id="bind" ref={ref}>
       <Section title="Who fulfils this job">
         <OneBindingWorkspace
           data={data}
