@@ -9,6 +9,10 @@
 import { after, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import {
+  AUTH_COOKIE_NAME,
+  LEGACY_AUTH_COOKIE_NAME,
+} from "@/utils/supabase/authCookie";
 import { extractErrorMessage } from "@/utils/errors";
 import { safeForwardedHost } from "@/utils/auth/safe-redirect";
 import {
@@ -24,6 +28,47 @@ import {
 } from "@/lib/services/guest-oauth-transfer";
 import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
 import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
+
+// The PKCE code-verifier cookie the login server action sets before sending
+// the browser to the provider. When it does not come back with the callback,
+// supabase-js fails the exchange CLIENT-SIDE (no /token request ever reaches
+// Supabase) — the signature of a broken cookie jar: stale pre-cutover cookies
+// under the legacy name, an evicted Set-Cookie on the login response, or a
+// jar past the browser's per-domain cap. 2026-08-31 mobile outage: iPhones
+// looped forever on a generic "Authentication failed" with zero server-side
+// trace while desktop logins worked.
+const CODE_VERIFIER_COOKIE = `${AUTH_COOKIE_NAME}-code-verifier`;
+
+// Every cookie this app's auth has ever written starts with one of these
+// (current + chunks `name.N`, verifier `name-code-verifier`, legacy twins).
+const AUTH_COOKIE_PREFIXES = [AUTH_COOKIE_NAME, LEGACY_AUTH_COOKIE_NAME];
+
+function isAuthCookieName(name: string): boolean {
+  return AUTH_COOKIE_PREFIXES.some(
+    (prefix) => name === prefix || name.startsWith(`${prefix}.`) || name.startsWith(`${prefix}-`),
+  );
+}
+
+/**
+ * Self-heal a broken cookie jar: expire every auth cookie present on the
+ * request, at BOTH scopes it could have been written under (host-only and the
+ * apex-wide `.aimatrx.com` span) — a deletion only lands when its Domain
+ * attribute matches the original write. The next sign-in attempt then starts
+ * from a clean jar instead of looping on the same poisoned state.
+ */
+function clearAuthCookies(
+  response: NextResponse,
+  cookieNames: string[],
+): void {
+  for (const name of cookieNames) {
+    response.cookies.set(name, "", { path: "/", maxAge: 0 });
+    response.cookies.set(name, "", {
+      path: "/",
+      maxAge: 0,
+      domain: ".aimatrx.com",
+    });
+  }
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -75,10 +120,54 @@ export async function GET(request: Request) {
       );
 
       if (error) {
+        // Diagnose before reporting: which auth cookies actually arrived?
+        // Names only — never log cookie values.
+        const jar = await cookies();
+        const authCookieNames = jar
+          .getAll()
+          .map(({ name }) => name)
+          .filter(isAuthCookieName);
+        const verifierArrived = jar.has(CODE_VERIFIER_COOKIE);
+
         console.error(
-          `[${timestamp}] Auth callback - Error exchanging code:`,
+          `[${timestamp}] Auth callback - LOUD: code exchange failed ` +
+            `(code=${error.code ?? "none"}, status=${error.status ?? "none"}, ` +
+            `verifierCookiePresent=${verifierArrived}, ` +
+            `authCookiesPresent=[${authCookieNames.join(", ")}], ` +
+            `ua=${request.headers.get("user-agent") ?? "unknown"}):`,
           error,
         );
+
+        // The browser may still hold a perfectly valid session (a re-used
+        // callback link, a second tab racing the first). Sending that user to
+        // /login with an error is a lie — they are signed in. Verify against
+        // the auth server, never the cookie alone.
+        const { data: existing } = await supabase.auth.getUser();
+        if (existing.user) {
+          console.log(
+            `[${timestamp}] Auth callback - exchange failed but a valid session exists; continuing to destination`,
+          );
+          return NextResponse.redirect(`${origin}${redirectTo}`);
+        }
+
+        if (!verifierArrived) {
+          // Client-side failure — supabase-js never called /token. The jar is
+          // broken (stale pre-cutover cookies, an evicted verifier). Retrying
+          // against the same jar loops forever, so heal it: expire every auth
+          // cookie on this response and say honestly what happened.
+          const loginUrl = `${origin}${preserveAuthDestination(
+            "/login",
+            { redirectTo },
+            {
+              error:
+                "Sign-in could not complete because this browser did not return its sign-in security cookie. Stale sign-in cookies have been cleared — please try again.",
+            },
+          )}`;
+          const response = NextResponse.redirect(loginUrl);
+          clearAuthCookies(response, authCookieNames);
+          return response;
+        }
+
         const loginUrl = `${origin}${preserveAuthDestination("/login", { redirectTo }, { error: "Authentication failed. Please try again." })}`;
         return NextResponse.redirect(loginUrl);
       }
