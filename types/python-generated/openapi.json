@@ -19999,6 +19999,27 @@
         }
       }
     },
+    "/jahia/public/status": {
+      "get": {
+        "tags": [
+          "Jahia Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_jahia_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JahiaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files-com/public/status": {
       "get": {
         "tags": [
@@ -139031,6 +139052,46 @@
         ],
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
+      },
+      "JahiaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "jahia_public_content_platform_status",
+            "title": "Kind",
+            "default": "jahia_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Jahia",
+            "title": "Provider",
+            "default": "Jahia"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.jahia.com",
+            "title": "Status Page",
+            "default": "https://status.jahia.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "JahiaServiceStatus"
       },
       "JazzHRServiceStatus": {
         "properties": {

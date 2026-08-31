@@ -8879,6 +8879,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jahia/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_jahia_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files-com/public/status": {
         parameters: {
             query?: never;
@@ -56986,6 +57003,35 @@ export interface components {
             current_version?: number;
             /** Selected Version */
             selected_version?: number | null;
+        };
+        /** JahiaServiceStatus */
+        JahiaServiceStatus: {
+            /**
+             * Kind
+             * @default jahia_public_content_platform_status
+             * @constant
+             */
+            __kind?: "jahia_public_content_platform_status";
+            /**
+             * Provider
+             * @default Jahia
+             * @constant
+             */
+            provider?: "Jahia";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.jahia.com
+             * @constant
+             */
+            status_page?: "https://status.jahia.com";
         };
         /**
          * JazzHRServiceStatus
@@ -106930,6 +106976,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LiferayServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_jahia_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JahiaServiceStatus"];
                 };
             };
         };
