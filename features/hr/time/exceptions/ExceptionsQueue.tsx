@@ -44,6 +44,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  attendanceExceptionEntityRef,
+  attendanceExceptionMenuSection,
+} from "../shared/exception-actions";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { hrTimeExceptionsHref, hrTimesheetHref, type HrOrgRef } from "@/features/hr/routes";
@@ -100,6 +106,24 @@ export function ExceptionsQueue({
   });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [contextRow, setContextRow] = useState<AttendanceExceptionRow | null>(null);
+
+  async function acknowledgeOne(row: AttendanceExceptionRow) {
+    try {
+      await resolveAttendanceException(row.id, "acknowledged", null, null, { mockCase });
+      toast.success("Exception acknowledged.");
+      queue.refetch();
+    } catch (caught) {
+      toast.error("Could not acknowledge this exception", {
+        description:
+          caught instanceof HrRpcError
+            ? caught.userMessage
+            : caught instanceof Error
+              ? caught.message
+              : String(caught),
+      });
+    }
+  }
 
   const queue = useHrTimeQuery<Paged<AttendanceExceptionRow>>(
     (signal) =>
@@ -174,6 +198,40 @@ export function ExceptionsQueue({
           ) : null}
 
           <div className="min-h-0 flex-1">
+            <NonEditableContextMenu
+              sourceFeature="internal"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = (target as HTMLElement | null)
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = (id && rows.find((r) => r.id === id)) || null;
+                setContextRow(row);
+                if (!row) return null;
+                return {
+                  [CONTEXT_MENU_ENTITY_KEY]: attendanceExceptionEntityRef(row),
+                  content: [
+                    row.employeeDisplayName ?? "This employee",
+                    EXCEPTION_KIND_LABELS[row.exceptionKind],
+                    row.message,
+                  ]
+                    .filter(Boolean)
+                    .join("\n"),
+                };
+              }}
+              extraSections={
+                contextRow
+                  ? [
+                      attendanceExceptionMenuSection(contextRow, orgRef, {
+                        onAcknowledge: readOnly
+                          ? undefined
+                          : () => void acknowledgeOne(contextRow),
+                      }),
+                    ]
+                  : []
+              }
+            >
             <MatrxDataTable<AttendanceExceptionRow>
               data={rows}
               columns={exceptionColumns({ readOnly, mockCase, orgRef, onResolved: queue.refetch })}
@@ -215,6 +273,7 @@ export function ExceptionsQueue({
                   "No attendance exceptions match these filters. That is not the same as none existing — widen the filters to be sure.",
               }}
             />
+            </NonEditableContextMenu>
           </div>
 
           {/* L3-82: the call site, and nothing else. Recommendation only. */}
