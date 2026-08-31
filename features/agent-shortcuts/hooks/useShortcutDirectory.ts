@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import {
   fetchUserShortcuts,
   listNonGlobalShortcutsForAdmin,
@@ -44,6 +49,9 @@ export function useShortcutDirectory({
   mode,
 }: UseShortcutDirectoryArgs): UseShortcutDirectoryResult {
   const dispatch = useAppDispatch();
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
   const globalQuery = useAgentShortcuts({
     scope: "global",
     autoFetch: mode === "admin",
@@ -69,6 +77,11 @@ export function useShortcutDirectory({
   }, [mode, globalQuery.categories, userCategoriesQuery.categories]);
 
   const loadExtra = useCallback(async () => {
+    // The server-authenticated admin shell can paint before the browser client
+    // adopts its cookie session. Wait for the usable JWT instead of dispatching
+    // an authenticated RPC as `anon` and recording the same failure twice.
+    if (!authReady || !userId || !accessToken) return;
+
     setLoadingExtra(true);
     setError(null);
     try {
@@ -97,9 +110,12 @@ export function useShortcutDirectory({
     } finally {
       setLoadingExtra(false);
     }
-  }, [categoryById, dispatch, mode]);
+  }, [accessToken, authReady, categoryById, dispatch, mode, userId]);
 
   useEffect(() => {
+    // loadExtra performs an external Redux/Supabase read and owns its async
+    // loading state; rerun it when the authenticated session becomes usable.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadExtra();
   }, [loadExtra]);
 

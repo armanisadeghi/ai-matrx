@@ -20,6 +20,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { pgErrorToError } from "@ai-matrx/data";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -792,6 +793,11 @@ export const listNonGlobalShortcutsForAdmin = createAsyncThunk<
   void,
   ThunkApi
 >("agentShortcut/listNonGlobalForAdmin", async () => {
+  // Admin layout authentication can finish before the browser Supabase client
+  // adopts its cookie session. Never let this authenticated-only RPC escape as
+  // an anonymous request; imperative callers (such as the import modal) do not
+  // have the directory hook's render-time auth gate.
+  await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc(SHORTCUT_RPCS.listNonGlobalForAdmin,
   );
 

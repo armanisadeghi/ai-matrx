@@ -34,4 +34,31 @@ describe("agent browse authenticated read boundary", () => {
       /if \(authReady && userId && accessToken\) \{[\s\S]*dispatch\(fetchDriftAlerts\(\)\)/,
     );
   });
+
+  it("keeps the shortcut admin directory behind the same browser auth boundary", () => {
+    const thunkSource = fs.readFileSync(
+      path.join(agentsRoot, "redux/agent-shortcuts/thunks.ts"),
+      "utf8",
+    );
+    const directorySource = fs.readFileSync(
+      path.join(agentsRoot, "../agent-shortcuts/hooks/useShortcutDirectory.ts"),
+      "utf8",
+    );
+
+    const guardIndex = thunkSource.indexOf(
+      "await requireAuthenticatedSupabaseSession(supabase)",
+    );
+    const rpcIndex = thunkSource.indexOf(
+      "supabase.rpc(SHORTCUT_RPCS.listNonGlobalForAdmin",
+    );
+    expect(guardIndex).toBeGreaterThan(-1);
+    expect(guardIndex).toBeLessThan(rpcIndex);
+
+    expect(directorySource).toContain("selectAuthReady");
+    expect(directorySource).toContain("selectUserId");
+    expect(directorySource).toContain("selectAccessToken");
+    expect(directorySource).toMatch(
+      /if \(!authReady \|\| !userId \|\| !accessToken\) return;[\s\S]*listNonGlobalShortcutsForAdmin\(\)/,
+    );
+  });
 });
