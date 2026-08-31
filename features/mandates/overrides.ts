@@ -268,11 +268,24 @@ export interface MandateBindingInput {
 }
 
 export interface MandateBindingPrincipalInput {
-  principalType: "user" | "org";
+  /**
+   * WHICH RUNG OF THE LADDER — global → org → user (Arman, 2026-08-27).
+   *
+   * `global` is THE SYSTEM RUNG, added 2026-08-31. Consumption is per-binding
+   * by THE-MODEL law, and this table could only ever be written for a user or
+   * an org, so the rung that serves EVERYBODY — whose Holder identity lives on
+   * `mandate.definition.default_holder_*` — had nowhere to put its consumption
+   * map or its settings overrides, and the system rung was the one rung that
+   * could not go through the binding machinery at all. One row per mandate,
+   * super-admin only (the server gates it and 403s with the reason).
+   */
+  principalType: "user" | "org" | "global";
   /** The org being bound — REQUIRED for org principals (the caller must
    * administer it; the server verifies). Omit for user bindings: callApi
    * injects the ambient organization_id, which is incidental there (a user
-   * binding keys on the USER — access never depends on the active org). */
+   * binding keys on the USER — access never depends on the active org).
+   * Ignored for `global`: the server stamps the MANDATE's own org, because the
+   * column is NOT NULL and the row is not scoped to any tenant. */
   organizationId?: string;
 }
 
