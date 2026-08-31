@@ -2792,19 +2792,35 @@ Also unwired, same wave: `features/files/components/core/FileList/`
 (FileList / FileListRow / FileTree) never wire `FileRightClickMenu`, though
 `PreviewPane` uses it for just the filename label.
 
-## 2026-08-31 — hr.job_title deployed read policy admits 5 rows the access kernel denies (gained=5, leak direction)
+## 2026-08-31 — RESOLVED: hr.job_title "gained=5" was the PROVER, not the policy
 
-Found by `aidream scripts/_verify_entity_read_equivalence.py` (60-row smoke, 3 sampled
-users) while re-proving the entity-read mirror for migration 0580: **271 of 272
-comparable tables identical; `hr.job_title` alone reports `lost=0 gained=5`** — its
-deployed `std_select` admits 5 rows `iam.has_access` denies for a sampled user. The
-table is `entity` variant with `suppress_platform_admin_lane=true` (the HR privacy
-wall) and HAS `created_by` + `visibility`, so this is NOT caused by the 2026-08-30
-ownerless-org kernel probe (unreachable there) — it predates it, and most likely the
-walled kernel path denies a lane (platform-staff or org arm) the pre-wall-generated
-policy text still carries. `gained` is the leak direction, which db-rules §6a weighs
-as seriously as a denial. **Do NOT re-run `iam.apply_rls` on hr.job_title as a "fix"
-without diagnosing first** — regeneration under the current mirror may either close
-or mask it; the repair belongs to the HR privacy-wall lane with the prover re-run as
-proof (`--table hr.job_title --full`). Recorded in aidream migration
-`0580_rerecord_kernel_fingerprint_after_ownerless_org_probe.sql`.
+**Original report (kept for the trail):** `aidream scripts/_verify_entity_read_equivalence.py`
+(60-row smoke, 3 users) reported 271 of 272 comparable tables identical and
+`hr.job_title lost=0 gained=5`, read as a leak in the deployed `std_select`.
+
+**Diagnosed 2026-08-31.** The deployed policy is correct. `iam._apply_rls_unchecked`
+honours `platform.entity_types.suppress_platform_admin_lane` (SPEC-ACCESS §3.5, the HR
+privacy wall) and emits NO platform-staff read arm for a walled token. The two functions
+that RECONSTRUCT a read lane for the prover — `iam.entity_read_equivalence` and
+`iam.component_original_lane` — hardcoded `'(select public.is_platform_admin()) or '`
+instead. So on a walled table the prover compared a correct policy against a candidate
+carrying an arm the generator would never emit. Measured per probe user, whole table: the
+one user with an `admin.admins` row showed `gained=5` (the entire table); the other five
+showed `0/0`. `gained` was pointing at the prover.
+
+**The class, not the instance.** `hr.job_title` was merely the only NON-EMPTY walled table
+on the `entity` lane (`hr.requisition`, `hr.schedule` have 0 rows, so they compared 0 rows
+and looked clean). Eight of the 25 walled tokens carry rows and every one diverged the same
+way for the same user — `hr.incident_party` 5, `hr.leave_ledger` 7, `hr.pay_period_employment`
+200/200, `hr.payroll_export` 6, `hr.payroll_export_line` 9, `hr.work_interval` 200/200,
+`hr.workweek` 16. Under `--apply` "DIFFERED" means SKIPPED, so the bug also silently withheld
+the indexable read lane from every walled HR table.
+
+**Fixed** in aidream `db/migrations/0582_privacy_wall_read_lane_prover_parity.sql`: one
+`iam.platform_admin_read_prefix(token)` is now the single answer both reconstruction sites
+ask; the generator was not touched (it was already right). The pre-0518 five-argument
+`entity_read_equivalence` overload carried the same literal and made every unqualified call
+ambiguous — dropped. Guard `iam.privacy_wall_read_lane_parity()` returns every walled token
+whose deployed policy and reconstructed lane disagree for a platform admin: **8 rows before
+the migration, 0 after**, asserted empty in the migration's post-flight. Prover re-run:
+`--table hr.job_title --full` → identical on every user.

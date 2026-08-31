@@ -50598,36 +50598,21 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
       }
-      entity_read_equivalence:
-        | {
-            Args: {
-              p_limit?: number
-              p_schema: string
-              p_table: string
-              p_token: string
-              p_user: string
-            }
-            Returns: {
-              compared: number
-              gained: number
-              lost: number
-            }[]
-          }
-        | {
-            Args: {
-              p_baseline?: string
-              p_limit?: number
-              p_schema: string
-              p_table: string
-              p_token: string
-              p_user: string
-            }
-            Returns: {
-              compared: number
-              gained: number
-              lost: number
-            }[]
-          }
+      entity_read_equivalence: {
+        Args: {
+          p_baseline?: string
+          p_limit?: number
+          p_schema: string
+          p_table: string
+          p_token: string
+          p_user: string
+        }
+        Returns: {
+          compared: number
+          gained: number
+          lost: number
+        }[]
+      }
       entity_read_expr: {
         Args: {
           p_schema: string
@@ -50784,6 +50769,18 @@ export type Database = {
       my_orgs: { Args: never; Returns: string[] }
       org_readable: { Args: { p_org: string }; Returns: boolean }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
+      platform_admin_read_prefix: { Args: { p_token: string }; Returns: string }
+      privacy_wall_read_lane_parity: {
+        Args: { p_limit?: number }
+        Returns: {
+          compared: number
+          gained: number
+          lost: number
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
+      }
       rulebook_ids_curated_by: { Args: { p_uid: string }; Returns: string[] }
       runnable_agent_fields: {
         Args: { p_agent_id: string }
