@@ -84,6 +84,46 @@
       ],
       "previousEventHash": "1822e621f73db6b3e238b5af36b106b2c5c85d3f5749d9e943a3bc821e8bc5c0",
       "eventHash": "b5e6ac07eed56cbacfefd8ee17ed2d4ef9b9f8472bdfd099b46c200aec1f971b"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-31T08:59:35.820Z",
+      "actor": "p1-recertifier-wave2",
+      "summary": "Corrected five-file wave 2 candidate independently certified",
+      "evidence": [
+        "Preview lease occupied by another checkout; bounded static and focused-test certification used"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "44a351bc6086d3091c2e4fc9182f90d6d82b7a93",
+        "certifierTaskId": "p1_recertifier_wave2",
+        "checks": [
+          "type-check PASS",
+          "dead-ends 45-to-36; candidate files zero",
+          "EntityRef focused tests 6-of-6 PASS",
+          "exact diff-check PASS",
+          "nested keyboard interaction corrected"
+        ]
+      },
+      "previousEventHash": "b5e6ac07eed56cbacfefd8ee17ed2d4ef9b9f8472bdfd099b46c200aec1f971b",
+      "eventHash": "ab326b1e713e6710eac64fa3b420d4dfb227f418ae106dcd166afae1e9683a52"
+    },
+    {
+      "sequence": 8,
+      "state": "delivery_queued",
+      "at": "2026-08-31T08:59:40.561Z",
+      "actor": "p1-controller",
+      "summary": "Certified candidate queued for fast-forward integration to origin/main",
+      "evidence": [
+        "Candidate contains current origin/main ca21128eb8 as ancestor"
+      ],
+      "delivery": {
+        "candidateSha": "44a351bc6086d3091c2e4fc9182f90d6d82b7a93",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260831T083803Z"
+      },
+      "previousEventHash": "ab326b1e713e6710eac64fa3b420d4dfb227f418ae106dcd166afae1e9683a52",
+      "eventHash": "b0654321a3a4932f3f16bd06e36101a83d11cc1555e4ddaae8e211eb93a83d5e"
     }
   ]
 }

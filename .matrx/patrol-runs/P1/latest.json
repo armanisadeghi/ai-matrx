@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T083803Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-31T08:55:01.125Z",
-  "summary": "Corrected wave 2 candidate pushed for fresh independent certification",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-31T08:59:40.561Z",
+  "summary": "Certified candidate queued for fast-forward integration to origin/main",
   "source": "20260831T083803Z.json",
-  "eventHash": "b5e6ac07eed56cbacfefd8ee17ed2d4ef9b9f8472bdfd099b46c200aec1f971b"
+  "eventHash": "b0654321a3a4932f3f16bd06e36101a83d11cc1555e4ddaae8e211eb93a83d5e"
 }
