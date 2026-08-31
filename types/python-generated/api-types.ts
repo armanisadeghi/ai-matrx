@@ -8947,6 +8947,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bunny-net/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bunny_net_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uxcam/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_uxcam_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/woopra/public/status": {
         parameters: {
             query?: never;
@@ -9075,6 +9109,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_cloudtalk_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/talkdesk/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_talkdesk_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -37729,6 +37780,35 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** BunnyNetServiceStatus */
+        BunnyNetServiceStatus: {
+            /**
+             * Kind
+             * @default bunny_net_public_content_delivery_status
+             * @constant
+             */
+            __kind?: "bunny_net_public_content_delivery_status";
+            /**
+             * Provider
+             * @default bunny.net
+             * @constant
+             */
+            provider?: "bunny.net";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.bunny.net
+             * @constant
+             */
+            status_page?: "https://status.bunny.net";
         };
         /**
          * ButterCmsServiceStatus
@@ -84457,6 +84537,43 @@ export interface components {
             controller_revision: number;
         };
         /**
+         * TalkdeskServiceStatus
+         * @description Safe aggregate status projection for Talkdesk's fixed status page.
+         */
+        TalkdeskServiceStatus: {
+            /**
+             * Kind
+             * @default talkdesk_official_contact_center_platform_status
+             * @constant
+             */
+            __kind?: "talkdesk_official_contact_center_platform_status";
+            /**
+             * Provider
+             * @default Talkdesk
+             * @constant
+             */
+            provider?: "Talkdesk";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.talkdesk.com
+             * @constant
+             */
+            status_page?: "https://status.talkdesk.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * TaskCreateRequest
          * @description Create a new sch_task (plus optional agent_task and trigger).
          */
@@ -87122,6 +87239,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.typeform.com/";
+        };
+        /** UXCamServiceStatus */
+        UXCamServiceStatus: {
+            /**
+             * Kind
+             * @default uxcam_public_service_status
+             * @constant
+             */
+            __kind?: "uxcam_public_service_status";
+            /**
+             * Provider
+             * @default UXCam
+             * @constant
+             */
+            provider?: "UXCam";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.uxcam.com
+             * @constant
+             */
+            status_page?: "https://status.uxcam.com";
         };
         /** UnarchiveWorkflowResponse */
         UnarchiveWorkflowResponse: {
@@ -107610,6 +107759,46 @@ export interface operations {
             };
         };
     };
+    public_status_bunny_net_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BunnyNetServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_uxcam_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UXCamServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_woopra_public_status_get: {
         parameters: {
             query?: never;
@@ -107766,6 +107955,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CloudTalkServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_talkdesk_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalkdeskServiceStatus"];
                 };
             };
         };
