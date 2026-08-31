@@ -58,6 +58,8 @@ import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { adminUserMenuSection } from "./admin-user-menu-section";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -97,6 +99,7 @@ export function AccountsTableClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [clickedRow, setClickedRow] = useState<AdminUserRow | null>(null);
   // The table's search / column filters / sort / page live HERE rather than
   // inside MatrxDataTable ("controlled-local": the table still filters the
   // local rows, the caller just owns the query). Without this the admin's
@@ -572,6 +575,39 @@ export function AccountsTableClient() {
       ) : null}
 
       <div className="min-h-0 flex-1" data-surface-value="visible_user_count">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (visibleRows.find((r) => r.id === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              content: [
+                `${row.display_name ?? "(no name)"} <${row.email ?? "no-email"}>`,
+                `id=${row.id}`,
+                row.admin_level ? `admin=${row.admin_level}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            };
+          }}
+          extraSections={[
+            adminUserMenuSection(
+              clickedRow
+                ? {
+                    id: clickedRow.id,
+                    email: clickedRow.email,
+                    displayName: clickedRow.display_name,
+                  }
+                : null,
+            ),
+          ]}
+        >
         <MatrxDataTable
           data={visibleRows}
           columns={columns}
@@ -755,6 +791,7 @@ export function AccountsTableClient() {
             </DropdownMenu>
           )}
         />
+        </NonEditableContextMenu>
       </div>
 
       <Dialog
