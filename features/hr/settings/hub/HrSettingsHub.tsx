@@ -27,6 +27,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import { hrSettingsHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
@@ -228,6 +229,28 @@ export function HrSettingsHub() {
             </Button>
           </div>
 
+          {/* Configuration key ("feature knob") — page-local: no other
+             MatrxDataTable pane lists these rows (`KnobPanel` renders a
+             non-tabular section, not a right-clickable pane). Wrapped for
+             Copy/Export/AI only; opening a row's editor is already the
+             table's own click behavior. */}
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id
+                ? (knobs.find((k) => k.full_key === id) ?? null)
+                : null;
+              if (!row) return null;
+              return {
+                content: `${row.full_key} = ${knobValueText(row.effective_value)} (${ORIGIN_LABEL[row.origin]})`,
+              };
+            }}
+          >
           <MatrxDataTable
             data={knobs}
             columns={columns}
@@ -262,6 +285,7 @@ export function HrSettingsHub() {
                 ) : null,
             }}
           />
+          </NonEditableContextMenu>
         </section>
       </div>
     </HrSettingsShell>
