@@ -30,6 +30,45 @@ Arman's sentence is the spine:
 | `offered-adapter.ts` | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory. |
 | `useHolderInputs.ts` | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream. |
 | `WorkflowHolderPicker.tsx` | Lifted from the wizard; now retries instead of dead-ending on a read failure. |
+| `described-offer.ts` | What a job offers when no code declared it (D18.1). ONE derivation, shared by both modes. |
+| `words.ts` | The four sources' names and the fill-down limits sentence — one vocabulary, so no two controls name one thing differently. |
+| `batch/` | **Batch mode** — the same middle transposed. See below. |
+
+## Batch mode — the same screen, many places
+
+`[ Map one place ][ Map many places ]` sits under the scope + holder bar, and that
+is the whole difference: **one rung and one holder apply to every row**. Places
+(jobs) are rows, the holder's inputs are columns.
+
+| File | What it is |
+|---|---|
+| `batch/ModeToggle.tsx` | The two-word toggle and the sentence that says what carries over. |
+| `batch/BatchMode.tsx` | The orchestrator: which places, the cascade, the fill-down, the requirement gate, Apply. |
+| `batch/PlacesSelector.tsx` | Which jobs are in the batch, each priced before it is picked, each saying whether this rung already answers it. |
+| `batch/InputCascade.tsx` | P17.1 — every input is `Keep each place's own \| Set for all places \| Per place`. Per place is the default. |
+| `batch/PlacesBatchGrid.tsx` | The grid. Health dot, ADD/UPD badge and fill-down come from `agent-shortcuts/.../BatchGridParts` — shared with the shortcut grid, never copied. |
+| `batch/PlaceBindingCell.tsx` | One cell: `InlineBindingEditor` (the shortcut grid's own) in this domain's words, with **Advanced opening `BindingMiddleRow` — map mode's full card**, many-to-one included. |
+| `batch/batch-model.ts` | Pure: row health, the copied-mapping rule over a whole map, and the Apply refusal's words. |
+| `batch/usePlaceOffers.ts` | Each place's offer, read lazily per row through the two paths the single-place screen already has. |
+
+Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
+
+1. **The same validation.** A row is red exactly when map mode would refuse to
+   save it — `consumptionMapProblems` is the judge in both, so a dot and a
+   sentence one screen apart can never disagree.
+2. **A copied mapping is reconciled against THAT place** — keep · re-bind on a
+   name match · clear and go red (`reconcileCopiedTarget`, the same function the
+   shortcut cell calls). An extra source of a many-to-one target is never
+   re-bound by name; it is kept or dropped, because re-binding it would join one
+   value to itself.
+3. **Apply is refused in words, with the count, ON THE PAGE** — *"1 required
+   input is still unmapped. Fix the red cells first."* The shortcut grid answers
+   the same refusal with a toast; that is its defect, not a pattern to copy.
+4. **N places are N ordinary binding writes.** There is no batch endpoint and no
+   second write path: each place goes through `consumption-writer` →
+   `buildBindingSavePayload` → `putMandateBinding`, and each keeps its own stored
+   settings and its own auto-run promise (batch never makes that promise — it is
+   a fact about ONE map, and the footer says so).
 
 ## Where it mounts
 

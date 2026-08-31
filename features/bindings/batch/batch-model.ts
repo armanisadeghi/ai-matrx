@@ -129,10 +129,14 @@ export function placeHealth({
   }
 
   const problems = consumptionMapProblems({ values: offered }, chosenMap);
+  // A source chosen with no value picked is RED whether or not the input is
+  // required, because it is an UNFINISHED CHOICE and the server refuses the
+  // whole map over it — which is exactly what map mode's Save says too. Colour
+  // and gate must agree, or the dot is decoration.
   const tone: PlaceHealth["tone"] =
-    requiredUnmapped > 0 || problems.length > 0 || blockers.length > 0
+    unmapped > 0 || problems.length > 0 || blockers.length > 0
       ? "red"
-      : unmapped > 0 || unfedRequired.length > 0
+      : unfedRequired.length > 0
         ? "amber"
         : "green";
 
@@ -166,6 +170,10 @@ export function applyRefusal(
   );
   if (requiredUnmapped > 0) {
     return `${requiredUnmapped} required ${requiredUnmapped === 1 ? "input is" : "inputs are"} still unmapped. Fix the red cells first.`;
+  }
+  const unmapped = healths.reduce((acc, h) => acc + h.unmapped, 0);
+  if (unmapped > 0) {
+    return `${unmapped} ${unmapped === 1 ? "input is" : "inputs are"} still waiting for you to pick which offered value feeds ${unmapped === 1 ? "it" : "them"}. Fix the red cells first.`;
   }
   const blocked = healths.filter((h) => h.blockers.length > 0).length;
   if (blocked > 0) {

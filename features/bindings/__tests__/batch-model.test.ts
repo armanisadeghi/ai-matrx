@@ -182,7 +182,10 @@ describe("placeHealth", () => {
     expect(health.requiredUnmapped).toBe(1);
   });
 
-  it("is AMBER — never red — when an optional input is mid-pick", () => {
+  it("is RED for an OPTIONAL input mid-pick too — an empty pick is refused", () => {
+    // Map mode's Save says the same thing about the same map ("One input is
+    // still waiting for you to pick…"), and the server 422s on an empty
+    // target. Colour and gate must agree.
     const health = placeHealth({
       targets: [TONE],
       offered: [CLEANED],
@@ -192,8 +195,19 @@ describe("placeHealth", () => {
         ],
       },
     });
-    expect(health.tone).toBe("amber");
+    expect(health.tone).toBe("red");
+    expect(health.unmapped).toBe(1);
     expect(health.requiredUnmapped).toBe(0);
+  });
+
+  it("is AMBER — never red — when a required input has nothing feeding it", () => {
+    const health = placeHealth({
+      targets: [WORKING_TEXT],
+      offered: [CLEANED],
+      map: {},
+    });
+    expect(health.tone).toBe("amber");
+    expect(health.unfedRequired).toEqual(["Working Text"]);
   });
 
   it("carries the SAME map problems the save's pre-flight raises", () => {
@@ -260,6 +274,21 @@ describe("applyRefusal — the words, with the count", () => {
   it("pluralizes honestly", () => {
     expect(applyRefusal([red, red], 2)).toBe(
       "2 required inputs are still unmapped. Fix the red cells first.",
+    );
+  });
+
+  it("names an optional mid-pick in its own words rather than calling it required", () => {
+    const optionalMidPick = placeHealth({
+      targets: [TONE],
+      offered: [CLEANED],
+      map: {
+        report_tone: [
+          { mapType: "offered_value", target: "", deliver: "variable" },
+        ],
+      },
+    });
+    expect(applyRefusal([optionalMidPick], 1)).toBe(
+      "1 input is still waiting for you to pick which offered value feeds it. Fix the red cells first.",
     );
   });
 

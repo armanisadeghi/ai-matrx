@@ -244,7 +244,10 @@ export function InlineBindingEditor({
 
       {/* Inline control for the most common case */}
       <div className="flex-1 min-w-0">
-        {mode === "agent_default" && (
+        {/* The trigger already NAMES this source when the call site shows
+            labels; repeating it in the value slot would be the same word
+            twice on one control. */}
+        {mode === "agent_default" && !showSourceLabel && (
           <span className="text-[11px] text-muted-foreground italic px-1">
             {labelFor("agent_default")}
           </span>

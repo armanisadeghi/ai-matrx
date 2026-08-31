@@ -41,9 +41,9 @@ import type { PlaceHealth, PlaceOfferState, PlaceRow } from "./batch-model";
 
 const STATUS_WORDS = {
   red: (n: number) =>
-    `${n} required ${n === 1 ? "input is" : "inputs are"} still unmapped here`,
+    `${n} ${n === 1 ? "thing stands" : "things stand"} in the way of writing this place — the row says what`,
   amber: (n: number) =>
-    `${n} ${n === 1 ? "input needs" : "inputs need"} a look`,
+    `${n} required ${n === 1 ? "input has" : "inputs have"} nothing feeding it`,
   green: "This place is ready to write",
 };
 
@@ -177,6 +177,11 @@ export function PlacesBatchGrid({
               const health = healthOf(row.key);
               const done = appliedKeys.has(row.key);
               const sentences = [
+                ...(health.unmapped > 0
+                  ? [
+                      `${health.unmapped} ${health.unmapped === 1 ? "input is" : "inputs are"} waiting for you to pick which offered value feeds ${health.unmapped === 1 ? "it" : "them"}.`,
+                    ]
+                  : []),
                 ...health.blockers,
                 ...health.problems,
                 ...health.unfedRequired.map(
@@ -302,11 +307,18 @@ export function PlacesBatchGrid({
   );
 }
 
+/**
+ * The dot reads the row's TONE, so its colour and its sentence can never
+ * disagree with the refusal printed beside Apply.
+ */
 function toAttention(health: PlaceHealth) {
-  return {
-    unmapped:
-      health.unmapped + health.unfedRequired.length + health.problems.length,
-    requiredUnmapped:
-      health.requiredUnmapped + health.problems.length + health.blockers.length,
-  };
+  if (health.tone === "red") {
+    const count =
+      health.unmapped + health.problems.length + health.blockers.length;
+    return { unmapped: count, requiredUnmapped: count };
+  }
+  if (health.tone === "amber") {
+    return { unmapped: health.unfedRequired.length, requiredUnmapped: 0 };
+  }
+  return { unmapped: 0, requiredUnmapped: 0 };
 }
