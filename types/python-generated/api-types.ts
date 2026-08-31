@@ -61704,6 +61704,8 @@ export interface components {
             duration_ms?: number;
             /** Error */
             error?: string | null;
+            /** Notes */
+            notes?: string[];
             /** Verdict Note */
             verdict_note?: string | null;
             /** Promoted To Reference At */

@@ -150568,6 +150568,13 @@
             ],
             "title": "Error"
           },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
           "verdict_note": {
             "anyOf": [
               {
