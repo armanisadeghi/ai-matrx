@@ -19,6 +19,7 @@ import React, { useEffect, useRef } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ProjectCreatePanel } from "@/features/projects/components/ProjectCreatePanel";
 import type { Project } from "@/features/projects/types";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import {
   emitCreateProjectEvent,
   type CreateProjectWindowData,
@@ -121,19 +122,24 @@ export default function CreateProjectWindow({
       onClose={onClose}
       bodyClassName="flex-1 min-h-0 overflow-hidden"
     >
-      <div className="h-full min-h-0">
-        <ProjectCreatePanel
-          initialOrgId={initialOrgId ?? null}
-          initialOrgSlug={initialOrgSlug ?? null}
-          orgLocked={orgLocked ?? false}
-          // In an overlay we don't yank the user to a settings route by
-          // default — the caller decides. War Room passes skipRedirect.
-          skipRedirect={skipRedirect ?? true}
-          onSuccess={handleSuccess}
-          onAiComplete={handleAiComplete}
-          onClose={onClose}
-        />
-      </div>
+      {/* context-menu-exempt: entity — a project draft has no id until Create
+          commits it; `handleSuccess` gets the real project, but this window
+          is gone by then (it closes on success). */}
+      <EditableContextMenu sourceFeature="projects" contentSource={{ type: "raw" }}>
+        <div className="h-full min-h-0">
+          <ProjectCreatePanel
+            initialOrgId={initialOrgId ?? null}
+            initialOrgSlug={initialOrgSlug ?? null}
+            orgLocked={orgLocked ?? false}
+            // In an overlay we don't yank the user to a settings route by
+            // default — the caller decides. War Room passes skipRedirect.
+            skipRedirect={skipRedirect ?? true}
+            onSuccess={handleSuccess}
+            onAiComplete={handleAiComplete}
+            onClose={onClose}
+          />
+        </div>
+      </EditableContextMenu>
     </WindowPanel>
   );
 }

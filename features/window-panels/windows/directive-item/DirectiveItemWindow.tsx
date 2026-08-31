@@ -41,6 +41,7 @@ import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComp
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface DirectiveItemWindowProps {
   windowInstanceId: string;
@@ -82,63 +83,73 @@ export default function DirectiveItemWindow({
       minWidth={360}
       minHeight={260}
     >
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1.5">
-          {(["pretty", "raw"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setTab(value)}
-              className={cn(
-                "rounded px-2 py-0.5 text-xs capitalize transition-colors",
-                tab === value
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {value}
-            </button>
-          ))}
-          {subtitle ? (
-            <span className="truncate text-[11px] text-muted-foreground">
-              {subtitle}
-            </span>
-          ) : null}
-          <div className="ml-auto">
-            <CopyButtons
-              label={title || "Item"}
-              human={() => JSON.stringify(item, null, 2)}
-              agent={{
-                kind: itemKind ?? "directive-item",
-                location: "AI Matrx — proposed directive item",
-                description: `One item of a pending directive${
-                  itemKind ? ` (kind: ${itemKind})` : ""
-                }. Not yet applied.`,
-                data: item,
-                ...(subtitle ? { context: { source: subtitle } } : {}),
-              }}
-              json={item}
-              size="icon"
-              appearance="bare"
-            />
+      {/* context-menu-exempt: entity — the item does NOT exist in the database
+          yet (it's the proposal, not yet applied); once applied the receipt
+          carries a real id and the ordinary item-presentation opener takes
+          over. */}
+      <NonEditableContextMenu
+        sourceFeature="system"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: JSON.stringify(item, null, 2) }}
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1.5">
+            {(["pretty", "raw"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTab(value)}
+                className={cn(
+                  "rounded px-2 py-0.5 text-xs capitalize transition-colors",
+                  tab === value
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {value}
+              </button>
+            ))}
+            {subtitle ? (
+              <span className="truncate text-[11px] text-muted-foreground">
+                {subtitle}
+              </span>
+            ) : null}
+            <div className="ml-auto">
+              <CopyButtons
+                label={title || "Item"}
+                human={() => JSON.stringify(item, null, 2)}
+                agent={{
+                  kind: itemKind ?? "directive-item",
+                  location: "AI Matrx — proposed directive item",
+                  description: `One item of a pending directive${
+                    itemKind ? ` (kind: ${itemKind})` : ""
+                  }. Not yet applied.`,
+                  data: item,
+                  ...(subtitle ? { context: { source: subtitle } } : {}),
+                }}
+                json={item}
+                size="icon"
+                appearance="bare"
+              />
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+            {tab === "raw" ? (
+              <pre className="whitespace-pre-wrap break-words font-mono text-xs text-foreground">
+                {JSON.stringify(item, null, 2)}
+              </pre>
+            ) : itemKind ? (
+              // The kind's OWN component — the seam paying off. No branch here for
+              // a missing component row: DbKindComponent degrades internally.
+              <DbKindComponent content={JSON.stringify(item)} />
+            ) : (
+              // No registered kind. The floor, honestly reached.
+              <StructuredValueView value={item} density="full" footer={false} />
+            )}
           </div>
         </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-          {tab === "raw" ? (
-            <pre className="whitespace-pre-wrap break-words font-mono text-xs text-foreground">
-              {JSON.stringify(item, null, 2)}
-            </pre>
-          ) : itemKind ? (
-            // The kind's OWN component — the seam paying off. No branch here for
-            // a missing component row: DbKindComponent degrades internally.
-            <DbKindComponent content={JSON.stringify(item)} />
-          ) : (
-            // No registered kind. The floor, honestly reached.
-            <StructuredValueView value={item} density="full" footer={false} />
-          )}
-        </div>
-      </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

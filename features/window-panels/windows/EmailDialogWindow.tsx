@@ -14,6 +14,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, Mail } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface EmailDialogWindowProps {
   isOpen: boolean;
@@ -51,7 +52,14 @@ export default function EmailDialogWindow({
       footerLeft={<EmailDialogFooterLeft form={form} />}
       footerRight={<EmailDialogFooterRight form={form} submitLabel={submitLabel} />}
     >
-      <EmailDialogBody form={form} description={description} />
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+          this, a right-click here is answered by whatever page sits
+          underneath. Page-local, content-only — a single ephemeral email
+          field, no record of its own (the live `<input>` itself still yields
+          to the native menu by design). */}
+      <NonEditableContextMenu sourceFeature="system" contentSource={{ type: "raw" }}>
+        <EmailDialogBody form={form} description={description} />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

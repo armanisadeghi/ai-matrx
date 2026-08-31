@@ -17,6 +17,13 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ReviewResult } from "@/features/flashcards/types";
 import type { FaceImageRef } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  useFlashcardMenuSection,
+  flashcardEntityRef,
+} from "@/features/flashcards/components/flashcard-menu";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 
 export interface FlashcardItemWindowProps {
   isOpen: boolean;
@@ -59,6 +66,15 @@ export function FlashcardItemWindow({
 
   const displayTitle = title ?? `Flashcard ${index + 1}`;
   const mobileCards = toFlashcardMobileCards([{ front, back }]);
+  const cardRow = { front, back, index };
+  const flashcardSection = useFlashcardMenuSection({
+    getRow: () => cardRow,
+    unavailable: {
+      "flashcard-flip": unavailableHere("the flashcard grid"),
+      "flashcard-open": "Already showing the full view",
+      "flashcard-study-set": "No set is attached to this card",
+    },
+  });
 
   if (isMobileView && front) {
     return <FlashcardMobileView cards={mobileCards} onClose={exitMobileView} />;
@@ -90,24 +106,34 @@ export function FlashcardItemWindow({
         ) : undefined
       }
     >
-      {front ? (
-        <FlashcardItem
-          front={front}
-          back={back}
-          index={index}
-          layoutMode={layoutMode}
-          additionalDetails={additionalDetails}
-          lastResult={lastResult}
-          presentation="panel"
-          showDevWindowTrigger={false}
-          frontImage={frontImage}
-          backImage={backImage}
-        />
-      ) : (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          No flashcard to display.
-        </div>
-      )}
+      <NonEditableContextMenu
+        sourceFeature="education-flashcards"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: front ? `${front}\n\n${back ?? ""}` : "" }}
+        resolveContextOnOpen={() => ({
+          [CONTEXT_MENU_ENTITY_KEY]: flashcardEntityRef(cardRow),
+        })}
+        extraSections={[flashcardSection]}
+      >
+        {front ? (
+          <FlashcardItem
+            front={front}
+            back={back}
+            index={index}
+            layoutMode={layoutMode}
+            additionalDetails={additionalDetails}
+            lastResult={lastResult}
+            presentation="panel"
+            showDevWindowTrigger={false}
+            frontImage={frontImage}
+            backImage={backImage}
+          />
+        ) : (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            No flashcard to display.
+          </div>
+        )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

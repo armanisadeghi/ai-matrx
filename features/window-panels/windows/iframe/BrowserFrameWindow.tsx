@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { browserFrameMenuSection } from "@/features/window-panels/windows/iframe/browser-frame-menu";
 
 export interface BrowserFrameWindowProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ function BrowserFrameWindowInner({
       : LUCIDE_ICONS_GALLERY_URL,
   );
   const [addressDraft, setAddressDraft] = useState(url);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [windowTitleExtra, setWindowTitleExtra] = useState<string | null>(() =>
     typeof initialWindowTitle === "string" && initialWindowTitle.trim()
       ? initialWindowTitle.trim()
@@ -123,14 +126,32 @@ function BrowserFrameWindowInner({
         </div>
       }
     >
-      <div className="flex h-full min-h-0 flex-col">
-        <EmbedSiteFrame
-          key={url}
-          src={url}
-          title={shortUrlLabel(url)}
-          className="min-h-[200px]"
-        />
-      </div>
+      {/*
+       * Cross-origin iframe — there is no page content this app can read, so
+       * the honest menu acts on the frame's own URL/title only. Shared with
+       * BrowserWorkbenchWindow (features/window-panels/windows/iframe/browser-frame-menu.tsx).
+       */}
+      <NonEditableContextMenu
+        sourceFeature="internal"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: url }}
+        extraSections={[
+          browserFrameMenuSection({
+            url,
+            title,
+            onReload: () => setReloadNonce((n) => n + 1),
+          }),
+        ]}
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <EmbedSiteFrame
+            key={`${url}-${reloadNonce}`}
+            src={url}
+            title={shortUrlLabel(url)}
+            className="min-h-[200px]"
+          />
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

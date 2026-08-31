@@ -17,6 +17,7 @@ import {
 } from "@/features/agent-connections/redux/ui/slice";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { Scope } from "@/features/agent-connections/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface AgentConnectionsWindowProps {
   isOpen: boolean;
@@ -102,7 +103,22 @@ function AgentConnectionsWindowInner({
         onCollectData={collectData}
         bodyClassName="bg-background"
       >
-        <AgentConnectionsBody />
+        {/* "Agent Customizations" is a coding-agent config hub (agents /
+            subagents / skills / render blocks / resources / instructions /
+            prompts / commands / hooks / MCP servers / plugins / registries /
+            preferences), scoped by user/org/project/task — not one platform
+            "agent" record and not one identity at all. Each section's row
+            identity (an .md file, a hook, an MCP server entry, …) lives in
+            `AgentConnectionsBody`'s own per-section state, out of scope to
+            reach from this composition root without editing that file. This
+            menu still replaces "answered by the page underneath" with an
+            honest content-only Copy/Export of whatever section is showing. */}
+        {/* context-menu-exempt: entity — a multi-section config hub, no single record at this level */}
+        {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+        {/* context-menu-exempt: extraSections — no page-local action beyond what each section's own UI already exposes */}
+        <NonEditableContextMenu sourceFeature="agent-builder" contentSource={{ type: "raw" }}>
+          <AgentConnectionsBody />
+        </NonEditableContextMenu>
       </WindowPanel>
     </AgentConnectionsNavProvider>
   );

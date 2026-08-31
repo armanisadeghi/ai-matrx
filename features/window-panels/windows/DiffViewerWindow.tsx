@@ -19,6 +19,7 @@ import {
   type DiffEngine,
   type DiffView,
 } from "@ai-matrx/diff/react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface DiffViewerWindowProps {
   windowInstanceId: string;
@@ -57,18 +58,29 @@ export default function DiffViewerWindow({
       height={640}
       onClose={onClose}
     >
-      <div className="flex h-full w-full overflow-hidden bg-background">
-        <DiffViewer
-          original={original}
-          modified={modified}
-          originalLabel={originalLabel}
-          modifiedLabel={modifiedLabel}
-          engine={engine}
-          language={language}
-          defaultView={defaultView}
-          className="flex-1 min-w-0"
-        />
-      </div>
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+          this, a right-click here is answered by whatever page sits
+          underneath. Page-local — every diff is raw `original`/`modified`
+          text passed in by the caller, with no stable id or registered
+          identity to attach/share. */}
+      <NonEditableContextMenu
+        sourceFeature="system"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: modified }}
+      >
+        <div className="flex h-full w-full overflow-hidden bg-background">
+          <DiffViewer
+            original={original}
+            modified={modified}
+            originalLabel={originalLabel}
+            modifiedLabel={modifiedLabel}
+            engine={engine}
+            language={language}
+            defaultView={defaultView}
+            className="flex-1 min-w-0"
+          />
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

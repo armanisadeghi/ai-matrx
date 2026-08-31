@@ -16,10 +16,14 @@ import { useCallback, useState } from "react";
 import { Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import type { RootState } from "@/lib/redux/store";
 import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsagesEngine";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 interface AgentFindUsagesWindowProps {
   isOpen: boolean;
@@ -34,6 +38,16 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
   const agentName = useAppSelector((s: RootState) =>
     effectiveId ? (selectAgentName(s, effectiveId) ?? null) : null,
   );
+  const dispatch = useAppDispatch();
+  const openAgentContentWindow = useOpenAgentContentWindow();
+  const agentSection = useAgentMenuSection({
+    agentId: effectiveId ?? "",
+    agentName,
+    onRefresh: effectiveId ? () => dispatch(fetchFullAgent(effectiveId)) : undefined,
+    onOpenBuilder: effectiveId
+      ? () => openAgentContentWindow({ initialAgentId: effectiveId })
+      : undefined,
+  });
 
   const handleSelect = useCallback((id: string) => setSelectedId(id), []);
 
@@ -63,6 +77,13 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
       minHeight={400}
       bodyClassName="p-0"
     >
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={effectiveId ? agentEntityRef(effectiveId, agentName) : undefined}
+        extraSections={effectiveId ? [agentSection] : []}
+      >
       {effectiveId ? (
         <AgentUsagesEngine key={effectiveId} agentId={effectiveId} mode="user" />
       ) : (
@@ -76,6 +97,7 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
           </div>
         </div>
       )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

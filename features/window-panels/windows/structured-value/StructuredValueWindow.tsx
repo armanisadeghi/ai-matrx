@@ -29,6 +29,7 @@
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface StructuredValueWindowProps {
   windowInstanceId: string;
@@ -59,13 +60,29 @@ export default function StructuredValueWindow({
       minWidth={340}
       minHeight={240}
     >
-      {/* ONE box: the frame is the chrome. The view brings its own spacing. */}
-      <div className="h-full min-h-0 overflow-y-auto px-3 py-2">
-        {subtitle ? (
-          <p className="mb-2 text-[11px] text-muted-foreground">{subtitle}</p>
-        ) : null}
-        <StructuredValueView value={value} density="full" footer={false} />
-      </div>
+      {/* context-menu-exempt: entity — "any JSON value" has no fixed identity;
+          the column/row it came from is named in `subtitle`, not a record. */}
+      <NonEditableContextMenu
+        sourceFeature="system"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: safeJsonString(value) }}
+      >
+        {/* ONE box: the frame is the chrome. The view brings its own spacing. */}
+        <div className="h-full min-h-0 overflow-y-auto px-3 py-2">
+          {subtitle ? (
+            <p className="mb-2 text-[11px] text-muted-foreground">{subtitle}</p>
+          ) : null}
+          <StructuredValueView value={value} density="full" footer={false} />
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
+}
+
+function safeJsonString(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2) ?? String(value);
+  } catch {
+    return String(value);
+  }
 }

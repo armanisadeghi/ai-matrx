@@ -32,6 +32,10 @@ import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 interface AgentCreateAppWindowProps {
   isOpen: boolean;
@@ -142,6 +146,15 @@ function CreateAppWindowBody({
 
   const hasAnyAgents = liveAgents.length > 0;
 
+  const agentName = useAppSelector((s) =>
+    agentId ? (selectAgentName(s, agentId) ?? null) : null,
+  );
+  const agentSection = useAgentMenuSection({
+    agentId: agentId ?? "",
+    agentName,
+    onRefresh: agentId ? () => dispatch(fetchFullAgent(agentId)) : undefined,
+  });
+
   const handleSubmit = useCallback(
     async (input: CreateAgentAppInput) => {
       setSubmitting(true);
@@ -199,6 +212,12 @@ function CreateAppWindowBody({
       ? `/administration/agents/agent-apps/edit/${created.id}`
       : `/agents/${agentId ?? ""}/apps/${created.id}`;
     return (
+      // context-menu-exempt: surfaceName — no registered surface manifest for this window
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={{ type: "app", id: created.id, title: created.name, resourceType: "app" }}
+      >
       <div className="flex flex-col items-center justify-center gap-3 py-10 text-center px-6">
         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500">
           <CheckCircle2 className="w-6 h-6" />
@@ -238,10 +257,18 @@ function CreateAppWindowBody({
           </Button>
         </div>
       </div>
+      </NonEditableContextMenu>
     );
   }
 
   return (
+    // context-menu-exempt: surfaceName — no registered surface manifest for this window
+    <NonEditableContextMenu
+      sourceFeature="agent-builder"
+      contentSource={{ type: "raw" }}
+      entity={agentId ? agentEntityRef(agentId, agentName) : undefined}
+      extraSections={agentId ? [agentSection] : []}
+    >
     <div className="flex flex-col h-full min-h-0">
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <CreateAgentAppForm
@@ -259,5 +286,6 @@ function CreateAppWindowBody({
         </div>
       )}
     </div>
+    </NonEditableContextMenu>
   );
 }

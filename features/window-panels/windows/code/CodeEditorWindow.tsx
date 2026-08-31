@@ -52,6 +52,8 @@ import { getLanguageIconNode } from "@/features/code-editor/components/code-bloc
 import { CodeEditorTabBar } from "./CodeEditorTabBar";
 import { useCodeEditorWindowState } from "./useCodeEditorWindowState";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -167,13 +169,23 @@ export function CodeEditorWindow({
       onClose={onClose}
       onCollectData={collectData}
       sidebar={
-        <CodeSidebar
-          files={files}
-          activeFile={activeTab ?? ""}
-          handleFileSelect={openFile}
-          // No fixed sidebarWidth — WindowPanel's resizable panel controls it.
-          className="border-r-0 w-full"
-        />
+        // context-menu-exempt: per-row entity — CodeSidebar's file rows are
+        // plain buttons with no data-* row id (shared component, not owned by
+        // this window); the pane-level wrap below still closes the "falls
+        // through to the page underneath" gap for this region.
+        <NonEditableContextMenu
+          sourceFeature="code-editor"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: files.map((f) => f.path).join("\n") }}
+        >
+          <CodeSidebar
+            files={files}
+            activeFile={activeTab ?? ""}
+            handleFileSelect={openFile}
+            // No fixed sidebarWidth — WindowPanel's resizable panel controls it.
+            className="border-r-0 w-full"
+          />
+        </NonEditableContextMenu>
       }
       sidebarDefaultSize={200}
       sidebarMinSize={140}
@@ -203,40 +215,69 @@ export function CodeEditorWindow({
       }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      {/* Body = content only: the tab strip + the editor (or empty state). */}
-      <CodeEditorTabBar
-        openTabs={openTabs}
-        activeTab={activeTab}
-        files={files}
-        onTabClick={selectTab}
-        onTabClose={closeTab}
-      />
-
-      {currentFile ? (
-        <div ref={editorWrapperRef} className="flex-1 min-h-0">
-          <SmallCodeEditor
-            path={editorPath}
-            language={monacoLanguage}
-            initialCode={currentFile.content}
-            onChange={handleContentChange}
-            mode={mode}
-            autoFormat={autoFormatOnOpen}
-            defaultWordWrap={defaultWordWrap}
-            height={editorHeight}
-            readOnly={!isEditing || currentFile.readOnly}
-            formatTrigger={formatTrigger}
-            controlledWordWrap={showWrapLines ? "on" : "off"}
-            controlledMinimap={minimapEnabled}
-            showFormatButton={false}
-            showCopyButton={false}
-            showResetButton={false}
-            showWordWrapToggle={false}
-            showMinimapToggle={false}
+      {/*
+       * The Monaco editor region already carries its own full editable menu
+       * (SmallCodeEditor → SmallCodeEditorImpl → CodeEditorContextMenu →
+       * EditableContextMenu, with real getTextarea/onTextReplace/onSave
+       * wiring and its own WidgetHandle registration for agent streaming) —
+       * per "nested menus: the innermost wins", right-clicking IN the editor
+       * still gets that menu unchanged.
+       *
+       * This outer wrap closes the actual gap: the tab strip, the sidebar's
+       * file tree, and the "no file open" empty state have no menu of their
+       * own, so a right-click there used to fall through to the page behind
+       * the window. No text-mutation callbacks are wired here (Monaco owns
+       * those) — this is Copy/AI/Export/Attach-To only, so no voice or
+       * text-transform action gets a live edit target here that could
+       * corrupt code.
+       */}
+      <EditableContextMenu
+        sourceFeature="code-editor"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: currentFile?.content ?? "" }}
+        entity={
+          isPersisted && activeTab && currentFile
+            ? { type: "code_file", id: activeTab, title: currentFile.name }
+            : undefined
+        }
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Body = content only: the tab strip + the editor (or empty state). */}
+          <CodeEditorTabBar
+            openTabs={openTabs}
+            activeTab={activeTab}
+            files={files}
+            onTabClick={selectTab}
+            onTabClose={closeTab}
           />
+
+          {currentFile ? (
+            <div ref={editorWrapperRef} className="flex-1 min-h-0">
+              <SmallCodeEditor
+                path={editorPath}
+                language={monacoLanguage}
+                initialCode={currentFile.content}
+                onChange={handleContentChange}
+                mode={mode}
+                autoFormat={autoFormatOnOpen}
+                defaultWordWrap={defaultWordWrap}
+                height={editorHeight}
+                readOnly={!isEditing || currentFile.readOnly}
+                formatTrigger={formatTrigger}
+                controlledWordWrap={showWrapLines ? "on" : "off"}
+                controlledMinimap={minimapEnabled}
+                showFormatButton={false}
+                showCopyButton={false}
+                showResetButton={false}
+                showWordWrapToggle={false}
+                showMinimapToggle={false}
+              />
+            </div>
+          ) : (
+            <EmptyState files={files} onOpenFile={openFile} />
+          )}
         </div>
-      ) : (
-        <EmptyState files={files} onOpenFile={openFile} />
-      )}
+      </EditableContextMenu>
     </WindowPanel>
   );
 }

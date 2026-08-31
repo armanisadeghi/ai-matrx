@@ -19,6 +19,7 @@ import {
   CANVAS_VIEWER_SURFACE_NAME,
   createCanvasViewerScope,
 } from "@/features/surfaces/manifests/canvas-viewer.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface CanvasViewerWindowProps {
   isOpen: boolean;
@@ -113,24 +114,37 @@ export function CanvasViewerWindow({
         }
         isEditable={false}
       >
-        <div className="flex-1 min-h-0 relative bg-background">
-          {activeToken ? (
-            <SharedCanvasView shareToken={activeToken} className="h-full min-h-0" />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <div className="w-12 h-12 rounded-full border border-border bg-muted flex items-center justify-center mb-3">
-                <Search className="w-5 h-5 text-muted-foreground" />
+        {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+            this, a right-click here is answered by whatever page sits
+            underneath. Page-local identity — a shared canvas view — checked
+            `grep -rl "SharedCanvasView" features app`: 1 other renderer
+            (`app/(public)/canvas/shared/[token]/SharedCanvasViewClient.tsx`,
+            outside this shard, no menu of its own either); no registered
+            builder to adopt. */}
+        <NonEditableContextMenu
+          sourceFeature="canvas"
+          surfaceName={CANVAS_VIEWER_SURFACE_NAME}
+          contentSource={{ type: "raw" }}
+        >
+          <div className="flex-1 min-h-0 relative bg-background">
+            {activeToken ? (
+              <SharedCanvasView shareToken={activeToken} className="h-full min-h-0" />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-12 h-12 rounded-full border border-border bg-muted flex items-center justify-center mb-3">
+                  <Search className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium text-foreground">
+                  No Canvas Selected
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">
+                  Enter a generated canvas code or shared link below to view it in
+                  this window.
+                </p>
               </div>
-              <h3 className="text-sm font-medium text-foreground">
-                No Canvas Selected
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">
-                Enter a generated canvas code or shared link below to view it in
-                this window.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </WindowPanel>
   );

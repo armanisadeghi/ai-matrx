@@ -4,7 +4,7 @@
  * FlashcardSubcardsWindow — a parent's nested subcards as a flip-card set.
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { FlashcardsSubcardsSet } from "@/components/mardown-display/blocks/flashcards/FlashcardsSubcardsSet";
@@ -17,6 +17,15 @@ import {
   useFlashcardMobileViewState,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  useFlashcardMenuSection,
+  flashcardEntityRef,
+  resolveFlashcardGridIndex,
+  type FlashcardMenuRow,
+} from "@/features/flashcards/components/flashcard-menu";
+import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 
 export interface FlashcardSubcardsWindowProps {
   isOpen: boolean;
@@ -38,6 +47,38 @@ export function FlashcardSubcardsWindow({
   const isMobile = useIsMobile();
   const { isMobileView, enterMobileView, exitMobileView, mobileStartIndex } =
     useFlashcardMobileViewState(0);
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [clickedCard, setClickedCard] = useState<FlashcardMenuRow | null>(
+    null,
+  );
+  const openItemWindow = useOpenFlashcardItemWindow();
+  const flashcardSection = useFlashcardMenuSection({
+    getRow: () => clickedCard,
+    actions: {
+      onOpenItem: (row) =>
+        openItemWindow({
+          front: row.front,
+          back: row.back,
+          index: row.index,
+          title: title ?? undefined,
+        }),
+    },
+    unavailable: {
+      "flashcard-flip": "Works on the Study window",
+      "flashcard-study-set": "This subcard set has no study session",
+    },
+  });
+  const resolveCardContext = (target: HTMLElement | null) => {
+    const idx = resolveFlashcardGridIndex(gridRef.current, target);
+    const card = idx != null ? cards[idx] : null;
+    const row: FlashcardMenuRow | null = card
+      ? { front: card.front, back: card.back, index: idx! }
+      : null;
+    setClickedCard(row);
+    if (!row) return null;
+    return { [CONTEXT_MENU_ENTITY_KEY]: flashcardEntityRef(row) };
+  };
 
   useEffect(() => {
     if (isOpen && isMobile && cards.length > 0) {
@@ -84,13 +125,21 @@ export function FlashcardSubcardsWindow({
         ) : undefined
       }
     >
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <FlashcardsSubcardsSet
-          subcards={cards}
-          compact
-          layoutMode={layoutMode}
-        />
-      </div>
+      <NonEditableContextMenu
+        sourceFeature="education-flashcards"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: parentFront ?? "" }}
+        resolveContextOnOpen={resolveCardContext}
+        extraSections={[flashcardSection]}
+      >
+        <div ref={gridRef} className="min-h-0 flex-1 overflow-y-auto">
+          <FlashcardsSubcardsSet
+            subcards={cards}
+            compact
+            layoutMode={layoutMode}
+          />
+        </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

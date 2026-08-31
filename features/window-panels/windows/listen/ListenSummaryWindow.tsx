@@ -55,6 +55,7 @@ import { SettingsSlider } from "@/components/official/settings/primitives/Settin
 import { availableVoices } from "@/lib/cartesia/voices";
 import { LANGUAGE_OPTIONS } from "@/features/settings/agent-writable-settings";
 import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const SUMMARY_STYLE_DEFAULT = "Extremely Concise Summary";
 
@@ -320,6 +321,13 @@ function ListenSummaryWindowInner({
       }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
+      {/* context-menu-exempt: entity — an ephemeral listening run (no
+          persisted record); the summary text itself is the readable content. */}
+      <NonEditableContextMenu
+        sourceFeature="system"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: summaryText }}
+      >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {/* Summary text — the canonical stream pipeline, nothing bespoke.
             The settings pane overlays via CSS `hidden`, never an unmount —
@@ -403,6 +411,7 @@ function ListenSummaryWindowInner({
           </div>
         </div>
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

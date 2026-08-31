@@ -12,6 +12,12 @@
 import React, { Suspense, lazy } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  datasetTableEntityRef,
+  useDatasetTableMenuSection,
+  type DatasetTableMenuRow,
+} from "@/features/data-tables/dataset-table-actions";
 
 const UserTableViewer = lazy(
   () => import("@/components/user-generated-table-data/UserTableViewer"),
@@ -36,6 +42,11 @@ export function UserTableWindow({
   // Size to the viewport so the window is "nice and big but always fits".
   const { width, height } = computeViewportSize();
 
+  const row: DatasetTableMenuRow | null = tableId
+    ? { id: tableId, name: title !== "Table" ? title : null }
+    : null;
+  const datasetSection = useDatasetTableMenuSection({ getRow: () => row });
+
   return (
     <WindowPanel
       id="user-table-window"
@@ -48,17 +59,29 @@ export function UserTableWindow({
       height={height}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-auto p-4"
     >
-      {tableId ? (
-        <Suspense fallback={<MatrxMiniLoader />}>
-          {/* The window's chrome already names the table, so suppress the
-              viewer's own title header (no double title). */}
-          <UserTableViewer tableId={tableId} renderCellMarkdown hideHeader />
-        </Suspense>
-      ) : (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          No table to display.
+      {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without this,
+          a right-click here is answered by whatever page sits underneath. */}
+      <NonEditableContextMenu
+        sourceFeature="system"
+        contentSource={{ type: "raw" }}
+        entity={datasetTableEntityRef(row) ?? undefined}
+        contextData={{ content: tableId ? `Data table: ${title}` : "" }}
+        extraSections={[datasetSection]}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          {tableId ? (
+            <Suspense fallback={<MatrxMiniLoader />}>
+              {/* The window's chrome already names the table, so suppress the
+                  viewer's own title header (no double title). */}
+              <UserTableViewer tableId={tableId} renderCellMarkdown hideHeader />
+            </Suspense>
+          ) : (
+            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              No table to display.
+            </div>
+          )}
         </div>
-      )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

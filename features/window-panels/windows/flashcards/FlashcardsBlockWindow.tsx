@@ -6,7 +6,7 @@
  * Body: card grid only (no ChatCollapsibleWrapper). Footer: all set controls.
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
@@ -24,6 +24,15 @@ import {
   useFlashcardMobileViewState,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  useFlashcardMenuSection,
+  flashcardEntityRef,
+  resolveFlashcardGridIndex,
+  type FlashcardMenuRow,
+} from "@/features/flashcards/components/flashcard-menu";
+import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 
 export interface FlashcardsBlockWindowProps {
   isOpen: boolean;

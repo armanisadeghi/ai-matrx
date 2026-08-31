@@ -15,6 +15,11 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { AGENT_SETTINGS_SURFACE_NAME } from "@/features/agents/constants/agent-settings-surface";
 import { useAgentSettingsSurface } from "./useAgentSettingsSurface";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 type PanelView = "info" | "surface";
 
@@ -91,6 +96,19 @@ export default function AgentSettingsWindow({
     boundSurfaceName: surfaceName,
   });
 
+  const activeAgentName = useAppSelector((s) =>
+    activeTabId ? (selectAgentName(s, activeTabId) ?? null) : null,
+  );
+  const openAgentContentWindow = useOpenAgentContentWindow();
+  const agentSection = useAgentMenuSection({
+    agentId: activeTabId ?? "",
+    agentName: activeAgentName,
+    onRefresh: activeTabId ? () => dispatch(fetchFullAgent(activeTabId)) : undefined,
+    onOpenBuilder: activeTabId
+      ? () => openAgentContentWindow({ initialAgentId: activeTabId })
+      : undefined,
+  });
+
   const closeTab = (e: React.MouseEvent, agentId: string) => {
     e.stopPropagation();
     const newTabs = openedTabIds.filter((id) => id !== agentId);
@@ -135,6 +153,14 @@ export default function AgentSettingsWindow({
         urlSyncId="agent-settings-window"
         urlSyncArgs={{ m: "as" }}
       >
+        <NonEditableContextMenu
+          sourceFeature="agent-builder"
+          surfaceName={AGENT_SETTINGS_SURFACE_NAME}
+          contentSource={{ type: "raw" }}
+          contextData={getScope()}
+          entity={activeTabId ? agentEntityRef(activeTabId, activeAgentName) : undefined}
+          extraSections={activeTabId ? [agentSection] : []}
+        >
         <div className="flex-1 flex flex-col h-full bg-background min-w-0">
           <AgentTabs
             openedTabIds={openedTabIds}
@@ -205,6 +231,7 @@ export default function AgentSettingsWindow({
             )}
           </div>
         </div>
+        </NonEditableContextMenu>
       </WindowPanel>
     </SurfaceRuntimeProvider>
   );

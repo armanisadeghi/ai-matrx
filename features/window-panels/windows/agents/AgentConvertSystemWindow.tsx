@@ -18,6 +18,11 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
 import { updateMandateDefinition } from "@/features/mandates/admin/service";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;
@@ -46,6 +51,16 @@ export default function AgentConvertSystemWindow({
   mandateKey,
   mandateLabel,
 }: AgentConvertSystemWindowProps) {
+  const dispatch = useAppDispatch();
+  const agentName = useAppSelector((s) =>
+    agentId ? (selectAgentName(s, agentId) ?? null) : null,
+  );
+  const agentSection = useAgentMenuSection({
+    agentId: agentId ?? "",
+    agentName,
+    onRefresh: agentId ? () => dispatch(fetchFullAgent(agentId)) : undefined,
+  });
+
   if (!isOpen) return null;
 
   const rebindMandateToSystem = mandateId
@@ -98,14 +113,22 @@ export default function AgentConvertSystemWindow({
       overlayId={OVERLAY_ID}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <AgentSyncBody
-        key={agentId}
-        agentId={agentId}
-        onClose={onClose}
-        mandateKey={mandateKey ?? undefined}
-        mandateLabel={mandateLabel ?? mandateKey ?? undefined}
-        onRebindToSystem={rebindMandateToSystem}
-      />
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={agentEntityRef(agentId, agentName)}
+        extraSections={[agentSection]}
+      >
+        <AgentSyncBody
+          key={agentId}
+          agentId={agentId}
+          onClose={onClose}
+          mandateKey={mandateKey ?? undefined}
+          mandateLabel={mandateLabel ?? mandateKey ?? undefined}
+          onRebindToSystem={rebindMandateToSystem}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

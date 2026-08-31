@@ -13,6 +13,7 @@ import React, { useEffect, useRef } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AddRulePanel } from "@/features/masterwork/components/add-rule/AddRulePanel";
 import { emitAddRuleEvent, type AddRuleWindowData } from "./callbacks";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 const OVERLAY_ID = "masterworkAddRuleWindow";
 
@@ -56,17 +57,26 @@ export default function AddRuleWindow({
       onClose={onClose}
       bodyClassName="flex-1 min-h-0 overflow-hidden"
     >
-      <AddRulePanel
-        rulebookId={rulebookId}
-        defaultSection={defaultSection ?? null}
-        onAdded={(rule, rulebook) =>
-          emitAddRuleEvent(callbackGroupRef.current, {
-            type: "added",
-            rule,
-            rulebook,
-          })
-        }
-      />
+      {/* context-menu-exempt: entity — a rule that doesn't exist yet (AI-draft
+          or manual-form lane); AddRulePanel's ProTextarea/RuleFields are the
+          editable region, so this wraps the whole panel with the editable
+          preset rather than inventing a rulebook-rule entity for a draft. */}
+      <EditableContextMenu
+        sourceFeature="masterwork"
+        contentSource={{ type: "raw" }}
+      >
+        <AddRulePanel
+          rulebookId={rulebookId}
+          defaultSection={defaultSection ?? null}
+          onAdded={(rule, rulebook) =>
+            emitAddRuleEvent(callbackGroupRef.current, {
+              type: "added",
+              rule,
+              rulebook,
+            })
+          }
+        />
+      </EditableContextMenu>
     </WindowPanel>
   );
 }

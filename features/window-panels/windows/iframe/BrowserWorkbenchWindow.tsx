@@ -22,6 +22,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { BookMarked, Plus, X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { browserFrameMenuSection } from "@/features/window-panels/windows/iframe/browser-frame-menu";
 
 export type { SiteWorkbenchBookmark };
 
@@ -204,6 +206,7 @@ function BrowserWorkbenchWindowInner({
   );
 
   const [addressDraft, setAddressDraft] = useState(activeTab?.url ?? "");
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({
@@ -453,11 +456,42 @@ function BrowserWorkbenchWindowInner({
         </div>
         <div className="min-h-0 flex-1">
           {activeTab ? (
-            <EmbedSiteFrame
-              key={`${activeTab.id}-${activeTab.url}`}
-              src={activeTab.url}
-              title={activeTab.label}
-            />
+            // Cross-origin iframe — the honest menu acts on the active tab's
+            // URL/title only. "Bookmark this tab" is page-local (only this
+            // workbench has a bookmark concept); the rest is the shared
+            // browser-frame section (also on BrowserFrameWindow).
+            <NonEditableContextMenu
+              sourceFeature="internal"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: activeTab.url }}
+              extraSections={[
+                browserFrameMenuSection({
+                  url: activeTab.url,
+                  title: activeTab.label,
+                  onReload: () => setReloadNonce((n) => n + 1),
+                }),
+                {
+                  id: "browser-workbench",
+                  items: [
+                    {
+                      kind: "item",
+                      id: "bookmark-tab",
+                      label: "Bookmark this tab",
+                      icon: BookMarked,
+                      onSelect: bookmarkActive,
+                    },
+                  ],
+                },
+              ]}
+            >
+              <div className="h-full min-h-0">
+                <EmbedSiteFrame
+                  key={`${activeTab.id}-${activeTab.url}-${reloadNonce}`}
+                  src={activeTab.url}
+                  title={activeTab.label}
+                />
+              </div>
+            </NonEditableContextMenu>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               Open a tab to browse.

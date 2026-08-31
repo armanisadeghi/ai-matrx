@@ -27,6 +27,13 @@ import {
   toFlashcardMobileCardsFromStudy,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  useFlashcardMenuSection,
+  flashcardEntityRef,
+} from "@/features/flashcards/components/flashcard-menu";
+import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 
 export interface FlashcardStudyWindowProps {
   isOpen: boolean;
@@ -137,6 +144,34 @@ export function FlashcardStudyWindow({
     title ?? study.set?.name ?? (setId ? "Study" : "Flashcard Study");
   const current = study.cards[study.currentIndex];
 
+  const openItemWindow = useOpenFlashcardItemWindow();
+  const cardRow = current
+    ? {
+        front: current.front,
+        back: current.back,
+        index: study.currentIndex,
+        setId: study.set?.id ?? null,
+        setTitle: study.set?.name ?? null,
+      }
+    : null;
+  const flashcardSection = useFlashcardMenuSection({
+    getRow: () => cardRow,
+    actions: {
+      onFlip: () => study.flip(),
+      onOpenItem: (row) =>
+        openItemWindow({
+          front: row.front,
+          back: row.back,
+          index: row.index,
+          title: row.setTitle ?? undefined,
+          lastResult: current ? study.resultsByCard[current.id] ?? null : null,
+        }),
+    },
+    unavailable: {
+      "flashcard-study-set": "Already studying this set",
+    },
+  });
+
   const body = (() => {
     if (study.loading) {
       return (
@@ -243,7 +278,19 @@ export function FlashcardStudyWindow({
         ) : undefined
       }
     >
-      {body}
+      <NonEditableContextMenu
+        sourceFeature="education-flashcards"
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: current ? `${current.front}\n\n${current.back ?? ""}` : "",
+        }}
+        resolveContextOnOpen={() => ({
+          [CONTEXT_MENU_ENTITY_KEY]: flashcardEntityRef(cardRow),
+        })}
+        extraSections={[flashcardSection]}
+      >
+        {body}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

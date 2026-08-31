@@ -18,7 +18,7 @@
  * All state + actions flow through useCodeFileManager. Redux owns persistence.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -44,6 +44,14 @@ import {
   type SortBy,
 } from "./useCodeFileManager";
 import type { CodeFileRecord } from "@/features/code-files/redux/code-files.types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  useCodeFileMenuSection,
+  codeFileEntityRef,
+  type CodeFileMenuRow,
+} from "@/features/code-files/file-menu";
+import { toast } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,
@@ -153,6 +161,46 @@ export function CodeFileManagerWindow({
     mgr.openFileIdsInEditor(mgr.selectedFileIds, "Code Editor");
     mgr.clearFileSelection();
   }, [mgr]);
+
+  // ── Right-click menu (`code_file` identity, shared with LibraryTreeNode's
+  // `/code` workspace tree via features/code-files/file-menu.tsx) ───────────
+  const [clickedFile, setClickedFile] = useState<CodeFileRecord | null>(null);
+  const codeFileSection = useCodeFileMenuSection({
+    getRow: () => clickedFile,
+    actions: {
+      onOpen: (row) => {
+        const file = mgr.visibleFiles.find((f) => f.id === row.id);
+        if (file) handleOpenFile(file);
+      },
+      onRename: (row) => {
+        setRenameDialog({ kind: "file", id: row.id, current: row.name });
+        setRenameValue(row.name);
+      },
+      onDelete: (row) =>
+        setConfirmDelete({ kind: "file", id: row.id, label: row.name }),
+      onCopyPath: (row) => {
+        void navigator.clipboard
+          .writeText(row.path || row.name)
+          .then(() => toast.success("Path copied"))
+          .catch(() => toast.error("Couldn't copy path"));
+      },
+    },
+  });
+  const resolveFileContext = useCallback(
+    (target: HTMLElement | null) => {
+      const rowEl = target?.closest<HTMLElement>("[data-code-file-id]");
+      const id = rowEl?.getAttribute("data-code-file-id") ?? null;
+      const row: CodeFileMenuRow | null =
+        (id && mgr.visibleFiles.find((f) => f.id === id)) || null;
+      setClickedFile(row as CodeFileRecord | null);
+      if (!row) return null;
+      return {
+        [CONTEXT_MENU_ENTITY_KEY]: codeFileEntityRef(row),
+        content: `${row.name}${row.path ? ` (${row.path})` : ""}`,
+      };
+    },
+    [mgr.visibleFiles],
+  );
 
   // ── Sidebar content ───────────────────────────────────────────────────────
   const sidebar = (
@@ -317,47 +365,55 @@ export function CodeFileManagerWindow({
         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       >
         {/* Body = content only: the scrollable file list. */}
-        <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-950">
-          {mgr.isLoadingList ? (
-            <div className="flex items-center justify-center h-full text-sm text-gray-400 gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading files…
-            </div>
-          ) : mgr.visibleFiles.length === 0 ? (
-            <EmptyFileList
-              searching={!!mgr.searchQuery}
-              folderEmpty={mgr.allFilesCount === 0}
-              onNewFile={handleCreateNewFile}
-            />
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {mgr.visibleFiles.map((file) => (
-                <FileRow
-                  key={file.id}
-                  file={file}
-                  selected={mgr.selectedFileIds.includes(file.id)}
-                  onToggleSelect={() => mgr.toggleFileSelection(file.id)}
-                  onOpen={() => handleOpenFile(file)}
-                  onRename={() => {
-                    setRenameDialog({
-                      kind: "file",
-                      id: file.id,
-                      current: file.name,
-                    });
-                    setRenameValue(file.name);
-                  }}
-                  onDelete={() =>
-                    setConfirmDelete({
-                      kind: "file",
-                      id: file.id,
-                      label: file.name,
-                    })
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <NonEditableContextMenu
+          sourceFeature="code-editor"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: selectedFolderName }}
+          resolveContextOnOpen={resolveFileContext}
+          extraSections={[codeFileSection]}
+        >
+          <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-950">
+            {mgr.isLoadingList ? (
+              <div className="flex items-center justify-center h-full text-sm text-gray-400 gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading files…
+              </div>
+            ) : mgr.visibleFiles.length === 0 ? (
+              <EmptyFileList
+                searching={!!mgr.searchQuery}
+                folderEmpty={mgr.allFilesCount === 0}
+                onNewFile={handleCreateNewFile}
+              />
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {mgr.visibleFiles.map((file) => (
+                  <FileRow
+                    key={file.id}
+                    file={file}
+                    selected={mgr.selectedFileIds.includes(file.id)}
+                    onToggleSelect={() => mgr.toggleFileSelection(file.id)}
+                    onOpen={() => handleOpenFile(file)}
+                    onRename={() => {
+                      setRenameDialog({
+                        kind: "file",
+                        id: file.id,
+                        current: file.name,
+                      });
+                      setRenameValue(file.name);
+                    }}
+                    onDelete={() =>
+                      setConfirmDelete({
+                        kind: "file",
+                        id: file.id,
+                        label: file.name,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </NonEditableContextMenu>
       </WindowPanel>
 
       {/* ── New Folder dialog ─────────────────────────────────────────────── */}

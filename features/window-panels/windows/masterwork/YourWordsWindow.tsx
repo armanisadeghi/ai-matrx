@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExpertRecordPage } from "@/features/masterwork/record/ExpertRecordPage";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const OVERLAY_ID = "masterworkYourWordsWindow";
 
@@ -53,7 +54,13 @@ export default function YourWordsWindow({
       }
       bodyClassName="bg-textured p-0"
     >
-      <ExpertRecordPage rulebookId={rulebookId} variant="window" />
+      <NonEditableContextMenu
+        sourceFeature="masterwork"
+        contentSource={{ type: "raw" }}
+        entity={{ type: "rulebook", id: rulebookId, title: "Your words" }}
+      >
+        <ExpertRecordPage rulebookId={rulebookId} variant="window" />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

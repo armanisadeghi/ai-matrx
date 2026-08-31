@@ -18,10 +18,14 @@ import { Lightbulb } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentSkillConfig } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentSkillConfig, selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentSkillConfig } from "@/features/agents/redux/agent-definition/slice";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { SkillConfigPicker } from "@/features/skills/components/SkillConfigPicker";
 import type { SkillConfig } from "@/features/skills/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 interface AgentSkillsWindowProps {
   isOpen: boolean;
@@ -52,6 +56,14 @@ function AgentSkillsWindowInner({
   const skillConfig = useAppSelector((state) =>
     selectAgentSkillConfig(state, agentId),
   );
+  const agentName = useAppSelector((state) => selectAgentName(state, agentId) ?? null);
+  const openAgentContentWindow = useOpenAgentContentWindow();
+  const agentSection = useAgentMenuSection({
+    agentId,
+    agentName,
+    onRefresh: () => dispatch(fetchFullAgent(agentId)),
+    onOpenBuilder: () => openAgentContentWindow({ initialAgentId: agentId }),
+  });
 
   const handleChange = useCallback(
     (next: SkillConfig) => {
@@ -96,7 +108,19 @@ function AgentSkillsWindowInner({
       position="center"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <SkillConfigPicker value={skillConfig} onChange={handleChange} />
+      {/* Per-catalog-skill identity (`skill` token exists) lives inside
+          `SkillConfigPicker`'s own internal selection state — out of scope
+          here. The entity below is this window's actual subject: the agent
+          whose skill_config is being edited. */}
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={agentEntityRef(agentId, agentName)}
+        extraSections={[agentSection]}
+      >
+        <SkillConfigPicker value={skillConfig} onChange={handleChange} />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

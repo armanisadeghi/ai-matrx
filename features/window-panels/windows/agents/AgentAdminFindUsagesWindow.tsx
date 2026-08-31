@@ -14,11 +14,15 @@ import { useCallback, useState } from "react";
 import { ShieldOff, ShieldCheck } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import type { RootState } from "@/lib/redux/store";
 import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsagesEngine";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 interface AgentAdminFindUsagesWindowProps {
   isOpen: boolean;
@@ -38,6 +42,17 @@ export function AgentAdminFindUsagesWindow({
   const agentName = useAppSelector((s: RootState) =>
     effectiveId ? (selectAgentName(s, effectiveId) ?? null) : null,
   );
+
+  const dispatch = useAppDispatch();
+  const openAgentContentWindow = useOpenAgentContentWindow();
+  const agentSection = useAgentMenuSection({
+    agentId: effectiveId ?? "",
+    agentName,
+    onRefresh: effectiveId ? () => dispatch(fetchFullAgent(effectiveId)) : undefined,
+    onOpenBuilder: effectiveId
+      ? () => openAgentContentWindow({ initialAgentId: effectiveId })
+      : undefined,
+  });
 
   const handleSelect = useCallback((id: string) => setSelectedId(id), []);
 
@@ -69,6 +84,13 @@ export function AgentAdminFindUsagesWindow({
       minHeight={420}
       bodyClassName="p-0"
     >
+      {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+      <NonEditableContextMenu
+        sourceFeature="agent-builder"
+        contentSource={{ type: "raw" }}
+        entity={effectiveId && isSuperAdmin ? agentEntityRef(effectiveId, agentName) : undefined}
+        extraSections={effectiveId && isSuperAdmin ? [agentSection] : []}
+      >
       {!isSuperAdmin ? (
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
           <ShieldOff className="h-12 w-12 opacity-20" aria-hidden />
@@ -90,6 +112,7 @@ export function AgentAdminFindUsagesWindow({
           </div>
         </div>
       )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
