@@ -7995,6 +7995,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bettermode/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bettermode_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/buttercms/public/status": {
         parameters: {
             query?: never;
@@ -8038,6 +8055,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_kaltura_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zype/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_zype_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8208,6 +8242,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_stova_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chili-piper/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_chili_piper_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -33166,6 +33217,41 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * BettermodeServiceStatus
+         * @description Safe aggregate status projection for Bettermode's fixed status page.
+         */
+        BettermodeServiceStatus: {
+            /**
+             * Kind
+             * @default bettermode_public_service_status
+             * @constant
+             */
+            __kind?: "bettermode_public_service_status";
+            /**
+             * Provider
+             * @default bettermode
+             * @constant
+             */
+            provider?: "bettermode";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.bettermode.com
+             * @constant
+             */
+            status_page?: "https://status.bettermode.com";
+        };
         /** BgRemoveParams */
         BgRemoveParams: {
             /**
@@ -37996,6 +38082,43 @@ export interface components {
              * @default 0
              */
             min_confidence?: number;
+        };
+        /**
+         * ChiliPiperStatusResult
+         * @description Safe projection of Chili Piper's high-level service status.
+         */
+        ChiliPiperStatusResult: {
+            /**
+             * Kind
+             * @default chili_piper_official_service_status
+             * @constant
+             */
+            __kind?: "chili_piper_official_service_status";
+            /**
+             * Provider
+             * @default chili_piper
+             * @constant
+             */
+            provider?: "chili_piper";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.chilipiper.com
+             * @constant
+             */
+            status_url?: "https://status.chilipiper.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** ChunkDetail */
         ChunkDetail: {
@@ -88276,6 +88399,38 @@ export interface components {
             /** Web Public Access Enabled */
             web_public_access_enabled: boolean;
         };
+        /**
+         * ZypeServiceStatus
+         * @description Safe aggregate status projection for Zype's fixed status page.
+         */
+        ZypeServiceStatus: {
+            /**
+             * Kind
+             * @default zype_public_media_platform_status
+             * @constant
+             */
+            __kind?: "zype_public_media_platform_status";
+            /**
+             * Provider
+             * @default Zype
+             * @constant
+             */
+            provider?: "Zype";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.zype.com
+             * @constant
+             */
+            status_page?: "https://status.zype.com";
+        };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
             /** Deleted */
@@ -102416,6 +102571,26 @@ export interface operations {
             };
         };
     };
+    public_status_bettermode_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BettermodeServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_buttercms_public_status_get: {
         parameters: {
             query?: never;
@@ -102472,6 +102647,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KalturaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_zype_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZypeServiceStatus"];
                 };
             };
         };
@@ -102672,6 +102867,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StovaStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_chili_piper_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiliPiperStatusResult"];
                 };
             };
         };
