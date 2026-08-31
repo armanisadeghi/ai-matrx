@@ -22,16 +22,17 @@ import {
 /**
  * Pure header builder shared by `useApiAuth().getHeaders()` (and its tests).
  *
- * Organization admission rides with auth: the server's AuthMiddleware
- * (matrx-connect, 2026-08-30) refuses any IDENTIFIED request that names no
- * organization via `X-Organization-Id`. Mirrors `buildHeaders` in
- * `lib/api/backend-client.ts` exactly — both the JWT and fingerprint (guest)
- * lanes are identified and run through the ONE fail-closed kernel
- * (`requireOrganizationContext`), so a missing organization throws
- * `OrganizationContextError` BEFORE any networking, matching the server's
- * `organization_required` 400 gate one hop earlier. Only a request with no
- * identity at all (no token, no fingerprint) skips the organization check,
- * because the server's admission gate never reaches it either.
+ * Organization admission rides with JWT auth: the server's AuthMiddleware
+ * (matrx-connect, 2026-08-30) refuses a Bearer-authenticated request that
+ * names no organization via `X-Organization-Id`, and ADMITS the
+ * fingerprint-guest lane without one (a guest has no membership to verify —
+ * matrx-connect 241750bf6). Mirrors `buildHeaders` in
+ * `lib/api/backend-client.ts` exactly: the JWT lane runs through the ONE
+ * fail-closed kernel (`requireOrganizationContext`) and throws
+ * `OrganizationContextError` BEFORE any networking; the guest lane binds an
+ * organization only when the caller actually has one, and never refuses —
+ * holding guests to the JWT rule 400'd every anonymous surface. A request
+ * with no identity at all sends nothing and checks nothing.
  */
 export function buildApiAuthHeaders(args: {
     accessToken: string | null;
@@ -50,7 +51,18 @@ export function buildApiAuthHeaders(args: {
         headers['X-Fingerprint-ID'] = args.fingerprintId;
     }
 
-    if (args.accessToken || args.fingerprintId) {
+    if (args.accessToken) {
+        headers = applyOrganizationContextHeader(
+            headers,
+            requireOrganizationContext(
+                args.organizationId,
+                args.organizationIdOverride ?? undefined,
+            ),
+        );
+    } else if (
+        args.fingerprintId &&
+        (args.organizationId || args.organizationIdOverride)
+    ) {
         headers = applyOrganizationContextHeader(
             headers,
             requireOrganizationContext(

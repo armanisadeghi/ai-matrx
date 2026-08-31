@@ -304,11 +304,19 @@ export class BackendClient {
         );
         break;
       case "fingerprint":
+        // The guest lane is admitted WITHOUT an organization — a guest has
+        // no membership to verify, so the server's gate exempts fingerprint
+        // auth (matrx-connect 241750bf6; the original "guest and JWT lanes
+        // are held to the same rule" wording is superseded — holding guests
+        // to it 400'd every anonymous surface). A scope org, when one was
+        // explicitly provided, still binds.
         headers["X-Fingerprint-ID"] = this.auth.fingerprintId;
-        headers = applyOrganizationContextHeader(
-          headers,
-          requireOrganizationContext(this.scope.organization_id ?? null),
-        );
+        if (this.scope.organization_id) {
+          headers = applyOrganizationContextHeader(
+            headers,
+            requireOrganizationContext(this.scope.organization_id),
+          );
+        }
         break;
       // 'anonymous' — no identity, no auth headers, no org check: the
       // server's admission gate never applies to an unidentified request.

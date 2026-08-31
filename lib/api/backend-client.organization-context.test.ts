@@ -66,15 +66,24 @@ describe("BackendClient organization admission (sender-side, fail-closed)", () =
     );
   });
 
-  it("REFUSAL: a guest (fingerprint) client with no organization scope never calls fetch", async () => {
-    const fetchMock = jest.fn();
+  it("GUEST LANE: a fingerprint client with no organization scope sends WITHOUT one — the server admits that lane org-less (matrx-connect 241750bf6)", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const client = createGuestClient("fp-123", "https://server.example.test");
-    await expect(client.getJson("/some/endpoint")).rejects.toThrow(
-      OrganizationContextError,
-    );
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(client.getJson("/some/endpoint")).resolves.toEqual({
+      ok: true,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers["X-Fingerprint-ID"]).toBe("fp-123");
+    expect(headers["X-Organization-Id"]).toBeUndefined();
   });
 
   it("CONTROL: an unidentified (anonymous/public) client is exempt — no org required, request proceeds", async () => {

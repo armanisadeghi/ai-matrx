@@ -41,13 +41,25 @@ const OTHER_ORG_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
 
 // Mutable per-test "Redux" stand-in — mirrors how `resolveBaseUrl` and now
 // `resolveRequestOrganizationId` read `getStore()` without a real store.
+// `orgBootstrapResolved: true` = the active-org bootstrap has authoritatively
+// finished, so `waitForOrganizationAdmission` settles immediately instead of
+// running its bounded real-time wait inside the tests.
 let selectedOrganizationId: string | null = null;
+let orgBootstrapResolved = true;
+const storeListeners = new Set<() => void>();
 
 jest.mock("@/lib/redux/store-singleton", () => ({
   getStore: () => ({
     getState: () => ({
-      appContext: { organization_id: selectedOrganizationId },
+      appContext: {
+        organization_id: selectedOrganizationId,
+        orgBootstrapResolved,
+      },
     }),
+    subscribe: (listener: () => void) => {
+      storeListeners.add(listener);
+      return () => storeListeners.delete(listener);
+    },
   }),
 }));
 
@@ -58,6 +70,8 @@ describe("python-client organization admission (sender-side, fail-closed)", () =
   beforeEach(() => {
     jest.clearAllMocks();
     selectedOrganizationId = null;
+    orgBootstrapResolved = true;
+    storeListeners.clear();
   });
 
   it("REFUSAL: buildHeaders throws before networking when no organization is selected or supplied", async () => {
@@ -114,6 +128,37 @@ describe("python-client organization admission (sender-side, fail-closed)", () =
     expect((init.headers as Record<string, string>)["X-Organization-Id"]).toBe(
       TEST_ORG_ID,
     );
+  });
+
+  it("GUEST LANE: a fingerprint-only request sends WITHOUT an organization (the server admits that lane org-less)", async () => {
+    // No JWT, guest fingerprint present — the lane a public demo or
+    // marketing surface uses. Demanding an org here made /demos/lulu-pricing
+    // refuse for every anonymous visitor (live, 2026-08-31).
+    const { supabase } = jest.requireMock("@/utils/supabase/client") as {
+      supabase: { auth: { getSession: jest.Mock } };
+    };
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
+    const { headers } = await buildHeaders(
+      { guestFingerprint: "fp-guest-abc" },
+      false,
+    );
+    expect(headers["X-Organization-Id"]).toBeUndefined();
+    expect(headers["X-Guest-Fingerprint"]).toBe("fp-guest-abc");
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  it("HYDRATION: an authenticated request waits for the org bootstrap instead of refusing at boot", async () => {
+    orgBootstrapResolved = false; // boot in progress — nothing resolved yet
+    const pending = buildHeaders({}, false);
+    // The selection lands a beat later, the way the real bootstrap does.
+    selectedOrganizationId = TEST_ORG_ID;
+    orgBootstrapResolved = true;
+    for (const listener of storeListeners) listener();
+    const { headers } = await pending;
+    expect(headers["X-Organization-Id"]).toBe(TEST_ORG_ID);
   });
 
   it("REFUSAL: postJson never calls fetch when no organization is reachable", async () => {

@@ -38,6 +38,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { waitForOrganizationAdmission } from "@/lib/api/organization-admission";
 import type { RootState } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
@@ -425,6 +426,27 @@ function resolveRequestOrganizationId(opts: RequestOptions): string {
   return requireOrganizationContext(selectedOrganizationId, opts.organizationId);
 }
 
+/**
+ * The JWT lane's organization, resolved AFTER admission.
+ *
+ * An explicit `opts.organizationId` wins immediately (the caller already
+ * resolved it authoritatively). Otherwise wait for the active-org bootstrap —
+ * this client's traffic is overwhelmingly fetch-on-mount, which used to race
+ * hydration and throw "Select an organization" (or burn a guaranteed-400
+ * request against the server gate) while the real selection was milliseconds
+ * away. When the bootstrap authoritatively resolves with NO organization, the
+ * existing fail-closed refusal stands — nothing is guessed.
+ */
+async function resolveRequestOrganizationIdAfterAdmission(
+  opts: RequestOptions,
+): Promise<string> {
+  if (opts.organizationId) {
+    return requireOrganizationContext(null, opts.organizationId);
+  }
+  await waitForOrganizationAdmission();
+  return resolveRequestOrganizationId(opts);
+}
+
 export async function buildHeaders(
   opts: RequestOptions,
   includeContentType: boolean,
@@ -454,13 +476,25 @@ export async function buildHeaders(
   if (opts.cloudFilesBypass)
     headers["X-Cloud-Files-Bypass"] = opts.cloudFilesBypass;
   if (includeContentType) headers["Content-Type"] = "application/json";
-  // Bound LAST, mandatory, through the shared kernel — the org header is
-  // resolved, validated, and normalized exactly as `callApi` does it, and a
-  // request with no reachable organization throws here instead of firing.
-  headers = applyOrganizationContextHeader(
-    headers,
-    resolveRequestOrganizationId(opts),
-  );
+  // Organization binds to JWT identity, mirroring the server's admission
+  // rule exactly: an authenticated (Bearer) request MUST name a verified
+  // organization — resolved after the active-org bootstrap, fail-closed,
+  // never guessed — while the fingerprint-guest lane carries NONE (a guest
+  // has no membership to verify; the middleware admits that lane without an
+  // organization, and demanding one here made every public/guest surface
+  // refuse client-side — live: /demos/lulu-pricing, 2026-08-31). An explicit
+  // caller-resolved `opts.organizationId` still binds on either lane.
+  if (token) {
+    headers = applyOrganizationContextHeader(
+      headers,
+      await resolveRequestOrganizationIdAfterAdmission(opts),
+    );
+  } else if (opts.organizationId) {
+    headers = applyOrganizationContextHeader(
+      headers,
+      requireOrganizationContext(null, opts.organizationId),
+    );
+  }
 
   return { headers, requestId };
 }

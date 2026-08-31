@@ -48,7 +48,7 @@ describe("useApiAuth organization admission", () => {
     });
   });
 
-  it("fails closed before networking when an identified request has no organization", () => {
+  it("fails closed before networking when a JWT request has no organization", () => {
     expect(() =>
       buildApiAuthHeaders({
         accessToken: "jwt-token",
@@ -56,13 +56,16 @@ describe("useApiAuth organization admission", () => {
         organizationId: null,
       }),
     ).toThrow(OrganizationContextError);
-    expect(() =>
-      buildApiAuthHeaders({
-        accessToken: null,
-        fingerprintId: "fp-guest",
-        organizationId: null,
-      }),
-    ).toThrow(OrganizationContextError);
+  });
+
+  it("GUEST LANE: a fingerprint-only request with no organization sends WITHOUT one — the server admits that lane org-less (matrx-connect 241750bf6)", () => {
+    const headers = buildApiAuthHeaders({
+      accessToken: null,
+      fingerprintId: "fp-guest",
+      organizationId: null,
+    });
+    expect(headers["X-Fingerprint-ID"]).toBe("fp-guest");
+    expect(headers["X-Organization-Id"]).toBeUndefined();
   });
 
   it("lets a caller-resolved authoritative organization win outright", () => {
