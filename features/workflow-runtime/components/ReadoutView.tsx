@@ -35,18 +35,16 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import {
-  CONTEXT_MENU_ENTITY_KEY,
-  type ContextMenuExtraItem,
-} from "@/features/context-menu-v3/types";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
+import { useWorkflowRunMenuSection } from "../run-actions";
 import {
   describeSource,
   type Readout,
@@ -709,28 +707,18 @@ export function ReadoutView({
   definition?: WorkflowDefinitionLike;
 }) {
   const title = readout.title ?? describeSource(readout.source);
+  const definitionId = useAppSelector(selectRunDefinitionId(runId));
+  const runMenuSection = useWorkflowRunMenuSection({
+    getRow: () => ({ runId, definitionId, workflowName: null }),
+    label: "This readout",
+  });
   return (
     <NonEditableContextMenu
       sourceFeature="workflow_run"
       contentSource={{ type: "raw" }}
       contextData={{ content: title }}
       entity={{ type: "workflow_run", id: runId, title }}
-      extraSections={[
-        {
-          id: "workflow-readout",
-          label: "This readout",
-          anchor: "after-compare",
-          items: [
-            {
-              kind: "link",
-              id: "workflow-readout-open-run",
-              label: "Open this run",
-              icon: ExternalLink,
-              href: `/workflows/runs/${runId}`,
-            },
-          ] satisfies ContextMenuExtraItem[],
-        },
-      ]}
+      extraSections={[runMenuSection]}
     >
       <div className="contents">
         {readoutContent({ runId, readout, ensureLane, definition })}

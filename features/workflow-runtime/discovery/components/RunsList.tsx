@@ -26,15 +26,18 @@ import MatrxDataTable from "@/components/official/matrx-data-table/MatrxDataTabl
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { relativeTime } from "@/lib/entity-list/columns";
-import { ExternalLink, ListX, Workflow } from "lucide-react";
+import { ListX } from "lucide-react";
 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import {
-  CONTEXT_MENU_ENTITY_KEY,
-  type ContextMenuExtraItem,
-} from "@/features/context-menu-v3/types";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 import { RunStatusChip, runStatusLabel } from "../../run-status";
+import {
+  runEntityRef,
+  runMenuContent,
+  useWorkflowRunMenuSection,
+  type WorkflowRunMenuRow,
+} from "../../run-actions";
 import { runDurationMs, runHref, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
 import { useWorkflowFacts } from "../useWorkflowFacts";
@@ -160,6 +163,17 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
     },
   ];
 
+  const runMenuSection = useWorkflowRunMenuSection({
+    getRow: (): WorkflowRunMenuRow | null =>
+      clickedRow
+        ? {
+            runId: clickedRow.runId,
+            definitionId: clickedRow.definitionId,
+            workflowName: clickedRow.workflowName,
+          }
+        : null,
+  });
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {error && (
@@ -179,15 +193,9 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
           setClickedRow(row);
           if (!row) return null;
           return {
-            [CONTEXT_MENU_ENTITY_KEY]: {
-              type: "workflow_run",
-              id: row.runId,
-              title: row.workflowName
-                ? `${row.workflowName} run`
-                : "Workflow run",
-            },
+            [CONTEXT_MENU_ENTITY_KEY]: runEntityRef(row),
             content: [
-              row.workflowName ?? "Unnamed workflow",
+              runMenuContent(row),
               `Status: ${runStatusLabel(row.status)}`,
               row.startedAt ? `Started: ${new Date(row.startedAt).toLocaleString()}` : null,
               row.declaredKind ? `Delivers: ${row.declaredKind}` : null,
@@ -196,37 +204,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
               .join("\n"),
           };
         }}
-        extraSections={[
-          {
-            id: "workflow-run-row",
-            label: "This run",
-            anchor: "after-compare",
-            items: [
-              {
-                kind: "link",
-                id: "workflow-run-open",
-                label: "Open run",
-                icon: ExternalLink,
-                href: clickedRow ? runHref(clickedRow) : "#",
-                disabled: !clickedRow,
-              },
-              {
-                kind: "link",
-                id: "workflow-run-open-workflow",
-                label: "Open workflow",
-                icon: Workflow,
-                href:
-                  clickedRow?.definitionId
-                    ? `/workflows/${clickedRow.definitionId}`
-                    : "#",
-                disabled: !clickedRow?.definitionId,
-                description: !clickedRow?.definitionId
-                  ? "This run has no linked workflow"
-                  : undefined,
-              },
-            ] satisfies ContextMenuExtraItem[],
-          },
-        ]}
+        extraSections={[runMenuSection]}
       >
         <div className="flex h-full min-h-0 flex-col">
           <MatrxDataTable<RunRowView>
