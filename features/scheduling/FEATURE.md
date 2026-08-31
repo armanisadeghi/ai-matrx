@@ -229,6 +229,10 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   completion payload, changes the ledger status to failed, and restores a
   useful `error_message`; the server adapter fix prevents recurrence.
 
+- **2026-08-30** — Memoized the run-history derivation by task id so opening a
+  schedule no longer returns a fresh array for identical Redux state or emits
+  the `useTaskRuns` selector-stability warning.
+
 - **2026-08-30** — codex: Surface certification closed two honesty gaps on `/schedules`. The duplicate guard's advisory read still cannot replace a working roster with a fatal page, but failure is no longer silent: both user and admin lists show an explicit Retry warning and capture the backend failure in Error Inspector. The create/edit form's Description and Prompt `ProTextarea` menus now receive the same live `matrx-user/schedules` scope as the page surface, and list/detail/form each mount one canonical v3 context menu over that same trigger-time scope; the list delegates row content by schedule id instead of mounting one menu per row. Compact mobile-only controls meet the 44px interaction floor, and Locate anchors cover the roster/load state, editor draft fields, open record, target configuration, trigger, timing, and run history. Status pills, duplicate warnings, failure detail, and trigger callouts now use the shared semantic intent tokens instead of owning raw light/dark palette pairs. Prompt keeps its existing dedicated 10,000-character counter rather than stacking a second text-stats footer; Description deliberately has no metric footer because it is a short metadata field.
 
 - **2026-08-29** — Replaced the temporary handwritten `DbJob*` HTTP wire
