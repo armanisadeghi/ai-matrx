@@ -55,6 +55,7 @@ import {
   SelectGroup,
   SelectLabel,
 } from "@/components/ui/select";
+import { toast } from "@/lib/toast";
 import {
   ExternalLink,
   Folder,
@@ -627,11 +628,21 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                           task={task}
                           isSelected={false}
                           onSelect={() => setSelectedTaskId(task.id)}
-                          onToggleComplete={() =>
-                            dispatch(
+                          onToggleComplete={() => {
+                            void dispatch(
                               toggleTaskCompleteThunk({ taskId: task.id }),
                             )
-                          }
+                              .unwrap()
+                              .catch((error) => {
+                                console.error(
+                                  "Error changing task completion:",
+                                  error,
+                                );
+                                toast.error(
+                                  "Could not update task completion",
+                                );
+                              });
+                          }}
                           hideProjectName={!showAllProjects}
                         />
                       ))}

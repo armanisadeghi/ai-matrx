@@ -25,6 +25,7 @@ import { CheckSquare, FolderPlus, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectProjects } from "@/features/tasks/redux/selectors";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { createSubtaskThunk } from "@/features/tasks/redux/thunks";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
 import { toast } from "@/lib/toast";
@@ -188,8 +189,7 @@ export default function ImportTasksModal({
     parentTaskId: string | null,
     onProgress: (count: number) => void,
   ) => {
-    const { createTask, createSubtask } =
-      await import("../services/taskService");
+    const { createTask } = await import("../services/taskService");
 
     for (const item of items) {
       // Skip sections and unselected tasks
@@ -212,16 +212,20 @@ export default function ImportTasksModal({
       // Create the task
       const isCompleted = checkboxState[item.id] || item.checked || false;
 
-      const newTask = parentTaskId
-        ? await createSubtask(parentTaskId, item.title, "")
-        : await createTask({
-            title: item.title,
-            description: "",
-            project_id: projectId,
-            status: isCompleted ? "completed" : "inbox",
-          });
+      const newTaskId = parentTaskId
+        ? await dispatch(
+            createSubtaskThunk({ parentTaskId, title: item.title }),
+          ).unwrap()
+        : (
+            await createTask({
+              title: item.title,
+              description: "",
+              project_id: projectId,
+              status: isCompleted ? "completed" : "inbox",
+            })
+          )?.id;
 
-      if (newTask) {
+      if (newTaskId) {
         onProgress(1);
 
         // Import children (subtasks)
@@ -229,7 +233,7 @@ export default function ImportTasksModal({
           await importTasksRecursive(
             item.children,
             projectId,
-            newTask.id,
+            newTaskId,
             onProgress,
           );
         }

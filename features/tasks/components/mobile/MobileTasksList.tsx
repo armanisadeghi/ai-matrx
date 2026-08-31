@@ -44,6 +44,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { TASKS_CONTEXT_MENU_PROPS } from "@/features/tasks/agent-context/buildTasksContextData";
 import { useTasksListSurfaceScope } from "@/features/tasks/components/TasksListSurfaceRuntime";
+import { toast } from "@/lib/toast";
 
 interface MobileTasksListProps {
   onTaskSelect: (taskId: string) => void;
@@ -78,15 +79,33 @@ export default function MobileTasksList({
     const defaultScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
-    await dispatch(
-      createTaskThunk({
-        title: newTaskTitle,
-        projectId: selectedProjectForTask ?? null,
-        organizationId: orgId,
-        scopeIds: defaultScopeIds,
-      }),
-    );
-    setShowQuickAdd(false);
+    try {
+      const createdId = await dispatch(
+        createTaskThunk({
+          title: newTaskTitle,
+          projectId: selectedProjectForTask ?? null,
+          organizationId: orgId,
+          scopeIds: defaultScopeIds,
+        }),
+      ).unwrap();
+      if (!createdId) {
+        toast.error("Could not create task");
+        return;
+      }
+      setShowQuickAdd(false);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Could not create task");
+    }
+  };
+
+  const handleToggleComplete = async (taskId: string) => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId })).unwrap();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
+    }
   };
 
   const currentProjectName = activeProject
@@ -300,9 +319,7 @@ export default function MobileTasksList({
                     <Checkbox
                       checked={task.completed}
                       onClick={(e) => e.stopPropagation()}
-                      onCheckedChange={() =>
-                        dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
-                      }
+                      onCheckedChange={() => void handleToggleComplete(task.id)}
                       className="relative mx-[15px] after:absolute after:-inset-[15px] after:rounded-full after:content-['']"
                       aria-label={
                         task.completed ? "Mark incomplete" : "Mark complete"

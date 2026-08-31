@@ -53,6 +53,7 @@ import {
   selectOrganizationId,
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
 
 function normalizeProjectIdForCreate(projectId: string | null): string | null {
   if (!projectId || projectId === UNASSIGNED_PROJECT_ID) return null;
@@ -236,9 +237,16 @@ export function QuickTasksSidebar() {
                 layout="stacked"
                 isSelected={selectedTaskId === task.id}
                 onSelect={() => dispatch(setQuickTasksSelectedTaskId(task.id))}
-                onToggleComplete={() =>
-                  dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
-                }
+                onToggleComplete={() => {
+                  void dispatch(
+                    toggleTaskCompleteThunk({ taskId: task.id }),
+                  )
+                    .unwrap()
+                    .catch((error) => {
+                      console.error("Error changing task completion:", error);
+                      toast.error("Could not update task completion");
+                    });
+                }}
                 hideProjectName={!showAllProjects}
               />
             ))}

@@ -35,6 +35,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 import type { TaskPriority } from "../TaskPriorityPicker";
 import { normalizeTaskStatus } from "@/features/tasks/constants/status";
+import { toast } from "@/lib/toast";
 
 type Priority = TaskPriority;
 
@@ -64,12 +65,15 @@ export function useTaskEditorController(taskId: string) {
       draft.description !== undefined
         ? draft.description
         : (task?.description ?? ""),
-    dueDate: draft.due_date !== undefined ? draft.due_date : (task?.due_date ?? null),
+    dueDate:
+      draft.due_date !== undefined ? draft.due_date : (task?.due_date ?? null),
     priority: (draft.priority !== undefined
       ? draft.priority
       : (task?.priority as Priority)) as Priority,
     projectId:
-      draft.project_id !== undefined ? draft.project_id : (task?.project_id ?? null),
+      draft.project_id !== undefined
+        ? draft.project_id
+        : (task?.project_id ?? null),
     assigneeId:
       draft.assignee_id !== undefined
         ? draft.assignee_id
@@ -106,7 +110,10 @@ export function useTaskEditorController(taskId: string) {
     if (!isDirty || isSaving) return;
     setIsSaving(true);
     try {
-      await dispatch(saveTaskEditsThunk({ taskId }));
+      await dispatch(saveTaskEditsThunk({ taskId })).unwrap();
+    } catch (error) {
+      console.error("Error saving task:", error);
+      toast.error("Could not save task");
     } finally {
       setIsSaving(false);
     }
@@ -129,15 +136,23 @@ export function useTaskEditorController(taskId: string) {
           taskId,
           projectId: task?.project_id ?? "__unassigned__",
         }),
-      );
+      ).unwrap();
       setDeleteConfirmOpen(false);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Could not delete task");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const handleToggleComplete = () => {
-    dispatch(toggleTaskCompleteThunk({ taskId }));
+  const handleToggleComplete = async () => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId })).unwrap();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
+    }
   };
 
   return {

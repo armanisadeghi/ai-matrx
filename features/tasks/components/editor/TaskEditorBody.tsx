@@ -43,6 +43,7 @@ import {
   toggleTaskCompleteThunk,
   deleteTaskThunk,
   createSubtaskThunk,
+  saveTaskEditsThunk,
 } from "@/features/tasks/redux/thunks";
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
@@ -58,6 +59,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskPriorityPicker, TASK_PRIORITY_META } from "../TaskPriorityPicker";
 import { TASK_STATUSES } from "@/features/tasks/constants/status";
+import { isValidDateOnly } from "@/utils/dateOnly";
+import { toast } from "@/lib/toast";
 import { TaskDueDatePicker } from "../TaskDueDatePicker";
 import { TaskStatusPicker } from "../TaskStatusPicker";
 import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
@@ -140,7 +143,6 @@ export function TaskEditorBody({
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSubtask);
-
 
   // One-shot freshness fetch — Redux is the source of truth, but the user
   // may have created subtasks elsewhere or RLS scope changed. Upsert any
@@ -262,30 +264,43 @@ export function TaskEditorBody({
           title: newSubtask.trim(),
         }),
       ).unwrap();
-      if (newId) {
-        setNewSubtask("");
-        scheduleSubtaskRefocus();
-        return true;
+      if (!newId) {
+        throw new Error("The subtask could not be created.");
       }
+      setNewSubtask("");
+      scheduleSubtaskRefocus();
+      return true;
+    } catch (error) {
+      console.error("Error adding subtask:", error);
+      toast.error("Could not add subtask");
       return false;
     } finally {
       setIsAddingSubtask(false);
     }
   };
 
-  const handleToggleSubtask = (subtaskId: string) => {
-    dispatch(toggleTaskCompleteThunk({ taskId: subtaskId }));
+  const handleToggleSubtask = async (subtaskId: string) => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId: subtaskId })).unwrap();
+    } catch (error) {
+      console.error("Error changing subtask completion:", error);
+      toast.error("Could not update subtask completion");
+    }
   };
 
-  const handleDeleteSubtask = (subtaskId: string) => {
-    dispatch(
-      deleteTaskThunk({
-        taskId: subtaskId,
-        projectId: task.project_id ?? "__unassigned__",
-      }),
-    );
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    try {
+      await dispatch(
+        deleteTaskThunk({
+          taskId: subtaskId,
+          projectId: task.project_id ?? "__unassigned__",
+        }),
+      ).unwrap();
+    } catch (error) {
+      console.error("Error deleting subtask:", error);
+      toast.error("Could not delete subtask");
+    }
   };
-
 
   const toggleLabel = (label: TaskLabel) => {
     const next = effective.labels.includes(label)
@@ -328,7 +343,7 @@ export function TaskEditorBody({
     task_due_date: (value: unknown) => {
       if (
         value !== null &&
-        (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+        (typeof value !== "string" || !isValidDateOnly(value))
       )
         throw new Error(
           "task_due_date expects a YYYY-MM-DD string, or null to clear.",
@@ -356,13 +371,18 @@ export function TaskEditorBody({
           "add_subtasks expects a non-empty array of subtask title strings.",
         );
       for (const title of value as string[]) {
-        await dispatch(
+        const createdId = await dispatch(
           createSubtaskThunk({ parentTaskId: taskId, title }),
         ).unwrap();
+        if (!createdId) {
+          throw new Error(`Could not create subtask "${title.trim()}".`);
+        }
       }
     },
     save_task: async () => {
-      await handleSave();
+      // Read the Redux draft inside the thunk instead of trusting this render's
+      // `isDirty` closure: an agent may stage and save in adjacent tool calls.
+      await dispatch(saveTaskEditsThunk({ taskId })).unwrap();
     },
   });
 

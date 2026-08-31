@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const source = (name: string) => readFileSync(join(__dirname, name), "utf8");
@@ -22,6 +22,23 @@ const taskRouteSource = () =>
     ),
     "utf8",
   );
+const taskReduxSource = (name: string) =>
+  readFileSync(join(__dirname, "..", "redux", name), "utf8");
+const taskServiceSource = (name: string) =>
+  readFileSync(join(__dirname, "..", "services", name), "utf8");
+const allFeatureSource = () => {
+  const root = join(__dirname, "..");
+  const visit = (directory: string): string[] =>
+    readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) return visit(path);
+      if (entry.name === "task-lifecycle-responsive-contract.test.ts") return [];
+      return /\.(?:ts|tsx)$/.test(entry.name)
+        ? [readFileSync(path, "utf8")]
+        : [];
+    });
+  return visit(root).join("\n");
+};
 
 describe("task lifecycle responsive contract", () => {
   it("keeps date-only table labels out of UTC parsing", () => {
@@ -115,6 +132,52 @@ describe("task lifecycle responsive contract", () => {
     );
     expect(mobileDetails).toContain("task_labels: (value: unknown)");
     expect(mobileDetails).toContain("TASK_LABEL_OPTIONS.map");
+  });
+
+  it("keeps every agent write terminal instead of clearing a failed draft", () => {
+    const desktopEditor = source("editor/TaskEditorBody.tsx");
+    const mobileEditor = source("mobile/MobileTaskDetails.tsx");
+    const thunks = taskReduxSource("thunks.ts");
+    const service = taskServiceSource("taskService.ts");
+
+    expect(desktopEditor).toContain(
+      "dispatch(saveTaskEditsThunk({ taskId })).unwrap()",
+    );
+    expect(desktopEditor).toContain("if (!createdId)");
+    expect(mobileEditor).toContain("surfaceDraftRef.current.title = next");
+    expect(mobileEditor).toContain("await persistSurfaceDraft()");
+    expect(mobileEditor).toContain("if (!labelsSaved)");
+    expect(mobileEditor).toContain("if (!createdId)");
+    expect(mobileEditor).toContain(
+      "dispatch(toggleTaskCompleteThunk({ taskId: task.id })).unwrap()",
+    );
+    expect(thunks).toContain(
+      "dispatch(updateTaskFieldThunk({ taskId, patch: core })).unwrap()",
+    );
+    expect(thunks).toContain("if (!labelsSaved)");
+    expect(thunks).toContain(
+      "throw new Error(`Task ${taskId} could not be saved.`)",
+    );
+    expect(thunks).toContain(
+      "throw new Error(`Task ${taskId} completion could not be saved.`)",
+    );
+    expect(thunks).toContain(
+      "throw new Error(`Task ${taskId} could not be deleted.`)",
+    );
+    expect(service).toContain("...companionUpdates");
+  });
+
+  it("keeps interactive subtask creation on the inheritance-aware thunk", () => {
+    const feature = allFeatureSource();
+
+    expect(feature).not.toContain("taskService.createSubtask(");
+    expect(feature).not.toContain("{ createTask, createSubtask }");
+    expect(source("TaskDetailsPanel.tsx")).toContain(
+      "createSubtaskThunk({ parentTaskId, title })",
+    );
+    expect(source("ImportTasksModal.tsx")).toContain(
+      "createSubtaskThunk({ parentTaskId, title: item.title })",
+    );
   });
 
   it("keeps every task editor header on the live draft copy control", () => {

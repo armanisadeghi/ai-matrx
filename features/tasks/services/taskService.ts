@@ -719,11 +719,15 @@ export async function updateSubtaskStatus(
 export async function completeTask(
   task: Pick<DatabaseTask, "id"> &
     Partial<Pick<DatabaseTask, "recurrence_rule" | "due_date">>,
+  companionUpdates: Omit<UpdateTaskInput, "status" | "completed_at"> = {},
 ): Promise<DatabaseTask | null> {
   const todayStr = new Date().toLocaleDateString("sv-SE"); // yyyy-mm-dd local
+  const effectiveDueDate = companionUpdates.due_date ?? task.due_date;
+  const effectiveRule =
+    companionUpdates.recurrence_rule ?? task.recurrence_rule;
   // A recurring task with no due date anchors its cycle on today.
-  const rolled = task.recurrence_rule
-    ? nextOccurrence(task.recurrence_rule, task.due_date || todayStr, todayStr)
+  const rolled = effectiveRule
+    ? nextOccurrence(effectiveRule, effectiveDueDate || todayStr, todayStr)
     : null;
 
   if (rolled) {
@@ -731,17 +735,18 @@ export async function completeTask(
     // anchor (BYMONTHDAY) so later rolls never lose month-end after a clamp
     // (Jan 31 → Feb 28 → Mar 31, not Mar 28 — D129).
     const anchoredRule = ensureMonthDayAnchor(
-      task.recurrence_rule,
-      task.due_date || todayStr,
+      effectiveRule,
+      effectiveDueDate || todayStr,
     );
     return updateTask(task.id, {
+      ...companionUpdates,
       status: "planned",
       due_date: rolled,
       completed_at: null,
       ...(anchoredRule ? { recurrence_rule: anchoredRule } : {}),
     });
   }
-  return updateTask(task.id, { status: "completed" });
+  return updateTask(task.id, { ...companionUpdates, status: "completed" });
 }
 
 // ─── System-created tasks (idempotent primitive) ────────────────────────────

@@ -66,6 +66,7 @@ import {
 } from "@/utils/datetime";
 import { formatDateOnly } from "@/utils/dateOnly";
 import type { TaskWithProject } from "@/features/tasks/types";
+import { toast } from "@/lib/toast";
 
 type SortKey =
   "status" | "title" | "project" | "priority" | "dueDate" | "updated";
@@ -749,9 +750,17 @@ export default function TasksTableView() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          dispatch(
+                          void dispatch(
                             toggleTaskCompleteThunk({ taskId: task.id }),
-                          );
+                          )
+                            .unwrap()
+                            .catch((error) => {
+                              console.error(
+                                "Error changing task completion:",
+                                error,
+                              );
+                              toast.error("Could not update task completion");
+                            });
                         }}
                         className="text-muted-foreground/70 hover:text-primary transition-colors"
                         title={

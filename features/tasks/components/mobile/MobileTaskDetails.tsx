@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   Calendar,
@@ -18,6 +18,7 @@ import {
   updateTaskFieldThunk,
   toggleTaskCompleteThunk,
   deleteTaskThunk,
+  createSubtaskThunk,
 } from "@/features/tasks/redux/thunks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,9 @@ import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
 import { TaskProvenanceChip } from "../TaskProvenanceChip";
 import { TaskSnoozeButton } from "../TaskSnoozeButton";
 import { TaskEditorCopyButtonsForDraft } from "../editor/TaskEditorCopyButtons";
+import type { UpdateTaskInput } from "@/features/tasks/services/taskService";
+import { isValidDateOnly } from "@/utils/dateOnly";
+import { toast } from "@/lib/toast";
 
 interface MobileTaskDetailsProps {
   task: TaskWithProject;
@@ -90,17 +94,15 @@ export default function MobileTaskDetails({
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
-  const createSubtask = async (parentTaskId: string, title: string) => {
-    const created = await taskService.createSubtask(parentTaskId, title);
-    if (created) await dispatch(invalidateAndRefetchFullContext());
-  };
-  const updateSubtaskStatus = async (subtaskId: string, completed: boolean) => {
-    const ok = await taskService.updateSubtaskStatus(subtaskId, completed);
-    if (ok) await dispatch(invalidateAndRefetchFullContext());
+  const updateSubtaskStatus = async (subtaskId: string) => {
+    await dispatch(toggleTaskCompleteThunk({ taskId: subtaskId })).unwrap();
+    await dispatch(invalidateAndRefetchFullContext());
   };
   const deleteSubtask = async (subtaskId: string) => {
-    const ok = await taskService.deleteSubtask(subtaskId);
-    if (ok) await dispatch(invalidateAndRefetchFullContext());
+    await dispatch(
+      deleteTaskThunk({ taskId: subtaskId, projectId: task.projectId }),
+    ).unwrap();
+    await dispatch(invalidateAndRefetchFullContext());
   };
 
   const [title, setTitle] = useState(task.title || "");
@@ -127,64 +129,87 @@ export default function MobileTaskDetails({
     useRefocusInputAfterAsync(isAddingSubtask);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const surfaceDraftRef = useRef({
+    title,
+    description,
+    dueDate,
+    startDate,
+    status,
+    recurrenceRule,
+    priority,
+    labels,
+  });
+  useEffect(() => {
+    surfaceDraftRef.current = {
+      title,
+      description,
+      dueDate,
+      startDate,
+      status,
+      recurrenceRule,
+      priority,
+      labels,
+    };
+  }, [
+    title,
+    description,
+    dueDate,
+    startDate,
+    status,
+    recurrenceRule,
+    priority,
+    labels,
+  ]);
+
+  const persistSurfaceDraft = async () => {
+    const pending = surfaceDraftRef.current;
+    const patch: UpdateTaskInput = {};
+    if (pending.title !== task.title) patch.title = pending.title;
+    if (pending.description !== task.description) {
+      patch.description = pending.description;
+    }
+    if (pending.dueDate !== task.dueDate) {
+      patch.due_date = pending.dueDate || null;
+    }
+    if (pending.startDate !== (task.startDate || "")) {
+      patch.start_date = pending.startDate || null;
+    }
+    if (pending.status !== task.status) patch.status = pending.status;
+    if (pending.recurrenceRule !== (task.recurrenceRule ?? null)) {
+      patch.recurrence_rule = pending.recurrenceRule;
+    }
+    if (pending.priority !== task.priority) patch.priority = pending.priority;
+
+    if (Object.keys(patch).length > 0) {
+      await dispatch(updateTaskFieldThunk({ taskId: task.id, patch })).unwrap();
+    }
+
+    const savedLabels = Array.isArray(task.settings?.labels)
+      ? task.settings.labels.filter(isTaskLabel)
+      : [];
+    if (pending.labels.join("\u0000") !== savedLabels.join("\u0000")) {
+      const labelsSaved = await taskService.updateTaskLabels(
+        task.id,
+        pending.labels,
+      );
+      if (!labelsSaved) {
+        throw new Error(`Task ${task.id} labels could not be saved.`);
+      }
+    }
+
+    await refresh();
+    setIsDirty(false);
+  };
+
   const handleSave = async () => {
     if (!isDirty || isSaving) return;
 
     setIsSaving(true);
     try {
-      if (title !== task.title) {
-        await dispatch(
-          updateTaskFieldThunk({ taskId: task.id, patch: { title } }),
-        );
-      }
-      if (description !== task.description) {
-        await dispatch(
-          updateTaskFieldThunk({ taskId: task.id, patch: { description } }),
-        );
-      }
-      if (dueDate !== task.dueDate) {
-        await dispatch(
-          updateTaskFieldThunk({
-            taskId: task.id,
-            patch: { due_date: dueDate || null },
-          }),
-        );
-      }
-      if (startDate !== (task.startDate || "")) {
-        await dispatch(
-          updateTaskFieldThunk({
-            taskId: task.id,
-            patch: { start_date: startDate || null },
-          }),
-        );
-      }
-      if (status !== task.status) {
-        await dispatch(
-          updateTaskFieldThunk({ taskId: task.id, patch: { status } }),
-        );
-      }
-      if (recurrenceRule !== (task.recurrenceRule ?? null)) {
-        await dispatch(
-          updateTaskFieldThunk({
-            taskId: task.id,
-            patch: { recurrence_rule: recurrenceRule },
-          }),
-        );
-      }
-      if (priority !== task.priority) {
-        await dispatch(
-          updateTaskFieldThunk({ taskId: task.id, patch: { priority } }),
-        );
-      }
-      const savedLabels = Array.isArray(task.settings?.labels)
-        ? task.settings.labels.filter(isTaskLabel)
-        : [];
-      if (labels.join("\u0000") !== savedLabels.join("\u0000")) {
-        await taskService.updateTaskLabels(task.id, labels);
-      }
-      setIsDirty(false);
+      await persistSurfaceDraft();
     } catch (error) {
       console.error("Error saving task:", error);
+      toast.error("Could not save task");
     } finally {
       setIsSaving(false);
     }
@@ -197,10 +222,11 @@ export default function MobileTaskDetails({
     try {
       await dispatch(
         deleteTaskThunk({ taskId: task.id, projectId: task.projectId }),
-      );
+      ).unwrap();
       onBack();
     } catch (error) {
       console.error("Error deleting task:", error);
+      toast.error("Could not delete task");
     } finally {
       setIsDeleting(false);
     }
@@ -211,12 +237,16 @@ export default function MobileTaskDetails({
 
     setIsAddingSubtask(true);
     try {
-      await createSubtask(task.id, newSubtask);
+      const createdId = await dispatch(
+        createSubtaskThunk({ parentTaskId: task.id, title: newSubtask }),
+      ).unwrap();
+      if (!createdId) throw new Error("The subtask could not be created.");
       setNewSubtask("");
       scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
+      toast.error("Could not add subtask");
     } finally {
       setIsAddingSubtask(false);
     }
@@ -227,19 +257,28 @@ export default function MobileTaskDetails({
     if (!subtask) return;
 
     try {
-      await updateSubtaskStatus(subtaskId, !subtask.completed);
-      await refresh();
+      await updateSubtaskStatus(subtaskId);
     } catch (error) {
       console.error("Error toggling subtask:", error);
+      toast.error("Could not update subtask completion");
     }
   };
 
   const handleDeleteSubtask = async (subtaskId: string) => {
     try {
       await deleteSubtask(subtaskId);
-      await refresh();
     } catch (error) {
       console.error("Error deleting subtask:", error);
+      toast.error("Could not delete subtask");
+    }
+  };
+
+  const handleToggleComplete = async () => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId: task.id })).unwrap();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
     }
   };
 
@@ -297,13 +336,16 @@ export default function MobileTaskDetails({
       if (typeof value !== "string" || !value.trim()) {
         throw new Error("task_title expects a non-empty string.");
       }
-      setTitle(value.trim());
+      const next = value.trim();
+      surfaceDraftRef.current.title = next;
+      setTitle(next);
       setIsDirty(true);
     },
     task_description: (value: unknown) => {
       if (typeof value !== "string") {
         throw new Error("task_description expects a string.");
       }
+      surfaceDraftRef.current.description = value;
       setDescription(value);
       setIsDirty(true);
     },
@@ -313,6 +355,7 @@ export default function MobileTaskDetails({
           `task_status expects one of: ${TASK_STATUSES.join(" | ")}.`,
         );
       }
+      surfaceDraftRef.current.status = value;
       setStatus(value);
       setIsDirty(true);
     },
@@ -320,18 +363,20 @@ export default function MobileTaskDetails({
       if (value !== "low" && value !== "medium" && value !== "high") {
         throw new Error("task_priority expects low | medium | high.");
       }
+      surfaceDraftRef.current.priority = value;
       setPriority(value);
       setIsDirty(true);
     },
     task_due_date: (value: unknown) => {
       if (
         value !== null &&
-        (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+        (typeof value !== "string" || !isValidDateOnly(value))
       ) {
         throw new Error(
           "task_due_date expects a YYYY-MM-DD string, or null to clear.",
         );
       }
+      surfaceDraftRef.current.dueDate = value ?? "";
       setDueDate(value ?? "");
       setIsDirty(true);
     },
@@ -341,6 +386,7 @@ export default function MobileTaskDetails({
           `task_labels expects an array drawn from: ${TASK_LABELS.join(" | ")}.`,
         );
       }
+      surfaceDraftRef.current.labels = value;
       setLabels(value);
       setIsDirty(true);
     },
@@ -355,12 +401,22 @@ export default function MobileTaskDetails({
         );
       }
       for (const subtaskTitle of value) {
-        await taskService.createSubtask(task.id, subtaskTitle.trim());
+        const createdId = await dispatch(
+          createSubtaskThunk({
+            parentTaskId: task.id,
+            title: subtaskTitle.trim(),
+          }),
+        ).unwrap();
+        if (!createdId) {
+          throw new Error(`Could not create subtask "${subtaskTitle.trim()}".`);
+        }
       }
       await refresh();
     },
     save_task: async () => {
-      await handleSave();
+      // The ref is updated synchronously by each draft handler, so an adjacent
+      // save call cannot observe the previous render's local-state closure.
+      await persistSurfaceDraft();
     },
   });
 
@@ -399,9 +455,7 @@ export default function MobileTaskDetails({
                 </Button>
                 <Checkbox
                   checked={task.completed}
-                  onCheckedChange={() =>
-                    dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
-                  }
+                  onCheckedChange={() => void handleToggleComplete()}
                   className="flex-shrink-0"
                 />
                 <h1

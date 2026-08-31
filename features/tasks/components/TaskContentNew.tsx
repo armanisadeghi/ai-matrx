@@ -53,6 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/lib/toast";
 
 export default function TaskContentNew() {
   const router = useRouter();
@@ -125,8 +126,13 @@ export default function TaskContentNew() {
     router.replace(`/tasks?${params.toString()}`, { scroll: false });
   };
 
-  const handleTaskToggle = (_projectId: string, taskId: string) => {
-    dispatch(toggleTaskCompleteThunk({ taskId }));
+  const handleTaskToggle = async (_projectId: string, taskId: string) => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId })).unwrap();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
+    }
   };
 
   const handleAddTask = async () => {

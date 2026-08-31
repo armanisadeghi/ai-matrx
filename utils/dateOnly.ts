@@ -12,7 +12,9 @@
  */
 
 /** Parse a `yyyy-mm-dd` (date-only) string into a LOCAL `Date` with no TZ shift. */
-export function parseDateOnly(value: string | null | undefined): Date | undefined {
+export function parseDateOnly(
+  value: string | null | undefined,
+): Date | undefined {
   if (!value) return undefined;
   const [y, m, d] = value.split("-").map(Number);
   if (!y || !m || !d) return undefined;
@@ -25,6 +27,13 @@ export function toDateOnly(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+/** True only for a real calendar day encoded exactly as `yyyy-mm-dd`. */
+export function isValidDateOnly(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = parseDateOnly(value);
+  return parsed !== undefined && toDateOnly(parsed) === value;
 }
 
 /**

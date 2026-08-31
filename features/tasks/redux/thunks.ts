@@ -304,7 +304,9 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
   const current = getState().tasks.entities[taskId];
   if (!current) {
     dispatch(removeOperatingTaskId(taskId));
-    return;
+    throw new Error(
+      `Task ${taskId} is not loaded; its completion state was not changed.`,
+    );
   }
   const prevStatus = current.status;
   const wasCompleted = prevStatus === "completed";
@@ -383,6 +385,7 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
           }),
         );
       }
+      throw new Error(`Task ${taskId} completion could not be saved.`);
     }
   } finally {
     dispatch(removeOperatingTaskId(taskId));
@@ -403,7 +406,9 @@ export const updateTaskFieldThunk = createAsyncThunk<
     const current = getState().tasks.entities[taskId];
     if (!current) {
       dispatch(removeOperatingTaskId(taskId));
-      return;
+      throw new Error(
+        `Task ${taskId} is not loaded; the update was not saved.`,
+      );
     }
 
     dispatch(
@@ -436,15 +441,19 @@ export const updateTaskFieldThunk = createAsyncThunk<
       const updated =
         patch.status === "completed" && !wasClosed
           ? await (async () => {
-              const { status: _s, ...rest } = patch;
-              if (Object.keys(rest).length > 0) {
-                await taskService.updateTask(taskId, rest);
-              }
-              return taskService.completeTask({
-                id: taskId,
-                recurrence_rule: current.recurrence_rule ?? null,
-                due_date: patch.due_date ?? current.due_date,
-              });
+              const {
+                status: _status,
+                completed_at: _completedAt,
+                ...companionUpdates
+              } = patch;
+              return taskService.completeTask(
+                {
+                  id: taskId,
+                  recurrence_rule: current.recurrence_rule ?? null,
+                  due_date: patch.due_date ?? current.due_date,
+                },
+                companionUpdates,
+              );
             })()
           : await taskService.updateTask(taskId, patch);
       if (updated) {
@@ -484,6 +493,7 @@ export const updateTaskFieldThunk = createAsyncThunk<
             }),
           );
         }
+        throw new Error(`Task ${taskId} could not be saved.`);
       }
     } finally {
       dispatch(removeOperatingTaskId(taskId));
@@ -502,7 +512,7 @@ export const moveTaskThunk = createAsyncThunk<
     const current = getState().tasks.entities[taskId];
     if (!current) {
       dispatch(removeOperatingTaskId(taskId));
-      return;
+      throw new Error(`Task ${taskId} is not loaded; it was not deleted.`);
     }
 
     const normalizedTo =
@@ -588,6 +598,16 @@ export const deleteTaskThunk = createAsyncThunk<
             level: "full-data",
           }),
         );
+        if (projectId && projectId !== "__unassigned__") {
+          dispatch(
+            adjustProjectTaskCount({
+              projectId,
+              openDelta: isClosedStatus(current.status) ? 0 : 1,
+              totalDelta: 1,
+            }),
+          );
+        }
+        throw new Error(`Task ${taskId} could not be deleted.`);
       }
     } finally {
       dispatch(removeOperatingTaskId(taskId));
@@ -611,13 +631,16 @@ export const saveTaskEditsThunk = createAsyncThunk<
 
   const { labels, ...core } = draft;
   if (Object.keys(core).length > 0) {
-    await dispatch(updateTaskFieldThunk({ taskId, patch: core }));
+    await dispatch(updateTaskFieldThunk({ taskId, patch: core })).unwrap();
   }
   if (labels !== undefined) {
-    await taskService.updateTaskLabels(
+    const labelsSaved = await taskService.updateTaskLabels(
       taskId,
       labels as Parameters<typeof taskService.updateTaskLabels>[1],
     );
+    if (!labelsSaved) {
+      throw new Error(`Task ${taskId} labels could not be saved.`);
+    }
   }
   dispatch(clearTaskEdit(taskId));
 });

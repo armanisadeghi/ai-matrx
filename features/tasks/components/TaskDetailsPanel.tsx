@@ -24,6 +24,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
+  createSubtaskThunk,
   updateTaskFieldThunk,
   toggleTaskCompleteThunk,
   deleteTaskThunk,
@@ -64,6 +65,7 @@ import type { QuickTasksTaskDraft } from "@/features/surfaces/manifests/quick-ta
 import type { TaskWithProject } from "@/features/tasks/types";
 import { buildTaskTitleLabel } from "@/features/tasks/utils/taskTitleLabel";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 
 export type TaskDetailsTitleLayout = "default" | "stacked";
 
@@ -106,16 +108,21 @@ export default function TaskDetailsPanel({
   const dispatch = useAppDispatch();
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
   const createSubtask = async (parentTaskId: string, title: string) => {
-    const created = await taskService.createSubtask(parentTaskId, title);
-    if (created) await dispatch(invalidateAndRefetchFullContext());
+    const createdId = await dispatch(
+      createSubtaskThunk({ parentTaskId, title }),
+    ).unwrap();
+    if (!createdId) throw new Error("The subtask could not be created.");
+    await dispatch(invalidateAndRefetchFullContext());
   };
-  const updateSubtaskStatus = async (subtaskId: string, completed: boolean) => {
-    const ok = await taskService.updateSubtaskStatus(subtaskId, completed);
-    if (ok) await dispatch(invalidateAndRefetchFullContext());
+  const updateSubtaskStatus = async (subtaskId: string) => {
+    await dispatch(toggleTaskCompleteThunk({ taskId: subtaskId })).unwrap();
+    await dispatch(invalidateAndRefetchFullContext());
   };
   const deleteSubtask = async (subtaskId: string) => {
-    const ok = await taskService.deleteSubtask(subtaskId);
-    if (ok) await dispatch(invalidateAndRefetchFullContext());
+    await dispatch(
+      deleteTaskThunk({ taskId: subtaskId, projectId: task.projectId }),
+    ).unwrap();
+    await dispatch(invalidateAndRefetchFullContext());
   };
 
   const [title, setTitle] = useState(task.title || "");
@@ -155,7 +162,6 @@ export default function TaskDetailsPanel({
     setIsDirty(false); // Reset dirty state when task updates
   }, [task.id, task.title, task.description, task.dueDate, task.priority]);
 
-
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
     setIsDirty(true);
@@ -177,8 +183,13 @@ export default function TaskDetailsPanel({
   };
 
   const handleToggleComplete = async () => {
-    await dispatch(toggleTaskCompleteThunk({ taskId: task.id }));
-    await refresh();
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId: task.id })).unwrap();
+      await refresh();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
+    }
   };
 
   const handleDelete = async () => {
@@ -188,10 +199,11 @@ export default function TaskDetailsPanel({
     try {
       await dispatch(
         deleteTaskThunk({ taskId: task.id, projectId: task.projectId }),
-      );
+      ).unwrap();
       onClose();
     } catch (error) {
       console.error("Error deleting task:", error);
+      toast.error("Could not delete task");
     } finally {
       setIsDeleting(false);
     }
@@ -205,12 +217,12 @@ export default function TaskDetailsPanel({
       if (title !== task.title) {
         await dispatch(
           updateTaskFieldThunk({ taskId: task.id, patch: { title } }),
-        );
+        ).unwrap();
       }
       if (description !== task.description) {
         await dispatch(
           updateTaskFieldThunk({ taskId: task.id, patch: { description } }),
-        );
+        ).unwrap();
       }
       if (dueDate !== task.dueDate) {
         await dispatch(
@@ -218,17 +230,18 @@ export default function TaskDetailsPanel({
             taskId: task.id,
             patch: { due_date: dueDate || null },
           }),
-        );
+        ).unwrap();
       }
       if (priority !== task.priority) {
         await dispatch(
           updateTaskFieldThunk({ taskId: task.id, patch: { priority } }),
-        );
+        ).unwrap();
       }
       const prevLabels: TaskLabel[] =
         (task.settings?.labels as TaskLabel[]) || [];
       if (JSON.stringify(labels) !== JSON.stringify(prevLabels)) {
-        await taskService.updateTaskLabels(task.id, labels);
+        const labelsSaved = await taskService.updateTaskLabels(task.id, labels);
+        if (!labelsSaved) throw new Error("Task labels could not be saved.");
       }
 
       // Refresh to get updated data
@@ -236,6 +249,7 @@ export default function TaskDetailsPanel({
       setIsDirty(false);
     } catch (error) {
       console.error("Error saving task:", error);
+      toast.error("Could not save task");
     } finally {
       setIsSaving(false);
     }
@@ -246,12 +260,13 @@ export default function TaskDetailsPanel({
 
     setIsAddingSubtask(true);
     try {
-      await createSubtask(task.id, newSubtask);
+      await createSubtask(task.id, newSubtask.trim());
       setNewSubtask("");
       scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
+      toast.error("Could not add subtask");
     } finally {
       setIsAddingSubtask(false);
     }
@@ -262,11 +277,12 @@ export default function TaskDetailsPanel({
     if (!subtask) return;
 
     try {
-      await updateSubtaskStatus(subtaskId, !subtask.completed);
+      await updateSubtaskStatus(subtaskId);
       // Refresh to get updated subtasks
       await refresh();
     } catch (error) {
       console.error("Error toggling subtask:", error);
+      toast.error("Could not update subtask completion");
     }
   };
 
@@ -277,9 +293,9 @@ export default function TaskDetailsPanel({
       await refresh();
     } catch (error) {
       console.error("Error deleting subtask:", error);
+      toast.error("Could not delete subtask");
     }
   };
-
 
   // Publish the panel's LIVE edit state for the host surface to emit as
   // `selected_task_draft`. From an EFFECT, never during render: `getScope`
@@ -378,19 +394,12 @@ export default function TaskDetailsPanel({
         throw new Error(
           "panel_add_subtasks expects a non-empty array of subtask title strings.",
         );
-      // The panel's own canonical create path — one refresh at the end
-      // instead of one per subtask.
+      // Use the same inheritance-aware thunk as every interactive subtask
+      // creator. This deliberately refreshes after each terminal creation so
+      // a rejected child cannot be hidden behind a later success.
       for (const subtaskTitle of value as string[]) {
-        const created = await taskService.createSubtask(
-          task.id,
-          subtaskTitle.trim(),
-        );
-        if (!created)
-          throw new Error(
-            `Creating subtask "${subtaskTitle.trim()}" failed — the service returned nothing.`,
-          );
+        await createSubtask(task.id, subtaskTitle.trim());
       }
-      await refresh();
     },
   });
 

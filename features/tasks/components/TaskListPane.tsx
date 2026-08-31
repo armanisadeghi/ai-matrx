@@ -82,6 +82,7 @@ import {
   buildTasksListContextData,
   createTasksExtraSections,
 } from "@/features/tasks/agent-context/buildTasksContextData";
+import { toast } from "@/lib/toast";
 
 /** DOM anchor the delegated menu reads to find the right-clicked row —
  * mirrors the pattern in `features/user-lists/dom-anchors.ts`. */
@@ -202,17 +203,44 @@ export default function TaskListPane() {
       activeProject && activeProject !== "__unassigned__"
         ? activeProject
         : (projects.find((p) => p.id !== "__unassigned__")?.id ?? null);
-    const newId = await dispatch(
-      createTaskThunk({
-        title: newTaskTitle,
-        projectId: firstProject,
-        organizationId: orgId,
-        scopeIds: defaultScopeIds,
-      }),
-    ).unwrap();
-    if (newId) {
+    try {
+      const newId = await dispatch(
+        createTaskThunk({
+          title: newTaskTitle,
+          projectId: firstProject,
+          organizationId: orgId,
+          scopeIds: defaultScopeIds,
+        }),
+      ).unwrap();
+      if (!newId) {
+        toast.error("Could not create task");
+        return;
+      }
       dispatch(setSelectedTaskId(newId));
       scheduleQuickAddRefocus();
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Could not create task");
+    }
+  };
+
+  const handleToggleTask = async (taskId: string) => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId })).unwrap();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
+    }
+  };
+
+  const handleDeleteTask = async (task: TaskWithProject) => {
+    try {
+      await dispatch(
+        deleteTaskThunk({ taskId: task.id, projectId: task.projectId }),
+      ).unwrap();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Could not delete task");
     }
   };
 
@@ -250,34 +278,33 @@ export default function TaskListPane() {
   };
 
   const handleDuplicateTask = async (task: TaskWithProject) => {
-    const newId = await dispatch(
-      createTaskThunk({
-        title: `${task.title} (copy)`,
-        description: task.description ?? null,
-        dueDate: task.dueDate ?? null,
-        projectId:
-          task.projectId && task.projectId !== "__unassigned__"
-            ? task.projectId
-            : null,
-        priority: task.priority ?? null,
-        organizationId: orgId,
-      }),
-    ).unwrap();
-    if (newId) dispatch(setSelectedTaskId(newId));
+    try {
+      const newId = await dispatch(
+        createTaskThunk({
+          title: `${task.title} (copy)`,
+          description: task.description ?? null,
+          dueDate: task.dueDate ?? null,
+          projectId:
+            task.projectId && task.projectId !== "__unassigned__"
+              ? task.projectId
+              : null,
+          priority: task.priority ?? null,
+          organizationId: orgId,
+        }),
+      ).unwrap();
+      if (!newId) throw new Error("The duplicated task was not created.");
+      dispatch(setSelectedTaskId(newId));
+    } catch (error) {
+      console.error("Error duplicating task:", error);
+      toast.error("Could not duplicate task");
+    }
   };
 
   const menuSections: ContextMenuExtraSection[] = menuTarget
     ? createTasksExtraSections({
         completed: menuTarget.completed,
-        onToggleComplete: () =>
-          dispatch(toggleTaskCompleteThunk({ taskId: menuTarget.id })),
-        onDelete: () =>
-          dispatch(
-            deleteTaskThunk({
-              taskId: menuTarget.id,
-              projectId: menuTarget.projectId,
-            }),
-          ),
+        onToggleComplete: () => void handleToggleTask(menuTarget.id),
+        onDelete: () => void handleDeleteTask(menuTarget),
       }).map((section) => {
         // Same "task-ops" section `TaskEditorBody` defines — drop "Save"
         // (no editor buffer in the list pane) and add "Duplicate" right
@@ -505,11 +532,7 @@ export default function TaskListPane() {
                             view={listView}
                             isSelected={selectedTaskId === task.id}
                             onSelect={() => handleSelectTask(task.id)}
-                            onToggle={() =>
-                              dispatch(
-                                toggleTaskCompleteThunk({ taskId: task.id }),
-                              )
-                            }
+                            onToggle={() => void handleToggleTask(task.id)}
                           />
                         ))}
                       </div>
