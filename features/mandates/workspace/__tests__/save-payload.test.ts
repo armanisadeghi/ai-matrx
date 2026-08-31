@@ -90,3 +90,37 @@ describe("buildBindingSavePayload", () => {
     ).toThrow(/never both/);
   });
 });
+
+// ── P14 — the promise travels, and NULL is a real third answer ──────────────
+
+describe("the auto-run promise on the wire", () => {
+  const base = {
+    holder: { agentId: "a1", agentVersionId: null, useLatest: true } as const,
+    hasOffer: true,
+    consumptionMap: {},
+    capturedOverrides: undefined,
+    storedOverrides: null,
+  };
+
+  it("carries the answer the screen was allowed to offer", () => {
+    expect(buildBindingSavePayload({ ...base, autoRun: true }).autoRun).toBe(true);
+    expect(buildBindingSavePayload({ ...base, autoRun: false }).autoRun).toBe(false);
+  });
+
+  it("says NOTHING when this binding has no opinion — never a silent false", () => {
+    // `null` means "the layer below decides". Collapsing it to `false` is the
+    // auto-run inversion itself: a binding that could never say "run it".
+    expect(buildBindingSavePayload(base).autoRun).toBeNull();
+    expect(buildBindingSavePayload({ ...base, autoRun: null }).autoRun).toBeNull();
+  });
+
+  it("carries it for a workflow Holder too — the promise is not agent-only", () => {
+    const payload = buildBindingSavePayload({
+      ...base,
+      holder: { kind: "workflow", workflowId: "w1" },
+      autoRun: true,
+    });
+    expect(payload.autoRun).toBe(true);
+    expect(payload.holderType).toBe("workflow");
+  });
+});

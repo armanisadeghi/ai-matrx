@@ -276,18 +276,15 @@ export function TranscriptsSidebar({
                   </div>
                 ) : (
                   <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setActiveTranscript(transcript)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setActiveTranscript(transcript);
-                      }
-                    }}
-                    className="w-full p-3 text-left cursor-pointer"
+                    className="relative w-full p-3 text-left"
                   >
-                    <div className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      aria-label={`Select ${transcript.title}`}
+                      onClick={() => setActiveTranscript(transcript)}
+                      className="absolute inset-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    />
+                    <div className="pointer-events-none relative z-10 flex items-start gap-2">
                       <div className="mt-0.5 text-gray-500 dark:text-gray-400">
                         {getSourceIcon(transcript.source_type)}
                       </div>
@@ -300,7 +297,7 @@ export function TranscriptsSidebar({
                               name={transcript.title}
                               showIcon={false}
                               fill
-                              className="w-full"
+                              className="pointer-events-auto w-full"
                               onOpen={() => setActiveTranscript(transcript)}
                             />
                           </h3>
@@ -309,7 +306,7 @@ export function TranscriptsSidebar({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="pointer-events-auto h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Rename recording"
                             onClick={(e) => startRename(transcript, e)}
                           >

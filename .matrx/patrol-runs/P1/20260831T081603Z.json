@@ -63,6 +63,80 @@
       },
       "previousEventHash": "98ab19b1b1ef457e76479c0d956b84b3afcf9645957ee2642566fbd375921417",
       "eventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049"
+    },
+    {
+      "sequence": 5,
+      "state": "certifying",
+      "at": "2026-08-31T08:31:00.838Z",
+      "actor": "codex-root",
+      "summary": "Exact escaped candidate fd212230d9 entered independent adversarial certification.",
+      "evidence": [
+        "Type-check, detector delta, exact diff, focused tests, focused lint baseline, and interaction semantics were assigned to an independent certifier."
+      ],
+      "previousEventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049",
+      "eventHash": "4b7f4e8fa97c00d93f2c04ccd5cca68d000329d75f1881399d75ba1814893749"
+    },
+    {
+      "sequence": 6,
+      "state": "rejected",
+      "at": "2026-08-31T08:31:01.401Z",
+      "actor": "p1-certifier-wave1",
+      "summary": "REJECTED: hover-preview and transcript keyboard semantics regressed in fd212230d9.",
+      "evidence": [
+        "FileResourceChip passed EntityRef directly to HoverCardTrigger asChild, dropping Radix trigger props/ref for read-only chips.",
+        "TranscriptsSidebar nested anchors beneath role=button key handling that prevented Enter/Space and created invalid interactive semantics."
+      ],
+      "previousEventHash": "4b7f4e8fa97c00d93f2c04ccd5cca68d000329d75f1881399d75ba1814893749",
+      "eventHash": "1e24fee332df4df7e504ec3d0b1bb2dbd16cb8643bc9dc078159a5bf7b30af6b"
+    },
+    {
+      "sequence": 7,
+      "state": "fixing",
+      "at": "2026-08-31T08:31:39.157Z",
+      "actor": "codex-root",
+      "summary": "Correcting the two concrete fd212 adversarial regressions.",
+      "evidence": [
+        "Restore a real DOM Radix hover trigger around every FileResourceChip variant.",
+        "Separate transcript row selection from EntityRef and rename controls with sibling interactive layers."
+      ],
+      "previousEventHash": "1e24fee332df4df7e504ec3d0b1bb2dbd16cb8643bc9dc078159a5bf7b30af6b",
+      "eventHash": "080a20f82d514020ed444126d87644076d96cc1eeaf0d4f56701cb3383d38ef3"
+    },
+    {
+      "sequence": 8,
+      "state": "certifying",
+      "at": "2026-08-31T08:33:38.607Z",
+      "actor": "codex-root",
+      "summary": "Corrected replacement candidate dbe21692e6 entered independent recertification.",
+      "evidence": [
+        "Original 11-file product candidate fd212230d9 plus two focused interaction corrections; all worker and local gates pass.",
+        "Candidate remote: origin/patrol/p1-20260831-wave1-corrected at dbe21692e62f75beecc2730925c6081c2f6a3fef."
+      ],
+      "previousEventHash": "080a20f82d514020ed444126d87644076d96cc1eeaf0d4f56701cb3383d38ef3",
+      "eventHash": "d66ea5d018aeeadcfd28ddf3845aaf621abba7b1afcbb7eaa9ff966b0486d58e"
+    },
+    {
+      "sequence": 9,
+      "state": "certified",
+      "at": "2026-08-31T08:35:22.897Z",
+      "actor": "p1-certifier-wave1",
+      "summary": "CERTIFIED corrected 11-file P1 candidate; both rejected interaction seams are closed.",
+      "evidence": [
+        "Managed preview remained occupied by another checkout; bounded static/component/test evidence used under the lease contract."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "certifierTaskId": "p1-certifier-wave1",
+        "checks": [
+          "FileResourceChip preserves Radix hover/focus preview with a real DOM trigger in removable and read-only states.",
+          "TranscriptsSidebar separates row selection from EntityRef and rename controls; keyboard and native modified-click doors remain valid.",
+          "Other nine product files are byte-identical to fd212; type-check PASS; detector 58/24 HIGH to 45/11 HIGH; diff-check PASS.",
+          "Five focused suites pass 19/19; focused lint has only unchanged baseline findings outside candidate hunks."
+        ]
+      },
+      "previousEventHash": "d66ea5d018aeeadcfd28ddf3845aaf621abba7b1afcbb7eaa9ff966b0486d58e",
+      "eventHash": "f6abb2ac6c207488c00d29ad8f59c78608d5c32f536c75eeb31b2eb69f682e12"
     }
   ]
 }

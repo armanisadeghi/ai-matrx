@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T081603Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-31T08:26:05.074Z",
-  "summary": "Recorded escaped delivery of the exact 11-file P1 candidate before adversarial certification.",
+  "state": "certified",
+  "updatedAt": "2026-08-31T08:35:22.897Z",
+  "summary": "CERTIFIED corrected 11-file P1 candidate; both rejected interaction seams are closed.",
   "source": "20260831T081603Z.json",
-  "eventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049"
+  "eventHash": "f6abb2ac6c207488c00d29ad8f59c78608d5c32f536c75eeb31b2eb69f682e12"
 }
