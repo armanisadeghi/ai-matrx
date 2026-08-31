@@ -392,7 +392,18 @@ function registryFindings(files: Map<string, string>): Finding[] {
     const builders = [...cells[2].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
     const filePath = cells[3].match(/`([^`]+)`/)?.[1];
     if (!builders.length || !filePath || filePath === "same file") continue;
-    const src = files.get(filePath);
+    // The scan map holds .tsx only, but a builder legitimately lives in a .ts
+    // (`buildTasksContextData.ts`). Falling back to disk stops the guard from
+    // reporting a healthy row as a missing file — a false alarm in a LAW
+    // section is how a guard gets ignored.
+    let src = files.get(filePath);
+    if (src === undefined) {
+      try {
+        src = readFileSync(join(ROOT, filePath), "utf8");
+      } catch {
+        /* genuinely absent — fall through to the finding below */
+      }
+    }
     if (src === undefined) {
       out.push({
         population: "registry",
@@ -450,10 +461,14 @@ function main() {
    * like a menu counts as carrying one.
    */
   const menuCarriers = new Set<string>();
-  for (const [path, src] of files) {
+  for (const [, src] of files) {
     if (!MOUNTS_MENU.test(src)) continue;
-    for (const name of exportedComponents(src))
-      if (/menu/i.test(name) || /menu/i.test(path)) menuCarriers.add(name);
+    // NOT restricted to menu-NAMED components. A window that renders only
+    // `<TextSectionsWindow>` — which mounts its own v3 menu — is covered by
+    // delegation, and reporting it as menu-less sends the next agent to nest a
+    // second one. The detail line names the carrier so the credit stays
+    // inspectable rather than becoming a blanket pass.
+    for (const name of exportedComponents(src)) menuCarriers.add(name);
   }
 
   const findings: Finding[] = [];
@@ -486,11 +501,14 @@ function main() {
       covered.push({ population, file: path, detail: "own menu", grade: gradeMenu(src, files) });
       continue;
     }
-    if ([...menuCarriers].some((n) => new RegExp(`<${n}[\\s/>]`).test(src))) {
+    const carrier = [...menuCarriers].find((n) =>
+      new RegExp(`<${n}[\\s/>]`).test(src),
+    );
+    if (carrier) {
       covered.push({
         population,
         file: path,
-        detail: "wrapped by a domain menu component that mounts v3",
+        detail: `delegates to <${carrier}>, which mounts v3`,
       });
       continue;
     }
