@@ -48,6 +48,14 @@ import {
   isOrgRole,
   type OrgRole,
 } from "@/features/organizations/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { adminUserMenuSection } from "@/features/admin/users/components/admin-user-menu-section";
+import {
+  unavailableHere,
+  withAvailability,
+} from "@/features/context-menu-v3/utils/availability";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
   email: string | null;
@@ -74,6 +82,11 @@ export function OrganizationsAdminClient() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
+  const [clickedOrganization, setClickedOrganization] =
+    useState<AdminOrganizationRow | null>(null);
+  const [clickedMember, setClickedMember] = useState<MemberDisplayRow | null>(
+    null,
+  );
   const [addUserId, setAddUserId] = useState<string>();
   const [addUserQuery, setAddUserQuery] = useState("");
   const [addRole, setAddRole] = useState<OrgRole>("member");
@@ -510,6 +523,54 @@ export function OrganizationsAdminClient() {
             </Button>
           </div>
           <div className="min-h-0 flex-1 p-2">
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(element) => {
+                const id = element
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const organization = id
+                  ? (visibleOrganizations.find((o) => o.id === id) ?? null)
+                  : null;
+                setClickedOrganization(organization);
+                if (!organization) return null;
+                return {
+                  [CONTEXT_MENU_ENTITY_KEY]: {
+                    type: "organization",
+                    id: organization.id,
+                    title: organization.name,
+                  },
+                  content: `${organization.name} (${organization.slug})\nid=${organization.id}\nmembers=${organization.member_count} owners=${organization.owner_count}`,
+                };
+              }}
+              extraSections={[
+                withAvailability(
+                  {
+                    id: "organization-actions",
+                    label: clickedOrganization?.name || "This organization",
+                    icon: Building2,
+                    anchor: "after-compare",
+                    items: [
+                      {
+                        kind: "item",
+                        id: "organization-view-members",
+                        label: "View members",
+                        icon: UserRound,
+                        disabled: !clickedOrganization,
+                        onSelect: () =>
+                          clickedOrganization &&
+                          setOrganizationFocus(clickedOrganization),
+                      },
+                    ] satisfies ContextMenuExtraItem[],
+                  },
+                  !clickedOrganization
+                    ? { "organization-view-members": unavailableHere("this table") }
+                    : undefined,
+                ),
+              ]}
+            >
             <MatrxDataTable
               urlState={{ id: "organizations", selectedRow: false }}
               data={visibleOrganizations}
@@ -542,6 +603,7 @@ export function OrganizationsAdminClient() {
                   : "No organizations are available.",
               }}
             />
+            </NonEditableContextMenu>
           </div>
         </section>
 
@@ -587,6 +649,61 @@ export function OrganizationsAdminClient() {
             </Button>
           </div>
           <div className="min-h-0 flex-1 p-2">
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(element) => {
+                const id = element
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const member = id
+                  ? (members.find((m) => m.id === id) ?? null)
+                  : null;
+                setClickedMember(member);
+                if (!member) return null;
+                return {
+                  content: `${member.display_name ?? "Unnamed user"} <${member.email ?? "no-email"}>\nuser_id=${member.user_id}\nrole=${member.role}`,
+                };
+              }}
+              extraSections={[
+                withAvailability(
+                  adminUserMenuSection(
+                    clickedMember
+                      ? {
+                          id: clickedMember.user_id,
+                          email: clickedMember.email,
+                          displayName: clickedMember.display_name,
+                        }
+                      : null,
+                  ),
+                  undefined,
+                ),
+                {
+                  id: "organization-member-actions",
+                  label: "This membership",
+                  anchor: "after-compare",
+                  items: [
+                    {
+                      kind: "item",
+                      id: "organization-member-remove",
+                      label: "Remove from organization…",
+                      icon: Trash2,
+                      destructive: true,
+                      disabled:
+                        !clickedMember ||
+                        Boolean(
+                          selectedOrganization?.is_personal &&
+                            clickedMember.user_id ===
+                              selectedOrganization.created_by,
+                        ),
+                      onSelect: () =>
+                        clickedMember && void removeMember(clickedMember),
+                    },
+                  ] satisfies ContextMenuExtraItem[],
+                },
+              ]}
+            >
             <MatrxDataTable
               urlState={{ id: "organization-members" }}
               data={members}
@@ -652,6 +769,7 @@ export function OrganizationsAdminClient() {
                   : "Choose an organization to inspect and manage its users.",
               }}
             />
+            </NonEditableContextMenu>
           </div>
         </section>
       </div>
