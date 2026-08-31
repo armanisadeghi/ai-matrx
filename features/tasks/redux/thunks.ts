@@ -634,13 +634,29 @@ export const saveTaskEditsThunk = createAsyncThunk<
     await dispatch(updateTaskFieldThunk({ taskId, patch: core })).unwrap();
   }
   if (labels !== undefined) {
-    const labelsSaved = await taskService.updateTaskLabels(
-      taskId,
-      labels as Parameters<typeof taskService.updateTaskLabels>[1],
-    );
+    const labelsSaved = await taskService.updateTaskLabels(taskId, labels);
     if (!labelsSaved) {
       throw new Error(`Task ${taskId} labels could not be saved.`);
     }
+    // `updateTaskLabels` persists through the canonical settings merge. Mirror
+    // that terminal truth into the same task entity the editor and its surface
+    // scope read; otherwise clearing the draft reveals the pre-save labels
+    // until an unrelated refetch happens.
+    const savedTask = getState().tasks.entities[taskId];
+    if (!savedTask) {
+      throw new Error(
+        `Task ${taskId} is not loaded after its labels were saved.`,
+      );
+    }
+    dispatch(
+      upsertTaskWithLevel({
+        record: {
+          ...savedTask,
+          settings: { ...(savedTask.settings ?? {}), labels },
+        },
+        level: "full-data",
+      }),
+    );
   }
   dispatch(clearTaskEdit(taskId));
 });

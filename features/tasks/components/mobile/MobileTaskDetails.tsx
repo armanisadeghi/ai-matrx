@@ -360,8 +360,15 @@ export default function MobileTaskDetails({
       setIsDirty(true);
     },
     task_priority: (value: unknown) => {
-      if (value !== "low" && value !== "medium" && value !== "high") {
-        throw new Error("task_priority expects low | medium | high.");
+      if (
+        value !== null &&
+        value !== "low" &&
+        value !== "medium" &&
+        value !== "high"
+      ) {
+        throw new Error(
+          "task_priority expects low | medium | high, or null to clear.",
+        );
       }
       surfaceDraftRef.current.priority = value;
       setPriority(value);

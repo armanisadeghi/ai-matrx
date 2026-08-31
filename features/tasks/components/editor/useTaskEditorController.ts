@@ -16,7 +16,7 @@
 // `read-by-id` surface (the notes leaf-unit pattern).
 
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectTaskEdit,
   selectTaskIsDirty,
@@ -30,19 +30,79 @@ import {
   deleteTaskThunk,
 } from "@/features/tasks/redux/thunks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import type { TaskRecord } from "@/features/agent-context/redux/tasksSlice";
 import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
-import type { TaskPriority } from "../TaskPriorityPicker";
 import { normalizeTaskStatus } from "@/features/tasks/constants/status";
+import { TASK_LABELS, type TaskLabel } from "@/features/tasks/constants/labels";
+import type { TaskEditDraft } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "@/lib/toast";
-
-type Priority = TaskPriority;
 
 export type TaskEditorController = ReturnType<typeof useTaskEditorController>;
 
+function isTaskLabel(value: unknown): value is TaskLabel {
+  return (
+    typeof value === "string" &&
+    TASK_LABELS.some((candidate) => candidate === value)
+  );
+}
+
+/**
+ * The ONE draft-over-saved projection used by both the visible editor and the
+ * submit-time surface scope. Keeping it pure makes the read-back contract
+ * testable and prevents the agent path from inventing a second task model.
+ */
+export function resolveTaskEditorEffective(
+  task: TaskRecord | undefined,
+  draft: TaskEditDraft,
+) {
+  const savedPriority =
+    task?.priority === "low" ||
+    task?.priority === "medium" ||
+    task?.priority === "high"
+      ? task.priority
+      : null;
+  const savedLabels = Array.isArray(task?.settings?.labels)
+    ? task.settings.labels.filter(isTaskLabel)
+    : [];
+
+  return {
+    title: draft.title ?? task?.title ?? "",
+    description:
+      draft.description !== undefined
+        ? draft.description
+        : (task?.description ?? ""),
+    dueDate:
+      draft.due_date !== undefined ? draft.due_date : (task?.due_date ?? null),
+    priority: draft.priority !== undefined ? draft.priority : savedPriority,
+    projectId:
+      draft.project_id !== undefined
+        ? draft.project_id
+        : (task?.project_id ?? null),
+    assigneeId:
+      draft.assignee_id !== undefined
+        ? draft.assignee_id
+        : (task?.assignee_id ?? null),
+    labels: draft.labels !== undefined ? draft.labels : savedLabels,
+    status:
+      draft.status !== undefined
+        ? draft.status
+        : normalizeTaskStatus(task?.status),
+    startDate:
+      draft.start_date !== undefined
+        ? draft.start_date
+        : (task?.start_date ?? null),
+    recurrenceRule:
+      draft.recurrence_rule !== undefined
+        ? draft.recurrence_rule
+        : (task?.recurrence_rule ?? null),
+  };
+}
+
 export function useTaskEditorController(taskId: string) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { metadataPending } = useEnsureTaskLoaded(taskId);
   const task = useAppSelector((s) => selectTaskById(s, taskId));
   const draft = useAppSelector(selectTaskEdit(taskId));
@@ -59,41 +119,17 @@ export function useTaskEditorController(taskId: string) {
 
   // Effective values — draft overlay over the persisted task. Tolerates a
   // not-yet-loaded task (callers gate on `task` before rendering chrome/body).
-  const effective = {
-    title: draft.title ?? task?.title ?? "",
-    description:
-      draft.description !== undefined
-        ? draft.description
-        : (task?.description ?? ""),
-    dueDate:
-      draft.due_date !== undefined ? draft.due_date : (task?.due_date ?? null),
-    priority: (draft.priority !== undefined
-      ? draft.priority
-      : (task?.priority as Priority)) as Priority,
-    projectId:
-      draft.project_id !== undefined
-        ? draft.project_id
-        : (task?.project_id ?? null),
-    assigneeId:
-      draft.assignee_id !== undefined
-        ? draft.assignee_id
-        : (task?.assignee_id ?? null),
-    labels:
-      draft.labels !== undefined
-        ? draft.labels
-        : ((task?.settings as { labels?: string[] } | null)?.labels ?? []),
-    status:
-      draft.status !== undefined
-        ? draft.status
-        : normalizeTaskStatus(task?.status),
-    startDate:
-      draft.start_date !== undefined
-        ? draft.start_date
-        : (task?.start_date ?? null),
-    recurrenceRule:
-      draft.recurrence_rule !== undefined
-        ? draft.recurrence_rule
-        : (task?.recurrence_rule ?? null),
+  const effective = resolveTaskEditorEffective(task, draft);
+
+  // Surface scope is sampled on execution. Read the same Redux task+draft
+  // pair at that instant so a save followed immediately by a new run cannot
+  // observe the prior render's status or labels.
+  const readEffective = () => {
+    const state = store.getState();
+    return resolveTaskEditorEffective(
+      selectTaskById(state, taskId),
+      selectTaskEdit(taskId)(state),
+    );
   };
 
   const completed = normalizeTaskStatus(task?.status) === "completed";
@@ -159,6 +195,7 @@ export function useTaskEditorController(taskId: string) {
     taskId,
     task,
     effective,
+    readEffective,
     completed,
     isDirty,
     isSaving,

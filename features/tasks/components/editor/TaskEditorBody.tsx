@@ -106,6 +106,7 @@ export function TaskEditorBody({
     orgId,
     metadataPending,
     patch,
+    readEffective,
     handleSave,
     handleToggleComplete,
     handleDelete,
@@ -222,20 +223,48 @@ export function TaskEditorBody({
   // Plain function (NOT useCallback): reads the live selection from the DOM at
   // call time, not from render state. React Compiler memoizes it anyway.
   const getApplicationScope = () => {
+    const liveEffective = readEffective();
     const el = descriptionRef.current;
     const start = el?.selectionStart ?? descSelectionStart;
     const end = el?.selectionEnd ?? descSelectionEnd;
     const selectedText =
       start !== end
-        ? effective.description.slice(
+        ? liveEffective.description.slice(
             Math.min(start, end),
             Math.max(start, end),
           )
         : "";
+    const liveContextData = buildTasksContextData({
+      taskId,
+      title: liveEffective.title,
+      description: liveEffective.description,
+      selectionStart: start,
+      selectionEnd: end,
+      status: liveEffective.status,
+      priority: liveEffective.priority,
+      dueDate: liveEffective.dueDate,
+      projectId: liveEffective.projectId,
+      projectName: project?.name ?? null,
+      subtasks: subtasks.map((s) => ({
+        id: s.id,
+        title: s.title,
+        status: s.status,
+      })),
+      labels: liveEffective.labels,
+      assigneeId: liveEffective.assigneeId,
+      createdAt: task.created_at ?? null,
+      createdBy: task.created_by ?? null,
+      comments: comments.map((c) => ({
+        id: c.id,
+        body: c.body,
+        createdAt: c.createdAt,
+        authorName: c.author.displayName ?? c.author.email ?? null,
+      })),
+    });
     return buildApplicationScopeFromMenuContext({
       selectedText,
       selectionRange: el ? { type: "editable", element: el, start, end } : null,
-      contextData,
+      contextData: liveContextData,
     });
   };
 
@@ -336,8 +365,15 @@ export function TaskEditorBody({
       patch("status", value as (typeof TASK_STATUSES)[number]);
     },
     task_priority: (value: unknown) => {
-      if (value !== "low" && value !== "medium" && value !== "high")
-        throw new Error("task_priority expects low | medium | high.");
+      if (
+        value !== null &&
+        value !== "low" &&
+        value !== "medium" &&
+        value !== "high"
+      )
+        throw new Error(
+          "task_priority expects low | medium | high, or null to clear.",
+        );
       patch("priority", value);
     },
     task_due_date: (value: unknown) => {

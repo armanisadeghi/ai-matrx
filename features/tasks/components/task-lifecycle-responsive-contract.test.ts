@@ -26,6 +26,11 @@ const taskReduxSource = (name: string) =>
   readFileSync(join(__dirname, "..", "redux", name), "utf8");
 const taskServiceSource = (name: string) =>
   readFileSync(join(__dirname, "..", "services", name), "utf8");
+const taskManifestSource = () =>
+  readFileSync(
+    join(__dirname, "..", "..", "surfaces", "manifests", "tasks.manifest.ts"),
+    "utf8",
+  );
 const allFeatureSource = () => {
   const root = join(__dirname, "..");
   const visit = (directory: string): string[] =>
@@ -166,6 +171,25 @@ describe("task lifecycle responsive contract", () => {
       "throw new Error(`Task ${taskId} could not be deleted.`)",
     );
     expect(service).toContain("...companionUpdates");
+  });
+
+  it("keeps nullable priority and submit-time Redux read-back in the Tasks surface", () => {
+    const desktopEditor = source("editor/TaskEditorBody.tsx");
+    const mobileEditor = source("mobile/MobileTaskDetails.tsx");
+    const controller = source("editor/useTaskEditorController.ts");
+    const thunks = taskReduxSource("thunks.ts");
+    const manifest = taskManifestSource();
+
+    expect(manifest).toContain("or null to clear it back to None");
+    expect(desktopEditor).toContain("value !== null &&");
+    expect(mobileEditor).toContain("value !== null &&");
+    expect(desktopEditor).toContain("const liveEffective = readEffective()");
+    expect(desktopEditor).toContain("contextData: liveContextData");
+    expect(controller).toContain("const state = store.getState()");
+    expect(controller).toContain("resolveTaskEditorEffective(");
+    expect(thunks).toContain(
+      "settings: { ...(savedTask.settings ?? {}), labels }",
+    );
   });
 
   it("keeps interactive subtask creation on the inheritance-aware thunk", () => {

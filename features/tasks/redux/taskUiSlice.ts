@@ -5,6 +5,7 @@ import type { DatabaseTask, ProjectWithTasks } from "../types/database";
 import type { TaskFilterType } from "../types";
 import type { TaskSortField } from "../types/sort";
 import type { SmartViewKey } from "../constants/smartViews";
+import type { TaskLabel } from "../constants/labels";
 
 export interface TaskUiState {
   // Hierarchical data (source of truth for the tasks route UI)
@@ -109,7 +110,7 @@ export interface TaskEditDraft {
   priority?: "low" | "medium" | "high" | null;
   project_id?: string | null;
   assignee_id?: string | null;
-  labels?: string[];
+  labels?: TaskLabel[];
   status?: import("../constants/status").TaskStatus;
   start_date?: string | null;
   recurrence_rule?: string | null;
@@ -428,7 +429,10 @@ const slice = createSlice({
     },
     patchTaskUserState(
       state,
-      action: PayloadAction<{ taskId: string; patch: Partial<TaskUserStateEntry> }>,
+      action: PayloadAction<{
+        taskId: string;
+        patch: Partial<TaskUserStateEntry>;
+      }>,
     ) {
       const { taskId, patch } = action.payload;
       const current = state.userState[taskId] ?? {

@@ -393,7 +393,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "task_priority",
     label: "Task priority",
     description:
-      "Stages a priority into the draft. One of: low | medium | high. The user still saves.",
+      "Stages a priority into the draft. One of: low | medium | high, or null to clear it back to None. The user still saves.",
     valueType: "string",
     updatesValue: "active_task_priority",
     mode: "draft",
