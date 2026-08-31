@@ -444,6 +444,12 @@ export async function putMandateBinding(
       path: "/mandates/{mandate_key}/binding",
       method: "PUT",
       pathParams: { mandate_key: mandateKey },
+      // An org binding is a write in THAT org's tenancy context, even when an
+      // admin currently has a different workspace selected. Keep the body and
+      // X-Organization-Id on one canonical value at the transport boundary.
+      ...(principal.organizationId
+        ? { scopeOverrides: { organization_id: principal.organizationId } }
+        : {}),
       body: {
         principal_type: principal.principalType,
         holder_type: input.holderType ?? "agent",
@@ -492,6 +498,9 @@ export async function removeMandateBinding(
       path: "/mandates/{mandate_key}/binding",
       method: "DELETE",
       pathParams: { mandate_key: mandateKey },
+      ...(principal.organizationId
+        ? { scopeOverrides: { organization_id: principal.organizationId } }
+        : {}),
       body: {
         principal_type: principal.principalType,
         ...(principal.organizationId
