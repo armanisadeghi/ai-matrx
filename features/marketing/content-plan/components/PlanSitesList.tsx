@@ -17,13 +17,16 @@ import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Columns3,
+  Eye,
   LayoutTemplate,
   ListTree,
   Map as MapIcon,
   MoreVertical,
   PanelsTopLeft,
+  Pencil,
   Plus,
   Table2,
+  Trash2,
   Users,
 } from "lucide-react";
 
@@ -47,6 +50,16 @@ import type {
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import {
+  siteEntityRef,
+  siteMenuSection,
+} from "@/features/marketing/seo/run-console/site-menu";
 import { buildSiteMenu } from "@/features/marketing/components/sites/site-actions";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
 import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
@@ -182,6 +195,7 @@ export function PlanSitesList({
   const [deleting, setDeleting] = useState<MarketingSite | null>(null);
   const [deniedDelete, setDeniedDelete] = useState<MarketingSite | null>(null);
   const [peeking, setPeeking] = useState<SiteListRow | null>(null);
+  const [contextRow, setContextRow] = useState<PlanSiteRow | null>(null);
   // `web.site.plan_profile_id` → the profile's vertical. Cross-org read on
   // purpose: this list spans orgs, and an org-scoped read would blank the
   // column for every row outside the active org.
@@ -397,6 +411,89 @@ export function PlanSitesList({
       statusMetaById,
       verticalById,
     ],
+  );
+
+  /**
+   * The pane's right-click menu — the same site identity as `buildRowMenu`
+   * (the kebab dropdown), rebuilt in `ContextMenuExtraSection` shape for the
+   * v3 pane wrapper. `siteMenuSection` carries the canonical site doors
+   * (registry: "Marketing site / brand"); this page-local section adds the
+   * content-plan-specific views and record actions the kebab already offers,
+   * so right-click parity holds with the visible menu.
+   */
+  const buildContextMenuSection = useCallback(
+    (row: PlanSiteRow): ContextMenuExtraSection => {
+      const cmsLink = resolveCmsLink(row.site, cmsSites.data ?? []);
+      const items: ContextMenuExtraItem[] = [
+        {
+          kind: "item",
+          id: "cp-open-tree",
+          label: "Open plan",
+          icon: ListTree,
+          onSelect: () => openWorkspace(row, "tree"),
+        },
+        {
+          kind: "item",
+          id: "cp-open-table",
+          label: "Table",
+          icon: Table2,
+          onSelect: () => openWorkspace(row, "table"),
+        },
+        {
+          kind: "item",
+          id: "cp-open-map",
+          label: "Pillar map",
+          icon: MapIcon,
+          onSelect: () => openWorkspace(row, "map"),
+        },
+        {
+          kind: "item",
+          id: "cp-open-entities",
+          label: "Entities",
+          icon: Users,
+          onSelect: () => openWorkspace(row, "entities"),
+        },
+        {
+          kind: "item",
+          id: "cp-open-setup",
+          label: "Site Setup",
+          icon: LayoutTemplate,
+          onSelect: () => openWorkspace(row, "setup"),
+        },
+        {
+          kind: "item",
+          id: "cp-quick-view",
+          label: "Quick view",
+          icon: Eye,
+          onSelect: () => openQuickView(row.site),
+        },
+        {
+          kind: "item",
+          id: "cp-edit-site",
+          label: "Edit site…",
+          icon: Pencil,
+          onSelect: () => setEditing(row.site),
+        },
+        {
+          kind: "item",
+          id: "cp-delete-site",
+          label: "Delete site…",
+          icon: Trash2,
+          onSelect: () => setDeleting(row.site),
+        },
+      ];
+      if (cmsLink.linked && cmsLink.cmsSiteId) {
+        items.push({
+          kind: "link",
+          id: "cp-open-cms",
+          label: "Open in CMS",
+          icon: PanelsTopLeft,
+          href: `/cms/${cmsLink.cmsSiteId}`,
+        });
+      }
+      return { id: "content-plan-actions", label: "Content plan", items };
+    },
+    [cmsSites.data, openQuickView, openWorkspace],
   );
 
   const columns = useMemo<MatrxColumnDef<PlanSiteRow>[]>(() => {
@@ -756,6 +853,43 @@ export function PlanSitesList({
         getScope={getScope}
         getWriteHandlers={getWriteHandlers}
       >
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = (target as HTMLElement | null)
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = (id && pageRows.find((r) => r.id === id)) || null;
+            setContextRow(row);
+            if (!row) return null;
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: siteEntityRef({
+                id: row.site.id,
+                name: row.site.name,
+                brandId: row.site.brand_id,
+              }),
+              content: planSiteSummary({
+                name: row.site.name,
+                domain: row.site.domain,
+                stats: row.stats,
+              }),
+            };
+          }}
+          extraSections={
+            contextRow
+              ? [
+                  siteMenuSection({
+                    id: contextRow.site.id,
+                    name: contextRow.site.name,
+                    brandId: contextRow.site.brand_id,
+                  }),
+                  buildContextMenuSection(contextRow),
+                ]
+              : []
+          }
+        >
         <MatrxDataTable<PlanSiteRow>
           data={pageRows}
           columns={visibleColumns}
@@ -903,6 +1037,7 @@ export function PlanSitesList({
           }}
           className="p-2"
         />
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
 
       {peeking ? (

@@ -20,7 +20,7 @@
  * already exists (`marketingRoutes.site` / `marketingRoutes.keywordResearch`).
  */
 
-import { ExternalLink, Search } from "lucide-react";
+import { ExternalLink, ListTree, Search } from "lucide-react";
 
 import type {
   ContextMenuEntityRef,
@@ -76,6 +76,14 @@ export function siteMenuSection(
       href: row
         ? `${marketingRoutes.keywordResearch()}?site=${encodeURIComponent(row.id)}`
         : "#",
+      disabled: !row,
+    },
+    {
+      kind: "link",
+      id: "site-content-plan",
+      label: "Open content plan",
+      icon: ListTree,
+      href: row ? marketingRoutes.contentPlanSite(row.id, "tree") : "#",
       disabled: !row,
     },
   ];

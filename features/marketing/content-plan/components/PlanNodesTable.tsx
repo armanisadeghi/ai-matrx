@@ -42,6 +42,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  planNodeEntityRef,
+  planNodeMenuSection,
+  type PlanNodeMenuRow,
+} from "./plan-node-actions";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { getKeywordPhrasesByIds } from "@/features/marketing/seo/keyword/data";
@@ -152,6 +159,7 @@ export function PlanNodesTable({
   // Selection is session state, never persisted: a stale selection restored on
   // a later visit is how someone runs a job over pages they forgot they picked.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [contextRow, setContextRow] = useState<PlanNodeRow | null>(null);
 
   // Query state (search / filters / page) — session-only, never persisted.
   // Sort and page size SEED from the persisted style prefs and write back.
@@ -232,6 +240,20 @@ export function PlanNodesTable({
     refresh: refreshKeywordAccess,
   } = useAccessStates("seo_keyword", unresolvedKeywordIds);
   const openKeywordIntel = useOpenKeywordWindow();
+
+  const toMenuRow = (row: PlanNodeRow): PlanNodeMenuRow => {
+    const page = cmsPageById?.get(row.id);
+    return {
+      id: row.id,
+      label: row.label,
+      siteId,
+      cmsSiteId,
+      cmsPageId: page?.pageId ?? null,
+      webPageId: page?.webPageId ?? null,
+      primaryKeywordId: row.primary_keyword_id,
+      keywordPhrase: phraseOf(row),
+    };
+  };
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -709,6 +731,34 @@ export function PlanNodesTable({
   };
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const id = (target as HTMLElement | null)
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = (id && pageRows.find((r) => r.id === id)) || null;
+        setContextRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: planNodeEntityRef(toMenuRow(row)),
+          content: planNodeSummary(row),
+        };
+      }}
+      extraSections={
+        contextRow
+          ? [
+              planNodeMenuSection(toMenuRow(contextRow), {
+                onOpenKeyword: (menuRow) =>
+                  menuRow.keywordPhrase &&
+                  openKeywordIntel({ phrase: menuRow.keywordPhrase, siteId }),
+              }),
+            ]
+          : []
+      }
+    >
     <MatrxDataTable<PlanNodeRow>
       data={pageRows}
       columns={visibleColumns}
@@ -910,5 +960,6 @@ export function PlanNodesTable({
       }}
       className="p-2"
     />
+    </NonEditableContextMenu>
   );
 }
