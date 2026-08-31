@@ -107,6 +107,14 @@ where the item will land. Drag starts from the grip handle only (text and
 inputs inside rows stay usable). Up/down arrow buttons are the keyboard and
 touch fallback. Native HTML5 DnD — no dependencies, no providers.
 
+Row controls (up/down/remove) sit **in flow** at the row's end and take their
+own width — they never float over the row. Rows carry the host component's own
+trailing controls (copy, edit, menus), and a control that costs no layout width
+must land on top of something when it appears, winning every click there. A
+hover-floating cluster was tried on 2026-08-30 and reverted the same day after
+it covered live buttons on every consumer. Overlap is never worth the density;
+if a row is too tight, cut what the row renders, not the kit's footprint.
+
 | Prop                          | Type                                                                  | Default                                                                   | Meaning                                                                         |
 | ----------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `items`                       | `readonly T[]`                                                        | required                                                                  | Current order. Never mutated; the new order arrives via `onReorder`.            |
