@@ -31,6 +31,15 @@ import { CheckCheck, PanelRightOpen } from "lucide-react";
 
 import { DataRowWindow } from "@/components/official/matrx-data-table/DataRowWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import {
+  periodGridRowContent,
+  periodGridRowEntityRef,
+} from "./period-grid-row-actions";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
@@ -101,6 +110,9 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [rawFor, setRawFor] = useState<PeriodGridRow | null>(null);
+  /** Right-clicked row — STATE (not a ref) so the menu reads the row that
+   *  was actually clicked. */
+  const [clickedRow, setClickedRow] = useState<PeriodGridRow | null>(null);
 
   const grid = useHrTimeQuery<LivePeriodGrid>(
     (signal) =>
@@ -164,6 +176,49 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   const rows = grid.data?.rows ?? [];
   const selectedRows = rows.filter((row) => selectedIds.includes(row.employmentId));
 
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && rows.find((r) => r.employmentId === id)) || null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: periodGridRowEntityRef(row),
+      content: periodGridRowContent(row),
+    };
+  };
+
+  const periodGridRowMenuSection: ContextMenuExtraSection = {
+    id: "period-grid-row",
+    label: clickedRow ? clickedRow.employeeDisplayName : "This timecard",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "link",
+        id: "period-grid-open-timesheet",
+        label: "Open timesheet",
+        href: clickedRow ? hrTimesheetHref(clickedRow.employmentId, orgRef) : "#",
+        disabled: !clickedRow,
+      },
+      {
+        kind: "item",
+        id: "period-grid-raw-punches",
+        label: "View raw punches",
+        icon: PanelRightOpen,
+        disabled: !clickedRow,
+        onSelect: () => clickedRow && setRawFor(clickedRow),
+      },
+      {
+        kind: "link",
+        id: "period-grid-exceptions",
+        label: "View exceptions",
+        href: clickedRow
+          ? hrTimeExceptionsHref(orgRef, { employment: clickedRow.employmentId })
+          : "#",
+        disabled: !clickedRow || clickedRow.openExceptionCount === 0,
+      },
+    ],
+  };
+
   return (
     <RuleSnapshotProvider>
       <div className="flex h-full min-h-0 flex-col gap-3 px-3 py-3 sm:px-4">
@@ -200,6 +255,12 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
             </p>
 
             <div className="min-h-0 flex-1">
+              <NonEditableContextMenu
+                sourceFeature="system"
+                contentSource={{ type: "raw" }}
+                resolveContextOnOpen={resolveRowContext}
+                extraSections={[periodGridRowMenuSection]}
+              >
               <MatrxDataTable<PeriodGridRow>
                 data={rows}
                 columns={columns(setRawFor, orgRef)}
@@ -228,6 +289,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
                     "Every timecard in this pay group is either filtered out or has not been created yet.",
                 }}
               />
+              </NonEditableContextMenu>
             </div>
 
             <AssistStrip surfaceName="matrx-user/hr-time" />
