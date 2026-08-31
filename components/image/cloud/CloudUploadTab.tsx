@@ -89,25 +89,32 @@ export function CloudUploadTab({
   const [folderId, setFolderId] = useState<string | null>(
     defaultUploadFolderId ?? null,
   );
-  const [resolving, setResolving] = useState(false);
+  const [folderResolution, setFolderResolution] = useState<
+    "resolving" | "resolved" | "error"
+  >(
+    defaultUploadFolderId || hideFolderControls === true
+      ? "resolved"
+      : "resolving",
+  );
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [recentlyUploaded, setRecentlyUploaded] = useState<string[]>([]);
   const [base64Open, setBase64Open] = useState(false);
 
   const folderRecord = folderId ? (foldersById[folderId] ?? null) : null;
+  const resolving = folderResolution === "resolving";
   const folderLabel = folderRecord ? folderRecord.folderName : targetPath;
   const folderPathDisplay = folderRecord ? folderRecord.folderPath : targetPath;
 
   // Resolve the default folder path → folder id on mount when not pre-provided.
   useEffect(() => {
-    if (folderId || resolving || hideFolderControls === true) return undefined;
-    if (defaultUploadFolderId) {
-      setFolderId(defaultUploadFolderId);
+    if (
+      defaultUploadFolderId ||
+      folderId ||
+      resolving ||
+      hideFolderControls === true
+    )
       return undefined;
-    }
     let cancelled = false;
-    setResolving(true);
-    setResolveError(null);
     dispatch(
       ensureFolderPath({
         folderPath: targetPath,
@@ -116,17 +123,18 @@ export function CloudUploadTab({
     )
       .unwrap()
       .then((id) => {
-        if (!cancelled) setFolderId(id);
+        if (!cancelled) {
+          setFolderId(id);
+          setFolderResolution("resolved");
+        }
       })
       .catch((err) => {
         if (!cancelled) {
           // Fall back to root — uploads will still work, just at root.
           setResolveError(extractErrorMessage(err));
           setFolderId(null);
+          setFolderResolution("error");
         }
-      })
-      .finally(() => {
-        if (!cancelled) setResolving(false);
       });
     return () => {
       cancelled = true;
@@ -173,7 +181,6 @@ export function CloudUploadTab({
         addImage(buildCloudImageSource(file, resolved));
         if (selectionMode === "single") break;
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.warn(
           `[ImageManager] Could not resolve uploaded file ${fileId}:`,
           err,
