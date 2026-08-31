@@ -530,7 +530,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "schedule_description",
     label: "Schedule description",
     description:
-      "Rewrites the open schedule's description and saves it immediately through the canonical update path. Plain string up to 2000 characters; pass an empty string to clear. Replaces the whole field — read schedule_description first if you mean to extend it. Changes only the human explanation, not what the schedule runs or when it fires.",
+      "Rewrites the open schedule's description and saves it immediately through the canonical update path. Plain string up to 2000 characters; pass an empty string to clear, which persists database NULL (not an empty string). Replaces the whole field — read schedule_description first if you mean to extend it. Changes only the human explanation, not what the schedule runs or when it fires.",
     valueType: "string",
     updatesValue: "schedule_description",
     mode: "entity",

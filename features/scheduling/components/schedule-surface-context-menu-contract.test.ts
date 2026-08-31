@@ -47,6 +47,19 @@ describe("schedule surface context-menu contract", () => {
     expect(form).toContain("context-menu-exempt: entity");
   });
 
+  it("tells the agent that clearing a saved description persists SQL NULL", () => {
+    const manifest = source(
+      "features/surfaces/manifests/schedules.manifest.ts",
+    );
+
+    expect(manifest).toContain(
+      "pass an empty string to clear, which persists database NULL (not an empty string)",
+    );
+    expect(manifest).toMatch(
+      /name: "schedule_description"[\s\S]*?mode: "entity"/,
+    );
+  });
+
   it("keeps run-row entity doors outside the expand button", () => {
     const runRow = source(
       "features/scheduling/components/detail/RunRow.tsx",
