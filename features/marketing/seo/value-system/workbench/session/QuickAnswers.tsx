@@ -58,6 +58,13 @@ import {
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import {
   KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
   createKeywordQuickAnswersScope,
@@ -107,6 +114,30 @@ export function QuickAnswers({
     values: Record<string, string>;
   }>({ dimensionSlug: null, values: {} });
   const reasonRef = useRef<ProTextareaElement | null>(null);
+
+  /**
+   * THE KEYWORD ROW'S OWN MENU (context-menu-v3 rollout). The outer pane menu
+   * below answers for the SITE; right-clicking one of the five keywords must
+   * answer for THAT keyword instead — same shared builder the Value Workbench
+   * this window opens out of already uses, so a class/level/service set here
+   * is the identical write path and shows up there too.
+   */
+  const clickedKeywordRow = useRef<BatchKeyword | null>(null);
+  const keywordAssignSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () => void batch.refetch(),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    siteName: siteLabel,
+    surfaces: keywordAssignSurfaces,
+    getRow: (): KeywordMenuRow | null => {
+      const row = clickedKeywordRow.current;
+      return row
+        ? { phrase: row.keyword, keywordId: row.keywordId }
+        : null;
+    },
+  });
 
   const catalog = useQuery({
     queryKey: ["marketing", "seo", "dimension-catalog", siteId],
@@ -305,6 +336,7 @@ export function QuickAnswers({
       className={cn("flex h-full min-h-0 flex-col", className)}
       data-surface-value="site_id"
     >
+      {keywordAssignSurfaces.node}
       <NonEditableContextMenu
         sourceFeature="marketing"
         surfaceName={KEYWORD_QUICK_ANSWERS_SURFACE_NAME}
@@ -401,24 +433,42 @@ export function QuickAnswers({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2" data-surface-value="is_saving">
-                  {keywords.map((row) => (
-                    <KeywordRow
-                      key={row.keywordId}
-                      row={row}
-                      answeredAs={done[row.keywordId] ?? null}
-                      values={values}
-                      busy={stamp.isPending}
-                      onAnswer={(valueId, valueLabel) =>
-                        stamp.mutate({
-                          keywordIds: [row.keywordId],
-                          valueId,
-                          valueLabel,
-                        })
-                      }
-                    />
-                  ))}
-                </div>
+                <NonEditableContextMenu
+                  sourceFeature="marketing"
+                  contentSource={{ type: "raw" }}
+                  extraSections={[keywordMenuSection]}
+                  resolveContextOnOpen={(target) => {
+                    const el = target?.closest<HTMLElement>("[data-row-id]");
+                    const id = el?.getAttribute("data-row-id") ?? null;
+                    const row = keywords.find((k) => k.keywordId === id) ?? null;
+                    clickedKeywordRow.current = row;
+                    return {
+                      [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef(
+                        row ? { phrase: row.keyword, keywordId: row.keywordId } : null,
+                      ),
+                      content: row ? row.keyword : "",
+                    };
+                  }}
+                >
+                  <div className="space-y-2" data-surface-value="is_saving">
+                    {keywords.map((row) => (
+                      <KeywordRow
+                        key={row.keywordId}
+                        row={row}
+                        answeredAs={done[row.keywordId] ?? null}
+                        values={values}
+                        busy={stamp.isPending}
+                        onAnswer={(valueId, valueLabel) =>
+                          stamp.mutate({
+                            keywordIds: [row.keywordId],
+                            valueId,
+                            valueLabel,
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                </NonEditableContextMenu>
               )}
             </div>
 
@@ -540,6 +590,7 @@ function KeywordRow({
   const DemandIcon = row.pickedFor === "clicks" ? MousePointerClick : Eye;
   return (
     <div
+      data-row-id={row.keywordId}
       className={cn(
         "relative overflow-hidden rounded-lg border p-2.5 transition-colors before:absolute before:inset-y-0 before:left-0 before:w-1",
         answeredAs

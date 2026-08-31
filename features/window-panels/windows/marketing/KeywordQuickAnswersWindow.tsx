@@ -18,6 +18,7 @@ import {
   QuickAnswers,
   type QuickAnswersSurfaceHandle,
 } from "@/features/marketing/seo/value-system/workbench/session/QuickAnswers";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
@@ -154,13 +155,28 @@ function KeywordQuickAnswersWindowInner({
         onClose={onClose}
         onCollectData={collectData}
       >
-        <QuickAnswers
-          siteId={siteId}
-          siteLabel={siteLabel}
-          dimensionSlug={slug}
-          onDimensionChange={setSlug}
-          surfaceHandleRef={surfaceHandleRef}
-        />
+        {/*
+         * Catch-all pane menu. `QuickAnswers` already mounts its own menus
+         * for the question/keywords area (site) and the reason box
+         * (editable) — this one only answers for the strip in between (the
+         * progress line, "Next five") that neither of those covers, so a
+         * right-click anywhere in the window resolves to this site, never to
+         * whatever page is open behind it.
+         */}
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: siteLabel ?? siteId }}
+          entity={{ type: "web_site", id: siteId, title: siteLabel ?? siteId, resourceType: "web_site" }}
+        >
+          <QuickAnswers
+            siteId={siteId}
+            siteLabel={siteLabel}
+            dimensionSlug={slug}
+            onDimensionChange={setSlug}
+            surfaceHandleRef={surfaceHandleRef}
+          />
+        </NonEditableContextMenu>
       </WindowPanel>
     </SurfaceRuntimeProvider>
   );
