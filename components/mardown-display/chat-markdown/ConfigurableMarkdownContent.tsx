@@ -29,8 +29,8 @@ import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton"
 
 import type { Components } from "react-markdown";
 import {
+  useMediaBlob,
   useMediaLoadRecovery,
-  useMediaResolution,
 } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
@@ -50,15 +50,18 @@ export function DurableMarkdownImg({
 }: React.ComponentProps<"img">) {
   const raw = typeof src === "string" ? src : null;
   const ourFile = raw ? recognizeOurFileUrl(raw) : null;
-  const resolvedFromIdentity = useMediaResolution(
-    fileSourceToMediaRef(ourFile?.source),
-  ).resolution?.src;
-  const effectiveSrc = resolvedFromIdentity ?? raw;
+  const fileRef = fileSourceToMediaRef(ourFile?.source);
+  const authenticatedBlob = useMediaBlob(fileRef);
+  const effectiveSrc = fileRef ? authenticatedBlob.url : raw;
   const { retryKey, onLoadError: onError, failed } = useMediaLoadRecovery(
     effectiveSrc,
     {
-      recoverable: !!ourFile?.fileId,
-      failureRef: fileSourceToMediaRef(ourFile?.source),
+      // Owned images already crossed the authenticated byte boundary before
+      // they reach the element. A blob URL cannot be repaired by refreshing
+      // the file-session cookie; blob-read failures are captured by
+      // useMediaBlob itself.
+      recoverable: false,
+      failureRef: fileRef,
     },
   );
   if (!effectiveSrc || failed) return null;

@@ -4,11 +4,11 @@ import { createRoot, type Root } from "react-dom/client";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-const useMediaResolution = jest.fn();
+const useMediaBlob = jest.fn();
 const useMediaLoadRecovery = jest.fn();
 
 jest.mock("@ai-matrx/media/core", () => ({
-  useMediaResolution,
+  useMediaBlob,
   useMediaLoadRecovery,
 }));
 
@@ -30,7 +30,14 @@ describe("DurableMarkdownImg", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    useMediaResolution.mockReset();
+    useMediaBlob.mockReset();
+    useMediaBlob.mockReturnValue({
+      url: null,
+      blob: null,
+      loading: false,
+      error: null,
+      retry: jest.fn(),
+    });
     useMediaLoadRecovery.mockReset();
     useMediaLoadRecovery.mockReturnValue({
       retryKey: 0,
@@ -45,17 +52,21 @@ describe("DurableMarkdownImg", () => {
   });
 
   it("promotes an owned byte endpoint to file identity before binding the image", () => {
-    useMediaResolution.mockReturnValue({
-      resolution: { src: AUTHENTICATED_BLOB, transport: "blob" },
+    useMediaBlob.mockReturnValue({
+      url: AUTHENTICATED_BLOB,
+      blob: new Blob(),
+      loading: false,
+      error: null,
+      retry: jest.fn(),
     });
 
     act(() => {
       root.render(<DurableMarkdownImg src={ENDPOINT} alt="generated chart" />);
     });
 
-    expect(useMediaResolution).toHaveBeenCalledWith({ file_id: FILE_ID });
+    expect(useMediaBlob).toHaveBeenCalledWith({ file_id: FILE_ID });
     expect(useMediaLoadRecovery).toHaveBeenCalledWith(AUTHENTICATED_BLOB, {
-      recoverable: true,
+      recoverable: false,
       failureRef: { file_id: FILE_ID },
     });
     expect(container.querySelector("img")?.getAttribute("src")).toBe(
@@ -64,18 +75,30 @@ describe("DurableMarkdownImg", () => {
   });
 
   it("keeps a foreign image URL external and does not grant session recovery", () => {
-    useMediaResolution.mockReturnValue({ resolution: null });
     const external = "https://example.com/chart.png";
 
     act(() => {
       root.render(<DurableMarkdownImg src={external} alt="external chart" />);
     });
 
-    expect(useMediaResolution).toHaveBeenCalledWith(null);
+    expect(useMediaBlob).toHaveBeenCalledWith(null);
     expect(useMediaLoadRecovery).toHaveBeenCalledWith(external, {
       recoverable: false,
       failureRef: null,
     });
     expect(container.querySelector("img")?.getAttribute("src")).toBe(external);
+  });
+
+  it("never falls back to the unauthenticated byte endpoint while the blob loads", () => {
+    act(() => {
+      root.render(<DurableMarkdownImg src={ENDPOINT} alt="generated chart" />);
+    });
+
+    expect(useMediaBlob).toHaveBeenCalledWith({ file_id: FILE_ID });
+    expect(useMediaLoadRecovery).toHaveBeenCalledWith(null, {
+      recoverable: false,
+      failureRef: { file_id: FILE_ID },
+    });
+    expect(container.querySelector("img")).toBeNull();
   });
 });
