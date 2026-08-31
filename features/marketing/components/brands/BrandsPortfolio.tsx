@@ -21,6 +21,9 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -77,6 +80,7 @@ export function BrandsPortfolio() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<MarketingBrand | null>(null);
   const [deleting, setDeleting] = useState<MarketingBrand | null>(null);
+  const [clickedRow, setClickedRow] = useState<BrandListRow | null>(null);
 
   const openCreate = () => {
     setEditing(null);
@@ -152,6 +156,61 @@ export function BrandsPortfolio() {
           }
         : {}),
     });
+
+  // Right-click: ONE menu for the whole portfolio table, resolved per row
+  // via `data-row-id` + STATE. A brand (`web.brand`) renders only here as a
+  // list row (a grep for `BrandListRow` across features/ and app/ turns up
+  // only this file), so its actions are an inline `extraSections`, not a
+  // shared builder.
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && listRows.find((r) => r.id === id)) || null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "web_brand" as const,
+        id: row.id,
+        title: row.name,
+      },
+      content: humanBrandRow(row),
+    };
+  };
+  const brandItems: ContextMenuExtraItem[] = clickedRow
+    ? [
+        {
+          kind: "link",
+          id: "brand-open",
+          label: "Open brand",
+          icon: Landmark,
+          href: marketingRoutes.brand(clickedRow.id),
+        },
+        {
+          kind: "item",
+          id: "brand-edit",
+          label: "Edit brand…",
+          icon: Pencil,
+          onSelect: () => {
+            setEditing(clickedRow);
+            setEditorOpen(true);
+          },
+        },
+        {
+          kind: "item",
+          id: "brand-delete",
+          label: "Delete brand",
+          icon: Trash2,
+          destructive: true,
+          onSelect: () => setDeleting(clickedRow),
+        },
+      ]
+    : [];
+  const brandSection = {
+    id: "brand-portfolio-actions",
+    label: "Brand",
+    icon: Landmark,
+    items: brandItems,
+  };
 
   const columns: MatrxColumnDef<BrandListRow>[] = [
     {
@@ -334,6 +393,13 @@ export function BrandsPortfolio() {
           />
         ) : (
           <div className="min-h-0 flex-1">
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={resolveRowContext}
+              extraSections={clickedRow ? [brandSection] : []}
+            >
             <MatrxDataTable<BrandListRow>
               data={brands.data?.rows ?? []}
               columns={columns}
@@ -428,6 +494,7 @@ export function BrandsPortfolio() {
                 ),
               }}
             />
+            </NonEditableContextMenu>
           </div>
         )}
       </main>
