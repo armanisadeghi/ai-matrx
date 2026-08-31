@@ -11143,6 +11143,69 @@ export type Database = {
           },
         ]
       }
+      certified_printer: {
+        Row: {
+          certified_at: string | null
+          certified_by: string | null
+          connection_note: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          printer_make: string
+          printer_model: string
+          result_notes: Json
+          status: string
+          template_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          certified_at?: string | null
+          certified_by?: string | null
+          connection_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          printer_make: string
+          printer_model: string
+          result_notes?: Json
+          status?: string
+          template_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          certified_at?: string | null
+          certified_by?: string | null
+          connection_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          printer_make?: string
+          printer_model?: string
+          result_notes?: Json
+          status?: string
+          template_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       cloud_sync_connection: {
         Row: {
           connection_id: string | null
