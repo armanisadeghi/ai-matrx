@@ -42,11 +42,11 @@
 // mandate inherits it, so this is THE pattern for the class rather than a fix
 // for the one call site that exposed it.
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ProTextarea } from "@/components/ui/pro-textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
 import { useMandateInputSurface } from "../input-surface";
@@ -214,7 +214,7 @@ export function AutomationButton({
               <ProTextarea
                 id={`ask-${mandateKey}-${ask.name}`}
                 value={answers[ask.name] ?? ""}
-                onChange={(e) =>
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                   setAnswers((prev) => ({ ...prev, [ask.name]: e.target.value }))
                 }
                 rows={2}

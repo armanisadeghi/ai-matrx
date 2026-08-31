@@ -34,6 +34,27 @@ jest.mock("@/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn() },
 }));
 jest.mock("../useMandate", () => ({ useMandate: jest.fn() }));
+// The seam reads the job's SERVED inputs before it can run. These cases are
+// about the KEY resolving, so the surface is held at a known-good empty
+// surface; the seam's own rules are pinned in
+// `features/mandates/__tests__/invoke-supplied-values.test.ts`.
+jest.mock("../input-surface", () => ({
+  useMandateInputSurface: (key: string | null) =>
+    key === null
+      ? { status: "loading" }
+      : {
+          status: "ready",
+          surface: {
+            mandateKey: key,
+            provisionKey: null,
+            surfaceSource: "mandate_inputs",
+            holderName: null,
+            acceptsUserInput: false,
+            inputs: [],
+            notes: [],
+          },
+        },
+}));
 
 const mockedUseMandate = useMandate as unknown as jest.Mock<MandateState>;
 
