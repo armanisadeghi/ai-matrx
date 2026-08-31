@@ -15,6 +15,21 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D294 — `@ai-matrx/data` legacy cookie migration skips `-code-verifier`, so an auth-cookie rename strands every in-flight/stale-bundle OAuth login
+
+Found 2026-08-31 root-causing the mobile Google OAuth outage. `migrateLegacyCookies`
+(`@ai-matrx/data/next`, `renamedCookie`) renames `sb-matrx-auth` → `sb-matrx-auth-v2`
+and chunk names `sb-matrx-auth.N`, but not `sb-matrx-auth-code-verifier` — so any
+client that starts PKCE under the old cookie name (a stale pre-cutover document whose
+action POST Vercel routes to its matching older deployment) returns from the provider
+with a verifier the new code never reads: the exchange fails CLIENT-side (no `/token`
+request, nothing in Supabase logs), on every retry, forever. The host-side shim in
+`app/auth/callback/route.ts` (accepts any historical `sb-*-code-verifier` name) covers
+matrx-frontend; the package fix — teach `renamedCookie` the `-code-verifier` suffix,
+plus a packed-tarball regression — belongs in aidream `apps/shared/data` so every
+other Matrx app inherits it before ITS next cookie rename. Cross-repo remainder:
+aidream should file `AD<n> — D294 remainder`.
+
 ### D293 — no calc fixture has ever been checked against the response model it claims to assert
 
 Found 2026-08-30 fixing the E-03 contradiction (`hr_calc_overtime.edge2` asserted
