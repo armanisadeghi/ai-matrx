@@ -82,6 +82,8 @@ export const EnhancedSQLEditor = ({
 }: EnhancedSQLEditorProps) => {
   const [sqlQuery, setSqlQuery] = useState("");
   const [queryResult, setQueryResult] = useState<unknown>(null);
+  const [resultWasServedFromCache, setResultWasServedFromCache] =
+    useState(false);
   const [queryHistory, setQueryHistory] = useState<
     { query: string; timestamp: Date }[]
   >([]);
@@ -96,6 +98,8 @@ export const EnhancedSQLEditor = ({
     if (!sqlQuery.trim()) return;
 
     try {
+      const willUseCachedResult =
+        useCache && Object.prototype.hasOwnProperty.call(queryCache, sqlQuery);
       const startTime = performance.now();
       setQueryHistory((prev) => [
         { query: sqlQuery, timestamp: new Date() },
@@ -108,6 +112,7 @@ export const EnhancedSQLEditor = ({
       const execTime = endTime - startTime;
       setExecutionTime(execTime);
       setQueryResult(result);
+      setResultWasServedFromCache(willUseCachedResult && result != null);
 
       // Only save successful queries to history
       if (result && !error) {
@@ -116,6 +121,7 @@ export const EnhancedSQLEditor = ({
     } catch (err) {
       setQueryResult(null);
       setExecutionTime(null);
+      setResultWasServedFromCache(false);
     }
   };
 
@@ -607,7 +613,7 @@ export const EnhancedSQLEditor = ({
               <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <Code className="h-4 w-4" />
                 Query Result
-                {isCached && (
+                {resultWasServedFromCache && (
                   <Badge
                     variant="outline"
                     className="ml-2 bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"

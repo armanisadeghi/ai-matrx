@@ -88,6 +88,21 @@ describe("database admin surface contract", () => {
     expect(tools).toContain("terminal-result locking");
   });
 
+  it("distinguishes a cached query from a result actually served from cache", () => {
+    const editor = source(
+      "app/(admin)/administration/database/components/enhanced-sql-editor.tsx",
+    );
+
+    expect(editor).toContain("resultWasServedFromCache");
+    expect(editor).toContain(
+      "useCache && Object.prototype.hasOwnProperty.call(queryCache, sqlQuery)",
+    );
+    expect(editor).toContain(
+      "setResultWasServedFromCache(willUseCachedResult && result != null)",
+    );
+    expect(editor).toContain("{resultWasServedFromCache && (");
+  });
+
   it("leaves workbench memoization to the React Compiler", () => {
     const workbenchFiles = [
       "features/administration/database-admin/workbench/ResultPreview.tsx",
