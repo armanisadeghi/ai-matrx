@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -18,14 +17,13 @@ import { MergePanel } from "./MergePanel";
 export function WorkbenchClient() {
   const wb = useQueryWorkbench();
 
-  const variableUsage = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const block of wb.blocks) {
-      const names = extractVariableNames(block.query);
-      for (const n of names) counts[n] = (counts[n] ?? 0) + 1;
+  const variableUsage: Record<string, number> = {};
+  for (const block of wb.blocks) {
+    const names = extractVariableNames(block.query);
+    for (const name of names) {
+      variableUsage[name] = (variableUsage[name] ?? 0) + 1;
     }
-    return counts;
-  }, [wb.blocks]);
+  }
 
   const anyRunning = wb.totals.running > 0;
 

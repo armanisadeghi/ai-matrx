@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { executeSqlQuery } from "@/actions/admin/database";
 import { interpolateQuery } from "../utils/interpolate";
 import { toRows } from "../utils/joinResults";
@@ -226,16 +226,13 @@ export function useQueryWorkbench() {
     }
   }, [blocks, variables, mergeConfig, hydrated]);
 
-  const updateBlock = useCallback(
-    (id: string, patch: Partial<QueryBlockState>) => {
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, ...patch } : b)),
-      );
-    },
-    [],
-  );
+  const updateBlock = (id: string, patch: Partial<QueryBlockState>) => {
+    setBlocks((prev) =>
+      prev.map((block) => (block.id === id ? { ...block, ...patch } : block)),
+    );
+  };
 
-  const addBlock = useCallback(() => {
+  const addBlock = () => {
     setBlocks((prev) => {
       const next: QueryBlockState = {
         id: genId("block"),
@@ -251,9 +248,9 @@ export function useQueryWorkbench() {
       };
       return [...prev, next];
     });
-  }, []);
+  };
 
-  const removeBlock = useCallback((id: string) => {
+  const removeBlock = (id: string) => {
     setBlocks((prev) => {
       if (prev.length <= 1) return prev;
       return prev.filter((b) => b.id !== id);
@@ -263,9 +260,9 @@ export function useQueryWorkbench() {
       leftBlockId: prev.leftBlockId === id ? null : prev.leftBlockId,
       rightBlockId: prev.rightBlockId === id ? null : prev.rightBlockId,
     }));
-  }, []);
+  };
 
-  const duplicateBlock = useCallback((id: string) => {
+  const duplicateBlock = (id: string) => {
     setBlocks((prev) => {
       const idx = prev.findIndex((b) => b.id === id);
       if (idx === -1) return prev;
@@ -286,9 +283,9 @@ export function useQueryWorkbench() {
       next.splice(idx + 1, 0, copy);
       return next;
     });
-  }, []);
+  };
 
-  const moveBlock = useCallback((id: string, direction: -1 | 1) => {
+  const moveBlock = (id: string, direction: -1 | 1) => {
     setBlocks((prev) => {
       const idx = prev.findIndex((b) => b.id === id);
       if (idx === -1) return prev;
@@ -299,9 +296,9 @@ export function useQueryWorkbench() {
       next.splice(target, 0, item);
       return next;
     });
-  }, []);
+  };
 
-  const runBlock = useCallback(async (id: string) => {
+  const runBlock = async (id: string) => {
     const target = blocksRef.current.find((b) => b.id === id);
     if (!target || !target.query.trim()) return;
 
@@ -403,16 +400,16 @@ export function useQueryWorkbench() {
         ),
       );
     }
-  }, []);
+  };
 
-  const runAll = useCallback(async () => {
+  const runAll = async () => {
     const targets = blocksRef.current
       .filter((b) => b.query.trim().length > 0)
       .map((b) => b.id);
     await Promise.all(targets.map((id) => runBlock(id)));
-  }, [runBlock]);
+  };
 
-  const clearResults = useCallback(() => {
+  const clearResults = () => {
     setBlocks((prev) =>
       prev.map((b) => ({
         ...b,
@@ -426,47 +423,45 @@ export function useQueryWorkbench() {
       })),
     );
     setMergeResult(null);
-  }, []);
+  };
 
-  const addVariable = useCallback(() => {
+  const addVariable = () => {
     setVariables((prev) => [
       ...prev,
       { id: genId("var"), name: "", value: "" },
     ]);
-  }, []);
+  };
 
-  const updateVariable = useCallback((id: string, patch: Partial<Variable>) => {
+  const updateVariable = (id: string, patch: Partial<Variable>) => {
     setVariables((prev) =>
       prev.map((v) => (v.id === id ? { ...v, ...patch } : v)),
     );
-  }, []);
+  };
 
-  const removeVariable = useCallback((id: string) => {
+  const removeVariable = (id: string) => {
     setVariables((prev) => prev.filter((v) => v.id !== id));
-  }, []);
+  };
 
-  const setMergeField = useCallback(
-    <K extends keyof MergeConfig>(key: K, value: MergeConfig[K]) => {
-      setMergeConfig((prev) => ({ ...prev, [key]: value }));
-    },
-    [],
-  );
+  const setMergeField = <K extends keyof MergeConfig>(
+    key: K,
+    value: MergeConfig[K],
+  ) => {
+    setMergeConfig((prev) => ({ ...prev, [key]: value }));
+  };
 
-  const totals = useMemo(() => {
-    let totalRows = 0;
-    let totalMs = 0;
-    let succeeded = 0;
-    let failed = 0;
-    let running = 0;
-    for (const b of blocks) {
-      if (typeof b.rowCount === "number") totalRows += b.rowCount;
-      if (typeof b.executionTime === "number") totalMs += b.executionTime;
-      if (b.status === "success") succeeded += 1;
-      if (b.status === "error") failed += 1;
-      if (b.status === "running") running += 1;
-    }
-    return { totalRows, totalMs, succeeded, failed, running };
-  }, [blocks]);
+  let totalRows = 0;
+  let totalMs = 0;
+  let succeeded = 0;
+  let failed = 0;
+  let running = 0;
+  for (const block of blocks) {
+    if (typeof block.rowCount === "number") totalRows += block.rowCount;
+    if (typeof block.executionTime === "number") totalMs += block.executionTime;
+    if (block.status === "success") succeeded += 1;
+    if (block.status === "error") failed += 1;
+    if (block.status === "running") running += 1;
+  }
+  const totals = { totalRows, totalMs, succeeded, failed, running };
 
   return {
     blocks,

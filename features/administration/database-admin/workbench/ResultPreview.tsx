@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table as TableIcon } from "lucide-react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
@@ -38,8 +38,8 @@ export function ResultPreview({
   className,
 }: ResultPreviewProps) {
   const [tab, setTab] = useState<string>(defaultTab);
-  const rows = useMemo(() => toRows(data), [data]);
-  const columns = useMemo(() => getColumns(rows), [rows]);
+  const rows = toRows(data);
+  const columns = getColumns(rows);
   const truncated = rows.length > maxTableRows;
   const displayRows = truncated ? rows.slice(0, maxTableRows) : rows;
 

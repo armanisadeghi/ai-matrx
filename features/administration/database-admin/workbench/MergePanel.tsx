@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
@@ -72,34 +72,16 @@ export function MergePanel({
   result,
   onResult,
 }: MergePanelProps) {
-  const successfulBlocks = useMemo(
-    () => blocks.filter((b) => b.status === "success"),
-    [blocks],
-  );
-
-  const leftBlock = useMemo(
-    () => successfulBlocks.find((b) => b.id === config.leftBlockId) ?? null,
-    [successfulBlocks, config.leftBlockId],
-  );
-  const rightBlock = useMemo(
-    () => successfulBlocks.find((b) => b.id === config.rightBlockId) ?? null,
-    [successfulBlocks, config.rightBlockId],
-  );
-
-  const leftRows = useMemo(
-    () => (leftBlock ? toRows(leftBlock.result) : []),
-    [leftBlock],
-  );
-  const rightRows = useMemo(
-    () => (rightBlock ? toRows(rightBlock.result) : []),
-    [rightBlock],
-  );
-  const leftCols = useMemo(() => getColumns(leftRows), [leftRows]);
-  const rightCols = useMemo(() => getColumns(rightRows), [rightRows]);
-  const suggestions = useMemo<JoinKeySuggestion[]>(
-    () => suggestJoinKeys(leftRows, rightRows),
-    [leftRows, rightRows],
-  );
+  const successfulBlocks = blocks.filter((block) => block.status === "success");
+  const leftBlock =
+    successfulBlocks.find((block) => block.id === config.leftBlockId) ?? null;
+  const rightBlock =
+    successfulBlocks.find((block) => block.id === config.rightBlockId) ?? null;
+  const leftRows = leftBlock ? toRows(leftBlock.result) : [];
+  const rightRows = rightBlock ? toRows(rightBlock.result) : [];
+  const leftCols = getColumns(leftRows);
+  const rightCols = getColumns(rightRows);
+  const suggestions: JoinKeySuggestion[] = suggestJoinKeys(leftRows, rightRows);
 
   const topSuggestion = suggestions[0] ?? null;
 
@@ -157,24 +139,22 @@ export function MergePanel({
     onChangeConfig("rightKey", s.rightKey);
   };
 
-  const leftHint = useMemo(() => {
-    if (!leftBlock) return null;
-    if (config.mode === "embed") return `Output keeps left rows as-is`;
-    if (config.mode === "concat" || config.mode === "timeline")
-      return `Tagged with _source: "${leftBlock.label}"`;
-    return `Columns prefixed with "${leftBlock.label}."`;
-  }, [leftBlock, config.mode]);
+  const leftHint = !leftBlock
+    ? null
+    : config.mode === "embed"
+      ? "Output keeps left rows as-is"
+      : config.mode === "concat" || config.mode === "timeline"
+        ? `Tagged with _source: "${leftBlock.label}"`
+        : `Columns prefixed with "${leftBlock.label}."`;
+  const rightHint = !rightBlock
+    ? null
+    : config.mode === "embed"
+      ? `Nested under "${deriveEmbedKey(rightBlock.label)}"`
+      : config.mode === "concat" || config.mode === "timeline"
+        ? `Tagged with _source: "${rightBlock.label}"`
+        : `Columns prefixed with "${rightBlock.label}."`;
 
-  const rightHint = useMemo(() => {
-    if (!rightBlock) return null;
-    if (config.mode === "embed")
-      return `Nested under "${deriveEmbedKey(rightBlock.label)}"`;
-    if (config.mode === "concat" || config.mode === "timeline")
-      return `Tagged with _source: "${rightBlock.label}"`;
-    return `Columns prefixed with "${rightBlock.label}."`;
-  }, [rightBlock, config.mode]);
-
-  const handleMerge = () => {
+  const onMerge = () => {
     if (!leftBlock || !rightBlock) {
       toast.error("Pick two successful queries first");
       return;
@@ -478,7 +458,7 @@ export function MergePanel({
                 )}
               </div>
               <Button
-                onClick={handleMerge}
+                onClick={onMerge}
                 disabled={!canMerge}
                 size="sm"
                 className="h-7 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800"

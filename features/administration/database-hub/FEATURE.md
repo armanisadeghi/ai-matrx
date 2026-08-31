@@ -43,6 +43,9 @@ with operational status and the categorized tool registry.
 
 ## Change log
 
+- 2026-08-31 — The SQL workbench leaves derivations and event handlers to the
+  React Compiler; the surface contract guards every workbench file against
+  manual `useMemo` / `useCallback` regressions.
 - 2026-08-30 — Rule 2026-08-30.2 static recheck: censused all three SQL
   execution callers onto the terminal Server Action, pinned the retired
   cancel/timeout path absent, corrected stale catalogue claims, and replaced

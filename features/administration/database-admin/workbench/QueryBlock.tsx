@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
@@ -112,10 +112,7 @@ export function QueryBlock({
   const [resultExpanded, setResultExpanded] = useState(true);
   const [showResolved, setShowResolved] = useState(false);
 
-  const interpolation = useMemo(
-    () => interpolateQuery(block.query, variables),
-    [block.query, variables],
-  );
+  const interpolation = interpolateQuery(block.query, variables);
 
   const hasMissing = interpolation.missing.length > 0;
   const hasUsed = interpolation.used.length > 0;

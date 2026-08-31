@@ -87,4 +87,19 @@ describe("database admin surface contract", () => {
     );
     expect(tools).toContain("terminal-result locking");
   });
+
+  it("leaves workbench memoization to the React Compiler", () => {
+    const workbenchFiles = [
+      "features/administration/database-admin/workbench/ResultPreview.tsx",
+      "features/administration/database-admin/workbench/WorkbenchClient.tsx",
+      "features/administration/database-admin/workbench/QueryBlock.tsx",
+      "features/administration/database-admin/workbench/MergePanel.tsx",
+      "features/administration/database-admin/workbench/hooks/useQueryWorkbench.ts",
+    ];
+
+    for (const file of workbenchFiles) {
+      const content = source(file);
+      expect(content).not.toMatch(/use(?:Memo|Callback)\s*[<(]/);
+    }
+  });
 });
