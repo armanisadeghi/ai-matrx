@@ -39,6 +39,8 @@ import {
 } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 interface ActivityRow {
   id: number;
@@ -201,17 +203,21 @@ export default function AdminEventsPage() {
     ];
   }, []);
 
+  /** The surface's live scope, assembled at trigger time so the menu and the
+   *  agent runtime always read the same fetched rows / filter / toggle. */
+  function getSurfaceScope() {
+    return createAdminReportingScope({
+      reporting_section: "events",
+      events_action_prefix: prefix ?? "all",
+      events_auto_refresh: autoRefresh,
+      events_rows: rows,
+    });
+  }
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_REPORTING_SURFACE_NAME}
-      getScope={() =>
-        createAdminReportingScope({
-          reporting_section: "events",
-          events_action_prefix: prefix ?? "all",
-          events_auto_refresh: autoRefresh,
-          events_rows: rows,
-        })
-      }
+      getScope={getSurfaceScope}
     >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="flex items-center gap-2">
@@ -232,6 +238,8 @@ export default function AdminEventsPage() {
             neither the ref nor onContextMenu Radix clones onto its trigger. */}
         <NonEditableContextMenu
           sourceFeature="admin"
+          surfaceName={ADMIN_REPORTING_SURFACE_NAME}
+          getApplicationScope={getSurfaceScope}
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(target) => {
@@ -241,7 +249,18 @@ export default function AdminEventsPage() {
             const row = id ? (rows.find((r) => String(r.id) === id) ?? null) : null;
             setClickedRow(row);
             if (!row) return null;
-            return { content: eventRowContent(row) };
+            // `activity` (platform.activity_log) is a registered entity
+            // token (@ai-matrx/associations) — the event row itself is the
+            // Attach-To/Share target, same as every other identity on the
+            // platform that has one.
+            return {
+              content: eventRowContent(row),
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "activity" as EntityTypeToken,
+                id: String(row.id),
+                title: row.action,
+              },
+            };
           }}
           extraSections={[
             {
