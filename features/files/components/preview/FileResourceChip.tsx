@@ -36,6 +36,7 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { MediaThumbnail } from "@ai-matrx/media/react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import {
   HoverCard,
@@ -107,8 +108,24 @@ export function FileResourceChip({
     visibility: "personal" as const,
   };
 
-  const chipContent = (
-    <>
+  const openControl = (
+    <EntityRef
+      token="file"
+      id={fileId}
+      name={fileName}
+      showIcon={false}
+      onOpen={handleOpen}
+      labelClassName="inline-flex min-w-0 items-center gap-1.5"
+      className={cn(
+        "group inline-flex items-center gap-1.5 border border-border bg-card text-foreground",
+        "transition-colors hover:bg-accent hover:border-accent-foreground/20",
+        onRemove ? "rounded-l-md" : "rounded-md",
+        size === "xs"
+          ? "h-7 pl-1 pr-1.5 text-[11px] leading-none"
+          : "h-7 pl-1 pr-2 text-xs",
+        className,
+      )}
+    >
       {/* Thumb: real image for image/video, category icon otherwise.
           Container forces a square so MediaThumbnail's aspect math is happy. */}
       <MediaThumbnail
@@ -122,7 +139,6 @@ export function FileResourceChip({
         className={cn("h-5 w-5", "shrink-0 rounded-sm")}
         rounded="rounded-sm"
       />
-
       <span
         className={cn(
           "truncate",
@@ -131,33 +147,14 @@ export function FileResourceChip({
       >
         {fileName}
       </span>
-    </>
+    </EntityRef>
   );
 
-  const openButton = (
-    <button
-      type="button"
-      onClick={handleOpen}
-      title={fileName}
-      className={cn(
-        "group inline-flex items-center gap-1.5 border border-border bg-card text-foreground",
-        "transition-colors hover:bg-accent hover:border-accent-foreground/20",
-        onRemove ? "rounded-l-md" : "rounded-md",
-        size === "xs"
-          ? "h-7 pl-1 pr-1.5 text-[11px] leading-none"
-          : "h-7 pl-1 pr-2 text-xs",
-        className,
-      )}
-    >
-      {chipContent}
-    </button>
-  );
-
-  // Open and remove are sibling buttons. Interactive descendants inside a
-  // button are invalid HTML and make one keyboard action trigger both paths.
+  // Open and remove are siblings. Keeping the remove button outside EntityRef
+  // prevents one keyboard action from triggering both paths.
   const chip = onRemove ? (
     <span className="inline-flex items-stretch">
-      {openButton}
+      {openControl}
       <button
         type="button"
         aria-label={`Remove ${fileName}`}
@@ -172,7 +169,7 @@ export function FileResourceChip({
       </button>
     </span>
   ) : (
-    openButton
+    openControl
   );
 
   return (

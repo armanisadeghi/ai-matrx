@@ -27,6 +27,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 import { RunStatusChip } from "../../run-status";
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
@@ -245,9 +246,13 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="truncate text-sm font-medium text-foreground">
-            {ready?.name ?? "Workflow"}
-          </span>
+          <EntityRef
+            token="workflow"
+            id={definitionId}
+            name={ready?.name ?? "Workflow"}
+            showIcon={false}
+            className="min-w-0 text-sm font-medium text-foreground"
+          />
         </div>
       }
       right={

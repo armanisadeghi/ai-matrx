@@ -28,6 +28,7 @@ import { DraftIndicator } from "./DraftIndicator";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useToastManager } from "@/hooks/useToastManager";
 import { ListScopeSwitcher } from "@/components/official/ListScopeSwitcher";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 interface TranscriptsSidebarProps {
   onCreateTranscript?: () => void;
@@ -292,8 +293,16 @@ export function TranscriptsSidebar({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
-                          <h3 className="font-medium text-sm text-gray-900 dark:text-white truncate flex-1">
-                            {transcript.title}
+                          <h3 className="min-w-0 flex-1 text-sm font-medium text-gray-900 dark:text-white">
+                            <EntityRef
+                              token="transcript"
+                              id={transcript.id}
+                              name={transcript.title}
+                              showIcon={false}
+                              fill
+                              className="w-full"
+                              onOpen={() => setActiveTranscript(transcript)}
+                            />
                           </h3>
                           {transcript.is_draft && <DraftIndicator size="sm" />}
                           <Button

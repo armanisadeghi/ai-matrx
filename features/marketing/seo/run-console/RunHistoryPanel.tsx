@@ -26,6 +26,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/styles/themes/utils";
 import { formatUsd } from "@/lib/processing-units/units";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
@@ -167,7 +168,17 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
           ) : null}
           <p className="text-[10px] tabular-nums text-muted-foreground">
             iteration {call.iteration ?? 0} · conversation{" "}
-            {call.conversation_id?.slice(0, 8) ?? "—"} · API{" "}
+            {call.conversation_id ? (
+              <EntityRef
+                token="conversation"
+                id={call.conversation_id}
+                name={call.conversation_id.slice(0, 8)}
+                showIcon={false}
+              />
+            ) : (
+              "—"
+            )}{" "}
+            · API{" "}
             {formatDuration(call.api_duration_ms)}
           </p>
         </div>

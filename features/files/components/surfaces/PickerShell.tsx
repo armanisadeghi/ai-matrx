@@ -43,6 +43,7 @@ import {
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileIcon } from "@ai-matrx/media/react";
 import { MediaThumbnail } from "@ai-matrx/media/react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import type { CloudFile } from "@/features/files/types";
@@ -270,21 +271,34 @@ function PickerBody({
               const isImage = file.mimeType?.startsWith("image/") ?? false;
               return (
                 <li key={id}>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => handleToggleFile(id)}
+                  <div
                     className={cn(
-                      "flex w-full items-center gap-3 px-4 text-left text-sm",
+                      "relative flex w-full items-center gap-3 px-4 text-left text-sm",
                       isImage ? "py-1.5" : "py-2",
                       disabled && "opacity-50",
-                      !disabled && "hover:bg-accent/60",
                       selected && "bg-accent text-accent-foreground",
                     )}
                   >
-                    <PickerFileThumbnail file={file} />
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate">{file.fileName}</div>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => handleToggleFile(id)}
+                      aria-label={`${selected ? "Deselect" : "Select"} ${file.fileName}`}
+                      className="absolute inset-0 rounded-none hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none"
+                    />
+                    <div className="pointer-events-none relative z-10 shrink-0">
+                      <PickerFileThumbnail file={file} />
+                    </div>
+                    <div className="pointer-events-none relative z-10 min-w-0 flex-1">
+                      <EntityRef
+                        token="file"
+                        id={file.id}
+                        name={file.fileName}
+                        showIcon={false}
+                        openInNewTab
+                        alwaysShowActions
+                        className="pointer-events-auto max-w-full"
+                      />
                       <FileMeta
                         file={{
                           fileSize: file.fileSize,
@@ -296,9 +310,12 @@ function PickerBody({
                       />
                     </div>
                     {selected ? (
-                      <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <Check
+                        className="pointer-events-none relative z-10 h-4 w-4 shrink-0"
+                        aria-hidden="true"
+                      />
                     ) : null}
-                  </button>
+                  </div>
                 </li>
               );
             })

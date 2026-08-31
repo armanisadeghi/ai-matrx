@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders, getFolderIconAndColor } from "../utils/folderUtils";
 import { NotesAPI } from "../service/notesApi";
@@ -229,18 +230,23 @@ export function NotesTreeView({
             {isExpanded && (
               <div>
                 {folderNotes.map((note) => (
-                  <button
+                  <EntityRef
                     key={note.id}
-                    type="button"
+                    token="note"
+                    id={note.id}
+                    name={note.label || "New Note"}
+                    showIcon={false}
+                    fill
+                    onOpen={() => handleNoteClick(note)}
                     className={cn(
                       "flex items-center gap-1 w-full pl-5 pr-1.5 py-[3px] hover:bg-accent/40 transition-colors",
                       note.id === activeNoteId && "bg-primary/10 text-primary",
                     )}
-                    onClick={() => handleNoteClick(note)}
+                    labelClassName="flex min-w-0 items-center gap-1"
                   >
                     <FileText className="h-3 w-3 shrink-0 text-muted-foreground/60" />
                     <span className="truncate">{note.label || "New Note"}</span>
-                  </button>
+                  </EntityRef>
                 ))}
 
                 {/* ── Inline create note ────────── */}

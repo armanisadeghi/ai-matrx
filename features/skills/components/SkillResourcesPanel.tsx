@@ -38,6 +38,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
@@ -290,7 +291,13 @@ function SortableResourceRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 text-sm font-medium text-foreground truncate">
           <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="truncate">{row.filename}</span>
+          <EntityRef
+            token="code_file"
+            id={row.id}
+            name={row.filename}
+            showIcon={false}
+            openInNewTab
+          />
           <Badge
             variant="outline"
             className="h-4 px-1 text-[10px] font-normal text-muted-foreground"

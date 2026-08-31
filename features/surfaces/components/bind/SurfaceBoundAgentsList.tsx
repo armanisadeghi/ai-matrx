@@ -20,6 +20,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
 import { unbindAgentFromSurface } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
@@ -159,14 +160,23 @@ export function SurfaceBoundAgentsList({
                   >
                     <Play className="h-3 w-3 fill-current" />
                   </button>
-                  <p className="min-w-0 flex-1 truncate text-xs font-medium leading-none">
-                    {view.role.label}
-                    {agentName && agentName !== view.role.label && (
-                      <span className="ml-1.5 font-normal text-muted-foreground">
-                        {agentName}
-                      </span>
-                    )}
-                  </p>
+                  <EntityRef
+                    token="agent"
+                    id={agentId}
+                    name={agentName ?? view.role.label}
+                    showIcon={false}
+                    fill
+                    className="min-w-0 flex-1 text-xs font-medium leading-none"
+                  >
+                    <span className="truncate">
+                      {view.role.label}
+                      {agentName && agentName !== view.role.label && (
+                        <span className="ml-1.5 font-normal text-muted-foreground">
+                          {agentName}
+                        </span>
+                      )}
+                    </span>
+                  </EntityRef>
                   <button
                     type="button"
                     title={`Settings for ${agentName ?? view.role.label}`}
@@ -209,9 +219,14 @@ export function SurfaceBoundAgentsList({
                 >
                   <Play className="h-3 w-3 fill-current" />
                 </button>
-                <p className="min-w-0 flex-1 truncate text-xs font-medium leading-none">
-                  {a.name}
-                </p>
+                <EntityRef
+                  token="agent"
+                  id={a.agentId}
+                  name={a.name}
+                  showIcon={false}
+                  fill
+                  className="min-w-0 flex-1 text-xs font-medium leading-none"
+                />
                 <button
                   type="button"
                   title={`Settings for ${a.name}`}
@@ -260,8 +275,19 @@ export function SurfaceBoundAgentsList({
         title="Remove from surface"
         description={
           <>
-            Remove <b>{detachTarget?.name}</b> from <b>{surfaceLabel}</b>? It
-            will no longer appear here or in this surface&apos;s context menu.
+            Remove{" "}
+            {detachTarget ? (
+              <EntityRef
+                token="agent"
+                id={detachTarget.agentId}
+                name={detachTarget.name}
+                showIcon={false}
+                openInNewTab
+                labelClassName="font-semibold"
+              />
+            ) : null}{" "}
+            from <b>{surfaceLabel}</b>? It will no longer appear here or in this
+            surface&apos;s context menu.
           </>
         }
         confirmLabel="Remove"

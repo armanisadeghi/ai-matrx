@@ -25,6 +25,7 @@ import { toast } from "@/lib/toast";
 import { getFolderIconAndColor } from '../utils/folderUtils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 function noteUpdatedAtMs(updatedAt: string | null): number {
     return updatedAt ? new Date(updatedAt).getTime() : 0;
@@ -339,9 +340,15 @@ export function CategoryNotesModal({
                                                 >
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate text-foreground">
-                                                                {note.label}
-                                                            </p>
+                                                            <EntityRef
+                                                                token="note"
+                                                                id={note.id}
+                                                                name={note.label}
+                                                                fill
+                                                                onOpen={() => setSelectedNoteId(note.id)}
+                                                                className="flex max-w-full text-sm text-foreground"
+                                                                labelClassName="font-medium"
+                                                            />
                                                             <p className="text-xs text-muted-foreground truncate mt-0.5">
                                                                 {note.updated_at ? new Date(note.updated_at).toLocaleDateString() : ''}
                                                             </p>
@@ -365,8 +372,15 @@ export function CategoryNotesModal({
                                         <div className="p-4 border-b border-border bg-card">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="text-lg font-semibold truncate text-foreground">
-                                                        {selectedNote.label}
+                                                    <h3 className="text-lg font-semibold text-foreground">
+                                                        <EntityRef
+                                                            token="note"
+                                                            id={selectedNote.id}
+                                                            name={selectedNote.label}
+                                                            openInNewTab
+                                                            fill
+                                                            className="flex max-w-full"
+                                                        />
                                                     </h3>
                                                     <p className="text-xs text-muted-foreground mt-1">
                                                         {selectedNote.updated_at ? new Date(selectedNote.updated_at).toLocaleString() : ''}
@@ -505,8 +519,15 @@ export function CategoryNotesModal({
                                             >
                                                 <div className="flex items-start justify-between gap-3 mb-2">
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="font-medium text-sm truncate text-foreground">
-                                                            {note.label}
+                                                        <h4 className="font-medium text-sm text-foreground">
+                                                            <EntityRef
+                                                                token="note"
+                                                                id={note.id}
+                                                                name={note.label}
+                                                                openInNewTab
+                                                                fill
+                                                                className="flex max-w-full"
+                                                            />
                                                         </h4>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <Badge variant="outline" className="text-xs">{note.folder_name}</Badge>

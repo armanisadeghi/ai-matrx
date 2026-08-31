@@ -7,8 +7,8 @@ import {
   type HierarchySelection,
 } from "@/features/agent-context/components/hierarchy-selection/types";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
-import { FolderKanban, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FolderKanban } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 function CompactProjectItem({
   project,
@@ -16,19 +16,14 @@ function CompactProjectItem({
   project: { id: string; name: string };
 }) {
   return (
-    <div className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md border text-sm transition-colors cursor-pointer group">
-      <div className="flex items-center gap-2 min-w-0">
-        <FolderKanban className="h-4 w-4 text-primary shrink-0" />
-        <span className="truncate font-medium">{project.name}</span>
-      </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-      >
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </Button>
-    </div>
+    <EntityRef
+      token="project"
+      id={project.id}
+      name={project.name}
+      fill
+      className="flex w-full rounded-md border p-2 text-sm transition-colors hover:bg-muted/50"
+      labelClassName="font-medium"
+    />
   );
 }
 

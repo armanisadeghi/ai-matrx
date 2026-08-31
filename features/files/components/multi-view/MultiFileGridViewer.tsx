@@ -25,6 +25,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { MediaThumbnail } from "@ai-matrx/media/react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { pickGridLayout } from "./grid-layout";
 import type { CloudFile } from "@/features/files/types";
 
@@ -272,9 +273,14 @@ function FocusView({
         </>
       ) : null}
 
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 max-w-[80vw] truncate rounded-full bg-card/80 backdrop-blur border border-border px-3 py-1 text-xs text-foreground">
-        {file.fileName}
-      </div>
+      <EntityRef
+        token="file"
+        id={file.id}
+        name={file.fileName}
+        openInNewTab
+        alwaysShowActions
+        className="absolute bottom-2 left-1/2 max-w-[80vw] -translate-x-1/2 rounded-full border border-border bg-card/80 px-3 py-1 text-xs text-foreground backdrop-blur"
+      />
     </div>
   );
 }
