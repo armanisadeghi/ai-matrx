@@ -6,9 +6,9 @@
 // Portals to document.body so fixed centering isn't trapped by flashcard
 // transform/perspective ancestors. Mic teardown on close via unmount cleanup.
 
-import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { SingleCardVoiceTest } from "./SingleCardVoiceTest";
 
@@ -28,11 +28,7 @@ export function CardVoiceTestDialog({
   onClose,
 }: CardVoiceTestDialogProps) {
   const isMobile = useIsMobile();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   const test = (
     <SingleCardVoiceTest

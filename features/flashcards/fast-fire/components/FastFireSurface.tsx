@@ -27,6 +27,7 @@ import { parseDrillConfigPatch } from "../drill-config";
 import {
   selectFastFirePhase,
   selectFastFireConfig,
+  selectFastFireCurrentCard,
 } from "../redux/fastFire.selectors";
 import { useFastFireDrill } from "../hooks/useFastFireDrill";
 import { FastFireSetup } from "./FastFireSetup";
@@ -45,6 +46,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   const [isExiting, startExitTransition] = useTransition();
   const phase = useAppSelector(selectFastFirePhase);
   const config = useAppSelector(selectFastFireConfig);
+  const currentCard = useAppSelector(selectFastFireCurrentCard);
 
   // The drill orchestrator — mounted for the whole surface so capture + timers
   // persist across phase transitions. It self-guards on phase internally.
@@ -135,6 +137,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
       body = (
         <>
           <FastFireLiveCard
+            key={currentCard?.id}
             subscribeProgress={subscribeProgress}
             onSkip={skipCard}
             onAbort={abort}

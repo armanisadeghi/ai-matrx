@@ -173,6 +173,10 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   // ── Countdown ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "countdown") {
+      // The countdown screen is unmounted outside this phase. Clearing the
+      // phase-local value here prevents a stale number flashing if a countdown
+      // is aborted and later restarted.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate phase-boundary reset
       setCountdown(null);
       return undefined;
     }

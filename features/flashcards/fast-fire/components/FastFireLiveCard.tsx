@@ -85,21 +85,18 @@ export function FastFireLiveCard({
     /** Bumped per tap so a re-tap remounts the player and replays the clip. */
     nonce: number;
   } | null>(null);
-  const cardShownAtRef = useRef<number>(0);
+  const cardShownAtRef = useRef<number | null>(null);
 
-  // L3: clear any help text when the card changes, so the previous card's help
-  // doesn't linger over the next card. Keyed on the card id. Also resets the
-  // "time on card" clock the help lane reports as real context.
+  // FastFireSurface keys this component by card id, so local help state cannot
+  // leak across cards. Record the display time only after this card commits.
   //
   // D151: clearing the DISPLAY is correct; it used to also destroy the answer.
   // The lane now journals every answer on the drill's session the instant it
   // lands, and `journal` below reads it back — so a timed-out card whose help
   // arrived a beat late is still recoverable instead of simply gone.
   useEffect(() => {
-    setHelp(null);
-    setInstantHelp(null);
     cardShownAtRef.current = Date.now();
-  }, [card?.id]);
+  }, []);
 
   const [journal, setJournal] = useState<SessionAiJournal>({});
   useEffect(() => {
@@ -156,7 +153,10 @@ export function FastFireLiveCard({
           cardId: card.id,
           front: card.front,
           back: card.back,
-          timeOnCardMs: Date.now() - cardShownAtRef.current,
+          timeOnCardMs:
+            cardShownAtRef.current === null
+              ? 0
+              : Date.now() - cardShownAtRef.current,
         }),
       );
       setHelp(result);

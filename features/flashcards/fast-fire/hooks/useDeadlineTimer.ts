@@ -56,15 +56,22 @@ export function useDeadlineTimer(options: DeadlineTimerOptions): void {
   // depends ONLY on `deadlineTs` — a new card means a new deadline means one
   // clean restart of the loop.
   const onExpireRef = useRef(onExpire);
-  onExpireRef.current = onExpire;
   const onTickRef = useRef(onTick);
-  onTickRef.current = onTick;
   const onWarningRef = useRef(onWarning);
-  onWarningRef.current = onWarning;
   const durationRef = useRef(durationMs);
-  durationRef.current = durationMs;
   const warningRef = useRef(warningMs);
-  warningRef.current = warningMs;
+
+  // Keep the loop's inputs current after commit. Writing refs during render is
+  // unsafe under concurrent rendering because an abandoned render can leak its
+  // values into the still-mounted tree. This effect runs before the deadline
+  // effect below, so a newly armed loop always observes the committed values.
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+    onTickRef.current = onTick;
+    onWarningRef.current = onWarning;
+    durationRef.current = durationMs;
+    warningRef.current = warningMs;
+  }, [durationMs, onExpire, onTick, onWarning, warningMs]);
 
   // Guards a single fire per deadline (expiry + warning are each once-only).
   const firedRef = useRef(false);

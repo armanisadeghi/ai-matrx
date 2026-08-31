@@ -23,6 +23,9 @@
 // `audioPlayer` is STATE here, not a ref (hard-requirement #5) — the old review
 // playback was dead because the player lived in a ref that never re-rendered.
 
+// This is the canonical FastFire slice under features/*/redux; the generic
+// restricted-import matcher cannot represent the nested fast-fire directory.
+// eslint-disable-next-line no-restricted-imports
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 // The grade result token + rubric come from the canonical grading core, not a
 // local copy: `GradeResult` is the shared trust vocabulary (correct/partial/

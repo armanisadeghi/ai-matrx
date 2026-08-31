@@ -49,13 +49,10 @@ export function VoiceTestAudioSetup({
 
   useEffect(() => {
     if (initialSpokenFrontFileId) {
-      setSpokenFrontFileId(initialSpokenFrontFileId);
-      setCheckingCache(false);
       return undefined;
     }
 
     let cancelled = false;
-    setCheckingCache(true);
     void (async () => {
       const cached = await getCachedSpokenFrontFileId(card.id);
       if (cancelled) return;
