@@ -10,12 +10,33 @@
  * same surface can be embedded elsewhere). It is ephemeral — it is tied to
  * whichever note the user clicked, so there is nothing meaningful to
  * restore across reloads.
+ *
+ * Right-click surface: this window names exactly one identity (the note it
+ * inspects), so it wears the SAME note menu the sidebar row and tab use
+ * (`buildNoteContextSections`, features/context-menu-v3/SECTIONS.md) rather
+ * than a bespoke set of actions.
  */
 
 "use client";
 
+import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NoteInfoPanel } from "@/features/notes/components/NoteInfoPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContentSource } from "@/features/rich-document/types";
+import {
+  buildNoteContextSections,
+  displayLabel,
+} from "@/features/notes/components/note-actions/noteMenuRegistry";
+import { withAvailability, unavailableHere } from "@/features/context-menu-v3/utils/availability";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectNoteById,
+  selectNoteContent,
+  selectAllFolders,
+} from "@/features/notes/redux/selectors";
+import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
+import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 
 export interface NoteInfoWindowProps {
   isOpen: boolean;
@@ -35,6 +56,51 @@ export default function NoteInfoWindow({
   if (!isOpen || !noteId) return null;
 
   return (
+    <NoteInfoWindowInner noteId={noteId} onClose={onClose} title={title} />
+  );
+}
+
+function NoteInfoWindowInner({
+  noteId,
+  onClose,
+  title,
+}: {
+  noteId: string;
+  onClose: () => void;
+  title?: string | null;
+}) {
+  const dispatch = useAppDispatch();
+  const note = useAppSelector(selectNoteById(noteId));
+  const content = useAppSelector(selectNoteContent(noteId));
+  const allFolders = useAppSelector(selectAllFolders);
+  const openKnowledge = useOpenNoteKnowledgePanel();
+  const openNotesWindow = useOpenNotesWindow();
+
+  const label = title || note?.label || "Untitled";
+  const folder = note?.folder_name ?? "Draft";
+
+  // This window has no notes-tab instance of its own (it's an info-only
+  // shell opened from wherever the note already lives), so "Open" spawns
+  // the canonical Notes window on this note instead of switching a tab, and
+  // "New folder…" stays in the Folder section above rather than a second
+  // dialog wired here.
+  const sections = withAvailability(
+    buildNoteContextSections({
+      instanceId: "",
+      noteId,
+      label,
+      content,
+      folder,
+      allFolders,
+      openKnowledge,
+      onCreateFolder: () => {},
+      dispatch,
+      onOpen: () => openNotesWindow({ initialNoteId: noteId }),
+    })[0],
+    { "move-new-folder": unavailableHere("the Folder section above") },
+  );
+
+  return (
     <WindowPanel
       title={title || "Note info"}
       width={400}
@@ -46,7 +112,20 @@ export default function NoteInfoWindow({
       onCollectData={() => ({ noteId, title: title ?? undefined })}
       bodyClassName="overflow-y-auto"
     >
-      <NoteInfoPanel noteId={noteId} />
+      <NonEditableContextMenu
+        sourceFeature="notes"
+        contextData={{ content: content ?? "" }}
+        contentSource={{ type: "note", noteId } satisfies ContentSource}
+        entity={{
+          type: "note",
+          id: noteId,
+          title: displayLabel(label),
+          resourceType: "note",
+        }}
+        extraSections={[sections]}
+      >
+        <NoteInfoPanel noteId={noteId} />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
