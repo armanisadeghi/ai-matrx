@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildFastFireSurfaceScope } from "../fastfire-surface-scope";
 import { openSetup, resetFastFire, updateConfig } from "../redux/fastFireSlice";
@@ -67,6 +69,12 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
 
   // Live scope for the surface system — read from the store at Run time only.
   const getScope = () => buildFastFireSurfaceScope(store.getState());
+  const getMenuScope = () =>
+    buildApplicationScopeFromMenuContext({
+      selectedText: window.getSelection()?.toString() ?? "",
+      selectionRange: null,
+      contextData: getScope() as Record<string, unknown>,
+    });
 
   // Write half of the surface (manifest `writeTargets`). ONE draft-mode target:
   // the drill's setup configuration. It dispatches the SAME `updateConfig`
@@ -163,7 +171,14 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
       getScope={getScope}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      {body}
+      <NonEditableContextMenu
+        sourceFeature="education-fastfire"
+        surfaceName="matrx-user/education-fastfire"
+        getApplicationScope={getMenuScope}
+        contentSource={{ type: "raw" }}
+      >
+        <div className="min-h-full">{body}</div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
