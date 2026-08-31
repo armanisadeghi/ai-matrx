@@ -192,3 +192,19 @@ describe("planMaterialization — structured kind detection", () => {
     });
   });
 });
+
+describe("planMaterialization — the raw kindState gate (2026-08-31 audit)", () => {
+  it("a payload the envelope CHECKED AND FAILED never materializes — not via the envelope, not via the parse fallback", () => {
+    // Schema-breaking flashcard_set: title must be a string, cards an array.
+    // The splitter's kind parser preserves the kind (KIND PRESERVATION) and
+    // marks kindState "raw"; before the gate, the envelope branch declined it
+    // and the parse fallback then happily planned a typed artifact from the
+    // same broken bytes.
+    const broken = `{"${"__kind"}": "flashcard_set", "title": 123, "cards": "nope"}`;
+    const plan = planMaterialization([
+      textBlock(`Result:\n\n\`\`\`json\n${broken}\n\`\`\`\n`),
+    ]);
+    expect(plan.artifacts).toHaveLength(0);
+    expect(plan.hasChanges).toBe(false);
+  });
+});

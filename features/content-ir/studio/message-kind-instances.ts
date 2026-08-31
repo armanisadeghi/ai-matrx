@@ -51,11 +51,16 @@ export async function extractRegisteredKindBlocks(
   const out: ExtractedKindBlock[] = [];
   for (const sb of splitContentIntoBlocksV2(text)) {
     // Envelope route (the splitter ran the kind parser).
+    // kindState gate: refuse "raw" and ONLY "raw" — "unverified" (no schema
+    // ever available, never checked) is GOOD data per the 2026-08-28 outage
+    // doctrine; gating on === "resolved" sent unverified instances to the
+    // zero-validation parse fallback below (2026-08-31 kindState audit). A
+    // known-FAILED payload never becomes a saved instance on either route.
     const envelope = readEnvelope(sb.metadata);
+    if (envelope?.root.kind && envelope.root.kindState === "raw") continue;
     if (
       envelope &&
       envelope.root.kind &&
-      envelope.root.kindState === "resolved" &&
       envelope.root.status === "complete"
     ) {
       if (kindRegistry.isKnownKind(envelope.root.kind)) {

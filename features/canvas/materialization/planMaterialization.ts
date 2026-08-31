@@ -185,10 +185,17 @@ function detectStructuredArtifact(sb: {
   metadata?: Record<string, unknown>;
 }): StructuredDetection | null {
   const envelope = readEnvelope(sb.metadata);
+  // kindState gate: refuse "raw" (checked and FAILED) — and ONLY "raw".
+  // "unverified" (no schema was ever available — never checked) is GOOD data
+  // and takes this validated branch; gating on === "resolved" sent every
+  // unverified instance down the parse fallback below, which re-reads the
+  // kind with ZERO validity check — strictly less safe than the branch it
+  // was excluded from (2026-08-31 kindState audit; the 2026-08-28 outage
+  // doctrine: never treat never-checked as failed).
   if (
     envelope &&
     envelope.root.kind &&
-    envelope.root.kindState === "resolved" &&
+    envelope.root.kindState !== "raw" &&
     envelope.root.status === "complete"
   ) {
     const def = resolveArtifactDefByKind(envelope.root.kind);
@@ -200,6 +207,13 @@ function detectStructuredArtifact(sb: {
       };
     }
   }
+
+  // A payload the envelope CHECKED AND FAILED must never materialize as its
+  // claimed kind — not here, and not via the unguarded parse fallback below,
+  // which would happily re-read the same broken bytes and mint a typed
+  // artifact from them (the flashcards empty-title class, on the artifact
+  // store instead of fc_set).
+  if (envelope?.root.kind && envelope.root.kindState === "raw") return null;
 
   // Parse fallback — only for JSON blocks (fenced ```json or bare-object
   // regions; the splitter stamps language "json" on both).

@@ -2824,3 +2824,25 @@ ambiguous — dropped. Guard `iam.privacy_wall_read_lane_parity()` returns every
 whose deployed policy and reconstructed lane disagree for a platform admin: **8 rows before
 the migration, 0 after**, asserted empty in the migration's post-flight. Prover re-run:
 `--table hr.job_title --full` → identical on every user.
+
+## 2026-08-31 — canvas materialization jest suite rotted: diagram icon canonicalization (463feb726a) broke 2 pinned assertions, and no CI job runs the suite
+
+`features/canvas/materialization/__tests__/planMaterialization.test.ts` fails 2/9 on main:
+`463feb726a feat(maps): use canonical icons` began rewriting authored diagram icon values to
+Lucide PascalCase (`crown`→`Crown`, `square`→`Square`), while the suite pins the pre-change
+verbatim-preservation behavior (including inside the zero-loss residue assertion). Either the
+canonicalization deliberately supersedes verbatim icon preservation (then the TEST is stale and
+the residue doctrine note needs updating) or authored values must be preserved with the mapping
+applied at render (then the ENRICHMENT is wrong) — the maps lane's intent decides, not this
+sweep. Class half: canvas/materialization jest runs in NO ci.yml job (only content-ir /
+workflow-runtime / hr are wired), so the rot was silent — same gap as D289's shortcuts suite.
+
+## 2026-08-31 — workflow render_block events bypass the reconnect replay buffer
+
+Found by the §11 partial-kinds repair (aidream `dfb1d3157`): `_emit_block_event`
+(aidream `services/ai_execution/ai_task_blocks.py`) writes NDJSON straight onto
+`emitter.queue` instead of through `_publish_wire`, so `render_block` events never enter the
+replay buffer — a client that reconnects mid-run re-reads chunks/tool events but NONE of the
+server-built blocks (envelopes, partial kinds) it missed. The disappearing-run/reconnect class
+(LIVE-RUN-RETENTION doctrine), transport-side. Repair belongs in aidream's emitter wiring;
+verify with a reconnect-mid-stream test before calling it closed.

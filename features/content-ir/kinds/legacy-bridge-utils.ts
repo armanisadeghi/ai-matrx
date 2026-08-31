@@ -87,6 +87,14 @@ export function makeCompleteEnvelopeBridge<
 
   return (envelope) => {
     if (envelope.root.kind !== kind) return undefined;
+    // Defense in depth (2026-08-31 kindState audit): a payload the kernel
+    // CHECKED AND FAILED never builds serverData. Today `applyIrKindRoute`
+    // drops raw envelopes to the generic floor before any bridge runs, so
+    // this line is unreachable through the route — it exists for every
+    // OTHER caller (export tooling, previews, future persistence) so the
+    // bridges are safe by construction, not safe by position. "unverified"
+    // (never checked) passes on purpose — the 2026-08-28 outage doctrine.
+    if (envelope.root.kindState === "raw") return undefined;
     if (
       envelope.root.status !== "complete" &&
       !(options?.provisional && envelope.root.status === "streaming")
