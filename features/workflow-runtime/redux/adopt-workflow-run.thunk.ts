@@ -49,6 +49,7 @@ import {
   startRunEventSource,
   type RunTransportMode,
 } from "../transport/run-event-source";
+import { stampRunStreamOrganizationContext } from "../transport/organization-context";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
 import {
   applyNodeStreamMeta,
@@ -125,12 +126,15 @@ export function adoptWorkflowRun(
     }
 
     const getHeaders = (): Record<string, string> => {
-      const token = selectAccessToken(getState());
+      const state = getState();
+      const token = selectAccessToken(state);
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      return headers;
+      // Mandatory org admission on every authed run fetch/SSE — see the
+      // helper's header comment for the non-throwing stream-lane posture.
+      return stampRunStreamOrganizationContext(state, headers);
     };
 
     const fetchJson = async <T>(path: string): Promise<T> => {

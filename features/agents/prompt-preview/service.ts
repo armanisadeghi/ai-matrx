@@ -10,13 +10,10 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import { supabase } from "@/utils/supabase/client";
-import {
-  selectResolvedBaseUrl,
-  selectEndpointOverrideConfig,
-} from "@/lib/redux/slices/apiConfigSlice";
+import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { resolveBackendForConversation } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
 import { assembleManualRequest } from "@/features/agents/redux/execution-system/thunks/execute-manual-instance.thunk";
 import type { PromptPreview } from "./types";
 
@@ -33,16 +30,19 @@ export async function requestPromptPreview(
     );
   }
 
-  const baseUrl = selectResolvedBaseUrl(state);
-  if (!baseUrl) {
+  // Same backend resolution as the REAL manual run (execute-manual): one
+  // channel decision (global / sandbox override / local engine / EC2) and one
+  // header set — Authorization (or guest fingerprint) PLUS the mandatory
+  // `X-Organization-Id` org admission the server's AuthMiddleware requires
+  // (matrx-connect, 2026-08-30). Previewing through a different transport
+  // than the run it previews would lie.
+  const backend = resolveBackendForConversation(state, conversationId);
+  if (!backend) {
     throw new Error(
       "No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).",
     );
   }
-
-  const { data, error } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (error || !token) {
+  if (!backend.headers["Authorization"]) {
     throw new Error(
       "Not signed in — previewing the prompt needs an authenticated session.",
     );
@@ -52,7 +52,7 @@ export async function requestPromptPreview(
     ENDPOINTS.ai.manual,
     selectEndpointOverrideConfig(state),
   );
-  const url = `${trimRoot(baseUrl)}${path}`;
+  const url = `${trimRoot(backend.baseUrl)}${path}`;
 
   // Dry-run + ephemeral: full assembly, no LLM turn, nothing persisted.
   // `store:false` is what makes it write nothing — `dry_run` only says "don't
@@ -68,7 +68,7 @@ export async function requestPromptPreview(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: backend.headers,
     body: JSON.stringify(body),
   });
 

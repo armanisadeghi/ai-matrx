@@ -22,6 +22,7 @@ import { useEffect, useRef } from "react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
+import { stampRunStreamOrganizationContext } from "../transport/organization-context";
 import type { RunAnnounceEvent } from "@/types/python-generated/workflow-events";
 
 import {
@@ -115,10 +116,14 @@ export function useRunAnnouncements(handlers: RunAnnouncementHandlers): void {
       openChannel(baseUrl, baseUrl, () => {
         // Read the token from the store at connect time, never from this
         // effect's closure — a refresh between reconnects must reach the wire.
-        const fresh = selectAccessToken(store.getState());
+        const state = store.getState();
+        const fresh = selectAccessToken(state);
         const headers: Record<string, string> = {};
         if (fresh) headers.Authorization = `Bearer ${fresh}`;
-        return headers;
+        // Mandatory org admission on the authed /runs/stream SSE — read at
+        // connect time like the token, non-throwing stream-lane posture (see
+        // the helper's header comment).
+        return stampRunStreamOrganizationContext(state, headers);
       });
     }
 

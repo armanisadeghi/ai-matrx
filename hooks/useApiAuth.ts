@@ -13,6 +13,55 @@ import {
     setFingerprintId,
 } from '@/lib/redux/slices/userSlice';
 import { getFingerprint } from '@/lib/services/fingerprint-service';
+import { selectOrganizationId } from '@/lib/redux/slices/appContextSlice';
+import {
+    applyOrganizationContextHeader,
+    requireOrganizationContext,
+} from '@/lib/api/organization-context';
+
+/**
+ * Pure header builder shared by `useApiAuth().getHeaders()` (and its tests).
+ *
+ * Organization admission rides with auth: the server's AuthMiddleware
+ * (matrx-connect, 2026-08-30) refuses any IDENTIFIED request that names no
+ * organization via `X-Organization-Id`. Mirrors `buildHeaders` in
+ * `lib/api/backend-client.ts` exactly — both the JWT and fingerprint (guest)
+ * lanes are identified and run through the ONE fail-closed kernel
+ * (`requireOrganizationContext`), so a missing organization throws
+ * `OrganizationContextError` BEFORE any networking, matching the server's
+ * `organization_required` 400 gate one hop earlier. Only a request with no
+ * identity at all (no token, no fingerprint) skips the organization check,
+ * because the server's admission gate never reaches it either.
+ */
+export function buildApiAuthHeaders(args: {
+    accessToken: string | null;
+    fingerprintId: string | null;
+    organizationId: string | null;
+    /** Caller-resolved authoritative org (e.g. an entity's own) — wins outright. */
+    organizationIdOverride?: string | null;
+}): Record<string, string> {
+    let headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (args.accessToken) {
+        headers['Authorization'] = `Bearer ${args.accessToken}`;
+    } else if (args.fingerprintId) {
+        headers['X-Fingerprint-ID'] = args.fingerprintId;
+    }
+
+    if (args.accessToken || args.fingerprintId) {
+        headers = applyOrganizationContextHeader(
+            headers,
+            requireOrganizationContext(
+                args.organizationId,
+                args.organizationIdOverride ?? undefined,
+            ),
+        );
+    }
+
+    return headers;
+}
 
 /**
  * Centralized hook for API authentication.
@@ -44,6 +93,7 @@ export function useApiAuth() {
     const authReady = useSelector(selectAuthReady);
     const isAuthenticated = useSelector(selectIsAuthenticated);
     const isAdmin = useSelector(selectIsSuperAdmin);
+    const organizationId = useSelector(selectOrganizationId);
 
     // Live refs so async loops always read current Redux state, not stale closures
     const accessTokenRef = useRef(accessToken);
@@ -58,21 +108,21 @@ export function useApiAuth() {
 
     /**
      * Get headers for API requests.
-     * Returns headers with either Authorization (authenticated) or X-Fingerprint-ID (guest).
+     * Returns headers with either Authorization (authenticated) or X-Fingerprint-ID (guest),
+     * plus the mandatory `X-Organization-Id` for every identified request —
+     * fail-closed (throws `OrganizationContextError` before any networking when
+     * no organization is selected), matching `lib/api/backend-client.ts`.
      */
-    const getHeaders = useCallback((): Record<string, string> => {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        };
-
-        if (accessToken) {
-            headers['Authorization'] = `Bearer ${accessToken}`;
-        } else if (fingerprintId) {
-            headers['X-Fingerprint-ID'] = fingerprintId;
-        }
-
-        return headers;
-    }, [accessToken, fingerprintId]);
+    const getHeaders = useCallback(
+        (options?: { organizationId?: string | null }): Record<string, string> =>
+            buildApiAuthHeaders({
+                accessToken,
+                fingerprintId,
+                organizationId,
+                organizationIdOverride: options?.organizationId ?? null,
+            }),
+        [accessToken, fingerprintId, organizationId],
+    );
 
     /**
      * Wait for authentication to be ready.

@@ -50,6 +50,11 @@ import { useRequestRecovery } from "@/features/request-recovery/providers/Reques
 import { selectActiveNetRequests } from "@/lib/redux/net/selectors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 type RunResult = { ok: true; detail: string } | { ok: false; error: string };
@@ -369,17 +374,28 @@ async function runServerScenario(args: {
   dispatch: ReturnType<typeof useAppDispatch>;
   baseUrl: string;
   token: string | null;
+  organizationId: string | null;
   scenario: ServerScenario;
 }): Promise<RunResult> {
-  const { dispatch, baseUrl, token, scenario } = args;
+  const { dispatch, baseUrl, token, organizationId, scenario } = args;
   const requestId = shortId();
   const abortController = new AbortController();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
   try {
+    let headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      // Mandatory org admission on every authed request (server
+      // AuthMiddleware, matrx-connect 2026-08-30) — fail-closed through the
+      // ONE kernel (inside the try so "select an organization" lands in the
+      // scenario's result line, never as an unhandled rejection) so a
+      // scenario never burns a run on a guaranteed organization_required 400.
+      headers = applyOrganizationContextHeader(
+        headers,
+        requireOrganizationContext(organizationId),
+      );
+    }
     await runTrackedRequest(dispatch, {
       id: requestId,
       kind: "api",
@@ -421,6 +437,7 @@ export default function ResilienceLabPage() {
   const activeRequests = useAppSelector(selectActiveNetRequests);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const accessToken = useAppSelector(selectAccessToken);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const [inputValue, setInputValue] = useState(MOCK_USER_INPUT);
   const [log, setLog] = useState<
@@ -761,6 +778,7 @@ export default function ResilienceLabPage() {
       dispatch,
       baseUrl,
       token: accessToken ?? null,
+      organizationId: organizationId ?? null,
       scenario: s,
     });
     setRunningServer(null);

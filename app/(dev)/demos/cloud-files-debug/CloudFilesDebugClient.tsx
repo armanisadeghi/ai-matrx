@@ -60,6 +60,7 @@ import {
   setCustomUrl,
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { resolveBaseUrlForPath, newRequestId } from "@/lib/python-client";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -123,6 +124,7 @@ export function CloudFilesDebugClient() {
   const customUrl = useAppSelector(selectCustomUrl);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const allServerHealth = useAppSelector(selectAllServerHealth);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const [jwt, setJwt] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -217,7 +219,15 @@ export function CloudFilesDebugClient() {
         Accept: "application/json",
         "X-Request-Id": requestId,
       };
-      if (jwt && !args.bypassJwt) headers.Authorization = `Bearer ${jwt}`;
+      if (jwt && !args.bypassJwt) {
+        headers.Authorization = `Bearer ${jwt}`;
+        // Mandatory org admission on every authed request (server
+        // AuthMiddleware, matrx-connect 2026-08-30). Deliberately omitted
+        // when no organization is selected — this harness exists to show raw
+        // server behavior, so the organization_required 400 then appears in
+        // the log exactly as the wire returns it.
+        if (organizationId) headers["X-Organization-Id"] = organizationId;
+      }
       if (args.contentType) headers["Content-Type"] = args.contentType;
 
       // Determine the body display + payload
@@ -315,7 +325,7 @@ export function CloudFilesDebugClient() {
       }
       return entry;
     },
-    [jwt],
+    [jwt, organizationId],
   );
 
   // ─── Test handlers ───────────────────────────────────────────────────────

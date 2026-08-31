@@ -22,6 +22,36 @@ import {
   type DirectiveConfirmResult,
 } from "@/features/directive-catalog/types";
 import { parseHttpError } from "@/lib/api/errors";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
+
+/**
+ * Organization admission rides with auth: the server's AuthMiddleware
+ * (matrx-connect, 2026-08-30) refuses any authenticated request that names no
+ * organization via `X-Organization-Id`. Both directive writes are identified
+ * (Bearer JWT), so the selected organization is resolved out of Redux and run
+ * through the ONE fail-closed kernel — a missing organization throws
+ * `OrganizationContextError` BEFORE any networking, matching the server's
+ * `organization_required` 400 gate one hop earlier (same pattern as
+ * `features/scheduling/service/schedulerClient.ts`).
+ */
+function authedDirectiveHeaders(token: string): Record<string, string> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader(
+    {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    organizationId,
+  );
+}
 
 const trimRoot = (baseUrl: string): string =>
   baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -86,10 +116,7 @@ export async function executeDirective(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authedDirectiveHeaders(token),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -143,10 +170,7 @@ export async function confirmDirective(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authedDirectiveHeaders(token),
     body: JSON.stringify(body),
   });
   if (!response.ok) {

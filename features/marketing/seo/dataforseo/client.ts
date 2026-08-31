@@ -26,6 +26,33 @@ import type {
   SiteLinkGapSeedResponse,
 } from "./types";
 
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
+
+/**
+ * Organization admission rides with auth: the server's AuthMiddleware
+ * (matrx-connect, 2026-08-30) refuses any authenticated request that names no
+ * organization via `X-Organization-Id`. Every request in this client is
+ * identified (Bearer JWT), so the currently selected organization is resolved
+ * out of Redux and run through the ONE fail-closed kernel — a missing
+ * organization throws `OrganizationContextError` BEFORE any networking,
+ * matching the server's `organization_required` 400 gate one hop earlier.
+ * Same pattern as `features/scheduling/service/schedulerClient.ts`.
+ */
+function organizationContextHeaders(
+  base: Record<string, string>,
+): Record<string, string> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader(base, organizationId);
+}
+
 export class SeoApiError extends Error {
   constructor(
     public readonly status: number,
@@ -53,11 +80,11 @@ async function seoRequest<T>(
 ): Promise<T> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
     ...init,
-    headers: {
+    headers: organizationContextHeaders({
       Authorization: `Bearer ${accessToken}`,
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
+      ...((init?.headers as Record<string, string> | undefined) ?? {}),
+    }),
   });
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
@@ -87,10 +114,10 @@ async function seoStreamTerminal<T>(
 ): Promise<T> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
     method: "POST",
-    headers: {
+    headers: organizationContextHeaders({
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(body),
     signal,
   });
