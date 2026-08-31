@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
 import { SelectableImageCard } from "./SelectableImageCard";
@@ -27,10 +27,6 @@ interface EnhancedImageCardProps {
 }
 
 export function MobileImageCard({ photo, onClick, viewMode = "grid" }: EnhancedImageCardProps) {
-    const [isLoading, setIsLoading] = useState(true);
-    const [isError, setIsError] = useState(false);
-    const [aspectRatio, setAspectRatio] = useState(1);
-
     // Get image URL from various possible formats
     const getImageUrl = (): string => {
         if (typeof photo.urls === "string") return photo.urls;
@@ -40,6 +36,17 @@ export function MobileImageCard({ photo, onClick, viewMode = "grid" }: EnhancedI
     };
 
     const imageUrl = getImageUrl();
+    const [loadState, setLoadState] = useState<{
+        url: string;
+        status: "loading" | "loaded" | "error";
+        aspectRatio: number;
+    }>({ url: imageUrl, status: imageUrl ? "loading" : "error", aspectRatio: 1 });
+    const imageStatus = !imageUrl
+        ? "error"
+        : loadState.url === imageUrl
+          ? loadState.status
+          : "loading";
+    const aspectRatio = loadState.url === imageUrl ? loadState.aspectRatio : 1;
 
     // Get image description from various possible formats
     const getImageDescription = (): string => {
@@ -57,29 +64,17 @@ export function MobileImageCard({ photo, onClick, viewMode = "grid" }: EnhancedI
         }
     };
 
-    // Preload the image to get dimensions
-    useEffect(() => {
-        if (!imageUrl) {
-            setIsError(true);
-            setIsLoading(false);
-            return;
-        }
-
-        const img = new Image();
-        img.src = imageUrl;
-        
-        img.onload = () => {
-            setAspectRatio(img.width / img.height);
-        };
-    }, [imageUrl]);
-
-    const handleLoad = () => {
-        setIsLoading(false);
+    const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+        const image = event.currentTarget;
+        setLoadState({
+            url: imageUrl,
+            status: "loaded",
+            aspectRatio: image.naturalWidth / image.naturalHeight,
+        });
     };
 
     const handleError = () => {
-        setIsLoading(false);
-        setIsError(true);
+        setLoadState({ url: imageUrl, status: "error", aspectRatio: 1 });
     };
 
     // Calculate height based on aspect ratio
@@ -96,11 +91,11 @@ export function MobileImageCard({ photo, onClick, viewMode = "grid" }: EnhancedI
     const cardContent = (
         <div className="rounded-md overflow-hidden">
             <div className="relative">
-                {isLoading && (
+                {imageStatus === "loading" && (
                     <Skeleton className={`w-full ${getHeight()}`} />
                 )}
                 
-                {isError ? (
+                {imageStatus === "error" ? (
                     <div className={`w-full ${getHeight()} flex items-center justify-center bg-muted`}>
                         <p className="text-xs text-muted-foreground">Not available</p>
                     </div>
@@ -108,7 +103,7 @@ export function MobileImageCard({ photo, onClick, viewMode = "grid" }: EnhancedI
                     <img
                         src={imageUrl}
                         alt={getImageDescription()}
-                        className={`w-full ${getHeight()} object-cover transition-opacity duration-300 ${isLoading ? "opacity-0" : "opacity-100"}`}
+                        className={`w-full ${getHeight()} object-cover transition-opacity duration-300 ${imageStatus === "loading" ? "opacity-0" : "opacity-100"}`}
                         onLoad={handleLoad}
                         onError={handleError}
                     />
