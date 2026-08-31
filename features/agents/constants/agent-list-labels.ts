@@ -9,7 +9,12 @@ export const AGENT_PUBLIC_BADGE_LABEL = "Public";
 export function agentListEmptyLabel(tab: AgentTab): string {
   switch (tab) {
     case "system":
-      return "No public agents found";
+      // 🚨 The tab IS the system tab, and the surfaces that mount this picker
+      // call that rung "System" (V1 round 3). Saying "public" here made the
+      // empty state name a different thing from the rung the person had just
+      // chosen. The tab's own LABEL is a wider vocabulary question and is left
+      // alone — this only stops the empty state contradicting its own case.
+      return "No system agents found";
     case "shared":
       return "No shared agents found";
     default:

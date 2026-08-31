@@ -28,14 +28,22 @@ import {
   SHORTCUT_SETTINGS_WORDS,
   type SettingsSectionWords,
 } from "@/features/agent-shortcuts/components/next/SettingsSection";
-import { JOB_ADVANCED_WORDS, JOB_SETTINGS_WORDS } from "../words";
+import {
+  JOB_ADVANCED_WORDS,
+  JOB_SETTINGS_WORDS,
+  JOB_TREATMENT_OVERRIDE_WORDS,
+} from "../words";
 
 /**
  * The old system's vocabulary, as a person reads it. "Shortcut" is banned as a
  * NOUN for the thing being edited; "keyboard shortcut" is a real English phrase
  * for a real control and is not this defect.
  */
-const OLD_SYSTEM_NOUNS = /\bshortcuts?\b|\bthe surface\b/i;
+// 🚨 WIDENED (V2 round 3). This read `\bthe surface\b`, so FIX-5's new model
+// copy said "launched from a menu or **a** surface" and walked straight past a
+// guard written for exactly this class. An article is not a word boundary the
+// vocabulary cares about: ban the NOUN.
+const OLD_SYSTEM_NOUNS = /\bshortcuts?\b|\bsurfaces?\b/i;
 const ALLOWED = /keyboard shortcut/i;
 
 const namesTheOldSystem = (copy: string): boolean =>
@@ -90,5 +98,48 @@ describe("the OPTIONS drawer never speaks the old system's nouns", () => {
       "for this shortcut",
     );
     expect(SHORTCUT_SETTINGS_WORDS.autoRunHint).toContain("the shortcut fires");
+  });
+});
+
+
+/**
+ * 🚨 THE GUARD MUST COVER EVERY STRING THAT REACHES A MANDATE HOST, not just
+ * the two default objects it was born watching (V2 round 3).
+ *
+ * The recurrence came in through a path that did not exist when this file was
+ * written: `AdvancedSection` grew an `overridesWords` prop carrying a NESTED
+ * words object (`RunConfigOverridesWords`), the mandate drawer passes its own,
+ * and nothing here walked it. Checking that the job words ANSWER the shortcut
+ * defaults is necessary but not sufficient — it says nothing about a job word
+ * that speaks the old system all by itself.
+ *
+ * So this asserts the job vocabulary directly: every string this repo ships to
+ * a mandate screen, from every words object, is checked for the old nouns. A
+ * new nested object added tomorrow is caught by the same sweep, because it is
+ * the VALUES that are walked and not a hand-listed set of keys.
+ */
+describe("the job's own vocabulary never speaks the old system", () => {
+  const jobWordObjects: Record<string, Record<string, unknown>> = {
+    JOB_ADVANCED_WORDS: JOB_ADVANCED_WORDS as Record<string, unknown>,
+    JOB_SETTINGS_WORDS: JOB_SETTINGS_WORDS as unknown as Record<string, unknown>,
+    JOB_TREATMENT_OVERRIDE_WORDS:
+      JOB_TREATMENT_OVERRIDE_WORDS as Record<string, unknown>,
+  };
+
+  it.each(Object.keys(jobWordObjects))("%s is clean", (name) => {
+    const offenders = Object.entries(jobWordObjects[name])
+      .filter(
+        ([, value]) => typeof value === "string" && namesTheOldSystem(value),
+      )
+      .map(([key, value]) => `${key}: ${String(value)}`);
+    expect(offenders).toEqual([]);
+  });
+
+  it("the nested overrides words the drawer passes are covered too", () => {
+    // The exact path the recurrence used. Named explicitly so that deleting the
+    // sweep above cannot silently stop covering it.
+    expect(Object.keys(jobWordObjects)).toContain(
+      "JOB_TREATMENT_OVERRIDE_WORDS",
+    );
   });
 });

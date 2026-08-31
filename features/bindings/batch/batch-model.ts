@@ -23,6 +23,7 @@
 //
 // Nothing here touches React, the network, or the store.
 
+import { hasHolderDefault } from "../consumption-writer";
 import { reconcileCopiedTarget } from "@/features/agent-shortcuts/components/batch/BatchBindingCell";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import {
@@ -126,13 +127,6 @@ export function unfedRequiredTargets({
     out.push(target.label ?? target.name);
   }
   return out;
-}
-
-function hasHolderDefault(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value === "string" && value.trim() === "") return false;
-  if (Array.isArray(value) && value.length === 0) return false;
-  return true;
 }
 
 /**

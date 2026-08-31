@@ -66,7 +66,7 @@ const OPEN_LAYER_SELECTOR = [
  * space to be believed. A guard whose refusal cannot be distinguished from its
  * absence is not a guard.
  */
-function hasOpenLayer(doc: Document): boolean {
+export function hasOpenLayer(doc: Document = document): boolean {
   for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
     // 🚨 ONLY AN EXPLICITLY OPEN LAYER COUNTS. The previous cut fell back to
     // "no state stamp, but it occupies space → treat as open", and that one
@@ -153,15 +153,37 @@ export function restoreBodyPointerEventsIfOrphaned(
   // back to being indistinguishable from a guard that is absent — the whole
   // defect this file exists to avoid. The first repair carries the full cause
   // and remedy; every one after it is a countable one-liner.
+  //
+  // 🚨 WARN, NOT ERROR — and the distinction is the point (V2 round 3).
+  // `globalErrorCapture` wraps `console.error` in production and feeds the
+  // Error Inspector, so every successful repair painted a red "1 error" chip
+  // over an action that had just WORKED: the person picked an offered value,
+  // the pick succeeded, the guard quietly fixed a layer bug, and the screen
+  // reported a failure that never happened. A screen that cries error after a
+  // success is lying in the other direction.
+  //
+  // This stays fully loud to the audience that can act on it — the console
+  // still carries the cause, the remedy and a count — but a repair the person
+  // never noticed is not their error. `console.warn` is not captured.
   if (repairs === 1) {
-    console.error(
+    console.warn(
       "[modal-layers] document.body was left pointer-events:none with no modal layer open — every control on the page was dead. Restored. Cause is two overlapping Radix layers (typically a Select whose selection synchronously opens a Dialog); the durable fix is to let the first layer finish closing before opening the second.",
     );
   } else {
-    console.error(`[modal-layers] repaired an orphaned body lock (#${repairs}).`);
+    console.warn(`[modal-layers] repaired an orphaned body lock (#${repairs}).`);
   }
   return true;
 }
+
+/**
+ * IS ANY MODAL LAYER ACTUALLY OPEN RIGHT NOW? Exported because two different
+ * problems need the same answer and must not answer it differently: this guard
+ * decides whether an orphaned body lock is safe to clear, and
+ * `after-current-layer-closes.ts` decides whether it is safe to OPEN a new
+ * layer. One predicate, or the two drift and each is right about a different
+ * DOM.
+ */
+export const isAnyModalLayerOpen = hasOpenLayer;
 
 /** For tests only — the counter is session state, not app state. */
 export function __resetBodyPointerEventsRepairs(): void {

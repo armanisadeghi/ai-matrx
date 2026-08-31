@@ -142,7 +142,7 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     __resetBodyPointerEventsRepairs();
     document.body.style.removeProperty("pointer-events");
     document.body.innerHTML = "";
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {});
   });
   afterEach(() => {
     jest.restoreAllMocks();
@@ -155,7 +155,7 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
     expect(document.body.style.pointerEvents).toBe("");
     expect(bodyPointerEventsRepairCount()).toBe(1);
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.warn).toHaveBeenCalledTimes(1);
 
     // 🚨 This used to assert the OPPOSITE — that a second repair counts but
     // does not print — on the reasoning that a repeated paragraph is noise. A
@@ -167,8 +167,8 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     document.body.style.pointerEvents = "none";
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
     expect(bodyPointerEventsRepairCount()).toBe(2);
-    expect(console.error).toHaveBeenCalledTimes(2);
-    expect((console.error as jest.Mock).mock.calls[1][0]).toBe(
+    expect(console.warn).toHaveBeenCalledTimes(2);
+    expect((console.warn as jest.Mock).mock.calls[1][0]).toBe(
       "[modal-layers] repaired an orphaned body lock (#2).",
     );
   });
@@ -229,7 +229,7 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     expect(cleared).toEqual([1]);
     callbacks.get(2)?.();
     expect(bodyPointerEventsRepairCount()).toBe(0);
-    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
 
     // A genuinely orphaned lock survives the full quiet window and is still
     // repaired well inside the 1.5-second recovery bar.
@@ -238,7 +238,7 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     callbacks.get(3)?.();
     expect(document.body.style.pointerEvents).toBe("");
     expect(bodyPointerEventsRepairCount()).toBe(1);
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -368,7 +368,7 @@ describe("R2-1 follow-up — PRESENT is not OPEN (walk: repaired only 2 of 6 pro
     __resetBodyPointerEventsRepairs();
     document.body.style.removeProperty("pointer-events");
     document.body.innerHTML = "";
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {});
   });
   afterEach(() => {
     jest.restoreAllMocks();
@@ -410,7 +410,7 @@ describe("R2-1 — THE WALKER'S 8-PROBE PROTOCOL (guard repaired exactly once pe
     __resetBodyPointerEventsRepairs();
     document.body.style.removeProperty("pointer-events");
     document.body.innerHTML = "";
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {});
   });
   afterEach(() => {
     jest.restoreAllMocks();
@@ -451,8 +451,8 @@ describe("R2-1 — THE WALKER'S 8-PROBE PROTOCOL (guard repaired exactly once pe
     // repairs demonstrably happened, so nobody could tell whether this guard
     // had done the work or something else had — which is the same "absent or
     // working, indistinguishable" defect the guard exists to end.
-    expect(console.error).toHaveBeenCalledTimes(8);
-    const messages = (console.error as jest.Mock).mock.calls.map((c) => c[0]);
+    expect(console.warn).toHaveBeenCalledTimes(8);
+    const messages = (console.warn as jest.Mock).mock.calls.map((c) => c[0]);
     // The first carries the full cause and remedy…
     expect(messages[0]).toContain("every control on the page was dead");
     expect(messages[0]).toContain("let the first layer finish closing");

@@ -56,6 +56,12 @@ export const FILL_DOWN_LIMITS =
  */
 export function feedSentence(
   sources: readonly ConsumptionEntry[] | undefined,
+  /**
+   * Whether the HOLDER supplies its own value for this input. Required, not
+   * optional-defaulting-to-true: a default of `true` is exactly the assumption
+   * that made this sentence lie (V2 round 3).
+   */
+  holderHasDefault: boolean,
 ): string {
   const all = sources ?? [];
   // An offered source with no value picked is an UNFINISHED CHOICE. It is not
@@ -70,7 +76,9 @@ export function feedSentence(
       ? unpicked === 1
         ? "Waiting for you to pick which offered value feeds this — nothing feeds it yet."
         : `Waiting for you to pick ${unpicked} offered values — nothing feeds this yet.`
-      : "Nothing feeds this — the holder's own default applies.";
+      : holderHasDefault
+        ? "Nothing feeds this — the holder's own default applies."
+        : "Nothing feeds this, and the holder has no default of its own — nothing arrives for it.";
   }
 
   const offered = settled.filter(isOfferedSource).length;
@@ -222,7 +230,7 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
   // (That they are two stores at all is the D5/D7 split; it is not this wave's
   // to unify, but it is this wave's not to lie about.)
   llmOverridesHint:
-    "Which model runs this job, and the settings it runs with, when it is launched from a menu or a surface. Stored with this job's own options, so it is one answer for everyone — options have no per-person rung. Left alone, the holder's own model and settings are used. (Runs through the job itself use the binding's own settings, under Settings above.)",
+    "Which model runs this job, and the settings it runs with, when it is launched from a menu or from a place in the app. Stored with this job's own options, so it is one answer for everyone — options have no per-person rung. Left alone, the holder's own model and settings are used. (Runs through the job itself use the binding's own settings, under Settings above.)",
   jsonExtractionHint:
     "How this job pulls a structured result out of the answer while it is still being written. Leave empty for off.",
 };
@@ -256,7 +264,7 @@ export const JOB_OVERRIDE_WORDS = {
 export const JOB_TREATMENT_OVERRIDE_WORDS = {
   heading: "Model settings for this job's own options",
   scopeNote:
-    "These are stored with this job's options and used when it is launched from a menu or a surface. One answer for everyone — options have no per-person rung. Resetting a value hands it back to the holder's own default.",
+    "These are stored with this job's options and used when it is launched from a menu or from a place in the app. One answer for everyone — options have no per-person rung. Resetting a value hands it back to the holder's own default.",
   noModelNote:
     "No model chosen — this job runs on its holder's own model unless you pick one.",
 };

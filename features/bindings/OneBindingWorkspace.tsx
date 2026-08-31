@@ -31,7 +31,7 @@ import { AlertTriangle, CircleCheck, Settings2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
+import { whenNoLayerIsOpen } from "@/components/dialogs/confirm/deferred-intent";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -308,6 +308,13 @@ function BindingDraft({
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
+  const organizationNames = useMemo(
+    () =>
+      Object.fromEntries(
+        organizations.map((o) => [o.id.toLowerCase(), o.name]),
+      ),
+    [organizations],
+  );
   const canBindGlobal = allowGlobal && isSuperAdmin;
 
   // ── The holder draft — seeded once, from the row this instance is keyed to ─
@@ -856,6 +863,54 @@ function BindingDraft({
   // rule here is the other honest one: say it before it happens, and say it
   // while it is true. Both — a confirm at the moment of the move, and a
   // standing sentence in the rung cell whenever there is work to lose.
+  /**
+   * A rung change waiting for the Select to finish closing. Held as STATE, not
+   * as an awaited promise in a click handler — see `requestRungChange`. Exactly
+   * one may be pending, and the cell says so while it is.
+   */
+  const [pendingRung, setPendingRung] = useState<{
+    rung: BindingRung;
+    organizationId: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!pendingRung) return;
+    const waiter = whenNoLayerIsOpen();
+    let live = true;
+    void (async () => {
+      const settled = await waiter.promise;
+      if (!live) return;
+      if (settled === "cancelled") return;
+      if (settled === "timeout") {
+        // Something owns the screen far longer than any close animation. Say
+        // it and drop the intent — opening a dialog underneath another layer is
+        // how this defect looked in the first place.
+        setPendingRung(null);
+        toast.error(
+          "Something else on screen is still open, so we could not ask about your unsaved changes. Nothing moved — try the rung again.",
+        );
+        return;
+      }
+      const ok = await confirm({
+        title: `Move to ${rungWords(pendingRung.rung).noun}?`,
+        description: `${rungWords(pendingRung.rung).noun[0].toUpperCase()}${rungWords(pendingRung.rung).noun.slice(1)} starts from its OWN stored answer, so the unsaved changes you have made here are discarded. Save first if you want to keep them.`,
+        confirmLabel: "Move and discard",
+        cancelLabel: "Stay here",
+        variant: "destructive",
+      });
+      if (!live) return;
+      setPendingRung(null);
+      if (ok) onRungChange(pendingRung.rung, pendingRung.organizationId);
+    })();
+    return () => {
+      live = false;
+      // The person moved on before we could ask. Discard the intent — never
+      // bank it to fire later as a question about something they stopped doing.
+      waiter.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingRung]);
+
   const storedDraft = useMemo(() => parseBindingWave1(binding), [binding]);
   /**
    * ONE SIGNATURE FOR "WHAT THIS DRAFT IS", used by both the unsaved-work note
@@ -903,20 +958,18 @@ function BindingDraft({
       return;
     }
     if (dirty) {
-      // `ShortcutScopePicker` is a Radix Select. Its selection callback runs
-      // before the listbox has committed its close, so opening the confirm in
-      // this same stack overlaps two body-lock owners. Both mandate routes use
-      // this boundary; wait one paint so the Select owns a complete close
-      // before the AlertDialog owns its open.
-      await afterCurrentLayerCloses();
-      const ok = await confirm({
-        title: `Move to ${rungWords(nextRung).noun}?`,
-        description: `${rungWords(nextRung).noun[0].toUpperCase()}${rungWords(nextRung).noun.slice(1)} starts from its OWN stored answer, so the unsaved changes you have made here are discarded. Save first if you want to keep them.`,
-        confirmLabel: "Move and discard",
-        cancelLabel: "Stay here",
-        variant: "destructive",
-      });
-      if (!ok) return;
+      // 🚨 PARK THE INTENT — never open the confirm from inside the Select's
+      // own close (V1 round-3 blocker R3-1). `ShortcutScopePicker` is a Radix
+      // Select whose `onValueChange` fires while its listbox still carries
+      // `data-state="open"` for ~2s; a confirm opened in that stack never
+      // appeared, the page went pointer-dead, THE RUNG CHANGE WAS SILENTLY
+      // DROPPED, and the queued confirm ambushed a later unrelated click.
+      //
+      // Awaiting a promise inside this handler is what let that stale question
+      // survive; the effect below owns the wait instead, and it either applies
+      // the intent or refuses it in words.
+      setPendingRung({ rung: nextRung, organizationId: nextOrgId });
+      return;
     }
     onRungChange(nextRung, nextOrgId);
   }
@@ -1081,14 +1134,23 @@ function BindingDraft({
           void requestRungChange(nextRung, nextOrgId)
         }
         unsavedNote={
-          dirty
-            ? "You have unsaved changes here. Moving rung starts from that rung's own stored answer and discards them — you will be asked first."
-            : null
+          // While an intent is parked, the cell says the question is coming —
+          // otherwise the click looks ignored, which is how R3-1 read to the
+          // person even before the confirm went missing.
+          pendingRung
+            ? `Moving to ${rungWords(pendingRung.rung).noun} — asking about your unsaved changes as soon as the menu closes…`
+            : dirty
+              ? "You have unsaved changes here. Moving rung starts from that rung's own stored answer and discards them — you will be asked first."
+              : null
         }
         // Where the row that was just written actually answers, in the server's
         // words — the row's own `organization_id` does not say it, and no client
         // sentence may guess it.
         appliesIn={writeReport?.appliesIn ?? null}
+        // The server names the org by id because it has no name to hand; this
+        // screen does. See ScopeHolderBar's note — a display resolution, not a
+        // rewrite of the server's sentence.
+        organizationNames={organizationNames}
         holder={holder}
         onHolderChange={setHolder}
         holderName={

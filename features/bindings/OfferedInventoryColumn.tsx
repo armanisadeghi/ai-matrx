@@ -123,7 +123,14 @@ export function OfferedInventoryColumn({
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                {/* 🚨 A clipped key with no ellipsis reads as a DIFFERENT key
+                    (V2 round 3: 75.7px cut at 1280 with no sign it was cut).
+                    `truncate` adds the ellipsis so the reader knows there is
+                    more, and `title` carries the whole thing. */}
+                <p
+                  className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground"
+                  title={value.name}
+                >
                   {value.name}
                 </p>
                 {value.description ? (

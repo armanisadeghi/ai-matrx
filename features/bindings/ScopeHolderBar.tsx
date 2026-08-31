@@ -74,6 +74,13 @@ export interface ScopeHolderBarProps {
    * scope sentence the server never agreed to.
    */
   appliesIn?: string | null;
+  /**
+   * Organization id → name, for resolving ids inside the SERVER'S sentences.
+   * The server names an org by UUID because it has no name to hand; this screen
+   * does, and a name is never a UUID where a name exists (V1 round 3, the G2
+   * class one cell over).
+   */
+  organizationNames?: Readonly<Record<string, string>>;
 
   holder: HolderDraft;
   onHolderChange: (next: HolderDraft) => void;
@@ -190,6 +197,7 @@ export function ScopeHolderBar({
   onRungChange,
   unsavedNote = null,
   appliesIn = null,
+  organizationNames = {},
   holder,
   onHolderChange,
   holderName = null,
@@ -199,6 +207,22 @@ export function ScopeHolderBar({
 }: ScopeHolderBarProps) {
   const dispatch = useAppDispatch();
   const restriction = holderRestriction(rung);
+  /**
+   * 🚨 A NAME IS NEVER A UUID WHERE A NAME EXISTS (V1 round 3; the G2 class
+   * again, one cell over). `applies_in` is the SERVER'S sentence and is printed
+   * verbatim — but it names the organization by raw id, because the server has
+   * no name to hand, while this screen shows that organization's NAME two lines
+   * above. Substituting the name for the id is a display resolution of an
+   * identifier, not a rewrite of the server's meaning: every other word is
+   * untouched, and an id we cannot resolve is left exactly as sent rather than
+   * replaced with a guess.
+   */
+  const appliesInResolved = appliesIn
+    ? appliesIn.replace(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+        (id) => organizationNames[id.toLowerCase()] ?? id,
+      )
+    : null;
 
   // The system catalogue is only in the slice after a FULL list fetch, and the
   // restriction below is what makes it the only catalogue offered at the system
@@ -269,13 +293,22 @@ export function ScopeHolderBar({
           {/* THE SAVED ROW SAYS WHERE IT ANSWERS, in the server's own words —
               beneath the ladder sentence, which is about the rung you are
               choosing, not about the row that exists. */}
-          {appliesIn ? (
-            <p className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">
-                Saved — where this applies:{" "}
-              </span>
-              {appliesIn}
-            </p>
+          {appliesInResolved ? (
+            /* 🚨 FOLDED AFTER IT IS READ (V2 round 3: it drove the cell to
+               52.8% empty and never cleared). It is a fact about the write that
+               just happened — worth reading once, not worth owning the cell
+               afterwards — so it opens expanded and the person can close it. */
+            <details
+              open
+              className="rounded-md border border-border bg-muted/40 px-2 py-1.5"
+            >
+              <summary className="cursor-pointer text-[11px] font-medium text-foreground">
+                Saved — where this applies
+              </summary>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                {appliesInResolved}
+              </p>
+            </details>
           ) : null}
           {!allowGlobal ? (
             <p className="text-[10.5px] leading-snug text-muted-foreground/80">

@@ -32,49 +32,62 @@ const question: ConsumptionEntry = {
 
 describe("feedSentence — names the kind it has actually checked", () => {
   it("says nothing feeds an input with no sources", () => {
-    expect(feedSentence([])).toBe(
+    expect(feedSentence([], true)).toBe(
       "Nothing feeds this — the holder's own default applies.",
     );
-    expect(feedSentence(undefined)).toContain("Nothing feeds this");
+    expect(feedSentence(undefined, true)).toContain("Nothing feeds this");
     expect(isFed([])).toBe(false);
   });
 
   it("calls one offered value an offered value", () => {
-    expect(feedSentence([offered("task_overview")])).toBe(
+    expect(feedSentence([offered("task_overview")], true)).toBe(
       "Fed by 1 offered value.",
     );
   });
 
   it("NEVER calls a fixed value an offered value", () => {
-    const sentence = feedSentence([literal]);
+    const sentence = feedSentence([literal], true);
     expect(sentence).toBe("Fed by a fixed value.");
     expect(sentence).not.toContain("offered");
   });
 
   it("NEVER calls a question an offered value", () => {
-    const sentence = feedSentence([question]);
+    const sentence = feedSentence([question], true);
     expect(sentence).toBe("Fed by a question the person answers.");
     expect(sentence).not.toContain("offered");
   });
 
   it("does not count an unpicked offered source as a feed", () => {
-    const sentence = feedSentence([offered("")]);
+    const sentence = feedSentence([offered("")], true);
     expect(sentence).toContain("Waiting for you to pick");
     expect(sentence).not.toContain("Fed by");
     expect(isFed([offered("")])).toBe(false);
   });
 
   it("names every kind in a mixed many-to-one map, and says they join", () => {
-    const sentence = feedSentence([offered("inputs"), offered("outputs"), literal]);
+    const sentence = feedSentence([offered("inputs"), offered("outputs"), literal], true);
     expect(sentence).toBe(
       "Fed by 2 offered values and a fixed value, joined in order.",
     );
   });
 
   it("reports a settled feed AND an outstanding pick in the same breath", () => {
-    const sentence = feedSentence([offered("inputs"), offered("")]);
+    const sentence = feedSentence([offered("inputs"), offered("")], true);
     expect(sentence).toContain("Fed by 1 offered value.");
     expect(sentence).toContain("still waiting for you to pick");
     expect(isFed([offered("inputs"), offered("")])).toBe(true);
+  });
+
+  /**
+   * 🚨 V2 round 3: this sentence printed "the holder's own default applies"
+   * beside a panel reading CURRENT AGENT DEFAULT — Not set. Two other readers
+   * (`BindingMiddle`, `batch-model`) already checked whether a default exists;
+   * this one asserted it. One fact, three readers, and only two of them asked.
+   */
+  it("does NOT claim a default the holder does not have", () => {
+    expect(feedSentence([], false)).toBe(
+      "Nothing feeds this, and the holder has no default of its own — nothing arrives for it.",
+    );
+    expect(feedSentence([], false)).not.toContain("default applies");
   });
 });

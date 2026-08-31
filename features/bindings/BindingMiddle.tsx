@@ -56,6 +56,7 @@ import {
 } from "@/features/mandates/provision-shapes";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { sourceLabelsFor } from "./words";
+import { hasHolderDefault } from "./consumption-writer";
 
 /** The one source kind that can be absent, and so the one that answers for it. */
 type OfferedSource = Extract<ConsumptionEntry, { mapType: "offered_value" }>;
@@ -321,13 +322,6 @@ export function BindingMiddleRow({
       />
     </div>
   );
-}
-
-function hasHolderDefault(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value === "string" && value.trim() === "") return false;
-  if (Array.isArray(value) && value.length === 0) return false;
-  return true;
 }
 
 /** Sources 1..n — the ones the shared row does not own. */

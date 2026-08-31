@@ -20,6 +20,7 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
 import type { ConsumptionEntry } from "@/features/mandates/provision-shapes";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { feedSentence, isFed } from "./words";
+import { hasHolderDefault } from "./consumption-writer";
 import { RAIL_MAX_HEIGHT } from "./rail-height";
 import type { HolderInputs } from "./useHolderInputs";
 
@@ -152,7 +153,7 @@ function InputGroup({
                 {item.name}
               </p>
               <p className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground/80">
-                {feedSentence(sources)}
+                {feedSentence(sources, hasHolderDefault(item.defaultValue))}
               </p>
             </div>
           );

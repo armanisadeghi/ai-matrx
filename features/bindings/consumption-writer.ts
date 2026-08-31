@@ -446,3 +446,21 @@ export function seedAutoBinds({
   }
   return { map: next, autoBound };
 }
+
+/**
+ * DOES THE HOLDER ITSELF SUPPLY A VALUE FOR THIS INPUT?
+ *
+ * 🚨 ONE definition, because there were three readers and only two of them
+ * asked (V2 round 3). `BindingMiddle` and `batch-model` each carried their own
+ * private copy and checked honestly; `feedSentence` — the rail's sentence —
+ * asserted *"the holder's own default applies"* without checking at all, and
+ * printed it beside a panel reading **CURRENT AGENT DEFAULT — Not set**. Two
+ * readers right, one reader confidently wrong about the same fact on the same
+ * screen is precisely the class F2 was supposed to close.
+ */
+export function hasHolderDefault(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string" && value.trim() === "") return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  return true;
+}
