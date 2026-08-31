@@ -31,6 +31,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   fetchAllTasksAdmin,
   type AdminTaskRow,
@@ -43,6 +44,7 @@ import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { DuplicateScheduleBanner } from "@/features/scheduling/components/list/DuplicateScheduleBanner";
 import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateSchedules";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
+import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -70,6 +72,21 @@ export default function AdminTasksPage() {
   useAdminSchedulingScopeSlice("tasks", () => ({
     task_row_count: rows.length,
   }));
+
+  // ONE right-click menu for the whole pane — the row is resolved from the
+  // DOM at open (`data-row-id`), same as every other MatrxDataTable menu.
+  const rowMenu = useScheduledTaskMenuSection<AdminTaskRow>({
+    rows: () => rows,
+    content: (r) =>
+      [
+        `Title: ${r.title}`,
+        `Owner: ${r.user_email ?? r.user_id}`,
+        `Trigger: ${triggerText(r)}`,
+        `State: ${r.enabled ? "enabled" : "paused"}`,
+      ].join("\n"),
+    onDisabled: (r) =>
+      setRows((prev) => prev.map((row) => (row.id === r.id ? { ...row, enabled: false } : row))),
+  });
 
   const load = useCallback(async () => {
     setFetching(true);
@@ -225,6 +242,13 @@ export default function AdminTasksPage() {
         }}
       />
       <div className="min-h-0 flex-1" data-surface-value="task_row_count">
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          getApplicationScope={rowMenu.getApplicationScope}
+          resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+          extraSections={rowMenu.sections}
+        >
         <MatrxDataTable
           urlState={{ id: "scheduling-tasks" }}
           data={rows}
@@ -282,6 +306,7 @@ export default function AdminTasksPage() {
             description: (r) => r.description ?? undefined,
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
