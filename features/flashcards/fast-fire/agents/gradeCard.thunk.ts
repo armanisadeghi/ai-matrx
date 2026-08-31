@@ -3,8 +3,8 @@
 // FIRE-AND-FORGET grading (REQUIREMENTS §7, hard-requirement #4). The drill loop
 // NEVER awaits this. For each card, the moment its window closes we:
 //   1. upload the per-card clip → durable file_id (fileHandler.upload),
-//   2. run the grader through the canonical headless primitive
-//      (`runHeadlessAgentJson`, D126) with the audio as a message part,
+//   2. run the grader through the ONE spoken-grading core, which delivers the
+//      durable file id as the mandate's named `answer_audio` offered value,
 //   3. dispatch `gradeResolved` INTO Redux (the grade reaches the UI ONLY this
 //      way — never a same-tick re-read of state set elsewhere; the §5.3 killer
 //      bug is structurally impossible),
@@ -56,7 +56,6 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   recordAttemptOfflineAware,
   type PendingGradeRequest,
@@ -68,9 +67,12 @@ import {
   audioExtensionForType,
   normalizeAudioType,
 } from "@ai-matrx/browser-audio/core";
-import { verdictResult, type GradeResult } from "@/features/education/trust/types";
+import {
+  verdictResult,
+  type GradeResult,
+} from "@/features/education/trust/types";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
-import { coerceSpokenGrade } from "./grading-core";
+import { runSpokenGrader } from "./grading-core";
 import {
   gradePending,
   gradeResolved,
@@ -201,47 +203,26 @@ export function gradeCard(args: GradeCardArgs) {
     dispatch(gradePending({ cardId, responseAudioFileId, runId: sessionId }));
 
     try {
-      // 2. Attach the audio as a message part (NOT userInput — that's a string)
-      //    and run the grader through the headless primitive.
-      const part = await fileHandler.toContentPart({
-        kind: "file_id",
-        fileId: responseAudioFileId,
-      });
-      const runResult = await runHeadlessAgentJson(dispatch, getState, {
-        mandateKey: FC_MANDATES.gradeSpoken,
-        surfaceKey: `fastfire-grade-${cardId}`,
-        // NOT ephemeral: the platform's ephemeral path is half-built and
-        // 404s against the v2 conversation gate (see /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/EPHEMERAL-RUNS.md).
-        // We persist instead, and keep these out of the user's normal chats
-        // via a distinct, system-marked source_feature (source-registry.ts).
-        sourceFeature: "education-fastfire",
-        surfaceName: "matrx-user/education-fastfire",
-        variables: {
+      // 2. Use THE shared spoken grader. It sends the durable file id as the
+      //    guaranteed `answer_audio` offered value; the mandate refuses before
+      //    model execution if that contract is ever incomplete.
+      const grade = await dispatch(
+        runSpokenGrader({
+          mandateKey: FC_MANDATES.gradeSpoken,
+          surfaceKey: `fastfire-grade-${cardId}`,
+          sourceFeature: "education-fastfire",
+          surfaceName: "matrx-user/education-fastfire",
           front,
           back,
-          seconds_allowed: secondsAllowed,
-        },
-        // No response_format override: the grader is OUR agent — its output
-        // schema lives in its DB definition (edit it there via agent_author,
-        // never a call-time override, which also wrecks the prod agent cache).
-        messageParts: [part],
-        timeoutMs: 120_000,
-        pollIntervalMs: 200,
-      });
+          secondsAllowed,
+          responseAudioFileId,
+        }),
+      );
 
-      // 3. Coerce via the shared spoken coercer (partial-tolerant on error).
-      const grade = coerceSpokenGrade(runResult.data);
       if (!grade) {
-        // The run's OWN reason wins. A failed run already carries the specific
-        // cause (a provider rejection, a timeout) — inventing "no structured
-        // grade" here buried it: on 2026-08-17 every card in a session showed
-        // that sentence while the real cause was a Google 400 on the grader's
-        // thinking level. Only claim a shape problem when the run succeeded.
-        throw new Error(
-          runResult.error ?? "grader did not return a structured grade",
-        );
+        throw new Error("grader did not return a structured grade");
       }
-      // Flatten the SpokenGrade adapter onto the slice's per-card wire shape:
+      // 3. Flatten the SpokenGrade adapter onto the slice's per-card wire shape:
       // the verdict's result token + explanation, plus the spoken extras.
       const result = verdictResult(grade.verdict);
       const feedback = grade.verdict.explanation;

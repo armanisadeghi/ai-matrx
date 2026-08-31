@@ -261,6 +261,14 @@ flashcards/FlashcardMobileView.tsx`); `CanvasFlashcardsView.tsx` and `FlashcardS
   of the existing full-width row below the grid, which now carries the confidence tap; the grid
   cell always offers "Jump" instead. Flip / swipe / audio behaviors untouched.
 
+- 2026-08-30 — **Fast Fire now actually uses the canonical spoken-grading wire.** The
+  2026-08-22 conversion correctly moved `runSpokenGrader` to the guaranteed named
+  `answer_audio` offered value, but the older fire-and-forget `gradeCard` path still carried
+  its pre-conversion `messageParts` copy. Live surface certification caught the resulting
+  `mandate_unfulfilled` failure on all four canary cards. `gradeCard` now dispatches
+  `runSpokenGrader` itself, deleting the second launch path; its online regression test pins
+  `variables.answer_audio` and the absence of `messageParts`.
+
 - 2026-08-22 — 🚨 **The spoken grader can no longer grade a silence.** A live bench run proved
   `flashcards.grade_spoken` with NO audio attached invented a transcript and returned
   `correct` — a learner who said nothing was marked right. Both halves are fixed. **Wire:**

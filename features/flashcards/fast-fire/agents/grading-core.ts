@@ -116,7 +116,9 @@ function coercePronunciation(raw: unknown): PronunciationAssessment | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const p = raw as Record<string, unknown>;
   const n = (v: unknown): number =>
-    typeof v === "number" && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0;
+    typeof v === "number" && Number.isFinite(v)
+      ? Math.min(1, Math.max(0, v))
+      : 0;
   const hasSignal =
     typeof p.accuracy === "number" ||
     typeof p.fluency === "number" ||
@@ -147,7 +149,9 @@ export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
   const score = Math.min(1, Math.max(0, num(r.score, 0)));
   const core = coerceGradeVerdict(r);
-  const result: GradeResult = core ? verdictResult(core) : resultFromScore(score);
+  const result: GradeResult = core
+    ? verdictResult(core)
+    : resultFromScore(score);
   const rubricRaw =
     r.rubric && typeof r.rubric === "object" && !Array.isArray(r.rubric)
       ? (r.rubric as Record<string, unknown>)
@@ -197,7 +201,11 @@ export async function uploadResponseClip(
     const namePrefix = opts.cardId ? `fastfire-${opts.cardId}` : "answer";
     const uploaded = await fileHandler.upload(
       { kind: "blob", blob: clip, fileName: `${namePrefix}.${ext}`, mime },
-      { folderPath: opts.folderPath, visibility: "personal", metadata: opts.metadata ?? {} },
+      {
+        folderPath: opts.folderPath,
+        visibility: "personal",
+        metadata: opts.metadata ?? {},
+      },
     );
     return uploaded.fileId ?? null;
   } catch (err) {
@@ -244,7 +252,9 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
     if (!args.responseAudioFileId) {
       // Belt and braces for JS callers: the type says required, and a grader
       // that runs on no clip fabricates a transcript (see the header note).
-      console.error("[grading-core] runSpokenGrader called with no clip — refusing.");
+      console.error(
+        "[grading-core] runSpokenGrader called with no clip — refusing.",
+      );
       return null;
     }
     try {
@@ -281,9 +291,19 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
             }
           : {}),
       });
-      return coerceSpokenGrade(result.data);
+      const grade = coerceSpokenGrade(result.data);
+      if (!grade) {
+        console.error(
+          `[grading-core] runSpokenGrader (${args.surfaceKey}) produced no grade:`,
+          result.error ?? "no structured grade",
+        );
+      }
+      return grade;
     } catch (err) {
-      console.error(`[grading-core] runSpokenGrader (${args.surfaceKey}):`, err);
+      console.error(
+        `[grading-core] runSpokenGrader (${args.surfaceKey}):`,
+        err,
+      );
       return null;
     }
   };

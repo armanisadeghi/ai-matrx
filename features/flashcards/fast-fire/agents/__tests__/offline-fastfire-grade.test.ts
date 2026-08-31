@@ -42,12 +42,16 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => USER,
 }));
 jest.mock("@/lib/toast", () => ({
-  toast: { error: jest.fn(), success: jest.fn(), info: jest.fn(), warning: jest.fn() },
+  toast: {
+    error: jest.fn(),
+    success: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+  },
 }));
 jest.mock("@/features/files/handler/handler", () => ({
   fileHandler: {
     upload: (...args: unknown[]) => upload(...args),
-    toContentPart: async () => ({ type: "file", file_id: "f1" }),
   },
 }));
 jest.mock(
@@ -304,7 +308,10 @@ describe("FastFire — the offline split (STATE §4.1 B8)", () => {
     await gradeCard(args())(dispatch, getState);
     spine.goOnline();
     upload.mockResolvedValue({ fileId: "file-audio-only" });
-    runHeadlessAgentJson.mockResolvedValue({ data: null, error: "grader down" });
+    runHeadlessAgentJson.mockResolvedValue({
+      data: null,
+      error: "grader down",
+    });
 
     const report = await flushStudyOutbox(USER, resolver);
     expect(report).toMatchObject({ flushed: 1, graded: 0, ungraded: 1 });
@@ -396,6 +403,18 @@ describe("FastFire — the offline split (STATE §4.1 B8)", () => {
       responseAudioFileId: "file-123",
     });
     expect(row.gradedBy).toBeTruthy();
+    expect(runHeadlessAgentJson).toHaveBeenCalledTimes(1);
+    const graderOptions = runHeadlessAgentJson.mock.calls[0][2] as {
+      variables?: Record<string, unknown>;
+      messageParts?: unknown[];
+    };
+    expect(graderOptions.variables).toMatchObject({
+      front: "front",
+      back: "back",
+      seconds_allowed: 20,
+      answer_audio: "file-123",
+    });
+    expect(graderOptions.messageParts).toBeUndefined();
     expect(spine.masteryFor("fc_card", CARD)).toMatchObject({
       attempt_count: 1,
       correct_count: 1,
@@ -430,10 +449,14 @@ describe("FastFire — the offline split (STATE §4.1 B8)", () => {
     graderReturnsGrade();
     await flushStudyOutbox(USER, resolver);
 
-    const { enqueueAttempt } = await import(
-      "@/features/education/study/offline/outbox"
-    );
-    const { seq: _s, failedAttempts: _f, lastError: _l, ...replayable } = queued;
+    const { enqueueAttempt } =
+      await import("@/features/education/study/offline/outbox");
+    const {
+      seq: _s,
+      failedAttempts: _f,
+      lastError: _l,
+      ...replayable
+    } = queued;
     await enqueueAttempt(replayable);
     await flushStudyOutbox(USER, resolver);
 
