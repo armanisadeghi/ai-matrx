@@ -38,14 +38,15 @@ with operational status and the categorized tool registry.
   and rejects direct client RPCs plus the retired timer/cancel path.
 - Browser storage entering the notebook is reconstructed only after its blocks,
   variables, and merge configuration pass runtime shape checks. Query result
-  rows are narrowed as plain objects; no assertion promotes unknown data.
+  rows are narrowed as plain objects, and saved query history is reconstructed
+  record by record; no assertion promotes unknown data.
 
 ## Change log
 
 - 2026-08-30 — Rule 2026-08-30.2 static recheck: censused all three SQL
   execution callers onto the terminal Server Action, pinned the retired
   cancel/timeout path absent, corrected stale catalogue claims, and replaced
-  assertion-based browser/result parsing with runtime narrowing.
+  assertion-based browser/result/history parsing with runtime narrowing.
 - 2026-08-30 — Removed false client-only SQL cancellation and timeout states;
   execution now reaches its real terminal server result before the UI unlocks.
 - 2026-08-30 — Surface certification repair: canonical context menu, Locate

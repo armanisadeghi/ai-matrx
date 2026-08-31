@@ -16,6 +16,55 @@ export interface StoredQuery {
 const STORAGE_KEY = 'sql-query-history';
 const MAX_QUERIES = 100;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseStoredQuery(value: unknown): StoredQuery | null {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    typeof value.query !== 'string' ||
+    typeof value.timestamp !== 'number' ||
+    !Number.isFinite(value.timestamp) ||
+    (value.executionTime !== undefined &&
+      (typeof value.executionTime !== 'number' ||
+        !Number.isFinite(value.executionTime))) ||
+    (value.tags !== undefined &&
+      (!Array.isArray(value.tags) ||
+        !value.tags.every((tag) => typeof tag === 'string'))) ||
+    (value.description !== undefined &&
+      typeof value.description !== 'string')
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    query: value.query,
+    timestamp: value.timestamp,
+    ...(value.result === undefined ? {} : { result: value.result }),
+    ...(value.executionTime === undefined
+      ? {}
+      : { executionTime: value.executionTime }),
+    ...(value.tags === undefined ? {} : { tags: value.tags }),
+    ...(value.description === undefined
+      ? {}
+      : { description: value.description }),
+  };
+}
+
+export function parseStoredQueryHistory(raw: string): StoredQuery[] | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const queries = parsed.map(parseStoredQuery);
+    return queries.every((query) => query !== null) ? queries : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Save a successful query to localStorage
  */
@@ -55,7 +104,15 @@ export const saveQuery = (query: string, result: unknown, executionTime?: number
 export const getQueryHistory = (): StoredQuery[] => {
   try {
     const storedData = localStorage.getItem(STORAGE_KEY);
-    return storedData ? JSON.parse(storedData) : [];
+    if (!storedData) return [];
+    const history = parseStoredQueryHistory(storedData);
+    if (!history) {
+      console.error(
+        'Stored SQL query history has an invalid shape; refusing to treat it as trusted query data.',
+      );
+      return [];
+    }
+    return history;
   } catch (error) {
     console.error('Failed to retrieve query history:', error);
     return [];
