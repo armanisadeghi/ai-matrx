@@ -15,6 +15,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D294 — every frontend release is blocked: a live entity type was never published to @ai-matrx/associations
+
+Found 2026-08-31 while shipping the one binding UI. `./ship.sh` (any target) dies
+at a **non-skippable** gate — it is deliberately outside `--no-gates`:
+
+```
+✗ Installed @ai-matrx/associations vocabulary (656 tokens) is OUT OF SYNC with
+  platform.entity_types (657 live tokens).
+  Live but not installed: commerce_certified_printer
+```
+
+`scripts/release.sh:407` hard-`fail`s, so NOTHING ships from this repo until it
+is cleared. npm `@ai-matrx/associations` latest is `0.6.1` and genuinely lacks
+the token, so `pnpm up` cannot fix it — somebody added
+`commerce_certified_printer` to `platform.entity_types` without the package half.
+
+**The fix (owner: whoever added the entity type):** `aidream/apps/shared/associations`
+→ `pnpm gen:entity-types`, patch-release `@ai-matrx/associations`, then
+`pnpm up @ai-matrx/associations` here. There is no local regeneration path —
+the vocabulary ships in the package.
+
+Not filed as mine to fix: publishing a shared package to npm for another lane's
+entity type is a side-effectful action on infrastructure I do not own.
+
 ### D293 — no calc fixture has ever been checked against the response model it claims to assert
 
 Found 2026-08-30 fixing the E-03 contradiction (`hr_calc_overtime.edge2` asserted
