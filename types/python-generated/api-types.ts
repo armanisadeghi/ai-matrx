@@ -9015,6 +9015,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scaleway/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_scaleway_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/databox/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_databox_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lightdash/public/status": {
         parameters: {
             query?: never;
@@ -9245,6 +9279,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_kixie_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/genesys-cloud/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_genesys_cloud_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -45783,6 +45834,38 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** DataboxServiceStatus */
+        DataboxServiceStatus: {
+            /**
+             * Kind
+             * @default databox_public_service_status
+             * @constant
+             */
+            __kind?: "databox_public_service_status";
+            /**
+             * Provider
+             * @default Databox
+             * @constant
+             */
+            provider?: "Databox";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.databox.com
+             * @constant
+             */
+            status_page?: "https://status.databox.com";
+        };
         /**
          * DatamuseSynonym
          * @description One ranked public synonym projected from Datamuse.
@@ -53797,6 +53880,43 @@ export interface components {
             recorded: boolean;
             /** Incident Id */
             incident_id?: string | null;
+        };
+        /**
+         * GenesysCloudServiceStatus
+         * @description Safe aggregate status projection for Genesys Cloud's fixed status page.
+         */
+        GenesysCloudServiceStatus: {
+            /**
+             * Kind
+             * @default genesys_cloud_official_contact_center_platform_status
+             * @constant
+             */
+            __kind?: "genesys_cloud_official_contact_center_platform_status";
+            /**
+             * Provider
+             * @default Genesys Cloud
+             * @constant
+             */
+            provider?: "Genesys Cloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.mypurecloud.com
+             * @constant
+             */
+            status_page?: "https://status.mypurecloud.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** GetConversationResponse */
         GetConversationResponse: {
@@ -78387,6 +78507,35 @@ export interface components {
             item_id: string;
             /** Page Url */
             page_url: string;
+        };
+        /** ScalewayServiceStatus */
+        ScalewayServiceStatus: {
+            /**
+             * Kind
+             * @default scaleway_public_object_storage_status
+             * @constant
+             */
+            __kind?: "scaleway_public_object_storage_status";
+            /**
+             * Provider
+             * @default Scaleway
+             * @constant
+             */
+            provider?: "Scaleway";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.scaleway.com
+             * @constant
+             */
+            status_page?: "https://status.scaleway.com";
         };
         /**
          * ScanQuad
@@ -108185,6 +108334,46 @@ export interface operations {
             };
         };
     };
+    public_status_scaleway_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScalewayServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_databox_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataboxServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_lightdash_public_status_get: {
         parameters: {
             query?: never;
@@ -108461,6 +108650,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KixieServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_genesys_cloud_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenesysCloudServiceStatus"];
                 };
             };
         };

@@ -20167,6 +20167,48 @@
         }
       }
     },
+    "/scaleway/public/status": {
+      "get": {
+        "tags": [
+          "Scaleway Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_scaleway_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScalewayServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/databox/public/status": {
+      "get": {
+        "tags": [
+          "Databox Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_databox_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataboxServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/lightdash/public/status": {
       "get": {
         "tags": [
@@ -20454,6 +20496,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KixieServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/genesys-cloud/public/status": {
+      "get": {
+        "tags": [
+          "Genesys Cloud Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_genesys_cloud_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenesysCloudServiceStatus"
                 }
               }
             }
@@ -111995,6 +112058,50 @@
         "type": "object",
         "title": "DataStorePatch"
       },
+      "DataboxServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "databox_public_service_status",
+            "title": "Kind",
+            "default": "databox_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Databox",
+            "title": "Provider",
+            "default": "Databox"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.databox.com",
+            "title": "Status Page",
+            "default": "https://status.databox.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DataboxServiceStatus"
+      },
       "DatamuseSynonym": {
         "properties": {
           "word": {
@@ -131499,6 +131606,56 @@
           "recorded"
         ],
         "title": "GenericFloorReportResponse"
+      },
+      "GenesysCloudServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "genesys_cloud_official_contact_center_platform_status",
+            "title": "Kind",
+            "default": "genesys_cloud_official_contact_center_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Genesys Cloud",
+            "title": "Provider",
+            "default": "Genesys Cloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mypurecloud.com",
+            "title": "Status Page",
+            "default": "https://status.mypurecloud.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GenesysCloudServiceStatus",
+        "description": "Safe aggregate status projection for Genesys Cloud's fixed status page."
       },
       "GetConversationResponse": {
         "properties": {
@@ -188794,6 +188951,46 @@
           "page_url"
         ],
         "title": "SavedLoginRequest"
+      },
+      "ScalewayServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "scaleway_public_object_storage_status",
+            "title": "Kind",
+            "default": "scaleway_public_object_storage_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Scaleway",
+            "title": "Provider",
+            "default": "Scaleway"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.scaleway.com",
+            "title": "Status Page",
+            "default": "https://status.scaleway.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ScalewayServiceStatus"
       },
       "ScanQuad": {
         "properties": {
