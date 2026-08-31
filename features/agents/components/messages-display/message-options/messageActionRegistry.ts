@@ -65,6 +65,7 @@ import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { openListenSummaryWindowAction } from "@/features/overlays/openers/listenSummaryWindow";
+import { primeAudioOutput } from "@/features/audio/unlock";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -1624,6 +1625,9 @@ function listeningItems(ctx: MessageActionContext): MenuItem[] {
   const turnText = ctx.turnContent ?? ctx.content;
   const openListen = (autoPlay: boolean) => {
     if (!turnText.trim()) return;
+    // This click is the ONLY user gesture before speech starts (the audio
+    // itself begins from a websocket callback) — unlock iOS/WebKit output now.
+    primeAudioOutput();
     ctx.dispatch(
       openListenSummaryWindowAction({
         agentId: agent.agentId,

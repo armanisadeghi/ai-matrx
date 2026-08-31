@@ -67,6 +67,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useSpeech } from "@/features/audio/service/useSpeech";
+import { primeAudioOutput } from "@/features/audio/unlock";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSummaryWindow";
 import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
@@ -547,6 +548,9 @@ export function useContextMenuActions(
   // transport in one place). The only difference is stream-to-stream autoplay.
   const openSpokenSummary = (autoPlay: boolean) => {
     if (!spokenSummaryAgentId || !actionText.text.trim()) return;
+    // This click is the ONLY user gesture before speech starts (the audio
+    // itself begins from a websocket callback) — unlock iOS/WebKit output now.
+    primeAudioOutput();
     openListenSummaryWindow({
       agentId: spokenSummaryAgentId,
       agentName: spokenSummaryRole?.role.label ?? null,

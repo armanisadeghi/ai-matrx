@@ -12,6 +12,7 @@
  */
 
 import { applySinkToMediaElement } from "@/features/audio/audioOutputSink";
+import { getPrimedMediaElement } from "@/features/audio/unlock";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { generateSpeech } from "@/features/audio/services/speechApi";
 import type {
@@ -42,7 +43,14 @@ export const catalogAdapter: PlaybackAdapter = {
     const speech = await generateSpeech(processed, { voice: item.catalog?.voice });
     const url = speech.url;
 
-    const audio = new Audio(url);
+    // iOS/WebKit blocks `.play()` outside a user gesture, and we arrive here
+    // AFTER the synthesis round-trip. Reuse the app's gesture-activated
+    // element (features/audio/unlock.ts) — element activation persists, so
+    // playing new sources through it is allowed. Falls back to a fresh
+    // element where no gesture has primed one (desktop is lenient).
+    const audio = getPrimedMediaElement() ?? new Audio();
+    audio.muted = false;
+    audio.src = url;
     audio.playbackRate = rate;
     void applySinkToMediaElement(audio);
 
@@ -50,29 +58,43 @@ export const catalogAdapter: PlaybackAdapter = {
     const release = () => {
       if (released) return;
       released = true;
+      // The element is SHARED across utterances — detach handlers before
+      // touching src so teardown can't fire a stale error/ended callback.
+      audio.onended = null;
+      audio.onerror = null;
       try {
         audio.pause();
       } catch {
         /* noop */
       }
-      audio.src = "";
+      audio.removeAttribute("src");
+      try {
+        audio.load();
+      } catch {
+        /* noop */
+      }
     };
 
-    audio.addEventListener("ended", () => {
-      if (released) return;
+    audio.onended = () => {
       release();
       cb.onEnded();
-    });
-    audio.addEventListener("error", () => {
-      if (released) return;
+    };
+    audio.onerror = () => {
       release();
       cb.onError("Audio playback failed");
-    });
+    };
 
     try {
       await audio.play();
     } catch (err) {
       release();
+      // WebKit's autoplay refusal — tell the truth and name the remedy: the
+      // retry tap itself is the user gesture that unblocks output.
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        throw new Error(
+          "The browser blocked audio output — tap play again to start sound.",
+        );
+      }
       throw err instanceof Error ? err : new Error("Playback failed");
     }
     cb.onPlaying();

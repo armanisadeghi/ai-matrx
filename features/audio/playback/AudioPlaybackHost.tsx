@@ -17,6 +17,7 @@ import { playbackSnapshotUpdated } from "@/lib/redux/slices/audioPlaybackSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { subscribePlayback } from "./playbackQueue";
 import { subscribePlaybackLock } from "./playbackLock";
+import { installAudioUnlockListeners } from "@/features/audio/unlock";
 
 const AUDIO_PANEL_OVERLAY_ID = "audioControlWindow";
 
@@ -27,6 +28,12 @@ export function AudioPlaybackHost() {
   const hadPendingRef = useRef(false);
 
   useEffect(() => {
+    // iOS/WebKit: audio output must be unlocked inside a user gesture, and
+    // ours starts from websocket callbacks. These capture-phase listeners
+    // unlock on the user's FIRST interaction anywhere, so by the time any
+    // audio plays the page is already unlocked (features/audio/unlock.ts).
+    installAudioUnlockListeners();
+
     const surfacePanel = () =>
       dispatch(openOverlay({ overlayId: AUDIO_PANEL_OVERLAY_ID }));
 

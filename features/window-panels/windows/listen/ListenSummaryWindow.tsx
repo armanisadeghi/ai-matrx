@@ -47,6 +47,7 @@ import {
   stopVoicePlayback,
 } from "@/features/transcript-studio/state/voicePlaybackBus";
 import { skipPlayback } from "@/features/audio/playback/playbackQueue";
+import { primeAudioOutput } from "@/features/audio/unlock";
 import { useListeningSettings } from "@/features/audio/service/useListeningSettings";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
@@ -238,6 +239,9 @@ function ListenSummaryWindowInner({
   }, [summaryText]);
 
   const handleTransport = useCallback(() => {
+    // Every transport tap re-primes iOS/WebKit output (idempotent) so a
+    // resume after an OS-level interruption always has a live gesture.
+    primeAudioOutput();
     if (session && isSpeaking) {
       control(session.id, "pause");
       return;

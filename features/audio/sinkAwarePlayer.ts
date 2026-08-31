@@ -45,6 +45,7 @@ import {
   getPreferredOutputDeviceId,
   subscribeOutputDevice,
 } from "@/features/audio/audioOutputSink";
+import { getUnlockedAudioContext } from "@/features/audio/unlock";
 
 /**
  * The slice of the Cartesia `Source` contract the player actually consumes.
@@ -98,6 +99,19 @@ export class SinkAwarePlayer {
   #bufferDuration: number;
   #createContext: (sampleRate: number) => SinkAwareAudioContext;
   #unsubscribeSink: (() => void) | null = null;
+  /**
+   * True when `#context` is the app's SHARED gesture-unlocked context
+   * (features/audio/unlock.ts) rather than a private per-utterance one.
+   * Shared mode exists for iOS/WebKit, where a context created outside a
+   * user gesture starts `suspended` forever — our audio starts from
+   * websocket callbacks, so per-utterance contexts were silent on iPhone.
+   * In shared mode the utterance plays through a per-utterance GainNode and
+   * `stop()` tears that down instead of closing the context.
+   */
+  #sharedMode = false;
+  #utteranceGain: GainNode | null = null;
+  #liveSources = new Set<AudioBufferSourceNode>();
+  #stopped = false;
 
   constructor({ bufferDuration, createContext }: SinkAwarePlayerOptions) {
     this.#bufferDuration = bufferDuration;
@@ -106,15 +120,52 @@ export class SinkAwarePlayer {
 
   /**
    * Play audio from a source. Resolves when the audio has finished playing.
-   * Builds a fresh AudioContext per call (matching the SDK), routed to the
-   * user's preferred output device and re-routed live on device change.
+   *
+   * Prefers the app's shared gesture-unlocked context (required for sound on
+   * iOS/WebKit); otherwise builds a fresh AudioContext per call (matching the
+   * SDK). Either way the output is routed to the user's preferred device and
+   * re-routed live on device change. Web Audio resamples per-buffer, so the
+   * shared context's hardware rate plays 44.1k sources correctly.
    */
   async play(source: PlayableSource): Promise<void> {
     this.#startNextPlaybackAt = 0;
+    this.#stopped = false;
     this.#detachSinkSubscription();
-    const context = this.#createContext(source.sampleRate);
+    // Custom createContext (tests) keeps full legacy behavior.
+    const shared = this.#createContext === defaultCreateContext
+      ? getUnlockedAudioContext()
+      : null;
+    const context: SinkAwareAudioContext =
+      shared ?? this.#createContext(source.sampleRate);
+    this.#sharedMode = shared !== null;
     this.#context = context;
+    if (this.#sharedMode) {
+      const ctx = shared as AudioContext;
+      this.#utteranceGain = ctx.createGain();
+      this.#utteranceGain.connect(ctx.destination);
+    } else {
+      this.#utteranceGain = null;
+    }
     this.#attachSinkRouting(context);
+
+    // A non-running context plays NOTHING while accepting every schedule
+    // call — the exact silent-on-iPhone failure. iOS also parks contexts in a
+    // non-standard "interrupted" state after a phone call / Siri. Resume
+    // (allowed once the page was gesture-unlocked); if it won't run, fail
+    // LOUDLY so the queue and the Listen panel show an error with a
+    // tap-to-retry instead of silence.
+    if ((context.state as string) !== "running") {
+      try {
+        await context.resume();
+      } catch {
+        /* judged below by the resulting state */
+      }
+      if ((context.state as string) !== "running") {
+        throw new Error(
+          "The browser blocked audio output — tap the play button to start sound.",
+        );
+      }
+    }
 
     try {
       const buffer = new Float32Array(
@@ -140,12 +191,16 @@ export class SinkAwarePlayer {
 
   /** Suspend playback. Throws before the first play (contract parity). */
   async pause(): Promise<void> {
-    await this.#requireContext().suspend();
+    const context = this.#requireContext();
+    if (this.#sharedMode && this.#stopped) return;
+    await context.suspend();
   }
 
   /** Resume suspended playback. Throws before the first play. */
   async resume(): Promise<void> {
-    await this.#requireContext().resume();
+    const context = this.#requireContext();
+    if (this.#sharedMode && this.#stopped) return;
+    await context.resume();
   }
 
   /** Pause when running, resume otherwise. Throws before the first play. */
@@ -158,13 +213,40 @@ export class SinkAwarePlayer {
   }
 
   /**
-   * Stop playback by closing the context. Throws before the first play
-   * (contract parity); a repeat stop on an already-closed context is a
-   * silent no-op.
+   * Stop playback. Throws before the first play (contract parity); a repeat
+   * stop is a silent no-op.
+   *
+   * Owned-context mode closes the context (the SDK contract). Shared mode
+   * NEVER closes the app-wide unlocked context — it stops this utterance's
+   * scheduled sources and tears down its GainNode, and resumes the context
+   * if this utterance had paused it (a suspended shared context would mute
+   * the NEXT utterance too).
    */
   async stop(): Promise<void> {
     const context = this.#requireContext();
     this.#detachSinkSubscription();
+    if (this.#sharedMode) {
+      if (this.#stopped) return;
+      this.#stopped = true;
+      for (const node of this.#liveSources) {
+        try {
+          node.stop();
+        } catch {
+          /* already ended */
+        }
+      }
+      this.#liveSources.clear();
+      try {
+        this.#utteranceGain?.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+      this.#utteranceGain = null;
+      if (context.state === "suspended") {
+        await context.resume().catch(() => {});
+      }
+      return;
+    }
     if (context.state === "closed") return;
     await context.close();
   }
@@ -214,19 +296,26 @@ export class SinkAwarePlayer {
   async #playBuffer(buf: Float32Array, sampleRate: number): Promise<void> {
     const context = this.#requireContext();
     if (buf.length === 0) return;
+    if (this.#sharedMode && this.#stopped) return;
     const startAt = this.#startNextPlaybackAt;
     const duration = buf.length / sampleRate;
     this.#startNextPlaybackAt =
       duration + Math.max(context.currentTime, this.#startNextPlaybackAt);
 
     const sourceNode = context.createBufferSource();
+    // The buffer carries the SOURCE sample rate; when it differs from the
+    // context's hardware rate (shared mode), Web Audio resamples on playback.
     const audioBuffer = context.createBuffer(1, buf.length, sampleRate);
     audioBuffer.getChannelData(0).set(buf);
     sourceNode.buffer = audioBuffer;
-    sourceNode.connect(context.destination);
+    sourceNode.connect(this.#utteranceGain ?? context.destination);
     sourceNode.start(startAt);
+    if (this.#sharedMode) this.#liveSources.add(sourceNode);
     await new Promise<void>((resolve) => {
-      sourceNode.onended = () => resolve();
+      sourceNode.onended = () => {
+        this.#liveSources.delete(sourceNode);
+        resolve();
+      };
     });
   }
 }

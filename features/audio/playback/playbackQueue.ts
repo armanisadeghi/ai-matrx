@@ -14,6 +14,7 @@
  */
 
 import { activateAudio } from "@/features/audio/activation";
+import { primeAudioOutput } from "@/features/audio/unlock";
 import { claimPlayback, releasePlayback } from "./playbackLock";
 import type {
   ActivePlayback,
@@ -218,6 +219,9 @@ export function enqueuePlayback(request: PlaybackRequest): EnqueueResult {
   // First engagement mounts the lazy audio system (mirrors + panel UI). The
   // queue itself plays fine without it; the host replays state on mount.
   activateAudio();
+  // Manual enqueues run inside a tap — unlock iOS/WebKit output NOW, while
+  // the gesture stack is live (audio itself starts after async work).
+  primeAudioOutput();
   const id = nextId();
   const item: PlaybackItem = {
     ...request,
@@ -242,6 +246,7 @@ export async function pausePlayback(): Promise<void> {
 
 export async function resumePlayback(): Promise<void> {
   activateAudio();
+  primeAudioOutput();
   if (!active || !currentId) return;
   await active.resume();
   patch(currentId, { status: "playing" });
@@ -266,6 +271,7 @@ export async function skipPlayback(): Promise<void> {
 /** Play (or replay) a specific item now, taking over anything active. */
 export async function playPlaybackItem(id: string): Promise<void> {
   activateAudio();
+  primeAudioOutput();
   const item = items.find((i) => i.id === id);
   if (!item) return;
   // Replay finished/errored items by resetting them to queued.
