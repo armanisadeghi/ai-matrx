@@ -6,6 +6,7 @@ import {
   SocialCardAnalyzer,
   type SocialCardAnalyzerValues,
 } from "@/features/marketing/seo/social/SocialCardAnalyzer";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 /**
  * SocialCardWindow — the canonical Social Card Analyzer in a floating window.
@@ -80,16 +81,31 @@ function SocialCardWindowInner({
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-y-auto p-4"
     >
-      <SocialCardAnalyzer
-        initialUrl={initialUrl}
-        initialTitle={initialTitle}
-        initialDescription={initialDescription}
-        initialImage={initialImage}
-        initialSiteName={initialSiteName}
-        initialOgType={initialOgType}
-        initialCardType={initialCardType}
-        onValuesChange={handleValuesChange}
-      />
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({
+          content: [
+            valuesRef.current.url,
+            valuesRef.current.title,
+            valuesRef.current.description,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        })}
+      >
+        <SocialCardAnalyzer
+          initialUrl={initialUrl}
+          initialTitle={initialTitle}
+          initialDescription={initialDescription}
+          initialImage={initialImage}
+          initialSiteName={initialSiteName}
+          initialOgType={initialOgType}
+          initialCardType={initialCardType}
+          onValuesChange={handleValuesChange}
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
