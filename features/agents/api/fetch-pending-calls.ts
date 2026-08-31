@@ -53,12 +53,18 @@ export const fetchConversationPendingCalls = (
   unknown,
   UnknownAction
 > => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    const organizationId =
+      getState().conversations.byConversationId[conversationId]
+        ?.organizationId ?? undefined;
     const result = await dispatch(
       callApi({
         path: "/ai/conversation/{conversation_id}/pending_calls",
         method: "GET",
         pathParams: { conversation_id: conversationId },
+        scopeOverrides: organizationId
+          ? { organization_id: organizationId }
+          : undefined,
       }),
     );
     if (result.error) {
@@ -81,12 +87,18 @@ export const fetchConversationPendingCallsStrict = (
   unknown,
   UnknownAction
 > => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    const organizationId =
+      getState().conversations.byConversationId[conversationId]
+        ?.organizationId ?? undefined;
     const result = await dispatch(
       callApi({
         path: "/ai/conversation/{conversation_id}/pending_calls",
         method: "GET",
         pathParams: { conversation_id: conversationId },
+        scopeOverrides: organizationId
+          ? { organization_id: organizationId }
+          : undefined,
       }),
     );
     if (result.error) {
