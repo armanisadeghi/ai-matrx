@@ -36,6 +36,8 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { formatChars } from "@/lib/tokens/estimate";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+// context-menu-exempt: entity — a generic "labeled chunks of text" primitive with no identity of its own; each consumer's sections carry whatever record they came from, which is the consumer's menu to wire
 
 /** Synthetic rail key for the all-sections view. */
 const EVERYTHING = "__everything__";
@@ -148,6 +150,11 @@ export function TextSectionsWindow({
       {...closeBinding}
       onCollectData={onCollectData}
     >
+      <NonEditableContextMenu
+        sourceFeature="ai-results"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: shownContent }}
+      >
       <div className="flex h-full min-h-0 flex-col">
         {/* ── Toolbar ───────────────────────────────────────────────────── */}
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border/60 px-2 py-1.5">
@@ -283,6 +290,7 @@ export function TextSectionsWindow({
           </div>
         </div>
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
