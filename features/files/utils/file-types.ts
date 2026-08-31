@@ -1928,8 +1928,18 @@ export function getFilePreviewProfile(
   // bytes are speech-only (transcript recordings, FastFire, scribe captures).
   const mimeEntry = BY_MIME.get(mime);
   let baseDetails = fromExt;
+  // Browsers and upload clients routinely label SVG bytes as generic XML
+  // (`application/xml` / `text/xml`). The filename is the stronger signal in
+  // that narrow case: allowing the generic MIME registry entry to win turns
+  // `icon.svg` into the tabular DataPreview, which can only reject it as an
+  // unknown data format. Preserve the dedicated SVG renderer while keeping
+  // true `.xml` files on the data path.
+  const genericXmlSvg =
+    fromExt.previewKind === "svg" &&
+    (mime === "application/xml" || mime === "text/xml");
   if (
     mimeEntry &&
+    !genericXmlSvg &&
     (mimeEntry.category !== fromExt.category ||
       mimeEntry.previewKind !== fromExt.previewKind)
   ) {
@@ -1945,7 +1955,7 @@ export function getFilePreviewProfile(
   // routing. Same idea would apply to any future text-shaped image MIME.
   let kind: PreviewKind = baseDetails.previewKind;
   let thumb: ThumbnailStrategy = baseDetails.thumbnailStrategy;
-  if (mime === "image/svg+xml") {
+  if (mime === "image/svg+xml" || genericXmlSvg) {
     kind = "svg";
     thumb = "image";
   } else if (mime.startsWith("image/")) {
