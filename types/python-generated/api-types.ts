@@ -7927,6 +7927,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/emailoctopus/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_emailoctopus_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/prismic/public/status": {
         parameters: {
             query?: never;
@@ -7995,6 +8012,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/strapi/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_strapi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/visme/public/status": {
         parameters: {
             query?: never;
@@ -8004,6 +8038,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_visme_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/airmeet/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_airmeet_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -30538,6 +30589,43 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * AirmeetStatusResult
+         * @description Safe projection of Airmeet's high-level service status.
+         */
+        AirmeetStatusResult: {
+            /**
+             * Kind
+             * @default airmeet_official_service_status
+             * @constant
+             */
+            __kind?: "airmeet_official_service_status";
+            /**
+             * Provider
+             * @default airmeet
+             * @constant
+             */
+            provider?: "airmeet";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.airmeet.com
+             * @constant
+             */
+            status_url?: "https://status.airmeet.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
             /**
@@ -46409,6 +46497,41 @@ export interface components {
             resolved?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * EmailOctopusServiceStatus
+         * @description Safe aggregate status projection for EmailOctopus's fixed status page.
+         */
+        EmailOctopusServiceStatus: {
+            /**
+             * Kind
+             * @default emailoctopus_public_service_status
+             * @constant
+             */
+            __kind?: "emailoctopus_public_service_status";
+            /**
+             * Provider
+             * @default emailoctopus
+             * @constant
+             */
+            provider?: "emailoctopus";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.emailoctopus.com/
+             * @constant
+             */
+            status_page?: "https://status.emailoctopus.com/";
         };
         /** EmbeddingPart */
         EmbeddingPart: {
@@ -66975,7 +67098,7 @@ export interface components {
             name?: string | null;
             /** Messages */
             messages?: {
-                [key: string]: string;
+                [key: string]: unknown;
             };
         };
         /**
@@ -67227,10 +67350,7 @@ export interface components {
             lulu_print_job_id: string | null;
             /** Shipping Level */
             shipping_level: string;
-            /** Tracking */
-            tracking: {
-                [key: string]: unknown;
-            } | null;
+            tracking: components["schemas"]["JsonValue"] | null;
             /** Created At */
             created_at: string;
             /** Paid At */
@@ -78718,6 +78838,38 @@ export interface components {
             status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
         };
         /**
+         * StrapiServiceStatus
+         * @description Safe aggregate status projection for Strapi's fixed status page.
+         */
+        StrapiServiceStatus: {
+            /**
+             * Kind
+             * @default strapi_public_content_platform_status
+             * @constant
+             */
+            __kind?: "strapi_public_content_platform_status";
+            /**
+             * Provider
+             * @default Strapi
+             * @constant
+             */
+            provider?: "Strapi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** State */
+            state: string;
+            /**
+             * Status Page
+             * @default https://status.strapi.io/
+             * @constant
+             */
+            status_page?: "https://status.strapi.io/";
+        };
+        /**
          * StreamYardServiceStatus
          * @description Safe aggregate status projection for StreamYard's fixed status page.
          */
@@ -78798,6 +78950,24 @@ export interface components {
              * @default 0.5
              */
             min_confidence?: number;
+        };
+        /**
+         * StripeWebhookResult
+         * @description Typed acknowledgement returned to Stripe for print-order events.
+         */
+        StripeWebhookResult: {
+            /** Handled */
+            handled: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Orphan */
+            orphan?: boolean | null;
+            /** Already */
+            already?: string | null;
+            /** Order Id */
+            order_id?: string | null;
+            /** Print Job Id */
+            print_job_id?: string | null;
         };
         /** StructuralVerdict */
         StructuralVerdict: {
@@ -100201,9 +100371,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["StripeWebhookResult"];
                 };
             };
             /** @description Validation Error */
@@ -101557,6 +101725,26 @@ export interface operations {
             };
         };
     };
+    public_status_emailoctopus_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailOctopusServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_prismic_public_status_get: {
         parameters: {
             query?: never;
@@ -101637,6 +101825,26 @@ export interface operations {
             };
         };
     };
+    public_status_strapi_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrapiServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_visme_public_status_get: {
         parameters: {
             query?: never;
@@ -101653,6 +101861,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VismeStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_airmeet_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirmeetStatusResult"];
                 };
             };
         };

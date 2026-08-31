@@ -17398,9 +17398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Stripe Webhook Lulu Webhooks Stripe Post"
+                  "$ref": "#/components/schemas/StripeWebhookResult"
                 }
               }
             }
@@ -18825,6 +18823,27 @@
         }
       }
     },
+    "/emailoctopus/public/status": {
+      "get": {
+        "tags": [
+          "EmailOctopus Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_emailoctopus_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailOctopusServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prismic/public/status": {
       "get": {
         "tags": [
@@ -18909,6 +18928,27 @@
         }
       }
     },
+    "/strapi/public/status": {
+      "get": {
+        "tags": [
+          "Strapi Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_strapi_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrapiServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/visme/public/status": {
       "get": {
         "tags": [
@@ -18923,6 +18963,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VismeStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/airmeet/public/status": {
+      "get": {
+        "tags": [
+          "Airmeet Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_airmeet_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirmeetStatusResult"
                 }
               }
             }
@@ -77230,6 +77291,56 @@
         "title": "AirfocusStatusResult",
         "description": "Safe projection of airfocus's high-level service status."
       },
+      "AirmeetStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "airmeet_official_service_status",
+            "title": "Kind",
+            "default": "airmeet_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "airmeet",
+            "title": "Provider",
+            "default": "airmeet"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.airmeet.com",
+            "title": "Status Url",
+            "default": "https://status.airmeet.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AirmeetStatusResult",
+        "description": "Safe projection of Airmeet's high-level service status."
+      },
       "AnalysisPreferencesBody": {
         "properties": {
           "per_detector_enabled": {
@@ -116750,6 +116861,51 @@
           "allowed"
         ],
         "title": "EligibilityVerdict"
+      },
+      "EmailOctopusServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "emailoctopus_public_service_status",
+            "title": "Kind",
+            "default": "emailoctopus_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "emailoctopus",
+            "title": "Provider",
+            "default": "emailoctopus"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.emailoctopus.com/",
+            "title": "Status Page",
+            "default": "https://status.emailoctopus.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "EmailOctopusServiceStatus",
+        "description": "Safe aggregate status projection for EmailOctopus's fixed status page."
       },
       "EmbeddingPart": {
         "properties": {
@@ -165862,9 +166018,7 @@
             "title": "Name"
           },
           "messages": {
-            "additionalProperties": {
-              "type": "string"
-            },
+            "additionalProperties": true,
             "type": "object",
             "title": "Messages"
           }
@@ -166607,14 +166761,12 @@
           "tracking": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Tracking"
+            ]
           },
           "created_at": {
             "type": "string",
@@ -194292,6 +194444,47 @@
         "title": "StoryAngleRulingResult",
         "description": "The human-owned status written to one story angle."
       },
+      "StrapiServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "strapi_public_content_platform_status",
+            "title": "Kind",
+            "default": "strapi_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Strapi",
+            "title": "Provider",
+            "default": "Strapi"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "State"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.strapi.io/",
+            "title": "Status Page",
+            "default": "https://status.strapi.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "StrapiServiceStatus",
+        "description": "Safe aggregate status projection for Strapi's fixed status page."
+      },
       "StreamYardServiceStatus": {
         "properties": {
           "__kind": {
@@ -194502,6 +194695,76 @@
         },
         "type": "object",
         "title": "StripRepeatedRegionsRequest"
+      },
+      "StripeWebhookResult": {
+        "properties": {
+          "handled": {
+            "type": "boolean",
+            "title": "Handled"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "orphan": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orphan"
+          },
+          "already": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Already"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "print_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Print Job Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "handled"
+        ],
+        "title": "StripeWebhookResult",
+        "description": "Typed acknowledgement returned to Stripe for print-order events."
       },
       "StructuralVerdict": {
         "properties": {
