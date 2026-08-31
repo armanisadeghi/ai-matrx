@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ExternalLink, FileQuestion } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import {
+  pageEntityRef,
+  pageMenuSection,
+} from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +49,8 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
   const router = useRouter();
   const sitemap = useSitemap(site.id, sitemapId);
   const [filter, setFilter] = useState<SitemapPagesFilter>("all");
+  const [clickedRow, setClickedRow] = useState<SitemapPageRow | null>(null);
+  const openDrilldown = useOpenGscDrilldownWindow();
   const table = useMarketingTableState({
     defaultSort: { id: "page", direction: "asc" },
   });

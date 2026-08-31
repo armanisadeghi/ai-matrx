@@ -330,6 +330,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
         of links.
       </p>
     </div>
+    </NonEditableContextMenu>
   );
 }
 

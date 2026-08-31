@@ -1372,7 +1372,34 @@ export function CrawlReportWorkspace({
                   "The crawl did not persist encountered URL outcomes.",
               }}
             />
+            </NonEditableContextMenu>
           ) : isLinkReport ? (
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id
+                  ? (brokenLinks.data?.rows.find((r) => r.id === id) ?? null)
+                  : null;
+                setClickedLinkRow(row);
+                if (!row) return null;
+                return {
+                  content: `${row.target_url} — ${row.http_status ?? "no response"}`,
+                  [CONTEXT_MENU_ENTITY_KEY]: linkEdgeEntityRef(
+                    toLinkEdgeMenuRow(row),
+                  ),
+                };
+              }}
+              extraSections={[
+                linkEdgeMenuSection(
+                  clickedLinkRow ? toLinkEdgeMenuRow(clickedLinkRow) : null,
+                ),
+              ]}
+            >
             <MatrxDataTable<InspectionLinkRow>
               data={brokenLinks.data?.rows ?? []}
               columns={brokenLinkColumns(site.brand_id, site.id)}
@@ -1445,7 +1472,34 @@ export function CrawlReportWorkspace({
                       : "Every checked link in this crawl returned a healthy response.",
               }}
             />
+            </NonEditableContextMenu>
           ) : (
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id
+                  ? (snapshotRows.find((r) => r.id === id) ?? null)
+                  : null;
+                setClickedSnapshotRow(row);
+                if (!row) return null;
+                return {
+                  content: `${row.url} — captured ${formatCompactDate(row.capturedAt)}`,
+                  [CONTEXT_MENU_ENTITY_KEY]: snapshotEntityRef(
+                    toSnapshotMenuRow(row),
+                  ),
+                };
+              }}
+              extraSections={[
+                snapshotMenuSection(
+                  clickedSnapshotRow ? toSnapshotMenuRow(clickedSnapshotRow) : null,
+                ),
+              ]}
+            >
             <MatrxDataTable<CrawlSnapshotReportRow>
               data={snapshotRows}
               columns={snapshotReportColumns(
@@ -1504,6 +1558,7 @@ export function CrawlReportWorkspace({
                   "This report is populated from immutable page snapshots produced by the crawl.",
               }}
             />
+            </NonEditableContextMenu>
           )}
         </div>
       </main>

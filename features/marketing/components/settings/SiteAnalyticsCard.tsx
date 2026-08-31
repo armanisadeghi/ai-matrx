@@ -15,6 +15,7 @@ import { LineChart, Loader2, RefreshCw } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -303,6 +304,25 @@ function SiteAnalyticsCardContent({ site }: { site: MarketingSite }) {
           <div className="h-20 animate-pulse rounded-md border border-border bg-muted/40" />
         ) : null}
         {!loading ? (
+          // Each row is a per-day AGGREGATE across the site's raw
+          // `seo.web_analytics_daily` rows (summed over dimension breakdowns)
+          // — page-local, no other surface renders this rollup shape. No
+          // entity ref for the same reason; wrapped for Copy/Export/AI only.
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const day = id ? (days.find((d) => d.date === id) ?? null) : null;
+              if (!day) return null;
+              return {
+                content: `${day.date}: ${integer(day.sessions)} sessions · ${integer(day.users)} users · ${integer(day.engagedSessions)} engaged`,
+              };
+            }}
+          >
           <MatrxDataTable
             urlState={{ id: "site-analytics-daily" }}
             data={days}
@@ -317,6 +337,7 @@ function SiteAnalyticsCardContent({ site }: { site: MarketingSite }) {
                 : "Connect a Google Analytics 4 property, then run a sync.",
             }}
           />
+          </NonEditableContextMenu>
         ) : null}
       </div>
     </section>

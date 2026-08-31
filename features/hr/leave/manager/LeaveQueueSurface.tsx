@@ -66,6 +66,16 @@ import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice"
 import { bulkDecide } from "@/features/hr/tasks/service";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import {
+  hrTaskStepEntityRef,
+  hrTaskStepMenuSection,
+} from "@/features/hr/tasks/task-step-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import {
   HR_DECISION_VERB,
   isRefusal,
   type HrBulkOutcome,
@@ -140,6 +150,53 @@ export function LeaveQueueSurface() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkOutcomes, setBulkOutcomes] = useState<HrBulkOutcome[] | null>(null);
   const [bulkRefusal, setBulkRefusal] = useState<HrRefusal | null>(null);
+  const [contextRow, setContextRow] = useState<LeaveQueueRow | null>(null);
+  const [othersContextRow, setOthersContextRow] = useState<LeaveQueueRow | null>(null);
+
+  function menuRowFor(row: LeaveQueueRow) {
+    return {
+      stepId: row.step_id,
+      label: row.subject_withheld
+        ? "Withheld"
+        : (row.subject_label ?? row.title ?? row.flow_key),
+      deepLink: row.deep_link,
+    };
+  }
+
+  /** The decision verbs already on the row's own buttons — right-click parity. */
+  function decisionSection(row: LeaveQueueRow): ContextMenuExtraSection {
+    const items: ContextMenuExtraItem[] = [
+      {
+        kind: "item",
+        id: "leave-approve",
+        label: "Approve",
+        icon: Check,
+        onSelect: () => setDecision({ row, intent: "approve" }),
+      },
+      {
+        kind: "item",
+        id: "leave-deny",
+        label: "Deny",
+        icon: X,
+        onSelect: () => setDecision({ row, intent: "reject" }),
+      },
+      {
+        kind: "item",
+        id: "leave-return",
+        label: "Send back for changes",
+        icon: Undo2,
+        onSelect: () => setDecision({ row, intent: "return" }),
+      },
+      {
+        kind: "item",
+        id: "leave-reassign",
+        label: "Reassign",
+        icon: UserCog,
+        onSelect: () => setReassign(row),
+      },
+    ];
+    return { id: "leave-decision", label: "Decide", items };
+  }
 
   const scopeMeta = SCOPES.find((s) => s.key === scope) ?? SCOPES[0];
 
@@ -461,6 +518,36 @@ export function LeaveQueueSurface() {
             </div>
           ) : null}
 
+          <NonEditableContextMenu
+            sourceFeature="internal"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = (target as HTMLElement | null)
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = (id && focused.find((r) => r.step_id === id)) || null;
+              setContextRow(row);
+              if (!row) return null;
+              return {
+                [CONTEXT_MENU_ENTITY_KEY]: hrTaskStepEntityRef(menuRowFor(row)),
+                content: [
+                  row.subject_withheld ? "Withheld" : (row.subject_label ?? row.title ?? ""),
+                  spanLabel(row),
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+              };
+            }}
+            extraSections={
+              contextRow
+                ? [
+                    hrTaskStepMenuSection(menuRowFor(contextRow)),
+                    decisionSection(contextRow),
+                  ]
+                : []
+            }
+          >
           <MatrxDataTable<LeaveQueueRow>
             data={focused}
             columns={columns}

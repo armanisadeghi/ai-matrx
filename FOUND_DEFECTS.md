@@ -2681,3 +2681,31 @@ the test input from `"RAG"` to `"Knowledge"` — encoding an intent that `knowle
 work, not drift from a package lane; per the unfinished-work-alarm policy nothing here was "fixed".
 Whoever resumes the knowledge/RAG consolidation should add the alias in `normalizeResourceFamilyPolicy`
 (and decide the canonical direction) or revert the test input.
+
+## 2026-08-30 — `@ai-matrx/content-ir` mirror validator ignores `nullable` on object-shaped fields (23 live sites)
+
+Found while registering the Lulu print kinds. In the compiled parser mirror's validator
+(`validateFinalFieldValue`, `node_modules/@ai-matrx/content-ir/dist/index.js`), `nullable: true` is
+honoured for scalars and `json[]` but **NOT** for `object` / `inline_object` / `record`: those three
+branches test `value === null` as part of the "must be an object" type check and return an error
+before `nullable` is ever consulted. So a field a kind legitimately declares nullable, whose value is
+genuinely `null`, degrades the ENTIRE instance to `kindState: "raw"` and it renders through
+`generic_structured` — the fallback-is-not-a-component failure, silent except for the Errors tab.
+
+Reproduced live: `lulu_print_job`'s canonical example (`costs: null`,
+`estimated_shipping_dates: null`) rendered as the generic key/value viewer on `/shapes/lulu_print_job`
+until the two fields were re-declared `json`. `lulu_print_cost_calculation` only escaped because its
+canonical example happens to carry non-null buckets — a real quote with `shipping_cost: null` would
+have broken the same way.
+
+Census of the same latent bug already in the repo (`type: "object" | "inline_object" | "record"`
+carrying `nullable: true`, all of which break the moment the field is actually null):
+`commerce-kinds.ts:112` · `rag-kinds.ts:133,190,281,302,307` · `rank-kinds.ts:278` ·
+`scraper-page.ts:250,276,278,279` · `search-results.ts:65,129,201,202,204,212,237,238,276,283,284` ·
+`table-kinds.ts:95` — 23 sites across 6 files.
+
+**The fix belongs in the package, not in the mirrors** (`aidream/apps/shared/content-ir`): the three
+object branches must return `null` when `value === null && fieldSchema.nullable`, exactly as `json[]`
+does, with a test that plants a null on a nullable `inline_object` and proves it failing-then-passing.
+The 23 sites above then need no change. Not fixed here because the print-kinds task has no authority
+to release a shared package, and the local mirrors were made honest instead (`json` + a comment).
