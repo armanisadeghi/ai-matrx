@@ -290,6 +290,29 @@ commit time.
 
 ## Change Log
 
+- 2026-08-31 — **THE INPUT SURFACE IS SERVED, and "user text only" became a measurement.**
+  Every reader derived a mandate's inputs from the two things only CODE declares (a
+  Provision, or the promoted `required_variables`), so a mandate a PERSON authored —
+  described inputs, an output kind, an agent bound and mapped — read as declaring nothing,
+  and its run form offered one anonymous text box (found live by Arman on
+  `mandate.goal_writer`). `GET /mandates/{key}/input-surface` (aidream
+  `services/mandates/input_surface.py`) now answers, `ServedInput`-shaped so a mandate
+  input and a workflow input are ONE contract (INPUT-SURFACE.md): provision → the
+  mandate's own described inputs (label = the description; a described input whose name
+  matches a Holder variable takes the HOLDER's spelling so the value lands) → the Holder's
+  own declarations → none. `input-surface.ts` is the client half; `isUserTextOnly()` is the
+  ONE rule for the phrase — served nothing AND nothing failed to load. `RunThisJobSection`
+  consumes it instead of deriving fields; `TriadSections`' else-branch and the console's
+  `MandateInputsCell` (via `mandate-health.ts`'s four-declaration `inputSummary`) read the
+  described inputs and the bound agent's declarations before they may say the words.
+  **THE SYSTEM RUNG BECAME A BINDING** in the same pass: `mandate.binding.principal_type`
+  admits `'global'` (one row per mandate, super-admin only), so the rung that serves
+  everybody can finally carry a consumption map and settings — `MandateBindingPrincipalInput`
+  accepts it. No binding UI changed; that is frozen pending Arman's written plan.
+  **THE DEAD SELECT** in the pin editor is fixed and guarded (`admin/pin-refusal.ts`): the
+  dropdown is the authority on what was picked, the catalogue only describes it, and every
+  refusal is in words on the page with its remedy named.
+
 - 2026-08-30 — **THE DETACH, code side (program item 6.10).** A mandate is fulfilled by an
   Agent, an Orchestra, or a Workflow, so the feature stopped living under the agent
   namespace. Moved, imports rewritten repo-wide, no behaviour change:
