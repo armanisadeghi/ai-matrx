@@ -371,6 +371,7 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
           }}
         />
       </div>
+      </NonEditableContextMenu>
     </main>
     </SurfaceRuntimeProvider>
   );

@@ -32,6 +32,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { mandatePinRefusal } from "./pin-refusal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -1409,15 +1410,14 @@ function MandateEditor({
     pickedAgent?.name ??
     (agentId ? "the selected agent" : null);
 
-  /** Why this pick cannot be saved — in words, or null when it can. */
-  const refusal: string | null = (() => {
-    if (!agentId) return null;
-    if (pickedIsSystem) return null;
-    if (!catalogueLoaded) {
-      return "The system-agent catalogue has not loaded yet, so this pick cannot be checked. It resolves on its own in a moment — try Save again then.";
-    }
-    return `${pickedName} is not a system agent. A mandate's default runs for EVERY user, so its pin must be a system agent — use "Duplicate & customize" above to make a system twin of it, or pick a system agent here.`;
-  })();
+  /** Why this pick cannot be saved — in words, or null when it can. The rule
+   * itself lives in `pin-refusal.ts` so a test can hold it. */
+  const refusal = mandatePinRefusal({
+    agentId,
+    pickedName,
+    catalogueLoaded,
+    pickedIsSystem,
+  });
 
   const save = async () => {
     if (!agentId) {
