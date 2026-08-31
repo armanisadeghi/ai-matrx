@@ -32,6 +32,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { versionStanding } from "@/features/admin/applications/version";
@@ -381,6 +383,30 @@ export function InstallationsClient({
         ) : null}
 
         <div className="min-h-0 flex-1">
+          <NonEditableContextMenu
+            sourceFeature="internal"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = (target as HTMLElement | null)
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = (id && rows.find((r) => r.id === id)) || null;
+              if (!row) return null;
+              return {
+                [CONTEXT_MENU_ENTITY_KEY]: {
+                  type: "app_instance",
+                  id: row.instance_id,
+                  title: row.instance_name || row.instance_id,
+                },
+                content: [
+                  `${row.instance_name || "(unnamed)"} — ${row.user_email}`,
+                  `version=${row.app_version ?? "not reported"} standing=${standingOf(row)}`,
+                  `platform=${row.platform || "?"} os=${row.os_version || "?"} arch=${row.architecture || "?"}`,
+                ].join("\n"),
+              };
+            }}
+          >
           <MatrxDataTable
             urlState={{ id: "application-installations" }}
             data={rows}
@@ -453,6 +479,7 @@ export function InstallationsClient({
               </div>
             )}
           />
+          </NonEditableContextMenu>
         </div>
       </div>
     </SurfaceRuntimeProvider>
