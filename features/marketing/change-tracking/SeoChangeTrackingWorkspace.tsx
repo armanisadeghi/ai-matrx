@@ -22,6 +22,9 @@ import {
 } from "lucide-react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
@@ -1706,6 +1709,9 @@ function UntrackedTable({
   onDocument: (row: UntrackedSnapshotChange) => void;
 }) {
   const { site } = useMarketingSite();
+  const [clickedRow, setClickedRow] = useState<UntrackedSnapshotChange | null>(
+    null,
+  );
   const columns = useMemo<MatrxColumnDef<UntrackedSnapshotChange>[]>(
     () => [
       {
@@ -1743,40 +1749,83 @@ function UntrackedTable({
     [brandId],
   );
   return (
-    <MatrxDataTable
-      data={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      pageSize={25}
-      toolbar={{ searchPlaceholder: "Search untracked pages or change types…" }}
-      copy={{
-        label: "Untracked page change",
-        listLabel: "Untracked page changes",
-        location: webLocation(
-          `SEO change tracking — ${site.root_url} — Untracked`,
-        ),
-        rowKind: "web-untracked-page-change",
-        listKind: "web-untracked-page-changes",
-        humanRow: (row) =>
-          humanLines([
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(element) => {
+        const id = element
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+        setClickedRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: {
+            type: "web_page",
+            id: row.page_id,
+            title: row.page_path || row.page_url || row.page_id,
+          },
+          content: humanLines([
             ["Page", row.page_path || row.page_url || row.page_id],
             ["Observed change", row.changed_fields?.map(titleCase).join(", ")],
             ["Observed", formatDate(row.captured_at)],
           ]),
+        };
       }}
-      rowActions={(row) => (
-        <Button size="sm" className="h-7" onClick={() => onDocument(row)}>
-          <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-          Document
-        </Button>
-      )}
-      emptyState={{
-        icon: <SearchCheck className="h-8 w-8 text-emerald-500" />,
-        title: "No unexplained crawl changes",
-        description:
-          "Every recent observed page change is associated with a documented intervention.",
-      }}
-    />
+      extraSections={[
+        {
+          id: "untracked-change-actions",
+          label: "This change",
+          anchor: "after-compare",
+          items: [
+            {
+              kind: "item",
+              id: "untracked-change-document",
+              label: "Document this change…",
+              icon: FlaskConical,
+              disabled: !clickedRow,
+              onSelect: () => clickedRow && onDocument(clickedRow),
+            },
+          ] satisfies ContextMenuExtraItem[],
+        },
+      ]}
+    >
+      <MatrxDataTable
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        pageSize={25}
+        toolbar={{ searchPlaceholder: "Search untracked pages or change types…" }}
+        copy={{
+          label: "Untracked page change",
+          listLabel: "Untracked page changes",
+          location: webLocation(
+            `SEO change tracking — ${site.root_url} — Untracked`,
+          ),
+          rowKind: "web-untracked-page-change",
+          listKind: "web-untracked-page-changes",
+          humanRow: (row) =>
+            humanLines([
+              ["Page", row.page_path || row.page_url || row.page_id],
+              ["Observed change", row.changed_fields?.map(titleCase).join(", ")],
+              ["Observed", formatDate(row.captured_at)],
+            ]),
+        }}
+        rowActions={(row) => (
+          <Button size="sm" className="h-7" onClick={() => onDocument(row)}>
+            <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
+            Document
+          </Button>
+        )}
+        emptyState={{
+          icon: <SearchCheck className="h-8 w-8 text-emerald-500" />,
+          title: "No unexplained crawl changes",
+          description:
+            "Every recent observed page change is associated with a documented intervention.",
+        }}
+      />
+    </NonEditableContextMenu>
   );
 }
 
@@ -1811,6 +1860,9 @@ export function SeoChangeTrackingWorkspace({
   };
   const [composerOpen, setComposerOpen] = useState(false);
   const [seed, setSeed] = useState<ComposerSeed>({});
+  const [clickedChange, setClickedChange] = useState<SeoChangeSummary | null>(
+    null,
+  );
   const changes = useQuery({
     queryKey: key.changes(site.id),
     queryFn: ({ signal }) => listSeoChanges(site.id, signal),
@@ -2103,6 +2155,45 @@ export function SeoChangeTrackingWorkspace({
               onRetry={() => void changes.refetch()}
             />
           ) : (
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(element) => {
+                const id = element
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+                setClickedChange(row);
+                if (!row) return null;
+                return {
+                  [CONTEXT_MENU_ENTITY_KEY]: {
+                    type: "seo_change_set",
+                    id: row.id,
+                    title: row.title,
+                  },
+                  content: `${row.title}\n${row.business_outcome ?? ""}\nStatus: ${row.status}`,
+                };
+              }}
+              extraSections={[
+                {
+                  id: "seo-change-actions",
+                  label: clickedChange?.title || "This change",
+                  anchor: "after-compare",
+                  items: [
+                    {
+                      kind: "item",
+                      id: "seo-change-open",
+                      label: "Open change",
+                      icon: ArrowUpRight,
+                      disabled: !clickedChange,
+                      onSelect: () =>
+                        clickedChange && setSelectedId(clickedChange.id),
+                    },
+                  ] satisfies ContextMenuExtraItem[],
+                },
+              ]}
+            >
             <MatrxDataTable
               data={rows}
               columns={columns}
@@ -2142,6 +2233,7 @@ export function SeoChangeTrackingWorkspace({
                 ),
               }}
             />
+            </NonEditableContextMenu>
           )
         ) : untracked.isError ? (
           <QueryError
