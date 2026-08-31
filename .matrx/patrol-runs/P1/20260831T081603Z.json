@@ -101,6 +101,91 @@
       ],
       "previousEventHash": "1e24fee332df4df7e504ec3d0b1bb2dbd16cb8643bc9dc078159a5bf7b30af6b",
       "eventHash": "080a20f82d514020ed444126d87644076d96cc1eeaf0d4f56701cb3383d38ef3"
+    },
+    {
+      "sequence": 8,
+      "state": "certifying",
+      "at": "2026-08-31T08:33:38.607Z",
+      "actor": "codex-root",
+      "summary": "Corrected replacement candidate dbe21692e6 entered independent recertification.",
+      "evidence": [
+        "Original 11-file product candidate fd212230d9 plus two focused interaction corrections; all worker and local gates pass.",
+        "Candidate remote: origin/patrol/p1-20260831-wave1-corrected at dbe21692e62f75beecc2730925c6081c2f6a3fef."
+      ],
+      "previousEventHash": "080a20f82d514020ed444126d87644076d96cc1eeaf0d4f56701cb3383d38ef3",
+      "eventHash": "d66ea5d018aeeadcfd28ddf3845aaf621abba7b1afcbb7eaa9ff966b0486d58e"
+    },
+    {
+      "sequence": 9,
+      "state": "certified",
+      "at": "2026-08-31T08:35:22.897Z",
+      "actor": "p1-certifier-wave1",
+      "summary": "CERTIFIED corrected 11-file P1 candidate; both rejected interaction seams are closed.",
+      "evidence": [
+        "Managed preview remained occupied by another checkout; bounded static/component/test evidence used under the lease contract."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "certifierTaskId": "p1-certifier-wave1",
+        "checks": [
+          "FileResourceChip preserves Radix hover/focus preview with a real DOM trigger in removable and read-only states.",
+          "TranscriptsSidebar separates row selection from EntityRef and rename controls; keyboard and native modified-click doors remain valid.",
+          "Other nine product files are byte-identical to fd212; type-check PASS; detector 58/24 HIGH to 45/11 HIGH; diff-check PASS.",
+          "Five focused suites pass 19/19; focused lint has only unchanged baseline findings outside candidate hunks."
+        ]
+      },
+      "previousEventHash": "d66ea5d018aeeadcfd28ddf3845aaf621abba7b1afcbb7eaa9ff966b0486d58e",
+      "eventHash": "f6abb2ac6c207488c00d29ad8f59c78608d5c32f536c75eeb31b2eb69f682e12"
+    },
+    {
+      "sequence": 10,
+      "state": "delivery_queued",
+      "at": "2026-08-31T08:35:39.580Z",
+      "actor": "codex-root",
+      "summary": "Certified corrected P1 candidate queued for origin/main integration.",
+      "evidence": [
+        "Exact candidate preserved on patrol run authority and patrol/p1-20260831-wave1-corrected refs."
+      ],
+      "delivery": {
+        "candidateSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260831T081603Z"
+      },
+      "previousEventHash": "f6abb2ac6c207488c00d29ad8f59c78608d5c32f536c75eeb31b2eb69f682e12",
+      "eventHash": "3cb8d386e0e0698e96038ab584f5d03528d1016d36786068d02b36b6211085be"
+    },
+    {
+      "sequence": 11,
+      "state": "delivered",
+      "at": "2026-08-31T08:36:51.033Z",
+      "actor": "codex-root",
+      "summary": "Corrected certified P1 wave integrated to origin/main; serialized release remains queued.",
+      "evidence": [
+        "dbe21692e6 is the exact independently certified candidate and an origin/main ancestor.",
+        "The earlier fd212 escaped delivery is superseded by the certified two-seam correction without reverting valid doors."
+      ],
+      "delivery": {
+        "candidateSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260831T081603Z",
+        "integratedSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "release": "release-queued"
+      },
+      "previousEventHash": "3cb8d386e0e0698e96038ab584f5d03528d1016d36786068d02b36b6211085be",
+      "eventHash": "b04f7221376efe4195f68e04a1a07039ad31736c83cfa3afd7a8309bee9bcc8e"
+    },
+    {
+      "sequence": 12,
+      "state": "closed",
+      "at": "2026-08-31T08:37:51.616Z",
+      "actor": "codex-root",
+      "summary": "Closed the certified corrected HIGH repair wave after origin/main integration; remaining raw rows are routed to the next wave.",
+      "evidence": [
+        "13 HIGH findings removed across 11 files; exact corrected candidate dbe21692e6 independently certified and delivered.",
+        "Initial escaped candidate fd212230d9 was rejected on two interaction regressions and superseded by certified replacement dbe21692e6.",
+        "Approvals 0; exceptions 0; product degradation none; managed preview unavailable under an occupied lease and bounded proof completed."
+      ],
+      "previousEventHash": "b04f7221376efe4195f68e04a1a07039ad31736c83cfa3afd7a8309bee9bcc8e",
+      "eventHash": "55cbcd91a57294b12f62d9f52fc51636dd15c6f33107421b406a3962d721572a"
     }
   ]
 }

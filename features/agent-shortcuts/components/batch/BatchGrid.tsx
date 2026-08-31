@@ -1,14 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, ArrowDownToLine, CheckCircle2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, X } from "lucide-react";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import {
@@ -19,6 +11,11 @@ import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { ScalarValueControl } from "./BatchFieldControls";
 import { BatchBindingCell } from "./BatchBindingCell";
+import {
+  FillDownButton,
+  RowKindBadge,
+  RowStatusDot,
+} from "./BatchGridParts";
 import {
   getFieldDef,
   rowAttention,
@@ -113,7 +110,10 @@ export function BatchGrid({
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="truncate">{def.label}</span>
-                      <ScalarFillButton
+                      <FillDownButton
+                        title="Fill this column for every row"
+                        limits="Set this value on every row."
+                        width="w-64"
                         onApply={(v) => onFillScalar(key, v)}
                         renderControl={(value, set) => (
                           <ScalarValueControl
@@ -147,9 +147,21 @@ export function BatchGrid({
                         *
                       </span>
                     )}
-                    <BindingFillButton
-                      target={t}
-                      onApply={(m) => onFillBinding(t.name, m)}
+                    <FillDownButton
+                      title="Fill this variable for every row"
+                      limits="Apply one binding to every row. Direct values, prompts, and defaults fill cleanly; surface values only match where the name exists."
+                      width="w-80"
+                      onApply={(m) =>
+                        onFillBinding(t.name, (m ?? null) as ValueMapping | null)
+                      }
+                      renderControl={(value, set) => (
+                        <SurfaceVariableBinding
+                          target={t}
+                          mapping={(value as ValueMapping | undefined) ?? undefined}
+                          availableSurfaceValues={BASELINE_ONLY}
+                          onChange={(next) => set(next)}
+                        />
+                      )}
                     />
                   </div>
                 </th>
@@ -173,9 +185,13 @@ export function BatchGrid({
                       {done ? (
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                       ) : (
-                        <StatusDot att={att} />
+                        <RowStatusDot att={att} />
                       )}
-                      <KindBadge kind={row.kind} />
+                      <RowKindBadge
+                        kind={row.kind}
+                        addTitle="Will create a new shortcut"
+                        updateTitle="Will update the existing shortcut"
+                      />
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-foreground truncate">
                           {row.existingLabel ||
@@ -261,135 +277,5 @@ export function BatchGrid({
         </div>
       )}
     </div>
-  );
-}
-
-function KindBadge({ kind }: { kind: "create" | "update" }) {
-  return (
-    <span
-      className={cn(
-        "shrink-0 inline-flex items-center h-4 px-1 rounded text-[9px] font-semibold uppercase tracking-wide",
-        kind === "create"
-          ? "bg-primary/10 text-primary"
-          : "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-      )}
-      title={
-        kind === "create"
-          ? "Will create a new shortcut"
-          : "Will update the existing shortcut"
-      }
-    >
-      {kind === "create" ? "Add" : "Upd"}
-    </span>
-  );
-}
-
-function StatusDot({
-  att,
-}: {
-  att: { unmapped: number; requiredUnmapped: number };
-}) {
-  if (att.requiredUnmapped > 0) {
-    return (
-      <span title={`${att.requiredUnmapped} required unmapped`}>
-        <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
-      </span>
-    );
-  }
-  if (att.unmapped > 0) {
-    return (
-      <span title={`${att.unmapped} unmapped`}>
-        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-      </span>
-    );
-  }
-  return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
-}
-
-// ─── Fill-down controls ────────────────────────────────────────────────────
-
-function ScalarFillButton({
-  renderControl,
-  onApply,
-}: {
-  renderControl: (value: unknown, set: (v: unknown) => void) => React.ReactNode;
-  onApply: (value: unknown) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState<unknown>(undefined);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-primary shrink-0"
-          title="Fill this column for every row"
-        >
-          <ArrowDownToLine className="h-3.5 w-3.5" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-3 space-y-2">
-        <p className="text-[11px] text-muted-foreground">
-          Set this value on every row.
-        </p>
-        {renderControl(value, setValue)}
-        <Button
-          size="sm"
-          className="w-full h-8 text-xs"
-          onClick={() => {
-            onApply(value);
-            setOpen(false);
-          }}
-        >
-          Apply to all rows
-        </Button>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function BindingFillButton({
-  target,
-  onApply,
-}: {
-  target: BindingTarget;
-  onApply: (mapping: ValueMapping | null) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<ValueMapping | null>(null);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-primary shrink-0"
-          title="Fill this variable for every row"
-        >
-          <ArrowDownToLine className="h-3.5 w-3.5" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-3 space-y-2">
-        <p className="text-[11px] text-muted-foreground">
-          Apply one binding to every row. Direct values, prompts, and defaults
-          fill cleanly; surface values only match where the name exists.
-        </p>
-        <SurfaceVariableBinding
-          target={target}
-          mapping={draft ?? undefined}
-          availableSurfaceValues={BASELINE_ONLY}
-          onChange={setDraft}
-        />
-        <Button
-          size="sm"
-          className="w-full h-8 text-xs"
-          onClick={() => {
-            onApply(draft);
-            setOpen(false);
-          }}
-        >
-          Apply to all rows
-        </Button>
-      </PopoverContent>
-    </Popover>
   );
 }

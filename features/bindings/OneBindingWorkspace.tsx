@@ -83,7 +83,6 @@ import {
   type SuggestionWords,
 } from "@/features/surfaces/components/bind/BindingSuggestionsTab";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
-import { parseDraftInputs } from "@/features/mandates/authoring/service";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import {
   putMandateBinding,
@@ -108,6 +107,9 @@ import {
   type HolderDraft,
 } from "./ScopeHolderBar";
 import { applySuggestions, seedAutoBinds, sourcesFor } from "./consumption-writer";
+import { describedOfferFrom } from "./described-offer";
+import { BatchMode } from "./batch/BatchMode";
+import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
 
@@ -238,62 +240,17 @@ function BindingDraft({
   const describedOffer: ProvisionOffer | null = useMemo(() => {
     if (data.provisionKey) return null;
     if (surfaceState.status !== "ready") return null;
-    // 🚨 GUARANTEED COMES FROM THE MANDATE'S OWN draft_inputs, NOT from the
-    // served surface's `sourcing`. They answer DIFFERENT questions and the
-    // wizard this replaced conflated them, which is why the first real save
-    // 422'd: aidream `offer.described_offered_values` sets
-    // `guaranteed = item["required"] is True`, while the input surface serves a
-    // described input as `sourcing="require"` to make the RUN FORM ask for it.
-    // Reading the asking policy as the guarantee told the client every value
-    // always arrives, so no row ever declared `when_absent`, and the server
-    // (rightly) refused the whole map. Same column, same rule, both halves.
-    // The slug a nameless described input gets is the SERVER's rule
-    // (`slug_for_description`), so it is never recomputed here: declared names
-    // match by name, and the rest match BY POSITION, which is safe because both
-    // lists are the same `draft_inputs` array in author order.
-    const drafts = parseDraftInputs(
-      (data.mandate as { draft_inputs?: unknown }).draft_inputs,
-    );
-    const requiredByName = new Map(
-      drafts
-        .filter((input) => Boolean(input.name?.trim()))
-        .map((input) => [input.name as string, input.required === true]),
-    );
-    const described = surfaceState.surface.inputs.filter(
-      (input) =>
-        input.origin === "mandate_input" || input.origin === "provision",
-    );
-    const values: OfferedValue[] = described.map((input, index) => ({
-      name: input.name,
-      kind: input.kind,
-      guaranteed:
-        requiredByName.get(input.name) ??
-        (drafts.length === described.length
-          ? drafts[index].required === true
-          : // Lists disagree — refuse to guess a guarantee. Optional makes
-            // absence a declared decision, which is never wrong to require.
-            false),
-      lazy: false,
-      description: input.label !== input.name ? input.label : input.help,
-      // D2 — the author's own example, served with the input (never re-derived
-      // here; the server is the one place that knows the declaration).
-      example: input.example,
-    }));
-    if (values.length === 0) return null;
-    return {
-      id: `mandate:${data.mandate.mandate_key}`,
-      provisionKey: `mandate:${data.mandate.mandate_key}`,
-      label: data.mandate.label ?? data.mandate.mandate_key,
-      description:
-        "This job's own described inputs. They ARE its provision — map them onto whatever fulfils it.",
-      offerKindSlug: null,
-      values,
-      isEnabled: true,
-    };
+    // The derivation is SHARED with batch mode — one rule for what a job
+    // offers, whichever mode is asking (`described-offer.ts`).
+    return describedOfferFrom({
+      mandateKey: data.mandate.mandate_key,
+      label: data.mandate.label,
+      draftInputs: (data.mandate as { draft_inputs?: unknown }).draft_inputs,
+      surface: surfaceState.surface,
+    });
   }, [
     data.provisionKey,
-    data.mandate.label,
-    data.mandate.mandate_key,
+    data.mandate,
     surfaceState,
   ]);
   const offer = data.offer ?? describedOffer;

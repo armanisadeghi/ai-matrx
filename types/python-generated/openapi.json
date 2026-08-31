@@ -18928,6 +18928,69 @@
         }
       }
     },
+    "/brandwatch/public/status": {
+      "get": {
+        "tags": [
+          "Brandwatch Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_brandwatch_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandwatchServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/drip/public/status": {
+      "get": {
+        "tags": [
+          "Drip Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_drip_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DripServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vista-social/public/status": {
+      "get": {
+        "tags": [
+          "Vista Social Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_vista_social_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VistaSocialServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/buttercms/public/status": {
       "get": {
         "tags": [
@@ -19005,6 +19068,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ZypeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-video/public/status": {
+      "get": {
+        "tags": [
+          "api.video Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_api_video_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiVideoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filestack/public/status": {
+      "get": {
+        "tags": [
+          "Filestack Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_filestack_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilestackServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wetransfer/public/status": {
+      "get": {
+        "tags": [
+          "WeTransfer Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_wetransfer_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeTransferServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/smugmug/public/status": {
+      "get": {
+        "tags": [
+          "SmugMug Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_smugmug_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmugMugServiceStatus"
                 }
               }
             }
@@ -19236,6 +19383,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChiliPiperStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/acuity-scheduling/public/status": {
+      "get": {
+        "tags": [
+          "Acuity Scheduling Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_acuity_scheduling_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcuitySchedulingStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/motion/public/status": {
+      "get": {
+        "tags": [
+          "Motion Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_motion_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MotionServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/toggl/public/status": {
+      "get": {
+        "tags": [
+          "Toggl Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_toggl_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TogglServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rescuetime/public/status": {
+      "get": {
+        "tags": [
+          "RescueTime Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rescuetime_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTimeServiceStatus"
                 }
               }
             }
@@ -72470,6 +72701,56 @@
         ],
         "title": "ActivityVerdict"
       },
+      "AcuitySchedulingStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "acuity_scheduling_official_service_status",
+            "title": "Kind",
+            "default": "acuity_scheduling_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "acuity_scheduling",
+            "title": "Provider",
+            "default": "acuity_scheduling"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.acuityscheduling.com",
+            "title": "Status Url",
+            "default": "https://status.acuityscheduling.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AcuitySchedulingStatusResult",
+        "description": "Safe projection of Acuity Scheduling's high-level service status."
+      },
       "AddAssetRequest": {
         "properties": {
           "asset_kind": {
@@ -78355,6 +78636,47 @@
         "title": "AnyDeskStatusResult",
         "description": "Safe projection of AnyDesk's high-level service status."
       },
+      "ApiVideoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "api_video_public_media_platform_status",
+            "title": "Kind",
+            "default": "api_video_public_media_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "api.video",
+            "title": "Provider",
+            "default": "api.video"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.api.video",
+            "title": "Status Page",
+            "default": "https://status.api.video"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ApiVideoServiceStatus",
+        "description": "Safe aggregate status projection for api.video's fixed status page."
+      },
       "AppConfigResponse": {
         "properties": {
           "app": {
@@ -83156,6 +83478,17 @@
             ],
             "title": "Consumption Map"
           },
+          "auto_run": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run"
+          },
           "is_enabled": {
             "type": "boolean",
             "title": "Is Enabled"
@@ -84858,6 +85191,51 @@
         ],
         "title": "BranchRef",
         "description": "One branch, as a placement decision needs to see it: what it is FOR and\nwhat it holds — never its full member list, which is what makes the walk\nbounded."
+      },
+      "BrandwatchServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "brandwatch_public_service_status",
+            "title": "Kind",
+            "default": "brandwatch_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "brandwatch",
+            "title": "Provider",
+            "default": "brandwatch"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.brandwatch.com",
+            "title": "Status Page",
+            "default": "https://status.brandwatch.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BrandwatchServiceStatus",
+        "description": "Safe aggregate status projection for Brandwatch's fixed status page."
       },
       "BreakPremiumCalcResponse": {
         "properties": {
@@ -113309,13 +113687,23 @@
           },
           "target": {
             "$ref": "#/components/schemas/JsonValue"
+          },
+          "deliver": {
+            "type": "string",
+            "enum": [
+              "variable",
+              "context"
+            ],
+            "title": "Deliver",
+            "default": "variable"
           }
         },
         "type": "object",
         "required": [
           "target"
         ],
-        "title": "DirectValueMapping"
+        "title": "DirectValueMapping",
+        "description": "A fixed literal, written on the binding itself.\n\n``deliver`` is the same channel flag :class:`OfferedValueMapping` carries,\nand it is here for the same reason: the channel is a property of the\nTARGET, not of the source. A mandate consumption map may feed a context\nslot from a literal exactly as it may feed one from an offered value, and\nevery source of one target must agree on where it lands. A surface binding\nnever sets it and never reads it — the default is the pre-existing\nbehaviour, so nothing stored before this field existed changes meaning."
       },
       "DirectiveApplyResult": {
         "properties": {
@@ -116189,6 +116577,51 @@
           "status"
         ],
         "title": "DrainRowResult"
+      },
+      "DripServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "drip_public_service_status",
+            "title": "Kind",
+            "default": "drip_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "drip",
+            "title": "Provider",
+            "default": "drip"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.drip.com",
+            "title": "Status Page",
+            "default": "https://status.drip.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DripServiceStatus",
+        "description": "Safe aggregate status projection for Drip's fixed status page."
       },
       "DropboxSelectedFileMetadata": {
         "properties": {
@@ -125036,6 +125469,47 @@
         ],
         "title": "FileVersionRecord",
         "description": "Client-safe projection of a ``files.file_versions`` row.\n\nThe versions endpoints used to return the raw row via ``select(\"*\")``,\nwhich leaked the version's ``storage_uri`` (server-only S3 location). This\nmodel is the explicit projection: everything a client needs to render the\nversion history, and NOT the storage location. To fetch a version's bytes,\nuse ``GET /files/{id}/versions/{n}/download`` (never the raw location)."
+      },
+      "FilestackServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "filestack_public_file_platform_status",
+            "title": "Kind",
+            "default": "filestack_public_file_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Filestack",
+            "title": "Provider",
+            "default": "Filestack"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.filestack.com",
+            "title": "Status Page",
+            "default": "https://status.filestack.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FilestackServiceStatus",
+        "description": "Safe aggregate status projection for Filestack's fixed status page."
       },
       "FillCommand": {
         "properties": {
@@ -145083,6 +145557,17 @@
             ],
             "title": "Consumption Map"
           },
+          "auto_run": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run"
+          },
           "is_enabled": {
             "type": "boolean",
             "title": "Is Enabled",
@@ -146119,6 +146604,17 @@
               }
             ],
             "title": "Consumption Map"
+          },
+          "auto_run": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run"
           }
         },
         "additionalProperties": false,
@@ -146291,10 +146787,16 @@
               "variable",
               "provision",
               "mandate_input",
-              "holder"
+              "holder",
+              "binding_prompt"
             ],
             "title": "Origin",
             "default": "field"
+          },
+          "example": {
+            "type": "string",
+            "title": "Example",
+            "default": ""
           },
           "node_id": {
             "anyOf": [
@@ -150769,6 +151271,47 @@
         "title": "MoodlePublicConfigResult",
         "description": "Bounded projection of Moodle's unauthenticated mobile public config."
       },
+      "MotionServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "motion_public_productivity_platform_status",
+            "title": "Kind",
+            "default": "motion_public_productivity_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Motion",
+            "title": "Provider",
+            "default": "Motion"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "State"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.usemotion.com/",
+            "title": "Status Page",
+            "default": "https://status.usemotion.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "MotionServiceStatus",
+        "description": "Safe aggregate status projection for Motion's fixed status page."
+      },
       "MoveArgs": {
         "properties": {
           "new_parent_id": {
@@ -153970,6 +154513,11 @@
             "type": "boolean",
             "title": "Lazy",
             "default": false
+          },
+          "example": {
+            "type": "string",
+            "title": "Example",
+            "default": ""
           }
         },
         "additionalProperties": false,
@@ -169285,10 +169833,20 @@
             "type": "boolean",
             "title": "Required",
             "default": false
+          },
+          "deliver": {
+            "type": "string",
+            "enum": [
+              "variable",
+              "context"
+            ],
+            "title": "Deliver",
+            "default": "variable"
           }
         },
         "type": "object",
-        "title": "PromptUserValueMapping"
+        "title": "PromptUserValueMapping",
+        "description": "Ask the person for this input, at the moment of the run.\n\n``deliver``: see :class:`DirectValueMapping`.\n\n🚨 WHO ASKS depends on WHERE this is stored, and the two are not the same\nthing. On a SURFACE binding the client asks in a dialog before it launches,\nand this shape never reaches a server-side resolve (:func:\n`resolve_variable_mapping` refuses it, loudly, because no human is present\ninside a server run). On a MANDATE consumption map the ask is served: the\nmandate's input surface publishes this target as a real named field, the\nrun form asks for it there, and the answer arrives in the supplied values\nlike any other input. Same promise to the person, asked by whichever half\nactually has them on screen."
       },
       "PromptWarmRequest": {
         "properties": {
@@ -178294,6 +178852,56 @@
         },
         "type": "object",
         "title": "RerunFromRequest"
+      },
+      "RescueTimeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rescuetime_official_service_status",
+            "title": "Kind",
+            "default": "rescuetime_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "RescueTime",
+            "title": "Provider",
+            "default": "RescueTime"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rescuetime.com",
+            "title": "Status Page",
+            "default": "https://status.rescuetime.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RescueTimeServiceStatus",
+        "description": "Safe aggregate status projection for RescueTime's fixed status page."
       },
       "ResearchRefreshState": {
         "properties": {
@@ -191650,6 +192258,47 @@
         ],
         "title": "SmsActionAuthorizationResponse"
       },
+      "SmugMugServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "smugmug_public_photo_platform_status",
+            "title": "Kind",
+            "default": "smugmug_public_photo_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SmugMug",
+            "title": "Provider",
+            "default": "SmugMug"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.smugmug.com",
+            "title": "Status Page",
+            "default": "https://status.smugmug.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SmugMugServiceStatus",
+        "description": "Safe aggregate status projection for SmugMug's fixed status page."
+      },
       "SnapBboxBody": {
         "properties": {
           "page_number": {
@@ -200426,6 +201075,56 @@
         ],
         "title": "TimesheetExportBody",
         "description": "E-21. Writes ``hr.access_audit action='export'`` and creates **no** ``hr.payroll_export``\nrow — conflating the two would let a report supersede a payroll file."
+      },
+      "TogglServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "toggl_official_service_status",
+            "title": "Kind",
+            "default": "toggl_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Toggl",
+            "title": "Provider",
+            "default": "Toggl"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.toggl.com",
+            "title": "Status Page",
+            "default": "https://status.toggl.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TogglServiceStatus",
+        "description": "Safe aggregate status projection for Toggl's fixed status page."
       },
       "ToolCallPart": {
         "properties": {
@@ -212109,6 +212808,51 @@
         "title": "VismeStatusResult",
         "description": "Safe projection of Visme's high-level service status."
       },
+      "VistaSocialServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "vistasocial_public_service_status",
+            "title": "Kind",
+            "default": "vistasocial_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "vistasocial",
+            "title": "Provider",
+            "default": "vistasocial"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.vistasocial.com/",
+            "title": "Status Page",
+            "default": "https://status.vistasocial.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "VistaSocialServiceStatus",
+        "description": "Safe aggregate status projection for Vista Social's fixed status page."
+      },
       "VoiceShare": {
         "properties": {
           "key": {
@@ -213702,6 +214446,47 @@
         ],
         "title": "WcReportRead",
         "description": "One row from `wc_report`. Totals are populated only after `/calculate`.\n\n`datetime | str` accepts native datetimes from the ORM and serializes to\nISO strings on the wire — same shape the FE consumes."
+      },
+      "WeTransferServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wetransfer_public_file_transfer_status",
+            "title": "Kind",
+            "default": "wetransfer_public_file_transfer_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "WeTransfer",
+            "title": "Provider",
+            "default": "WeTransfer"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.wetransfer.com",
+            "title": "Status Page",
+            "default": "https://status.wetransfer.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "WeTransferServiceStatus",
+        "description": "Safe aggregate status projection for WeTransfer's fixed status page."
       },
       "WebSearchPart": {
         "properties": {

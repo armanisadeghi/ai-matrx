@@ -34,6 +34,7 @@ import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifes
 import {
   SurfaceVariableBinding,
   type BindingTarget,
+  type SourceLabels,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
@@ -142,14 +143,35 @@ export function InlineBindingEditor({
   surfaceName,
   onChange,
   disabled,
+  sourceLabels,
+  valueFieldLabel,
+  showSourceLabel = false,
+  valuePlaceholder,
 }: {
   target: BindingTarget;
   mapping: ValueMapping | undefined;
   availableSurfaceValues: readonly SurfaceValue[];
-  /** Shown as the heading inside the advanced popover. */
+  /** Shown as the heading inside the advanced popover (the place, in words). */
   surfaceName?: string;
   onChange: (next: ValueMapping | null) => void;
   disabled?: boolean;
+  /**
+   * THIS CALL SITE'S WORDS for the four sources. The mechanic is closed and
+   * fixed; the nouns belong to the domain — a job binding consumes an OFFERED
+   * value, never a "surface value". Travels into the advanced popover too, so
+   * the inline control and the full card can never call one thing two names.
+   */
+  sourceLabels?: SourceLabels;
+  /** Label over the picker inside the advanced card. */
+  valueFieldLabel?: string;
+  /**
+   * P3 — name the source IN WORDS on the trigger instead of an icon alone.
+   * The shortcut grid packs fifteen columns into a viewport and keeps the icon;
+   * a mandate screen never asks a reader to decode a glyph.
+   */
+  showSourceLabel?: boolean;
+  /** Placeholder for the value picker ("Pick value…" by default). */
+  valuePlaceholder?: string;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
@@ -158,6 +180,8 @@ export function InlineBindingEditor({
     availableSurfaceValues.find((sv) => sv.name === target.name) ?? null;
   const mode = modeOf(mapping);
   const Meta = MODE_META[mode];
+  const labelFor = (m: FourWayMode): string =>
+    sourceLabels?.[m] ?? MODE_META[m].label;
 
   const setMode = (next: FourWayMode) => {
     onChange(mappingForMode(next, mapping, autoCandidate));
@@ -172,16 +196,23 @@ export function InlineBindingEditor({
           <button
             type="button"
             disabled={disabled}
-            title={Meta.label}
+            title={labelFor(mode)}
+            aria-label={`Source: ${labelFor(mode)}`}
             className={cn(
-              "shrink-0 flex h-7 w-7 items-center justify-center rounded border border-border bg-background hover:bg-accent/60 transition-colors",
+              "shrink-0 flex h-7 items-center justify-center rounded border border-border bg-background hover:bg-accent/60 transition-colors",
+              showSourceLabel ? "gap-1 px-1.5" : "w-7",
               disabled && "opacity-50",
             )}
           >
             <Meta.icon className={cn("h-3.5 w-3.5", Meta.tone)} />
+            {showSourceLabel ? (
+              <span className="text-[11px] text-foreground">
+                {labelFor(mode)}
+              </span>
+            ) : null}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-44 p-1">
+        <PopoverContent align="start" className="w-48 p-1">
           {MODE_ORDER.map((m) => {
             const M = MODE_META[m];
             const active = m === mode;
@@ -198,7 +229,7 @@ export function InlineBindingEditor({
                 )}
               >
                 <M.icon className={cn("h-3.5 w-3.5 shrink-0", M.tone)} />
-                <span className="truncate">{M.label}</span>
+                <span className="truncate">{labelFor(m)}</span>
               </button>
             );
           })}
@@ -209,7 +240,7 @@ export function InlineBindingEditor({
       <div className="flex-1 min-w-0">
         {mode === "agent_default" && (
           <span className="text-[11px] text-muted-foreground italic px-1">
-            Agent default
+            {labelFor("agent_default")}
           </span>
         )}
 
@@ -222,6 +253,7 @@ export function InlineBindingEditor({
             }
             availableSurfaceValues={availableSurfaceValues}
             disabled={disabled}
+            placeholder={valuePlaceholder}
             onChange={onChange}
           />
         )}
@@ -321,6 +353,8 @@ export function InlineBindingEditor({
               mapping={mapping}
               availableSurfaceValues={availableSurfaceValues}
               disabled={disabled}
+              sourceLabels={sourceLabels}
+              valueFieldLabel={valueFieldLabel}
               onChange={onChange}
             />
           </div>
@@ -334,11 +368,13 @@ function SurfaceValueInline({
   mapping,
   availableSurfaceValues,
   disabled,
+  placeholder,
   onChange,
 }: {
   mapping: Extract<ValueMapping, { mapType: "surface_value" }>;
   availableSurfaceValues: readonly SurfaceValue[];
   disabled?: boolean;
+  placeholder?: string;
   onChange: (next: ValueMapping) => void;
 }) {
   return (
@@ -356,12 +392,12 @@ function SurfaceValueInline({
             "border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400",
         )}
       >
-        <SelectValue placeholder="Pick value…" />
+        <SelectValue placeholder={placeholder ?? "Pick value…"} />
       </SelectTrigger>
       <SelectContent>
         {availableSurfaceValues.length === 0 && (
           <SelectItem value="__none__" disabled>
-            No surface values
+            Nothing on offer here
           </SelectItem>
         )}
         {availableSurfaceValues.map((sv) => (
@@ -374,6 +410,54 @@ function SurfaceValueInline({
       </SelectContent>
     </Select>
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE COPIED-MAPPING RULE (UI-STANDARD P17.2), pure and shared.
+//
+// A batch grid's whole point is that one decision lands on many rows — and the
+// rows are NOT the same place. So a value name inherited from a fill-down, a
+// template or the row above is reconciled against the values THIS row's place
+// actually has, and the outcome is one of exactly three:
+//
+//   1. keep      — the inherited name exists here.
+//   2. rebind    — it does not, but this place offers a value named exactly
+//                  like the input being fed; bind that, because a name match is
+//                  the same rule the resolver itself uses.
+//   3. clear     — neither exists. The cell goes EMPTY and therefore RED, and
+//                  the person picks. Silently leaving a name this place cannot
+//                  supply is the lie this rule exists to prevent.
+//
+// Pure on purpose: jest holds it, and both grids call it rather than each
+// keeping its own copy of a three-branch rule.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CopiedTargetVerdict =
+  | { action: "keep" }
+  | { action: "rebind"; target: string }
+  | { action: "clear"; target: "" };
+
+export function reconcileCopiedTarget({
+  inheritedTarget,
+  targetName,
+  availableNames,
+}: {
+  /** The value name copied in — "" when nothing was chosen. */
+  inheritedTarget: string;
+  /** The holder input this cell feeds; its own name is the re-bind candidate. */
+  targetName: string;
+  /** Every value name this row's place actually offers. */
+  availableNames: readonly string[];
+}): CopiedTargetVerdict {
+  const names = new Set(availableNames);
+  if (inheritedTarget && names.has(inheritedTarget)) return { action: "keep" };
+  if (names.has(targetName)) {
+    return targetName === inheritedTarget
+      ? { action: "keep" }
+      : { action: "rebind", target: targetName };
+  }
+  if (inheritedTarget) return { action: "clear", target: "" };
+  return { action: "keep" };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -424,13 +508,9 @@ export function BatchBindingCell({
     );
   }, [surfaceValues]);
 
-  // Resolve the inherited surface_value target against THIS surface, once the
-  // surface's values are known. Rules (the "inherit, change only on mismatch"
-  // contract):
-  //   1. inherited target exists here          → keep it (green).
-  //   2. inherited target missing, but a value  → re-bind to the variable-name
-  //      named like the variable exists           match.
-  //   3. neither exists                         → clear (red; user picks).
+  // P17.2 — a mapping copied to this row is reconciled against THIS place's
+  // values. The rule is `reconcileCopiedTarget`, shared with the one binding
+  // UI's batch mode so both grids self-heal identically.
   const resolvedRef = useRef(false);
   useEffect(() => {
     if (resolvedRef.current) return;
@@ -438,15 +518,13 @@ export function BatchBindingCell({
     if (mapping?.mapType !== "surface_value") return;
     resolvedRef.current = true;
 
-    const names = new Set(availableSurfaceValues.map((v) => v.name));
-    if (mapping.target && names.has(mapping.target)) return; // (1) inherited ok
-
-    const byVar = availableSurfaceValues.find((sv) => sv.name === target.name);
-    if (byVar) {
-      if (byVar.name !== mapping.target) onChange({ ...mapping, target: byVar.name }); // (2)
-    } else if (mapping.target) {
-      onChange({ ...mapping, target: "" }); // (3) inherited target not here
-    }
+    const verdict = reconcileCopiedTarget({
+      inheritedTarget: mapping.target,
+      targetName: target.name,
+      availableNames: availableSurfaceValues.map((v) => v.name),
+    });
+    if (verdict.action === "keep") return;
+    onChange({ ...mapping, target: verdict.target });
   }, [availableSurfaceValues, status, mapping, target.name, onChange]);
 
   const loading = status === "loading" && surfaceValues.length === 0;
