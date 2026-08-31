@@ -30,6 +30,8 @@ import {
   TaskMetadataFooter,
 } from "@/features/tasks/components/editor/TaskWindowChrome";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { createTasksExtraSections } from "@/features/tasks/agent-context/buildTasksContextData";
 
 const OVERLAY_ID = "taskEditorWindow";
 
@@ -77,10 +79,35 @@ export default function TaskEditorWindow({
             {recordUnavailableMessage("task", "unknown")}
           </div>
         ) : (
-          <div className="flex h-full min-h-0 flex-col">
-            <TaskTitleBand />
-            <TaskEditorBody />
-          </div>
+          // Backstop only — TaskEditorBody's description field already mounts
+          // its own EditableContextMenu/NonEditableContextMenu (task-ops
+          // section from createTasksExtraSections, the canonical builder
+          // shared with TaskListPane), which wins on its own DOM. This wrap
+          // covers the rest of the pane (title band, padding) so a
+          // right-click there opens task actions instead of falling through
+          // to whatever page hosts this floating window.
+          <NonEditableContextMenu
+            sourceFeature="tasks"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: controller.effective.description ?? "" }}
+            entity={{
+              type: "task",
+              id: taskId,
+              title: controller.effective.title || "Untitled task",
+              resourceType: "task",
+            }}
+            extraSections={createTasksExtraSections({
+              onSave: () => void controller.handleSave(),
+              onToggleComplete: () => void controller.handleToggleComplete(),
+              onDelete: controller.handleDelete,
+              completed: controller.completed,
+            })}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <TaskTitleBand />
+              <TaskEditorBody />
+            </div>
+          </NonEditableContextMenu>
         )}
       </WindowPanel>
     </TaskEditorControllerProvider>
