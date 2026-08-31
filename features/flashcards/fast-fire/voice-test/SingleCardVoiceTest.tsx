@@ -377,6 +377,7 @@ export function SingleCardVoiceTest({
       {phase === "setup" ? (
         <div className="overflow-y-auto">
           <VoiceTestAudioSetup
+            key={`${card.id}:${initialSpokenFrontFileId ?? "none"}`}
             card={{ id: card.id, front: card.front }}
             initialSpokenFrontFileId={initialSpokenFrontFileId}
             onStart={handleSetupStart}
