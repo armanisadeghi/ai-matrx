@@ -28,6 +28,7 @@ import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SessionAudio } from "@/features/education/study/components/SessionAudio";
+import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { podcastService } from "@/features/podcasts/service";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
@@ -80,9 +81,16 @@ function AudioPlayback({
   if (episodeUrl) {
     // Episode audio_url is a durable public/CDN URL (episodes are share-ready).
     return (
-      <audio src={episodeUrl} controls preload="none" className="h-10 w-full">
-        <track kind="captions" />
-      </audio>
+      <SessionMediaElement
+        as="audio"
+        src={episodeUrl}
+        controls
+        preload="none"
+        className="h-10 w-full"
+        sessionSource="podcast"
+        sessionLabel="Education audio study"
+        trackKey={episodeUrl}
+      />
     );
   }
   return (
@@ -104,7 +112,7 @@ function regenerateHref(media: StudyMediaRow): string {
 export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
   const router = useRouter();
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedMediaId, setLoadedMediaId] = useState<string | null>(null);
   const { isOwner } = useAccess("study_media", mediaId);
 
   // Read at trigger time, never from stale closure state.
@@ -132,18 +140,17 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     studyMediaService.getById(mediaId).then((res) => {
       if (!active) return;
       setMedia(res.data);
-      setLoading(false);
+      setLoadedMediaId(mediaId);
     });
     return () => {
       active = false;
     };
   }, [mediaId]);
 
-  if (loading) {
+  if (loadedMediaId !== mediaId) {
     return (
       <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
         <Skeleton className="h-8 w-64" />

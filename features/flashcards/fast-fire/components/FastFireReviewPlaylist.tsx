@@ -16,6 +16,7 @@ import { ListMusic, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { selectReviewRows } from "../redux/fastFire.selectors";
 import { playCard, stopPlayback } from "../redux/fastFireSlice";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
@@ -28,6 +29,7 @@ export function FastFireReviewPlaylist() {
   // Index into `playable`; -1 = transport idle.
   const [index, setIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
+  const [mediaPlaying, setMediaPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const current = index >= 0 ? playable[index] : undefined;
@@ -39,12 +41,23 @@ export function FastFireReviewPlaylist() {
   // handler swap + play synchronously (no async mint mid-chain).
   useMediaResolution(next?.grade?.responseAudioFileId ?? null);
 
+  useMediaElementPlaybackSession({
+    elementRef: audioRef,
+    // The lock follows the element's real play/pause events. `playing` is also
+    // used optimistically by the transport while the next clip is resolving.
+    isPlaying: mediaPlaying,
+    source: "other",
+    label: "Fast Fire answer playlist",
+    trackKey: current?.grade?.responseAudioFileId ?? undefined,
+  });
+
   if (playable.length === 0) return null;
 
   const stop = () => {
     audioRef.current?.pause();
     setIndex(-1);
     setPlaying(false);
+    setMediaPlaying(false);
     dispatch(stopPlayback());
   };
 
@@ -127,6 +140,14 @@ export function FastFireReviewPlaylist() {
           autoPlay
           preload="auto"
           className="sr-only"
+          onPlay={() => {
+            setPlaying(true);
+            setMediaPlaying(true);
+          }}
+          onPause={() => {
+            setPlaying(false);
+            setMediaPlaying(false);
+          }}
           onEnded={() => playIndex(index + 1)}
           onError={() => playIndex(index + 1)}
         >

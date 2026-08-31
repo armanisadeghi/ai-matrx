@@ -19,8 +19,9 @@
 // fallback opens the window after a max-wait. The robust fix is to play the
 // decoded buffer through the Start-resumed AudioContext (like the buzzer).
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMediaResolution } from "@ai-matrx/media/core";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 
 export function SpokenFrontPlayer({
   fileId,
@@ -34,6 +35,19 @@ export function SpokenFrontPlayer({
 }) {
   const src = useMediaResolution(fileId ?? null).resolution?.src ?? null;
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Spoken fronts are audio output, not incidental markup. Join the same
+  // app-wide lock as podcasts, file previews, and TTS so a new card question
+  // synchronously pauses whatever was already audible (and is itself paused
+  // by the next output path).
+  useMediaElementPlaybackSession({
+    elementRef: audioRef,
+    isPlaying,
+    source: "other",
+    label: "Fast Fire spoken question",
+    trackKey: `${cardId}:${fileId ?? "none"}`,
+  });
 
   // autoPlay alone is unreliable after async URL resolution (and on iOS). Explicit
   // play() when src lands keeps voice-test + FastFire aligned with the Start gesture.
@@ -57,8 +71,16 @@ export function SpokenFrontPlayer({
       autoPlay
       preload="auto"
       className="sr-only"
-      onEnded={() => onEnded?.(cardId)}
-      onError={() => onEnded?.(cardId)}
+      onPlay={() => setIsPlaying(true)}
+      onPause={() => setIsPlaying(false)}
+      onEnded={() => {
+        setIsPlaying(false);
+        onEnded?.(cardId);
+      }}
+      onError={() => {
+        setIsPlaying(false);
+        onEnded?.(cardId);
+      }}
     >
       <track kind="captions" />
     </audio>
