@@ -34,6 +34,8 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 import { useHrContext } from "../../shared/useHrContext";
 import { fetchHrCustomFieldRegistry } from "../service";
@@ -243,6 +245,33 @@ export function HrFieldsPanel() {
         {/* The registry itself */}
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
+          <NonEditableContextMenu
+            sourceFeature="internal"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = (target as HTMLElement | null)
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = (id && definitions.find((r) => r.id === id)) || null;
+              if (!row) return null;
+              return {
+                [CONTEXT_MENU_ENTITY_KEY]: {
+                  type: "custom_field_definition",
+                  id: row.id,
+                  title: row.display_name,
+                },
+                content: [
+                  row.display_name,
+                  row.field_key,
+                  row.field_type,
+                  `Sensitivity: ${row.sensitivity_tier}`,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+              };
+            }}
+          >
           <MatrxDataTable
             data={definitions}
             columns={columns}
@@ -256,6 +285,7 @@ export function HrFieldsPanel() {
                 "Nothing has been added beyond the built-in fields. When the platform field editor arrives, what you create with it appears here.",
             }}
           />
+          </NonEditableContextMenu>
         </section>
 
         {/* The rules that are not negotiable */}
