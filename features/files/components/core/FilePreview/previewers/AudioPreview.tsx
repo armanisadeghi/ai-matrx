@@ -60,9 +60,6 @@ export function AudioPreview({
   mimeType,
   className,
 }: AudioPreviewProps) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-
   // Media durability: on a load failure the file-session cookie is refreshed
   // and the SAME durable URL retried once instead of dead-ending — a user's
   // own file never just "expires". `remintOnError` is wired to the <audio>
@@ -76,6 +73,44 @@ export function AudioPreview({
   } = useMediaLoadRecovery(url, {
     recoverable: !!url && recognizeOurFileUrl(url) !== null,
   });
+
+  // A distinct audio source owns a distinct playback session. Keying the
+  // stateful session component makes React discard every source-derived value
+  // during reconciliation instead of scheduling a second render from an
+  // effect. That keeps a newly selected file from briefly showing the prior
+  // file's playback state and satisfies the lifecycle contract directly.
+  return (
+    <AudioPreviewSession
+      key={url ?? ""}
+      url={url}
+      fileName={fileName}
+      mimeType={mimeType}
+      className={className}
+      retryKey={retryKey}
+      remintOnError={remintOnError}
+      remintFailed={remintFailed}
+    />
+  );
+}
+
+interface AudioPreviewSessionProps extends AudioPreviewProps {
+  retryKey: number;
+  remintOnError: (event?: unknown) => void;
+  remintFailed: boolean;
+}
+
+function AudioPreviewSession({
+  url,
+  fileName,
+  mimeType,
+  className,
+  retryKey,
+  remintOnError,
+  remintFailed,
+}: AudioPreviewSessionProps) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const src = url ?? "";
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -141,16 +176,6 @@ export function AudioPreview({
       audio.removeEventListener("canplay", onCanPlay);
     };
   }, [scrubbing]);
-
-  // Reset transient state when the source URL changes (different file).
-  useEffect(() => {
-    setPlaying(false);
-    setPosition(0);
-    setDuration(0);
-    setBuffered(0);
-    setError(null);
-    setLoading(true);
-  }, [url]);
 
   // Keep the audio element's properties in sync with state.
   useEffect(() => {
