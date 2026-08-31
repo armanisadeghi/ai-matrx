@@ -11,6 +11,7 @@
  */
 
 import { adoptHeadlessAgentJson } from "../run-headless-agent-json";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 const REQUEST_ID = "req-1";
 const CONVERSATION_ID = "conv-1";
@@ -21,6 +22,12 @@ jest.mock(
   "@/features/agents/redux/execution-system/conversations/conversations.thunks",
   () => ({ destroyInstanceIfAllowed: () => ({ type: "noop" }) }),
 );
+
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  captureError: jest.fn(),
+}));
+
+const captureErrorMock = jest.mocked(captureError);
 
 function stateWith(request: Record<string, unknown>) {
   return {
@@ -35,6 +42,8 @@ function stateWith(request: Record<string, unknown>) {
 const dispatch = (() => ({})) as never;
 
 describe("adoptHeadlessAgentJson error precedence", () => {
+  beforeEach(() => captureErrorMock.mockClear());
+
   test("a terminal error wins over a finalized-but-empty extraction", async () => {
     const getState = () =>
       stateWith({
@@ -76,5 +85,29 @@ describe("adoptHeadlessAgentJson error precedence", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("no json");
+    expect(captureErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("a retried malformed JSON attempt defers only its intermediate diagnostic", async () => {
+    const getState = () =>
+      stateWith({
+        status: "complete",
+        jsonExtractionComplete: true,
+        extractedJson: [],
+      });
+
+    const result = await adoptHeadlessAgentJson(dispatch, getState, {
+      requestId: REQUEST_ID,
+      conversationId: CONVERSATION_ID,
+      surfaceKey: "test",
+      timeoutMs: 1_000,
+      pollIntervalMs: 100,
+      failureMessages: { noJson: "no json" },
+      deferNoJsonCapture: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("no json");
+    expect(captureErrorMock).not.toHaveBeenCalled();
   });
 });

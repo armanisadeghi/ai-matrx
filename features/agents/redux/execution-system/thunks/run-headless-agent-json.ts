@@ -798,14 +798,16 @@ async function waitForExtraction(
     if (reason === "aborted") {
       return { success: false, data: null, error: message, ...base() };
     }
-    reportNoResult(getState, {
-      requestId,
-      conversationId,
-      surfaceKey: args.surfaceKey,
-      agentRef: args.agentRef,
-      reason,
-      message,
-    });
+    if (!args.deferNoJsonCapture || reason === "timeout") {
+      reportNoResult(getState, {
+        requestId,
+        conversationId,
+        surfaceKey: args.surfaceKey,
+        agentRef: args.agentRef,
+        reason,
+        message,
+      });
+    }
     return { success: false, data: null, error: message, ...base() };
   };
 
