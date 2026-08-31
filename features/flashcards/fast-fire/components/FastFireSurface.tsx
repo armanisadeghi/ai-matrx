@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useEffect, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -41,6 +41,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const router = useRouter();
+  const menuContentRef = useRef<HTMLDivElement>(null);
   const [isExiting, startExitTransition] = useTransition();
   const phase = useAppSelector(selectFastFirePhase);
   const config = useAppSelector(selectFastFireConfig);
@@ -73,7 +74,10 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
     buildApplicationScopeFromMenuContext({
       selectedText: window.getSelection()?.toString() ?? "",
       selectionRange: null,
-      contextData: getScope() as Record<string, unknown>,
+      contextData: {
+        ...getScope(),
+        content: menuContentRef.current?.innerText ?? "",
+      },
     });
 
   // Write half of the surface (manifest `writeTargets`). ONE draft-mode target:
@@ -177,7 +181,9 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
         getApplicationScope={getMenuScope}
         contentSource={{ type: "raw" }}
       >
-        <div className="min-h-full">{body}</div>
+        <div ref={menuContentRef} className="min-h-full">
+          {body}
+        </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
