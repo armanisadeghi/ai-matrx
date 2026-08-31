@@ -11,6 +11,13 @@
 // `mandate.vw_shortcut` joins on exactly that triple. This writer keeps the same
 // natural key rather than inventing a second one.
 //
+// THE DATABASE ALREADY ENFORCES IT, which is why `maybeSingle()` below cannot
+// surprise anyone and the insert cannot race a second default into existence:
+//   CREATE UNIQUE INDEX treatment_default_uq ON mandate.treatment (mandate_id, tier)
+//     WHERE (is_default AND deleted_at IS NULL);
+// It is also exactly this read's predicate, so both resolvers' presentation
+// lookup is an index hit, not a scan on a hot path.
+//
 // WHAT THE ROW INHERITS, and why none of it is a choice made here:
 //   · `organization_id` — the MANDATE's own. Repo law: every write carries an
 //     explicit organization_id and no resolver or trigger may pick one, so the
