@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T081603Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-31T08:35:39.580Z",
-  "summary": "Certified corrected P1 candidate queued for origin/main integration.",
+  "state": "delivered",
+  "updatedAt": "2026-08-31T08:36:51.033Z",
+  "summary": "Corrected certified P1 wave integrated to origin/main; serialized release remains queued.",
   "source": "20260831T081603Z.json",
-  "eventHash": "3cb8d386e0e0698e96038ab584f5d03528d1016d36786068d02b36b6211085be"
+  "eventHash": "b04f7221376efe4195f68e04a1a07039ad31736c83cfa3afd7a8309bee9bcc8e"
 }

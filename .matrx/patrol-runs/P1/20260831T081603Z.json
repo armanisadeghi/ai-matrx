@@ -153,6 +153,25 @@
       },
       "previousEventHash": "f6abb2ac6c207488c00d29ad8f59c78608d5c32f536c75eeb31b2eb69f682e12",
       "eventHash": "3cb8d386e0e0698e96038ab584f5d03528d1016d36786068d02b36b6211085be"
+    },
+    {
+      "sequence": 11,
+      "state": "delivered",
+      "at": "2026-08-31T08:36:51.033Z",
+      "actor": "codex-root",
+      "summary": "Corrected certified P1 wave integrated to origin/main; serialized release remains queued.",
+      "evidence": [
+        "dbe21692e6 is the exact independently certified candidate and an origin/main ancestor.",
+        "The earlier fd212 escaped delivery is superseded by the certified two-seam correction without reverting valid doors."
+      ],
+      "delivery": {
+        "candidateSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260831T081603Z",
+        "integratedSha": "dbe21692e62f75beecc2730925c6081c2f6a3fef",
+        "release": "release-queued"
+      },
+      "previousEventHash": "3cb8d386e0e0698e96038ab584f5d03528d1016d36786068d02b36b6211085be",
+      "eventHash": "b04f7221376efe4195f68e04a1a07039ad31736c83cfa3afd7a8309bee9bcc8e"
     }
   ]
 }
