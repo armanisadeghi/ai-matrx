@@ -124,14 +124,20 @@ export interface CategoryTree {
   flat: AgentShortcutCategoryRecord[];
 }
 
+export function compareCategoryOrder(
+  a: AgentShortcutCategoryRecord,
+  b: AgentShortcutCategoryRecord,
+): number {
+  return (
+    (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+    (a.label ?? "").localeCompare(b.label ?? "")
+  );
+}
+
 export const selectCategoryTreeByScope = createSelector(
   [selectCategoriesByScope],
   (categories): AgentShortcutCategoryRecord[] => {
-    const sortByOrder = (
-      a: AgentShortcutCategoryRecord,
-      b: AgentShortcutCategoryRecord,
-    ) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label);
-    return [...categories].sort(sortByOrder);
+    return [...categories].sort(compareCategoryOrder);
   },
 );
 
@@ -148,13 +154,11 @@ export const selectCategoryTreeStructuredByScope = createSelector(
         roots.push(c);
       }
     });
-    const sortByOrder = (
-      a: AgentShortcutCategoryRecord,
-      b: AgentShortcutCategoryRecord,
-    ) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label);
-    roots.sort(sortByOrder);
-    Object.values(byParent).forEach((list) => list.sort(sortByOrder));
-    const flat = [...categories].sort(sortByOrder);
+    roots.sort(compareCategoryOrder);
+    Object.values(byParent).forEach((list) =>
+      list.sort(compareCategoryOrder),
+    );
+    const flat = [...categories].sort(compareCategoryOrder);
     return { roots, childrenByParentId: byParent, flat };
   },
 );

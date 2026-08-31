@@ -49,7 +49,8 @@ export interface AgentShortcutCategorySliceState {
 
 export interface CategoryApiRow {
   id: string;
-  label: string;
+  /** External reads can contain legacy rows with a missing platform name. */
+  label: string | null;
   description: string | null;
   icon_name: string | null;
   color: string | null;

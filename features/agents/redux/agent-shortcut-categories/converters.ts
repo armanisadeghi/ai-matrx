@@ -8,7 +8,9 @@ export function categoryRowToDef(
 ): AgentShortcutCategoryDef {
   return {
     id: row.id,
-    label: row.label,
+    // Keep the canonical client record renderable even when an old/malformed
+    // platform category reaches the compatibility API without a name.
+    label: row.label?.trim() || "Unnamed category",
     description: row.description,
     iconName: row.icon_name,
     color: row.color,
