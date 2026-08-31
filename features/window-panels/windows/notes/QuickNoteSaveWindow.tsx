@@ -15,6 +15,7 @@ import {
 } from "@/features/surfaces/manifests/quick-note-save.manifest";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFolders } from "@/features/notes/redux/selectors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface QuickNoteSaveWindowProps {
   isOpen: boolean;
@@ -157,18 +158,34 @@ function QuickNoteSaveWindowInner({
         onClose={onClose}
         footerRight={<div ref={setFooterHost} className="flex items-center" />}
       >
-        <div className="h-full min-h-0 p-3">
-          <QuickNoteSaveCore
-            initialContent={initialContent}
-            defaultFolder={defaultFolder}
-            defaultNoteName={defaultNoteName}
-            initialEditorMode={initialEditorMode}
-            surfaceName={QUICK_NOTE_SAVE_SURFACE_NAME}
-            onSaved={handleSaved}
-            onCancel={onClose}
-            footerHost={footerHost}
-          />
-        </div>
+        {/*
+         * The draft has no note id until Save is pressed, so there is no
+         * "note" entity to attach yet — contentSource stays "raw". Copy /
+         * Export / AI still resolve from the live DOM. The editor itself
+         * (RefinableContentEditor) has no text-mutation hooks exposed to this
+         * window, so right-clicking the live textarea yields to the native
+         * browser menu (cut/copy/paste still work there) — this menu covers
+         * everything else: the title/folder form, the preview pane, blank
+         * space.
+         */}
+        <NonEditableContextMenu
+          sourceFeature="notes"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: initialContent }}
+        >
+          <div className="h-full min-h-0 p-3">
+            <QuickNoteSaveCore
+              initialContent={initialContent}
+              defaultFolder={defaultFolder}
+              defaultNoteName={defaultNoteName}
+              initialEditorMode={initialEditorMode}
+              surfaceName={QUICK_NOTE_SAVE_SURFACE_NAME}
+              onSaved={handleSaved}
+              onCancel={onClose}
+              footerHost={footerHost}
+            />
+          </div>
+        </NonEditableContextMenu>
       </WindowPanel>
     </SurfaceRuntimeProvider>
   );
