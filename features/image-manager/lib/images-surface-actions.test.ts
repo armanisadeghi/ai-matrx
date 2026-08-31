@@ -14,9 +14,18 @@ const visible = [
 
 describe("Images surface action guards", () => {
   it("keeps every image-manager thumbnail on the durable file-id path", () => {
-    const durableFileCallers = [
+    const canonicalCloudThumbnail = readFileSync(
+      resolve(
+        process.cwd(),
+        "components/image/cloud/CloudImageThumbnail.tsx",
+      ),
+      "utf8",
+    );
+    const delegatedCloudThumbnailCallers = [
       "components/image/cloud/CloudImageGrid.tsx",
       "components/image/cloud/CloudImageList.tsx",
+    ];
+    const directDurableFileCallers = [
       "components/image/cloud/CloudFilesBrowserTable.tsx",
       "features/capture-camera/host/CloudLibrarySheet.tsx",
       "features/files/components/multi-view/MultiFileGridViewer.tsx",
@@ -28,7 +37,17 @@ describe("Images surface action guards", () => {
       "features/resource-manager/resource-picker/FilesResourcePicker.tsx",
     ];
 
-    for (const caller of durableFileCallers) {
+    expect(canonicalCloudThumbnail).toMatch(/file_id: file\.id/);
+    expect(canonicalCloudThumbnail).not.toMatch(/thumbnailUrl/);
+
+    for (const caller of delegatedCloudThumbnailCallers) {
+      const source = readFileSync(resolve(process.cwd(), caller), "utf8");
+      expect(source).toMatch(/<CloudImageThumbnail\b/);
+      expect(source).toMatch(/file=\{file\}/);
+      expect(source).not.toMatch(/thumbnailUrl/);
+    }
+
+    for (const caller of directDurableFileCallers) {
       const source = readFileSync(resolve(process.cwd(), caller), "utf8");
       expect(source).toMatch(/file_id: (?:file|thumbnailFile)\.id/);
       expect(source).not.toMatch(
