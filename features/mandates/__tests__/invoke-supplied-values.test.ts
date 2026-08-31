@@ -8,7 +8,19 @@
  * `full_agent_object` — synthesized from its described inputs — plus a
  * person-answered `brief` its binding asks for. Read out of the live DB:
  * `mandate.definition.draft_inputs` for goal_writer carries exactly those five
- * descriptions, and binding `39aff811` maps `brief` as `prompt_user`.
+ * descriptions, and the user-rung binding live at the time mapped `brief` as
+ * `prompt_user`.
+ *
+ * ⚠️ A CORRECTION WORTH KEEPING, because it nearly poisoned this fixture.
+ * That binding (`39aff811`, holder "Masterwork Method Interrogator", prompt
+ * "V1 parity probe: what brief?") was NOT Arman's — it was an adversarial
+ * reviewer's leftover probe row, and several lanes including this one had been
+ * treating it as his and protecting it. It was soft-deleted 2026-08-31 15:55Z,
+ * and `mandate.goal_writer` now resolves through his real global binding to
+ * "Agent Goal Writer". **Never infer a row's owner from its id — read
+ * `created_by`.** The SHAPE these cases pin (a `prompt_user` source is served
+ * as a named field with `origin: "binding_prompt"`) is a property of the
+ * binding model, not of that row, so the fixture stands on its own.
  */
 
 import { planInvocation, skippedSentence } from "../invoke/supplied-values";
