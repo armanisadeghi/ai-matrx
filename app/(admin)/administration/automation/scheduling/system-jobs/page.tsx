@@ -58,6 +58,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   listDbJobs,
   listSystemTasks,
@@ -137,6 +139,11 @@ export default function SystemJobsPage() {
   const [dbLoadError, setDbLoadError] = useState<string | null>(null);
   const [dbBusy, setDbBusy] = useState<Set<number>>(new Set());
   const [editingDbJob, setEditingDbJob] = useState<DbJobResponse | null>(null);
+
+  // Clicked row for each pane's context menu — STATE, not a ref, so a
+  // row-dependent label/availability re-renders before the menu opens.
+  const [clickedJob, setClickedJob] = useState<SystemTaskResponse | null>(null);
+  const [clickedDbJob, setClickedDbJob] = useState<DbJobResponse | null>(null);
 
   useAdminSchedulingScopeSlice("system_jobs", () =>
     definedOnly({
@@ -457,6 +464,57 @@ export default function SystemJobsPage() {
     );
   };
 
+  // Right-click menu for the system-jobs pane — page-local identity (a
+  // scheduling.system-jobs job is not shown anywhere else), so the section is
+  // inline rather than a registered SECTIONS.md builder. Every item delegates
+  // to the row-button handler above — no new write path.
+  const resolveJobContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? rows.find((r) => r.id === id) ?? null : null;
+    setClickedJob(row);
+    if (!row) return null;
+    return {
+      content: [
+        `Title: ${row.title}`,
+        `Tool: ${row.tool_name}`,
+        `State: ${row.enabled ? "enabled" : "disabled"}`,
+        `Cadence: ${cadenceText(row)}`,
+      ].join("\n"),
+    };
+  };
+
+  const jobMenuItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "job-toggle-enabled",
+      label: clickedJob?.enabled ? "Disable" : "Enable",
+      icon: Power,
+      disabled: !clickedJob || busy.has(clickedJob.id),
+      onSelect: () => clickedJob && void toggleEnabled(clickedJob),
+    },
+    {
+      kind: "item",
+      id: "job-edit",
+      label: "Edit…",
+      icon: Pencil,
+      disabled: !clickedJob || busy.has(clickedJob.id),
+      onSelect: () => clickedJob && setEditing(clickedJob),
+    },
+    {
+      kind: "item",
+      id: "job-run-now",
+      label: "Run now",
+      icon: Play,
+      disabled:
+        !clickedJob || busy.has(clickedJob.id) || clickedJob.handler_registered === false,
+      description:
+        clickedJob?.handler_registered === false
+          ? "No handler registered — nothing would run"
+          : undefined,
+      onSelect: () => clickedJob && void runNow(clickedJob),
+    },
+  ];
+
   // ── Database jobs (pg_cron) handlers + columns ────────────────────────────
 
   const markDbBusy = (jobid: number, on: boolean) =>
@@ -641,12 +699,55 @@ export default function SystemJobsPage() {
     );
   };
 
+  // Right-click menu for the pg_cron pane — same rationale as the system-jobs
+  // pane above: page-local identity, every item delegates to the row-button
+  // handler already defined.
+  const resolveDbJobContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? dbRows.find((r) => String(r.jobid) === id) ?? null : null;
+    setClickedDbJob(row);
+    if (!row) return null;
+    return {
+      content: [
+        `Job: ${row.jobname ?? row.jobid}`,
+        `Schedule: ${row.schedule}`,
+        `State: ${row.active ? "active" : "inactive"}`,
+        `Command: ${row.command}`,
+      ].join("\n"),
+    };
+  };
+
+  const dbJobMenuItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "db-job-toggle-active",
+      label: clickedDbJob?.active ? "Disable" : "Enable",
+      icon: Power,
+      disabled: !clickedDbJob || dbBusy.has(clickedDbJob.jobid),
+      onSelect: () => clickedDbJob && void toggleDbActive(clickedDbJob),
+    },
+    {
+      kind: "item",
+      id: "db-job-edit",
+      label: "Edit…",
+      icon: Pencil,
+      disabled: !clickedDbJob || dbBusy.has(clickedDbJob.jobid),
+      onSelect: () => clickedDbJob && setEditingDbJob(clickedDbJob),
+    },
+  ];
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
       <div
         className="min-h-0 flex-1 basis-3/5"
         data-surface-value="system_job_count"
       >
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveJobContext}
+          extraSections={[{ id: "system-job-row", label: "Job", items: jobMenuItems }]}
+        >
         <MatrxDataTable
           urlState={{ id: "scheduling-system-jobs" }}
           data={rows}
@@ -700,6 +801,7 @@ export default function SystemJobsPage() {
             rowAttributes: (r) => ({ id: r.id, enabled: r.enabled }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       <div
@@ -714,6 +816,12 @@ export default function SystemJobsPage() {
             destructive purges, and pg_cron has no run-once).
           </p>
         </div>
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveDbJobContext}
+          extraSections={[{ id: "db-job-row", label: "Job", items: dbJobMenuItems }]}
+        >
         <MatrxDataTable
           urlState={{ id: "scheduling-db-jobs" }}
           data={dbRows}
@@ -766,6 +874,7 @@ export default function SystemJobsPage() {
             rowAttributes: (r) => ({ jobid: r.jobid, active: r.active }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       {editing && (
