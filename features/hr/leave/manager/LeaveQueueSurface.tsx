@@ -631,6 +631,7 @@ export function LeaveQueueSurface() {
               </div>
             )}
           />
+          </NonEditableContextMenu>
 
           {/* The other scopes' rows: waiting on somebody, not on me. Read-only, no actions. */}
           {queue.others.length > 0 ? (
@@ -638,6 +639,34 @@ export function LeaveQueueSurface() {
               <h2 className="text-sm font-semibold text-foreground">
                 Waiting on somebody else
               </h2>
+              <NonEditableContextMenu
+                sourceFeature="internal"
+                contentSource={{ type: "raw" }}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={(target) => {
+                  const id = (target as HTMLElement | null)
+                    ?.closest("[data-row-id]")
+                    ?.getAttribute("data-row-id");
+                  const row =
+                    (id && queue.others.find((r) => r.step_id === id)) || null;
+                  setOthersContextRow(row);
+                  if (!row) return null;
+                  return {
+                    [CONTEXT_MENU_ENTITY_KEY]: hrTaskStepEntityRef(menuRowFor(row)),
+                    content: [
+                      row.subject_withheld ? "Withheld" : (row.subject_label ?? row.title ?? ""),
+                      spanLabel(row),
+                    ]
+                      .filter(Boolean)
+                      .join("\n"),
+                  };
+                }}
+                extraSections={
+                  othersContextRow
+                    ? [hrTaskStepMenuSection(menuRowFor(othersContextRow))]
+                    : []
+                }
+              >
               <MatrxDataTable<LeaveQueueRow>
                 data={queue.others}
                 columns={columns}
@@ -645,6 +674,7 @@ export function LeaveQueueSurface() {
                 pageSize={10}
                 emptyState={{ title: "Nothing else open in this scope" }}
               />
+              </NonEditableContextMenu>
             </section>
           ) : null}
 

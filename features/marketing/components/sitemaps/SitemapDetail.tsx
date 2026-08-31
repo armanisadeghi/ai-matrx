@@ -268,6 +268,45 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
         </a>
       </header>
 
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const rowId = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = rowId
+            ? ((pages.data?.rows ?? []).find((r) => r.id === rowId) ?? null)
+            : null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+              pageId: row.page_id,
+              url: row.page.url,
+            }),
+            content: humanLines([
+              ["URL", row.page.url],
+              ["State", row.page.status],
+              [
+                "Captured",
+                row.page.latest_snapshot_id ? "crawled" : "never crawled",
+              ],
+              ["Sitemap memberships", row.membership_count],
+            ]),
+          };
+        }}
+        extraSections={[
+          pageMenuSection({
+            siteId: site.id,
+            siteName: site.name,
+            url: clickedRow?.page.url ?? "",
+            pageId: clickedRow?.page_id ?? null,
+            openDrilldown,
+          }),
+        ]}
+      >
       <div className="min-h-0 flex-1">
         <MatrxDataTable<SitemapPageRow>
           data={pages.data?.rows ?? []}
