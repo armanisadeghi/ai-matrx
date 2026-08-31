@@ -114,8 +114,9 @@ with `#bind`.
 6. **Nothing dead, nothing silent.** Every empty, loading, unreadable and refused state is a
    sentence with a remedy. Save is disabled only with its reason printed beside it.
 7. **A selection closes before its confirmation opens.** `afterCurrentLayerCloses` waits for
-   the rung picker's actual body lock to release before the dirty-draft AlertDialog opens, so
-   their Radix body locks never overlap. A fixed paint delay is not treated as proof of close.
+   the rung picker's body lock to remain released for two consecutive paints before the
+   dirty-draft AlertDialog opens, so a late closing-layer cleanup cannot retake ownership.
+   Neither a fixed delay nor the first unlocked paint is treated as proof of close.
 
 ## The four sources, all four real
 

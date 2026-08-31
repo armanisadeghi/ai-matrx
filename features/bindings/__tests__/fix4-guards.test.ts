@@ -220,8 +220,15 @@ describe("V1 R2-1 producer — a selection closes before its confirm opens", () 
     expect(continued).toBe(false);
     expect(scheduled).toHaveLength(1);
 
+    // The first unlocked paint is not yet a safe ownership boundary: the
+    // closing layer can still commit one final body-style write afterward.
     layerClosed = true;
     scheduled.shift()?.(32);
+    await Promise.resolve();
+    expect(continued).toBe(false);
+    expect(scheduled).toHaveLength(1);
+
+    scheduled.shift()?.(48);
     await handoff;
     expect(continued).toBe(true);
   });

@@ -5,8 +5,10 @@
  * and can leave document.body pointer-blocked after both layers close.
  *
  * A fixed one-frame delay is not a close boundary: under production scheduling
- * the Select may retain its body lock across more than one paint. Wait for the
- * lock itself to be released, which is the condition the next modal needs.
+ * the Select may retain its body lock across more than one paint. Nor is the
+ * first unlocked frame sufficient: react-remove-scroll can briefly release the
+ * body before the closing layer's cleanup commits its final style write. Require
+ * two consecutive closed paints before handing ownership to the next modal.
  */
 export function afterCurrentLayerCloses(
   schedule: (callback: FrameRequestCallback) => number = requestAnimationFrame,
@@ -15,10 +17,16 @@ export function afterCurrentLayerCloses(
     document.body.style.pointerEvents !== "none",
 ): Promise<void> {
   return new Promise((resolve) => {
+    let consecutiveClosedPaints = 0;
     const check = () => {
       if (isLayerClosed()) {
-        resolve();
-        return;
+        consecutiveClosedPaints += 1;
+        if (consecutiveClosedPaints >= 2) {
+          resolve();
+          return;
+        }
+      } else {
+        consecutiveClosedPaints = 0;
       }
       schedule(check);
     };
