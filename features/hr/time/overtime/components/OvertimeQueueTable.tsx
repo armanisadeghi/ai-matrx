@@ -14,11 +14,15 @@
  * all arrive computed and snapshot-backed; this file formats them and nothing else.
  */
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldAlert } from "lucide-react";
+import { ArrowRight, ShieldAlert } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { formatHours, formatLocalDate } from "../../shared/format";
 import type { OvertimeRequestRow } from "../api/overtimeReads";
 import {
@@ -58,6 +62,7 @@ export interface OvertimeQueueTableProps {
 
 export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTableProps) {
   const router = useRouter();
+  const [clickedRow, setClickedRow] = useState<OvertimeRequestRow | null>(null);
 
   const columns: MatrxColumnDef<OvertimeRequestRow>[] = [
     {
@@ -160,20 +165,59 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTa
   ];
 
   return (
-    <MatrxDataTable<OvertimeRequestRow>
-      data={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      isLoading={isLoading}
-      zebra
-      searchText={(row) => `${row.employeeDisplayName} ${row.state} ${row.reasonNote ?? ""}`}
-      toolbar={{ search: true, searchPlaceholder: "Search overtime requests…" }}
-      onRowOpen={(row) => router.push(hrefFor(row))}
-      emptyState={{
-        title: "No overtime requests",
-        description:
-          "Requests appear here when someone asks to work overtime in advance, when a manager plans coverage, or when overtime is worked without a request — those last are paid and flagged so a manager can look at them.",
+    <NonEditableContextMenu
+      sourceFeature="admin"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(element) => {
+        const id = element
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+        setClickedRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: {
+            type: "hr_overtime_preapproval",
+            id: row.id,
+            title: row.employeeDisplayName,
+          },
+          content: `${row.employeeDisplayName}: ${OT_STATE_LABEL[displayState(row)]}, requested ${formatHours(row.requestedHours)}`,
+        };
       }}
-    />
+      extraSections={[
+        {
+          id: "overtime-request-actions",
+          label: clickedRow?.employeeDisplayName || "This request",
+          anchor: "after-compare",
+          items: [
+            {
+              kind: "link",
+              id: "overtime-open-request",
+              label: "Open request",
+              icon: ArrowRight,
+              href: clickedRow ? hrefFor(clickedRow) : "#",
+              disabled: !clickedRow,
+            },
+          ] satisfies ContextMenuExtraItem[],
+        },
+      ]}
+    >
+      <MatrxDataTable<OvertimeRequestRow>
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        zebra
+        searchText={(row) => `${row.employeeDisplayName} ${row.state} ${row.reasonNote ?? ""}`}
+        toolbar={{ search: true, searchPlaceholder: "Search overtime requests…" }}
+        onRowOpen={(row) => router.push(hrefFor(row))}
+        emptyState={{
+          title: "No overtime requests",
+          description:
+            "Requests appear here when someone asks to work overtime in advance, when a manager plans coverage, or when overtime is worked without a request — those last are paid and flagged so a manager can look at them.",
+        }}
+      />
+    </NonEditableContextMenu>
   );
 }
