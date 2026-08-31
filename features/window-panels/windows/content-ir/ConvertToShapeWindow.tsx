@@ -27,6 +27,7 @@ import {
 import { loadShapeReadiness } from "@/features/content-ir/studio/shape-readiness-service";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface ConvertToShapeWindowProps {
   isOpen: boolean;
@@ -166,6 +167,16 @@ function ConvertToShapeWindowContent({
         </div>
       }
     >
+      {/*
+       * Preview-only surface for a Shape that doesn't exist yet (the creator
+       * mints it on Continue), so there is no entity to attach — raw content
+       * is the JSON sample itself. Copy/Export/AI still resolve from it.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="internal"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: initialJsonContent }}
+      >
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         <ShapeReadinessSummary
           readiness={readiness}
@@ -231,6 +242,7 @@ function ConvertToShapeWindowContent({
           />
         </section>
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
