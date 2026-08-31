@@ -219,6 +219,32 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-08-31 — **The V-panel fix wave (v0.4.1565).** Ten findings from three adversaries, at
+  their class. **The system rung is guarded**: `GlobalBindAgentGuard` is interposed between
+  `save()` and the write exactly as `SurfaceAgentBindPanel` does it — a personal agent set as
+  THE ANSWER EVERYBODY GETS now gets the lineage audit, the system-twin offer and the visibility
+  warning, and "Use system version" moves the DRAFT as well as the write so the screen never
+  describes a binding that does not exist. **The rail stopped guessing a kind**: `feedSentence`
+  (`words.ts`) reads the SOURCES, so a stored literal, a question and an unmade pick each get
+  their own true sentence — the column takes `fedBy`, never a count. **Moving the rung is
+  announced** — a confirm when the draft is dirty, plus a standing sentence in the rung cell for
+  as long as there is work to lose. **The AI map can propose write access**: the OPTIONS drawer
+  is the single reader of the treatment row and reports the job's surface upward, so the tab gets
+  real `writeTargets` and accepted policies land in the drawer's own `WritePolicyEditor`.
+  **Both inventories fit again**: one shared `RAIL_MAX_HEIGHT` + a worded count turned the
+  27-value `podcast.solo_script` workspace from 4,502px into 724px with the rail scrolling
+  internally, and the scope bar (`1fr / 1.7fr / 1fr`, ladder sentence moved into the rung cell)
+  took RUNG's waste from 62% to 7% and JOB's from 73% to 31% while the holder gained 279px and
+  its full name. **Nothing is dropped in silence**: `parseConsumptionMapWithDrops` carries every
+  discarded source to `parseBindingWave1().droppedSources`, printed as a counted notice that says
+  a save REPLACES the stored map. **Two reads stopped lying**: `if (!organizationId) return` left
+  them "Reading…" forever, and both now settle on `selectOrgBootstrapResolved` with the reason and
+  the remedy. **And the gate that stated a problem and acted anyway is closed**: `applyRefusal`
+  had no branch for "required, unfed, holder has no default", so batch wrote a place it was
+  complaining about — refused now in BOTH modes (P17), with a test pinning the general rule that
+  any stated problem refuses Apply, and `placeHealth` no longer judges a place whose offer it has
+  not read.
+
 - 2026-08-31 — **V2 G1 + G5 — the drawer stopped speaking the old system, and the
   AI map stopped speaking snake_case.** `SettingsSection` and `AdvancedSection`
   each gained a `words` prop with the SHORTCUT copy as its default (the pattern
