@@ -7,7 +7,7 @@
  * while WindowPanel's secondary panel owns metadata and actions.
  */
 
-import { useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import {
   Check,
   Copy,
@@ -32,6 +32,8 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ImageViewer } from "@/features/window-panels/windows/image/ImageViewerWindow";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { mediaAssetMenuSection } from "@/features/marketing/components/media/media-asset-actions";
 import { fileHandler } from "@/features/files/handler/handler";
 import {
   LoadingSurface,
@@ -77,6 +79,19 @@ function srcTail(src: string): string {
   const withoutQuery = src.split(/[?#]/)[0] ?? src;
   const segments = withoutQuery.split("/").filter(Boolean);
   return segments.at(-1) ?? "Media asset";
+}
+
+/**
+ * The inspector owns copy/import/library-add/replace as local mutations
+ * (`useCreateBrandAsset`, `fileHandler.upload`); the window-level context
+ * menu needs to call the SAME functions, not a second write path, so the
+ * inspector reports its latest closures here every render.
+ */
+interface AssetInspectorActions {
+  copySrc: () => void;
+  orderReplacement: () => void;
+  importAndEdit: () => void;
+  addToLibrary: (kind: BrandAssetKind) => void;
 }
 
 function MetaRow({ label, value }: { label: string; value: string | null }) {
@@ -157,6 +172,7 @@ function MarketingMediaAssetWindowContent({
   const site = useSite(siteId);
   const media = useSiteMedia(siteId);
   const isMobile = useIsMobile();
+  const actionsRef = useRef<AssetInspectorActions | null>(null);
 
   const asset = (() => {
     if (!media.data) return null;
@@ -185,6 +201,15 @@ function MarketingMediaAssetWindowContent({
   const error = site.error ?? media.error;
   const siteRow = site.data ?? null;
   const standards = siteRow ? parseSiteMediaStandards(siteRow.settings) : null;
+  const menuSection = mediaAssetMenuSection(
+    asset ? { src: asset.src, alt: asset.alt } : null,
+    {
+      onCopyUrl: () => actionsRef.current?.copySrc(),
+      onOrderReplacement: () => actionsRef.current?.orderReplacement(),
+      onImportAndEdit: () => actionsRef.current?.importAndEdit(),
+      onAddToLibrary: (_row, kind) => actionsRef.current?.addToLibrary(kind),
+    },
+  );
   const inspector =
     asset && siteRow && standards ? (
       <AssetInspector
@@ -196,8 +221,19 @@ function MarketingMediaAssetWindowContent({
         instanceId={instanceId}
         callbackGroupId={callbackGroupId}
         onClose={handleClose}
+        actionsRef={actionsRef}
       />
     ) : null;
+  const inspectorWithMenu = inspector ? (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: asset?.src ?? "" }}
+      extraSections={[menuSection]}
+    >
+      {inspector}
+    </NonEditableContextMenu>
+  ) : null;
 
   return (
     <WindowPanel
@@ -210,7 +246,7 @@ function MarketingMediaAssetWindowContent({
       minHeight={420}
       position="center"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      secondaryPanel={!isMobile ? inspector : undefined}
+      secondaryPanel={!isMobile ? inspectorWithMenu : undefined}
       secondaryPanelDefaultSize={390}
       secondaryPanelMinSize={320}
       onClose={handleClose}
@@ -254,16 +290,23 @@ function MarketingMediaAssetWindowContent({
           }
           isEditable={false}
         >
-          {isMobile ? (
-            <div className="h-full overflow-y-auto">
-              <div className="h-[55dvh] min-h-72 border-b border-border">
-                <ImageViewer images={[asset.src]} alts={[asset.alt ?? title]} />
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: asset.src }}
+            extraSections={[menuSection]}
+          >
+            {isMobile ? (
+              <div className="h-full overflow-y-auto">
+                <div className="h-[55dvh] min-h-72 border-b border-border">
+                  <ImageViewer images={[asset.src]} alts={[asset.alt ?? title]} />
+                </div>
+                {inspector}
               </div>
-              {inspector}
-            </div>
-          ) : (
-            <ImageViewer images={[asset.src]} alts={[asset.alt ?? title]} />
-          )}
+            ) : (
+              <ImageViewer images={[asset.src]} alts={[asset.alt ?? title]} />
+            )}
+          </NonEditableContextMenu>
         </SurfaceRuntimeProvider>
       )}
     </WindowPanel>
@@ -296,6 +339,7 @@ function AssetInspector({
   instanceId,
   callbackGroupId,
   onClose,
+  actionsRef,
 }: {
   asset: SnapshotMediaAsset;
   siteId: string;
@@ -305,6 +349,8 @@ function AssetInspector({
   instanceId: string;
   callbackGroupId?: string | null;
   onClose: () => void;
+  /** The window's context menu calls these SAME functions — see the type doc above. */
+  actionsRef?: RefObject<AssetInspectorActions | null>;
 }) {
   const createAsset = useCreateBrandAsset();
   const [libraryKind, setLibraryKind] = useState<BrandAssetKind>("image");
@@ -362,7 +408,7 @@ function AssetInspector({
     }
   };
 
-  const addToLibrary = async () => {
+  const addToLibrary = async (kind: BrandAssetKind = libraryKind) => {
     if (!brandId) {
       toast.error("This site is not connected to a brand.");
       return;
@@ -371,7 +417,7 @@ function AssetInspector({
       await createAsset.mutateAsync({
         organizationId,
         brandId,
-        kind: libraryKind,
+        kind,
         sourceUrl: asset.src,
         title: asset.alt || null,
         notes: `Promoted from the crawled media inventory (${asset.pages.length} page${asset.pages.length === 1 ? "" : "s"}).`,
@@ -394,6 +440,15 @@ function AssetInspector({
     });
     onClose();
   };
+
+  if (actionsRef) {
+    actionsRef.current = {
+      copySrc: () => void copySrc(),
+      orderReplacement,
+      importAndEdit: () => void importAndEdit(),
+      addToLibrary: (kind) => void addToLibrary(kind),
+    };
+  }
 
   return (
     <div className="h-full overflow-y-auto p-3">
