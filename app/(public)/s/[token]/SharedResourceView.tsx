@@ -24,6 +24,7 @@ import {
 } from "@/features/sharing/lenses/registry";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
+import { CanvasUnavailableBoundary } from "@/features/canvas/core/CanvasUnavailableBoundary";
 
 export function SharedResourceView({
   result,
@@ -42,13 +43,15 @@ export function SharedResourceView({
 
   if (immersive) {
     return (
-      <div
-        ref={contentRef}
-        data-public-immersive-surface
-        className="h-full min-h-0 bg-textured"
-      >
-        {lens({ result, token })}
-      </div>
+      <CanvasUnavailableBoundary>
+        <div
+          ref={contentRef}
+          data-public-immersive-surface
+          className="h-full min-h-0 bg-textured"
+        >
+          {lens({ result, token })}
+        </div>
+      </CanvasUnavailableBoundary>
     );
   }
 

@@ -250,7 +250,12 @@ export function MandateWorkspace({
         <TriadFlowMark />
         <TriadOutputSection data={data} />
 
-        <FulfillmentSection data={data} resolution={resolution} onChanged={refresh} />
+        <FulfillmentSection
+          data={data}
+          resolution={resolution}
+          onChanged={refresh}
+          authoring={authoring}
+        />
 
         {/* Run it — mandate management, so it lives where management lives:
             the admin route. Still super-admin gated inside (the server endpoint
@@ -301,10 +306,12 @@ function FulfillmentSection({
   data,
   resolution,
   onChanged,
+  authoring = false,
 }: {
   data: MandateWorkspaceData;
   resolution: ReturnType<typeof resolveForPrincipal>;
   onChanged: () => void;
+  authoring?: boolean;
 }) {
   const { copying, copyAndOpen } = useCopyMandateAgent();
   const { agent, agentId, layer, useLatest, pinned, drift } = resolution;
@@ -325,10 +332,31 @@ function FulfillmentSection({
               className="text-[13.5px] font-medium"
             />
           ) : holderless ? (
-            <span className="text-[13px] text-muted-foreground">
-              No Holder bound yet — this job is waiting for its intelligence.
-              Bind one below.
-            </span>
+            authoring ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[13px] text-muted-foreground">
+                  No Holder bound yet — this job is waiting for its
+                  intelligence.
+                </span>
+                {/* THE action for a new mandate — never buried in a fold. */}
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent("matrx:open-mandate-pin"),
+                    )
+                  }
+                >
+                  Bind an agent to this job
+                </Button>
+              </div>
+            ) : (
+              <span className="text-[13px] text-muted-foreground">
+                No Holder bound yet — this job is waiting for its intelligence.
+                You can set a personal one in the override section below.
+              </span>
+            )
           ) : (
             <span className="text-[13px] text-destructive">
               The effective agent could not be read — it may be deleted or not

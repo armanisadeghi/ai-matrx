@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { CanvasUnavailableBoundary } from "@/features/canvas/core/CanvasUnavailableBoundary";
 
 const SharedCanvasView = dynamic(
   () =>
@@ -12,8 +13,10 @@ const SharedCanvasView = dynamic(
 
 export function SharedCanvasViewClient({ shareToken }: { shareToken: string }) {
   return (
-    <div data-public-immersive-surface className="h-full min-h-0">
-      <SharedCanvasView shareToken={shareToken} className="h-full min-h-0" />
-    </div>
+    <CanvasUnavailableBoundary>
+      <div data-public-immersive-surface className="h-full min-h-0">
+        <SharedCanvasView shareToken={shareToken} className="h-full min-h-0" />
+      </div>
+    </CanvasUnavailableBoundary>
   );
 }

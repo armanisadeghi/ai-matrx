@@ -1664,12 +1664,14 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
  * test / overrides as collapsible sections. Used by both the side panel and
  * the WindowPanel Edit tab. */
 export function MandateDetailView({
+  forcePinSignal = 0,
   row,
   data,
   lineage,
   builtinAgentsById,
   onSaved,
 }: {
+  forcePinSignal?: number;
   row: MandateRow;
   data: MandateConsoleData;
   lineage: AgentLineage;
@@ -1697,6 +1699,9 @@ export function MandateDetailView({
   // Bumped by the drift panel's "Test old vs new first" — the bench scrolls
   // itself into view and arms the pinned-vs-latest comparison.
   const [benchFocus, setBenchFocus] = useState(0);
+  useEffect(() => {
+    if (forcePinSignal > 0) setPinOpen(true);
+  }, [forcePinSignal]);
   const benchRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

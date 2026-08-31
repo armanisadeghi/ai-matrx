@@ -79,12 +79,16 @@ the rules an agent editing THIS directory must obey.
   `/s/[token]` lens suppress the generic public header/footer through
   `data-public-immersive-surface`, render the same identity/action header, and keep
   renderer-specific choices in floating controls — never stack route, artifact, and workbench
-  bars above the content.
+  bars above the content. These immersive viewers also mark the global side canvas unavailable,
+  so nested renderers never advertise a second Canvas action that cannot have a persisted source.
 
 **Keep-docs-live:** a change to the wire format, the identity keys, the type registry, or the write
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-08-30` — Immersive shared-canvas viewers now suppress the global side-canvas availability
+  signal on both `/canvas/shared/[token]` and `/s/[token]`, removing nested dead-end Canvas actions.
 
 - `2026-08-27` — Fresh mobile certification raised canonical block icon actions to the 44px touch
   floor with tooltip-derived accessible names, repaired progress/troubleshooting action reflow, and

@@ -18,7 +18,7 @@
 // the workspace, rendered by the SAME `MandateDetailView` the drawer used.
 // It is no longer the first thing an admin sees, and it is no longer a drawer.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown, Loader2, Wrench } from "lucide-react";
 
@@ -79,6 +79,22 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
 
   const [open, setOpen] = useState(false);
+  // "Bind an agent to this job" (the holderless workspace button) opens this
+  // panel AND the pin section — the one action a new mandate needs is never
+  // two folds deep.
+  const [pinSignal, setPinSignal] = useState(0);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const onOpenPin = () => {
+      setOpen(true);
+      setPinSignal((n) => n + 1);
+      requestAnimationFrame(() =>
+        panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    };
+    window.addEventListener("matrx:open-mandate-pin", onOpenPin);
+    return () => window.removeEventListener("matrx:open-mandate-pin", onOpenPin);
+  }, []);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<
     Record<string, MandateCodeTruth>
@@ -155,7 +171,7 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
   if (!isSuperAdmin) return null;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
+    <div ref={panelRef} className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
       <div className="rounded-xl border border-border/60 bg-card">
         <button
           type="button"
@@ -204,6 +220,7 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                 }
                 builtinAgentsById={builtinAgentsById}
                 onSaved={load}
+                forcePinSignal={pinSignal}
               />
             )}
           </div>
