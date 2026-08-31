@@ -263,8 +263,8 @@ export function TriadInputSection({
         ) : null}
 
         {/* 🚨 ONE SENTENCE, ONE AUTHORITY — see MandateUserTextLine. This was
-            a hardcoded "accepted (platform default)" while the admin panel
-            said the opposite about the same mandate. */}
+            a hardcoded claim that free text was always accepted, while the
+            admin panel said the opposite about the same mandate. */}
         <MandateUserTextLine
           mandateKey={data.mandate.mandate_key}
           className="border-t border-border/40 pt-2 text-[11.5px] text-muted-foreground/80"
