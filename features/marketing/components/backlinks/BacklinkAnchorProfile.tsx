@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { ShieldCheck, TriangleAlert } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -50,6 +51,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
   const { site } = useMarketingSite();
   const query = useBacklinkAnchorsFull(siteId);
   const [drillClass, setDrillClass] = useState<AnchorClassKey | null>(null);
+  const [clickedPhrase, setClickedPhrase] = useState<string | null>(null);
 
   if (query.isError) {
     return (
@@ -204,7 +206,49 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
     },
   ];
 
+  // No app record backs a row here — these are client-computed aggregates
+  // over the anchor wording (a bucket label or a phrase), not a DB entity.
+  // context-menu-exempt: entity — anchor wording is a client-computed aggregate, not an app record
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const rowId = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        setClickedPhrase(rowId ?? null);
+        if (!rowId) return null;
+        return {
+          content: `Link wording: ${rowId}`,
+        };
+      }}
+      extraSections={[
+        {
+          id: "anchor-profile-actions",
+          label: "Link wording",
+          items: [
+            {
+              kind: "item",
+              id: "anchor-drill",
+              label: "Show most-used wording for this class",
+              disabled:
+                !clickedPhrase ||
+                !ANCHOR_CLASSES.some((c) => c.key === clickedPhrase),
+              onSelect: () => {
+                if (
+                  clickedPhrase &&
+                  ANCHOR_CLASSES.some((c) => c.key === clickedPhrase)
+                ) {
+                  setDrillClass(clickedPhrase as AnchorClassKey);
+                }
+              },
+            },
+          ],
+        },
+      ]}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto pb-2">
       {profile.warnings.length > 0 ? (
         <div className="flex flex-col gap-1.5">

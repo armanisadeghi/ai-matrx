@@ -57,6 +57,13 @@ import {
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  hrPersonEntityRef,
+  hrPersonMenuSection,
+  leaveBalanceRowTarget,
+} from "@/features/hr/people/hr-person-menu";
 
 import {
   LeaveAfterPendingCell,
@@ -116,6 +123,7 @@ export function LeaveBalancesSurface() {
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
   const [adjusting, setAdjusting] = useState<LeaveBalanceRow | null>(null);
+  const [contextRow, setContextRow] = useState<LeaveBalanceRow | null>(null);
 
   const load = useCallback(
     async (signal: AbortSignal) => {
@@ -430,6 +438,51 @@ export function LeaveBalancesSurface() {
             </p>
           ) : null}
 
+          <NonEditableContextMenu
+            sourceFeature="internal"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = (target as HTMLElement | null)
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row =
+                (id &&
+                  rows.find(
+                    (r) =>
+                      `${r.employmentId ?? "unknown"}-${r.policyId ?? "unknown"}` ===
+                      id,
+                  )) ||
+                null;
+              setContextRow(row);
+              if (!row) return null;
+              const menuTarget = leaveBalanceRowTarget(row, orgRef);
+              return {
+                [CONTEXT_MENU_ENTITY_KEY]: hrPersonEntityRef(menuTarget),
+                content: [
+                  menuTarget.name,
+                  row.policyName ?? "",
+                  row.sentence ?? "",
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+              };
+            }}
+            extraSections={
+              contextRow
+                ? [
+                    hrPersonMenuSection(
+                      leaveBalanceRowTarget(contextRow, orgRef),
+                      {
+                        onAdjustBalance: list?.canAdjust
+                          ? () => setAdjusting(contextRow)
+                          : undefined,
+                      },
+                    ),
+                  ]
+                : []
+            }
+          >
           <MatrxDataTable<LeaveBalanceRow>
             data={rows}
             columns={columns}
@@ -475,6 +528,7 @@ export function LeaveBalancesSurface() {
               ) : null
             }
           />
+          </NonEditableContextMenu>
         </div>
       </HrPageState>
 

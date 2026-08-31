@@ -22,6 +22,16 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { CellEditsMap, MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import { useCompetitorMenu } from "./competitor-actions";
+import {
+  collectionRunContent,
+  collectionRunEntityRef,
+} from "@/features/marketing/seo/run-console/collection-run-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -342,6 +352,12 @@ export default function CompetitorAutopsyWorkspace({
     autopsyScope === "local" &&
     (!autopsyLocalKeyword.trim() || !autopsyLocalArea.trim());
 
+  // Right-clicked rows for the Opportunities / History tables — STATE (not a
+  // ref) so the menu's items read the row that was actually clicked.
+  const [clickedOpportunity, setClickedOpportunity] =
+    useState<CompetitorOpportunityRow | null>(null);
+  const [clickedRun, setClickedRun] = useState<CompetitorRunRow | null>(null);
+
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;
     void supabase.auth.getUser().then(({ data: auth }) => {
@@ -529,6 +545,91 @@ export default function CompetitorAutopsyWorkspace({
         error instanceof Error ? error.message : "Could not update action",
       );
     }
+  };
+
+  // -- right-click menus ------------------------------------------------------
+
+  const competitorMenu = useCompetitorMenu({
+    rows: () => data?.competitors ?? [],
+    onMutateTracking: (id, status) => void mutateTracking(id, status),
+  });
+
+  const resolveOpportunityContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row =
+      (id && (data?.opportunities ?? []).find((r) => r.id === id)) || null;
+    setClickedOpportunity(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "seo_competitor_opportunity" as const,
+        id: row.id,
+        title: row.title,
+      },
+      content: [row.title, row.recommended_action, `status=${row.status}`]
+        .filter(Boolean)
+        .join("\n"),
+    };
+  };
+
+  const opportunityMenuSection: ContextMenuExtraSection = {
+    id: "competitor-opportunity-row",
+    label: clickedOpportunity ? clickedOpportunity.title : "This opportunity",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "item",
+        id: "opportunity-accept",
+        label: "Accept",
+        disabled: !clickedOpportunity || clickedOpportunity.status !== "open",
+        onSelect: () =>
+          clickedOpportunity &&
+          void mutateOpportunity(clickedOpportunity.id, "accepted"),
+      },
+      {
+        kind: "item",
+        id: "opportunity-start",
+        label: "Start",
+        disabled:
+          !clickedOpportunity || clickedOpportunity.status !== "accepted",
+        onSelect: () =>
+          clickedOpportunity &&
+          void mutateOpportunity(clickedOpportunity.id, "in_progress"),
+      },
+      {
+        kind: "item",
+        id: "opportunity-complete",
+        label: "Complete",
+        disabled:
+          !clickedOpportunity || clickedOpportunity.status !== "in_progress",
+        onSelect: () =>
+          clickedOpportunity &&
+          void mutateOpportunity(clickedOpportunity.id, "completed"),
+      },
+      {
+        kind: "item",
+        id: "opportunity-dismiss",
+        label: "Dismiss",
+        disabled:
+          !clickedOpportunity ||
+          clickedOpportunity.status === "completed" ||
+          clickedOpportunity.status === "dismissed",
+        onSelect: () =>
+          clickedOpportunity &&
+          void mutateOpportunity(clickedOpportunity.id, "dismissed"),
+      },
+    ],
+  };
+
+  const resolveRunContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && (data?.runs ?? []).find((r) => r.id === id)) || null;
+    setClickedRun(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: collectionRunEntityRef(row),
+      content: collectionRunContent(row),
+    };
   };
 
   // ── Write half of the marketing-competitors surface ──────────────────────
@@ -1331,6 +1432,12 @@ export default function CompetitorAutopsyWorkspace({
           </TabsContent>
 
           <TabsContent value="opportunities" className="mt-0">
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              resolveContextOnOpen={resolveOpportunityContext}
+              extraSections={[opportunityMenuSection]}
+            >
             <MatrxDataTable
               urlState={{ id: "competitor-opportunities" }}
               data={data?.opportunities ?? []}
@@ -1440,9 +1547,16 @@ export default function CompetitorAutopsyWorkspace({
                   "Run an autopsy to turn competitive evidence into a prioritized action list.",
               }}
             />
+            </NonEditableContextMenu>
           </TabsContent>
 
           <TabsContent value="competitors" className="mt-0">
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              resolveContextOnOpen={competitorMenu.resolveContextOnOpen}
+              extraSections={competitorMenu.sections}
+            >
             <MatrxDataTable
               urlState={{ id: "competitors" }}
               data={data?.competitors ?? []}
@@ -1493,6 +1607,7 @@ export default function CompetitorAutopsyWorkspace({
                   "Automatic discovery measures real keyword overlap before adding a rival.",
               }}
             />
+            </NonEditableContextMenu>
           </TabsContent>
 
           <TabsContent value="evidence" className="mt-0">

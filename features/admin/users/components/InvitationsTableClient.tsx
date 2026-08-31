@@ -223,7 +223,7 @@ export function InvitationsTableClient() {
               anchor: "after-compare",
               items: [
                 {
-                  kind: "action",
+                  kind: "item",
                   id: "invitation-approve",
                   label: "Approve & send code",
                   icon: CheckCircle,
@@ -232,7 +232,7 @@ export function InvitationsTableClient() {
                     clickedRow && void act(clickedRow, "approve"),
                 },
                 {
-                  kind: "action",
+                  kind: "item",
                   id: "invitation-reject",
                   label: "Reject request…",
                   icon: XCircle,

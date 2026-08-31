@@ -15,6 +15,13 @@ import { CrmFoldControl } from "@/features/crm/components/outreach-start/CrmFold
 import { StartOutreachDialog } from "@/features/crm/components/outreach-start/StartOutreachDialog";
 import { isNonProspectDomainVerdict } from "@/features/crm/outreach-start/service";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  referringDomainEntityRef,
+  useReferringDomainMenuSection,
+  type ReferringDomainMenuRow,
+} from "@/features/marketing/components/backlinks/referring-domain-actions";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -275,6 +282,32 @@ export function ReferringDomainIntelligenceTable({
   });
   const profiles = useReferringDomainProfiles(siteId, table.queryState);
   const rows = profiles.data?.rows ?? [];
+  const [clickedRow, setClickedRow] = useState<ReferringDomainProfileRow | null>(
+    null,
+  );
+  const [outreachRow, setOutreachRow] = useState<ReferringDomainProfileRow | null>(
+    null,
+  );
+  const referringDomainSection = useReferringDomainMenuSection({
+    brandId,
+    siteId,
+    getRow: (): ReferringDomainMenuRow | null =>
+      clickedRow
+        ? {
+            domainId: clickedRow.id,
+            domain: clickedRow.normalized_domain,
+            displayDomain: clickedRow.display_domain,
+            verdict:
+              (typeof jsonRecord(clickedRow.human_ruling).verdict === "string"
+                ? (jsonRecord(clickedRow.human_ruling).verdict as string)
+                : null) ?? clickedRow.opinion_verdict,
+          }
+        : null,
+    onStartOutreach: (row) => {
+      const found = rows.find((r) => r.id === row.domainId);
+      if (found) setOutreachRow(found);
+    },
+  });
   const columns: MatrxColumnDef<ReferringDomainProfileRow>[] = [
     {
       id: "display_domain",
@@ -396,6 +429,35 @@ export function ReferringDomainIntelligenceTable({
     );
   }
   return (
+    <>
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const rowId = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+        setClickedRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: referringDomainEntityRef({
+            domainId: row.id,
+            domain: row.normalized_domain,
+            displayDomain: row.display_domain,
+          }),
+          content: humanLines([
+            ["Domain", row.display_domain],
+            ["Kind of site", humanizeAssessmentValue(row.domain_type)],
+            ["Links from this site", row.current_backlinks],
+            ["Our score", row.opinion_score ?? "Not reviewed"],
+            ["Our verdict", humanizeAssessmentValue(row.opinion_verdict)],
+          ]),
+        };
+      }}
+      extraSections={[referringDomainSection]}
+    >
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       {/* ONE RECORD, TWO RENDERS — the same `crm_fold` setting is rendered on
           the site-settings surface too. Here is where its consequence shows. */}
@@ -453,5 +515,30 @@ export function ReferringDomainIntelligenceTable({
       className="min-h-0 flex-1"
       />
     </div>
+    </NonEditableContextMenu>
+    {outreachRow ? (
+      <StartOutreachDialog
+        open={Boolean(outreachRow)}
+        onOpenChange={(open) => {
+          if (!open) setOutreachRow(null);
+        }}
+        target={{
+          siteId: outreachRow.site_id,
+          organizationId: site.organization_id,
+          domain: outreachRow.normalized_domain || outreachRow.display_domain,
+          label: outreachRow.display_domain,
+          sourceUrl: `https://${outreachRow.normalized_domain || outreachRow.display_domain}`,
+          motivation: {
+            kind: "backlink",
+            profileId: outreachRow.id,
+            verdict:
+              (typeof jsonRecord(outreachRow.human_ruling).verdict === "string"
+                ? (jsonRecord(outreachRow.human_ruling).verdict as string)
+                : null) ?? outreachRow.opinion_verdict,
+          },
+        }}
+      />
+    ) : null}
+    </>
   );
 }

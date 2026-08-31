@@ -18,10 +18,12 @@
  * `…/backlinks?view=coverage&mention=<id>`.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ExternalLink, Link2, Trophy } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -167,6 +169,9 @@ export function CoverageTab({ siteId }: { siteId: string }) {
   const searchParams = useSearchParams();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrolledTo = useRef<string | null>(null);
+  const [clickedRow, setClickedRow] = useState<CoverageMentionRow | null>(
+    null,
+  );
 
   const highlightId = searchParams.get(MENTION_PARAM);
   const linkedOnly = searchParams.get(LINKED_PARAM) === "1";
@@ -634,6 +639,44 @@ export function CoverageTab({ siteId }: { siteId: string }) {
         </div>
       </div>
 
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const rowId = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "web_coverage_mention",
+              id: row.id,
+              title: row.domain,
+            },
+            content: humanMentionRow(row),
+          };
+        }}
+        extraSections={[
+          {
+            id: "coverage-mention-actions",
+            label: "Coverage",
+            items: [
+              {
+                kind: "link",
+                id: "coverage-open-article",
+                label: "Open article",
+                icon: ExternalLink,
+                href: clickedRow?.url ?? "#",
+                target: "_blank",
+                disabled: !clickedRow?.url,
+              },
+            ],
+          },
+        ]}
+      >
       <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col">
         {mentions.isError ? (
           <InlineQueryError
@@ -704,6 +747,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           />
         )}
       </div>
+      </NonEditableContextMenu>
     </div>
   );
 }

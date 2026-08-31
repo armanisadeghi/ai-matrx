@@ -39,6 +39,8 @@ import { useMemo, useState } from "react";
 import { ArrowUpRight, Check, Loader2, Pencil } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useCompetitorMenu } from "./competitor-actions";
 import type {
   CellEditsMap,
   MatrxColumnDef,
@@ -498,6 +500,8 @@ export function GroundTruthQueue({
     [labelOptions],
   );
 
+  const competitorMenu = useCompetitorMenu({ rows: () => pending });
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -509,6 +513,12 @@ export function GroundTruthQueue({
         </p>
       </CardHeader>
       <CardContent>
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={competitorMenu.resolveContextOnOpen}
+          extraSections={competitorMenu.sections}
+        >
         <MatrxDataTable
           urlState={{ id: "competitor-ground-truth" }}
           data={pending}
@@ -564,6 +574,7 @@ export function GroundTruthQueue({
               "Find competitors, or add one you already know, and they will queue up here.",
           }}
         />
+        </NonEditableContextMenu>
       </CardContent>
     </Card>
   );

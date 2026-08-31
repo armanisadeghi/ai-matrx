@@ -45,6 +45,13 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddToOutreachListDialog } from "@/features/crm/components/outreach-lists/AddToOutreachListDialog";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  prospectDomainEntityRef,
+  useProspectDomainMenuSection,
+  type ProspectDomainMenuRow,
+} from "@/features/marketing/components/backlinks/prospect-actions";
 import {
   InlineQueryError,
   SectionCard,
@@ -343,6 +350,7 @@ export function BacklinkProspectsTab({
   siteDomain: string;
 }) {
   const [enrolling, setEnrolling] = useState(false);
+  const [clickedRow, setClickedRow] = useState<LinkGapDomainRow | null>(null);
   const { seed, run } = prospects;
   const approvedCount = prospects.statusCounts.approved ?? 0;
   const pendingCount = prospects.statusCounts.pending ?? 0;
@@ -350,6 +358,24 @@ export function BacklinkProspectsTab({
   const selectedPartyIds = prospects.selectedIds.flatMap((id) => {
     const partyId = prospects.partyByDomainId[id];
     return partyId ? [partyId] : [];
+  });
+  const prospectMenuSection = useProspectDomainMenuSection({
+    getRow: (): ProspectDomainMenuRow | null =>
+      clickedRow
+        ? {
+            id: clickedRow.id,
+            normalizedDomain: clickedRow.normalized_domain,
+            displayDomain: clickedRow.display_domain,
+            reviewStatus: clickedRow.review_status,
+            partyId: prospects.partyByDomainId[clickedRow.id] ?? null,
+          }
+        : null,
+    onReview: (ids, status) => void prospects.review(ids, status),
+    reviewing: prospects.reviewing,
+    onAddToOutreach: (row) => {
+      prospects.setSelectedIds([row.id]);
+      setEnrolling(true);
+    },
   });
 
   const columns: MatrxColumnDef<LinkGapDomainRow>[] = [
@@ -608,6 +634,37 @@ export function BacklinkProspectsTab({
         </p>
       ) : null}
 
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const rowId = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = rowId
+            ? (prospects.rows.find((r) => r.id === rowId) ?? null)
+            : null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: prospectDomainEntityRef({
+              id: row.id,
+              normalizedDomain: row.normalized_domain,
+              displayDomain: row.display_domain,
+              reviewStatus: row.review_status,
+              partyId: prospects.partyByDomainId[row.id] ?? null,
+            }),
+            content: humanLines([
+              ["Site", row.display_domain],
+              ["Competitors it links to", row.match_count],
+              ["Matrx Authority Score", row.priority_score ?? UNMEASURED_LABEL],
+              ["Your call", linkGapReviewLabel(row.review_status)],
+            ]),
+          };
+        }}
+        extraSections={[prospectMenuSection]}
+      >
       {prospects.isError ? (
         <InlineQueryError
           what="your prospect list"
@@ -775,6 +832,7 @@ export function BacklinkProspectsTab({
           />
         </div>
       )}
+      </NonEditableContextMenu>
 
       <AddToOutreachListDialog
         open={enrolling}

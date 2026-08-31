@@ -54,6 +54,23 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  crawlUrlEntityRef,
+  crawlUrlMenuSection,
+  type CrawlUrlMenuRow,
+} from "@/features/marketing/components/crawls/crawl-url-actions";
+import {
+  linkEdgeEntityRef,
+  linkEdgeMenuSection,
+  type LinkEdgeMenuRow,
+} from "@/features/marketing/components/inspection/link-edge-actions";
+import {
+  snapshotEntityRef,
+  snapshotMenuSection,
+  type SnapshotMenuRow,
+} from "@/features/marketing/components/pages/snapshot-actions";
 
 const OUTCOME_OPTIONS = [
   "discovered",
@@ -971,6 +988,40 @@ export function CrawlReportWorkspace({
   );
   const showDuplicates =
     reportKey === "content" && contentView === "duplicates";
+  // Only one of the three report tables renders per `reportKey`, so one
+  // clicked-row slot per identity is enough — state, not a ref, so the menu
+  // section rebuilt below reads the row that was actually right-clicked.
+  const [clickedUrlRow, setClickedUrlRow] = useState<CrawlUrl | null>(null);
+  const [clickedLinkRow, setClickedLinkRow] =
+    useState<InspectionLinkRow | null>(null);
+  const [clickedSnapshotRow, setClickedSnapshotRow] =
+    useState<CrawlSnapshotReportRow | null>(null);
+  const toCrawlUrlMenuRow = (row: CrawlUrl): CrawlUrlMenuRow => ({
+    siteId: site.id,
+    brandId,
+    crawlUrlId: row.id,
+    pageId: row.page_id,
+    rawUrl: row.raw_url,
+  });
+  const toLinkEdgeMenuRow = (row: InspectionLinkRow): LinkEdgeMenuRow => ({
+    siteId: site.id,
+    brandId,
+    linkEdgeId: row.id,
+    sourcePageId: row.source_page_id,
+    targetPageId: row.target_page_id,
+    targetUrl: row.target_url,
+    snapshotId: row.snapshot_id ?? null,
+  });
+  const toSnapshotMenuRow = (
+    row: CrawlSnapshotReportRow,
+  ): SnapshotMenuRow => ({
+    siteId: site.id,
+    brandId,
+    pageId: row.pageId,
+    snapshotId: row.id,
+    capturedAt: row.capturedAt,
+    finalUrl: null,
+  });
   const table = useMarketingTableState({
     defaultSort:
       report.source === "crawl-url"
@@ -1218,6 +1269,32 @@ export function CrawlReportWorkspace({
               onRetry={() => void query.refetch()}
             />
           ) : isResponseReport ? (
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id
+                  ? (urls.data?.rows.find((r) => r.id === id) ?? null)
+                  : null;
+                setClickedUrlRow(row);
+                if (!row) return null;
+                return {
+                  content: `${row.raw_url} — ${row.outcome} (${row.classification})`,
+                  [CONTEXT_MENU_ENTITY_KEY]: crawlUrlEntityRef(
+                    toCrawlUrlMenuRow(row),
+                  ),
+                };
+              }}
+              extraSections={[
+                crawlUrlMenuSection(
+                  clickedUrlRow ? toCrawlUrlMenuRow(clickedUrlRow) : null,
+                ),
+              ]}
+            >
             <MatrxDataTable<CrawlUrl>
               data={urls.data?.rows ?? []}
               columns={responseColumns(brandId, site.id)}

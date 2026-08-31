@@ -54,6 +54,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
 import { AddToOutreachListDialog } from "@/features/crm/components/outreach-lists/AddToOutreachListDialog";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  prospectDomainEntityRef,
+  useProspectDomainMenuSection,
+  type ProspectDomainMenuRow,
+} from "@/features/marketing/components/backlinks/prospect-actions";
 import {
   InlineQueryError,
   SectionCard,
@@ -948,11 +955,30 @@ export function SerpProspectsTab({
 }) {
   const [enrolling, setEnrolling] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [clickedRow, setClickedRow] = useState<SerpOpportunityRow | null>(null);
   const approvedCount = prospects.statusCounts.approved ?? 0;
   const pendingCount = prospects.statusCounts.pending ?? 0;
   const selectedPartyIds = prospects.selectedIds.flatMap((id) => {
     const partyId = prospects.partyByOpportunityId[id];
     return partyId ? [partyId] : [];
+  });
+  const prospectMenuSection = useProspectDomainMenuSection({
+    getRow: (): ProspectDomainMenuRow | null =>
+      clickedRow
+        ? {
+            id: clickedRow.id,
+            normalizedDomain: clickedRow.normalized_domain,
+            displayDomain: clickedRow.display_domain,
+            reviewStatus: clickedRow.review_status,
+            partyId: prospects.partyByOpportunityId[clickedRow.id] ?? null,
+          }
+        : null,
+    onReview: (ids, status) => void prospects.review(ids, status),
+    reviewing: prospects.reviewing,
+    onAddToOutreach: (row) => {
+      prospects.setSelectedIds([row.id]);
+      setEnrolling(true);
+    },
   });
 
   const columns: MatrxColumnDef<SerpOpportunityRow>[] = [
@@ -1211,6 +1237,37 @@ export function SerpProspectsTab({
 
       <PromoterBand prospects={prospects} />
 
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const rowId = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = rowId
+            ? (prospects.rows.find((r) => r.id === rowId) ?? null)
+            : null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: prospectDomainEntityRef({
+              id: row.id,
+              normalizedDomain: row.normalized_domain,
+              displayDomain: row.display_domain,
+              reviewStatus: row.review_status,
+              partyId: prospects.partyByOpportunityId[row.id] ?? null,
+            }),
+            content: humanLines([
+              ["Site", row.display_domain],
+              ["Searches it ranks in", row.mention_count],
+              ["Matrx Authority Score", row.priority_score ?? UNMEASURED_LABEL],
+              ["Your call", linkGapReviewLabel(row.review_status)],
+            ]),
+          };
+        }}
+        extraSections={[prospectMenuSection]}
+      >
       {prospects.isError ? (
         <InlineQueryError
           what="your prospect list"
@@ -1366,6 +1423,7 @@ export function SerpProspectsTab({
           />
         </div>
       )}
+      </NonEditableContextMenu>
 
       <AddToOutreachListDialog
         open={enrolling}

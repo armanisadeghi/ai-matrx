@@ -84,6 +84,9 @@ import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
+import { useState } from "react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -118,6 +121,9 @@ export function BacklinkObservationTable({
 }) {
   const { brandId } = useMarketingSite();
   const openFilePreview = useOpenFilePreviewWindow();
+  const [clickedRow, setClickedRow] = useState<BacklinkObservationRow | null>(
+    null,
+  );
   const lensFallback = lens ? LENS_DEFAULT_SORT[lens] : null;
   const table = useMarketingTableState({
     defaultSort: lensFallback
@@ -589,7 +595,55 @@ export function BacklinkObservationTable({
     },
   ];
 
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const rowId = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "web_backlink",
+        id: row.id,
+        title: `Link from ${row.source_domain ?? "another website"}`,
+      },
+      content: humanBacklinkRow(row),
+    };
+  };
+
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={resolveRowContext}
+      extraSections={[
+        {
+          id: "backlink-observation-actions",
+          label: "Backlink",
+          items: [
+            {
+              kind: "link",
+              id: "backlink-open-source",
+              label: "Open linking page",
+              href: clickedRow?.source_url ?? "#",
+              target: "_blank",
+              disabled: !clickedRow?.source_url,
+            },
+            {
+              kind: "item",
+              id: "backlink-analyze",
+              label: "Analyze with AI",
+              disabled: !clickedRow || !onAnalyze || analysisDisabled,
+              onSelect: () => {
+                if (clickedRow && onAnalyze) onAnalyze(clickedRow);
+              },
+            },
+          ],
+        },
+      ]}
+    >
     <div className="flex min-h-0 flex-1 flex-col">
       {backlinks.isError ? (
         <InlineQueryError
@@ -711,5 +765,6 @@ export function BacklinkObservationTable({
         />
       )}
     </div>
+    </NonEditableContextMenu>
   );
 }

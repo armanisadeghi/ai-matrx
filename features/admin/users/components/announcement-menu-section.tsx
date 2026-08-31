@@ -43,7 +43,7 @@ export function announcementMenuSection(
 ): ContextMenuExtraSection {
   const items: ContextMenuExtraItem[] = [
     {
-      kind: "action",
+      kind: "item",
       id: "announcement-toggle-active",
       label: row?.is_active ? "Deactivate" : "Activate",
       icon: Power,
@@ -51,7 +51,7 @@ export function announcementMenuSection(
       onSelect: () => row && handlers.onToggleActive(row),
     },
     {
-      kind: "action",
+      kind: "item",
       id: "announcement-delete",
       label: "Delete announcement…",
       icon: Trash2,

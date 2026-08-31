@@ -9,10 +9,17 @@
  * per-column filter renders because the server honors none for dimensions.
  */
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Globe, Link2, Quote, Users } from "lucide-react";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
+import {
+  referringDomainEntityRef,
+  useReferringDomainMenuSection,
+} from "@/features/marketing/components/backlinks/referring-domain-actions";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
@@ -371,6 +378,32 @@ export function BacklinkDimensionTable({
   const rows = dimension.data?.rows ?? [];
   const total = dimension.data?.total ?? 0;
   const EmptyIcon = EMPTY_ICON[kind];
+  const [clickedRow, setClickedRow] = useState<BacklinkDimensionRow | null>(
+    null,
+  );
+  // THE GROWTH STEP / THE CONSISTENCY STEP — this tab is the "provider" half
+  // of the SAME `/backlinks?view=domains` identity ReferringDomainIntelligenceTable
+  // owns; every non-domain dimension (anchor, target page, competitor) is a
+  // different identity and disables the whole section rather than forking it.
+  const referringDomainSection = useReferringDomainMenuSection({
+    brandId,
+    siteId,
+    getRow: () =>
+      kind === "referring_domain" && clickedRow
+        ? {
+            domain: clickedRow.label ?? clickedRow.dimension_key,
+            displayDomain: clickedRow.label ?? clickedRow.dimension_key,
+          }
+        : null,
+    unavailable:
+      kind === "referring_domain"
+        ? undefined
+        : {
+            "rd-open": unavailableHere("the Referring domains tab"),
+            "rd-our-view": unavailableHere("the Referring domains tab"),
+            "rd-provider-view": unavailableHere("the Referring domains tab"),
+          },
+  });
 
   const columns: MatrxColumnDef<BacklinkDimensionRow>[] = [
     {
@@ -590,6 +623,84 @@ export function BacklinkDimensionTable({
   ];
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const rowId = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+        setClickedRow(row);
+        if (!row) return null;
+        const label = row.label ?? row.dimension_key;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]:
+            kind === "referring_domain"
+              ? referringDomainEntityRef({ domain: label, displayDomain: label })
+              : { type: `web_backlink_${kind}`, id: row.id, title: label },
+          content: humanDimensionRow(row),
+        };
+      }}
+      extraSections={[
+        referringDomainSection,
+        {
+          id: "backlink-dimension-actions",
+          label: config.surface,
+          items: [
+            {
+              kind: "link",
+              id: "dim-see-links",
+              label: "See these links",
+              icon: Link2,
+              href: clickedRow
+                ? domainLinksHref(
+                    brandId,
+                    siteId,
+                    clickedRow.label ?? clickedRow.dimension_key,
+                  )
+                : "#",
+              disabled: !clickedRow,
+            },
+            ...(kind === "target_page"
+              ? [
+                  {
+                    kind: "link" as const,
+                    id: "dim-open-page",
+                    label: "Open this page in AI Matrx",
+                    icon: ExternalLink,
+                    href: clickedRow
+                      ? ourPageHref(
+                          brandId,
+                          siteId,
+                          clickedRow.url ?? clickedRow.dimension_key,
+                        )
+                      : "#",
+                    disabled: !clickedRow,
+                  },
+                ]
+              : []),
+            ...(kind === "competitor_domain"
+              ? [
+                  {
+                    kind: "link" as const,
+                    id: "dim-open-competitor",
+                    label: "Open competitor site",
+                    icon: ExternalLink,
+                    href: clickedRow
+                      ? (clickedRow.url ??
+                        `https://${clickedRow.label ?? clickedRow.dimension_key}`)
+                      : "#",
+                    target: "_blank",
+                    disabled: !clickedRow,
+                  },
+                ]
+              : []),
+          ],
+        },
+      ]}
+    >
     <div className="flex min-h-0 flex-1 flex-col">
       {dimension.isError ? (
         <InlineQueryError
@@ -665,5 +776,6 @@ export function BacklinkDimensionTable({
         />
       )}
     </div>
+    </NonEditableContextMenu>
   );
 }

@@ -19,10 +19,12 @@
  * that row.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Activity, ExternalLink, Link2 } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -228,6 +230,9 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
   const { site, brandId } = useMarketingSite();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [clickedRow, setClickedRow] = useState<BacklinkChangeEventRow | null>(
+    null,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrolledTo = useRef<string | null>(null);
 
@@ -611,6 +616,43 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
         </div>
       </div>
 
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const rowId = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = rowId ? (rows.find((r) => r.id === rowId) ?? null) : null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "web_backlink_change",
+              id: row.id,
+              title: changeVerdict(row).headline,
+            },
+            content: humanChangeRow(row),
+          };
+        }}
+        extraSections={[
+          {
+            id: "backlink-change-actions",
+            label: "Link change",
+            items: [
+              {
+                kind: "link",
+                id: "backlink-change-open-link",
+                label: "Open the link record",
+                icon: Link2,
+                href: clickedRow ? linkRecordHref(clickedRow) : "#",
+                disabled: !clickedRow,
+              },
+            ],
+          },
+        ]}
+      >
       <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col">
         {changes.isError ? (
           <InlineQueryError
@@ -703,6 +745,7 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
           />
         )}
       </div>
+      </NonEditableContextMenu>
     </div>
   );
 }

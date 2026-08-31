@@ -17,9 +17,10 @@
  * No new write path — the only door is the existing profile / ledger route.
  */
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Pencil } from "lucide-react";
 
 import type {
+  ContextMenuEntityRef,
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
@@ -35,6 +36,14 @@ export interface HrPersonMenuTarget {
   href: string | null;
   jobTitle?: string | null;
   department?: string | null;
+}
+
+/** There is no separate "person row" record — this IS the `hr.employee` row. */
+export function hrPersonEntityRef(
+  target: HrPersonMenuTarget | null,
+): ContextMenuEntityRef | null {
+  if (!target) return null;
+  return { type: "hr_employee", id: target.id, title: target.name };
 }
 
 export function hrPersonMenuContent(target: HrPersonMenuTarget | null): string {
@@ -70,7 +79,13 @@ export function leaveBalanceRowTarget(
   };
 }
 
-export function hrPersonMenuSection(target: HrPersonMenuTarget | null): ContextMenuExtraSection {
+export function hrPersonMenuSection(
+  target: HrPersonMenuTarget | null,
+  opts?: {
+    /** LeaveBalancesSurface only — absent (not disabled) when the caller cannot adjust. */
+    onAdjustBalance?: () => void;
+  },
+): ContextMenuExtraSection {
   const items: ContextMenuExtraItem[] = [
     {
       kind: "link",
@@ -86,6 +101,14 @@ export function hrPersonMenuSection(target: HrPersonMenuTarget | null): ContextM
           : undefined,
     },
   ];
+  if (opts?.onAdjustBalance)
+    items.push({
+      kind: "item",
+      id: "hr-person-adjust-balance",
+      label: "Adjust balance…",
+      icon: Pencil,
+      onSelect: opts.onAdjustBalance,
+    });
 
   return { id: "hr-person", label: "This person", anchor: "after-compare", items };
 }
