@@ -32,7 +32,8 @@ const allFeatureSource = () => {
     readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) return visit(path);
-      if (entry.name === "task-lifecycle-responsive-contract.test.ts") return [];
+      if (entry.name === "task-lifecycle-responsive-contract.test.ts")
+        return [];
       return /\.(?:ts|tsx)$/.test(entry.name)
         ? [readFileSync(path, "utf8")]
         : [];
@@ -172,6 +173,12 @@ describe("task lifecycle responsive contract", () => {
 
     expect(feature).not.toContain("taskService.createSubtask(");
     expect(feature).not.toContain("{ createTask, createSubtask }");
+    expect(taskServiceSource("taskService.ts")).not.toContain(
+      "export async function updateSubtaskStatus",
+    );
+    expect(taskServiceSource("taskService.ts")).not.toContain(
+      "export async function deleteSubtask",
+    );
     expect(source("TaskDetailsPanel.tsx")).toContain(
       "createSubtaskThunk({ parentTaskId, title })",
     );

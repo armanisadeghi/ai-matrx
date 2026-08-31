@@ -16,6 +16,7 @@ import {
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { toast } from "@/lib/toast";
 
 export default function TaskDetails({ task }: { task: TaskWithProject }) {
   const dispatch = useAppDispatch();
@@ -44,7 +45,13 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
           taskId: task.id,
           patch: { description: debouncedDescription },
         }),
-      ).finally(() => setIsSaving(false));
+      )
+        .unwrap()
+        .catch((error) => {
+          console.error("Error saving task description:", error);
+          toast.error("Could not save task description");
+        })
+        .finally(() => setIsSaving(false));
     }
   }, [debouncedDescription, task.id, task.description, dispatch]);
 
@@ -56,7 +63,13 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
           taskId: task.id,
           patch: { due_date: debouncedDueDate || null },
         }),
-      ).finally(() => setIsSaving(false));
+      )
+        .unwrap()
+        .catch((error) => {
+          console.error("Error saving task due date:", error);
+          toast.error("Could not save task due date");
+        })
+        .finally(() => setIsSaving(false));
     }
   }, [debouncedDueDate, task.id, task.dueDate, dispatch]);
 

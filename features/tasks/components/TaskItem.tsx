@@ -32,6 +32,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Task, TaskWithProject } from "@/features/tasks/types";
+import { toast } from "@/lib/toast";
 
 export default function TaskItem({
   task,
@@ -51,9 +52,34 @@ export default function TaskItem({
   const isExpanded = expandedTasks.includes(task.id);
 
   const handleSaveTitle = async (newTitle: string) => {
-    await dispatch(
-      updateTaskFieldThunk({ taskId: task.id, patch: { title: newTitle } }),
-    );
+    try {
+      await dispatch(
+        updateTaskFieldThunk({ taskId: task.id, patch: { title: newTitle } }),
+      ).unwrap();
+    } catch (error) {
+      console.error("Error renaming task:", error);
+      toast.error("Could not rename task");
+    }
+  };
+
+  const handleToggleComplete = async () => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId: task.id })).unwrap();
+    } catch (error) {
+      console.error("Error changing task completion:", error);
+      toast.error("Could not update task completion");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await dispatch(
+        deleteTaskThunk({ taskId: task.id, projectId: task.projectId }),
+      ).unwrap();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Could not delete task");
+    }
   };
 
   const handleCopyTask = async (e: React.MouseEvent) => {
@@ -100,7 +126,7 @@ export default function TaskItem({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              dispatch(toggleTaskCompleteThunk({ taskId: task.id }));
+              void handleToggleComplete();
             }}
             className="mt-0.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
           >
@@ -115,8 +141,7 @@ export default function TaskItem({
             {showAllProjects && (
               <div className="text-xs mb-0.5 text-muted-foreground">
                 {/* A relationship we can resolve is rendered AND linked. */}
-                {task.projectId &&
-                task.projectId !== UNASSIGNED_PROJECT_ID ? (
+                {task.projectId && task.projectId !== UNASSIGNED_PROJECT_ID ? (
                   <EntityRef
                     token="project"
                     id={task.projectId}
@@ -134,9 +159,7 @@ export default function TaskItem({
                 title={task.title}
                 completed={task.completed}
                 onSave={handleSaveTitle}
-                onToggleComplete={() =>
-                  dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
-                }
+                onToggleComplete={() => void handleToggleComplete()}
               />
             </div>
 
@@ -225,13 +248,7 @@ export default function TaskItem({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                e.stopPropagation();
-                dispatch(
-                  deleteTaskThunk({
-                    taskId: task.id,
-                    projectId: task.projectId,
-                  }),
-                );
+                void handleDelete();
               }}
               disabled={isOperating}
               className="p-1 text-muted-foreground hover:text-destructive rounded hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -303,9 +320,37 @@ function SubtaskItem({
   };
 
   const handleSaveTitle = async (newTitle: string) => {
-    await dispatch(
-      updateTaskFieldThunk({ taskId: subtask.id, patch: { title: newTitle } }),
-    );
+    try {
+      await dispatch(
+        updateTaskFieldThunk({
+          taskId: subtask.id,
+          patch: { title: newTitle },
+        }),
+      ).unwrap();
+    } catch (error) {
+      console.error("Error renaming subtask:", error);
+      toast.error("Could not rename subtask");
+    }
+  };
+
+  const handleToggleComplete = async () => {
+    try {
+      await dispatch(toggleTaskCompleteThunk({ taskId: subtask.id })).unwrap();
+    } catch (error) {
+      console.error("Error changing subtask completion:", error);
+      toast.error("Could not update subtask completion");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await dispatch(
+        deleteTaskThunk({ taskId: subtask.id, projectId: parentTaskId }),
+      ).unwrap();
+    } catch (error) {
+      console.error("Error deleting subtask:", error);
+      toast.error("Could not delete subtask");
+    }
   };
 
   return (
@@ -326,7 +371,7 @@ function SubtaskItem({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              dispatch(toggleTaskCompleteThunk({ taskId: subtask.id }));
+              void handleToggleComplete();
             }}
             className="mt-0.5 text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
           >
@@ -343,9 +388,7 @@ function SubtaskItem({
                 title={subtask.title}
                 completed={subtask.completed}
                 onSave={handleSaveTitle}
-                onToggleComplete={() =>
-                  dispatch(toggleTaskCompleteThunk({ taskId: subtask.id }))
-                }
+                onToggleComplete={() => void handleToggleComplete()}
               />
             </div>
 
@@ -370,13 +413,7 @@ function SubtaskItem({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                e.stopPropagation();
-                dispatch(
-                  deleteTaskThunk({
-                    taskId: subtask.id,
-                    projectId: parentTaskId,
-                  }),
-                );
+                void handleDelete();
               }}
               disabled={isOperating}
               className="p-1 text-muted-foreground hover:text-destructive rounded hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"

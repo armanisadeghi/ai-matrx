@@ -681,34 +681,6 @@ export async function createSubtask(
 }
 
 /**
- * Update subtask completion status
- */
-export async function updateSubtaskStatus(
-  subtaskId: string,
-  completed: boolean,
-): Promise<boolean> {
-  try {
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update({
-        status: completed ? "completed" : "active",
-        completed_at: completed ? new Date().toISOString() : null,
-      })
-      .eq("id", subtaskId);
-
-    if (error) {
-      console.error("Error updating subtask status:", error.message);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Exception updating subtask status:", error);
-    return false;
-  }
-}
-
-/**
  * Complete a task the smart way — the canonical completion path.
  *
  * Recurring tasks (recurrence_rule set) roll forward instead of closing:
@@ -818,13 +790,6 @@ export async function resolveSystemTask(
     return false;
   }
   return !!(data as { resolved?: boolean } | null)?.resolved;
-}
-
-/**
- * Delete a subtask
- */
-export async function deleteSubtask(subtaskId: string): Promise<boolean> {
-  return deleteTask(subtaskId);
 }
 
 /**
