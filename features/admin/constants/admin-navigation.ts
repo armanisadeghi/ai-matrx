@@ -665,6 +665,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "PanelsTopLeft",
         destinations: [
           destination("/administration/preview/unified-management", [
+            "/administration/preview/one-binding-ui",
             "/administration/preview/unified-management/batch",
             "/administration/preview/unified-management/jobs",
             "/administration/preview/unified-management/places",
