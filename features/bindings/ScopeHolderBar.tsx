@@ -276,7 +276,7 @@ export function rungWords(rung: BindingRung): { noun: string; covers: string } {
       return {
         noun: "your own answer",
         covers:
-          "Only you get this, everywhere you run. It overrides your organization's answer and the system answer.",
+          "This applies everywhere you run. It overrides your organization's answer and the system answer.",
       };
   }
 }

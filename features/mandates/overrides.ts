@@ -318,6 +318,35 @@ function consumptionMapForApi(
   return out;
 }
 
+/**
+ * 🚨 THE BIND GATE'S WORDS REACH THE PERSON (found live 2026-08-31, first real
+ * save through the one binding UI).
+ *
+ * `parseCallApiError` splits a backend error into `detail` (the server's own
+ * sentence) and `userMessage` (a generic safe fallback — for a 422 that is
+ * literally "Invalid request. Please check your input and try again."). Both
+ * mandate write paths threw `userMessage`, so the gate's precise refusal —
+ * *"'page_text': offered value 'task_overview' is OPTIONAL — declare
+ * when_absent ('skip' | 'use_default' | 'fail') so absence is a decision, not a
+ * surprise"* — was thrown away and the author was told nothing they could act
+ * on. That is the exact defect the 2026-08-22 fix in this file was meant to end;
+ * it only ever reached `error.message`, never the split body.
+ *
+ * A `validation_error` detail is authored prose about the caller's own input,
+ * so it IS the copy. Anything else keeps the safe generic.
+ */
+function bindGateMessage(error: {
+  message: string;
+  status?: number;
+  serverDetail?: unknown;
+}): string {
+  const parsed = parseCallApiError(error);
+  if (parsed.code === "validation_error" && parsed.detail.trim().length > 0) {
+    return parsed.detail;
+  }
+  return parsed.userMessage;
+}
+
 /** Create or update the principal's binding for a mandate through the ONE bind
  * path (aidream PUT, contract-enforced server-side). Throws with the server's
  * 422 detail verbatim on a contract violation. */
@@ -368,8 +397,9 @@ export async function putMandateBinding(
   );
   // ONE parser for the server body: the contract gate answers 422 with the
   // exact mismatch in `detail`; `result.error.message` alone flattened it to a
-  // generic "Invalid request" toast (found live 2026-08-22).
-  if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
+  // generic "Invalid request" toast (found live 2026-08-22), and so did
+  // `userMessage` (found live 2026-08-31) — see bindGateMessage.
+  if (result.error) throw new Error(bindGateMessage(result.error));
   invalidateMandateCache(mandateKey);
 }
 
@@ -395,7 +425,8 @@ export async function removeMandateBinding(
   );
   // ONE parser for the server body: the contract gate answers 422 with the
   // exact mismatch in `detail`; `result.error.message` alone flattened it to a
-  // generic "Invalid request" toast (found live 2026-08-22).
-  if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
+  // generic "Invalid request" toast (found live 2026-08-22), and so did
+  // `userMessage` (found live 2026-08-31) — see bindGateMessage.
+  if (result.error) throw new Error(bindGateMessage(result.error));
   invalidateMandateCache(mandateKey);
 }

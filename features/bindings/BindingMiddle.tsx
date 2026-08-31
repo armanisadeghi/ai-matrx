@@ -112,9 +112,14 @@ export function BindingMiddle({
 
         // The SAME pre-flight the save runs, narrowed to this row — so the
         // problem is printed where it was caused, never as a list at the bottom.
+        // A source still waiting for its pick is NOT "consumes something this
+        // job does not offer": it is an unfinished choice, and it gets its own
+        // sentence below rather than a confusing one from the pre-flight.
+        const chosen = sources.filter((entry) => entry.target !== "");
+        const awaitingPick = sources.length > chosen.length;
         const rowProblems = consumptionMapProblems(
           { values: offered },
-          sources.length > 0 ? { [target.name]: [...sources] } : {},
+          chosen.length > 0 ? { [target.name]: chosen } : {},
         );
         const unfedRequired =
           target.required === true &&
@@ -158,11 +163,37 @@ export function BindingMiddle({
               }}
             />
 
+            {/* P9 — a source that is not guaranteed must declare what happens
+                when it is absent. The shared row carries a Required toggle but
+                no absence answer (a surface value's absence is the surface's
+                problem; an offered value's is the binding's), so source 0 gets
+                its control HERE — sources 1..n get the same one in the strip
+                below. `skip` is pre-answered on selection; this makes the
+                answer visible and changeable instead of merely stored. */}
+            {sources[0] && sources[0].target !== "" ? (
+              <AbsenceControl
+                entry={sources[0]}
+                offered={offeredByName.get(sources[0].target)}
+                disabled={disabled}
+                onPatch={(patch) =>
+                  onChange(patchSourceAt(value, target.name, 0, patch))
+                }
+              />
+            ) : null}
+
             {/* Why the last pick could not be stored — in words, with a remedy. */}
             {refusals[target.name] ? (
               <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 {refusals[target.name]}
+              </p>
+            ) : null}
+
+            {awaitingPick ? (
+              <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Pick which offered value feeds this input, or switch back to the
+                holder&apos;s own default.
               </p>
             ) : null}
 
@@ -321,46 +352,73 @@ function ExtraSources({
               </div>
             </div>
             {/* P9 — a source that is not guaranteed declares its absence answer. */}
-            {offered && !offered.guaranteed ? (
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground">
-                <span>If absent:</span>
-                <Select
-                  value={entry.when_absent ?? "skip"}
-                  disabled={disabled}
-                  onValueChange={(v) =>
-                    onPatch(index, {
-                      when_absent: v as ConsumptionEntry["when_absent"],
-                    })
-                  }
-                >
-                  <SelectTrigger
-                    className="h-7 w-[150px] text-[11.5px]"
-                    aria-label={`When ${entry.target} is absent`}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="skip">Skip it</SelectItem>
-                    <SelectItem value="use_default">Use a default</SelectItem>
-                    <SelectItem value="fail">Fail the run</SelectItem>
-                  </SelectContent>
-                </Select>
-                {entry.when_absent === "use_default" ? (
-                  <ProTextarea
-                    wrapperClassName="h-8 min-w-0 flex-1"
-                    value={typeof entry.default === "string" ? entry.default : ""}
-                    disabled={disabled}
-                    onChange={(e) => onPatch(index, { default: e.target.value })}
-                    placeholder="Default value"
-                    className="h-8 min-h-8 flex-1 resize-none py-1 text-[12px]"
-                    style={{ fontSize: "14px" }}
-                  />
-                ) : null}
-              </div>
-            ) : null}
+            <AbsenceControl
+              entry={entry}
+              offered={offered}
+              disabled={disabled}
+              onPatch={(patch) => onPatch(index, patch)}
+            />
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * THE ABSENCE ANSWER (P9). A value the job does not guarantee must say what
+ * happens when it is missing, and the server refuses the whole map without it.
+ * `skip` is pre-answered the moment the value is chosen — this is where that
+ * answer becomes visible and changeable, on source 0 and on every joined source
+ * alike, so absence is never a surprise and never an invisible default.
+ */
+function AbsenceControl({
+  entry,
+  offered,
+  disabled,
+  onPatch,
+}: {
+  entry: ConsumptionEntry;
+  offered: OfferedValue | undefined;
+  disabled: boolean;
+  onPatch: (patch: Partial<ConsumptionEntry>) => void;
+}) {
+  if (!offered || offered.guaranteed) return null;
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2 px-0.5 text-[11.5px] text-muted-foreground">
+      <span>
+        {formatVariableDisplayName(entry.target)} is not always there. If absent:
+      </span>
+      <Select
+        value={entry.when_absent ?? "skip"}
+        disabled={disabled}
+        onValueChange={(v) =>
+          onPatch({ when_absent: v as ConsumptionEntry["when_absent"] })
+        }
+      >
+        <SelectTrigger
+          className="h-7 w-[150px] text-[11.5px]"
+          aria-label={`When ${entry.target} is absent`}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="skip">Skip it</SelectItem>
+          <SelectItem value="use_default">Use a default</SelectItem>
+          <SelectItem value="fail">Fail the run</SelectItem>
+        </SelectContent>
+      </Select>
+      {entry.when_absent === "use_default" ? (
+        <ProTextarea
+          wrapperClassName="h-8 min-w-0 flex-1"
+          value={typeof entry.default === "string" ? entry.default : ""}
+          disabled={disabled}
+          onChange={(e) => onPatch({ default: e.target.value })}
+          placeholder="Default value"
+          className="h-8 min-h-8 flex-1 resize-none py-1 text-[12px]"
+          style={{ fontSize: "14px" }}
+        />
+      ) : null}
     </div>
   );
 }

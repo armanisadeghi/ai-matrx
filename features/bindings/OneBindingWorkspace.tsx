@@ -76,6 +76,7 @@ import {
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
+import { parseDraftInputs } from "@/features/mandates/authoring/service";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import {
   putMandateBinding,
@@ -112,6 +113,15 @@ export interface OneBindingWorkspaceProps {
   onChanged: () => void;
 }
 
+/**
+ * The rung lives OUT here, above the draft, because it is the one choice that
+ * must survive changing which binding is being edited. Everything else —
+ * holder, map, refusals — is seeded from the stored row, so the draft is keyed
+ * by that row's identity and REMOUNTS when it moves. Re-seeding half a dozen
+ * useStates from an effect is the cascading-render defect; a key is the whole
+ * fix, and it also guarantees the org answer never starts from the user
+ * answer's draft.
+ */
 export function OneBindingWorkspace({
   data,
   initialRung = "user",
@@ -119,14 +129,9 @@ export function OneBindingWorkspace({
   allowGlobal = false,
   onChanged,
 }: OneBindingWorkspaceProps) {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
   const userId = useAppSelector(selectUserId);
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const { organizations } = useUserOrganizations();
-  const canBindGlobal = allowGlobal && isSuperAdmin;
 
-  // ── The rung, as a control (P13) ──────────────────────────────────────────
   const [rung, setRung] = useState<BindingRung>(
     initialRung === "global" && !allowGlobal ? "user" : initialRung,
   );
@@ -134,12 +139,52 @@ export function OneBindingWorkspace({
     initialOrganizationId,
   );
 
-  const binding = useMemo(
-    () => findBinding(data.bindings, rung, userId, organizationId),
-    [data.bindings, rung, userId, organizationId],
-  );
+  const binding = findBinding(data.bindings, rung, userId, organizationId);
+  const bindingIdentity = `${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
 
-  // ── The holder draft ──────────────────────────────────────────────────────
+  return (
+    <BindingDraft
+      key={bindingIdentity}
+      data={data}
+      binding={binding}
+      rung={rung}
+      organizationId={organizationId}
+      allowGlobal={allowGlobal}
+      onRungChange={(nextRung, nextOrgId) => {
+        setRung(nextRung);
+        setOrganizationId(
+          nextRung === "org" ? (nextOrgId ?? organizations[0]?.id ?? null) : null,
+        );
+      }}
+      onChanged={onChanged}
+    />
+  );
+}
+
+function BindingDraft({
+  data,
+  binding,
+  rung,
+  organizationId,
+  allowGlobal,
+  onRungChange,
+  onChanged,
+}: {
+  data: MandateWorkspaceData;
+  binding: MandateBindingRowDb | null;
+  rung: BindingRung;
+  organizationId: string | null;
+  allowGlobal: boolean;
+  onRungChange: (rung: BindingRung, organizationId: string | null) => void;
+  onChanged: () => void;
+}) {
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const userId = useAppSelector(selectUserId);
+  const canBindGlobal = allowGlobal && isSuperAdmin;
+
+  // ── The holder draft — seeded once, from the row this instance is keyed to ─
   const [holder, setHolder] = useState<HolderDraft>(() => holderDraftOf(binding));
   const [draftMap, setDraftMap] = useState<ConsumptionMap>(
     () => parseBindingWave1(binding).consumptionMap,
@@ -149,18 +194,6 @@ export function OneBindingWorkspace({
     () => new Set<string>(),
   );
   const [seededFor, setSeededFor] = useState<string | null>(null);
-
-  // Re-seed the whole draft whenever the rung, the org, or the stored row moves.
-  // Editing the org answer must never start from the user answer's draft.
-  const bindingIdentity = `${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
-  useEffect(() => {
-    setHolder(holderDraftOf(binding));
-    setDraftMap(parseBindingWave1(binding).consumptionMap);
-    setRefusals({});
-    setAutoBound(new Set<string>());
-    setSeededFor(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bindingIdentity]);
 
   const storedOverrides = useMemo(
     () =>
@@ -179,18 +212,44 @@ export function OneBindingWorkspace({
   const describedOffer: ProvisionOffer | null = useMemo(() => {
     if (data.provisionKey) return null;
     if (surfaceState.status !== "ready") return null;
-    const values: OfferedValue[] = surfaceState.surface.inputs
-      .filter(
-        (input) =>
-          input.origin === "mandate_input" || input.origin === "provision",
-      )
-      .map((input) => ({
-        name: input.name,
-        kind: input.kind,
-        guaranteed: input.sourcing === "require",
-        lazy: false,
-        description: input.label !== input.name ? input.label : input.help,
-      }));
+    // 🚨 GUARANTEED COMES FROM THE MANDATE'S OWN draft_inputs, NOT from the
+    // served surface's `sourcing`. They answer DIFFERENT questions and the
+    // wizard this replaced conflated them, which is why the first real save
+    // 422'd: aidream `offer.described_offered_values` sets
+    // `guaranteed = item["required"] is True`, while the input surface serves a
+    // described input as `sourcing="require"` to make the RUN FORM ask for it.
+    // Reading the asking policy as the guarantee told the client every value
+    // always arrives, so no row ever declared `when_absent`, and the server
+    // (rightly) refused the whole map. Same column, same rule, both halves.
+    // The slug a nameless described input gets is the SERVER's rule
+    // (`slug_for_description`), so it is never recomputed here: declared names
+    // match by name, and the rest match BY POSITION, which is safe because both
+    // lists are the same `draft_inputs` array in author order.
+    const drafts = parseDraftInputs(
+      (data.mandate as { draft_inputs?: unknown }).draft_inputs,
+    );
+    const requiredByName = new Map(
+      drafts
+        .filter((input) => Boolean(input.name?.trim()))
+        .map((input) => [input.name as string, input.required === true]),
+    );
+    const described = surfaceState.surface.inputs.filter(
+      (input) =>
+        input.origin === "mandate_input" || input.origin === "provision",
+    );
+    const values: OfferedValue[] = described.map((input, index) => ({
+      name: input.name,
+      kind: input.kind,
+      guaranteed:
+        requiredByName.get(input.name) ??
+        (drafts.length === described.length
+          ? drafts[index].required === true
+          : // Lists disagree — refuse to guess a guarantee. Optional makes
+            // absence a declared decision, which is never wrong to require.
+            false),
+      lazy: false,
+      description: input.label !== input.name ? input.label : input.help,
+    }));
     if (values.length === 0) return null;
     return {
       id: `mandate:${data.mandate.mandate_key}`,
@@ -231,17 +290,22 @@ export function OneBindingWorkspace({
   // P4 — a row must never open blank when the answer is obvious. Seed exact
   // name matches into the DRAFT once per (binding × holder inputs), and tell
   // each seeded row it was seeded.
-  const seedKey = `${bindingIdentity}|${holderInputs.targets.map((t) => t.name).join(",")}`;
-  useEffect(() => {
-    if (holderInputs.status !== "ready") return;
-    if (holderInputs.targets.length === 0) return;
-    if (offeredValues.length === 0) return;
-    if (seededFor === seedKey) return;
-    const offeredByName = new Map(offeredValues.map((v) => [v.name, v]));
+  //
+  // This is an ADJUSTMENT DURING RENDER, not an effect: the seed depends only
+  // on props/state already in hand, and doing it in an effect would render the
+  // blank rows once and then re-render them filled — the cascading-render
+  // defect this repo has fixed twice already.
+  const seedKey = `${holder.kind}:${holder.agentId ?? holder.workflowId ?? ""}|${holderInputs.targets.map((t) => t.name).join(",")}`;
+  if (
+    holderInputs.status === "ready" &&
+    holderInputs.targets.length > 0 &&
+    offeredValues.length > 0 &&
+    seededFor !== seedKey
+  ) {
     const seeded = seedAutoBinds({
       map: draftMap,
       targetNames: holderInputs.targets.map((t) => t.name),
-      offeredByName,
+      offeredByName: new Map(offeredValues.map((v) => [v.name, v])),
       deliverFor: (name): ConsumptionEntry["deliver"] =>
         holderInputs.contextKeys.has(name) ? "context" : "variable",
     });
@@ -250,24 +314,29 @@ export function OneBindingWorkspace({
       setDraftMap(seeded.map);
       setAutoBound(seeded.autoBound);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seedKey, holderInputs.status, offeredValues.length]);
+  }
 
   // ── The agent pre-flight (the server stays the authority) ─────────────────
+  //
+  // ONE SETTLED SLOT, stamped with the agent it answers for. `checking` is
+  // DERIVED — writing it from the effect body is the same cascading-render
+  // defect, and a verdict stamped with a stale agent id is a lie.
   const agentId = effectiveAgentId(holder, data);
-  const [verdict, setVerdict] = useState<{
-    checking: boolean;
+  const [settledVerdict, setSettledVerdict] = useState<{
+    agentId: string;
     problems: string[];
-    passed: boolean;
-  }>({ checking: false, problems: [], passed: false });
+  } | null>(null);
+  const currentVerdict =
+    settledVerdict?.agentId === agentId ? settledVerdict : null;
+  const verdict = {
+    checking: agentId !== null && currentVerdict === null,
+    problems: currentVerdict?.problems ?? [],
+    passed: currentVerdict !== null && currentVerdict.problems.length === 0,
+  };
 
   useEffect(() => {
-    if (holder.kind === "workflow" || !agentId) {
-      setVerdict({ checking: false, problems: [], passed: false });
-      return;
-    }
+    if (holder.kind === "workflow" || !agentId) return;
     let cancelled = false;
-    setVerdict({ checking: true, problems: [], passed: false });
     (async () => {
       await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
       const payload = selectAgentExecutionPayload(store.getState(), agentId);
@@ -304,15 +373,12 @@ export function OneBindingWorkspace({
           }
         }
       }
-      if (!cancelled) {
-        setVerdict({ checking: false, problems, passed: problems.length === 0 });
-      }
+      if (!cancelled) setSettledVerdict({ agentId, problems });
     })().catch((err: unknown) => {
       if (cancelled) return;
-      setVerdict({
-        checking: false,
+      setSettledVerdict({
+        agentId,
         problems: [err instanceof Error ? err.message : String(err)],
-        passed: false,
       });
     });
     return () => {
@@ -383,8 +449,16 @@ export function OneBindingWorkspace({
 
   const holderChosen =
     holder.kind === "workflow" ? Boolean(holder.workflowId) : Boolean(agentId);
+  // A source whose value has not been picked yet is an UNFINISHED CHOICE, not
+  // an invalid map — it gets its own words, on its own row and here, instead of
+  // the pre-flight's "consumes something this job does not offer".
+  const awaitingPick = Object.values(draftMap).some((sources) =>
+    sources.some((entry) => entry.target === ""),
+  );
   const mapProblems =
-    offer && holderChosen ? consumptionMapProblems(offer, draftMap) : [];
+    offer && holderChosen
+      ? consumptionMapProblems(offer, withoutUnpicked(draftMap))
+      : [];
   const rungReady = rung !== "org" || Boolean(organizationId);
   const refusalCount = Object.values(refusals).filter(Boolean).length;
 
@@ -399,7 +473,9 @@ export function OneBindingWorkspace({
           ? verdict.checking
             ? "Checking whether this agent meets the mandate…"
             : "This agent does not meet the mandate yet — see the problems above."
-          : mapProblems.length > 0
+          : awaitingPick
+            ? "One input is still waiting for you to pick which offered value feeds it."
+            : mapProblems.length > 0
             ? "Fix the mapping problems named on the rows above."
             : refusalCount > 0
               ? "One of your picks can't be stored on a job binding — see the rows above."
@@ -427,7 +503,9 @@ export function OneBindingWorkspace({
               useLatest: holder.useLatest,
             },
       hasOffer: Boolean(offer),
-      consumptionMap: draftMap,
+      // An unfinished pick never reaches the wire — Save is refused while one
+      // stands, so this is a belt on top of the braces, not a silent drop.
+      consumptionMap: withoutUnpicked(draftMap),
       capturedOverrides:
         captured === undefined
           ? undefined
@@ -560,14 +638,7 @@ export function OneBindingWorkspace({
         rung={rung}
         organizationId={organizationId}
         allowGlobal={allowGlobal}
-        onRungChange={(nextRung, nextOrgId) => {
-          setRung(nextRung);
-          setOrganizationId(
-            nextRung === "org"
-              ? (nextOrgId ?? organizations[0]?.id ?? null)
-              : null,
-          );
-        }}
+        onRungChange={onRungChange}
         holder={holder}
         onHolderChange={setHolder}
         job={{
@@ -831,6 +902,16 @@ function MiddleBody({
 }
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
+
+/** The draft minus sources still waiting for a pick — what the save sends. */
+function withoutUnpicked(map: ConsumptionMap): ConsumptionMap {
+  const out: ConsumptionMap = {};
+  for (const [name, sources] of Object.entries(map)) {
+    const chosen = sources.filter((entry) => entry.target !== "");
+    if (chosen.length > 0) out[name] = chosen;
+  }
+  return out;
+}
 
 function findBinding(
   bindings: readonly MandateBindingRowDb[],

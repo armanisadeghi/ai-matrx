@@ -238,6 +238,6 @@ export const SCOPE_RUNGS = [
   {
     id: "user",
     label: "Just me",
-    description: "Only you. The strongest rung — nothing overrides it.",
+    description: "Personal. The strongest rung — nothing overrides it.",
   },
 ];
