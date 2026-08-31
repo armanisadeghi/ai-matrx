@@ -396,6 +396,7 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 
 ## Change Log
 
+- `2026-08-31` — **Mobile long-press has a deterministic touch-path witness.** A focused component test dispatches a real `touchstart`, proves the drawer stays closed through 479 ms, and proves it opens at the canonical 480 ms threshold for `matrx-user/settings`. This distinguishes genuine press-and-hold behavior from the separate mobile `contextmenu` compatibility path.
 - `2026-08-31` — **Desktop multi-child surfaces honor Radix's slot contract.** The shell gives `ContextMenuTrigger asChild` one layout-neutral `display:contents` element when a consumer supplies sibling surface/loading/empty nodes; single elements still receive handlers directly, preserving legal table-row markup. A forcing DOM test pins both siblings and the trigger wrapper.
 
 - `2026-08-31` — **Structured surface scope counts as an actionable menu contract.** The dev-time inert-menu guard now recognizes informative non-baseline application-scope values, so galleries and charts can remain honest about having no rich-document text while their Surface Context and agent actions still operate on live structured values. Empty baseline-only read-only menus continue to fail loudly; focused regressions pin both sides.
