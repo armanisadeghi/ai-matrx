@@ -192,6 +192,7 @@ export default function ImageUploaderWindow({
                  */}
                 <NonEditableContextMenu
                     sourceFeature="files"
+                    surfaceName={IMAGE_UPLOADER_SURFACE_NAME}
                     contentSource={{ type: "raw" }}
                     contextData={{ content: result?.primary_url ?? "" }}
                     entity={

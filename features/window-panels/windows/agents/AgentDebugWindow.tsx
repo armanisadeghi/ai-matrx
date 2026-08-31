@@ -1042,6 +1042,13 @@ function AgentDebugWindowInner({
     ? `${agentName ?? "Agent"} — ${selectedConversationId.slice(0, 8)}…`
     : (agentName ?? "Agent Debug");
 
+  const dispatch = useAppDispatch();
+  const agentSection = useAgentMenuSection({
+    agentId: selectedAgentId ?? "",
+    agentName: agentName ?? null,
+    onRefresh: selectedAgentId ? () => dispatch(fetchFullAgent(selectedAgentId)) : undefined,
+  });
+
   return (
     <WindowPanel
       id="agent-debug-window"
@@ -1072,6 +1079,17 @@ function AgentDebugWindowInner({
             onActivate={setActiveTab}
             conversationId={selectedConversationId}
           />
+          {/* A debug dump across 7 tabs (overview/definition/instances/
+              variables/input/uistate/history) — the identity a right-click
+              here means is the agent being inspected, same shared "Agent"
+              section AgentContentWindow/AgentMemoryWindow/etc. use. */}
+          {/* context-menu-exempt: surfaceName — no registered surface manifest for this window */}
+          <NonEditableContextMenu
+            sourceFeature="agent-builder"
+            contentSource={{ type: "raw" }}
+            entity={agentEntityRef(selectedAgentId, agentName ?? null)}
+            extraSections={[agentSection]}
+          >
           <div className="flex-1 min-h-0 overflow-hidden">
             {activeTab === "overview" && (
               <OverviewTab
@@ -1101,6 +1119,7 @@ function AgentDebugWindowInner({
               <HistoryTab conversationId={selectedConversationId} />
             )}
           </div>
+          </NonEditableContextMenu>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">

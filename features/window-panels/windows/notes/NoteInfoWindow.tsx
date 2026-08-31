@@ -112,6 +112,12 @@ function NoteInfoWindowInner({
       onCollectData={() => ({ noteId, title: title ?? undefined })}
       bodyClassName="overflow-y-auto"
     >
+      {/*
+       * context-menu-exempt: surfaceName — this info-only shell never
+       * publishes the matrx-user/notes SurfaceRuntimeProvider (the editor
+       * window does); passing it here would light up value mappings this
+       * pane cannot back.
+       */}
       <NonEditableContextMenu
         sourceFeature="notes"
         contextData={{ content: content ?? "" }}

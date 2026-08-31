@@ -130,6 +130,8 @@ export function SmartCodeEditorWindow({
        * getTextarea/onTextReplace are wired (Monaco isn't a native textarea
        * and isn't exposed by SmartCodeEditor), so no text-mutation action
        * can appear here — nothing that could corrupt code.
+       * context-menu-exempt: surfaceName — no registered ui_surface for this in-memory buffer
+       * context-menu-exempt: entity — the buffer is not a persisted record
        */}
       <EditableContextMenu
         sourceFeature="code-editor"

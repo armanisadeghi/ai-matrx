@@ -460,6 +460,8 @@ function BrowserWorkbenchWindowInner({
             // URL/title only. "Bookmark this tab" is page-local (only this
             // workbench has a bookmark concept); the rest is the shared
             // browser-frame section (also on BrowserFrameWindow).
+            // context-menu-exempt: surfaceName — no registered ui_surface for a raw browsed tab
+            // context-menu-exempt: entity — an arbitrary external URL is not an app record
             <NonEditableContextMenu
               sourceFeature="internal"
               contentSource={{ type: "raw" }}

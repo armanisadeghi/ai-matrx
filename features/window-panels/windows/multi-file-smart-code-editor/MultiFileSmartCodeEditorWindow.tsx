@@ -455,7 +455,9 @@ export function MultiFileSmartCodeEditorWindow({
           doesn't fall through to whatever page hosts the floating window. No
           getTextarea/onTextReplace are wired (Monaco's internal textarea
           isn't exposed by SmallCodeEditor), so no text-mutation action can
-          appear here — nothing that could corrupt code. */}
+          appear here — nothing that could corrupt code.
+          context-menu-exempt: surfaceName — no registered ui_surface for this in-memory buffer
+          context-menu-exempt: entity — the open file is not a persisted record */}
       <EditableContextMenu
         sourceFeature="code-editor"
         contentSource={{ type: "raw" }}

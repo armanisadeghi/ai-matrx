@@ -165,6 +165,10 @@ export function NotesWindow({
          * instead of falling through to whatever page hosts this floating
          * window. "New note" is page-local to this composition root, not a
          * shared identity — see features/context-menu-v3/SECTIONS.md.
+         * context-menu-exempt: surfaceName — no active tab here (this fires
+         * only on blank space); the matrx-user/notes scope publishes from
+         * NoteContentEditor when a tab IS active, which mounts its own menu.
+         * context-menu-exempt: entity — blank space names no note
          */}
         <NonEditableContextMenu
           sourceFeature="notes"

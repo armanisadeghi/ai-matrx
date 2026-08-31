@@ -130,6 +130,8 @@ function BrowserFrameWindowInner({
        * Cross-origin iframe — there is no page content this app can read, so
        * the honest menu acts on the frame's own URL/title only. Shared with
        * BrowserWorkbenchWindow (features/window-panels/windows/iframe/browser-frame-menu.tsx).
+       * context-menu-exempt: surfaceName — no registered ui_surface for a raw browsed URL
+       * context-menu-exempt: entity — an arbitrary external URL is not an app record
        */}
       <NonEditableContextMenu
         sourceFeature="internal"
