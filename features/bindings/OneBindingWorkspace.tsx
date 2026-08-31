@@ -697,14 +697,16 @@ function BindingDraft({
             "the match is a ~180px sliver while both inventory columns sit wide
             and mostly empty"). The grid template is the root cause and the only
             place it is fixed:
-              · the middle has a FLOOR of 32rem and takes every spare pixel, so
-                a row card is always comfortable and nothing in it truncates;
-              · the rails are `minmax(0, 15rem)` — they are reference, so they
+              · the middle is 32rem at its narrowest and 56rem at its widest —
+                a floor so a row card is always comfortable and nothing in it
+                truncates, and a ceiling so it keeps the reading rhythm of the
+                shortcut editor's row instead of stretching across a monitor;
+              · the rails are `minmax(0, 18rem)` — they are reference, so they
                 compress first and disappear last;
               · three columns only once the container can carry all of it
                 (@5xl); below that the middle stacks FIRST and the rails follow,
                 because the match is what you came here to do. */}
-        <div className="grid gap-3 @5xl:grid-cols-[minmax(0,15rem)_minmax(32rem,1fr)_minmax(0,15rem)]">
+        <div className="grid justify-center gap-3 @5xl:grid-cols-[minmax(0,18rem)_minmax(32rem,56rem)_minmax(0,18rem)]">
         <div className="order-2 min-w-0 @5xl:order-none">
           <OfferedInventoryColumn
             values={offeredValues}
