@@ -65,6 +65,8 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { formatLocalDate } from "@/features/hr/time/shared/format";
@@ -485,6 +487,12 @@ export function ExportRunList({
   const [dialog, setDialog] = useState<PendingDialog>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [failure, setFailure] = useState<ExportFailure | null>(null);
+  // State, not a ref: the context menu's `extraSections` below reads it
+  // directly while rebuilding the section for the row that was clicked.
+  const [clickedRow, setClickedRow] = useState<PayrollExportHistoryRow | null>(
+    null,
+  );
+  const [clickedRowEl, setClickedRowEl] = useState<HTMLElement | null>(null);
 
   const reload = history.reload;
   // A supersede answers 202, so the surface follows the RUNTIME SPINE and re-reads the durable
@@ -918,6 +926,92 @@ export function ExportRunList({
       ) : null}
 
       <div className="min-h-0 flex-1">
+        {/* Same identity, same actions, same reasons as the row's `ItemMenu`
+            (`menuFor` above) — this just offers them from a right-click too.
+            RULE 2 still holds here: a blocked replace is ABSENT, not
+            disabled (see the comment inside `menuFor`). */}
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const rowEl = target?.closest<HTMLElement>("[data-row-id]") ?? null;
+            const id = rowEl?.getAttribute("data-row-id");
+            const row = id ? (rows.find((r) => r.export_id === id) ?? null) : null;
+            setClickedRow(row);
+            setClickedRowEl(rowEl);
+            if (!row) return null;
+            return {
+              content: `Version ${row.export_version} — ${STATE_LABEL[row.delivery_state]}`,
+            };
+          }}
+          extraSections={[
+            {
+              id: "export-run-row",
+              label: "This version",
+              anchor: "after-compare",
+              items: (() => {
+                const row = clickedRow;
+                const cannotReplaceBecause = row ? supersedeBlockedReason(row) : null;
+                const items: ContextMenuExtraItem[] = [
+                  {
+                    kind: "item",
+                    id: "export-run-download",
+                    label: "Open the file and its checksum",
+                    icon: Download,
+                    disabled:
+                      !row ||
+                      !CAN_DOWNLOAD.has(row.delivery_state) ||
+                      !row.artifact_file_id,
+                    description: !row?.artifact_file_id
+                      ? "This version was never built into a file"
+                      : "A replaced version's file is not offered for download",
+                    onSelect: () => clickedRowEl?.click(),
+                  },
+                  {
+                    kind: "item",
+                    id: "export-run-acknowledge",
+                    label: "Record that payroll accepted it",
+                    icon: CheckCircle2,
+                    disabled: !row || !CAN_ACKNOWLEDGE.has(row.delivery_state),
+                    description:
+                      row?.delivery_state === "acknowledged"
+                        ? "Already recorded as accepted"
+                        : "Only a built or sent file can be marked accepted",
+                    onSelect: () => {
+                      if (row) setDialog({ kind: "acknowledge", row });
+                    },
+                  },
+                  {
+                    kind: "item",
+                    id: "export-run-fail",
+                    label: "Record that it failed",
+                    icon: AlertTriangle,
+                    disabled: !row || !CAN_FAIL.has(row.delivery_state),
+                    description:
+                      row?.delivery_state === "failed"
+                        ? "This version's failure is already recorded"
+                        : "Only a built or sent file can be marked failed",
+                    onSelect: () => {
+                      if (row) setDialog({ kind: "fail", row });
+                    },
+                  },
+                ];
+                // RULE 2: a blocked replace is ABSENT, never a disabled ghost.
+                if (row && !cannotReplaceBecause && CAN_SUPERSEDE.has(row.delivery_state)) {
+                  items.push({
+                    kind: "item",
+                    id: "export-run-supersede",
+                    label: "Replace it with a new file",
+                    icon: Layers,
+                    onSelect: () => setDialog({ kind: "supersede", row }),
+                  });
+                }
+                return items;
+              })(),
+            },
+          ]}
+        >
         <MatrxDataTable<PayrollExportHistoryRow>
           data={rows}
           columns={columns}
@@ -971,6 +1065,7 @@ export function ExportRunList({
             </ItemMenu>
           )}
         />
+        </NonEditableContextMenu>
       </div>
 
       {dialog?.kind === "acknowledge" ? (
