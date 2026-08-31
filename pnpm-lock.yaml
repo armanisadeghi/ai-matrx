@@ -43,7 +43,7 @@ importers:
         version: 0.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/icons':
         specifier: latest
-        version: 0.1.2(react@19.2.7)
+        version: 0.1.3(react@19.2.7)
       '@ai-matrx/kit':
         specifier: latest
         version: 0.7.3(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -888,8 +888,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/icons@0.1.2':
-    resolution: {integrity: sha512-33ORdBRib7sc8Papo/qBNi0E7IJo7gaeYdDQC+yBL5LZQm8DXKr7pRGs7vejFMJ0XQT43V7oItjOsArv8Vi/SA==}
+  '@ai-matrx/icons@0.1.3':
+    resolution: {integrity: sha512-CoDUfMLiLZspvKgREJSib1ZjTE4VHGqX5j+rZyYGtJJAFhBuuwFU/79byelfV81w3hNM9C9hPm0kpZUvrkFE0g==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13198,7 +13198,7 @@ snapshots:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@ai-matrx/icons@0.1.2(react@19.2.7)':
+  '@ai-matrx/icons@0.1.3(react@19.2.7)':
     dependencies:
       lucide-react: 1.37.0(react@19.2.7)
       react: 19.2.7
