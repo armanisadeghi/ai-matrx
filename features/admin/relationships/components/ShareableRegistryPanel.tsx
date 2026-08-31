@@ -31,6 +31,8 @@ import { Switch } from "@/components/ui/switch";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {
   ShareableResourceForm,
   type ShareableEditorState,
@@ -125,6 +127,11 @@ export function ShareableRegistryPanel({
   const [policyRow, setPolicyRow] = useState<SharePolicyRow | null>(null);
   const [policyDraft, setPolicyDraft] = useState<Set<string>>(new Set());
   const [policyBusy, setPolicyBusy] = useState(false);
+  /** Right-clicked row — STATE (not a ref) so the menu reads the row that
+   *  was actually clicked, not a stale capture. */
+  const [clickedRow, setClickedRow] = useState<ShareableRegistryRow | null>(
+    null,
+  );
 
   const policyByType = useMemo(
     () => new Map(policies.map((p) => [p.resource_type, p])),
@@ -504,6 +511,49 @@ export function ShareableRegistryPanel({
     ];
   }, []);
 
+  const resolveContextOnOpen = (target: HTMLElement | null) => {
+    const resourceType = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const row =
+      (resourceType && registry.find((r) => r.resource_type === resourceType)) ||
+      null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      content: [
+        `${row.display_label} (${row.resource_type}) — ${row.schema_name}.${row.table_name}`,
+        `active=${row.is_active} scopeable=${row.is_scopeable} link_shareable=${row.is_link_shareable}`,
+        row.notes ? `notes: ${row.notes}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
+  };
+
+  const shareableResourceMenuSection: ContextMenuExtraSection = {
+    id: "shareable-resource-row",
+    label: clickedRow ? clickedRow.display_label : "This resource",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "item",
+        id: "shareable-resource-edit",
+        label: "Edit resource…",
+        disabled: !clickedRow,
+        onSelect: () => clickedRow && openEditInSidePanel(clickedRow),
+      },
+      {
+        kind: "item",
+        id: "shareable-resource-link-policy",
+        label: "Link policy…",
+        icon: Columns3,
+        disabled: !clickedRow,
+        onSelect: () => clickedRow && openPolicy(clickedRow),
+      },
+    ],
+  };
+
   return (
     <section
       ref={sectionRef}
@@ -528,6 +578,12 @@ export function ShareableRegistryPanel({
         </Button>
       </div>
       <div className="min-h-[16rem]">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveContextOnOpen}
+          extraSections={[shareableResourceMenuSection]}
+        >
         <MatrxDataTable
           urlState={{ id: "shareable-resources", selectedRow: false }}
           data={registry}
@@ -650,6 +706,7 @@ export function ShareableRegistryPanel({
             </>
           )}
         />
+        </NonEditableContextMenu>
       </div>
 
       {policyRow ? (
