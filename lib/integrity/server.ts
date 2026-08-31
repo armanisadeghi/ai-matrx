@@ -84,12 +84,20 @@ function resolveBackendUrl(): string {
  * Builds a FileProbe that range-probes the download endpoint with the given
  * bearer token. Returns undefined when no token is available (the caller then
  * reports the probe check as skipped).
+ *
+ * Organization admission: the backend's AuthMiddleware refuses a Bearer-JWT
+ * request without `X-Organization-Id` (400 organization_required), so a probe
+ * without an organization can only ever measure the gate, not the download.
+ * The caller passes the requester's own organization; without one the probe is
+ * skipped (undefined) so the report says "skipped: select an organization"
+ * instead of a wall of 400s.
  */
 export function createDownloadProbe(
   token: string | null,
+  organizationId: string | null = null,
 ): FileProbe | undefined {
   const backend = resolveBackendUrl();
-  if (!token) return undefined;
+  if (!token || !organizationId) return undefined;
 
   return async (fileId: string) => {
     const start = Date.now();
@@ -99,6 +107,7 @@ export function createDownloadProbe(
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
+          "X-Organization-Id": organizationId,
           // Cheap liveness probe — just the first byte.
           Range: "bytes=0-0",
         },

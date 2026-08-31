@@ -8,6 +8,12 @@ import {
 } from "@/lib/api/errors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { isJsonRecord, type CrawlEvent } from "@/features/marketing/types";
 import type { CrawlRenderMode } from "@/features/marketing/crawler/crawl-options";
@@ -382,6 +388,25 @@ async function bearerToken(): Promise<string> {
   return token;
 }
 
+/**
+ * Organization admission rides with auth: the scraper service sits behind the
+ * same AuthMiddleware (matrx-connect, 2026-08-30) that refuses any Bearer-JWT
+ * request naming no organization via `X-Organization-Id`. Every crawler call
+ * is identified (see `bearerToken`), so the currently selected organization is
+ * resolved through the ONE fail-closed kernel — a missing organization throws
+ * `OrganizationContextError` (with the select-an-organization remedy) BEFORE
+ * any networking. Same pattern as `features/marketing/seo/dataforseo/client.ts`.
+ */
+function organizationContextHeaders(
+  base: Record<string, string>,
+): Record<string, string> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader(base, organizationId);
+}
+
 export function crawlerErrorMessage(
   status: number,
   detail: string | undefined,
@@ -461,11 +486,11 @@ async function streamCommand(
   const token = await bearerToken();
   const response = await fetch(crawlerCommandUrl(path), {
     method: "POST",
-    headers: {
+    headers: organizationContextHeaders({
       Accept: "application/x-ndjson",
       Authorization: `Bearer ${token}`,
       ...(body ? { "Content-Type": "application/json" } : {}),
-    },
+    }),
     body: body ? JSON.stringify(body) : undefined,
     signal: callbacks.signal,
   });
@@ -653,10 +678,10 @@ export async function cancelCrawl(sessionId: string): Promise<void> {
     crawlerCommandUrl(`sessions/${sessionId}/cancel`),
     {
       method: "POST",
-      headers: {
+      headers: organizationContextHeaders({
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
     },
   );
   if (!response.ok)

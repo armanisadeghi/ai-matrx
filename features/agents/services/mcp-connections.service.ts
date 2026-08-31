@@ -13,6 +13,12 @@
 import { createClient } from "@/utils/supabase/client";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 import type { components } from "@/types/python-generated/api-types";
 
 function backendBase(): string {
@@ -25,10 +31,24 @@ async function authHeaders(): Promise<Record<string, string>> {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+  // Organization admission rides with auth: aidream's AuthMiddleware
+  // (matrx-connect, 2026-08-30) refuses any Bearer-JWT request that names no
+  // organization via `X-Organization-Id`. Resolved through the ONE
+  // fail-closed kernel — a missing organization throws
+  // `OrganizationContextError` (with the select-an-organization remedy)
+  // BEFORE any networking. Same pattern as
+  // `features/marketing/seo/dataforseo/client.ts`.
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader(
+    {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    organizationId,
+  );
 }
 
 async function mcpFetch<T>(path: string, init?: RequestInit): Promise<T> {

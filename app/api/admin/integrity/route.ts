@@ -68,11 +68,16 @@ export async function POST(request: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
     const token = session?.access_token ?? null;
+    // Organization admission for the JWT download probe — the requester's own
+    // active organization, forwarded by the admin page. Never resolved here.
+    const organizationId =
+      request.headers.get("X-Organization-Id") ??
+      request.headers.get("x-organization-id");
 
     const report = await runIntegrityChecks(
       {
         sql: createAdminSqlRunner(),
-        probe: createDownloadProbe(token),
+        probe: createDownloadProbe(token, organizationId),
         script: createScriptRunner(),
       },
       {

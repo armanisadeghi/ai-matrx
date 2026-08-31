@@ -341,7 +341,7 @@ export default function AgentTestClient() {
         `${apiConfig.baseUrl}${ENDPOINTS.ai.agentWarm(promptId)}`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${apiConfig.authToken}` },
+          headers: { ...apiConfig.authHeaders },
         },
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -376,7 +376,7 @@ export default function AgentTestClient() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${apiConfig.authToken}`,
+            ...apiConfig.authHeaders,
           },
           body: JSON.stringify(body),
           signal: controller.signal,

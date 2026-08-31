@@ -144,7 +144,7 @@ export default function HealthTestClient() {
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${apiConfig.authToken}`,
+                    ...apiConfig.authHeaders,
                 },
             });
             const responseTimeMs = Math.round(performance.now() - start);
@@ -184,7 +184,7 @@ export default function HealthTestClient() {
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${apiConfig.authToken}`,
+                    ...apiConfig.authHeaders,
                 },
             });
             const responseTimeMs = Math.round(performance.now() - start);

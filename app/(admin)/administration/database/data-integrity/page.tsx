@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
@@ -318,9 +319,18 @@ export default function DataIntegrityPage() {
     async (body: { checkIds?: string[]; includeProbe?: boolean }) => {
       setError(null);
       try {
+        // The route's JWT download probe needs organization admission
+        // (AuthMiddleware refuses org-less JWT calls); without a selected
+        // organization the probe reports itself skipped.
+        const activeOrganizationId = peekSelectedOrganizationId();
         const res = await fetch("/api/admin/integrity", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(activeOrganizationId
+              ? { "X-Organization-Id": activeOrganizationId }
+              : {}),
+          },
           body: JSON.stringify(body),
         });
         if (!res.ok)

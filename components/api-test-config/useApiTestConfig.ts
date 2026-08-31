@@ -10,6 +10,7 @@ import {
   selectResolvedBaseUrl,
   switchServer,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -21,6 +22,19 @@ export interface ApiTestConfig {
   serverType: ServerType;
   authToken: string;
   baseUrl: string;
+  /**
+   * Ready-to-spread request headers for the JWT lane: `Authorization` plus
+   * mandatory `X-Organization-Id` organization admission (the backend's
+   * AuthMiddleware, matrx-connect 2026-08-30, refuses org-less JWT requests
+   * with 400 organization_required). The organization is the admin's scope
+   * override when set, otherwise the selected organization — never a
+   * first/personal fallback. On these diagnostic surfaces a missing
+   * organization is NOT thrown client-side: the request goes out without the
+   * header and the server's own `organization_required` refusal is shown on
+   * screen, which is the surface's job. Every consumer must build its auth
+   * headers from THIS object, never from `authToken` by hand.
+   */
+  authHeaders: Record<string, string>;
 }
 
 export interface UseApiTestConfigReturn extends ApiTestConfig {
@@ -155,10 +169,22 @@ export function useApiTestConfig(
     [dispatch],
   );
 
+  // Organization admission for the JWT lane (see ApiTestConfig.authHeaders).
+  const selectedOrganizationId = useSelector(selectOrganizationId);
+  const organizationId =
+    scopeOverride.organization_id ?? selectedOrganizationId ?? null;
+  const authHeaders: Record<string, string> = {
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    ...(authToken && organizationId
+      ? { "X-Organization-Id": organizationId }
+      : {}),
+  };
+
   return {
     serverType,
     authToken,
     baseUrl: backendUrl,
+    authHeaders,
     setServerType: handleSetServerType,
     setAuthToken,
     isCheckingLocalhost,

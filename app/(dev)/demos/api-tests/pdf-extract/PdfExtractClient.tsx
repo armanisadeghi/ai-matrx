@@ -77,7 +77,7 @@ export default function PdfExtractClient() {
       const complete = await streamPdfExtractText({
         file: selectedFile,
         baseUrl: apiConfig.baseUrl,
-        headers: { Authorization: `Bearer ${apiConfig.authToken}` },
+        headers: { ...apiConfig.authHeaders },
         callbacks: {
           onProgress: setProgressMessage,
           onStarted: (data) => {

@@ -15,6 +15,12 @@ import type {
   YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 // Keep this small exchange control local rather than deriving it from the
 // deployed OpenAPI snapshot: the frontend and backend deploy independently,
 // and a newly added fail-closed purpose must be usable as soon as both source
@@ -193,6 +199,25 @@ function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
 }
 
+/**
+ * Organization admission rides with auth: aidream's AuthMiddleware
+ * (matrx-connect, 2026-08-30) refuses any Bearer-JWT request that names no
+ * organization via `X-Organization-Id`. Every call here is identified, so the
+ * currently selected organization is resolved through the ONE fail-closed
+ * kernel — a missing organization throws `OrganizationContextError` (with the
+ * select-an-organization remedy) BEFORE any networking. Same pattern as
+ * `features/marketing/seo/dataforseo/client.ts`.
+ */
+function organizationContextHeaders(
+  base: Record<string, string>,
+): Record<string, string> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader(base, organizationId);
+}
+
 export async function postGoogleBackend(
   path: string,
   body: Record<string, unknown>,
@@ -205,10 +230,10 @@ export async function postGoogleBackend(
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
-    headers: {
+    headers: organizationContextHeaders({
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(body),
   });
   if (!response.ok) {

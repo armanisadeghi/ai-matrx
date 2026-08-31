@@ -156,7 +156,7 @@ export default function BlockProcessingClient() {
       "Content-Type": "application/json",
     };
     if (apiConfig.authToken)
-      headers["Authorization"] = `Bearer ${apiConfig.authToken}`;
+      Object.assign(headers, apiConfig.authHeaders);
     const body = JSON.stringify({ content, include_raw: includeRaw });
 
     try {

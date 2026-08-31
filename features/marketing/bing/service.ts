@@ -12,6 +12,12 @@ import type {
   BingSiteBinding,
 } from "@/features/marketing/bing/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, status, last_verified_at, last_error, created_at, updated_at, metadata";
@@ -121,6 +127,25 @@ function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
 }
 
+/**
+ * Organization admission rides with auth: aidream's AuthMiddleware
+ * (matrx-connect, 2026-08-30) refuses any Bearer-JWT request that names no
+ * organization via `X-Organization-Id`. Every direct call here is identified,
+ * so the currently selected organization is resolved through the ONE
+ * fail-closed kernel — a missing organization throws
+ * `OrganizationContextError` (with the select-an-organization remedy) BEFORE
+ * any networking. Same pattern as `features/marketing/seo/dataforseo/client.ts`.
+ */
+function organizationContextHeaders(
+  base: Record<string, string>,
+): Record<string, string> {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader(base, organizationId);
+}
+
 async function aidreamPost(
   path: string,
   body: Record<string, unknown>,
@@ -134,10 +159,10 @@ async function aidreamPost(
     throw new Error("Sign in to manage Bing Webmaster.");
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
-    headers: {
+    headers: organizationContextHeaders({
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -178,7 +203,11 @@ export async function startBingOAuth(
   }
   const response = await fetch(
     `${backendBase()}/api/bing-integrations/authorize-url?${query.toString()}`,
-    { headers: { Authorization: `Bearer ${session.access_token}` } },
+    {
+      headers: organizationContextHeaders({
+        Authorization: `Bearer ${session.access_token}`,
+      }),
+    },
   );
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as {

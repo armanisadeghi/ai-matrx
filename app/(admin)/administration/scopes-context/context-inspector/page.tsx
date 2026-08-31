@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 
 type ScopeSystemTier = "overview" | "scope" | "scope_type" | "context_item";
 type ScopeSystemVariation = "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
@@ -130,8 +131,14 @@ export default function ContextInspectorPage() {
 
     const loadOrganizations = async () => {
       try {
+        // The proxy forwards this to aidream, whose AuthMiddleware refuses a
+        // JWT request that names no organization (400 organization_required).
+        const activeOrganizationId = peekSelectedOrganizationId();
         const result = await fetch("/api/admin/agent-context/organizations", {
           cache: "no-store",
+          headers: activeOrganizationId
+            ? { "X-Organization-Id": activeOrganizationId }
+            : undefined,
         });
         const payload = await result.json() as {
           organizations?: OrganizationOption[];
@@ -199,9 +206,14 @@ export default function ContextInspectorPage() {
     };
 
     try {
+      // The invocation organization is explicitly chosen on this page — it is
+      // the organization admission for the proxied aidream call.
       const result = await fetch("/api/admin/agent-context/render", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Organization-Id": organizationId.trim(),
+        },
         body: JSON.stringify(body),
       });
       const bytes = await result.arrayBuffer();
