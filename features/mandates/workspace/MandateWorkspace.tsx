@@ -222,7 +222,7 @@ export function MandateWorkspace({
         host === "route" && "pt-[calc(var(--shell-header-h)+0.5rem)]",
       )}
     >
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-2 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-6 pt-2 sm:px-6">
         {/* Header — identity only. */}
         <header className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -281,17 +281,28 @@ export function MandateWorkspace({
           />
         ) : null}
 
-        {/* §4 — THE ONE BINDING UI. One screen, every rung, both holder types:
-            the job's offered inventory on one side, the holder's inputs on the
-            other, the match in the middle by the shared row component. The
-            four-step wizard it replaces is deleted, not deprecated. */}
+      </div>
+
+      {/* §4 — THE ONE BINDING UI. One screen, every rung, both holder types:
+          the job's offered inventory on one side, the holder's inputs on the
+          other, the match in the middle by the shared row component. The
+          four-step wizard it replaces is deleted, not deprecated.
+
+          It gets its OWN, WIDER container: the triad is a reading column and
+          3xl is right for it, but two standing inventories with the match
+          between them cannot live in 768px. The columns themselves are
+          container-queried, so this width is an offer, never an assumption —
+          the window panel keeps its own and stacks. */}
+      <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 sm:px-6">
         <BindingSection
           data={data}
           principal={principal}
           authoring={authoring}
           onChanged={refresh}
         />
+      </div>
 
+      <div className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
         <MandateNotesPanel
           mandateId={data.mandate.id}
           mandateKey={data.mandate.mandate_key}

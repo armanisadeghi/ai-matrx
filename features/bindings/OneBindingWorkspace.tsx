@@ -685,8 +685,15 @@ function BindingDraft({
         </div>
       ) : null}
 
-      {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1). */}
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)_minmax(0,280px)]">
+      {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
+          🚨 CONTAINER query, not a viewport one. This workspace is hosted in a
+          3xl reading column, in the admin shell, and inside a draggable window
+          panel; a `lg:` breakpoint measures the WINDOW and would lay three
+          columns into a 768px container, which is how the first dark-theme walk
+          found the middle squeezed to ~90px. `@container` measures the space
+          this actually has, so every host gets the layout it can carry. */}
+      <div className="@container">
+        <div className="grid gap-3 @4xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,260px)]">
         <OfferedInventoryColumn
           values={offeredValues}
           consumedBy={consumedBy}
@@ -744,11 +751,12 @@ function BindingDraft({
           </div>
         </section>
 
-        <HolderInputsColumn
-          inputs={holderInputs}
-          fedCount={fedCount}
-          holderKind={holder.kind}
-        />
+          <HolderInputsColumn
+            inputs={holderInputs}
+            fedCount={fedCount}
+            holderKind={holder.kind}
+          />
+        </div>
       </div>
 
       {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
