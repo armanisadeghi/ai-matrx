@@ -9,7 +9,10 @@ import {
   parseSearchConsoleUrl,
   pruneFiltersForTab,
   resolvePeriods,
+  searchConsoleBasePath,
+  searchConsoleToolTab,
   withPrevCompare,
+  SEARCH_CONSOLE_DEFAULT_BASE,
   type SearchConsoleUrlState,
 } from "./url-state";
 import { GSC_DEFAULT_RANGE, GSC_RANGE_PRESETS, GSC_TABS } from "../types";
@@ -51,6 +54,70 @@ describe("pruneFiltersForTab on the new tabs", () => {
         }),
       ).toEqual({});
     }
+  });
+});
+
+describe("the four TOOLS are routes, the dimension pivots stay ?tab=", () => {
+  const SITE = "/marketing/acme/seo/site-1/search-console";
+
+  it("keeps the workspace on the host it is mounted on", () => {
+    // It used to write the flat pillar's path unconditionally, so the first
+    // click on the per-site dashboard teleported the user to a permanent
+    // redirect and came back as the cross-client roster.
+    expect(searchConsoleBasePath(SITE)).toBe(SITE);
+    expect(searchConsoleBasePath(`${SITE}/digs`)).toBe(SITE);
+    expect(searchConsoleBasePath("/marketing/reports/search-console/insights"))
+      .toBe("/marketing/reports/search-console");
+    expect(searchConsoleBasePath(null)).toBe(SEARCH_CONSOLE_DEFAULT_BASE);
+    // Anything that is not a Search Console host falls back rather than
+    // inventing a route.
+    expect(searchConsoleBasePath("/marketing/acme")).toBe(
+      SEARCH_CONSOLE_DEFAULT_BASE,
+    );
+  });
+
+  it("reads the tool out of the pathname", () => {
+    expect(searchConsoleToolTab(`${SITE}/digs`)).toBe("digs");
+    expect(searchConsoleToolTab(`${SITE}/new-pages`)).toBe("new-pages");
+    expect(searchConsoleToolTab(SITE)).toBeNull();
+    // A dimension pivot is NOT a route — it is a pivot of one dataset.
+    expect(searchConsoleToolTab(`${SITE}/queries`)).toBeNull();
+  });
+
+  it("writes a tool as a path segment and a pivot as ?tab=", () => {
+    expect(buildSearchConsoleUrl({ ...BASE, tab: "digs" }, SITE)).toContain(
+      `${SITE}/digs?`,
+    );
+    expect(buildSearchConsoleUrl({ ...BASE, tab: "digs" }, SITE)).not.toContain(
+      "tab=digs",
+    );
+    expect(buildSearchConsoleUrl({ ...BASE, tab: "queries" }, SITE)).toContain(
+      "tab=queries",
+    );
+    // The flat pillar is a redirect shim with no children — it keeps ?tab=.
+    expect(buildSearchConsoleUrl({ ...BASE, tab: "digs" })).toContain(
+      "tab=digs",
+    );
+  });
+
+  it("takes the route's tool as the default and lets ?tab= win", () => {
+    expect(parseSearchConsoleUrl(new URLSearchParams(""), "watchlist").tab).toBe(
+      "watchlist",
+    );
+    expect(parseSearchConsoleUrl(new URLSearchParams("")).tab).toBe("overview");
+    expect(
+      parseSearchConsoleUrl(new URLSearchParams("tab=pages"), "watchlist").tab,
+    ).toBe("pages");
+  });
+
+  it("round-trips a dig rule through the tool ROUTE", () => {
+    const url = buildSearchConsoleUrl({ ...BASE, ruleId: "abc-123" }, SITE);
+    const parsed = parseSearchConsoleUrl(
+      new URLSearchParams(url.split("?")[1]),
+      searchConsoleToolTab(url.split("?")[0]),
+    );
+    expect(parsed.tab).toBe("digs");
+    expect(parsed.ruleId).toBe("abc-123");
   });
 });
 

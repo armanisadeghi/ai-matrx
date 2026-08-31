@@ -44,6 +44,20 @@ export interface MarketingSubView {
    * case this field exists for.
    */
   purpose?: string;
+  /**
+   * PATH-STYLE SECTIONS ONLY — the URL under the section when it is not the
+   * plain `/[id]` this file otherwise derives.
+   *
+   * Exists for Settings, whose six views are real routes that do NOT all map
+   * one-to-one onto their ids: the three access AUDIENCES share one `/access`
+   * route and pick their list with `?view=` (an audience selects which list
+   * the one screen shows — a filter, by this file's own test). Without this
+   * field, Settings could only be query-style, and `?view=integrations` on the
+   * Settings route is a link that silently lands on Site settings.
+   *
+   * Written as the suffix appended to the section href, query included.
+   */
+  path?: string;
 }
 
 export type MarketingSubViewHrefStyle = "query" | "path";
@@ -78,6 +92,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "tree", label: "Tree" },
       { id: "columns", label: "Columns" },
     ],
+    hrefStyle: "path",
   },
   {
     // Media is what this WEBSITE's own media is: the images and videos
@@ -92,6 +107,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "videos", label: "Videos" },
       { id: "standards", label: "Standards" },
     ],
+    hrefStyle: "path",
   },
   {
     section: "links",
@@ -109,6 +125,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "routes", label: "Routes" },
       { id: "evidence", label: "Evidence" },
     ],
+    hrefStyle: "path",
   },
   {
     section: "backlinks",
@@ -135,6 +152,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "prospects", label: "Prospects" },
       { id: "insights", label: "Insights" },
     ],
+    hrefStyle: "path",
   },
   {
     // The six tabs BELOW these (Overview, Theories, Implementation, Live
@@ -147,6 +165,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "tracked", label: "Tracked" },
       { id: "untracked", label: "Untracked" },
     ],
+    hrefStyle: "path",
   },
   {
     section: "reputation",
@@ -157,6 +176,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "narratives", label: "Narratives" },
       { id: "evidence", label: "Evidence" },
     ],
+    hrefStyle: "path",
   },
   {
     // 🚨 THE KEYWORD FRONT DOOR. `start` is FIRST, so the bare
@@ -262,15 +282,35 @@ export const MARKETING_SITE_SUBVIEWS = [
     hrefStyle: "path",
   },
   {
+    // 🚨 SETTINGS IS PATH-STYLE, and it always should have been: all six views
+    // are REAL ROUTES under `…/websites/[siteId]/settings`, and the entry
+    // carried no `hrefStyle` at all — so the site header emitted
+    // `…/settings?view=integrations`, which the settings route ignores. Every
+    // Settings sub-view link landed on Site settings (fixed 2026-08-30).
+    //
+    // Flipping it needs the `path` field, because the three access AUDIENCES
+    // are one route with a `?view=` (an audience selects which list the ONE
+    // access screen shows — a filter by this file's own test, and the route
+    // reads it that way). This declaration is the single source of those
+    // paths: `marketingSiteSettingsHref` in `lib/routes.ts` reads it.
     section: "settings",
     views: [
       { id: "site", label: "Site" },
       { id: "integrations", label: "Integrations" },
-      { id: "access-users", label: "User access" },
-      { id: "access-organizations", label: "Organization access" },
-      { id: "access-public", label: "Public access" },
+      { id: "access-users", label: "User access", path: "/access?view=users" },
+      {
+        id: "access-organizations",
+        label: "Organization access",
+        path: "/access?view=organizations",
+      },
+      {
+        id: "access-public",
+        label: "Public access",
+        path: "/access?view=public",
+      },
       { id: "intake", label: "Intake" },
     ],
+    hrefStyle: "path",
   },
 ] as const satisfies readonly MarketingSectionSubViews[];
 
@@ -341,8 +381,25 @@ export function marketingSubViewHrefStyle(
 }
 
 /**
+ * What a path-style sub-view adds to its section href — `/[id]` unless the
+ * view declares its own `path` (Settings' access audiences). The default view
+ * adds nothing: it IS the bare section URL.
+ */
+export function marketingSubViewPathSuffix(
+  section: string,
+  viewId: string,
+): string {
+  const first = defaultMarketingSubView(section);
+  if (!first || viewId === first.id) return "";
+  return (
+    listMarketingSubViews(section).find((view) => view.id === viewId)?.path ??
+    `/${viewId}`
+  );
+}
+
+/**
  * The href for a sub-view. Query-style sections use `?view=`; path-style
- * sections use `/[view]`. The default is always the bare section URL.
+ * sections use their path suffix. The default is always the bare section URL.
  */
 export function marketingSubViewHref(
   sectionHref: string,
@@ -352,8 +409,46 @@ export function marketingSubViewHref(
   const first = defaultMarketingSubView(section);
   if (!first || viewId === first.id) return sectionHref;
   return marketingSubViewHrefStyle(section) === "path"
-    ? `${sectionHref}/${viewId}`
+    ? `${sectionHref}${marketingSubViewPathSuffix(section, viewId)}`
     : `${sectionHref}?view=${viewId}`;
+}
+
+/**
+ * Which path-style sub-view a URL is on, from what follows the section href.
+ *
+ * `remainder` is the pathname after the section (`""` on the bare URL) and
+ * `viewParam` the `?view=` value, because a sub-view can be a route PLUS a
+ * query (Settings' access audiences). Returns `null` when nothing matches, so
+ * the caller can fall back to the query value and then the section default.
+ */
+export function resolveMarketingPathSubView(
+  section: string,
+  remainder: string,
+  viewParam: string | null,
+): string | null {
+  const views = listMarketingSubViews(section);
+  if (views.length === 0) return null;
+  // The BARE section URL says nothing, so the caller falls through to `?view=`
+  // and then the default — which is how a pre-restructure `?view=` link still
+  // lands on the screen it names.
+  if (remainder === "" || remainder === "/") return null;
+  const candidate = viewParam ? `${remainder}?view=${viewParam}` : remainder;
+  const exact = views.find(
+    (view) => marketingSubViewPathSuffix(section, view.id) === candidate,
+  );
+  if (exact) return exact.id;
+  // A deeper or query-less URL under a sub-view's own route still belongs to
+  // it (`/settings/access` with no audience is the users list the route
+  // renders; `/media/videos/<id>` is still Videos).
+  const segment = remainder.split("/").filter(Boolean)[0] ?? null;
+  if (!segment) return null;
+  return (
+    views.find(
+      (view) =>
+        marketingSubViewPathSuffix(section, view.id).split("?")[0] ===
+        `/${segment}`,
+    )?.id ?? null
+  );
 }
 
 /** Every destination inside a site: one per section, plus one per sub-view. */

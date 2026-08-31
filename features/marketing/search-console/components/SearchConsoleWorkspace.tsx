@@ -37,6 +37,8 @@ import {
   allowedFilterKeysForTab,
   buildSearchConsoleUrl,
   parseSearchConsoleUrl,
+  searchConsoleBasePath,
+  searchConsoleToolTab,
   pruneFiltersForTab,
   resolveGscDataThrough,
   resolvePeriods,
@@ -127,9 +129,14 @@ export function SearchConsoleWorkspace() {
   const [visibleMetrics, setVisibleMetrics] =
     useState<readonly GscMetric[]>(DEFAULT_VISIBLE);
 
+  // THE PATH IS STATE TOO. The four TOOLS (Dig Here, Insights, Watchlist, New
+  // Pages) are separate jobs, not pivots of the dimension dataset, so each is
+  // its own route on both hosts; the dimension tabs stay `?tab=`. Reading the
+  // tool out of the pathname keeps ONE source of truth — no route fixes a tab
+  // with a prop that this component's own URL writer would contradict.
   const state = useMemo(
-    () => parseSearchConsoleUrl(searchParams),
-    [searchParams],
+    () => parseSearchConsoleUrl(searchParams, searchConsoleToolTab(pathname)),
+    [searchParams, pathname],
   );
   // Render-safe filters: a shared/hand-edited URL can carry filters the
   // active tab's dimension cannot serve — prune instead of letting the RPC
@@ -221,7 +228,7 @@ export function SearchConsoleWorkspace() {
     next: SearchConsoleUrlState,
     options: { history?: "push" | "replace" } = {},
   ) => {
-    const href = buildSearchConsoleUrl(next);
+    const href = buildSearchConsoleUrl(next, searchConsoleBasePath(pathname));
     startNavigation(() => {
       if (options.history === "replace") router.replace(href, { scroll: false });
       else router.push(href, { scroll: false });

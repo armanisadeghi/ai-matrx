@@ -1780,15 +1780,20 @@ function UntrackedTable({
   );
 }
 
-export function SeoChangeTrackingWorkspace() {
+export function SeoChangeTrackingWorkspace({
+  view: fixedView,
+}: { view?: string } = {}) {
   const { site } = useMarketingSite();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
   // The tracked/untracked split is this section's second level; the SITE HEADER
-  // renders it and owns navigation (`?view=untracked`). This file only reads.
-  const view = useMarketingSubView("changes");
+  // renders it and owns navigation. It is a real route now (`/changes` and
+  // `/changes/untracked`), so the route may fix it with the `view` prop; this
+  // file only reads, and still honours `?view=` when nothing fixes it.
+  const queryView = useMarketingSubView("changes");
+  const view = fixedView ?? queryView;
   const selectedId = searchParams.get("change");
   const setSelectedId = (id: string | null) => {
     const params = new URLSearchParams(searchParams.toString());

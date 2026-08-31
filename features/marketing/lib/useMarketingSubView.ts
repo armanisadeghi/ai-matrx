@@ -22,6 +22,7 @@ import {
   listMarketingSubViews,
   marketingSubViewHref,
   marketingSubViewHrefStyle,
+  resolveMarketingPathSubView,
 } from "@/features/marketing/lib/site-subviews";
 import {
   listMarketingSeoModes,
@@ -96,7 +97,11 @@ function buildFixedSectionSubNav(
 ): MarketingSiteSubNav {
   const pathView =
     marketingSubViewHrefStyle(section) === "path"
-      ? (pathname.slice(baseHref.length).split("/").filter(Boolean)[0] ?? null)
+      ? resolveMarketingPathSubView(
+          section,
+          pathname.slice(baseHref.length),
+          rawViewParam,
+        )
       : null;
   const view = resolveMarketingSubView(section, pathView ?? rawViewParam);
   const views = listMarketingSubViews(section);
@@ -148,8 +153,11 @@ export function buildMarketingSubNav(
   }
   const pathView =
     marketingSubViewHrefStyle(section) === "path"
-      ? (pathname.slice(sectionHref.length).split("/").filter(Boolean)[0] ??
-        null)
+      ? resolveMarketingPathSubView(
+          section,
+          pathname.slice(sectionHref.length),
+          rawViewParam,
+        )
       : null;
   const view = resolveMarketingSubView(section, pathView ?? rawViewParam);
   const views = listMarketingSubViews(section);

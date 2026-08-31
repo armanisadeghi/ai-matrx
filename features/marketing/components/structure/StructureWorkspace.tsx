@@ -42,8 +42,9 @@ import { cn } from "@/lib/utils";
  * - Columns: Finder-style drill-down for walking one branch at a time.
  *
  * The views are declared in `lib/site-subviews.ts` and rendered by the SITE
- * HEADER, which owns switching. This file only reads which one is active — so
- * Columns now has a URL (`?view=columns`) and is linkable for the first time.
+ * HEADER, which owns switching. This file only reads which one is active — and
+ * since 2026-08-30 Columns is a REAL ROUTE (`/structure/columns`), not a
+ * `?view=` on the tree, so the route hands it in as the `view` prop.
  *
  * Data model + sorting/count rules live in `lib/route-tree.ts` (pure,
  * unit-tested); the bounded fetch is `data/service.ts#fetchSiteStructureRows`.
@@ -403,11 +404,17 @@ function ColumnsView({
   );
 }
 
-export function StructureWorkspace() {
+/**
+ * `view` fixes the screen from the ROUTE (`/structure` = tree, and
+ * `/structure/columns` beside it is Columns as its own route). Left out, the
+ * view still comes from `?view=` — the shape every other mount uses.
+ */
+export function StructureWorkspace({ view: fixedView }: { view?: string } = {}) {
   const { site, brandId } = useMarketingSite();
   const structure = useSiteStructure(site.id);
 
-  const view = useMarketingSubView("structure");
+  const queryView = useMarketingSubView("structure");
+  const view = fixedView ?? queryView;
   /** null = every level; N = render nothing deeper than depth N. */
   const [depthFilter, setDepthFilter] = useState<number | null>(null);
   const [query, setQuery] = useState("");

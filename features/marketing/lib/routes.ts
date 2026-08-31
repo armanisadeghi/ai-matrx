@@ -33,6 +33,8 @@
  * fall back to a shim path that resolves it server/client-side.
  */
 
+import { marketingSubViewHref } from "@/features/marketing/lib/site-subviews";
+
 /** The brand asset desk's four views, in display order. */
 export const MARKETING_BRAND_ASSETS_VIEWS = [
   { id: "library", label: "Library" },
@@ -58,21 +60,21 @@ export type MarketingSiteSettingsView =
   | "access-public"
   | "intake";
 
-/** Settings tabs are ROUTES now (tabs-law); access keeps its audience as a view. */
-const SITE_SETTINGS_PATHS: Record<MarketingSiteSettingsView, string> = {
-  site: "",
-  integrations: "/integrations",
-  intake: "/intake",
-  "access-users": "/access?view=users",
-  "access-organizations": "/access?view=organizations",
-  "access-public": "/access?view=public",
-};
-
+/**
+ * Settings tabs are ROUTES (tabs-law); access keeps its audience as a `?view=`
+ * because it selects which list the ONE access screen shows.
+ *
+ * Those six paths used to be declared HERE as well as in the sub-view registry
+ * — and the registry's copy was wrong (it had no `hrefStyle`, so the site
+ * header emitted `?view=integrations` and every Settings sub-view link landed
+ * on Site settings). One declaration now: `site-subviews.ts`, beside the
+ * labels and icons the header renders from.
+ */
 export function marketingSiteSettingsHref(
   sitePath: string,
   view: MarketingSiteSettingsView = "site",
 ): string {
-  return `${sitePath}/settings${SITE_SETTINGS_PATHS[view]}`;
+  return marketingSubViewHref(`${sitePath}/settings`, "settings", view);
 }
 
 /**

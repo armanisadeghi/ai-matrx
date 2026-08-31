@@ -86,21 +86,60 @@ describe("what the site header renders", () => {
   it("points the default view at the bare section URL", () => {
     const media = navFor(`${SITE}/media`);
     expect(media.modes[0]?.href).toBe(`${SITE}/media`);
-    expect(media.modes[2]?.href).toBe(`${SITE}/media?view=standards`);
+    // Media's sub-views became real routes on 2026-08-30.
+    expect(media.modes[2]?.href).toBe(`${SITE}/media/standards`);
     expect(media.activeHref).toBe(`${SITE}/media`);
   });
 
-  it("marks the active item from the query string", () => {
-    // Sub-views differ only by query string, so the header cannot resolve this
-    // from the pathname — this is what `activeModeHref` exists for.
-    expect(navFor(`${SITE}/media`, "standards").activeHref).toBe(
-      `${SITE}/media?view=standards`,
+  it("marks the active item from the path on a path-style section", () => {
+    expect(navFor(`${SITE}/media/standards`).activeHref).toBe(
+      `${SITE}/media/standards`,
     );
     // `library` left for the brand asset desk on 2026-08-15 — an unknown view
     // resolves to the section default, and the route itself redirects it.
     expect(navFor(`${SITE}/media`, "library").activeHref).toBe(`${SITE}/media`);
-    expect(navFor(`${SITE}/settings`, "access-public").activeHref).toBe(
-      `${SITE}/settings?view=access-public`,
+    // A pre-restructure `?view=` link still resolves: the path says nothing,
+    // so the query is read as it always was.
+    expect(navFor(`${SITE}/media`, "standards").activeHref).toBe(
+      `${SITE}/media/standards`,
+    );
+  });
+
+  it("links Settings at its real routes, access audiences included", () => {
+    // Settings carried NO hrefStyle until 2026-08-30 while all six views were
+    // already routes, so every header link read `?view=…` and landed on Site
+    // settings. The access trio is one route plus an audience query.
+    const settings = navFor(`${SITE}/settings`);
+    expect(settings.modes.map((mode) => mode.href)).toEqual([
+      `${SITE}/settings`,
+      `${SITE}/settings/integrations`,
+      `${SITE}/settings/access?view=users`,
+      `${SITE}/settings/access?view=organizations`,
+      `${SITE}/settings/access?view=public`,
+      `${SITE}/settings/intake`,
+    ]);
+    expect(navFor(`${SITE}/settings/integrations`).activeHref).toBe(
+      `${SITE}/settings/integrations`,
+    );
+    expect(navFor(`${SITE}/settings/access`, "public").activeHref).toBe(
+      `${SITE}/settings/access?view=public`,
+    );
+  });
+
+  it("renders Structure and Changes as routes", () => {
+    expect(navFor(`${SITE}/structure`).modes.map((m) => m.href)).toEqual([
+      `${SITE}/structure`,
+      `${SITE}/structure/columns`,
+    ]);
+    expect(navFor(`${SITE}/structure/columns`).activeHref).toBe(
+      `${SITE}/structure/columns`,
+    );
+    expect(seoNavFor(`${S}/changes`).modes.map((m) => m.href)).toEqual([
+      `${S}/changes`,
+      `${S}/changes/untracked`,
+    ]);
+    expect(seoNavFor(`${S}/changes/untracked`).activeHref).toBe(
+      `${S}/changes/untracked`,
     );
   });
 

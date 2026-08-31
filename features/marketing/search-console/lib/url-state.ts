@@ -113,14 +113,20 @@ export function applyGscFilters(
   }
 }
 
+/**
+ * `routeTab` is the tool the PATH names (see `searchConsoleToolTab`) — the
+ * default when the query string does not name a tab. A `?tab=` still wins, so
+ * an old shared link keeps meaning what its author saw.
+ */
 export function parseSearchConsoleUrl(
   params: ReadonlyURLSearchParams | URLSearchParams,
+  routeTab: GscTab | null = null,
 ): SearchConsoleUrlState {
   const siteParam = params.get("site");
   const tabParam = params.get("tab");
   const tab: GscTab = GSC_TABS.some((t) => t.key === tabParam)
     ? (tabParam as GscTab)
-    : "overview";
+    : (routeTab ?? "overview");
   const rangeParam = params.get("range");
   const isPreset = GSC_RANGE_PRESETS.some((r) => r.key === rangeParam);
   const customFrom = params.get("from");
@@ -162,10 +168,68 @@ export function parseSearchConsoleUrl(
   };
 }
 
-export function buildSearchConsoleUrl(state: SearchConsoleUrlState): string {
+/**
+ * THE FOUR TOOLS — separate jobs that happen to be mounted beside the
+ * dimension pivots, and REAL ROUTES since 2026-08-30
+ * (`…/search-console/digs`, `/insights`, `/watchlist`, `/new-pages` on both
+ * hosts). `overview|queries|pages|countries|devices|appearance` stay `?tab=`:
+ * those are dimension pivots of ONE dataset under one set of filters, not
+ * separate screens.
+ */
+export const GSC_TOOL_TABS = [
+  "digs",
+  "insights",
+  "watchlist",
+  "new-pages",
+] as const satisfies readonly GscTab[];
+
+export const SEARCH_CONSOLE_DEFAULT_BASE = "/marketing/search-console";
+
+/**
+ * The Search Console host a URL is mounted on, with any tool-route segment
+ * stripped — what `buildSearchConsoleUrl` must write back onto.
+ *
+ * The workspace lives on three hosts (the per-site SEO route, the Reports
+ * roll-up, and the legacy flat pillar) and writes every interaction back into
+ * the URL. It used to write the flat pillar's path unconditionally, so the
+ * first click on ANY other host teleported the user out of it — and the flat
+ * pillar is a permanent redirect, so a per-site dashboard came back as the
+ * cross-client roster.
+ */
+export function searchConsoleBasePath(pathname: string | null): string {
+  if (!pathname) return SEARCH_CONSOLE_DEFAULT_BASE;
+  const trimmed = pathname.replace(/\/+$/, "");
+  const tool = GSC_TOOL_TABS.find((key) => trimmed.endsWith(`/${key}`));
+  const base = tool ? trimmed.slice(0, -(tool.length + 1)) : trimmed;
+  return base.endsWith("/search-console") ? base : SEARCH_CONSOLE_DEFAULT_BASE;
+}
+
+/**
+ * The tool a URL's own PATH names, or `null` on a host root. This is how the
+ * four tool routes select their tool: the pathname IS the state, so no page
+ * has to fix a tab with a prop the workspace's URL writer would contradict.
+ */
+export function searchConsoleToolTab(pathname: string | null): GscTab | null {
+  if (!pathname) return null;
+  const trimmed = pathname.replace(/\/+$/, "");
+  return GSC_TOOL_TABS.find((key) => trimmed.endsWith(`/${key}`)) ?? null;
+}
+
+export function buildSearchConsoleUrl(
+  state: SearchConsoleUrlState,
+  basePath: string = SEARCH_CONSOLE_DEFAULT_BASE,
+): string {
   const params = new URLSearchParams();
+  // A TOOL becomes a path segment on the hosts that carry the tool routes.
+  // The flat pillar has none — it is a permanent-redirect shim with no
+  // children — so it keeps writing `?tab=`.
+  const toolPath =
+    basePath !== SEARCH_CONSOLE_DEFAULT_BASE &&
+    (GSC_TOOL_TABS as readonly GscTab[]).includes(state.tab)
+      ? `${basePath}/${state.tab}`
+      : null;
   if (state.siteId) params.set("site", state.siteId);
-  if (state.tab !== "overview") params.set("tab", state.tab);
+  if (state.tab !== "overview" && !toolPath) params.set("tab", state.tab);
   if (state.range !== GSC_DEFAULT_RANGE) params.set("range", state.range);
   if (state.range === "custom" && state.customFrom && state.customTo) {
     params.set("from", state.customFrom);
@@ -180,7 +244,8 @@ export function buildSearchConsoleUrl(state: SearchConsoleUrlState): string {
     if (value && value.trim() !== "") params.set(param, value);
   }
   const qs = params.toString();
-  return qs ? `/marketing/search-console?${qs}` : "/marketing/search-console";
+  const path = toolPath ?? basePath;
+  return qs ? `${path}?${qs}` : path;
 }
 
 function isoDate(d: Date): string {

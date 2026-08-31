@@ -8,7 +8,12 @@ import {
   listMarketingSubViews,
   marketingSubNavCeiling,
   marketingSubViewHref,
+  resolveMarketingPathSubView,
 } from "./site-subviews";
+import {
+  marketingSiteSettingsHref,
+  type MarketingSiteSettingsView,
+} from "./routes";
 
 const SITE_PATH = "/marketing/brands/brand-1/sites/site-1";
 
@@ -66,12 +71,14 @@ describe("marketing site sub-view registry", () => {
     expect(MARKETING_SUBNAV_SECTION_DEBT.backlinks).toBe(10);
   });
 
-  it("resolves the default view and omits its param from the href", () => {
+  it("resolves the default view and omits it from the href", () => {
+    // Media became path-style on 2026-08-30 (`/media/videos`,
+    // `/media/standards` are routes now) — the default is still the bare URL.
     const mediaHref = `${SITE_PATH}/media`;
     expect(defaultMarketingSubView("media")?.id).toBe("crawled");
     expect(marketingSubViewHref(mediaHref, "media", "crawled")).toBe(mediaHref);
     expect(marketingSubViewHref(mediaHref, "media", "standards")).toBe(
-      `${mediaHref}?view=standards`,
+      `${mediaHref}/standards`,
     );
     // The four moved views are no longer the website's to name — an old
     // `?view=library` URL is handled by the media route's redirect, not here.
@@ -88,6 +95,67 @@ describe("marketing site sub-view registry", () => {
     expect(marketingSubViewHref(sectionHref, "ai-visibility", "claims")).toBe(
       `${sectionHref}/claims`,
     );
+  });
+
+  it("gives Settings its real routes, access audiences included", () => {
+    // THE BUG THIS GUARDS (2026-08-30): Settings declared no `hrefStyle`, so
+    // the header emitted `…/settings?view=integrations` — a link the Settings
+    // route ignores, landing every sub-view on Site settings. It is path-style
+    // now, and the three access AUDIENCES carry an explicit `path` because
+    // they share ONE `/access` route and pick their list with `?view=`.
+    const settingsHref = `${SITE_PATH}/settings`;
+    expect(marketingSubViewHref(settingsHref, "settings", "site")).toBe(
+      settingsHref,
+    );
+    expect(marketingSubViewHref(settingsHref, "settings", "integrations")).toBe(
+      `${settingsHref}/integrations`,
+    );
+    expect(marketingSubViewHref(settingsHref, "settings", "intake")).toBe(
+      `${settingsHref}/intake`,
+    );
+    expect(marketingSubViewHref(settingsHref, "settings", "access-users")).toBe(
+      `${settingsHref}/access?view=users`,
+    );
+    expect(
+      marketingSubViewHref(settingsHref, "settings", "access-organizations"),
+    ).toBe(`${settingsHref}/access?view=organizations`);
+    expect(
+      marketingSubViewHref(settingsHref, "settings", "access-public"),
+    ).toBe(`${settingsHref}/access?view=public`);
+  });
+
+  it("is the ONE declaration marketingSiteSettingsHref reads", () => {
+    // `lib/routes.ts` used to carry a second copy of these six paths, and the
+    // registry's copy was the wrong one. Two spellings of one URL is how the
+    // header ended up linking nowhere.
+    for (const view of listMarketingSubViews("settings")) {
+      expect(
+        marketingSiteSettingsHref(SITE_PATH, view.id as MarketingSiteSettingsView),
+      ).toBe(marketingSubViewHref(`${SITE_PATH}/settings`, "settings", view.id));
+    }
+  });
+
+  it("reads a path-style sub-view back out of a URL", () => {
+    // What the site header uses to know which pill is current.
+    // The bare section URL says nothing — the caller falls through to `?view=`
+    // and then the default, so an old query link still lands.
+    expect(resolveMarketingPathSubView("media", "", null)).toBeNull();
+    expect(resolveMarketingPathSubView("media", "/videos", null)).toBe("videos");
+    expect(resolveMarketingPathSubView("changes", "/untracked", null)).toBe(
+      "untracked",
+    );
+    expect(resolveMarketingPathSubView("settings", "/access", "public")).toBe(
+      "access-public",
+    );
+    // A `/access` URL with no audience is the users list the route renders.
+    expect(resolveMarketingPathSubView("settings", "/access", null)).toBe(
+      "access-users",
+    );
+    // A deeper URL still belongs to the sub-view whose route it is under.
+    expect(
+      resolveMarketingPathSubView("media", "/videos/asset-1", null),
+    ).toBe("videos");
+    expect(resolveMarketingPathSubView("media", "/nonsense", null)).toBeNull();
   });
 
   it("returns an empty list for a section with no sub-views", () => {

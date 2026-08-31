@@ -46,7 +46,12 @@ import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media
  * brief in the URL and SAYS so rather than teleporting the user silently.
  */
 
-export function SiteMediaWorkspace() {
+/**
+ * `view` fixes the screen from the ROUTE (`/media` = crawled, with
+ * `/media/videos` and `/media/standards` beside it). Left out, the view still
+ * comes from `?view=` — the shape every other mount uses.
+ */
+export function SiteMediaWorkspace({ view: fixedView }: { view?: string } = {}) {
   const { site, crawlActivity } = useMarketingSite();
   const params = useParams<{ brandId: string }>();
   const brandId = params.brandId;
@@ -54,7 +59,8 @@ export function SiteMediaWorkspace() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const view = useMarketingSubView("media");
+  const queryView = useMarketingSubView("media");
+  const view = fixedView ?? queryView;
 
   const standards = useMemo(
     () => parseSiteMediaStandards(site.settings),
