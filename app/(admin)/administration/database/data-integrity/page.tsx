@@ -32,6 +32,8 @@ import {
 } from "@/components/official/entity-ref/doors";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 type Severity = "error" | "warning" | "info";
 
@@ -229,6 +231,20 @@ function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
   );
 }
 
+function checkRowContent(r: IntegrityRow): string {
+  return [
+    `Check: ${r.title} (${r.id})`,
+    `Category: ${r.category} · Severity: ${r.severity} · Kind: ${r.kind}`,
+    `Status: ${rowStatus(r)}`,
+    r.result
+      ? `Findings: ${r.result.count} · Duration: ${r.result.durationMs}ms`
+      : "Findings: not run",
+    r.result?.error ? `Error: ${r.result.error}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function CheckDetail({ row }: { row: IntegrityRow }) {
   const r = row.result;
   return (
@@ -298,6 +314,7 @@ export default function DataIntegrityPage() {
     "table.data-integrity.row",
     stringUrlCodec(),
   );
+  const [clickedRow, setClickedRow] = useState<IntegrityRow | null>(null);
 
   const loadChecks = useCallback(async () => {
     setError(null);
@@ -582,6 +599,54 @@ export default function DataIntegrityPage() {
       )}
 
       <div className="min-h-0 flex-1">
+        {/* A PLAIN DOM CHILD, not the table itself — MatrxDataTable forwards
+            neither the ref nor onContextMenu Radix clones onto its trigger. */}
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return { content: checkRowContent(row) };
+          }}
+          extraSections={[
+            {
+              id: "integrity-check-row",
+              label: "This check",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "item",
+                  id: "integrity-run-check",
+                  label: "Run this check",
+                  icon: Play,
+                  disabled:
+                    !clickedRow || runningId === clickedRow?.id || runningAll,
+                  description: "Already running",
+                  onSelect: () => {
+                    if (clickedRow) void runOne(clickedRow.id);
+                  },
+                },
+                {
+                  kind: "item",
+                  id: "integrity-view-findings",
+                  label: "View findings",
+                  icon: Info,
+                  disabled: !clickedRow?.result?.sample.length,
+                  description: "No findings sampled for this check",
+                  onSelect: () => {
+                    if (clickedRow) setSelectedId(clickedRow.id);
+                  },
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "data-integrity", selectedRow: false }}
           data={rows}
@@ -625,18 +690,7 @@ export default function DataIntegrityPage() {
             location: "/administration/database/data-integrity",
             rowKind: "integrity-check",
             listKind: "integrity-checks",
-            humanRow: (r) =>
-              [
-                `Check: ${r.title} (${r.id})`,
-                `Category: ${r.category} · Severity: ${r.severity} · Kind: ${r.kind}`,
-                `Status: ${rowStatus(r)}`,
-                r.result
-                  ? `Findings: ${r.result.count} · Duration: ${r.result.durationMs}ms`
-                  : "Findings: not run",
-                r.result?.error ? `Error: ${r.result.error}` : null,
-              ]
-                .filter(Boolean)
-                .join("\n"),
+            humanRow: checkRowContent,
             rowAttributes: (r) => ({
               id: r.id,
               severity: r.severity,
@@ -655,6 +709,7 @@ export default function DataIntegrityPage() {
             render: (r) => <CheckDetail row={r} />,
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
