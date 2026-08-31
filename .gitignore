@@ -135,4 +135,7 @@ public/pdfjs/
 # once complete, so a concurrent type-check never sees a half-written database.types.ts.
 # A lingering staging file means a generation run failed; it must never be committable.
 types/database.types.ts.staging
+# Cross-repo parity tests create Python tempfile bridge modules in the repo root.
+# They are transient inputs and must never be captured by a ship-mode release.
+/tmp*.ts
 .dev-login-nonce
