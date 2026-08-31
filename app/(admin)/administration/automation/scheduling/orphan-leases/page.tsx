@@ -16,6 +16,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { StatusPill } from "@/features/scheduling/components/shared/StatusPill";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import {
@@ -26,6 +27,7 @@ import {
 import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
+import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 
 export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
@@ -54,6 +56,23 @@ export default function OrphanLeasesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // ONE right-click menu for the whole pane, shared with the runs console
+  // (same row shape — `useScheduledRunMenuSection` is the identity's ONE
+  // builder; its "Mark run as failed…" delegates to the same RPC as the
+  // row's own button below).
+  const rowMenu = useScheduledRunMenuSection<AdminRunRow>({
+    rows: () => rows,
+    content: (r) =>
+      [
+        `Run: ${r.id}`,
+        `Task: ${r.task_title ?? "(title unavailable)"} (${r.task_id})`,
+        `Status: ${r.status}`,
+        `Claimed: ${humanizeRelative(r.claimed_at)}`,
+        `Expired: ${humanizeRelative(r.claim_expires_at)}`,
+      ].join("\n"),
+    onMarkedFailed: () => void load(),
+  });
 
   const handleKill = useCallback(
     async (run: AdminRunRow) => {
@@ -179,6 +198,13 @@ export default function OrphanLeasesPage() {
         className="min-h-0 flex-1"
         data-surface-value="orphan_lease_row_count"
       >
+        <NonEditableContextMenu
+          sourceFeature="scheduled"
+          contentSource={{ type: "raw" }}
+          getApplicationScope={rowMenu.getApplicationScope}
+          resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+          extraSections={rowMenu.sections}
+        >
         <MatrxDataTable
           urlState={{ id: "scheduling-orphan-leases" }}
           data={rows}
@@ -252,6 +278,7 @@ export default function OrphanLeasesPage() {
             </Button>
           )}
         />
+        </NonEditableContextMenu>
       </div>
     </div>
   );
