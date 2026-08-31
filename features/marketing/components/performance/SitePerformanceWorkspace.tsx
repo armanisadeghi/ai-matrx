@@ -803,6 +803,55 @@ export function SitePerformanceWorkspace() {
                 <Badge variant="outline">28-day GSC traffic</Badge>
               </div>
               <div className="p-3">
+                <NonEditableContextMenu
+                  sourceFeature="marketing"
+                  contentSource={{ type: "raw" }}
+                  contextData={{ content: "" }}
+                  resolveContextOnOpen={(target) => {
+                    const id = (target as HTMLElement | null)
+                      ?.closest("[data-row-id]")
+                      ?.getAttribute("data-row-id");
+                    const row =
+                      (id && worstPages.find((r) => r.page_id === id)) ||
+                      null;
+                    setWorstContextRow(row);
+                    if (!row) return null;
+                    return {
+                      [CONTEXT_MENU_ENTITY_KEY]: pageEntityRef({
+                        pageId: row.page_id,
+                        url: row.url,
+                      }),
+                      content: `${row.url}\nMobile score ${scoreLabel(row.performance_score)}`,
+                    };
+                  }}
+                  extraSections={
+                    worstContextRow
+                      ? [
+                          pageMenuSection({
+                            siteId: site.id,
+                            siteName: site.name,
+                            url: worstContextRow.url,
+                            pageId: worstContextRow.page_id,
+                            openDrilldown,
+                          }),
+                          {
+                            id: "performance-actions",
+                            label: "Performance",
+                            items: [
+                              {
+                                kind: "item",
+                                id: "run-pagespeed-test",
+                                label: "Run PageSpeed test",
+                                icon: Zap,
+                                onSelect: () =>
+                                  void runTest(worstContextRow.page_id),
+                              },
+                            ],
+                          },
+                        ]
+                      : []
+                  }
+                >
                 <MatrxDataTable
                   urlState={{ id: "performance-worst-pages" }}
                   data={worstPages}
@@ -816,6 +865,7 @@ export function SitePerformanceWorkspace() {
                       "The list will populate automatically as PageSpeed coverage and Search Console evidence overlap.",
                   }}
                 />
+                </NonEditableContextMenu>
               </div>
             </section>
 
