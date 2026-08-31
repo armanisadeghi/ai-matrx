@@ -66,7 +66,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
     }
   }, [isOpen]);
 
-  const loadQueries = () => {
+  function loadQueries() {
     const history = searchText.trim() 
       ? searchQueries(searchText)
       : getQueryHistory();
@@ -94,7 +94,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
     });
     
     setAllTags(Array.from(tags));
-  };
+  }
 
   // Handle search
   const handleSearch = () => {
@@ -638,4 +638,4 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
       </Dialog>
     </>
   );
-}; 
+};
