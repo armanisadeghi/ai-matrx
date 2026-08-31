@@ -14,7 +14,6 @@ export function ModeToggle({
   mode,
   onChange,
   disabled = false,
-  placeCount,
 }: {
   mode: BindingMode;
   onChange: (next: BindingMode) => void;
