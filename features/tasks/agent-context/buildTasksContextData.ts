@@ -192,7 +192,9 @@ export function buildTasksContextData(
   const scope = createTasksScope({
     // ── Baselines (live editor) ──────────────────────────────────────────
     selection: selectedText || undefined,
-    content: taskOpen ? text || undefined : undefined,
+    // A task title is always actionable content. Empty descriptions are common,
+    // and must not turn the shared Tasks context menu into an inert shell.
+    content: taskOpen ? text || title || undefined : undefined,
     context: surround,
 
     // ── Task identity ────────────────────────────────────────────────────

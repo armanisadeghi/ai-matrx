@@ -64,6 +64,27 @@ describe("Tasks surface context", () => {
     });
   });
 
+  it("uses the task title as canonical menu content when description is empty", () => {
+    expect(
+      buildTasksContextData({
+        taskId: "task-1",
+        title: "Ship the surface",
+        description: "",
+      }),
+    ).toMatchObject({
+      content: "Ship the surface",
+      active_task_title: "Ship the surface",
+    });
+
+    expect(
+      buildTasksContextData({
+        taskId: "task-1",
+        title: "Ship the surface",
+        description: "Detailed instructions",
+      }),
+    ).toMatchObject({ content: "Detailed instructions" });
+  });
+
   it("emits priority as an exact read twin, including honest None", () => {
     const savedMedium = buildTasksContextData({
       taskId: "task-1",
