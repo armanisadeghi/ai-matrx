@@ -275,8 +275,9 @@ The monetization layer also moves **real money to creators**: a student buys a p
 class, the platform takes a cut, and the rest is paid out to the creator. Built on
 **Stripe Connect Express** (Stripe hosts onboarding, KYC, payouts, tax — we link, we
 never rebuild). Connect is enabled and the platform profile is complete. Test
-Express onboarding works; live Express creation remains gated only by Stripe's
-required platform-representative photo-ID and selfie verification.
+Express onboarding works; live Express creation remains gated by Stripe's platform
+review. Stripe reports that review in progress, disables the remaining Connect
+identity/final-details controls, and refuses live `accounts.create` until it clears.
 
 **Split model — ONE source: [`lib/stripe/connect.ts`](../../lib/stripe/connect.ts).**
 `PLATFORM_FEE_BPS = 2000` → **platform 20% / creator 80%**. `platformFeeAmount()` /
@@ -416,9 +417,11 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
       test `billing.product`/`price` row is seeded (`AI Matrx Premium (TEST)`, $10/mo).
 - [ ] Stripe Connect production activation: live/test standard endpoints share the production URL,
       use mode-pinned signature verification, and have the four Stripe API keys plus both endpoint
-      secrets installed in their required Vercel scopes across all three projects. Stripe still
-      requires Arman to complete its photo-ID + selfie representative verification before the
-      platform may create live Express accounts; the final-details review unlocks after that step.
+      secrets installed in their required Vercel scopes across all three projects. AI Matrx branding,
+      the platform business profile, and the representative identity ceremony are submitted. Stripe
+      now reports **Review in progress** (2–3 days), disables the remaining identity/final-details
+      controls, and still refuses live Express creation. The live create/onboard/delete canary follows
+      Stripe's review; there is no agent-actionable activation step while that external review runs.
 - [ ] **Blocked on Arman:** seed `billing.price` with the REAL Premium number (product decision).
       `/pricing` is already DB-backed off the TEST row — swapping the number needs no code change.
 - [ ] **Blocked on Arman:** aidream-side spend re-check per capability → then flip `enforced` per
@@ -462,14 +465,16 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
-- **2026-08-30** — Advanced Stripe Connect creator payouts to the final identity gate. Connect
+- **2026-08-30** — Advanced Stripe Connect creator payouts to Stripe's platform-review gate. Connect
   is enabled, the platform profile is complete, and the live/test standard webhook endpoints use
   the exact eight-event contract. Repaired the shared production webhook so
   it verifies both endpoint secrets while pinning the matching Stripe client to `event.livemode`;
   a live signature can never authorize a test event or vice versa. Added regression coverage for
   both valid ledgers and the cross-ledger rejection, installed the Stripe key matrix across all
-  three Vercel projects, and released it. Live account creation is still refused until Arman
-  completes Stripe's mandatory photo-ID + selfie verification; final live/test canaries follow it.
+  three Vercel projects, and released it. Saved AI Matrx branding and the corrected business website;
+  live and test `account.updated` canaries both return HTTP 200. After the representative ceremony,
+  Stripe reports a 2–3 day account review, disables Connect's identity/final-details controls, and
+  still refuses live Express creation. The disposable live account canary follows Stripe clearance.
 
 - **2026-08-22** — **THE EDUCATION FLIP (Q2, ruled 2026-08-19).** All 16 `education.*`
   capabilities are `enforced: true` — registry AND `billing.capability` rows flipped
