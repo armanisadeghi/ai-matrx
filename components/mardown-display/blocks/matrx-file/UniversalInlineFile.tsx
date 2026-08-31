@@ -35,7 +35,10 @@ import {
   getFilePreviewProfile,
   type PreviewKind,
 } from "@/features/files/utils/file-types";
-import type { OurFileMatch } from "@/lib/media/our-file-sources";
+import {
+  fileNameFromUrl,
+  type OurFileMatch,
+} from "@/lib/media/our-file-sources";
 
 export interface UniversalInlineFileProps {
   /** Proven-ours match (source + recovered fileId + sniffed mime). */
@@ -280,27 +283,11 @@ function InlineSkeleton() {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Best-effort display name from a URL: prefer the `filename="…"` baked into the
- * signed URL's `response-content-disposition`, else the last path segment.
- */
-function fileNameFromUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const disp = u.searchParams.get("response-content-disposition");
-    if (disp) {
-      const m = decodeURIComponent(disp).match(
-        /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i,
-      );
-      if (m?.[1]) return m[1];
-    }
-    const seg = u.pathname.split("/").filter(Boolean).pop();
-    if (seg && /\.[a-z0-9]+$/i.test(seg)) return decodeURIComponent(seg);
-  } catch {
-    // ignore — fall through to null
-  }
-  return null;
-}
+// `fileNameFromUrl` used to live here. It is now the canonical recognizer's
+// (`@ai-matrx/data/files`, re-exported through `@/lib/media/our-file-sources`):
+// same contract — the `response-content-disposition` filename when present,
+// else the last path segment ONLY when it looks like a real name, never a
+// UUID id. C9 collapse, adopting @ai-matrx/data 0.4.1.
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

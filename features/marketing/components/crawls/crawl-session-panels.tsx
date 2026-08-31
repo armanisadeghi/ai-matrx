@@ -15,8 +15,10 @@ const RENDER_MODE_LABELS: Record<string, string> = {
   browser_with_screenshot: "Browser + screenshots",
 };
 
-function formatBytes(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "0 B";
+/** A missing/garbled size reads "—", never a confident "0 B" (media 0.4.0). */
+function formatBytes(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value) || value < 0) return "—";
+  if (value <= 0) return "0 B";
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;

@@ -2,9 +2,17 @@
  * Formatting helpers for org-admin metrics. Pure, no side effects.
  */
 
-/** Human-readable byte size. */
+/**
+ * Human-readable byte size.
+ *
+ * A MISSING size is never a confident "0 B" — null / undefined / NaN /
+ * non-finite / negative render as an em-dash, so a corrupt or not-yet-swept
+ * row reads as "unknown" instead of "empty". (The defect class @ai-matrx/media
+ * 0.4.0 named across the platform; a real zero still reads "0 B".)
+ */
 export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || bytes <= 0) return "0 B";
+  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "—";
+  if (bytes <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / Math.pow(1024, i);
