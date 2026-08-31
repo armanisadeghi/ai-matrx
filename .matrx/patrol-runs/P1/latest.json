@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T081603Z",
-  "state": "certified",
-  "updatedAt": "2026-08-31T08:35:22.897Z",
-  "summary": "CERTIFIED corrected 11-file P1 candidate; both rejected interaction seams are closed.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-31T08:35:39.580Z",
+  "summary": "Certified corrected P1 candidate queued for origin/main integration.",
   "source": "20260831T081603Z.json",
-  "eventHash": "f6abb2ac6c207488c00d29ad8f59c78608d5c32f536c75eeb31b2eb69f682e12"
+  "eventHash": "3cb8d386e0e0698e96038ab584f5d03528d1016d36786068d02b36b6211085be"
 }
