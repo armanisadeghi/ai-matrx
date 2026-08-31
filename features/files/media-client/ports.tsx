@@ -22,6 +22,7 @@
 import type { Ref, RefObject } from "react";
 import type {
   MediaActionContext,
+  MediaFailureInfo,
   MediaHostPorts,
   PlaybackSessionPort,
 } from "@ai-matrx/media";
@@ -126,26 +127,17 @@ const actions: MediaHostPorts["actions"] = {
 };
 
 /**
- * The `@ai-matrx/media` 0.3.0 diagnostics binding — the port whose ABSENCE
- * made the 2026-08-30 private-image outage invisible to the Error Inspector.
- * The payload's structural type is mirrored locally so this module
- * type-checks against the currently-installed package even before the 0.3.0
- * `MediaHostPorts.diagnostics` declaration lands here; the shape is the
- * package's `MediaFailureInfo` (mediaRef is durable identity, never a signed
- * URL). Per C22 this is a pure sink binding — zero interpretation.
+ * The `@ai-matrx/media` diagnostics binding — the port whose ABSENCE made the
+ * 2026-08-30 private-image outage invisible to the Error Inspector. Per C22
+ * this is a pure sink binding: zero interpretation, no host policy.
+ *
+ * The payload type is the PACKAGE's `MediaFailureInfo`. It used to be mirrored
+ * as a local interface because `MediaHostPorts` did not yet declare the port;
+ * it does now (0.4.x), so the mirror is deleted rather than left as a twin that
+ * silently stops matching the day the package adds a phase or a field.
  */
-interface MediaFailureCapture {
-  source: "media";
-  phase: "resolve" | "session" | "blob" | "element-load" | "recovery";
-  mediaRef: string;
-  status?: number | undefined;
-  retryOutcome?: string | undefined;
-  terminal: boolean;
-  message: string;
-}
-
 const diagnostics = {
-  capture(info: MediaFailureCapture): void {
+  capture(info: MediaFailureInfo): void {
     captureError({
       source: "media",
       relation: info.mediaRef,
@@ -161,9 +153,7 @@ const diagnostics = {
 };
 
 /** Referentially stable for the app lifetime — required by the port contract. */
-export const mediaHostPorts: MediaHostPorts & {
-  diagnostics?: typeof diagnostics;
-} = {
+export const mediaHostPorts: MediaHostPorts = {
   ImageComponent: NextMediaImage,
   playbackSession,
   actions,
