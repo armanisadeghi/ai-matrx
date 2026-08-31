@@ -35,6 +35,7 @@ import { FastFireCountdown } from "./FastFireCountdown";
 import { FastFireLiveCard } from "./FastFireLiveCard";
 import { FastFireScoreboard } from "./FastFireScoreboard";
 import { FastFireTimesUp } from "./FastFireTimesUp";
+import { useFastFireLocalQaAudioFixture } from "../qa/useFastFireLocalQaAudioFixture";
 
 const FLASHCARDS_HOME = "/education/flashcards";
 
@@ -47,6 +48,11 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   const phase = useAppSelector(selectFastFirePhase);
   const config = useAppSelector(selectFastFireConfig);
   const currentCard = useAppSelector(selectFastFireCurrentCard);
+
+  // Certification-only deterministic audio source. The hook is inert unless
+  // this is a development build on localhost with the exact bounded QA flag;
+  // production and ordinary local sessions retain native getUserMedia.
+  useFastFireLocalQaAudioFixture();
 
   // The drill orchestrator — mounted for the whole surface so capture + timers
   // persist across phase transitions. It self-guards on phase internally.

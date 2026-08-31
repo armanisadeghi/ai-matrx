@@ -167,8 +167,12 @@ own fresh conversation):
   orphaned active session. Expected permission refusal stays visible with the
   browser-settings remedy and no longer pollutes the system-error console. The
   isolated Browser certification can replace only the physical audio source at
-  `getUserMedia` with `scripts/qa/fastfire-browser-audio-fixture.mjs`; the real
-  capture, clip, upload, grading, persistence, and terminal-result paths remain.
+  `getUserMedia` with the canonical FastFire QA fixture. Activation requires a
+  development build, a `localhost` or `127.0.0.1` origin, and the exact
+  `matrxQaAudio=fastfire-browser-audio-fixture-v1` query value; production,
+  non-local origins, and ordinary local sessions keep native media permissions.
+  The real capture, clip, upload, grading, persistence, and terminal-result
+  paths remain.
 
 - 2026-08-30 — FastFire's React 19 audit is clean: card-local help now resets
   through a keyed card boundary, the deadline loop updates committed refs in an
