@@ -88,7 +88,7 @@ const COMMON_ABBREVIATION_PATTERN = new RegExp(
   `\\b(${Object.keys(COMMON_ABBREVIATION_EXPANSIONS)
     .sort((a, b) => b.length - a.length)
     .map(escapeRegExp)
-    .join("|")})\\b`,
+    .join("|")})(['’]s|s)?\\b`,
   "gi",
 );
 
@@ -121,17 +121,26 @@ const CASE_SENSITIVE_WORD_ACRONYMS = new Set<CommonAbbreviation>([
   "WAN",
 ]);
 
-function spokenFormForAbbreviation(match: string): string {
-  const abbreviation = COMMON_ABBREVIATION_BY_UPPERCASE[match.toUpperCase()];
+function spokenFormForAbbreviation(
+  match: string,
+  sourceAbbreviation: string,
+  suffix = "",
+): string {
+  const abbreviation =
+    COMMON_ABBREVIATION_BY_UPPERCASE[sourceAbbreviation.toUpperCase()];
   if (!abbreviation) return match;
   if (
     CASE_SENSITIVE_WORD_ACRONYMS.has(abbreviation) &&
-    match !== abbreviation
+    sourceAbbreviation !== abbreviation
   ) {
     return match;
   }
-  if (SPOKEN_AS_WORD.has(abbreviation)) return abbreviation;
-  return Array.from(abbreviation.toUpperCase()).join(" ");
+  if (SPOKEN_AS_WORD.has(abbreviation)) return `${abbreviation}${suffix}`;
+  const spoken = Array.from(abbreviation.toUpperCase()).join(" ");
+  // Plural and possessive initialisms sound the same. The apostrophe gives
+  // both engines an unambiguous suffix instead of turning the final "s" into
+  // another letter in the initialism.
+  return suffix ? `${spoken}'s` : spoken;
 }
 
 /**
@@ -144,10 +153,7 @@ function spokenFormForAbbreviation(match: string): string {
  */
 export function normalizeSpeechAbbreviations(text: string): string {
   if (!text) return text;
-  return text.replace(
-    COMMON_ABBREVIATION_PATTERN,
-    spokenFormForAbbreviation,
-  );
+  return text.replace(COMMON_ABBREVIATION_PATTERN, spokenFormForAbbreviation);
 }
 
 /**
@@ -184,14 +190,20 @@ export function normalizeSpeechBlanks(text: string): string {
 }
 
 /** Apply dictionary pronunciation substitutions, whole-word & case-insensitive. */
-function applyPronunciations(text: string, pairs: SpeechPronunciation[]): string {
+function applyPronunciations(
+  text: string,
+  pairs: SpeechPronunciation[],
+): string {
   let out = text;
   for (const { from, to } of pairs) {
     const term = from.trim();
     if (!term || !to) continue;
     // \b only anchors on word chars; for terms with leading/trailing non-word
     // chars fall back to a lookaround on whitespace/boundaries.
-    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`, "giu");
+    const re = new RegExp(
+      `(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`,
+      "giu",
+    );
     out = out.replace(re, to);
   }
   return out;

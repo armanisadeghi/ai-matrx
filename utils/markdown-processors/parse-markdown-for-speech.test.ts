@@ -11,6 +11,14 @@ describe("speech abbreviation normalization", () => {
     );
   });
 
+  it("normalizes repeated plural and possessive initialisms", () => {
+    expect(
+      parseMarkdownToText(
+        "APIs call APIs, and the API's response mentions AI.",
+      ),
+    ).toBe("A P I's call A P I's, and the A P I's response mentions A I.");
+  });
+
   it("keeps conventional word acronyms for natural model pronunciation", () => {
     expect(
       parseMarkdownToText("JSON, OAuth, REST, CRUD, SaaS, LAN, and WAN."),
@@ -18,9 +26,9 @@ describe("speech abbreviation normalization", () => {
   });
 
   it("does not reinterpret lowercase words that collide with acronyms", () => {
-    expect(normalizeSpeechAbbreviations("rest at the spa beside dom and wan")).toBe(
-      "rest at the spa beside dom and wan",
-    );
+    expect(
+      normalizeSpeechAbbreviations("rest at the spa beside dom and wan"),
+    ).toBe("rest at the spa beside dom and wan");
   });
 
   it("still exposes the complete long-form reference list without speaking it", () => {
@@ -31,5 +39,10 @@ describe("speech abbreviation normalization", () => {
     expect(parseMarkdownToText("AI API")).not.toContain(
       COMMON_ABBREVIATION_EXPANSIONS.API,
     );
+    for (const [abbreviation, expansion] of Object.entries(
+      COMMON_ABBREVIATION_EXPANSIONS,
+    )) {
+      expect(normalizeSpeechAbbreviations(abbreviation)).not.toBe(expansion);
+    }
   });
 });
