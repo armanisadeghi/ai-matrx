@@ -33,15 +33,26 @@
  * never add a module-eval-time dependency between them.
  */
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+} from "@/features/context-menu-v3/types";
 
-import type { Readout, ReadoutSource, RunSurfaceConfig } from "../surface/config";
+import {
+  describeSource,
+  type Readout,
+  type ReadoutSource,
+  type RunSurfaceConfig,
+} from "../surface/config";
 import { TERMINAL_RUN_STATUSES } from "../types";
 import {
   getDefaultSurface,
@@ -613,7 +624,9 @@ function ActionReadout({
   );
 }
 
-export function ReadoutView({
+/** The switch's actual render — factored out so `ReadoutView` can wrap the
+ * result in exactly one context menu regardless of which source kind fired. */
+function readoutContent({
   runId,
   readout,
   ensureLane,
@@ -621,11 +634,9 @@ export function ReadoutView({
 }: {
   runId: string;
   readout: Readout;
-  /** Lane promotion bound to this readout's run (from the adoption handle). */
   ensureLane?: EnsureLaneFn;
-  /** The workflow graph — action readouts derive readiness from its edges. */
   definition?: WorkflowDefinitionLike;
-}) {
+}): ReactNode {
   const source: ReadoutSource = readout.source;
   const prefer = readout.prefer ?? "live";
   switch (source.kind) {
@@ -682,4 +693,48 @@ export function ReadoutView({
     default:
       return null;
   }
+}
+
+export function ReadoutView({
+  runId,
+  readout,
+  ensureLane,
+  definition,
+}: {
+  runId: string;
+  readout: Readout;
+  /** Lane promotion bound to this readout's run (from the adoption handle). */
+  ensureLane?: EnsureLaneFn;
+  /** The workflow graph — action readouts derive readiness from its edges. */
+  definition?: WorkflowDefinitionLike;
+}) {
+  const title = readout.title ?? describeSource(readout.source);
+  return (
+    <NonEditableContextMenu
+      sourceFeature="workflow_run"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: title }}
+      entity={{ type: "workflow_run", id: runId, title }}
+      extraSections={[
+        {
+          id: "workflow-readout",
+          label: "This readout",
+          anchor: "after-compare",
+          items: [
+            {
+              kind: "link",
+              id: "workflow-readout-open-run",
+              label: "Open this run",
+              icon: ExternalLink,
+              href: `/workflows/runs/${runId}`,
+            },
+          ] satisfies ContextMenuExtraItem[],
+        },
+      ]}
+    >
+      <div className="contents">
+        {readoutContent({ runId, readout, ensureLane, definition })}
+      </div>
+    </NonEditableContextMenu>
+  );
 }
