@@ -19,14 +19,20 @@
  * away too.
  */
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import MatrxDataTable from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { relativeTime } from "@/lib/entity-list/columns";
-import { ListX } from "lucide-react";
+import { ExternalLink, ListX, Workflow } from "lucide-react";
+
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+} from "@/features/context-menu-v3/types";
 
 import { RunStatusChip, runStatusLabel } from "../../run-status";
 import { runDurationMs, runHref, type RunListRow } from "../runs";
@@ -66,6 +72,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
   const [, startTransition] = useTransition();
   const { rows, loading, error } = useRunsList({ definitionId });
   const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
+  const [clickedRow, setClickedRow] = useState<RunRowView | null>(null);
 
   const view: RunRowView[] = rows.map((row) => {
     const fact = row.definitionId ? facts.get(row.definitionId) : undefined;
@@ -160,21 +167,85 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
           {error}
         </p>
       )}
-      <MatrxDataTable<RunRowView>
-        data={view}
-        columns={columns}
-        getRowId={(row) => row.runId}
-        isLoading={loading}
-        urlState={{ id: definitionId ? "workflow-runs" : "runs" }}
-        onRowOpen={(row) => {
-          startTransition(() => router.push(runHref(row)));
+      <NonEditableContextMenu
+        sourceFeature="workflow_run"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = (id && view.find((r) => r.runId === id)) || null;
+          setClickedRow(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "workflow_run",
+              id: row.runId,
+              title: row.workflowName
+                ? `${row.workflowName} run`
+                : "Workflow run",
+            },
+            content: [
+              row.workflowName ?? "Unnamed workflow",
+              `Status: ${runStatusLabel(row.status)}`,
+              row.startedAt ? `Started: ${new Date(row.startedAt).toLocaleString()}` : null,
+              row.declaredKind ? `Delivers: ${row.declaredKind}` : null,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          };
         }}
-        emptyState={{
-          icon: <ListX className="h-5 w-5" />,
-          title: definitionId ? "This workflow hasn't run yet" : "No runs yet",
-          description: "A run appears here the moment it starts.",
-        }}
-      />
+        extraSections={[
+          {
+            id: "workflow-run-row",
+            label: "This run",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "link",
+                id: "workflow-run-open",
+                label: "Open run",
+                icon: ExternalLink,
+                href: clickedRow ? runHref(clickedRow) : "#",
+                disabled: !clickedRow,
+              },
+              {
+                kind: "link",
+                id: "workflow-run-open-workflow",
+                label: "Open workflow",
+                icon: Workflow,
+                href:
+                  clickedRow?.definitionId
+                    ? `/workflows/${clickedRow.definitionId}`
+                    : "#",
+                disabled: !clickedRow?.definitionId,
+                description: !clickedRow?.definitionId
+                  ? "This run has no linked workflow"
+                  : undefined,
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <MatrxDataTable<RunRowView>
+            data={view}
+            columns={columns}
+            getRowId={(row) => row.runId}
+            isLoading={loading}
+            urlState={{ id: definitionId ? "workflow-runs" : "runs" }}
+            onRowOpen={(row) => {
+              startTransition(() => router.push(runHref(row)));
+            }}
+            emptyState={{
+              icon: <ListX className="h-5 w-5" />,
+              title: definitionId ? "This workflow hasn't run yet" : "No runs yet",
+              description: "A run appears here the moment it starts.",
+            }}
+          />
+        </div>
+      </NonEditableContextMenu>
     </div>
   );
 }
