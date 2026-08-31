@@ -12,6 +12,7 @@ import React, { useCallback, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ContentEditor } from "@/components/official/content-editor/ContentEditor";
 import { useContentEditorEmitter } from "./useContentEditorEmitter";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface ContentEditorWindowProps {
   /** Overlay instanceId — stable across re-renders, unique per window. */
@@ -86,16 +87,31 @@ export function ContentEditorWindow({
       onCollectData={collectData}
       bodyClassName="p-3"
     >
-      <ContentEditor
-        value={value}
-        onChange={handleChange}
-        onSave={handleSave}
-        onModeChange={handleModeChange}
-        title={documentTitle}
-        showCopyButton
-        showContentManager
-        className="h-full"
-      />
+      {/*
+       * Fallback pane menu — ContentEditor's own EditableContextMenu /
+       * NonEditableContextMenu only wraps its "plain" and "preview" modes;
+       * wysiwyg/markdown/matrx-split (its DEFAULT mode) render with no menu
+       * at all. This outer wrapper is the pane's answer for those modes; the
+       * inner one (nested deeper in the DOM) wins whenever it exists, so
+       * plain/preview keep their richer editable menu untouched.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="documents"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({ content: value })}
+      >
+        <ContentEditor
+          value={value}
+          onChange={handleChange}
+          onSave={handleSave}
+          onModeChange={handleModeChange}
+          title={documentTitle}
+          showCopyButton
+          showContentManager
+          className="h-full"
+        />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

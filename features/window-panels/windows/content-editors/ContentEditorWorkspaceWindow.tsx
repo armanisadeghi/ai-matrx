@@ -17,6 +17,7 @@ import {
 } from "@/components/official/content-editor/ContentEditorTabsWithList";
 import { useContentEditorEmitter } from "./useContentEditorEmitter";
 import type { ContentEditorSeedDocument } from "./useOpenContentEditorWindow";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface ContentEditorWorkspaceWindowProps {
   windowInstanceId: string;
@@ -158,24 +159,41 @@ export function ContentEditorWorkspaceWindow({
       onCollectData={collectData}
       bodyClassName="p-3"
     >
-      {hasDocuments ? (
-        <ContentEditorTabsWithList
-          documents={documents}
-          onDocumentsChange={handleDocumentsChange}
-          openIds={openIds}
-          onOpenIdsChange={handleOpenIdsChange}
-          activeId={activeId}
-          onActiveIdChange={handleActiveIdChange}
-          listTitle={listTitle ?? "Documents"}
-          sharedModeSelector
-          onSave={handleSave}
-          className="h-full"
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full text-xs text-zinc-500 dark:text-zinc-400">
-          No documents available
-        </div>
-      )}
+      {/*
+       * Fallback pane menu — ContentEditor's own EditableContextMenu /
+       * NonEditableContextMenu only wraps its "plain" and "preview" modes;
+       * wysiwyg/markdown/matrx-split (its DEFAULT mode) and the tabs/list
+       * chrome around it render with no menu at all. This outer wrapper
+       * answers the right-click there; the inner one wins whenever it
+       * exists (nested deeper in the DOM for the covered modes).
+       */}
+      <NonEditableContextMenu
+        sourceFeature="documents"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({
+          content: documents.find((d) => d.id === activeId)?.value ?? "",
+        })}
+      >
+        {hasDocuments ? (
+          <ContentEditorTabsWithList
+            documents={documents}
+            onDocumentsChange={handleDocumentsChange}
+            openIds={openIds}
+            onOpenIdsChange={handleOpenIdsChange}
+            activeId={activeId}
+            onActiveIdChange={handleActiveIdChange}
+            listTitle={listTitle ?? "Documents"}
+            sharedModeSelector
+            onSave={handleSave}
+            className="h-full"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-xs text-zinc-500 dark:text-zinc-400">
+            No documents available
+          </div>
+        )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

@@ -18,6 +18,7 @@ import {
 } from "@/components/official/content-editor/ContentEditorList";
 import { useContentEditorEmitter } from "./useContentEditorEmitter";
 import type { ContentEditorSeedDocument } from "./useOpenContentEditorWindow";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface ContentEditorListWindowProps {
   windowInstanceId: string;
@@ -136,14 +137,24 @@ export function ContentEditorListWindow({
       sidebar={
         <div className="flex flex-col min-h-0 h-full">
           <div className="flex-1 min-h-0 p-1.5">
-            <ContentEditorList
-              items={listItems}
-              activeId={activeId}
-              openIds={activeId ? [activeId] : []}
-              onItemClick={handleItemClick}
-              title={listTitle ?? "Documents"}
-              className="h-full"
-            />
+            {/* Page-local list of the window's own seed documents — not a
+             * platform record, so a resolved row-level menu would attach
+             * to nothing real. A pane-level fallback still beats silently
+             * falling through to the page underneath. */}
+            <NonEditableContextMenu
+              sourceFeature="documents"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: listTitle ?? "Documents" }}
+            >
+              <ContentEditorList
+                items={listItems}
+                activeId={activeId}
+                openIds={activeId ? [activeId] : []}
+                onItemClick={handleItemClick}
+                title={listTitle ?? "Documents"}
+                className="h-full"
+              />
+            </NonEditableContextMenu>
           </div>
         </div>
       }
@@ -152,23 +163,37 @@ export function ContentEditorListWindow({
       sidebarExpandsWindow
       bodyClassName="p-3"
     >
-      {activeDoc ? (
-        <ContentEditor
-          key={activeDoc.id}
-          value={activeDoc.value}
-          onChange={handleChange}
-          onSave={handleSave}
-          onModeChange={handleModeChange}
-          title={activeDoc.title}
-          showCopyButton
-          showContentManager
-          className="h-full"
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full text-xs text-zinc-500 dark:text-zinc-400">
-          Select a document to edit
-        </div>
-      )}
+      {/*
+       * Fallback pane menu — ContentEditor's own EditableContextMenu /
+       * NonEditableContextMenu only wraps its "plain" and "preview" modes;
+       * wysiwyg/markdown/matrx-split (its DEFAULT mode) render with no menu
+       * at all. This outer wrapper answers the right-click for those modes;
+       * the inner one wins whenever it exists.
+       */}
+      <NonEditableContextMenu
+        sourceFeature="documents"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={() => ({ content: activeDoc?.value ?? "" })}
+      >
+        {activeDoc ? (
+          <ContentEditor
+            key={activeDoc.id}
+            value={activeDoc.value}
+            onChange={handleChange}
+            onSave={handleSave}
+            onModeChange={handleModeChange}
+            title={activeDoc.title}
+            showCopyButton
+            showContentManager
+            className="h-full"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-xs text-zinc-500 dark:text-zinc-400">
+            Select a document to edit
+          </div>
+        )}
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
