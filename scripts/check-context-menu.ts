@@ -401,14 +401,22 @@ function registryFindings(files: Map<string, string>): Finding[] {
       });
       continue;
     }
-    for (const b of builders) {
-      if (!new RegExp(`export\\s+(function|const)\\s+${b}\\b`).test(src))
-        out.push({
-          population: "registry",
-          file: filePath,
-          detail: `registry names \`${b}\` but the file exports no such builder`,
-        });
-    }
+    // 🚨 A Builder cell legitimately carries PROSE alongside the name — "…
+    // rendered via `rowWrapper` + `ItemContextMenu`". Treating every backticked
+    // token as a builder name turned one well-documented row into four false
+    // findings, which is how a guard trains people to ignore it. The row is
+    // honest as long as AT LEAST ONE named symbol is really exported.
+    const exported = builders.filter((b) =>
+      new RegExp(`export\\s+(function|const|type)\\s+${b}\\b`).test(src),
+    );
+    if (exported.length === 0)
+      out.push({
+        population: "registry",
+        file: filePath,
+        detail: `registry names ${builders
+          .map((b) => `\`${b}\``)
+          .join(", ")} but the file exports none of them`,
+      });
   }
   return out;
 }
