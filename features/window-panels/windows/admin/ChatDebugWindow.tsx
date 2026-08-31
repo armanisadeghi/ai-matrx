@@ -55,6 +55,8 @@ const selectMessages = (_state: RootState, _sessionId: string): unknown[] =>
 const selectResources = (_state: RootState, _sessionId: string): unknown[] =>
   EMPTY_RESOURCES;
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+// context-menu-exempt: entity — a debug toggle panel + stubbed session-state dump, not a record; the conversation/agent it names already has its own doors via EntityRef
 
 // ─── Window inner ─────────────────────────────────────────────────────────────
 
@@ -134,6 +136,17 @@ function ChatDebugWindowInner({
       minHeight={300}
       overlayId="chatDebugWindow"
     >
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: JSON.stringify(
+            { sessionId, session, uiState, messageCount: messages.length, resourceCount: resources.length },
+            null,
+            2,
+          ),
+        }}
+      >
       <div className="flex flex-col gap-4 p-4 overflow-y-auto h-full">
         {/* ── Admin-only: Global Debug Mode ──────────────────── */}
         {isAdmin && (
@@ -308,6 +321,7 @@ function ChatDebugWindowInner({
           </>
         )}
       </div>
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }

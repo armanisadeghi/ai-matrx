@@ -29,6 +29,11 @@ import {
 import { cn } from "@/lib/utils";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { toast } from "@/lib/toast";
+// context-menu-exempt: entity — a Redux state dump of the instanceUIState slice, not a persisted record; the underlying conversation/agent already has its own doors elsewhere
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -313,6 +318,7 @@ function InstanceUIStateWindowInner({
   initialConversationId: string | null;
 }) {
   const state = useInstanceUIState(initialConversationId);
+  const sliceState = useAppSelector(selectFullInstanceUIStateSlice);
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({
@@ -320,6 +326,47 @@ function InstanceUIStateWindowInner({
     }),
     [state.activeTabId],
   );
+
+  const activeInstance = state.activeTabId
+    ? sliceState.byConversationId[state.activeTabId]
+    : null;
+
+  const debugSection: ContextMenuExtraSection = {
+    id: "instance-ui-state",
+    label: "Instance state",
+    icon: Copy,
+    items: [
+      {
+        kind: "item",
+        id: "iuis-copy-active",
+        label: "Copy active instance as JSON",
+        icon: Copy,
+        disabled: !activeInstance,
+        description: activeInstance ? undefined : "Select an instance first",
+        onSelect: () => {
+          if (!activeInstance) return;
+          void copyToClipboard(formatJson(activeInstance, 2), {
+            formatJson: false,
+            onSuccess: () => toast.success("Instance state copied"),
+            onError: () => toast.error("Could not copy instance state"),
+          });
+        },
+      },
+      {
+        kind: "item",
+        id: "iuis-copy-full-slice",
+        label: "Copy full slice as JSON",
+        icon: Copy,
+        onSelect: () => {
+          void copyToClipboard(state.sliceJson, {
+            formatJson: false,
+            onSuccess: () => toast.success("Full slice copied"),
+            onError: () => toast.error("Could not copy slice"),
+          });
+        },
+      },
+    ],
+  };
 
   return (
     <WindowPanel
@@ -347,7 +394,16 @@ function InstanceUIStateWindowInner({
       sidebarMinSize={150}
       defaultSidebarOpen
     >
-      <InstanceUIStateBody state={state} />
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: activeInstance ? formatJson(activeInstance, 2) : state.sliceJson,
+        }}
+        extraSections={[debugSection]}
+      >
+        <InstanceUIStateBody state={state} />
+      </NonEditableContextMenu>
     </WindowPanel>
   );
 }
