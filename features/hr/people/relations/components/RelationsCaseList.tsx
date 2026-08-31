@@ -24,6 +24,16 @@
 
 "use client";
 
+// context-menu: deliberately-absent — a CSV of complaints must not exist by accident
+//
+// This surface deliberately withholds Copy / Export / AI (see the header note
+// and the table's disabled copy controls). The v3 right-click menu grants all
+// three, so wiring it here would hand every viewer the exfiltration path this
+// route was built to refuse. A fleet worker on the 2026-08-26 context-menu
+// rollout reached that conclusion by reading the header and correctly skipped
+// the file; this marker is what stops the NEXT agent — handed the file by a
+// census that would otherwise still list it — from quietly undoing that.
+
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Gavel, Lock, MessageSquareQuote, Plus } from "lucide-react";

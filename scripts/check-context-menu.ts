@@ -187,6 +187,32 @@ function classify(path: string, src: string): Population | null {
 const EXEMPT_RE =
   /context-menu-exempt:\s*(surfaceName|contentSource|entity|extraSections)\s*—\s*\S+/g;
 
+/**
+ * 🚨 DELIBERATE ABSENCE — a surface that must NEVER get a menu.
+ *
+ * Some surfaces are built to withhold exactly what this menu grants. The
+ * employee-relations case list (`features/hr/people/relations/`) states it in
+ * its own header: a CSV of complaints "is exactly the artifact that should not
+ * exist by accident", so Copy/Export/AI are switched off on purpose. A fleet
+ * worker read that, understood it, and correctly refused to wire the file.
+ *
+ * Without a marker, that judgement survives exactly until the next agent is
+ * handed the file by a census that still lists it — and that agent may not
+ * read the header. So a deliberate refusal must be RECORDED where the census
+ * looks, not just honoured once. A file declaring:
+ *
+ *   // context-menu: deliberately-absent — a CSV of complaints must not exist by accident
+ *
+ * leaves every population, and the reason is printed so the decision stays
+ * visible and reviewable rather than becoming invisible.
+ */
+const DELIBERATELY_ABSENT_RE =
+  /context-menu:\s*deliberately-absent\s*[—-]\s*(.+)/;
+
+function deliberateAbsence(src: string): string | null {
+  return src.match(DELIBERATELY_ABSENT_RE)?.[1]?.trim() ?? null;
+}
+
 function exemptSlots(src: string): Set<string> {
   const out = new Set<string>();
   for (const m of src.matchAll(EXEMPT_RE)) out.add(m[1]);
@@ -368,6 +394,16 @@ function main() {
       findings.push({ population: "density", file: path, detail: v });
 
     if (!population) continue;
+
+    const refusal = deliberateAbsence(src);
+    if (refusal) {
+      covered.push({
+        population,
+        file: path,
+        detail: `deliberately absent — ${refusal}`,
+      });
+      continue;
+    }
 
     const ownMenu = MOUNTS_MENU.test(src);
     const needsEditable = population === "editables";
