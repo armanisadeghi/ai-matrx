@@ -256,7 +256,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
 
             <div className="min-h-0 flex-1">
               <NonEditableContextMenu
-                sourceFeature="system"
+                sourceFeature="admin"
                 contentSource={{ type: "raw" }}
                 resolveContextOnOpen={resolveRowContext}
                 extraSections={[periodGridRowMenuSection]}

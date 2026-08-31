@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CircleAlert, Clock, EyeOff } from "lucide-react";
 
@@ -12,6 +13,13 @@ import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState"
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type { HrInboxRow } from "@/features/hr/tasks/types";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
+import {
+  hrTaskStepEntityRef,
+  hrTaskStepMenuSection,
+  type HrTaskStepMenuRow,
+} from "@/features/hr/tasks/task-step-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 /**
  * One actionable HR item, rendered once. Every row's title is a DOOR to the
@@ -41,6 +49,18 @@ export function HrTaskTable({
     /** Reload the queue after a decision taken in the row window. */
     onRowDecided?: () => void;
 }) {
+    /** Right-clicked row — STATE (not a ref) so the menu reads the row that
+     *  was actually clicked. */
+    const [contextRow, setContextRow] = useState<HrInboxRow | null>(null);
+
+    function menuRowFor(row: HrInboxRow): HrTaskStepMenuRow {
+        return {
+            stepId: row.step_id,
+            label: row.title ?? row.flow_label ?? row.flow_key,
+            deepLink: row.deep_link,
+        };
+    }
+
     const columns: MatrxColumnDef<HrInboxRow>[] = [
         {
             id: "title",
@@ -167,6 +187,32 @@ export function HrTaskTable({
     if (showDelivery) columns.push(deliveryColumn);
 
     return (
+        <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            resolveContextOnOpen={(target) => {
+                const id = target
+                    ?.closest("[data-row-id]")
+                    ?.getAttribute("data-row-id");
+                const row = (id && rows.find((r) => r.step_id === id)) || null;
+                setContextRow(row);
+                if (!row) return null;
+                return {
+                    [CONTEXT_MENU_ENTITY_KEY]: hrTaskStepEntityRef(menuRowFor(row)),
+                    content: [
+                        row.subject_withheld
+                            ? "Withheld"
+                            : (row.title ?? row.flow_label ?? row.flow_key),
+                        row.step_label ?? row.step_key,
+                    ]
+                        .filter(Boolean)
+                        .join("\n"),
+                };
+            }}
+            extraSections={
+                contextRow ? [hrTaskStepMenuSection(menuRowFor(contextRow))] : []
+            }
+        >
         <MatrxDataTable<HrInboxRow>
             data={rows}
             columns={columns}
@@ -231,5 +277,6 @@ export function HrTaskTable({
                     : undefined
             }
         />
+        </NonEditableContextMenu>
     );
 }
