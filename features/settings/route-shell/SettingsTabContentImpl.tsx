@@ -11,6 +11,7 @@ import {
   SurfaceRuntimeProvider,
   getRegisteredSurfaceScopeContributions,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { createSettingsScope } from "@/features/surfaces/manifests/settings.manifest";
 import {
   getSliceBinding,
@@ -356,12 +357,20 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
       getWriteHandlers={getSurfaceWriteHandlers}
       isEditable={false}
     >
-      <SettingsTabHost
-        activeTab={activeTab}
-        treeNodes={treeNodes}
-        onNavigate={navigate}
-        navigationPending={isNavigationPending}
-      />
+      <NonEditableContextMenu
+        sourceFeature="system"
+        surfaceName="matrx-user/settings"
+        menuVersion={1}
+        getApplicationScope={getScope}
+        contentSource={{ type: "raw" }}
+      >
+        <SettingsTabHost
+          activeTab={activeTab}
+          treeNodes={treeNodes}
+          onNavigate={navigate}
+          navigationPending={isNavigationPending}
+        />
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
