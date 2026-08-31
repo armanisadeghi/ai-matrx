@@ -107,9 +107,12 @@ jobs:
   # names a claim it did not test is worse than a red one, and it is exactly
   # the "WARN that reads as a pass" THE STRICTNESS LAW clause 7 forbids.
   #
-  # 🚨 ARMAN: the fix is ONE repo secret — SUPABASE_SECRET_KEY (plus
-  # NEXT_PUBLIC_SUPABASE_URL). Until it exists this job is RED, deliberately,
-  # because the alternative is a gate that lies on every push.
+  # RESOLVED 2026-08-25: both repo secrets (SUPABASE_SECRET_KEY +
+  # NEXT_PUBLIC_SUPABASE_URL) are configured and this job measures for real
+  # (verified green against live runs, 2026-08-31). The UNMEASURED hard-fail
+  # below STAYS — it is the guard that fires again if the secrets are ever
+  # rotated away, and a gate that cannot reach its dependency must fail, never
+  # warn (THE STRICTNESS LAW clause 7).
   # ---------------------------------------------------------------------------
   kind-registry:
     name: generated kind types vs the live registry (UNMEASURED without the secret)

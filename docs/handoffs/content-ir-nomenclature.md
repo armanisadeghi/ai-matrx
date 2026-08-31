@@ -26,9 +26,11 @@ repo. **Read it before touching anything here; it outranks this work order.**
 
 - Freeze values (above). Go all the way (lexicon Law 4). Leave nothing behind — no alias, shim,
   deprecated export, or old word in a comment.
-- Twinned files (`registry/kind-registry.types.ts`, `kind-dual-gate.ts`, `core/`) → run
-  `python scripts/sync_content_ir_core.py` from the aidream root; prove
-  `python scripts/check_content_ir_twin.py` passes.
+- Kernel-owned files (`kind-registry.types.ts`, `kind-dual-gate.ts`, the former `core/`) live in
+  the PACKAGE (`aidream/apps/shared/content-ir-core`, npm `@ai-matrx/content-ir`) — the source
+  twin and `sync_content_ir_core.py` were RETIRED 2026-08-22 and `features/content-ir/core/` is
+  deleted; rename in the package, release a version, adopt here same-session
+  (`common-docs/systems/content-ir-twin/FEATURE.md`).
 - Verify: `pnpm type-check` · `pnpm check:shapes` · `pnpm check:content-ir:strict` no worse than
   before; regenerate generated files, never hand-edit. Report before/after grep counts → zero.
 - Protocol mirror: `MATRX_ENVELOPE.md` / `MATRX_REFERENCES.md` are byte-mirrored (edit aidream,
