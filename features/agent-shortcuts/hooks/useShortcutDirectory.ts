@@ -108,9 +108,26 @@ export function useShortcutDirectory({
       const globalRows = globalQuery.shortcuts.map((shortcut) =>
         globalShortcutToDirectoryRow(shortcut, categoryById),
       );
+      // 🚨 GLOBAL WINS, AND THE ORDER IS THE FIX.
+      // These two sources overlap, and they disagree about the same row.
+      // `globalQuery` is the authoritative global read; the second source is
+      // `agx_list_non_global_shortcuts_for_admin_m`, whose name is a promise it
+      // no longer keeps. Its WHERE still defines non-global the pre-flip way —
+      //   NOT (created_by IS NULL AND organization_id IS NULL AND …)
+      // — so now that every global row is owned by the SYSTEM organization,
+      // EVERY global shortcut satisfies "non-global" and comes back from it.
+      // Worse, its scope CASE tests `created_by IS NOT NULL → 'user'` BEFORE it
+      // tests the organization, and `mandate.vw_shortcut`'s write trigger does
+      // `COALESCE(NEW.created_by, v_actor)` — so a global shortcut an admin just
+      // created came back labelled `user` and, because it was written into the
+      // map SECOND, relabelled the correct row "Personal / <that admin>".
+      // A row the GLOBAL read already claimed is global by definition, so it is
+      // written LAST and a list of non-global rows cannot overrule it.
+      // The stale rule inside that function is filed separately; this seam does
+      // not depend on it being fixed.
       const merged = new Map<string, ShortcutDirectoryRow>();
-      for (const row of globalRows) merged.set(row.id, row);
       for (const row of adminNonGlobalRows) merged.set(row.id, row);
+      for (const row of globalRows) merged.set(row.id, row);
       return Array.from(merged.values()).sort((a, b) =>
         a.label.localeCompare(b.label),
       );
