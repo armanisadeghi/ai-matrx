@@ -26,7 +26,7 @@ On a mobile viewport (`useIsMobile()`) the shell renders a vaul `Drawer` instead
 
 Both renderers consume ONE `useContextMenuActions` hook (extracted 2026-07-21) — desktop and mobile behavior cannot drift; a launch-path or handler change lands in the hook once. **Nested desktop triggers let Radix mark the gesture handled, then outer shells yield to `defaultPrevented`, so the innermost eligible menu owns the gesture** (for example, a code-tree row inside its explorer pane). Mobile long-press triggers still stop propagation so only the innermost timer runs.
 
-**The mobile shell attaches its handlers with NO wrapper element.** Desktop has always merged onto the child (Radix `ContextMenuTrigger asChild`); mobile now does the same through Radix `Slot` whenever `children` is a single non-Fragment element, composing (never clobbering) the child's own handlers and ref. The `display:contents` `<div>` survives ONLY as the multi-children/Fragment fallback. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. React logged hydration errors on `/cms/html-pages` at mobile widths until the wrapper went away. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`. Nested mobile triggers stop propagation after the native-text-menu guard, so the innermost row owns the long-press/contextmenu gesture instead of opening its surrounding list menu too.
+**Both shells slot one child and wrap many.** Desktop (`ContextMenuTrigger asChild`) and mobile (`Slot`) merge onto a single non-Fragment child, composing its handlers and ref. A multi-child/Fragment payload first gets one `display:contents` `<div>` so Radix never receives an invalid multi-child slot. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`. Nested mobile triggers stop propagation after the native-text-menu guard, so the innermost row owns the long-press/contextmenu gesture instead of opening its surrounding list menu too.
 
 ## Inline agent editing — the WidgetHandle wire
 
@@ -395,6 +395,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 ---
 
 ## Change Log
+
+- `2026-08-31` — **Desktop multi-child surfaces honor Radix's slot contract.** The shell gives `ContextMenuTrigger asChild` one layout-neutral `display:contents` element when a consumer supplies sibling surface/loading/empty nodes; single elements still receive handlers directly, preserving legal table-row markup. A forcing DOM test pins both siblings and the trigger wrapper.
 
 - `2026-08-31` — **Structured surface scope counts as an actionable menu contract.** The dev-time inert-menu guard now recognizes informative non-baseline application-scope values, so galleries and charts can remain honest about having no rich-document text while their Surface Context and agent actions still operate on live structured values. Empty baseline-only read-only menus continue to fail loudly; focused regressions pin both sides.
 

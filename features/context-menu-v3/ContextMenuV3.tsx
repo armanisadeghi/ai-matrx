@@ -661,6 +661,14 @@ export function ContextMenuV3({
     },
   };
 
+  // Radix `asChild` is a strict one-element slot. Consumers may legitimately
+  // wrap a surface plus sibling loading/empty states, so normalize that shape
+  // to one layout-neutral element before either renderer reaches a Slot.
+  const canSlotChildren =
+    React.Children.count(children) === 1 &&
+    React.isValidElement(children) &&
+    children.type !== React.Fragment;
+
   // The version footer is gone (Arman, 2026-08-22: dev/testing info, not for
   // users). The surface name + revision now live in the surface submenu the
   // engine builds (`surfaceSection`), admin-only for the revision.
@@ -700,14 +708,9 @@ export function ContextMenuV3({
     // single element, and cloning props onto a Fragment is invalid, so both
     // fall back to the wrapper — where a `<div>` was always going to be legal
     // anyway, since a Fragment/multi-child payload cannot be a lone `<tr>`.
-    const canSlot =
-      React.Children.count(children) === 1 &&
-      React.isValidElement(children) &&
-      children.type !== React.Fragment;
-
     return (
       <MenuPresenceProvider value={true}>
-        {canSlot ? (
+        {canSlotChildren ? (
           <Slot ref={setSelectionOwner} {...mobileTriggerProps}>
             {children}
           </Slot>
@@ -782,7 +785,11 @@ export function ContextMenuV3({
           onMouseDown={handleMouseDown}
           onContextMenu={handleContextMenu}
         >
-          {children}
+          {canSlotChildren ? (
+            children
+          ) : (
+            <div style={{ display: "contents" }}>{children}</div>
+          )}
         </ContextMenuTrigger>
         {/* z-[9999]: menus must layer above floating WindowPanels (z >= 1000). */}
         {/* max-h + overflow-y-auto: a long menu (30 rows on /notes measured

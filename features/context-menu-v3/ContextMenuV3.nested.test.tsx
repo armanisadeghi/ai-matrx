@@ -61,4 +61,29 @@ describe("ContextMenuV3 nested desktop triggers", () => {
     expect(inner.getAttribute("data-state")).toBe("open");
     expect(outer.getAttribute("data-state")).toBe("closed");
   });
+
+  it("wraps multiple desktop children without violating the Radix slot contract", () => {
+    expect(() => {
+      act(() => {
+        root.render(
+          <NonEditableContextMenu sourceFeature="admin">
+            <table data-testid="directory-table">
+              <tbody>
+                <tr>
+                  <td>Shortcut</td>
+                </tr>
+              </tbody>
+            </table>
+            <div data-testid="directory-state">Loading shortcuts</div>
+          </NonEditableContextMenu>,
+        );
+      });
+    }).not.toThrow();
+
+    expect(host.querySelector('[data-testid="directory-table"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="directory-state"]')).not.toBeNull();
+    expect(
+      host.querySelector('div[style*="display: contents"]'),
+    ).not.toBeNull();
+  });
 });
