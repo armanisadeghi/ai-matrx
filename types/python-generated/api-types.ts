@@ -8284,6 +8284,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/signnow/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_signnow_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/breathehr/public/status": {
         parameters: {
             query?: never;
@@ -8293,6 +8310,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_breathehr_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rippling/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_rippling_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8344,6 +8378,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_onesignal_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fullstory/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_fullstory_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -52231,6 +52282,41 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * FullstoryServiceStatus
+         * @description Safe aggregate status projection for Fullstory's fixed status page.
+         */
+        FullstoryServiceStatus: {
+            /**
+             * Kind
+             * @default fullstory_public_service_status
+             * @constant
+             */
+            __kind?: "fullstory_public_service_status";
+            /**
+             * Provider
+             * @default fullstory
+             * @constant
+             */
+            provider?: "fullstory";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.fullstory.com
+             * @constant
+             */
+            status_page?: "https://status.fullstory.com";
+        };
+        /**
          * GatherStatusResult
          * @description Safe projection of Gather's high-level service status.
          */
@@ -59839,8 +59925,13 @@ export interface components {
             contract?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-            /** Provenance */
-            provenance: string;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "system" | "global" | "org" | "user" | "run";
+            /** Freshness */
+            freshness: string;
             /** Provision Key */
             provision_key?: string | null;
             /**
@@ -60126,7 +60217,7 @@ export interface components {
              * @default unresolved
              * @enum {string}
              */
-            provenance?: "system" | "org" | "user" | "run" | "mandate-pinned" | "latest" | "agent" | "version" | "unresolved";
+            provenance?: "system" | "global" | "org" | "user" | "run" | "mandate-pinned" | "latest" | "agent" | "version" | "unresolved";
             /** Applied Config Overrides */
             applied_config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -74886,6 +74977,43 @@ export interface components {
             members: components["schemas"]["RichDataStoreMember"][];
         };
         /**
+         * RipplingServiceStatus
+         * @description Safe aggregate status projection for Rippling's fixed status page.
+         */
+        RipplingServiceStatus: {
+            /**
+             * Kind
+             * @default rippling_official_workforce_platform_status
+             * @constant
+             */
+            __kind?: "rippling_official_workforce_platform_status";
+            /**
+             * Provider
+             * @default Rippling
+             * @constant
+             */
+            provider?: "Rippling";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.rippling.com
+             * @constant
+             */
+            status_page?: "https://status.rippling.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * RoadmunkStatusResult
          * @description Safe projection of Roadmunk's high-level service status.
          */
@@ -78504,6 +78632,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * SignNowServiceStatus
+         * @description Safe aggregate status projection for SignNow's fixed status page.
+         */
+        SignNowServiceStatus: {
+            /**
+             * Kind
+             * @default signnow_public_esignature_platform_status
+             * @constant
+             */
+            __kind?: "signnow_public_esignature_platform_status";
+            /**
+             * Provider
+             * @default SignNow
+             * @constant
+             */
+            provider?: "SignNow";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.signnow.com
+             * @constant
+             */
+            status_page?: "https://status.signnow.com";
         };
         /**
          * SimplecastServiceStatus
@@ -104724,6 +104884,26 @@ export interface operations {
             };
         };
     };
+    public_status_signnow_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignNowServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_breathehr_public_status_get: {
         parameters: {
             query?: never;
@@ -104740,6 +104920,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BreatheHRServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_rippling_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RipplingServiceStatus"];
                 };
             };
         };
@@ -104800,6 +105000,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OneSignalServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_fullstory_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FullstoryServiceStatus"];
                 };
             };
         };

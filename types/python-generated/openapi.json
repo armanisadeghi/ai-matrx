@@ -19264,6 +19264,27 @@
         }
       }
     },
+    "/signnow/public/status": {
+      "get": {
+        "tags": [
+          "SignNow Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_signnow_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignNowServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/breathehr/public/status": {
       "get": {
         "tags": [
@@ -19278,6 +19299,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BreatheHRServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rippling/public/status": {
+      "get": {
+        "tags": [
+          "Rippling Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rippling_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RipplingServiceStatus"
                 }
               }
             }
@@ -19341,6 +19383,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OneSignalServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fullstory/public/status": {
+      "get": {
+        "tags": [
+          "Fullstory Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_fullstory_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullstoryServiceStatus"
                 }
               }
             }
@@ -129244,6 +129307,51 @@
         ],
         "title": "FullTableBookmark"
       },
+      "FullstoryServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "fullstory_public_service_status",
+            "title": "Kind",
+            "default": "fullstory_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "fullstory",
+            "title": "Provider",
+            "default": "fullstory"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.fullstory.com",
+            "title": "Status Page",
+            "default": "https://status.fullstory.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FullstoryServiceStatus",
+        "description": "Safe aggregate status projection for Fullstory's fixed status page."
+      },
       "GatherStatusResult": {
         "properties": {
           "__kind": {
@@ -147771,7 +147879,18 @@
           },
           "provenance": {
             "type": "string",
+            "enum": [
+              "system",
+              "global",
+              "org",
+              "user",
+              "run"
+            ],
             "title": "Provenance"
+          },
+          "freshness": {
+            "type": "string",
+            "title": "Freshness"
           },
           "provision_key": {
             "anyOf": [
@@ -147822,7 +147941,8 @@
         "type": "object",
         "required": [
           "mandate_key",
-          "provenance"
+          "provenance",
+          "freshness"
         ],
         "title": "MandateResolutionResponse",
         "description": "What a client needs to run this mandate's agent, resolved for the caller.\n\nTHE POINT (2026-08-16): matrx-ai running as a client (inside matrx-local)\ncannot read `agent.mandate` directly — that is a server-side table.\nBefore this endpoint it had no way to ask, so it fell back to an agent id\nfrozen in its own source. That fallback is deleted; this is its replacement,\nand it is the same answer the server resolves for itself, through the SAME\n`resolve_mandate` precedence (system default -> org binding -> user binding).\n\nThe caller then loads the agent through its ExecutionAgentSource, exactly as\nit already loads any saved agent — so a client honours a user's rebind with\nno deploy, which is the whole promise of mandates."
@@ -148469,6 +148589,7 @@
             "type": "string",
             "enum": [
               "system",
+              "global",
               "org",
               "user",
               "run",
@@ -182720,6 +182841,56 @@
         ],
         "title": "RichMembersResponse"
       },
+      "RipplingServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rippling_official_workforce_platform_status",
+            "title": "Kind",
+            "default": "rippling_official_workforce_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Rippling",
+            "title": "Provider",
+            "default": "Rippling"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rippling.com",
+            "title": "Status Page",
+            "default": "https://status.rippling.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RipplingServiceStatus",
+        "description": "Safe aggregate status projection for Rippling's fixed status page."
+      },
       "RoadmunkStatusResult": {
         "properties": {
           "__kind": {
@@ -191466,6 +191637,47 @@
         ],
         "title": "ShortcutStatusResult",
         "description": "Safe projection of Shortcut's high-level service status."
+      },
+      "SignNowServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "signnow_public_esignature_platform_status",
+            "title": "Kind",
+            "default": "signnow_public_esignature_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SignNow",
+            "title": "Provider",
+            "default": "SignNow"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.signnow.com",
+            "title": "Status Page",
+            "default": "https://status.signnow.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SignNowServiceStatus",
+        "description": "Safe aggregate status projection for SignNow's fixed status page."
       },
       "SimplecastServiceStatus": {
         "properties": {
