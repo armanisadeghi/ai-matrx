@@ -41,7 +41,8 @@ import {
 import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-compact-stringify";
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { useOpenConvertToShapeWindow } from "@/features/overlays/openers/convertToShapeWindow";
-import { findKindMarkers } from "@/features/content-ir/react/kind-problems";
+import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import { findEscapedKindMarkers } from "@/features/content-ir/react/kind-problems";
 import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
@@ -90,6 +91,8 @@ interface JsonBlockProps {
   messageId?: string | null;
   /** Hide the self-referential conversion action inside conversion previews. */
   allowConvertToShape?: boolean;
+  /** Canonical promotion evidence for this JSON region, when one exists. */
+  irEnvelope?: CanonicalBlockIR | null;
 }
 
 /**
@@ -115,6 +118,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   conversationId,
   messageId,
   allowConvertToShape = true,
+  irEnvelope = null,
 }) => {
   const openConvertToShape = useOpenConvertToShapeWindow();
   const [mode, setMode] = useState<ViewMode>("code");
@@ -159,8 +163,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   // purpose (conversion previews, authoring inspectors) — no tripwire there.
   const kindMarkers = useMemo(() => {
     if (!parsed.ok || isStreamActive || !allowConvertToShape) return [];
-    return findKindMarkers(parsed.value);
-  }, [parsed, isStreamActive, allowConvertToShape]);
+    return findEscapedKindMarkers(parsed.value, irEnvelope);
+  }, [parsed, isStreamActive, allowConvertToShape, irEnvelope]);
 
   const tabular = useMemo(() => {
     if (!parsed.ok) {

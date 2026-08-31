@@ -78,6 +78,7 @@ import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/Co
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 
 // ── The flat render-block shape ──────────────────────────────────────────────
 
@@ -917,6 +918,7 @@ function renderJsonCode(ctx: BlockDispatchContext) {
       isStreamActive={isStreamActive}
       conversationId={conversationId}
       messageId={messageId}
+      irEnvelope={readEnvelope(block.metadata)}
       onCodeChange={
         isStreamActive
           ? undefined

@@ -201,3 +201,25 @@ export function findKindMarkers(
   walk(value, "", 0);
   return found;
 }
+
+/**
+ * Keep the raw-JSON tripwire about the boundary it can actually prove.
+ *
+ * A marker is escaped only when the canonical envelope did not already claim
+ * that exact path/kind. A schema-invalid kind deliberately remains on the raw
+ * JSON fallback, but it was still promoted; reporting it as a promotion crack
+ * sends repair patrols to the wrong producer and hides the real validation
+ * evidence carried by the envelope.
+ */
+export function findEscapedKindMarkers(
+  value: unknown,
+  envelope: CanonicalBlockIR | null | undefined,
+  limit = 5,
+): FoundKindMarker[] {
+  return findKindMarkers(value, limit).filter((marker) => {
+    const claimedNode = marker.path
+      ? envelope?.nodeIndex?.[marker.path]
+      : envelope?.root;
+    return claimedNode?.kind !== marker.slug;
+  });
+}
