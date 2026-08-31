@@ -226,14 +226,33 @@ export function reconcilePlaceMap({
         rebuilt.push(entry);
         return;
       }
-      const verdict = reconcileCopiedTarget({
-        inheritedTarget: entry.target,
-        targetName: target.name,
-        availableNames,
-      });
-      if (verdict.action === "keep") {
+      // An EXTRA source (1..n) is never re-bound by name: source 0 already owns
+      // the input's own name, so re-binding an extra to it would join the same
+      // value to itself — the same paragraph twice, which the one writer
+      // forbids on purpose. An extra either exists here or it is dropped.
+      const verdict =
+        index === 0
+          ? reconcileCopiedTarget({
+              inheritedTarget: entry.target,
+              targetName: target.name,
+              availableNames,
+            })
+          : availableNames.includes(entry.target)
+            ? ({ action: "keep" } as const)
+            : ({ action: "clear", target: "" } as const);
+      const alreadyJoined = rebuilt.some(
+        (other) =>
+          other.mapType === "offered_value" &&
+          other.target !== "" &&
+          other.target === entry.target,
+      );
+      if (verdict.action === "keep" && !alreadyJoined) {
         if (entry.target) kept.push(entry.target);
         rebuilt.push(withAbsenceAnswer(entry, offeredByName.get(entry.target)));
+        return;
+      }
+      if (verdict.action === "keep") {
+        cleared.push(target.label ?? target.name);
         return;
       }
       if (verdict.action === "rebind") {
