@@ -117,6 +117,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "plan", label: "Plan" },
       { id: "table", label: "Table" },
     ],
+    hrefStyle: "path",
   },
   {
     section: "authority",
