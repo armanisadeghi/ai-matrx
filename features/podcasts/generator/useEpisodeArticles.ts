@@ -63,6 +63,32 @@ export function episodeMetadata(
   };
 }
 
+/** Build the exact named values offered by the episode-content provision.
+ *  `episode_title` is guaranteed by that provision, so every article writer
+ *  receives it directly even while the bound agents still consume the legacy
+ *  metadata blob under their kind-specific variable name. */
+export function episodeArticleVariables(
+  episode: PcEpisodeWithShow,
+  kind: PcArticleKind,
+): Record<string, string> {
+  const metadataJson = JSON.stringify(episodeMetadata(episode));
+  return kind === "blog"
+    ? {
+        episode_transcript: episode.script ?? "",
+        episode_title: episode.title,
+        episode_metadata: metadataJson,
+        style_guidance: "",
+      }
+    : {
+        episode_transcript: episode.script ?? "",
+        episode_title: episode.title,
+        episode_metadata_json: metadataJson,
+        duration_hint: episode.duration_seconds
+          ? String(episode.duration_seconds)
+          : "",
+      };
+}
+
 /**
  * The article's title, read off the markdown's own leading `# ` H1.
  * Returns null when the agent produced no H1, so the caller falls back rather
@@ -158,21 +184,7 @@ export function useEpisodeArticles(
       });
       windowsRef.current[kind] = handle;
       try {
-        const metadataJson = JSON.stringify(episodeMetadata(episode));
-        const variables: Record<string, string> =
-          kind === "blog"
-            ? {
-                episode_transcript: episode.script,
-                episode_metadata: metadataJson,
-                style_guidance: "",
-              }
-            : {
-                episode_transcript: episode.script,
-                episode_metadata_json: metadataJson,
-                duration_hint: episode.duration_seconds
-                  ? String(episode.duration_seconds)
-                  : "",
-              };
+        const variables = episodeArticleVariables(episode, kind);
         // THE PRODUCT IS MARKDOWN (2026-08-18). These agents used to answer
         // with a JSON envelope that the client immediately flattened into
         // markdown — and markdown is what `pc_articles` stores, so nothing

@@ -20,6 +20,7 @@ import {
 import { parseChaptersWrite } from "@/features/podcasts/studio/components/EpisodeChaptersPanel";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
 import {
+  episodeArticleVariables,
   episodeMetadata,
   headingTitle,
 } from "@/features/podcasts/generator/useEpisodeArticles";
@@ -303,4 +304,23 @@ describe("episodeMetadata", () => {
       related_episodes: [],
     });
   });
+
+  it.each(["blog", "show_notes"] as const)(
+    "supplies every guaranteed episode-content value to the %s writer",
+    (kind) => {
+      const episode = {
+        id: "ep-1",
+        title: "Episode 7: Signals",
+        script: "HOST: Welcome to the show.",
+        duration_seconds: 125,
+        speakers: [],
+        show: null,
+      } as unknown as PcEpisodeWithShow;
+
+      expect(episodeArticleVariables(episode, kind)).toMatchObject({
+        episode_transcript: "HOST: Welcome to the show.",
+        episode_title: "Episode 7: Signals",
+      });
+    },
+  );
 });

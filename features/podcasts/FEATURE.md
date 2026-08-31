@@ -110,6 +110,11 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-31 — **Episode article launches satisfy their provision guarantees.**
+  `useEpisodeArticles` builds blog and show-notes variables through one shared
+  boundary that always supplies `episode_transcript` and `episode_title`; the
+  legacy metadata variable remains only for the currently bound agent input.
+
 - 2026-08-30 — **Unsupported MediaSource no longer creates a false system error.** The live MP3 player records unavailable/unsupported browser capability as the expected informational fallback to canonical audio; true SourceBuffer, append, and decode failures remain errors. Forcing tests pin both unsupported branches to zero `console.error` calls.
 
 - 2026-08-26 — **Deleting a Studio run uses the canonical anchored, non-modal
