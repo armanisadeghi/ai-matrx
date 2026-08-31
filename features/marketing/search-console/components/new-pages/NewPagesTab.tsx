@@ -32,6 +32,9 @@ import {
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { pageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import {
   humanLines,
   webLocation,
@@ -89,6 +92,7 @@ export function NewPagesTab({
   const openDrilldown = useOpenGscDrilldownWindow();
   const [addOpen, setAddOpen] = useState(false);
   const [notesTarget, setNotesTarget] = useState<TrackedPageRow | null>(null);
+  const [clickedRow, setClickedRow] = useState<LaunchRow | null>(null);
 
   const tracked = useQuery({
     queryKey: ["marketing", "gsc", "launch-pages", siteId],
@@ -377,6 +381,35 @@ export function NewPagesTab({
       ? firstDates.error
       : null;
 
+  // Right-click: ONE menu for the whole tracker, resolved per row via
+  // `data-row-id` + STATE (never a ref, so a row-dependent label can never go
+  // stale). Every row here is a canonical `web.page` — the same identity the
+  // Insights page-dimension tables show — so it gets the SAME shared section
+  // ("Site page" in features/context-menu-v3/SECTIONS.md) rather than a
+  // private copy; the launch-tracker-only actions (mark requested, notes,
+  // untrack) stay in their own section since no other "page" surface has
+  // launch-tracking state to act on.
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && rows.find((r) => r.id === id)) || null;
+    setClickedRow(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: { type: "web_page" as const, id: row.id, title: row.url },
+      content: [
+        `Page: ${row.url}`,
+        `Stage: ${LAUNCH_STAGE_LABELS[row.lifecycle.stage].label}`,
+      ].join("\n"),
+    };
+  };
+  const sitePageSection = pageMenuSection({
+    siteId,
+    siteName,
+    url: clickedRow?.url ?? "",
+    pageId: clickedRow?.id ?? null,
+    openDrilldown,
+  });
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -403,6 +436,13 @@ export function NewPagesTab({
         </div>
       ) : (
         <div className="min-h-0 flex-1">
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={resolveRowContext}
+            extraSections={clickedRow ? [sitePageSection] : []}
+          >
           <MatrxDataTable<LaunchRow>
             urlState={{ id: "gsc-new-pages" }}
             data={rows}
@@ -472,6 +512,7 @@ export function NewPagesTab({
             }}
             className="flex-1"
           />
+          </NonEditableContextMenu>
         </div>
       )}
 
