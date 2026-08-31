@@ -126,6 +126,46 @@ describe("global ownership on the wire", () => {
     ).toBe(TENANT_ORG_ID);
   });
 
+  it("clears the PERSON on a system-org row, not just the organization", () => {
+    // Storage stamps an actor over the client's deliberate null
+    // (`COALESCE(NEW.created_by, v_actor)` in mandate.vw_shortcut's trigger),
+    // and the client reads a person as "personal scope". A global shortcut an
+    // admin just saved must not come back as that admin's own.
+    const stamped = {
+      organization_id: SYSTEM_ORG_ID,
+      created_by: "87a6e699-3622-4869-8843-d0867456c0dd", // admin@admin.com
+      label: "ZZ-GLOBAL",
+    };
+    const wired = toGlobalOwnershipWire(stamped, SYSTEM_ORG_ID);
+    expect(wired.organization_id).toBeNull();
+    expect(wired.created_by).toBeNull();
+    expect(wired.label).toBe("ZZ-GLOBAL");
+
+    // A tenant row keeps BOTH — the creator there is real ownership.
+    const personal = { ...stamped, organization_id: TENANT_ORG_ID };
+    expect(toGlobalOwnershipWire(personal, SYSTEM_ORG_ID)).toBe(personal);
+  });
+
+  it("classifies a stamped global shortcut as global, not personal", () => {
+    const stampedRecord = {
+      organizationId: SYSTEM_ORG_ID,
+      userId: "87a6e699-3622-4869-8843-d0867456c0dd",
+      projectId: null,
+      taskId: null,
+    };
+    // THE REGRESSION: raw, it reads as that admin's personal shortcut.
+    expect(matchesScope(stampedRecord, { scope: "global", scopeId: null })).toBe(
+      false,
+    );
+    expect(matchesScope(stampedRecord, { scope: "user", scopeId: null })).toBe(
+      true,
+    );
+
+    const fixed = toGlobalOwnershipRecord(stampedRecord, SYSTEM_ORG_ID);
+    expect(matchesScope(fixed, { scope: "global", scopeId: null })).toBe(true);
+    expect(matchesScope(fixed, { scope: "user", scopeId: null })).toBe(false);
+  });
+
   it("round-trips: read as global, written back as the system org", () => {
     const read = toGlobalOwnershipRecord(
       { organizationId: SYSTEM_ORG_ID },

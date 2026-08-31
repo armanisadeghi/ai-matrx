@@ -45,19 +45,44 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
-type OwnedRow = { organization_id?: string | null };
+type OwnedRow = {
+  organization_id?: string | null;
+  created_by?: string | null;
+  user_id?: string | null;
+};
 
 /**
  * Present one row the way the client's scope model reads it: a row owned by the
- * system organization is GLOBAL, so it goes out with no organization. Any other
- * org id is a real tenant and passes through untouched.
+ * system organization is GLOBAL, so it goes out with NO OWNER AT ALL — no
+ * organization and no person. Any other org id is a real tenant and the row
+ * passes through untouched.
+ *
+ * 🚨 WHY THE PERSON IS CLEARED TOO, and it is not tidiness. Storage cannot
+ * represent "nobody made this": `mandate.vw_shortcut`'s INSTEAD OF trigger does
+ *   COALESCE(NEW.created_by, v_actor)
+ * so the client's deliberate `created_by: null` for a global write is REPLACED
+ * with the acting admin. Every global shortcut that predates the UI has
+ * `created_by IS NULL`; every one created through the UI is stamped. The client
+ * reads `userId !== null` as "a personal row", so a global shortcut an admin
+ * had just saved classified as that admin's personal shortcut and vanished
+ * from the global list they were looking at — the same write→read gap as the
+ * organization, one column over.
+ *
+ * The discriminator post-flip is the ORGANIZATION: a personal shortcut belongs
+ * to that person's personal org, a global one to the system org. `created_by`
+ * is audit, not ownership, and audit does not belong in a scope decision. The
+ * only client readers of a shortcut's `userId` are scope classifiers and the
+ * "Yours" label — and a platform-global shortcut is not yours.
  */
 export function toGlobalOwnershipWire<T extends OwnedRow>(
   row: T,
   systemOrgId: string,
 ): T {
   if (!row || row.organization_id !== systemOrgId) return row;
-  return { ...row, organization_id: null };
+  const out: T = { ...row, organization_id: null };
+  if ("created_by" in row) out.created_by = null;
+  if ("user_id" in row) out.user_id = null;
+  return out;
 }
 
 /** `toGlobalOwnershipWire` over a list. */
@@ -80,7 +105,10 @@ export async function projectGlobalOwnership<T extends OwnedRow>(
   return toGlobalOwnershipWireList(rows, await resolveSystemOrgId(client));
 }
 
-type OwnedRecord = { organizationId?: string | null };
+type OwnedRecord = {
+  organizationId?: string | null;
+  userId?: string | null;
+};
 
 /**
  * The same rule for records already converted to the client's camelCase shape —
@@ -92,7 +120,11 @@ export function toGlobalOwnershipRecord<T extends OwnedRecord>(
   systemOrgId: string,
 ): T {
   if (!record || record.organizationId !== systemOrgId) return record;
-  return { ...record, organizationId: null };
+  const out: T = { ...record, organizationId: null };
+  // Same reason as the wire: storage stamps an actor onto a global write, and
+  // the client reads a person as "personal scope".
+  if ("userId" in record) out.userId = null;
+  return out;
 }
 
 /**

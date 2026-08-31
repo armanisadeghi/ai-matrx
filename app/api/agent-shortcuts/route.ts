@@ -71,13 +71,22 @@ export async function GET(request: NextRequest) {
 
     let query = shortcutTable(supabase).select("*").is("deleted_at", null);
 
+    const systemOrgIdForScope = await resolveSystemOrgId(supabase);
+
     if (scope === "global") {
-      // Global/platform content now lives in the system org (was NULL org).
-      query = query
-        .is("created_by", null)
-        .eq("organization_id", await resolveSystemOrgId(supabase));
+      // Global/platform content lives in the system org (was NULL org). The
+      // ORGANIZATION is the discriminator, deliberately — filtering on
+      // `created_by IS NULL` as well would have hidden every global shortcut
+      // created through the UI, because `mandate.vw_shortcut`'s write trigger
+      // does `COALESCE(NEW.created_by, v_actor)` and stamps the acting admin
+      // over the client's null. `created_by` is audit; ownership is the org.
+      query = query.eq("organization_id", systemOrgIdForScope);
     } else if (scope === "user") {
-      query = query.eq("created_by", user.id);
+      // ...and for the same reason a person's own scope must EXCLUDE the
+      // system org, or the globals they happened to create come back as theirs.
+      query = query
+        .eq("created_by", user.id)
+        .neq("organization_id", systemOrgIdForScope);
     } else if (scope === "organization") {
       if (!scopeId) {
         return NextResponse.json(
@@ -145,7 +154,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: toGlobalOwnershipWireList(
         filtered as { organization_id?: string | null }[],
-        await resolveSystemOrgId(supabase),
+        systemOrgIdForScope,
       ),
     });
   } catch (error) {
