@@ -8488,6 +8488,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/planday/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_planday_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tcp-software/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tcp_software_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/namely/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_namely_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bullhorn/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bullhorn_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jazzhr/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_jazzhr_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobvite/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_jobvite_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lucky-orange/public/status": {
         parameters: {
             query?: never;
@@ -8514,6 +8616,108 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_logrocket_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/honeybadger/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_honeybadger_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/help-scout/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_help_scout_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/olark/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_olark_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/helpshift/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_helpshift_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wufoo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_wufoo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/123formbuilder/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_123formbuilder_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8565,6 +8769,108 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_acquia_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kontent-ai/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kontent_ai_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agility-cms/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_agility_cms_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bloomreach/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bloomreach_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/directus/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_directus_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/optimizely/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_optimizely_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/liferay/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_liferay_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -31278,6 +31584,35 @@ export interface components {
             /** Changed At */
             changed_at?: string | null;
         };
+        /** AgilityCMSServiceStatus */
+        AgilityCMSServiceStatus: {
+            /**
+             * Kind
+             * @default agility_cms_public_content_platform_status
+             * @constant
+             */
+            __kind?: "agility_cms_public_content_platform_status";
+            /**
+             * Provider
+             * @default Agility CMS
+             * @constant
+             */
+            provider?: "Agility CMS";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.agilitycms.com
+             * @constant
+             */
+            status_page?: "https://status.agilitycms.com";
+        };
         /**
          * AgorapulseServiceStatus
          * @description Safe aggregate status projection for Agorapulse's fixed status page.
@@ -34643,6 +34978,35 @@ export interface components {
          * @enum {string}
          */
         BlockerKind: "human_decision" | "approval" | "rate_limit" | "quota" | "external_data" | "schedule" | "upstream_failure" | "dependency" | "manual_hold";
+        /** BloomreachServiceStatus */
+        BloomreachServiceStatus: {
+            /**
+             * Kind
+             * @default bloomreach_public_content_platform_status
+             * @constant
+             */
+            __kind?: "bloomreach_public_content_platform_status";
+            /**
+             * Provider
+             * @default Bloomreach
+             * @constant
+             */
+            provider?: "Bloomreach";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.bloomreach.com
+             * @constant
+             */
+            status_page?: "https://status.bloomreach.com";
+        };
         /**
          * BlueskyPublicAuthorFeed
          * @description Bounded public feed response for one actor.
@@ -37124,6 +37488,43 @@ export interface components {
             succeeded: string[];
             /** Failed */
             failed: components["schemas"]["BulkVerdictFailure"][];
+        };
+        /**
+         * BullhornServiceStatus
+         * @description Safe aggregate status projection for Bullhorn's fixed status page.
+         */
+        BullhornServiceStatus: {
+            /**
+             * Kind
+             * @default bullhorn_official_recruiting_platform_status
+             * @constant
+             */
+            __kind?: "bullhorn_official_recruiting_platform_status";
+            /**
+             * Provider
+             * @default Bullhorn
+             * @constant
+             */
+            provider?: "Bullhorn";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.bullhorn.com
+             * @constant
+             */
+            status_page?: "https://status.bullhorn.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * ButterCmsServiceStatus
@@ -46685,6 +47086,35 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** DirectusServiceStatus */
+        DirectusServiceStatus: {
+            /**
+             * Kind
+             * @default directus_public_content_platform_status
+             * @constant
+             */
+            __kind?: "directus_public_content_platform_status";
+            /**
+             * Provider
+             * @default Directus
+             * @constant
+             */
+            provider?: "Directus";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.directus.cloud
+             * @constant
+             */
+            status_page?: "https://status.directus.cloud";
+        };
         /** DiscardRequest */
         DiscardRequest: {
             /** Job Id */
@@ -52394,6 +52824,38 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** FormBuilderServiceStatus */
+        FormBuilderServiceStatus: {
+            /**
+             * Kind
+             * @default 123formbuilder_public_service_status
+             * @constant
+             */
+            __kind?: "123formbuilder_public_service_status";
+            /**
+             * Provider
+             * @default 123formbuilder
+             * @constant
+             */
+            provider?: "123formbuilder";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.123formbuilder.com
+             * @constant
+             */
+            status_page?: "https://status.123formbuilder.com";
+        };
         /**
          * FrameIoServiceStatus
          * @description Safe aggregate status projection for Frame.io's fixed status page.
@@ -54020,6 +54482,70 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** HelpScoutServiceStatus */
+        HelpScoutServiceStatus: {
+            /**
+             * Kind
+             * @default help_scout_public_service_status
+             * @constant
+             */
+            __kind?: "help_scout_public_service_status";
+            /**
+             * Provider
+             * @default help_scout
+             * @constant
+             */
+            provider?: "help_scout";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.helpscout.com
+             * @constant
+             */
+            status_page?: "https://status.helpscout.com";
+        };
+        /** HelpshiftServiceStatus */
+        HelpshiftServiceStatus: {
+            /**
+             * Kind
+             * @default helpshift_public_service_status
+             * @constant
+             */
+            __kind?: "helpshift_public_service_status";
+            /**
+             * Provider
+             * @default helpshift
+             * @constant
+             */
+            provider?: "helpshift";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.helpshift.com
+             * @constant
+             */
+            status_page?: "https://status.helpshift.com";
+        };
         /**
          * HexPackageMetadata
          * @description Safe bounded projection of one public Hex.pm package.
@@ -54216,6 +54742,38 @@ export interface components {
             deprecated: boolean;
             /** Disabled */
             disabled: boolean;
+        };
+        /** HoneybadgerServiceStatus */
+        HoneybadgerServiceStatus: {
+            /**
+             * Kind
+             * @default honeybadger_public_service_status
+             * @constant
+             */
+            __kind?: "honeybadger_public_service_status";
+            /**
+             * Provider
+             * @default honeybadger
+             * @constant
+             */
+            provider?: "honeybadger";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.honeybadger.io
+             * @constant
+             */
+            status_page?: "https://status.honeybadger.io";
         };
         /**
          * HootsuiteServiceStatus
@@ -56430,6 +56988,77 @@ export interface components {
             selected_version?: number | null;
         };
         /**
+         * JazzHRServiceStatus
+         * @description Safe aggregate status projection for JazzHR's fixed status page.
+         */
+        JazzHRServiceStatus: {
+            /**
+             * Kind
+             * @default jazzhr_official_recruiting_platform_status
+             * @constant
+             */
+            __kind?: "jazzhr_official_recruiting_platform_status";
+            /**
+             * Provider
+             * @default JazzHR
+             * @constant
+             */
+            provider?: "JazzHR";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.jazzhr.com
+             * @constant
+             */
+            status_page?: "https://status.jazzhr.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** JobviteServiceStatus */
+        JobviteServiceStatus: {
+            /**
+             * Kind
+             * @default jobvite_official_recruiting_platform_status
+             * @constant
+             */
+            __kind?: "jobvite_official_recruiting_platform_status";
+            /**
+             * Provider
+             * @default Jobvite
+             * @constant
+             */
+            provider?: "Jobvite";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.jobvite.com
+             * @constant
+             */
+            status_page?: "https://status.jobvite.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * JoplinCloudHealthResult
          * @description Safe projection of the official Joplin Cloud ping response.
          */
@@ -57793,6 +58422,35 @@ export interface components {
             /** Canonical Page */
             canonical_page: string;
         };
+        /** KontentAIServiceStatus */
+        KontentAIServiceStatus: {
+            /**
+             * Kind
+             * @default kontent_ai_public_content_platform_status
+             * @constant
+             */
+            __kind?: "kontent_ai_public_content_platform_status";
+            /**
+             * Provider
+             * @default Kontent.ai
+             * @constant
+             */
+            provider?: "Kontent.ai";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.kontent.ai
+             * @constant
+             */
+            status_page?: "https://status.kontent.ai";
+        };
         /** LLMParams */
         LLMParams: {
             /** Model */
@@ -58906,6 +59564,35 @@ export interface components {
             hits: components["schemas"]["LibraryTestSearchHit"][];
             /** Total Chunks In Doc */
             total_chunks_in_doc: number;
+        };
+        /** LiferayServiceStatus */
+        LiferayServiceStatus: {
+            /**
+             * Kind
+             * @default liferay_public_content_platform_status
+             * @constant
+             */
+            __kind?: "liferay_public_content_platform_status";
+            /**
+             * Provider
+             * @default Liferay
+             * @constant
+             */
+            provider?: "Liferay";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.liferay.cloud
+             * @constant
+             */
+            status_page?: "https://status.liferay.cloud";
         };
         /**
          * LineageNode
@@ -62820,6 +63507,43 @@ export interface components {
             /** Types */
             types: string[];
         };
+        /**
+         * NamelyServiceStatus
+         * @description Safe aggregate status projection for Namely's fixed status page.
+         */
+        NamelyServiceStatus: {
+            /**
+             * Kind
+             * @default namely_official_hr_platform_status
+             * @constant
+             */
+            __kind?: "namely_official_hr_platform_status";
+            /**
+             * Provider
+             * @default Namely
+             * @constant
+             */
+            provider?: "Namely";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.namely.com
+             * @constant
+             */
+            status_page?: "https://status.namely.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** NamespaceField */
         NamespaceField: {
             /** Path */
@@ -64207,6 +64931,38 @@ export interface components {
             /** Ok */
             ok: boolean;
         };
+        /** OlarkServiceStatus */
+        OlarkServiceStatus: {
+            /**
+             * Kind
+             * @default olark_public_service_status
+             * @constant
+             */
+            __kind?: "olark_public_service_status";
+            /**
+             * Provider
+             * @default olark
+             * @constant
+             */
+            provider?: "olark";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.olark.com
+             * @constant
+             */
+            status_page?: "https://status.olark.com";
+        };
         /**
          * OmnisendServiceStatus
          * @description Safe aggregate status projection for Omnisend's fixed status page.
@@ -65057,6 +65813,35 @@ export interface components {
             events_24h: number;
             /** Unrecovered 24H */
             unrecovered_24h: number;
+        };
+        /** OptimizelyServiceStatus */
+        OptimizelyServiceStatus: {
+            /**
+             * Kind
+             * @default optimizely_public_content_platform_status
+             * @constant
+             */
+            __kind?: "optimizely_public_content_platform_status";
+            /**
+             * Provider
+             * @default Optimizely
+             * @constant
+             */
+            provider?: "Optimizely";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.optimizely.com
+             * @constant
+             */
+            status_page?: "https://status.optimizely.com";
         };
         /**
          * OracleHealthCapability
@@ -68564,6 +69349,43 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.planable.io";
+        };
+        /**
+         * PlandayServiceStatus
+         * @description Safe aggregate status projection for Planday's fixed status page.
+         */
+        PlandayServiceStatus: {
+            /**
+             * Kind
+             * @default planday_official_employee_scheduling_platform_status
+             * @constant
+             */
+            __kind?: "planday_official_employee_scheduling_platform_status";
+            /**
+             * Provider
+             * @default Planday
+             * @constant
+             */
+            provider?: "Planday";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.planday.com
+             * @constant
+             */
+            status_page?: "https://status.planday.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * PlannedPageResult
@@ -82802,6 +83624,43 @@ export interface components {
             taxonomy_nodes: components["schemas"]["SystemTaskTaxonomyNode"][];
         };
         /**
+         * TCPSoftwareServiceStatus
+         * @description Safe aggregate status projection for TCP Software's fixed status page.
+         */
+        TCPSoftwareServiceStatus: {
+            /**
+             * Kind
+             * @default tcp_software_official_workforce_platform_status
+             * @constant
+             */
+            __kind?: "tcp_software_official_workforce_platform_status";
+            /**
+             * Provider
+             * @default TCP Software
+             * @constant
+             */
+            provider?: "TCP Software";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.tcpsoftware.com
+             * @constant
+             */
+            status_page?: "https://status.tcpsoftware.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * TVmazePublicShow
          * @description Safe bounded projection of one public TVmaze show record.
          */
@@ -90206,6 +91065,38 @@ export interface components {
             workweek_id?: string | null;
             /** Leave Ledger Ids */
             leave_ledger_ids?: string[];
+        };
+        /** WufooServiceStatus */
+        WufooServiceStatus: {
+            /**
+             * Kind
+             * @default wufoo_public_service_status
+             * @constant
+             */
+            __kind?: "wufoo_public_service_status";
+            /**
+             * Provider
+             * @default wufoo
+             * @constant
+             */
+            provider?: "wufoo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.wufoo.com
+             * @constant
+             */
+            status_page?: "https://status.wufoo.com";
         };
         /** YieldBreachOut */
         YieldBreachOut: {
@@ -105583,6 +106474,126 @@ export interface operations {
             };
         };
     };
+    public_status_planday_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlandayServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tcp_software_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TCPSoftwareServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_namely_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NamelyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_bullhorn_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BullhornServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_jazzhr_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JazzHRServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_jobvite_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobviteServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_lucky_orange_public_status_get: {
         parameters: {
             query?: never;
@@ -105619,6 +106630,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogRocketServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_honeybadger_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoneybadgerServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_help_scout_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpScoutServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_olark_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OlarkServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_helpshift_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpshiftServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_wufoo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WufooServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_123formbuilder_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormBuilderServiceStatus"];
                 };
             };
         };
@@ -105679,6 +106810,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcquiaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_kontent_ai_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KontentAIServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_agility_cms_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgilityCMSServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_bloomreach_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BloomreachServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_directus_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectusServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_optimizely_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptimizelyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_liferay_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiferayServiceStatus"];
                 };
             };
         };
