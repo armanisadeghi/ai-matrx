@@ -200,6 +200,9 @@ function MandatesPanel() {
   const [mandates, setMandates] = useState<SeoMandateRow[]>([]);
   const [provisions, setProvisions] = useState<SeoProvisionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clickedMandate, setClickedMandate] = useState<SeoMandateRow | null>(
+    null,
+  );
 
   useEffect(() => {
     Promise.all([fetchSeoMandates(), fetchSeoProvisions()])
@@ -309,16 +312,61 @@ function MandatesPanel() {
         </Link>
         .
       </p>
-      <MatrxDataTable
-        urlState={{ id: "seo-ops-mandates" }}
-        data={mandates}
-        columns={columns}
-        getRowId={(row) => row.id}
-        isLoading={loading}
-        pageSize={30}
-        emptyState={{ title: "No SEO mandates found" }}
-        toolbar={{ search: true }}
-      />
+      {/* `mandate` also renders on `features/mandates/admin/MandatesConsole.tsx`
+         with its own richer menu — extracting a shared builder is future
+         work (flagged separately); this pane only needs its existing "Open"
+         door on the menu, not a competing set of mandate actions. */}
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(element) => {
+          const id = element
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = id ? (mandates.find((m) => m.id === id) ?? null) : null;
+          setClickedMandate(row);
+          if (!row) return null;
+          return {
+            [CONTEXT_MENU_ENTITY_KEY]: {
+              type: "mandate",
+              id: row.id,
+              title: row.label || row.mandate_key,
+            },
+            content: `${row.label || row.mandate_key}\n${row.description ?? ""}`,
+          };
+        }}
+        extraSections={[
+          {
+            id: "seo-mandate-actions",
+            label: clickedMandate?.label || clickedMandate?.mandate_key || "This mandate",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "link",
+                id: "seo-mandate-open",
+                label: "Open in mandates console",
+                icon: ArrowUpRight,
+                href: clickedMandate
+                  ? `/administration/mandates?mandate=${encodeURIComponent(clickedMandate.mandate_key)}`
+                  : "#",
+                disabled: !clickedMandate,
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
+        <MatrxDataTable
+          urlState={{ id: "seo-ops-mandates" }}
+          data={mandates}
+          columns={columns}
+          getRowId={(row) => row.id}
+          isLoading={loading}
+          pageSize={30}
+          emptyState={{ title: "No SEO mandates found" }}
+          toolbar={{ search: true }}
+        />
+      </NonEditableContextMenu>
     </div>
   );
 }

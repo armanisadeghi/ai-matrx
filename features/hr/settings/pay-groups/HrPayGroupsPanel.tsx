@@ -359,6 +359,7 @@ export function HrPayGroupsPanel() {
                 ),
               }}
             />
+            </NonEditableContextMenu>
           </div>
         </section>
       </div>

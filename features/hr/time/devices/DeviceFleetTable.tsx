@@ -316,7 +316,7 @@ export function DeviceFleetTable({
       {/* Same actions as the row buttons — approve/pause/revoke/reissue all
           go through `confirm({...})` above, never a silent onSelect. */}
       <NonEditableContextMenu
-        sourceFeature="hr"
+        sourceFeature="admin"
         contentSource={{ type: "raw" }}
         contextData={{ content: "" }}
         resolveContextOnOpen={(target) => {

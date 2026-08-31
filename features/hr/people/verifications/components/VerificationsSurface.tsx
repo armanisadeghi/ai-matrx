@@ -23,6 +23,8 @@ import { FileCheck2, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import MatrxDataTable from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { useBackendApi } from "@/hooks/useBackendApi";
@@ -62,6 +64,9 @@ export function VerificationsSurface() {
   const [creating, setCreating] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [clickedRow, setClickedRow] = useState<HrVerificationLetterRow | null>(
+    null,
+  );
 
   const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
   const organizationId = active?.organization_id ?? null;
