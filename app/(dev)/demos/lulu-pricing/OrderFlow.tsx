@@ -222,9 +222,9 @@ export function OrderFlow({
         order.status === "pending_payment"
           ? `"${order.title}" hasn't been paid yet — canceling just closes it.`
           : `"${order.title}" will not be printed, and the ${total} you paid is refunded in full. This can't be undone once production starts.`,
-      confirmText: "Cancel the order",
-      cancelText: "Keep it",
-      destructive: true,
+      confirmLabel: "Cancel the order",
+      cancelLabel: "Keep it",
+      variant: "destructive",
     });
     if (!confirmed) return;
     setCancelingId(order.id);

@@ -17180,8 +17180,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/PrintOrderPublic"
                   },
                   "type": "array",
                   "title": "Response List Orders Lulu Orders Get"
@@ -17256,9 +17255,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Read Order Lulu Orders  Order Id  Get"
+                  "$ref": "#/components/schemas/PrintOrderPublic"
                 }
               }
             }
@@ -17301,9 +17298,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Cancel Order Lulu Orders  Order Id  Cancel Post"
+                  "$ref": "#/components/schemas/PrintOrderPublic"
                 }
               }
             }
@@ -166529,6 +166524,161 @@
         ],
         "title": "PrintOrderCreateRequest",
         "description": "Body of ``POST /lulu/orders`` — quote, capture, and start checkout."
+      },
+      "PrintOrderPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "pod_package_id": {
+            "type": "string",
+            "title": "Pod Package Id"
+          },
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "lulu_total_incl_tax": {
+            "type": "string",
+            "title": "Lulu Total Incl Tax"
+          },
+          "markup_percent": {
+            "type": "string",
+            "title": "Markup Percent"
+          },
+          "charge_amount_cents": {
+            "type": "integer",
+            "title": "Charge Amount Cents"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "status_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Message"
+          },
+          "lulu_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lulu Status"
+          },
+          "lulu_print_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lulu Print Job Id"
+          },
+          "shipping_level": {
+            "type": "string",
+            "title": "Shipping Level"
+          },
+          "tracking": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracking"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "placed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Placed At"
+          },
+          "refunded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refunded At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "pod_package_id",
+          "page_count",
+          "quantity",
+          "currency",
+          "lulu_total_incl_tax",
+          "markup_percent",
+          "charge_amount_cents",
+          "status",
+          "status_message",
+          "lulu_status",
+          "lulu_print_job_id",
+          "shipping_level",
+          "tracking",
+          "created_at",
+          "paid_at",
+          "placed_at",
+          "refunded_at"
+        ],
+        "title": "PrintOrderPublic",
+        "description": "One order as every surface consumes it — also the generated-contract shape."
       },
       "PrintShippingAddress": {
         "properties": {

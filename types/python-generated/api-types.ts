@@ -67195,6 +67195,52 @@ export interface components {
             cancel_url: string;
         };
         /**
+         * PrintOrderPublic
+         * @description One order as every surface consumes it — also the generated-contract shape.
+         */
+        PrintOrderPublic: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Pod Package Id */
+            pod_package_id: string;
+            /** Page Count */
+            page_count: number;
+            /** Quantity */
+            quantity: number;
+            /** Currency */
+            currency: string;
+            /** Lulu Total Incl Tax */
+            lulu_total_incl_tax: string;
+            /** Markup Percent */
+            markup_percent: string;
+            /** Charge Amount Cents */
+            charge_amount_cents: number;
+            /** Status */
+            status: string;
+            /** Status Message */
+            status_message: string | null;
+            /** Lulu Status */
+            lulu_status: string | null;
+            /** Lulu Print Job Id */
+            lulu_print_job_id: string | null;
+            /** Shipping Level */
+            shipping_level: string;
+            /** Tracking */
+            tracking: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at: string;
+            /** Paid At */
+            paid_at: string | null;
+            /** Placed At */
+            placed_at: string | null;
+            /** Refunded At */
+            refunded_at: string | null;
+        };
+        /**
          * PrintShippingAddress
          * @description Lulu requires a real address to compute tax and shipping.
          */
@@ -100007,9 +100053,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["PrintOrderPublic"][];
                 };
             };
         };
@@ -100064,9 +100108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PrintOrderPublic"];
                 };
             };
             /** @description Validation Error */
@@ -100097,9 +100139,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PrintOrderPublic"];
                 };
             };
             /** @description Validation Error */
