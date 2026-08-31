@@ -19159,6 +19159,27 @@
         }
       }
     },
+    "/fellow/public/status": {
+      "get": {
+        "tags": [
+          "Fellow Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_fellow_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FellowServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/frontify/public/status": {
       "get": {
         "tags": [
@@ -19201,6 +19222,69 @@
         }
       }
     },
+    "/frame-io/public/status": {
+      "get": {
+        "tags": [
+          "Frame.io Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_frame_io_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameIoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pandadoc/public/status": {
+      "get": {
+        "tags": [
+          "PandaDoc Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pandadoc_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PandaDocServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/breathehr/public/status": {
+      "get": {
+        "tags": [
+          "BreatheHR Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_breathehr_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreatheHRServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/brevo/public/status": {
       "get": {
         "tags": [
@@ -19215,6 +19299,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BrevoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attentive/public/status": {
+      "get": {
+        "tags": [
+          "Attentive Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_attentive_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttentiveServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/onesignal/public/status": {
+      "get": {
+        "tags": [
+          "OneSignal Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_onesignal_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OneSignalServiceStatus"
                 }
               }
             }
@@ -81416,6 +81542,51 @@
         ],
         "title": "AssignmentUniqueness"
       },
+      "AttentiveServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "attentive_public_service_status",
+            "title": "Kind",
+            "default": "attentive_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "attentive",
+            "title": "Provider",
+            "default": "attentive"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://attentive.statuspage.io",
+            "title": "Status Page",
+            "default": "https://attentive.statuspage.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AttentiveServiceStatus",
+        "description": "Safe aggregate status projection for Attentive's fixed status page."
+      },
       "AudioExtractionRequest": {
         "properties": {},
         "additionalProperties": false,
@@ -85914,6 +86085,56 @@
         ],
         "title": "BreakPremiumLine",
         "description": "A statutory meal or rest premium.\n\nAlways **1.0 hours** by statute — a premium is not a measured interval, which is also why\nrounding never touches it (SPEC-TIME §10)."
+      },
+      "BreatheHRServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "breathehr_official_people_platform_status",
+            "title": "Kind",
+            "default": "breathehr_official_people_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "BreatheHR",
+            "title": "Provider",
+            "default": "BreatheHR"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.breathehr.com",
+            "title": "Status Page",
+            "default": "https://status.breathehr.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "BreatheHRServiceStatus",
+        "description": "Safe aggregate status projection for BreatheHR's fixed status page."
       },
       "BrevoServiceStatus": {
         "properties": {
@@ -124187,6 +124408,56 @@
         "title": "FeedbackIterationRequest",
         "description": "Turn N>=2 — the user's feedback message + replayed session.\n\nMode A: the client may also send `apply_choice` to commit the\nprevious turn's winner before the rebuild runs (so successive\nfeedback messages compose). When `apply_choice` is omitted the\nserver uses the most-recent version as baseline."
       },
+      "FellowServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "fellow_official_meeting_platform_status",
+            "title": "Kind",
+            "default": "fellow_official_meeting_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Fellow",
+            "title": "Provider",
+            "default": "Fellow"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.fellow.ai/",
+            "title": "Status Page",
+            "default": "https://status.fellow.ai/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FellowServiceStatus",
+        "description": "Safe aggregate status projection for Fellow's fixed status page."
+      },
       "FieldAdd": {
         "properties": {
           "display_name": {
@@ -128759,6 +129030,47 @@
         "type": "object",
         "title": "ForkRequest",
         "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
+      },
+      "FrameIoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "frame_io_public_creative_collaboration_status",
+            "title": "Kind",
+            "default": "frame_io_public_creative_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Frame.io",
+            "title": "Provider",
+            "default": "Frame.io"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.frame.io",
+            "title": "Status Page",
+            "default": "https://status.frame.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FrameIoServiceStatus",
+        "description": "Safe aggregate status projection for Frame.io's fixed status page."
       },
       "FramerServiceStatus": {
         "properties": {
@@ -155894,6 +156206,51 @@
         ],
         "title": "OneDriveSelectedFileResponse"
       },
+      "OneSignalServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "onesignal_public_service_status",
+            "title": "Kind",
+            "default": "onesignal_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "onesignal",
+            "title": "Provider",
+            "default": "onesignal"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.onesignal.com/",
+            "title": "Status Page",
+            "default": "https://status.onesignal.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "OneSignalServiceStatus",
+        "description": "Safe aggregate status projection for OneSignal's fixed status page."
+      },
       "OpenAlexPublicWork": {
         "properties": {
           "__kind": {
@@ -161439,6 +161796,47 @@
         "additionalProperties": false,
         "type": "object",
         "title": "PagespeedSyncBody"
+      },
+      "PandaDocServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pandadoc_public_document_platform_status",
+            "title": "Kind",
+            "default": "pandadoc_public_document_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "PandaDoc",
+            "title": "Provider",
+            "default": "PandaDoc"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pandadoc.com",
+            "title": "Status Page",
+            "default": "https://status.pandadoc.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PandaDocServiceStatus",
+        "description": "Safe aggregate status projection for PandaDoc's fixed status page."
       },
       "PanelCostEstimate": {
         "properties": {

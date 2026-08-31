@@ -8199,6 +8199,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/fellow/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_fellow_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/frontify/public/status": {
         parameters: {
             query?: never;
@@ -8233,6 +8250,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/frame-io/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_frame_io_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pandadoc/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pandadoc_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/breathehr/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_breathehr_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/brevo/public/status": {
         parameters: {
             query?: never;
@@ -8242,6 +8310,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_brevo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/attentive/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_attentive_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onesignal/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_onesignal_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -32793,6 +32895,41 @@ export interface components {
          * @enum {string}
          */
         AssignmentUniqueness: "allow_repeats" | "without_replacement";
+        /**
+         * AttentiveServiceStatus
+         * @description Safe aggregate status projection for Attentive's fixed status page.
+         */
+        AttentiveServiceStatus: {
+            /**
+             * Kind
+             * @default attentive_public_service_status
+             * @constant
+             */
+            __kind?: "attentive_public_service_status";
+            /**
+             * Provider
+             * @default attentive
+             * @constant
+             */
+            provider?: "attentive";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://attentive.statuspage.io
+             * @constant
+             */
+            status_page?: "https://attentive.statuspage.io";
+        };
         /** AudioExtractionRequest */
         AudioExtractionRequest: Record<string, never>;
         /**
@@ -34852,6 +34989,43 @@ export interface components {
             attendance_exception_id?: string | null;
             /** Source Punch Ids */
             source_punch_ids?: string[];
+        };
+        /**
+         * BreatheHRServiceStatus
+         * @description Safe aggregate status projection for BreatheHR's fixed status page.
+         */
+        BreatheHRServiceStatus: {
+            /**
+             * Kind
+             * @default breathehr_official_people_platform_status
+             * @constant
+             */
+            __kind?: "breathehr_official_people_platform_status";
+            /**
+             * Provider
+             * @default BreatheHR
+             * @constant
+             */
+            provider?: "BreatheHR";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.breathehr.com
+             * @constant
+             */
+            status_page?: "https://status.breathehr.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * BrevoServiceStatus
@@ -50078,6 +50252,43 @@ export interface components {
             /** Apply Choice */
             apply_choice?: ("A" | "B") | null;
         };
+        /**
+         * FellowServiceStatus
+         * @description Safe aggregate status projection for Fellow's fixed status page.
+         */
+        FellowServiceStatus: {
+            /**
+             * Kind
+             * @default fellow_official_meeting_platform_status
+             * @constant
+             */
+            __kind?: "fellow_official_meeting_platform_status";
+            /**
+             * Provider
+             * @default Fellow
+             * @constant
+             */
+            provider?: "Fellow";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.fellow.ai/
+             * @constant
+             */
+            status_page?: "https://status.fellow.ai/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** FieldAdd */
         FieldAdd: {
             /** Display Name */
@@ -51880,6 +52091,38 @@ export interface components {
             exclusive?: boolean;
             /** Title */
             title?: string | null;
+        };
+        /**
+         * FrameIoServiceStatus
+         * @description Safe aggregate status projection for Frame.io's fixed status page.
+         */
+        FrameIoServiceStatus: {
+            /**
+             * Kind
+             * @default frame_io_public_creative_collaboration_status
+             * @constant
+             */
+            __kind?: "frame_io_public_creative_collaboration_status";
+            /**
+             * Provider
+             * @default Frame.io
+             * @constant
+             */
+            provider?: "Frame.io";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.frame.io
+             * @constant
+             */
+            status_page?: "https://status.frame.io";
         };
         /**
          * FramerServiceStatus
@@ -63552,6 +63795,41 @@ export interface components {
             last_modified_at: string | null;
         };
         /**
+         * OneSignalServiceStatus
+         * @description Safe aggregate status projection for OneSignal's fixed status page.
+         */
+        OneSignalServiceStatus: {
+            /**
+             * Kind
+             * @default onesignal_public_service_status
+             * @constant
+             */
+            __kind?: "onesignal_public_service_status";
+            /**
+             * Provider
+             * @default onesignal
+             * @constant
+             */
+            provider?: "onesignal";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.onesignal.com/
+             * @constant
+             */
+            status_page?: "https://status.onesignal.com/";
+        };
+        /**
          * OpenAlexPublicWork
          * @description Safe factual projection of one public OpenAlex work.
          */
@@ -65786,6 +66064,38 @@ export interface components {
             strategy?: "mobile" | "desktop" | "both";
             /** Request Id */
             request_id?: string | null;
+        };
+        /**
+         * PandaDocServiceStatus
+         * @description Safe aggregate status projection for PandaDoc's fixed status page.
+         */
+        PandaDocServiceStatus: {
+            /**
+             * Kind
+             * @default pandadoc_public_document_platform_status
+             * @constant
+             */
+            __kind?: "pandadoc_public_document_platform_status";
+            /**
+             * Provider
+             * @default PandaDoc
+             * @constant
+             */
+            provider?: "PandaDoc";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.pandadoc.com
+             * @constant
+             */
+            status_page?: "https://status.pandadoc.com";
         };
         /**
          * PanelCostEstimate
@@ -104314,6 +104624,26 @@ export interface operations {
             };
         };
     };
+    public_status_fellow_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FellowServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_frontify_public_status_get: {
         parameters: {
             query?: never;
@@ -104354,6 +104684,66 @@ export interface operations {
             };
         };
     };
+    public_status_frame_io_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameIoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pandadoc_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PandaDocServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_breathehr_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreatheHRServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_brevo_public_status_get: {
         parameters: {
             query?: never;
@@ -104370,6 +104760,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrevoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_attentive_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttentiveServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_onesignal_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneSignalServiceStatus"];
                 };
             };
         };
