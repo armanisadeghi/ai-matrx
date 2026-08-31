@@ -113,10 +113,10 @@ with `#bind`.
    with an honest sentence. The structural skip is what this build exists to end.
 6. **Nothing dead, nothing silent.** Every empty, loading, unreadable and refused state is a
    sentence with a remedy. Save is disabled only with its reason printed beside it.
-7. **A selection closes before its confirmation opens.** `afterCurrentLayerCloses` waits for
-   the rung picker's body lock to remain released for two consecutive paints before the
-   dirty-draft AlertDialog opens, so a late closing-layer cleanup cannot retake ownership.
-   Neither a fixed delay nor the first unlocked paint is treated as proof of close.
+7. **A selection closes before its confirmation opens.** The shared `confirm()` boundary
+   calls `afterCurrentLayerCloses`, so every Select/Menu caller waits for the current body
+   lock to remain released for two consecutive paints before AlertDialog opens. Neither a
+   caller opt-in, fixed delay, nor the first unlocked paint is treated as proof of close.
 
 ## The four sources, all four real
 
@@ -224,6 +224,10 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-08-31 — **Modal ownership is enforced at the shared boundary.** `confirm()` waits
+  for `afterCurrentLayerCloses()` before every AlertDialog open; the forcing guard rejects
+  the former direct re-export that left unpatched Select/Menu callers exposed.
 
 - 2026-08-31 — **The Select-to-confirm handoff now observes the real close boundary.** The first
   producer fix waited one animation frame, but the deployed admin surface reproduced the orphaned

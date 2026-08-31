@@ -14,6 +14,8 @@ import {
   restoreBodyPointerEventsIfOrphaned,
 } from "@/components/dialogs/confirm/body-pointer-events-guard";
 import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
+import fs from "node:fs";
+import path from "node:path";
 import { extractErrorMessage } from "@/utils/errors";
 import { coverageLine } from "../words";
 import { writeReportStillDescribesDraft } from "../write-report-life";
@@ -199,6 +201,25 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
 });
 
 describe("V1 R2-1 producer — a selection closes before its confirm opens", () => {
+  test("the shared confirm boundary owns the handoff for every caller", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "components/dialogs/confirm/ConfirmDialogHost.tsx"),
+      "utf8",
+    );
+    const confirmBody = source.slice(
+      source.indexOf("export async function confirm"),
+      source.indexOf("const ConfirmDialogHostImpl"),
+    );
+
+    expect(confirmBody).toContain("await afterCurrentLayerCloses()");
+    expect(confirmBody.indexOf("await afterCurrentLayerCloses()")).toBeLessThan(
+      confirmBody.indexOf("openConfirm(options)"),
+    );
+    expect(source).not.toContain(
+      'export { confirm } from "@ai-matrx/kit/confirm-opener"',
+    );
+  });
+
   test("the handoff waits for Radix to release its body lock, not merely one frame", async () => {
     const scheduled: FrameRequestCallback[] = [];
     let continued = false;

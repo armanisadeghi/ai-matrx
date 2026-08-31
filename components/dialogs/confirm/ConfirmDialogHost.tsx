@@ -21,11 +21,21 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import {
+  confirm as openConfirm,
+  type ConfirmOptions,
+} from "@ai-matrx/kit/confirm-opener";
 
+import { afterCurrentLayerCloses } from "./after-current-layer-closes";
 import { useBodyPointerEventsGuard } from "./body-pointer-events-guard";
 
-export { confirm } from "@ai-matrx/kit/confirm-opener";
 export type { ConfirmOptions } from "@ai-matrx/kit/confirm-opener";
+
+/** The one ownership handoff for every imperative confirm in the app. */
+export async function confirm(options: ConfirmOptions): Promise<boolean> {
+  await afterCurrentLayerCloses();
+  return openConfirm(options);
+}
 
 const ConfirmDialogHostImpl = dynamic(
   () => import("@ai-matrx/kit/confirm").then((m) => m.ConfirmDialogHost),
