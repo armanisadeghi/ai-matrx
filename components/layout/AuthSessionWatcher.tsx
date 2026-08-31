@@ -166,6 +166,34 @@ export default function AuthSessionWatcher() {
         dispatch(scopesActions.scopesReset());
         dispatch(contextValuesActions.contextValuesReset());
       }
+      if (
+        event === "SIGNED_IN" ||
+        event === "USER_UPDATED" ||
+        (event === "INITIAL_SESSION" && session)
+      ) {
+        // THE AUTH-HYDRATION RE-KICK (2026-08-31). A fresh tab's first
+        // content-ir registry loads can fire BEFORE this session hydrates —
+        // the reads run as `anon`, RLS answers 42501, and every kind on the
+        // page renders as raw JSON / the generic floor while its component
+        // sits one authenticated read away. The moment auth is real, re-kick
+        // both registries: ensureWarm() is a no-op when the first load
+        // already succeeded (deduped promise) and a retry-now when it failed,
+        // so this costs nothing on the healthy path and heals the race
+        // deterministically on the broken one. The kind repaint seam
+        // (useContentIrKindVersion) upgrades every mounted block in place.
+        //
+        // Dynamic imports on purpose: this file is the thin always-mounted
+        // shell, and a static edge into the registry cluster would pull the
+        // entire compiled-kind graph into every route's first load (THE
+        // FRAGMENTATION LAW). Any page that renders kinds has these modules
+        // in flight already, so this resolves to the same instances.
+        void import("@/features/content-ir/registry/kind-registry").then(
+          (m) => m.kindRegistry.ensureWarm(),
+        );
+        void import("@/features/content-ir/registry/component-registry").then(
+          (m) => m.componentRegistry.ensureWarm(),
+        );
+      }
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         setSessionExpired(false);
         // Fresh sign-in → establish the file-session cookie for this identity.
