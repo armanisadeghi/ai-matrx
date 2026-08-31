@@ -36,8 +36,10 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
@@ -119,6 +121,7 @@ import {
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
+  softDeleteMandate,
   updateMandateDefinition,
   type MandateAgentOption,
   type MandateCodeTruth,
@@ -531,6 +534,39 @@ export function MandatesConsole() {
     };
   };
 
+  /**
+   * Remove a mandate — soft, confirmed, and honest about the consequence.
+   *
+   * The confirm states what a person actually loses and what survives, because
+   * "Are you sure?" tells them nothing they did not already know. It is a soft
+   * delete: the row keeps its history and an admin can restore it, and saying
+   * so is what makes this safe to offer on a list.
+   */
+  const removeMandate = async (row: ConsoleRow) => {
+    const ok = await confirm({
+      title: `Remove "${row.mandateKey}"?`,
+      description:
+        `Everywhere that runs this job stops finding it: the console, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
+        `Anything bound to it — every rung's holder and mapping — stops applying with it. ` +
+        `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
+      confirmLabel: "Remove it",
+      cancelLabel: "Keep it",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await softDeleteMandate(row.id);
+      toast.success(`Removed "${row.mandateKey}" — nothing runs it now.`);
+      reload();
+    } catch (error: unknown) {
+      // The service's own sentence (RLS refusal, already-removed) reaches the
+      // person; this never invents a reason it does not have.
+      toast.error(
+        error instanceof Error ? error.message : "That job was not removed.",
+      );
+    }
+  };
+
   const mandateMenuSections: ContextMenuExtraSection[] = (() => {
     const row = menuRow;
     if (!row) return [];
@@ -574,6 +610,19 @@ export function MandatesConsole() {
         },
       },
     ];
+    // 🚨 REMOVE — the missing half of this console's CRUD (walk, 2026-08-31:
+    // duplicate / export / split were offered and there was NO way to remove a
+    // mandate from any screen a person normally uses). Destructive, so it is
+    // last, styled as destructive, and its confirm names what actually happens
+    // rather than asking "are you sure?".
+    items.push({
+      kind: "item",
+      id: "mandate-delete",
+      label: `Remove "${row.mandateKey}"`,
+      icon: Trash2,
+      destructive: true,
+      onSelect: () => void removeMandate(row),
+    });
     return [
       {
         id: "mandate-actions",

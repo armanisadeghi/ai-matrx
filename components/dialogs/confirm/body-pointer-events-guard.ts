@@ -113,10 +113,20 @@ export function restoreBodyPointerEventsIfOrphaned(
   // counter carries it (`bodyPointerEventsRepairCount()`), because a guard
   // that reprints the same paragraph on every rung change is noise, and noise
   // is how a scream stops being heard.
+  //
+  // 🚨 EVERY repair says something; only the ESSAY is deduplicated (walk,
+  // 2026-08-31: the diagnostic logged ZERO times across a session in which
+  // repairs demonstrably happened, so nobody could tell whether the guard had
+  // done the work or something else had). A guard that repairs silently is
+  // back to being indistinguishable from a guard that is absent — the whole
+  // defect this file exists to avoid. The first repair carries the full cause
+  // and remedy; every one after it is a countable one-liner.
   if (repairs === 1) {
     console.error(
-      "[modal-layers] document.body was left pointer-events:none with no modal layer open — every control on the page was dead. Restored. Cause is two overlapping Radix layers (typically a Select whose selection synchronously opens a Dialog); the durable fix is to let the first layer finish closing before opening the second. Further repairs this session are counted, not reprinted.",
+      "[modal-layers] document.body was left pointer-events:none with no modal layer open — every control on the page was dead. Restored. Cause is two overlapping Radix layers (typically a Select whose selection synchronously opens a Dialog); the durable fix is to let the first layer finish closing before opening the second.",
     );
+  } else {
+    console.error(`[modal-layers] repaired an orphaned body lock (#${repairs}).`);
   }
   return true;
 }
@@ -139,13 +149,20 @@ export function bodyPointerEventsRepairCount(): number {
 export function useBodyPointerEventsGuard(): void {
   useEffect(() => {
     if (typeof document === "undefined") return;
-    let frame = 0;
+    //
+    // 🚨 NEVER SCHEDULE THE REPAIR ON requestAnimationFrame (walk, 2026-08-31:
+    // 8/8 probes eventually repaired, but two of them took 4.5s and ~15-20s
+    // against a 1.5s bar). rAF is SUSPENDED while a tab is hidden and
+    // coalesced under load, so the one thing standing between a person and a
+    // dead page was tied to the clock most likely to stop. A dead page is not
+    // a paint — it does not need a frame, it needs a turn of the event loop.
+    let queued = 0;
     const schedule = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
+      if (queued) return;
+      queued = window.setTimeout(() => {
+        queued = 0;
         restoreBodyPointerEventsIfOrphaned();
-      });
+      }, 0);
     };
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, {
@@ -159,16 +176,21 @@ export function useBodyPointerEventsGuard(): void {
     // all unless the body is actually locked with no layer up.
     const sweep = setInterval(() => {
       restoreBodyPointerEventsIfOrphaned();
-    }, 1000);
+    }, 500);
     // Portals mount into <body>, but a layer can also be removed from deeper in
     // the tree; a pointerdown that lands on nothing is the other symptom, and
     // it costs nothing to re-check then.
     document.addEventListener("pointerdown", schedule, true);
+    // Timers are throttled hard while a tab is hidden, so the moment it comes
+    // back is exactly when a lock may have been sitting unrepaired: check then,
+    // before the person's first click lands on a dead page.
+    document.addEventListener("visibilitychange", schedule);
     return () => {
       observer.disconnect();
       clearInterval(sweep);
       document.removeEventListener("pointerdown", schedule, true);
-      if (frame) cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", schedule);
+      if (queued) clearTimeout(queued);
     };
   }, []);
 }

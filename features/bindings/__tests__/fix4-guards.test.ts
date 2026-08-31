@@ -146,19 +146,27 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     document.body.innerHTML = "";
   });
 
-  test("locked with no layer in the document: repaired and screamed once", () => {
+  test("locked with no layer in the document: repaired, and every repair speaks", () => {
     document.body.style.pointerEvents = "none";
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
     expect(document.body.style.pointerEvents).toBe("");
     expect(bodyPointerEventsRepairCount()).toBe(1);
     expect(console.error).toHaveBeenCalledTimes(1);
 
-    // A second repair counts but does not reprint — a guard that repeats a
-    // paragraph is noise, and noise is how a scream stops being heard.
+    // 🚨 This used to assert the OPPOSITE — that a second repair counts but
+    // does not print — on the reasoning that a repeated paragraph is noise. A
+    // walk then measured the diagnostic logging ZERO times across a session in
+    // which repairs demonstrably happened, and nobody could tell whether this
+    // guard had done the work or something else had. Silence per repair
+    // reintroduced the exact ambiguity the guard exists to remove, so the rule
+    // flipped: dedupe the ESSAY, never the EVENT.
     document.body.style.pointerEvents = "none";
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
     expect(bodyPointerEventsRepairCount()).toBe(2);
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalledTimes(2);
+    expect((console.error as jest.Mock).mock.calls[1][0]).toBe(
+      "[modal-layers] repaired an orphaned body lock (#2).",
+    );
   });
 
   test("locked WITH a dialog open: left completely alone", () => {
@@ -375,8 +383,23 @@ describe("R2-1 — THE WALKER'S 8-PROBE PROTOCOL (guard repaired exactly once pe
     }
     expect(repaired).toBe(8);
     expect(bodyPointerEventsRepairCount()).toBe(8);
-    // Only the LOGGING is deduplicated — never the repair.
-    expect(console.error).toHaveBeenCalledTimes(1);
+    // 🚨 EVERY repair speaks; only the ESSAY is deduplicated. A later walk
+    // found the diagnostic logging ZERO times across a session in which
+    // repairs demonstrably happened, so nobody could tell whether this guard
+    // had done the work or something else had — which is the same "absent or
+    // working, indistinguishable" defect the guard exists to end.
+    expect(console.error).toHaveBeenCalledTimes(8);
+    const messages = (console.error as jest.Mock).mock.calls.map((c) => c[0]);
+    // The first carries the full cause and remedy…
+    expect(messages[0]).toContain("every control on the page was dead");
+    expect(messages[0]).toContain("let the first layer finish closing");
+    // …and the rest are countable one-liners, not the essay again.
+    expect(messages[1]).toBe(
+      "[modal-layers] repaired an orphaned body lock (#2).",
+    );
+    expect(messages[7]).toBe(
+      "[modal-layers] repaired an orphaned body lock (#8).",
+    );
   });
 
   test("and it still refuses while a real layer is genuinely open", () => {

@@ -580,6 +580,42 @@ function structuredCloneJson(value: unknown): JsonObject {
   return parsed;
 }
 
+/**
+ * SOFT-DELETE A MANDATE — the missing half of its CRUD.
+ *
+ * 🚨 An independent walk proved the gap on production (2026-08-31): the admin
+ * mandates UI offered duplicate / export / split and **no way to remove a
+ * mandate at all**. A person could create one and then never get rid of it
+ * from any screen they normally use. Core CRUD, explicitly asked for.
+ *
+ * SOFT, never hard. `deleted_at` is what every read in this repo filters on
+ * (nine of them, censused 2026-08-31), so stamping it removes the mandate from
+ * the console, the pickers, the resolver and the run door in one move, while
+ * the row and its history survive for anyone who has to answer "what happened
+ * to it". Its BINDINGS are deliberately left alone: they are scoped to the
+ * mandate and become unreachable with it, and cascading a delete across rows
+ * other people own is a bigger decision than this button should make.
+ */
+export async function softDeleteMandate(mandateId: string): Promise<void> {
+  const supabase = createClient();
+  const { data, error } = await mandateDefinitions(supabase)
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", mandateId)
+    .is("deleted_at", null)
+    .select("mandate_key")
+    .maybeSingle();
+  if (error) throw error;
+  // A write that matched nothing is not a success. RLS refusal and
+  // already-deleted both land here, and both must be said rather than
+  // reported as a delete that happened.
+  if (!data) {
+    throw new Error(
+      "This job was not removed — either it is already removed, or your account is not allowed to remove it. Nothing changed.",
+    );
+  }
+  invalidateMandateCache(data.mandate_key);
+}
+
 export async function deleteMandateExemplar(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
