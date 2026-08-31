@@ -20,6 +20,7 @@ import {
   type DataTableCopyField,
   type DataTableCopyRow,
 } from "@/features/data-tables/table-copy";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const DEFAULT_CUSTOM_QUERY: MatrxDataTableQueryState = {
   page: 1,
@@ -169,6 +170,25 @@ export function TableCustomCopyWindow({
     .filter((row) => sourceSelectedSet.has(row.id))
     .map((row) => row.id);
 
+  /** No fixed identity here — a row is an arbitrary user-defined table's data,
+   *  so there is no `entity_types` token to resolve. The menu still reads the
+   *  right-clicked row's own visible columns, so Copy / AI / Export act on
+   *  that row rather than the whole preview. */
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? rows.find((r) => r.id === id) : undefined;
+    if (!row) return null;
+    const visibleFields = fields.filter((field) => fieldIdSet.has(field.id));
+    return {
+      content: visibleFields
+        .map(
+          (field) =>
+            `${field.display_name}: ${dataTableCopyValueText(row.data[field.field_name])}`,
+        )
+        .join("\n"),
+    };
+  };
+
   return (
     <WindowPanel
       id={`table-custom-copy-${tableId}`}
@@ -253,6 +273,11 @@ export function TableCustomCopyWindow({
             </p>
           </div>
         ) : (
+          <NonEditableContextMenu
+            sourceFeature="udt"
+            contentSource={{ type: "raw" }}
+            resolveContextOnOpen={resolveRowContext}
+          >
           <MatrxDataTable<DataTableCopyRow>
             data={rows}
             columns={columns}
@@ -331,6 +356,7 @@ export function TableCustomCopyWindow({
                 "Clear or loosen the search and column filters to see more rows.",
             }}
           />
+          </NonEditableContextMenu>
         )}
       </div>
     </WindowPanel>
