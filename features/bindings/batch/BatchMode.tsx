@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Layers, Loader2 } from "lucide-react";
 
+import { ApplyRefusal } from "@/features/agent-shortcuts/components/batch/BatchGridParts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/toast";
@@ -759,13 +760,10 @@ export function BatchMode({
       </div>
 
       {/* 🚨 THE REFUSAL, ON THE PAGE. Counted, in words, beside the control it
-          refuses — never a toast, which takes the reason away with it. */}
-      {refusal ? (
-        <p className="flex items-start justify-end gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {refusal}
-        </p>
-      ) : null}
+          refuses — never a toast, which takes the reason away with it. ONE
+          renderer, shared with the shortcut batch grid (`BatchGridParts`),
+          which used to answer the same refusal with a toast. */}
+      <ApplyRefusal refusal={refusal} />
 
       <p className="text-right text-[11px] leading-relaxed text-muted-foreground/80">
         Batch writes the match, the holder and the rung. &quot;Run

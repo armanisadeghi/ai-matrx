@@ -98,6 +98,7 @@ import type {
 
 import { AutoRunBar } from "./AutoRunBar";
 import { BindingMiddle } from "./BindingMiddle";
+import { BindingOptionsDrawer } from "./BindingOptionsDrawer";
 import { HolderInputsColumn } from "./HolderInputsColumn";
 import { OfferedInventoryColumn } from "./OfferedInventoryColumn";
 import {
@@ -241,6 +242,7 @@ function BindingDraft({
   const store = useAppStore();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const userId = useAppSelector(selectUserId);
+  const { organizations } = useUserOrganizations();
   const canBindGlobal = allowGlobal && isSuperAdmin;
 
   // ── The holder draft — seeded once, from the row this instance is keyed to ─
@@ -1026,6 +1028,29 @@ function BindingDraft({
                 )
               ) : null}
             </div>
+          ) : null}
+
+          {/* OPTIONS (P16) — the folded stack over the shortcut editor's own
+          sections. Last on the page and folded shut, because the match is what
+          you came here to do and depth beyond it is progressive. It is offered
+          only once a holder is chosen: presentation is how a RUNNING job shows
+          itself, and there is nothing to present until something runs it. */}
+          {holderChosen ? (
+            <BindingOptionsDrawer
+              owner={{
+                mandateId: data.mandate.id,
+                organizationId: data.mandate.organization_id,
+                label: data.mandate.label ?? data.mandate.mandate_key,
+                visibility: data.mandate.visibility,
+              }}
+              autoRun={autoRun === true}
+              organizationName={
+                organizations.find(
+                  (o) => o.id === data.mandate.organization_id,
+                )?.name ?? null
+              }
+              disabled={disabled}
+            />
           ) : null}
 
           {/* The server's refusal, kept ON THE PAGE — its words name the exact

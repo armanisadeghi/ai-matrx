@@ -58,6 +58,11 @@ export function AdvancedSection({
   value,
   onChange,
   disabled,
+  omit,
+  heading = "Advanced",
+  hint = "Power-user knobs you rarely need to touch.",
+  activeTitle = "Active",
+  activeHint = "Inactive shortcuts are hidden from menus but kept in the DB.",
 }: {
   value: AdvancedFields;
   onChange: <K extends keyof AdvancedFields>(
@@ -65,8 +70,23 @@ export function AdvancedSection({
     next: AdvancedFields[K],
   ) => void;
   disabled?: boolean;
+  /**
+   * Fields this host does NOT store, hidden rather than shown dead. A control
+   * whose value goes nowhere is the defect this prop exists to prevent — the
+   * one binding UI's OPTIONS drawer stores a job's presentation and not the
+   * job's own description, so it omits that one field instead of offering an
+   * edit that would be silently dropped. The shortcut editor omits nothing.
+   */
+  omit?: readonly (keyof AdvancedFields)[];
+  /** The fold's own words — the mechanic is fixed, the vocabulary is the
+   * domain's (the same rule `BatchGridParts` follows). */
+  heading?: string;
+  hint?: string;
+  activeTitle?: string;
+  activeHint?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const hidden = (field: keyof AdvancedFields) => omit?.includes(field) ?? false;
 
   return (
     <section className="space-y-3">
@@ -78,36 +98,40 @@ export function AdvancedSection({
         <ChevronDown
           className={cn("h-4 w-4 transition-transform", !open && "-rotate-90")}
         />
-        Advanced
+        {heading}
         <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-          Power-user knobs you rarely need to touch.
+          {hint}
         </span>
       </button>
 
       {open && (
         <div className="space-y-1 rounded-xl border border-border bg-muted/30 p-4">
-          <ToggleRow
-            title="Active"
-            hint="Inactive shortcuts are hidden from menus but kept in the DB."
-            checked={value.isActive}
-            onChange={(v) => onChange("isActive", v)}
-            disabled={disabled}
-          />
-
-          <FieldRow
-            title="Internal description"
-            hint="Notes for admins. Not shown to end users."
-          >
-            <ProTextarea
-              value={value.description ?? ""}
-              onChange={(e) => onChange("description", e.target.value || null)}
-              rows={2}
-              placeholder="What this shortcut does"
+          {!hidden("isActive") && (
+            <ToggleRow
+              title={activeTitle}
+              hint={activeHint}
+              checked={value.isActive}
+              onChange={(v) => onChange("isActive", v)}
               disabled={disabled}
-              className="text-sm resize-none"
-              style={{ fontSize: "16px" }}
             />
-          </FieldRow>
+          )}
+
+          {!hidden("description") && (
+            <FieldRow
+              title="Internal description"
+              hint="Notes for admins. Not shown to end users."
+            >
+              <ProTextarea
+                value={value.description ?? ""}
+                onChange={(e) => onChange("description", e.target.value || null)}
+                rows={2}
+                placeholder="What this shortcut does"
+                disabled={disabled}
+                className="text-sm resize-none"
+                style={{ fontSize: "16px" }}
+              />
+            </FieldRow>
+          )}
 
           <FieldRow
             title="Icon"

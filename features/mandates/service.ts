@@ -57,7 +57,13 @@ import {
   isFloatingMandate,
   mandateBindings,
   mandateDefinitions,
+  mandateTreatments,
 } from "@/lib/supabase/mandateStorage";
+import {
+  TREATMENT_TIER_WIDGET,
+  parseTreatmentConfig,
+  type BindingPresentation,
+} from "@/features/bindings/treatment-shape";
 
 export interface ResolvedMandate {
   mandateKey: string;
@@ -102,6 +108,20 @@ export interface ResolvedMandate {
   pins: JsonObject;
   /** Offered values the mandate force-delivers as context. */
   pinnedContext: string[];
+  /**
+   * THE JOB'S PRESENTATION — how it shows itself when it runs (widget, variable
+   * panel, reveal toggles, gate, write access). `null` when the job stores none,
+   * which is the platform default and NOT the same as "off".
+   *
+   * 🚨 This is DISPLAY IDENTITY, which is exactly what this client path is for
+   * — read the doctrine block in `launch-agent-execution.thunk.ts`: the server
+   * owns the run decision (holder, consumption, `config_overrides`, which is
+   * why those are deliberately not echoed back), and the browser owns how the
+   * result is painted. A shortcut has honoured its stored presentation since
+   * the cutover, off this exact table; a job stored one it could not honour,
+   * which is the inversion this field closes.
+   */
+  presentation: BindingPresentation | null;
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -293,6 +313,31 @@ export async function resolveMandate(
     }
   }
 
+  // THE PRESENTATION LAYER. One row per job (`tier='widget'`, `is_default`),
+  // the same natural key `mandate.vw_shortcut` joins on. A read failure is NOT
+  // a launch failure: a job whose presentation could not be read still runs, on
+  // the platform default, and says so in the console rather than refusing.
+  let presentation: BindingPresentation | null = null;
+  {
+    const { data: treatment, error: treatmentError } = await mandateTreatments(
+      supabase,
+    )
+      .select("config, is_enabled")
+      .eq("mandate_id", mandate.id)
+      .eq("tier", TREATMENT_TIER_WIDGET)
+      .eq("is_default", true)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (treatmentError) {
+      console.warn(
+        `[resolveMandate] "${mandateKey}": its display options could not be read; running on the platform default presentation`,
+        treatmentError,
+      );
+    } else if (treatment && treatment.is_enabled !== false) {
+      presentation = parseTreatmentConfig(treatment.config);
+    }
+  }
+
   const wave1: MandateWave1Fields = parseMandateWave1(mandate);
   const value: ResolvedMandate = {
     mandateKey,
@@ -307,6 +352,7 @@ export async function resolveMandate(
     provisionKey: wave1.provisionKey,
     pins: wave1.pins,
     pinnedContext: wave1.pinnedContext,
+    presentation,
   };
   cache.set(mandateKey, { at: Date.now(), value });
   return value;

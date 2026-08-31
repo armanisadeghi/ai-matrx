@@ -74,6 +74,7 @@ export const MANDATE_STORAGE_LABEL = MANDATE_SCHEMA_CUTOVER ? "mandate.*" : "age
 const definitionTable = (supabase: Client) => supabase.schema("mandate").from("definition");
 const provisionTable = (supabase: Client) => supabase.schema("mandate").from("provision");
 const bindingTable = (supabase: Client) => supabase.schema("mandate").from("binding");
+const treatmentTable = (supabase: Client) => supabase.schema("mandate").from("treatment");
 
 /** The mandate definition table: `agent.mandate` or `mandate.definition`. */
 export const mandateDefinitions = definitionTable;
@@ -83,6 +84,22 @@ export const mandateProvisions = provisionTable;
 
 /** The binding table: `agent.mandate_binding` or `mandate.binding`. */
 export const mandateBindings = bindingTable;
+
+/**
+ * The TREATMENT table — a job's PRESENTATION, as opposed to its consumption.
+ *
+ * THE-MODEL law 4: how a job shows itself (widget, variable panel, reveal
+ * toggles, gate, menu placement, write access) is treatment; what it feeds its
+ * holder is consumption and lives on the binding. The 208 migrated shortcuts
+ * already store their presentation here, and `mandate.vw_shortcut` reads it
+ * back out flattened into the legacy shortcut columns — so this table is the
+ * live home, not a new one.
+ *
+ * 🚨 The ONE place this table is named outside the compat view's own trigger.
+ * Its config shape has exactly one client codec:
+ * `features/bindings/treatment-shape.ts`.
+ */
+export const mandateTreatments = treatmentTable;
 
 /**
  * Mandate notes. NOT part of the schema move — `agent.mandate_note` stays where
@@ -101,6 +118,8 @@ export function mandateNotes(supabase: Client) {
 type NewMandateRow = Database["mandate"]["Tables"]["definition"]["Row"];
 type NewBindingRow = Database["mandate"]["Tables"]["binding"]["Row"];
 type NewProvisionRow = Database["mandate"]["Tables"]["provision"]["Row"];
+
+export type MandateTreatmentRow = Database["mandate"]["Tables"]["treatment"]["Row"];
 
 export type MandateDefinitionRow = NewMandateRow;
 export type MandateBindingRow = NewBindingRow;

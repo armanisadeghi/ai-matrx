@@ -45,7 +45,13 @@ import {
   isFloatingMandate,
   mandateBindings,
   mandateDefinitions,
+  mandateTreatments,
 } from "@/lib/supabase/mandateStorage";
+import {
+  TREATMENT_TIER_WIDGET,
+  parseTreatmentConfig,
+  type BindingPresentation,
+} from "@/features/bindings/treatment-shape";
 
 /** The HOLDER gate — twin of `service.ts`'s `assertExecutableHolder`; a
  * `workflow` Holder carries no `agent_id`, so without this the binding falls
@@ -170,6 +176,30 @@ export async function resolveMandateServer(
     }
   }
 
+  // THE PRESENTATION LAYER — the SSR twin of the client resolver's read. Both
+  // resolvers must answer the same question the same way, or a job would paint
+  // itself one way before first paint and another after hydration.
+  let presentation: BindingPresentation | null = null;
+  {
+    const { data: treatment, error: treatmentError } = await mandateTreatments(
+      supabase,
+    )
+      .select("config, is_enabled")
+      .eq("mandate_id", mandate.id)
+      .eq("tier", TREATMENT_TIER_WIDGET)
+      .eq("is_default", true)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (treatmentError) {
+      console.error(
+        `[resolveMandateServer] "${mandateKey}": its display options could not be read; painting the platform default presentation`,
+        treatmentError,
+      );
+    } else if (treatment && treatment.is_enabled !== false) {
+      presentation = parseTreatmentConfig(treatment.config);
+    }
+  }
+
   const wave1 = parseMandateWave1(mandate);
   return {
     mandateKey,
@@ -187,5 +217,6 @@ export async function resolveMandateServer(
     provisionKey: wave1.provisionKey,
     pins: wave1.pins,
     pinnedContext: wave1.pinnedContext,
+    presentation,
   };
 }

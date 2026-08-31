@@ -115,6 +115,45 @@ export function RowKindBadge({
 }
 
 /**
+ * 🚨 THE APPLY REFUSAL, ON THE PAGE — the fourth shared part.
+ *
+ * A batch grid refuses to write while any red cell stands. That refusal is the
+ * single most actionable sentence on the screen, and BOTH grids used to lose
+ * it: the shortcut grid fired it as a `toast.error` from inside the click
+ * handler (so the button looked live, the reason appeared for four seconds
+ * somewhere else on screen, and then the person was back where they started),
+ * and the mandate grid printed its own paragraph inline. Now there is ONE
+ * renderer and one rule:
+ *
+ *   · the refusal is DERIVED, not discovered on click — so Apply is disabled
+ *     with its reason already visible, never live-then-scolding;
+ *   · it is counted, in the domain's words, and sits BESIDE the button.
+ *
+ * `null` renders nothing: a screen with nothing to refuse says nothing.
+ */
+export function ApplyRefusal({
+  refusal,
+  align = "end",
+}: {
+  refusal: string | null;
+  /** Which edge the sentence hugs — the button's edge in both grids. */
+  align?: "start" | "end";
+}) {
+  if (!refusal) return null;
+  return (
+    <p
+      className={cn(
+        "flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground",
+        align === "end" ? "justify-end" : "justify-start",
+      )}
+    >
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      {refusal}
+    </p>
+  );
+}
+
+/**
  * P17.4 — FILL-DOWN, STATING ITS OWN LIMITS. The popover always prints what
  * will and will not carry cleanly to every row BEFORE the button is pressed,
  * because a fill that silently half-lands is the defect this sentence exists to

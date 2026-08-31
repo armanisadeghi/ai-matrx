@@ -339,6 +339,40 @@ export const launchAgentExecution = createAsyncThunk<
   const responseDensity = config?.responseDensity;
   const variablesPanelStyle = config?.variablesPanelStyle;
 
+  // ── THE JOB'S OWN PRESENTATION (one-binding-UI step 7) ────────────────────
+  //
+  // 🚨 THE INVERSION THIS CLOSES. A SHORTCUT has painted itself out of its own
+  // stored treatment since the cutover — `shortcut.displayMode`,
+  // `.allowChat`, `.writePolicies` are read a few dozen lines below. A JOB
+  // stored the identical row in the identical table and NOTHING read it, so
+  // every mandate launched on whatever literal its call site happened to type.
+  // The one binding UI's OPTIONS drawer writes that row; this is the reader
+  // that makes it mean something.
+  //
+  // PRECEDENCE, and why it is this way round: the CALLER still wins. A surface
+  // that deliberately paints a job a certain way is making an explicit choice
+  // for that one launch, exactly as `displayModeOverride` wins over a
+  // shortcut's stored mode. The job's answer fills only what the caller left
+  // unsaid — which is why every field below stays `undefined` when neither has
+  // an opinion, per the "never default to a concrete value" rule above.
+  //
+  // This applies ONLY on the path that resolved the mandate here (an
+  // imperative `launchMandate`). A caller that passed `agentId` alongside
+  // `mandateKey` already knows what it is painting and is not second-guessed.
+  const jobPresentation = resolvedMandate?.presentation ?? null;
+  const jobDisplayMode = jobPresentation?.displayMode;
+  const jobAllowChat = jobPresentation?.allowChat;
+  const jobShowVariablePanel = jobPresentation?.showVariablePanel;
+  const jobVariablesPanelStyle = jobPresentation?.variablesPanelStyle;
+  const jobShowDefinitionMessages = jobPresentation?.showDefinitionMessages;
+  const jobShowDefinitionMessageContent =
+    jobPresentation?.showDefinitionMessageContent;
+  const jobHideReasoning = jobPresentation?.hideReasoning;
+  const jobHideToolResults = jobPresentation?.hideToolResults;
+  const jobResponseDensity = jobPresentation?.responseDensity;
+  const jobShowPreExecutionGate = jobPresentation?.showPreExecutionGate;
+  const jobPreExecutionMessage = jobPresentation?.preExecutionMessage ?? undefined;
+
   // ── Trace: launch envelope ────────────────────────────────────────────────
   // One line summarizing what the caller actually sent, then a structured
   // view of the live runtime/scope so "variable didn't map" bugs surface
@@ -391,7 +425,8 @@ export const launchAgentExecution = createAsyncThunk<
   const resolvedShowDefinitionMessageContent = showDefinitionMessageContent;
 
   let conversationId: string;
-  let resolvedDisplayMode: ResultDisplayMode = displayModeOverride ?? "direct";
+  let resolvedDisplayMode: ResultDisplayMode =
+    displayModeOverride ?? jobDisplayMode ?? "direct";
 
   // ── THE AUTO-RUN INVERSION (surface_binding payload v3) ───────────────────
   // A surface binding now answers the same one question a shortcut's
@@ -658,17 +693,23 @@ export const launchAgentExecution = createAsyncThunk<
         apiEndpointMode,
         displayMode: resolvedDisplayMode,
         autoRun,
-        allowChat,
-        showPreExecutionGate,
-        showVariablePanel: resolvedShowVariablePanel,
-        showDefinitionMessages: resolvedShowDefinitionMessages,
-        showDefinitionMessageContent: resolvedShowDefinitionMessageContent,
+        // Caller first, then the JOB's own stored presentation, then nothing —
+        // see THE JOB'S OWN PRESENTATION above. `??` and not `||`: `false` is
+        // an answer, and only `undefined` means "the caller said nothing".
+        allowChat: allowChat ?? jobAllowChat,
+        showPreExecutionGate: showPreExecutionGate ?? jobShowPreExecutionGate,
+        showVariablePanel: resolvedShowVariablePanel ?? jobShowVariablePanel,
+        showDefinitionMessages:
+          resolvedShowDefinitionMessages ?? jobShowDefinitionMessages,
+        showDefinitionMessageContent:
+          resolvedShowDefinitionMessageContent ??
+          jobShowDefinitionMessageContent,
         widgetHandleId,
-        variablesPanelStyle,
-        hideReasoning,
-        hideToolResults,
-        responseDensity,
-        preExecutionMessage,
+        variablesPanelStyle: variablesPanelStyle ?? jobVariablesPanelStyle,
+        hideReasoning: hideReasoning ?? jobHideReasoning,
+        hideToolResults: hideToolResults ?? jobHideToolResults,
+        responseDensity: responseDensity ?? jobResponseDensity,
+        preExecutionMessage: preExecutionMessage ?? jobPreExecutionMessage,
         jsonExtraction,
         originalText,
         ...(isEphemeral !== undefined ? { isEphemeral } : {}),

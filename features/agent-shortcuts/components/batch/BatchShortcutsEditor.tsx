@@ -10,6 +10,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ApplyRefusal } from "./BatchGridParts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -482,35 +483,45 @@ export function BatchShortcutsEditor({
     return { needsAttention, collide, createCount, updateCount };
   }, [rows, ctx, targets, existingSurfaceNames]);
 
-  // ── Apply (true batch — two writes total, not N) ───────────────────────────
-  const onApply = useCallback(async () => {
-    // Only act on rows not already written this session.
+  // ── WHY APPLY IS REFUSED — derived, printed, never a toast ────────────────
+  //
+  // 🚨 This used to be three `toast.error` early-returns inside `onApply`: the
+  // button looked live, you pressed it, and the reason flashed somewhere else
+  // on screen for four seconds and then took itself away. A refusal that
+  // vanishes is a refusal nobody can act on. The rule is now the same one the
+  // mandate batch grid keeps — the refusal is a FACT about the current rows,
+  // computed here, disabling the button with its own sentence beside it
+  // (`ApplyRefusal`, shared by both grids).
+  const applyRefusal = useMemo<string | null>(() => {
     const pending = rows.filter((r) => !appliedKeys.has(r.key));
     if (pending.length === 0) {
-      toast.error("Nothing left to apply — everything is already done.");
-      return;
+      return "Nothing left to apply — everything is already done.";
     }
-    const missingCategory = pending.some(
+    const missingCategory = pending.filter(
       (r) =>
         r.kind === "create" &&
         !String(resolveScalar(ctx, r, "categoryId") ?? "").trim(),
-    );
-    if (missingCategory) {
-      toast.error(
-        "New shortcuts need a category — pick a template that has one, or set the Category field.",
-      );
-      return;
+    ).length;
+    if (missingCategory > 0) {
+      return `${missingCategory} new ${missingCategory === 1 ? "shortcut needs" : "shortcuts need"} a category — pick a template that has one, or set the Category field.`;
     }
     const requiredUnmapped = pending.reduce(
       (acc, r) => acc + rowAttention(ctx, r, targets).requiredUnmapped,
       0,
     );
     if (requiredUnmapped > 0) {
-      toast.error(
-        `${requiredUnmapped} required variable binding(s) are still unmapped. Fix the red cells first.`,
-      );
-      return;
+      return `${requiredUnmapped} required variable ${requiredUnmapped === 1 ? "binding is" : "bindings are"} still unmapped. Fix the red cells first.`;
     }
+    return null;
+  }, [rows, appliedKeys, ctx, targets]);
+
+  // ── Apply (true batch — two writes total, not N) ───────────────────────────
+  const onApply = useCallback(async () => {
+    // Belt on top of the braces: the button is already disabled while a
+    // refusal stands, so this can only fire on a clean batch.
+    if (applyRefusal) return;
+    // Only act on rows not already written this session.
+    const pending = rows.filter((r) => !appliedKeys.has(r.key));
 
     const createRows = pending.filter((r) => r.kind === "create");
     const updateRows = pending.filter((r) => r.kind === "update");
@@ -581,7 +592,7 @@ export function BatchShortcutsEditor({
     } else {
       toast.error(`${created + updated} succeeded · ${failed.length} failed.`);
     }
-  }, [rows, appliedKeys, ctx, targets, dispatch]);
+  }, [rows, appliedKeys, ctx, targets, dispatch, applyRefusal]);
 
   // ── Render ──────────────────────────────────────────────────────────────
   const pendingCount = rows.filter((r) => !appliedKeys.has(r.key)).length;
@@ -819,7 +830,7 @@ export function BatchShortcutsEditor({
             )}
             <Button
               onClick={() => void onApply()}
-              disabled={applying || pendingCount === 0}
+              disabled={applying || Boolean(applyRefusal)}
               className="h-9 gap-1.5 text-sm min-w-[150px]"
             >
               {applying ? (
@@ -830,6 +841,11 @@ export function BatchShortcutsEditor({
               {applying ? "Applying…" : `Apply ${pendingCount || ""}`.trim()}
             </Button>
           </div>
+        </div>
+        {/* 🚨 THE REFUSAL, ON THE PAGE — counted, in words, beside the control
+            it refuses. The same renderer the mandate batch grid uses. */}
+        <div className="mx-auto w-full max-w-[1400px]">
+          <ApplyRefusal refusal={applyRefusal} />
         </div>
       </footer>
     </div>

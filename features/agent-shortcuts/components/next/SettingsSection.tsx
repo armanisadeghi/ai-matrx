@@ -52,6 +52,7 @@ export function SettingsSection({
   value,
   onChange,
   disabled,
+  omitAutoRun = false,
 }: {
   value: SettingsFields;
   onChange: <K extends keyof SettingsFields>(
@@ -59,6 +60,18 @@ export function SettingsSection({
     next: SettingsFields[K],
   ) => void;
   disabled?: boolean;
+  /**
+   * Hide the auto-run row AND its gate cascade, for a host that already owns
+   * that promise elsewhere on the same screen.
+   *
+   * 🚨 The one binding UI's `AutoRunBar` is such a host: on a job, "run
+   * instantly" is not a preference but a FACT about the mapping, narrated as
+   * the map changes, refused at the write and re-checked by the resolver
+   * (`mandate.binding.auto_run`). A second switch for it inside OPTIONS would be
+   * two controls for one answer, and the loser would be silently ignored. The
+   * shortcut editor passes nothing and is unchanged.
+   */
+  omitAutoRun?: boolean;
 }) {
   // Variable Panel Style derives from two underlying fields. "Hide"
   // collapses showVariablePanel=false; any other value flips it on.
@@ -76,14 +89,20 @@ export function SettingsSection({
 
   return (
     <div className="space-y-1">
-      <ToggleRow
-        title="Auto run"
-        hint="Submit the agent automatically when the shortcut fires."
-        checked={value.autoRun}
-        onChange={(v) => onChange("autoRun", v)}
-        disabled={disabled}
-      />
+      {!omitAutoRun && (
+        <ToggleRow
+          title="Auto run"
+          hint="Submit the agent automatically when the shortcut fires."
+          checked={value.autoRun}
+          onChange={(v) => onChange("autoRun", v)}
+          disabled={disabled}
+        />
+      )}
 
+      {/* The GATE is presentation, not the promise: it is what the person sees
+          in the moment an auto-run fires. So it survives `omitAutoRun` — the
+          host that owns the promise still passes the current `autoRun` fact,
+          and the gate is offered exactly while that fact makes it meaningful. */}
       {value.autoRun && (
         <Indent>
           <ToggleRow

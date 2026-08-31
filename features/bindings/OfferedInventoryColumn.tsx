@@ -113,9 +113,14 @@ export function OfferedInventoryColumn({
                     both. Static, declared with the provision, never read at run
                     time — so it is labelled as an example and can never be
                     mistaken for the value this run will carry. Absent means the
-                    declaration gave none: say nothing, never invent one. */}
+                    declaration gave none: say nothing, never invent one.
+                    🚨 NOT `truncate`: the example exists so the reader can SEE
+                    what a value is, and a one-line clip on an 18rem rail turned
+                    "Looks like: Q3 planning sync" into an ellipsis — the P5
+                    mechanic paying nothing. Two lines, and long words break
+                    rather than push the rail wide. */}
                 {value.example ? (
-                  <p className="mt-1 truncate text-[10.5px] leading-snug text-muted-foreground/80">
+                  <p className="mt-1 line-clamp-2 break-words text-[10.5px] leading-snug text-muted-foreground/80">
                     <span className="text-muted-foreground/60">Looks like: </span>
                     <span className="font-mono">{value.example}</span>
                   </p>
