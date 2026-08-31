@@ -41,7 +41,10 @@ import {
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
-import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
+import {
+  acquireMicStream,
+  releaseMicStream,
+} from "@ai-matrx/browser-audio/core";
 import {
   acquireCameraLease,
   type CameraLease,
@@ -98,6 +101,8 @@ export interface CameraCaptureHost {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   stream: MediaStream | null;
   recording: boolean;
+  /** Development image streams exercise the real decoder, not capture. */
+  qaQrOnly: boolean;
 }
 
 export function useCameraCaptureHost(
@@ -225,6 +230,7 @@ export function useCameraCaptureHost(
   }, [deviceId, qaImageUrl, qaPermissionDenied]);
 
   const cameraBlocked = notSupported || permissionDenied;
+  const qaQrOnly = Boolean(qaImageUrl);
 
   // ── Camera flip — KEPT (C22) for the two host facts it injects: the app's
   //    device snapshot and the persisted preferred camera (setCamera). The
@@ -414,5 +420,6 @@ export function useCameraCaptureHost(
     videoRef,
     stream,
     recording,
+    qaQrOnly,
   };
 }

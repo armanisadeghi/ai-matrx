@@ -25,7 +25,8 @@ export function useQrAutoScan(args: {
   enabled: boolean;
   /** The code already on the current item (never re-fires). */
   currentCode: string | null;
-  onCode: (code: string) => void;
+  /** Resolves only after the decoded item has become the current item. */
+  onCode: (code: string) => void | Promise<void>;
 }) {
   const { videoRef, enabled, currentCode, onCode } = args;
 
@@ -58,7 +59,10 @@ export function useQrAutoScan(args: {
               now - last.at < QR_REPEAT_COOLDOWN_MS;
             lastSeenRef.current = { value: text, at: now };
             if (!isRepeat && text !== currentCodeRef.current) {
-              onCodeRef.current(text);
+              // Do not schedule the next decoder tick until the item switch
+              // has committed. Otherwise sequential codes can race and leave
+              // the UI bound to an older item even though the later row exists.
+              await onCodeRef.current(text);
             }
           }
         } catch {

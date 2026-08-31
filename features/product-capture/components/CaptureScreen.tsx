@@ -66,6 +66,7 @@ import type { CaptureCameraMode, CaptureOptionTile } from "@ai-matrx/capture";
 import { useCameraCaptureHost } from "@/features/capture-camera/host/useCameraCaptureHost";
 
 import type { PendingArtifact } from "../types";
+import { captureActionDisabled } from "../capture-rules";
 import { useProductCaptureSession } from "../hooks/useProductCaptureSession";
 import {
   INSTANT_ANALYSIS_MANDATE_KEY,
@@ -132,7 +133,7 @@ export function CaptureScreen({
   const [processOpen, setProcessOpen] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
 
-  const runInstant = useCallback(() => {
+  const runInstant = () => {
     const item = session.currentItem;
     if (!item) return;
     setLaunchError(null);
@@ -142,9 +143,9 @@ export function CaptureScreen({
         err instanceof Error ? err.message : "Processing failed — try again.",
       );
     });
-  }, [session.currentItem, instant]);
+  };
 
-  const onProcess = useCallback(() => {
+  const onProcess = () => {
     // A run in flight, or a result this item already has: the button OPENS the
     // sheet rather than paying for the analysis twice. Closing the sheet never
     // cancels a run — the hook's seams persist it regardless.
@@ -153,13 +154,13 @@ export function CaptureScreen({
       return;
     }
     runInstant();
-  }, [instant.isRunning, instant.storedResult, runInstant]);
+  };
 
-  const onInstantNextItem = useCallback(() => {
+  const onInstantNextItem = () => {
     setProcessOpen(false);
     instant.dismiss();
     session.nextItem();
-  }, [instant, session]);
+  };
 
   // ── Upload inputs (fallback + gallery picker) ───────────────────────────
   const fallbackInputRef = useRef<HTMLInputElement>(null);
@@ -247,13 +248,17 @@ export function CaptureScreen({
   }, []);
 
   const onQrCode = useCallback(
-    (code: string) => {
-      void session.onQrCode(code).then(() => {
+    async (code: string) => {
+      try {
+        await session.onQrCode(code);
         navigator.vibrate?.(80);
         setQrFlash(code);
         if (qrFlashTimerRef.current) clearTimeout(qrFlashTimerRef.current);
         qrFlashTimerRef.current = setTimeout(() => setQrFlash(null), 1600);
-      });
+      } catch (err) {
+        console.error("[product-capture] QR item switch failed", err);
+        toast.error("The QR code was read, but its item could not be opened.");
+      }
     },
     [session],
   );
@@ -326,8 +331,12 @@ export function CaptureScreen({
     .reverse()
     .find((a) => a.kind !== "audio");
 
-  const shutterDisabled =
-    host.cameraBlocked || voiceActive || session.organizationId === null;
+  const shutterDisabled = captureActionDisabled({
+    cameraBlocked: host.cameraBlocked,
+    voiceActive,
+    organizationResolved: session.organizationId !== null,
+    qaQrOnly: host.qaQrOnly,
+  });
 
   const goToItems = useCallback(
     () => router.push("/tools/product-capture/all"),
@@ -454,17 +463,19 @@ export function CaptureScreen({
               <ScanLine className="h-[22px] w-[22px]" />
             </button>
           ),
-          statusChips: qrMode ? (
-            qrFlash ? (
-              <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-lg">
-                <Check className="h-4 w-4" />
-                {qrFlash}
-              </span>
-            ) : !controlsHidden ? (
-              <span className="rounded-full bg-black/50 px-3 py-1 text-[11px] text-white/80">
-                QR auto-switch on — scan a code to start its item
-              </span>
-            ) : null
+          statusChips: qrFlash ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-lg">
+              <Check className="h-4 w-4" />
+              {qrFlash}
+            </span>
+          ) : host.qaQrOnly ? (
+            <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/90">
+              QR test feed — photo and video are disabled
+            </span>
+          ) : qrMode && !controlsHidden ? (
+            <span className="rounded-full bg-black/50 px-3 py-1 text-[11px] text-white/80">
+              QR auto-switch on — scan a code to start its item
+            </span>
           ) : null,
           optionTiles: productTiles,
           aboveModeSelector: (
@@ -545,7 +556,7 @@ export function CaptureScreen({
               size="sm"
               className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
               onClick={session.nextItem}
-              disabled={currentItem === null || host.recording}
+              disabled={!session.canAdvanceItem || host.recording}
             >
               <PackagePlus className="mr-1 h-3.5 w-3.5" />
               Next

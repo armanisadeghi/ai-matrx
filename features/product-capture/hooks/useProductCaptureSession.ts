@@ -37,6 +37,7 @@ import type {
   ProductCaptureCodeSource,
   ProductCaptureFileKind,
 } from "../types";
+import { hasQualifyingCaptureArtifact } from "../capture-rules";
 import {
   appendToItemNotes,
   closeItem,
@@ -65,6 +66,8 @@ export interface UseProductCaptureSessionResult {
   artifacts: PendingArtifact[];
   uploadingCount: number;
   errorCount: number;
+  /** True only when Next may close this item. */
+  canAdvanceItem: boolean;
   transcribingCount: number;
   /** Current item's notes as the textarea should show them. */
   notes: string;
@@ -85,7 +88,7 @@ export interface UseProductCaptureSessionResult {
    *  item carrying the code. Returns "assigned" | "switched". */
   onQrCode: (code: string) => Promise<"assigned" | "switched">;
   /** Mode 1's button: finish this item, next capture starts a fresh one. */
-  nextItem: () => void;
+  nextItem: () => boolean;
   /** Reopen an existing item (from the review sheet). */
   resumeItem: (itemId: string) => Promise<void>;
   removeArtifact: (localId: string) => void;
@@ -133,6 +136,7 @@ export function useProductCaptureSession(
   const notesDirtyRef = useRef(false);
   const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ensureItemPromiseRef = useRef<Promise<CaptureItem> | null>(null);
+  const qrTransitionRef = useRef<Promise<unknown>>(Promise.resolve());
   const previewUrlsRef = useRef(new Map<string, string>());
   const artifactSeqRef = useRef(0);
   // Artifact count for the empty-item test without re-subscribing state.
@@ -309,9 +313,15 @@ export function useProductCaptureSession(
     setNotesState("");
   }, [flushNotes, clearResumeKey, instantLane]);
 
-  const nextItem = useCallback(() => {
+  const canAdvanceItem = hasQualifyingCaptureArtifact(artifacts);
+
+  const nextItem = useCallback((): boolean => {
+    // The UI disables Next too, but the session boundary owns the invariant:
+    // callers cannot close a code/notes-only or failed-upload-only item.
+    if (!hasQualifyingCaptureArtifact(artifacts)) return false;
     finishCurrentItem();
-  }, [finishCurrentItem]);
+    return true;
+  }, [artifacts, finishCurrentItem]);
 
   const resumeItem = useCallback(
     async (itemId: string) => {
@@ -408,16 +418,29 @@ export function useProductCaptureSession(
   }, [artifacts]);
 
   const onQrCode = useCallback(
-    async (code: string): Promise<"assigned" | "switched"> => {
-      // An untouched current item just takes the code — the scan-first flow.
-      if (isCurrentItemEmpty()) {
-        await applyCode(code, "qr");
-        if (!currentItemRef.current) await ensureItem({ code, source: "qr" });
-        return "assigned";
-      }
-      finishCurrentItem();
-      await ensureItem({ code, source: "qr" });
-      return "switched";
+    (code: string): Promise<"assigned" | "switched"> => {
+      // Decoder callbacks can arrive faster than database item adoption. One
+      // promise chain is the atomic switch boundary: every scan observes the
+      // item installed by the scan before it, and failures never poison later
+      // transitions.
+      const transition = qrTransitionRef.current.then(async () => {
+        // An untouched current item just takes the code — the scan-first flow.
+        if (isCurrentItemEmpty()) {
+          await applyCode(code, "qr");
+          if (!currentItemRef.current) {
+            await ensureItem({ code, source: "qr" });
+          }
+          return "assigned" as const;
+        }
+        finishCurrentItem();
+        await ensureItem({ code, source: "qr" });
+        return "switched" as const;
+      });
+      qrTransitionRef.current = transition.then(
+        () => undefined,
+        () => undefined,
+      );
+      return transition;
     },
     [isCurrentItemEmpty, applyCode, ensureItem, finishCurrentItem],
   );
@@ -616,6 +639,7 @@ export function useProductCaptureSession(
     artifacts,
     uploadingCount,
     errorCount,
+    canAdvanceItem,
     transcribingCount,
     notes,
     notesSaving,

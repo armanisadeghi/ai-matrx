@@ -14,7 +14,7 @@
 - **Mode 2 — QR auto-switch:** the ScanLine toggle watches the live preview (`useQrAutoScan` → `lib/qr/decode.ts`, 250 ms tick); a scanned code closes the current item and opens a new one carrying the code as its product id (an untouched current item just takes the code). Toggle persists in localStorage.
 - **Both modes:** the chrome's **VIDEO · PHOTO · UPLOAD** mode row (`@ai-matrx/capture`; video records the same pinned lease via the host adapter's `startVideoRecording`, mic on; Upload opens the device gallery/files picker) · many uploaded photos/videos at once, joining the current item through `session.addUploads` → the same `uploads.ts` boundary as a live shot (no `capture` attribute on that input; that is what keeps the OS from opening the camera) · SKU quick-entry field (commit on Enter/blur) · collapsible autosaving notes textarea (reopen returns the caret to the END of the text) · one-tap voice notes (`useSimpleRecorder`) uploaded to the item's folder and transcribed in the background (`transcribeCloudFile` by file_id), transcript appended to the item's notes.
 
-Everything autosaves; there is no save button anywhere. Items are created lazily on the first artifact/code/note — "Next" can never mint an empty row. The current item id persists in localStorage per org so a reload resumes mid-item. The LayoutGrid button opens the review drawer (recent org items — reopen as current, delete).
+Everything autosaves; there is no save button anywhere. Items are created lazily on the first artifact/code/note, but **Next remains disabled until an artifact is uploading or uploaded** and the session boundary enforces the same rule. The current item id persists in localStorage per org so a reload resumes mid-item. The LayoutGrid button opens the review drawer (recent org items — reopen as current, delete).
 
 ## The pipeline (v3)
 
@@ -94,12 +94,14 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 1. Bytes only via `uploads.ts` → `fileHandler.upload`; persist `file_id`, never a URL; render via `CaptureThumb`/`InlineMediaRef` or the selectable high-level primitive. Persisted capture thumbnails use the bearer-authenticated blob transport, not the cross-site file-session cookie. A feature never resolves a private file ID to a URL and fetches it back for bytes.
 2. An item's `folder_path` is set once at creation and never renamed — a code assigned later lives on the row + file metadata only.
-3. QR dedupe: the current item's own code never re-fires; a repeat value re-fires only after 4 s out of frame.
+3. QR dedupe: the current item's own code never re-fires; a repeat value re-fires only after 4 s out of frame. Decoder ticks await the serialized current-item adoption boundary, so sequential codes cannot create a later row while leaving the UI on an earlier item.
 4. Voice note and video recording never run together (the app-wide capture lock would take over) — the UI disables the other control.
 5. Downstream consumers read items by `organization_id` + `status='captured'` and flip `status` to `processed` — never delete to consume.
 6. **The `capturing → captured` transition IS the workflow handoff.** Items are born `capturing`; `service.closeItem` flips to `captured` when the photographer moves on (`finishCurrentItem` — Next, QR-advance, item switch — plus the manage/detail "Mark ready" action), and that DB transition fires the table's workflow event trigger (`workflow.watch_table` attached `workflow.emit_trigger_events`; matrx-graph event triggers, aidream `packages/matrx-graph/matrx_graph/workers/FEATURE.md` § Trigger watchers). `reopenItem` (capture surface adopting an existing item) flips back to `capturing`, so closing again re-fires — more photos mean a reprocess; likewise "Reprocess" on a `processed` item is just `closeItem`. Never fire workflows from client code — the status write is the only trigger path, so agents/SQL/imports behave identically to the UI.
 
 ## Change log
+
+- 2026-08-30 — Q28 verifier repair: serialized decoder delivery through current-item adoption, gated Next at both UI and session boundaries on uploading/uploaded artifacts, and made the deterministic image-stream seam honestly QR-only with disabled capture controls.
 
 - 2026-08-30 — Added development-only `__qa_camera=denied|image` acceptance inputs; image fixtures still traverse a real `<video>` stream and the production QR decoder.
 

@@ -25,8 +25,10 @@ host/                       APP-SIDE injection wiring ONLY (C22): useCameraCaptu
 
 **Deterministic browser QA uses the host adapter, never decoder injection.**
 `useCameraCaptureHost` accepts development-only `qaPermissionDenied` and
-`qaImageUrl`; the image becomes a real canvas-backed `MediaStream`. Production
-callers never pass either value.
+`qaImageUrl`; the image becomes a real canvas-backed `MediaStream` for the
+production QR decoder. It is **QR-only**: the host reports `qaQrOnly`, capture
+controls disable, and an honesty chip names the constraint. Production callers
+never pass either value.
 
 ## Extensibility — typed slots, not a plugin framework
 
@@ -40,6 +42,8 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 - Edit for persisted-only slides (fileId → blob fetch) — today Edit shows only when local pixels (`previewUrl`) exist.
 
 ## Change Log
+
+- 2026-08-30 — Q28 repair: the deterministic image-stream seam is explicitly QR-only (`qaQrOnly`); hosts disable photo/video capture and label the constraint instead of presenting a lease-less shutter.
 
 - 2026-08-30 — **C22/C23 retrofit: the hard parts moved INTO the package (capture 0.5.0) and the host collapsed to injection wiring.** `useCameraCaptureHost` now imports the package's `cropBlobToAspect` / `classifyCameraBlockReason` / `nextCameraDevice` / `PHOTO_JPEG_QUALITY` (local twins deleted) and every kept block carries its C22 justification (lease lifecycle, device persistence, app mic-singleton warm hold, canonical capture/record paths, toasts). The 206-line `CloudLibrarySheet` chrome moved to the package; the host copy is now a 110-line data wrapper (Redux files → `CaptureCloudLibraryItem[]`, `MediaThumbnail`, router push) with unchanged props, so intake v2/v3 did not move. Host `host/` total: 621 → 528 lines, none of it chrome or quirk branches. Package side: warm-mic manager with the four iOS branches ported verbatim, production default engine, laws amended (see aidream `apps/shared/capture/FEATURE.md`).
 
