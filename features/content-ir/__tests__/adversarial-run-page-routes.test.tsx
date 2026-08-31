@@ -124,6 +124,10 @@ describe("HOLE B — evicted fingerprint slugs still arrive on the wire as outpu
     // FE registry tier can ever deliver it. The unregistered floor must hold.
     const evictedSlug = "workflow_io_data_transform_2aa7e01c_output";
     expect(kindRegistry.getDefinition(evictedSlug)).toBeUndefined();
+    // THE COLD-VERDICT RULE: "unregistered" is only honest from a resolver
+    // that has actually looked. An empty replace is how a test declares the
+    // list loaded and this slug genuinely is not in it.
+    componentRegistry.replaceDbRows([]);
 
     const block = kindBlock(evictedSlug, { anything: true });
     const routed = applyIrKindRoute(block);
