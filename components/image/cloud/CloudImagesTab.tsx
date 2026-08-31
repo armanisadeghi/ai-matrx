@@ -83,10 +83,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   createExclusiveOperationGate,
   parseVisibleImageSelection,
+  pruneImageSelectionToVisible,
+  selectVisibleCloudImages,
 } from "@/features/image-manager/lib/images-surface-actions";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserId } from "@/lib/redux/selectors/userSelectors";
@@ -252,34 +253,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   }, [userId, treeStatus, dispatch]);
 
   const imageFiles = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return allFiles
-      .filter((file) => {
-        if (file.deletedAt) return false;
-        const mime = resolveMime(file.mimeType, file.fileName);
-        if (!isImageMime(mime)) return false;
-        if (showRecentsOnly) {
-          const ts = file.updatedAt
-            ? new Date(file.updatedAt).getTime()
-            : file.createdAt
-              ? new Date(file.createdAt).getTime()
-              : 0;
-          if (recentsCutoff !== null && ts < recentsCutoff) return false;
-        }
-        if (
-          q &&
-          !file.fileName.toLowerCase().includes(q) &&
-          !idMatchesQuery(file, q)
-        )
-          return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const aTs = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-        const bTs = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-        return bTs - aTs;
-      });
-  }, [allFiles, query, recentsCutoff, showRecentsOnly]);
+    return selectVisibleCloudImages(allFiles, query, recentsCutoff);
+  }, [allFiles, query, recentsCutoff]);
   // applySurfaceWrite resolves a handler before the ask-confirmation dialog.
   // Read the post-confirmation render here so a filter changed while that
   // dialog was open cannot authorize a now-hidden image id.
@@ -303,13 +278,20 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   // hidden selection, while still preventing hidden ids from reappearing when
   // the filter is broadened later.
   const handleQueryChange = (next: string) => {
-    setBulkSelectedIds(visibleBulkSelectedIds);
+    const nextVisible = selectVisibleCloudImages(allFiles, next, recentsCutoff);
+    setBulkSelectedIds((current) =>
+      pruneImageSelectionToVisible(current, nextVisible),
+    );
     setQuery(next);
   };
 
   const handleRecentsOnlyChange = (next: boolean) => {
-    setBulkSelectedIds(visibleBulkSelectedIds);
-    setRecentsCutoff(next ? new Date().getTime() - RECENTS_WINDOW_MS : null);
+    const nextCutoff = next ? new Date().getTime() - RECENTS_WINDOW_MS : null;
+    const nextVisible = selectVisibleCloudImages(allFiles, query, nextCutoff);
+    setBulkSelectedIds((current) =>
+      pruneImageSelectionToVisible(current, nextVisible),
+    );
+    setRecentsCutoff(nextCutoff);
   };
 
   const handleToggleBulkSelected = (fileId: string) => {

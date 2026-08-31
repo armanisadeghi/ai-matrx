@@ -182,6 +182,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 - **Server-only Unsplash key.** `NEXT_PUBLIC_UNSPLASH_ACCESS_KEY` was removed. Every Unsplash call goes through `/api/unsplash` via `hooks/images/unsplashClient.ts` (or the GET form for `PublicImageSearch`). Don't reintroduce a `NEXT_PUBLIC_*` Unsplash key.
 - **`ImageManagerContent` is a deprecated alias** of `<ImageManager>` — kept for legacy callers. New code imports `ImageManager` directly.
 - **Cloud-file image URLs must resolve through the universal handler.** Use `resolveCloudFileUrl()` (or `fileHandler.use(source).as({ kind: "html_src" })` directly) instead of calling `/files/{id}/url` from image-manager UI. Viewer payloads must pass plain URL strings, never resolver objects.
+- **Gallery filters are one pure projection.** `selectVisibleCloudImages()` drives both rendering and filter-change selection pruning; pruning against the old visible set lets hidden image IDs reappear when a filter is broadened.
 - **Asset-envelope GETs survive one dropped connection.** The canonical `python-client.getJson()` transport retries one `TypeError` network rejection before capture, so a transient read failure does not blank a tile or enter the repair queue; HTTP failures and caller aborts still fail immediately.
 
 ---
@@ -207,6 +208,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-08-30` — codex: **Images rule 2026-08-30.2 static preparation is React-pure and filter-safe.** The Recents cutoff is captured only by its initiating event, post-confirmation image selection reads the latest committed visible set, URL resolution has a synchronous one-operation gate, and both UI/agent filter changes prune bulk selection against the next rendered result so hidden IDs cannot reappear when filters broaden. Focused regression tests cover filter projection, stale selection rejection, and concurrent resolution.
 - `2026-08-30` — codex: **Surface certification repaired the image library's missing pane menu and touch-only dead ends.** `/images/my-cloud` now mounts the canonical `NonEditableContextMenu` around the whole gallery with trigger-time `matrx-user/images` scope, so desktop right-click and mobile long-press resolve the same surface instead of falling through to shell state. Grid metadata and filenames are visible without hover on mobile, grid/list metadata controls and bulk-selection checkboxes have touch-reachable hit areas, and key query/view/count/content regions carry Locate anchors.
 - `2026-08-30` — codex: **The cloud gallery no longer reports a failed file-tree read as an empty library.** `treeStatus === "error"` now renders a recoverable “Couldn’t load your images” state with an explicit retry, while automatic loading is reserved for the initial idle state.
 - `2026-08-26` — codex: **Canonical backend GETs retry one transient browser transport loss before structured capture.** `/images/my-cloud` asset-envelope reads now recover from a single dropped connection while deterministic HTTP failures and caller aborts remain immediate.

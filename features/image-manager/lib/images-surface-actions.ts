@@ -6,6 +6,67 @@
  * URL resolution is exclusive even before React has committed its busy state.
  */
 
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import type { CloudFileRecord } from "@/features/files/types";
+import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
+
+type FilterableCloudImage = Pick<
+  CloudFileRecord,
+  "id" | "fileName" | "mimeType" | "createdAt" | "updatedAt" | "deletedAt"
+>;
+
+/**
+ * The one pure projection used by both gallery rendering and filter-change
+ * selection pruning. `recentsCutoff` is captured by the initiating event so
+ * render stays deterministic.
+ */
+export function selectVisibleCloudImages<T extends FilterableCloudImage>(
+  files: readonly T[],
+  query: string,
+  recentsCutoff: number | null,
+): T[] {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  return files
+    .filter((file) => {
+      if (file.deletedAt) return false;
+      if (!isImageMime(resolveMime(file.mimeType, file.fileName))) return false;
+
+      if (recentsCutoff !== null) {
+        const timestamp = file.updatedAt
+          ? new Date(file.updatedAt).getTime()
+          : file.createdAt
+            ? new Date(file.createdAt).getTime()
+            : 0;
+        if (timestamp < recentsCutoff) return false;
+      }
+
+      return (
+        !normalizedQuery ||
+        file.fileName.toLowerCase().includes(normalizedQuery) ||
+        idMatchesQuery(file, normalizedQuery)
+      );
+    })
+    .sort((left, right) => {
+      const leftTimestamp = left.updatedAt
+        ? new Date(left.updatedAt).getTime()
+        : 0;
+      const rightTimestamp = right.updatedAt
+        ? new Date(right.updatedAt).getTime()
+        : 0;
+      return rightTimestamp - leftTimestamp;
+    });
+}
+
+/** Permanently drop selected ids that the next rendered filter cannot show. */
+export function pruneImageSelectionToVisible(
+  selectedIds: readonly string[],
+  visibleImages: ReadonlyArray<{ id: string }>,
+): string[] {
+  const visibleIds = new Set(visibleImages.map((file) => file.id));
+  return selectedIds.filter((id) => visibleIds.has(id));
+}
+
 export function parseVisibleImageSelection(
   value: unknown,
   visibleImages: ReadonlyArray<{ id: string; fileName: string }>,
