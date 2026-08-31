@@ -72,6 +72,12 @@ export interface StoredModelOverridesFieldProps {
   onChange: (next: Record<string, unknown> | null) => void;
   /** One sentence about what these overrides cover, in the host's words. */
   hint: string;
+  /**
+   * The field's own heading. Defaulted, but a host with a SECOND settings
+   * surface on the same screen must name this one distinctly — two controls
+   * both headed "Model & settings" is a screen that cannot be read.
+   */
+  title?: string;
   /** The overrides panel's own words. Omit for the per-conversation default. */
   words?: Partial<RunConfigOverridesWords>;
   disabled?: boolean;
@@ -96,6 +102,7 @@ export function StoredModelOverridesField({
   value,
   onChange,
   hint,
+  title = "Model & settings",
   words,
   disabled = false,
 }: StoredModelOverridesFieldProps) {
@@ -161,9 +168,7 @@ export function StoredModelOverridesField({
   return (
     <div className="space-y-2 py-2.5">
       <div>
-        <div className="text-sm font-medium text-foreground">
-          Model &amp; settings
-        </div>
+        <div className="text-sm font-medium text-foreground">{title}</div>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           {hint}
         </p>

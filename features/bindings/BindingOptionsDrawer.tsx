@@ -77,8 +77,8 @@ import {
 } from "./treatment-writer";
 import {
   JOB_ADVANCED_WORDS,
-  JOB_OVERRIDE_WORDS,
   JOB_SETTINGS_WORDS,
+  JOB_TREATMENT_OVERRIDE_WORDS,
 } from "./words";
 
 type LoadState =
@@ -478,7 +478,11 @@ export function BindingOptionsDrawer({
                 omit={["description"]}
                 words={JOB_ADVANCED_WORDS}
                 overridesInstanceKey={`mandate-treatment-${owner.mandateId}`}
-                overridesWords={JOB_OVERRIDE_WORDS}
+                // NAMED APART from the "Settings" block above, which edits the
+                // BINDING's overrides. Two controls both headed "Model &
+                // settings" on one screen is a screen that cannot be read.
+                overridesTitle="Model & settings for this job's own options"
+                overridesWords={JOB_TREATMENT_OVERRIDE_WORDS}
                 // A no-code job screen never hands its user off to an icon
                 // LIBRARY's developer site. The in-app icon gallery lists
                 // every name that works here, so nothing is lost.

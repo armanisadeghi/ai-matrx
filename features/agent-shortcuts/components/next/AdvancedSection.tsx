@@ -122,6 +122,7 @@ export function AdvancedSection({
   showLucideSources = true,
   overridesInstanceKey,
   overridesWords,
+  overridesTitle,
 }: {
   value: AdvancedFields;
   onChange: <K extends keyof AdvancedFields>(
@@ -160,6 +161,9 @@ export function AdvancedSection({
   overridesInstanceKey: string;
   /** The overrides panel's own words, in the host's domain. */
   overridesWords?: Partial<RunConfigOverridesWords>;
+  /** Heading for the model field. Hosts with a second settings surface on the
+   * same screen must name this one distinctly. */
+  overridesTitle?: string;
 }) {
   const w = { ...SHORTCUT_ADVANCED_WORDS, ...words };
   const [open, setOpen] = useState(false);
@@ -318,6 +322,7 @@ export function AdvancedSection({
               onChange("llmOverrides", next as AgentShortcut["llmOverrides"])
             }
             hint={w.llmOverridesHint}
+            title={overridesTitle}
             words={overridesWords}
             disabled={disabled}
           />

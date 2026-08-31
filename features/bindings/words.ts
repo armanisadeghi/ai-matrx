@@ -212,8 +212,17 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
   iconPlaceholder: "e.g. Flame, Rocket",
   contextOverridesHint:
     "Per-key values that override what this job supplies into context policies.",
+  // 🚨 TWO SETTINGS SURFACES SIT ON THIS SCREEN, AND THEY ARE NOT THE SAME
+  // ROW. This one is the job's OWN options (`mandate.treatment.config`), which
+  // is what a menu/surface launch reads — the shortcut face of the same record.
+  // The one under "Settings" above is the BINDING's (`mandate.binding
+  // .config_overrides`), which is what the mandate run door applies, per rung
+  // and server-side. Neither is dead and neither covers the other, so each
+  // names its own reach rather than letting the person assume one control.
+  // (That they are two stores at all is the D5/D7 split; it is not this wave's
+  // to unify, but it is this wave's not to lie about.)
   llmOverridesHint:
-    "Which model runs this job, and the settings it runs with. Left alone, the holder's own model and settings are used.",
+    "Which model runs this job, and the settings it runs with, when it is launched from a menu or a surface. Stored with this job's own options, so it is one answer for everyone — options have no per-person rung. Left alone, the holder's own model and settings are used. (Runs through the job itself use the binding's own settings, under Settings above.)",
   jsonExtractionHint:
     "How this job pulls a structured result out of the answer while it is still being written. Leave empty for off.",
 };
@@ -231,7 +240,23 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
 export const JOB_OVERRIDE_WORDS = {
   heading: "Model settings for this binding",
   scopeNote:
-    "These are stored on this binding and apply to every run of this job, for everyone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
+    "These are stored on this binding and applied by the server on every run of this job, for everyone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
   noModelNote:
     "No model resolved for this holder yet — its settings appear once it is read.",
+};
+
+/**
+ * The OTHER settings surface on this screen, and the reason both must name
+ * their own reach: this one is the job's own options
+ * (`mandate.treatment.config`), which a menu or surface launch reads;
+ * `JOB_OVERRIDE_WORDS` above is the binding row the mandate run door applies.
+ * Two live controls, two different doors — see `JOB_ADVANCED_WORDS
+ * .llmOverridesHint`.
+ */
+export const JOB_TREATMENT_OVERRIDE_WORDS = {
+  heading: "Model settings for this job's own options",
+  scopeNote:
+    "These are stored with this job's options and used when it is launched from a menu or a surface. One answer for everyone — options have no per-person rung. Resetting a value hands it back to the holder's own default.",
+  noModelNote:
+    "No model chosen — this job runs on its holder's own model unless you pick one.",
 };
