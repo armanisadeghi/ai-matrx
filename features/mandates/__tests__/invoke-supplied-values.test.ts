@@ -23,6 +23,9 @@
  * binding model, not of that row, so the fixture stands on its own.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { planInvocation, skippedSentence } from "../invoke/supplied-values";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
 
@@ -152,5 +155,43 @@ describe("the caller supplies the job's OWN inputs, by served name", () => {
     });
     expect(plan.variables).toEqual({});
     expect(plan.skipped.map((s) => s.input.name)).toEqual(["a"]);
+  });
+});
+
+describe("a binding's question is never silently answered — on the run form too", () => {
+  /**
+   * 🚨 A walk found the admin "Run this job" form serving a `prompt_user`
+   * input as OPTIONAL, letting it be left blank, and running anyway on the
+   * agent's own default ("Luxury Shopping") — the person was asked nothing,
+   * told nothing, and got a value they never chose.
+   *
+   * Two surfaces invoke a mandate and both must obey the same rule. The
+   * AutomationButton seam ALWAYS asks (pinned below); the run form keeps the
+   * author's "optional" but states the consequence before the run. Neither may
+   * substitute in silence.
+   */
+  const askedByBinding: ServedInput = served({
+    name: "brief",
+    label: "Brief",
+    origin: "binding_prompt",
+    sourcing: "optional",
+  });
+
+  test("the seam asks it even when the surface calls it optional", () => {
+    const plan = planInvocation({ inputs: [askedByBinding], known: {} });
+    expect(plan.asks.map((a) => a.name)).toEqual(["brief"]);
+    // And it is NOT quietly filed as a skipped optional, which would be the
+    // silent path wearing a different label.
+    expect(plan.skipped).toHaveLength(0);
+  });
+
+  test("the run form's own copy states the consequence of leaving it blank", () => {
+    const source = readFileSync(
+      join(__dirname, "../workspace/RunThisJobSection.tsx"),
+      "utf8",
+    );
+    expect(source).toContain('field.origin === "binding_prompt"');
+    expect(source).toContain("This job asks you for this");
+    expect(source).toContain("the run uses");
   });
 });

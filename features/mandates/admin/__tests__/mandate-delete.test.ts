@@ -75,3 +75,37 @@ describe("the console's remove affordance", () => {
     expect(handler).toContain("error instanceof Error ? error.message");
   });
 });
+
+describe("the delete is DISCOVERABLE, not only in a right-click menu", () => {
+  /**
+   * 🚨 The first cut shipped the delete ONLY into the console's context menu,
+   * and an independent walk could not find it anywhere on the live surface —
+   * it reported the release's own "adds the missing mandate delete" claim as
+   * false. A right-click-only affordance is invisible, and "it is in the
+   * context menu" is not an answer to "a creator can never remove a job".
+   * The job's own page now carries a visible destructive control.
+   */
+  const page = readFileSync(
+    join(__dirname, "../AdminMandateWorkspacePage.tsx"),
+    "utf8",
+  );
+
+  it("puts a visible Remove button on the mandate's own page", () => {
+    expect(page).toContain("Remove this job");
+    expect(page).toContain('variant="destructive"');
+    expect(page).toContain("softDeleteMandate(row.id)");
+  });
+
+  it("says what it does next to the button, not only inside the dialog", () => {
+    expect(page).toContain("Stops every rung from finding it");
+    expect(page).toContain("an admin\n        can restore it");
+  });
+
+  it("leaves the page rather than describing a job that no longer exists", () => {
+    expect(page).toContain('router.push("/administration/mandates")');
+  });
+
+  it("shows the service's own refusal rather than inventing one", () => {
+    expect(page).toContain("error instanceof Error ? error.message");
+  });
+});

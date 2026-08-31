@@ -325,6 +325,23 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
                   {ORIGIN_LABEL[field.origin]}
                 </span>
               </div>
+              {/* 🚨 A QUESTION THIS JOB ASKS YOU NEVER GETS SILENTLY ANSWERED
+                  (walk, 2026-08-31). A `prompt_user` source served as an
+                  OPTIONAL field was left blank here and the run went ahead on
+                  the agent's own default — the person was asked nothing, told
+                  nothing, and got a value they never chose ("Luxury
+                  Shopping"). Whoever bound this job chose to be asked; a
+                  substitution for that choice is exactly the stand-in that has
+                  to announce itself. It is not made required — the binding's
+                  author said optional and that stands — but the consequence of
+                  leaving it blank is stated BEFORE the run, not discovered
+                  after it. */}
+              {field.origin === "binding_prompt" && !field.required && !field.pinned ? (
+                <p className="mb-1 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                  This job asks you for this. Leave it blank and the run uses
+                  the holder&rsquo;s own default instead of an answer from you.
+                </p>
+              ) : null}
               {field.pinned ? (
                 <p className="text-[11.5px] text-muted-foreground">
                   {field.description ||
