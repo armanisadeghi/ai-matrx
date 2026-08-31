@@ -149,6 +149,14 @@ export type LuluFetchState<T> =
   | { status: "ready"; data: T }
   /** Server answered 503: Lulu sandbox credentials are not configured yet. */
   | { status: "awaiting_credentials"; detail: string }
+  /**
+   * The client-side org-context kernel refused before any request fired
+   * (`OrganizationContextError`, code `organization_context_required`) —
+   * not an upstream failure, so it gets its own honest state rather than
+   * the "error" card's dead-end Retry (retrying without an org fails the
+   * same way every time).
+   */
+  | { status: "needs_organization" }
   | { status: "error"; headline: string; detail: string | null };
 
 export interface BulkTier {

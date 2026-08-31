@@ -17,6 +17,7 @@
 
 import { apiGet, apiPost } from "@/lib/api/typed-client";
 import { BackendApiError, describeBackendFailure } from "@/lib/api/errors";
+import { OrganizationContextError } from "@/lib/api/organization-context";
 import type { components } from "@/types/python-generated/api-types";
 import type {
   LuluCatalog,
@@ -55,6 +56,9 @@ function credentialDetail(error: unknown): string {
 export function toFetchState<T>(error: unknown): LuluFetchState<T> {
   if (isAwaitingCredentials(error)) {
     return { status: "awaiting_credentials", detail: credentialDetail(error) };
+  }
+  if (error instanceof OrganizationContextError) {
+    return { status: "needs_organization" };
   }
   const explanation = describeBackendFailure(error);
   return {

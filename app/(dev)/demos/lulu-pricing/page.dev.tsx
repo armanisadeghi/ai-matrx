@@ -19,6 +19,8 @@
  */
 
 import { useEffect, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   BookOpen,
   Check,
@@ -74,6 +76,7 @@ import { BulkTierTable, MobilePriceBar, PricePanel } from "./PricePanel";
 import {
   AwaitingCredentialsCard,
   ConfiguratorSkeleton,
+  NeedsOrganizationCard,
   UpstreamErrorCard,
 } from "./LuluStateCards";
 import { OptionGrid, type OptionGridEntry } from "./OptionGrid";
@@ -264,6 +267,7 @@ interface Keyed<T> {
 }
 
 export default function LuluPricingDemoPage() {
+  const organizationId = useAppSelector(selectOrganizationId);
   const [catalogState, setCatalogState] = useState<LuluFetchState<LuluCatalog>>({
     status: "loading",
   });
@@ -297,6 +301,7 @@ export default function LuluPricingDemoPage() {
   // ── Catalog ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const controller = new AbortController();
+    setCatalogState({ status: "loading" });
     fetchCatalog(controller.signal)
       .then((catalog) => {
         if (!controller.signal.aborted) {
@@ -309,7 +314,10 @@ export default function LuluPricingDemoPage() {
         }
       });
     return () => controller.abort();
-  }, [catalogAttempt]);
+    // `organizationId` is a dependency (not just `catalogAttempt`) so picking
+    // an org from the `NeedsOrganizationCard` below re-fires this fetch on
+    // its own — the calculator comes alive without a manual retry click.
+  }, [catalogAttempt, organizationId]);
 
   function retryCatalog() {
     setCatalogState({ status: "loading" });
@@ -692,6 +700,12 @@ export default function LuluPricingDemoPage() {
             onRetry={retryCatalog}
             retrying={false}
           />
+        </div>
+      ) : null}
+
+      {catalogState.status === "needs_organization" ? (
+        <div className="mb-8">
+          <NeedsOrganizationCard />
         </div>
       ) : null}
 
