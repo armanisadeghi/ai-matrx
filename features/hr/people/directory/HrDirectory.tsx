@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemContextMenu, ItemMenu } from "@/components/official/item/ItemMenu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal } from "lucide-react";
@@ -428,6 +428,27 @@ export function HrDirectory() {
                     <MoreHorizontal className="h-4 w-4" aria-hidden />
                   </Button>
                 </ItemMenu>
+              )}
+              rowWrapper={(row, children) => (
+                <ItemContextMenu
+                  sourceFeature="internal"
+                  entity={{
+                    type: "hr_employee",
+                    id: row.employee_id,
+                    title: row.display_name,
+                  }}
+                  config={() =>
+                    buildMenu({
+                      employeeId: row.employee_id,
+                      displayName: row.display_name,
+                      workEmail: row.work_email,
+                      employmentId: row.employment_id,
+                      status: row.directory_status,
+                    })
+                  }
+                >
+                  {children}
+                </ItemContextMenu>
               )}
               detail={{ enabled: false }}
               window={{ enabled: false }}

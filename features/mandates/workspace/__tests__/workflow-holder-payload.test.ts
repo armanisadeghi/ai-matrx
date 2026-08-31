@@ -15,7 +15,7 @@
 import { buildBindingSavePayload } from "../save-payload";
 
 const base = {
-  hasProvision: true,
+  hasOffer: true,
   consumptionMap: {},
   capturedOverrides: undefined,
   storedOverrides: null,
@@ -60,7 +60,7 @@ describe("buildBindingSavePayload — workflow Holder", () => {
   it("keeps the legacy-mandate map rule: no provision means no map on the wire", () => {
     const payload = buildBindingSavePayload({
       ...base,
-      hasProvision: false,
+      hasOffer: false,
       holder: { kind: "workflow", workflowId: WORKFLOW_ID },
     });
     expect(payload.consumptionMap).toBeUndefined();

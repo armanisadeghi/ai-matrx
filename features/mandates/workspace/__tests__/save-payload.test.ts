@@ -6,7 +6,7 @@ describe("buildBindingSavePayload", () => {
   it("legacy mandate sends NO consumption map (undefined, never {})", () => {
     const payload = buildBindingSavePayload({
       holder,
-      hasProvision: false,
+      hasOffer: false,
       consumptionMap: {},
       capturedOverrides: undefined,
       storedOverrides: null,
@@ -20,7 +20,7 @@ describe("buildBindingSavePayload", () => {
     };
     const payload = buildBindingSavePayload({
       holder,
-      hasProvision: true,
+      hasOffer: true,
       consumptionMap: map,
       capturedOverrides: undefined,
       storedOverrides: null,
@@ -32,7 +32,7 @@ describe("buildBindingSavePayload", () => {
     const stored = { model: "abc", temperature: 0.2 };
     const payload = buildBindingSavePayload({
       holder,
-      hasProvision: true,
+      hasOffer: true,
       consumptionMap: {},
       capturedOverrides: undefined,
       storedOverrides: stored,
@@ -43,7 +43,7 @@ describe("buildBindingSavePayload", () => {
   it("settings step opened with genuine deltas -> deltas win", () => {
     const payload = buildBindingSavePayload({
       holder,
-      hasProvision: true,
+      hasOffer: true,
       consumptionMap: {},
       capturedOverrides: { thinking_level: "high" },
       storedOverrides: { model: "old" },
@@ -54,7 +54,7 @@ describe("buildBindingSavePayload", () => {
   it("settings step opened and cleared -> explicit null (overrides removed)", () => {
     const payload = buildBindingSavePayload({
       holder,
-      hasProvision: true,
+      hasOffer: true,
       consumptionMap: {},
       capturedOverrides: {},
       storedOverrides: { model: "old" },
@@ -65,7 +65,7 @@ describe("buildBindingSavePayload", () => {
   it("pinned holder carries the version id + useLatest false", () => {
     const payload = buildBindingSavePayload({
       holder: { agentId: null, agentVersionId: "ver-9", useLatest: false },
-      hasProvision: true,
+      hasOffer: true,
       consumptionMap: {},
       capturedOverrides: undefined,
       storedOverrides: null,
@@ -79,7 +79,7 @@ describe("buildBindingSavePayload", () => {
     expect(() =>
       buildBindingSavePayload({
         holder: { agentId: "a", agentVersionId: "v", useLatest: false },
-        hasProvision: true,
+        hasOffer: true,
         consumptionMap: {},
         capturedOverrides: undefined,
         storedOverrides: null,

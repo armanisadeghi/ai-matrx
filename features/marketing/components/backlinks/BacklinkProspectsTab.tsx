@@ -367,6 +367,7 @@ export function BacklinkProspectsTab({
             normalizedDomain: clickedRow.normalized_domain,
             displayDomain: clickedRow.display_domain,
             reviewStatus: clickedRow.review_status,
+            source: "link-gap",
             partyId: prospects.partyByDomainId[clickedRow.id] ?? null,
           }
         : null,
@@ -653,6 +654,7 @@ export function BacklinkProspectsTab({
               normalizedDomain: row.normalized_domain,
               displayDomain: row.display_domain,
               reviewStatus: row.review_status,
+              source: "link-gap",
               partyId: prospects.partyByDomainId[row.id] ?? null,
             }),
             content: humanLines([

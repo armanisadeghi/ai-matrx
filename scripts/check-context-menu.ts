@@ -71,6 +71,7 @@ type Population =
   | "overlays"
   | "bespoke"
   | "density"
+  | "attribution"
   | "registry";
 
 /** Populations a first-wave fleet is pointed at. `overlays` is tracked only. */
@@ -325,6 +326,49 @@ function densityViolations(src: string): string[] {
 // SECTIONS.md registry drift
 // ---------------------------------------------------------------------------
 
+/**
+ * 🚨 AN INVENTED `sourceFeature` MISATTRIBUTES EVERY AGENT RUN IT LAUNCHES.
+ *
+ * `SOURCE_FEATURES` is AUTO-GENERATED from the Python server's provenance
+ * allow-list — it cannot be extended from this repo, so a value that is not in
+ * it is always wrong, never a missing entry to add. Two fleet workers invented
+ * one anyway ("admin-relationships", "hr") because the prop reads like free
+ * text. It is not: it is how a run launched from this menu is attributed to
+ * its true caller, so a wrong value silently files runs under the wrong
+ * feature and a suppressed one does the same thing quietly.
+ *
+ * tsc catches this too, but only once the whole tree compiles — and during a
+ * fleet run the tree is often red from someone else's in-flight work, which is
+ * exactly when an agent decides the error is "not mine" and moves on.
+ */
+function attributionFindings(files: Map<string, string>): Finding[] {
+  const out: Finding[] = [];
+  const gen = files.get("types/python-generated/source-attribution.ts") ??
+    (() => {
+      try {
+        return readFileSync(join(ROOT, "types/python-generated/source-attribution.ts"), "utf8");
+      } catch {
+        return "";
+      }
+    })();
+  if (!gen) return out;
+  const block = gen.slice(gen.indexOf("SOURCE_FEATURES"));
+  const allowed = new Set([...block.matchAll(/"([^"]+)"/g)].map((m) => m[1]));
+  if (allowed.size === 0) return out;
+
+  for (const [path, src] of files) {
+    for (const m of src.matchAll(/sourceFeature=\{?"([^"]+)"/g)) {
+      if (!allowed.has(m[1]))
+        out.push({
+          population: "attribution",
+          file: path,
+          detail: `sourceFeature="${m[1]}" is not in the generated SOURCE_FEATURES allow-list — pick an existing value, never invent one`,
+        });
+    }
+  }
+  return out;
+}
+
 function registryFindings(files: Map<string, string>): Finding[] {
   const out: Finding[] = [];
   const REGISTRY = "features/context-menu-v3/SECTIONS.md";
@@ -447,6 +491,7 @@ function main() {
       });
   }
 
+  findings.push(...attributionFindings(files));
   findings.push(...registryFindings(files));
 
   const selected = findings.filter(
@@ -493,6 +538,7 @@ function report(findings: Finding[], covered: Finding[]) {
     "overlays",
     "bespoke",
     "density",
+    "attribution",
     "registry",
   ];
   for (const p of order) {
@@ -502,7 +548,7 @@ function report(findings: Finding[], covered: Finding[]) {
       ? "WAVE ONE"
       : p === "overlays"
         ? "tracked — not wave one"
-        : p === "density" || p === "registry"
+        : p === "density" || p === "registry" || p === "attribution"
           ? "LAW"
           : "collapse";
     console.log(`── ${p} (${rows.length}) — ${tag}`);

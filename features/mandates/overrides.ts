@@ -293,18 +293,27 @@ export interface MandateBindingPrincipalInput {
  * (the strict API payload carries no `undefined`). */
 function consumptionMapForApi(
   map: ConsumptionMap,
-): Record<string, JsonObject> {
-  const out: Record<string, JsonObject> = {};
-  for (const [name, entry] of Object.entries(map)) {
-    const wire: JsonObject = {
-      mapType: entry.mapType,
-      target: entry.target,
-      deliver: entry.deliver ?? "variable",
-    };
-    if (entry.required === true) wire.required = true;
-    if (entry.when_absent) wire.when_absent = entry.when_absent;
-    if (entry.default !== undefined) wire.default = entry.default as JsonValue;
-    out[name] = wire;
+): Record<string, JsonObject | JsonObject[]> {
+  const out: Record<string, JsonObject | JsonObject[]> = {};
+  for (const [name, sources] of Object.entries(map)) {
+    const wires = sources.map((entry) => {
+      const wire: JsonObject = {
+        mapType: entry.mapType,
+        target: entry.target,
+        deliver: entry.deliver ?? "variable",
+      };
+      if (entry.required === true) wire.required = true;
+      if (entry.when_absent) wire.when_absent = entry.when_absent;
+      if (entry.default !== undefined) wire.default = entry.default as JsonValue;
+      return wire;
+    });
+    if (wires.length === 0) continue;
+    // 🚨 D18.2 ON THE WIRE. A target with SEVERAL sources travels as an ordered
+    // list — the server concatenates them with a blank line, in this order. A
+    // target with ONE source keeps travelling as a bare object, so re-saving a
+    // binding written before 2026-08-31 rewrites it byte-identically instead of
+    // silently changing its stored shape. The server reads both.
+    out[name] = wires.length === 1 ? wires[0] : wires;
   }
   return out;
 }

@@ -87,9 +87,13 @@ import {
   parseBindingWave1,
   SCALAR_VALUE_KINDS,
   MEDIA_VALUE_KINDS,
+  MULTI_SOURCE_JOINER,
   type ConsumptionEntry,
   type ConsumptionMap,
+  type OfferedValue,
 } from "../provision-shapes";
+import { useMandateInputSurface } from "../input-surface";
+import type { ProvisionOffer } from "../provisions";
 import { putMandateBinding, removeMandateBinding } from "../overrides";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { buildBindingSavePayload } from "./save-payload";
@@ -265,7 +269,50 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
     };
   }, [effectiveAgentId, data.contract, data.provisionKey, dispatch, store]);
 
-  // ── Step 3 state — the consumption map (provisioned mandates only) ────────
+  // ── THE OFFER — whatever this job actually offers ─────────────────────────
+  //
+  // 🚨 D18.1 (Arman, live, 2026-08-30): **a mandate's described inputs ARE its
+  // provision.** This flow used to gate the whole mapping step on
+  // `data.offer` — the row behind `provision_key` — so a mandate a PERSON
+  // authored skipped step 3 entirely and silently: he was told his job had "no
+  // provision" and given nothing to map, while his five described inputs sat
+  // right there in the triad above.
+  //
+  // The served input surface is the ONE place that knows every declaration, so
+  // the source side comes from there when there is no code provision. Its
+  // names are the server's own, which is what makes a map saved here land on
+  // the same values at run time.
+  const surfaceState = useMandateInputSurface(
+    data.provisionKey ? null : data.mandate.mandate_key,
+  );
+  const describedOffer: ProvisionOffer | null = useMemo(() => {
+    if (data.provisionKey) return null;
+    if (surfaceState.status !== "ready") return null;
+    const values: OfferedValue[] = surfaceState.surface.inputs
+      .filter((input) => input.origin === "mandate_input" || input.origin === "provision")
+      .map((input) => ({
+        name: input.name,
+        kind: input.kind,
+        guaranteed: input.sourcing === "require",
+        lazy: false,
+        description: input.label !== input.name ? input.label : input.help,
+      }));
+    if (values.length === 0) return null;
+    return {
+      key: `mandate:${data.mandate.mandate_key}`,
+      label: data.mandate.label ?? data.mandate.mandate_key,
+      description:
+        "This job's own described inputs. They ARE its provision — map them onto whatever fulfils it.",
+      values,
+    };
+  }, [data.provisionKey, data.mandate.label, data.mandate.mandate_key, surfaceState]);
+  const offer = data.offer ?? describedOffer;
+  // Still fetching the described offer: the step must not render "nothing to
+  // map" in the meantime, which is the same silent skip in a shorter form.
+  const offerPending =
+    !data.provisionKey && !data.offer && surfaceState.status === "loading";
+
+  // ── Step 3 state — the consumption map ────────────────────────────────────
   const [draftMap, setDraftMap] = useState<ConsumptionMap>(storedMap);
   useEffect(() => setDraftMap(storedMap), [myBinding?.id, myBinding?.updated_at, storedMap]);
 
@@ -339,9 +386,7 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
   const holderChosen =
     holderKind === "workflow" ? Boolean(workflowId) : Boolean(effectiveAgentId);
   const mapProblems =
-    data.offer && holderChosen
-      ? consumptionMapProblems(data.offer, draftMap)
-      : [];
+    offer && holderChosen ? consumptionMapProblems(offer, draftMap) : [];
   const canSave =
     holderChosen &&
     !busy &&
@@ -367,7 +412,9 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
                 agentVersionId: useLatest ? null : agentVersionId,
                 useLatest,
               },
-        hasProvision: Boolean(data.provisionKey),
+        // D18.1 — described inputs ARE the provision, so the map channel is
+        // open whenever this job offers anything at all.
+        hasOffer: Boolean(offer),
         consumptionMap: draftMap,
         capturedOverrides:
           captured === undefined
@@ -582,10 +629,11 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
           maps onto its compiled input surface; an AGENT onto its declared
           variables and context policies. Same rows, same wire shape — the
           server checks exactly this map either way. */}
-      {holderKind === "workflow" && workflowId && data.offer ? (
+      {holderKind === "workflow" && workflowId && offer ? (
         <StepBlock index={3} title="Map the offered values">
           <WorkflowMappingStep
             data={data}
+            offer={offer}
             workflowId={workflowId}
             value={draftMap}
             onChange={setDraftMap}
@@ -606,10 +654,18 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
           ) : null}
         </StepBlock>
       ) : null}
-      {effectiveAgentId && verdict.passed && data.offer ? (
+      {effectiveAgentId && verdict.passed && offerPending ? (
+        <StepBlock index={3} title="Map the offered values">
+          <p className="text-[12px] text-muted-foreground">
+            Reading what this job offers…
+          </p>
+        </StepBlock>
+      ) : null}
+      {effectiveAgentId && verdict.passed && offer ? (
         <StepBlock index={3} title="Map the offered values">
           <MappingStep
             data={data}
+            offer={offer}
             agentId={effectiveAgentId}
             value={draftMap}
             onChange={setDraftMap}
@@ -633,7 +689,7 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
 
       {/* Step 4 — Settings (rare, de-emphasized disclosure) */}
       {effectiveAgentId && verdict.passed ? (
-        <StepBlock index={data.offer ? 4 : 3} title="Settings" optional>
+        <StepBlock index={offer ? 4 : 3} title="Settings" optional>
           <Button
             variant={overriddenCount > 0 ? "secondary" : "ghost"}
             size="sm"

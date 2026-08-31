@@ -41,8 +41,16 @@ export type HolderChoice =
 
 export interface SavePayloadArgs {
   holder: HolderChoice;
-  /** Whether the MANDATE carries a Provision (decides the map channel). */
-  hasProvision: boolean;
+  /**
+   * Whether the MANDATE OFFERS ANYTHING to map (decides the map channel).
+   *
+   * 🚨 D18.1 — this used to be `hasProvision`, read straight off
+   * `provision_key`, which meant a mandate a person authored could never send
+   * a consumption map however completely they had described its inputs. A
+   * mandate's described inputs ARE its provision; only a mandate that offers
+   * nothing at all sends `undefined` here.
+   */
+  hasOffer: boolean;
   /** The full current consumption map from the mapping step. */
   consumptionMap: ConsumptionMap;
   /**
@@ -55,7 +63,7 @@ export interface SavePayloadArgs {
 }
 
 export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingInput {
-  const { holder, hasProvision, consumptionMap, capturedOverrides, storedOverrides } =
+  const { holder, hasOffer, consumptionMap, capturedOverrides, storedOverrides } =
     args;
 
   const configOverridesFor = () =>
@@ -76,7 +84,7 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
       agentId: null,
       agentVersionId: null,
       configOverrides: configOverridesFor(),
-      consumptionMap: hasProvision ? consumptionMap : undefined,
+      consumptionMap: hasOffer ? consumptionMap : undefined,
     };
   }
 
@@ -96,8 +104,9 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
     agentVersionId: holder.agentVersionId,
     useLatest: holder.useLatest,
     configOverrides,
-    // Legacy mandates: the field must be ABSENT from the wire (undefined), not
-    // an empty map — bindings.py 422s on any non-None map without a provision.
-    consumptionMap: hasProvision ? consumptionMap : undefined,
+    // A mandate that offers NOTHING: the field must be ABSENT from the wire
+    // (undefined), not an empty map — bindings.py 422s on any non-None map
+    // when there is nothing to consume from.
+    consumptionMap: hasOffer ? consumptionMap : undefined,
   };
 }

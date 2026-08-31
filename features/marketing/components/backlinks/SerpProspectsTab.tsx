@@ -970,6 +970,7 @@ export function SerpProspectsTab({
             normalizedDomain: clickedRow.normalized_domain,
             displayDomain: clickedRow.display_domain,
             reviewStatus: clickedRow.review_status,
+            source: "serp",
             partyId: prospects.partyByOpportunityId[clickedRow.id] ?? null,
           }
         : null,
@@ -1256,6 +1257,7 @@ export function SerpProspectsTab({
               normalizedDomain: row.normalized_domain,
               displayDomain: row.display_domain,
               reviewStatus: row.review_status,
+              source: "serp",
               partyId: prospects.partyByOpportunityId[row.id] ?? null,
             }),
             content: humanLines([

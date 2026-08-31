@@ -651,6 +651,44 @@ function DeductionCodesSection({
   organizationId: string | null;
   onSaved: () => void;
 }) {
+  /** Right-clicked row — STATE (not a ref) so the menu reads the row that
+   *  was actually clicked. */
+  const [clickedCode, setClickedCode] = useState<HrDeductionCode | null>(null);
+
+  const resolveContextOnOpen = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const row = (id && codes.find((c) => c.id === id)) || null;
+    setClickedCode(row);
+    if (!row) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "hr_deduction_code" as const,
+        id: row.id,
+        title: `${row.code} — ${row.name}`,
+      },
+      content: `${row.code} — ${row.name}\nstatus=${row.is_active ? "active" : "inactive"}`,
+    };
+  };
+
+  const deductionCodeMenuSection: ContextMenuExtraSection = {
+    id: "deduction-code-row",
+    label: clickedCode ? clickedCode.code : "This code",
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "item",
+        id: "deduction-code-copy",
+        label: "Copy code",
+        disabled: !clickedCode,
+        onSelect: () => {
+          if (!clickedCode) return;
+          void navigator.clipboard.writeText(clickedCode.code);
+          toast.success("Code copied");
+        },
+      },
+    ],
+  };
+
   const columns: MatrxColumnDef<HrDeductionCode>[] = [
     {
       id: "code",
@@ -709,6 +747,12 @@ function DeductionCodesSection({
       </div>
 
       <div className="p-4">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={resolveContextOnOpen}
+          extraSections={[deductionCodeMenuSection]}
+        >
         <MatrxDataTable
           data={codes}
           columns={columns}
@@ -732,6 +776,7 @@ function DeductionCodesSection({
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
     </section>
   );
