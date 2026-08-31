@@ -32,6 +32,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useRelationshipRuleMenu } from "./relationship-rule-actions";
 import { RuleEditorForm } from "./RuleEditorForm";
 import { ConveyPill, DirectionGlyph } from "./shared";
 import { label, ruleKey, ruleSentence, RELATIONSHIPS_LOCATION } from "../utils";
@@ -449,6 +451,12 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
     }
   }
 
+  const ruleMenu = useRelationshipRuleMenu({
+    rules: () => rules,
+    onEdit: openEditInSidePanel,
+    onDelete: (rule) => setDeleteTarget(rule),
+  });
+
   // -- render ------------------------------------------------------------------
 
   return (
@@ -464,6 +472,12 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
 
       {/* Registry table — MatrxDataTable (sticky, every-column filter/sort) */}
       <div className="min-h-[28rem]">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          resolveContextOnOpen={ruleMenu.resolveContextOnOpen}
+          extraSections={ruleMenu.sections}
+        >
         <MatrxDataTable
           urlState={{ id: "relationship-rules", selectedRow: false }}
           data={filtered}
@@ -640,6 +654,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
             </>
           )}
         />
+        </NonEditableContextMenu>
       </div>
 
       {/* Create rule — SidePanelSurface (MatrxDynamicPanelHost) */}
