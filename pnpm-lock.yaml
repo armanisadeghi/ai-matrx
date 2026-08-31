@@ -28,10 +28,10 @@ importers:
         version: 0.5.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/content-ir':
         specifier: latest
-        version: 0.10.1
+        version: 0.10.3
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.9.1(react@19.2.7)
+        version: 0.9.3(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
         version: 0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
@@ -850,18 +850,14 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.9.1':
-    resolution: {integrity: sha512-yMpkTDqifSSSCMcV0071v0raocBSVZnziFDx44IGafw1viTymjP4V6F0T4lkT3Ctf3914SOVDB9n2FpKAD4vog==}
+  '@ai-matrx/content-ir-react@0.9.3':
+    resolution: {integrity: sha512-xQ81mG6USBLzF54azSddyeTE0M25c11YlcHg2+73NuyDHVLyXqKzac1oiZ17hB1836Qx9zdBPNeF1FFiWIbSPg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
 
-  '@ai-matrx/content-ir@0.10.0':
-    resolution: {integrity: sha512-+tJiGcVCpEfitD2MvT5dksqcrNswVpe3LWDy7QyjswJwvqJC5ZwIiOmnbJtVpelE6T8iS347OJwlrZNjR056Xg==}
-    engines: {node: '>=20'}
-
-  '@ai-matrx/content-ir@0.10.1':
-    resolution: {integrity: sha512-p+O4tebf9Jio6sd/reNPfRcoBZ+V/d7+Gu5v4G32wOYQ6F99wPeKsB+xQH6/Dl3fx+n0jpjNk+rNGx/HVlUZhw==}
+  '@ai-matrx/content-ir@0.10.3':
+    resolution: {integrity: sha512-MxJPRIwUd2CXU7RUbN8Dm7tt2VnTvr1cTBpG97w/zL8PDJmOf1AUy2H0LDqmUw7uVLofZmSMaqb4eWMBQhnfJA==}
     engines: {node: '>=20'}
 
   '@ai-matrx/data@0.6.2':
@@ -13159,16 +13155,12 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
-  '@ai-matrx/content-ir-react@0.9.1(react@19.2.7)':
+  '@ai-matrx/content-ir-react@0.9.3(react@19.2.7)':
     dependencies:
-      '@ai-matrx/content-ir': 0.10.0
+      '@ai-matrx/content-ir': 0.10.3
       react: 19.2.7
 
-  '@ai-matrx/content-ir@0.10.0':
-    dependencies:
-      ajv: 8.20.0
-
-  '@ai-matrx/content-ir@0.10.1':
+  '@ai-matrx/content-ir@0.10.3':
     dependencies:
       ajv: 8.20.0
 

@@ -15,6 +15,21 @@
 import type { KindDefinition, KindSchema } from "@ai-matrx/content-ir";
 import { makeSearchKindBridge } from "./search-results";
 
+/**
+ * Lulu's `LuluCostGroup` — one cost bucket (shipping & handling, or
+ * fulfillment). Declared once because the quote carries two of them and a print
+ * job's `costs` carries a third.
+ */
+const COST_GROUP = {
+  type: "inline_object",
+  fields: {
+    total_cost_excl_tax: { type: "string", nullable: true },
+    total_cost_incl_tax: { type: "string", nullable: true },
+    total_tax: { type: "string", nullable: true },
+    tax_rate: { type: "string", nullable: true },
+  },
+} as const satisfies KindSchema["fields"][string];
+
 const schemas: KindSchema[] = [
   {
     kind: "lulu_print_cost_calculation",
@@ -22,14 +37,11 @@ const schemas: KindSchema[] = [
       provider: { type: "string" },
       currency: { type: "string", nullable: true },
       line_item_costs: { type: "json[]", nullable: true },
-      // `json`, not a nullable `inline_object`: the mirror's validator honours
-      // `nullable` for scalars and `json[]` but NOT for `inline_object` /
-      // `object` / `record` — a genuinely-null bucket would degrade the whole
-      // instance to the generic viewer. `null` is a real state for every one of
-      // these (Lulu has not priced the basket yet). Class defect + the 23 other
-      // sites: FOUND_DEFECTS.md.
-      shipping_cost: { type: "json", nullable: true },
-      fulfillment_cost: { type: "json", nullable: true },
+      // `null` is a real state for both buckets — Lulu has not priced the
+      // basket yet — and @ai-matrx/content-ir 0.10.2 honours `nullable` on
+      // object-shaped fields, so the true shape is declared here.
+      shipping_cost: { ...COST_GROUP, nullable: true },
+      fulfillment_cost: { ...COST_GROUP, nullable: true },
       fees: { type: "json[]" },
       total_cost_excl_tax: { type: "string", nullable: true },
       total_cost_incl_tax: { type: "string", nullable: true },
@@ -80,14 +92,39 @@ const schemas: KindSchema[] = [
       production_delay: { type: "number", nullable: true },
       production_due_time: { type: "string", nullable: true },
       tax_country: { type: "string", nullable: true },
-      // `json` for the same reason as the quote's buckets above — a print job
-      // legitimately carries `costs: null` and `estimated_shipping_dates: null`
-      // until Lulu prices and schedules it, and a nullable `inline_object`
-      // would fail that instance outright.
-      status: { type: "json", nullable: true },
+      // A print job legitimately carries `status`, `costs` and
+      // `estimated_shipping_dates` as null until Lulu prices and schedules it.
+      status: {
+        type: "inline_object",
+        nullable: true,
+        fields: {
+          name: { type: "string", required: true },
+          changed: { type: "string", nullable: true },
+          message: { type: "string", nullable: true },
+        },
+      },
       line_items: { type: "json[]" },
-      costs: { type: "json", nullable: true },
-      estimated_shipping_dates: { type: "json", nullable: true },
+      costs: {
+        type: "inline_object",
+        nullable: true,
+        fields: {
+          line_item_costs: { type: "json[]", nullable: true },
+          shipping_cost: { ...COST_GROUP, nullable: true },
+          total_cost_excl_tax: { type: "string", nullable: true },
+          total_cost_incl_tax: { type: "string", nullable: true },
+          total_tax: { type: "string", nullable: true },
+        },
+      },
+      estimated_shipping_dates: {
+        type: "inline_object",
+        nullable: true,
+        fields: {
+          dispatch_min: { type: "string", nullable: true },
+          dispatch_max: { type: "string", nullable: true },
+          arrival_min: { type: "string", nullable: true },
+          arrival_max: { type: "string", nullable: true },
+        },
+      },
       date_created: { type: "string", nullable: true },
       date_modified: { type: "string", nullable: true },
     },

@@ -2682,7 +2682,7 @@ work, not drift from a package lane; per the unfinished-work-alarm policy nothin
 Whoever resumes the knowledge/RAG consolidation should add the alias in `normalizeResourceFamilyPolicy`
 (and decide the canonical direction) or revert the test input.
 
-## 2026-08-30 — `@ai-matrx/content-ir` mirror validator ignores `nullable` on object-shaped fields (23 live sites)
+## 2026-08-30 — `@ai-matrx/content-ir` mirror validator ignores `nullable` on object-shaped fields (23 live sites) — **FIXED 2026-08-31 in 0.10.2**
 
 Found while registering the Lulu print kinds. In the compiled parser mirror's validator
 (`validateFinalFieldValue`, `node_modules/@ai-matrx/content-ir/dist/index.js`), `nullable: true` is
@@ -2704,11 +2704,26 @@ carrying `nullable: true`, all of which break the moment the field is actually n
 `scraper-page.ts:250,276,278,279` · `search-results.ts:65,129,201,202,204,212,237,238,276,283,284` ·
 `table-kinds.ts:95` — 23 sites across 6 files.
 
-**The fix belongs in the package, not in the mirrors** (`aidream/apps/shared/content-ir`): the three
-object branches must return `null` when `value === null && fieldSchema.nullable`, exactly as `json[]`
-does, with a test that plants a null on a nullable `inline_object` and proves it failing-then-passing.
-The 23 sites above then need no change. Not fixed here because the print-kinds task has no authority
-to release a shared package, and the local mirrors were made honest instead (`json` + a comment).
+**FIXED IN THE PACKAGE, as the CLASS** (`@ai-matrx/content-ir` 0.10.2, released and adopted
+2026-08-31): `nullable` was never a property of a field's TYPE, so it now short-circuits at the top
+of `validateFinalFieldValue` for every field type — the three object branches plus `array` and the
+scalar arrays, which ignored it equally — and the same law was applied to the streaming placement
+path (`validateValueAgainstField`), where a `null` arrives as a scalar token and every shape check
+would have rejected it. Proven failing-then-passing on the unfixed parser (`Field "costs" on kind
+"print_job" must be an inline object.`).
+
+Declaring the true `lulu_print_job` shape then surfaced a SIBLING of the same class, fixed as
+**0.10.3**: `resolveParentFieldSchema` resolved a field only through kind-typed parents, so a
+second-level `inline_object` (`costs.shipping_cost`) registered no context mid-stream and closed as
+an untyped object — `Object is missing "__kind"` — while the final validator recursed happily. The
+two halves now agree at any depth.
+
+The 23 sites needed no edit; `print-kinds.ts` went back to its real `inline_object` shapes and the
+workaround comments are gone. Both guards are class guards, not instance pins:
+`features/content-ir/__tests__/kind-nullable-object-fields.test.ts` plants a null on EVERY field
+every system kind declares nullable (67 kinds; 22 of them fail on 0.10.1, which is how the census
+was taken mechanically), and `kind-print-lulu.test.ts` runs Lulu's own canonical payloads —
+including the unpriced job that produced the live `generic_structured` render.
 
 ## `sourceFeature="camera"` is not a valid SOURCE_FEATURE — 2026-08-26
 
