@@ -124,6 +124,7 @@ function isAbortResultError(e: { message?: string; hint?: string }): boolean {
   return (
     msg.startsWith("aborterror") ||
     msg.includes("the operation was aborted") ||
+    msg.includes("signal is aborted") ||
     hint.includes("request was aborted")
   );
 }

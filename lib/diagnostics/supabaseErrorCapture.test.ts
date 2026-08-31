@@ -137,6 +137,39 @@ describe("schema-cache recovery", () => {
     });
   });
 
+  it("classifies the current browser abort wording as expected control flow", async () => {
+    const aborted = {
+      data: null,
+      error: {
+        code: "",
+        message: "AbortError: signal is aborted without reason",
+        details: "",
+        hint: "",
+      },
+      status: 0,
+    };
+    const builder = {
+      then(onFulfilled: (value: unknown) => unknown) {
+        return Promise.resolve(onFulfilled(aborted));
+      },
+    };
+    const client = wrapClientForCapture({
+      schema: (_schema: string) => ({ from: (_relation: string) => builder }),
+    });
+
+    await expect(
+      Promise.resolve(client.schema("users").from("integration_connections")),
+    ).resolves.toEqual(aborted);
+    expect(getSnapshot()).toHaveLength(1);
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "supabase-postgrest",
+      name: "AbortError",
+      relation: "integration_connections",
+      tier: "yellow",
+      tierRuleId: "request-aborted",
+    });
+  });
+
   it("lets a retry owner suppress premature capture for one builder", async () => {
     const transportLoss = {
       data: null,

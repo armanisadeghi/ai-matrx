@@ -337,6 +337,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-31 — **Current browser cancellation wording stays in the canonical abort class.** The Supabase adapter now recognizes `AbortError: signal is aborted without reason` in addition to the older `operation was aborted` response, so React Query navigation/unmount cancellation remains a yellow local diagnostic instead of masquerading as a database failure. A focused adapter test pins the exact observed wording and `users.integration_connections` path.
 - 2026-08-30 — **Local-only downgrade rules enforce non-durability.** `persist: false` now keeps proven local recoveries out of `ops.system_error` even during pre-auth hydration and the guest/new-account observation window; the status-0 Supabase transport rule is the first forcing case.
 - 2026-08-30 — **Evidence-free cross-origin script sentinels stay local.** The
   exact browser `Script error.` shape with no error object, URL, line, or column
