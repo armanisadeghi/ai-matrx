@@ -24,7 +24,10 @@
 //                       natively keyed by HOLDER INPUT name with
 //                       `target` = offered value (provision-shapes.ts).
 //                       Unconsumed offered values render calmly available.
-//                       Legacy mandates SKIP this step structurally.
+//                       MANY sources may feed ONE input (D18.2) — joined in
+//                       order with a blank line; context slots are targets
+//                       exactly like variables (D18.3). Only a mandate that
+//                       offers NOTHING skips this step.
 //   Step 4  SETTINGS    rare, de-emphasized: the canonical instance-overrides
 //                       layer (RunConfigOverrides + selectSettingsOverridesFor
 //                       Api — genuine diffs only), seeded per the bench recipe
@@ -36,9 +39,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   CircleCheck,
   Settings2,
   Trash2,
+  X,
   Workflow as WorkflowIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +93,6 @@ import {
   parseBindingWave1,
   SCALAR_VALUE_KINDS,
   MEDIA_VALUE_KINDS,
-  MULTI_SOURCE_JOINER,
   type ConsumptionEntry,
   type ConsumptionMap,
   type OfferedValue,
@@ -299,11 +304,18 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
       }));
     if (values.length === 0) return null;
     return {
-      key: `mandate:${data.mandate.mandate_key}`,
+      // No `agent.provision` ROW exists for a described offer — it is
+      // synthesized from the mandate's own inputs, and the key says so (the
+      // same key aidream's `offer.offer_for` builds, so an error message from
+      // either half names the same thing).
+      id: `mandate:${data.mandate.mandate_key}`,
+      provisionKey: `mandate:${data.mandate.mandate_key}`,
       label: data.mandate.label ?? data.mandate.mandate_key,
       description:
         "This job's own described inputs. They ARE its provision — map them onto whatever fulfils it.",
+      offerKindSlug: null,
       values,
+      isEnabled: true,
     };
   }, [data.provisionKey, data.mandate.label, data.mandate.mandate_key, surfaceState]);
   const offer = data.offer ?? describedOffer;
@@ -971,16 +983,17 @@ function StepBlock({
 // Visual anatomy mirrors SurfaceVariableBinding (fixed-height detail, calm
 // unconsumed strip) without extending its type-incompatible props.
 
-const NOT_FED = "__not_fed__";
 
 function MappingStep({
   data,
+  offer,
   agentId,
   value,
   onChange,
   disabled,
 }: {
   data: MandateWorkspaceData;
+  offer: ProvisionOffer;
   agentId: string;
   value: ConsumptionMap;
   onChange: (next: ConsumptionMap) => void;
@@ -1015,6 +1028,7 @@ function MappingStep({
   return (
     <MappingRows
       data={data}
+      offer={offer}
       targets={targets}
       contextKeys={contextKeys}
       value={value}
@@ -1033,12 +1047,14 @@ function MappingStep({
  */
 function WorkflowMappingStep({
   data,
+  offer,
   workflowId,
   value,
   onChange,
   disabled,
 }: {
   data: MandateWorkspaceData;
+  offer: ProvisionOffer;
   workflowId: string;
   value: ConsumptionMap;
   onChange: (next: ConsumptionMap) => void;
@@ -1086,6 +1102,7 @@ function WorkflowMappingStep({
   return (
     <MappingRows
       data={data}
+      offer={offer}
       targets={targets}
       // A workflow input surface has no context channel — every value lands
       // on a named input.
@@ -1099,8 +1116,28 @@ function WorkflowMappingStep({
 
 const EMPTY_CONTEXT_KEYS: ReadonlySet<string> = new Set<string>();
 
+
+/**
+ * THE TWO SIDES AND THE MIDDLE — the agent's inputs down the left, the job's
+ * offered values chosen on the right, MANY of them per input.
+ *
+ * 🚨 D18.2 / D18.3 (Arman, live, 2026-08-30). Two rulings shape this component:
+ *
+ *  · **Many-to-one is required, generally.** A job may offer fifty values while
+ *    the bound agent has two variables. Several offered values landing on ONE
+ *    input are CONCATENATED into that input's text, in the order listed here,
+ *    separated by a blank line. The old row could hold exactly one source, so
+ *    the answer to "I have five inputs and three variables" was "pick two and
+ *    lose the rest".
+ *  · **Context slots are first-class targets**, symmetric with variables —
+ *    same rows, same many-to-one, only the channel differs. `buildBindingTargets`
+ *    already returns both; this component now SAYS which is which, because a
+ *    value delivered to a context slot behaves differently from one substituted
+ *    into a prompt and the author is entitled to know which they chose.
+ */
 function MappingRows({
   data,
+  offer,
   targets,
   contextKeys,
   value,
@@ -1108,61 +1145,91 @@ function MappingRows({
   disabled,
 }: {
   data: MandateWorkspaceData;
+  offer: ProvisionOffer;
   targets: BindingTarget[];
   contextKeys: ReadonlySet<string>;
   value: ConsumptionMap;
   onChange: (next: ConsumptionMap) => void;
   disabled: boolean;
 }) {
-  const offer = data.offer;
-  if (!offer) return null;
-
   const consumedSources = new Set(
-    Object.values(value).map((entry) => entry.target),
+    Object.values(value).flatMap((sources) => sources.map((entry) => entry.target)),
   );
   const unconsumed = offer.values.filter(
     (v) => !consumedSources.has(v.name) && !data.pinnedContext.includes(v.name),
   );
+  const selectable = offer.values.filter(
+    (v) => !data.pinnedContext.includes(v.name),
+  );
 
-  const setRow = (targetName: string, sourceName: string | null) => {
-    const next: ConsumptionMap = { ...value };
-    if (!sourceName) {
-      delete next[targetName];
-    } else {
-      const offered = offer.values.find((v) => v.name === sourceName);
-      const deliver: ConsumptionEntry["deliver"] = contextKeys.has(targetName)
-        ? "context"
-        : "variable";
-      const entry: ConsumptionEntry = {
-        mapType: "offered_value",
-        target: sourceName,
-        deliver,
-      };
-      if (offered && !offered.guaranteed) entry.when_absent = "skip";
-      next[targetName] = entry;
-    }
-    onChange(next);
+  const channelFor = (targetName: string): ConsumptionEntry["deliver"] =>
+    contextKeys.has(targetName) ? "context" : "variable";
+
+  /** Build one source entry for a target, with absence handled up front. */
+  const entryFor = (
+    targetName: string,
+    sourceName: string,
+  ): ConsumptionEntry => {
+    const offered = offer.values.find((v) => v.name === sourceName);
+    const entry: ConsumptionEntry = {
+      mapType: "offered_value",
+      target: sourceName,
+      deliver: channelFor(targetName),
+    };
+    if (offered && !offered.guaranteed) entry.when_absent = "skip";
+    return entry;
   };
 
-  const patchRow = (targetName: string, patch: Partial<ConsumptionEntry>) => {
-    const current = value[targetName];
-    if (!current) return;
-    onChange({ ...value, [targetName]: { ...current, ...patch } });
+  const setSources = (targetName: string, next: ConsumptionEntry[]) => {
+    const map: ConsumptionMap = { ...value };
+    if (next.length === 0) delete map[targetName];
+    else map[targetName] = next;
+    onChange(map);
+  };
+
+  const addSource = (targetName: string, sourceName: string) => {
+    const current = value[targetName] ?? [];
+    // The same value twice would be the same paragraph twice — silently, and
+    // for no reason anyone could later explain.
+    if (current.some((entry) => entry.target === sourceName)) return;
+    setSources(targetName, [...current, entryFor(targetName, sourceName)]);
+  };
+
+  const removeSource = (targetName: string, index: number) => {
+    const current = value[targetName] ?? [];
+    setSources(
+      targetName,
+      current.filter((_, i) => i !== index),
+    );
+  };
+
+  const moveSource = (targetName: string, index: number, delta: number) => {
+    const current = [...(value[targetName] ?? [])];
+    const next = index + delta;
+    if (next < 0 || next >= current.length) return;
+    [current[index], current[next]] = [current[next], current[index]];
+    setSources(targetName, current);
+  };
+
+  const patchSource = (
+    targetName: string,
+    index: number,
+    patch: Partial<ConsumptionEntry>,
+  ) => {
+    const current = [...(value[targetName] ?? [])];
+    if (!current[index]) return;
+    current[index] = { ...current[index], ...patch };
+    setSources(targetName, current);
   };
 
   return (
     <div className="space-y-2">
       {targets.map((target) => {
-        const entry = value[target.name];
-        const source = entry?.target ?? NOT_FED;
-        const offered = entry
-          ? offer.values.find((v) => v.name === entry.target)
-          : undefined;
-        const structuredAsVariable =
-          entry?.deliver === "variable" &&
-          offered !== undefined &&
-          !SCALAR_VALUE_KINDS.has(offered.kind) &&
-          !MEDIA_VALUE_KINDS.has(offered.kind);
+        const sources = value[target.name] ?? [];
+        const isContext = contextKeys.has(target.name);
+        const remaining = selectable.filter(
+          (v) => !sources.some((entry) => entry.target === v.name),
+        );
         return (
           <article
             key={target.name}
@@ -1176,6 +1243,13 @@ function MappingRows({
                 <code className="ml-1.5 text-[10px] text-muted-foreground/70">
                   {target.name}
                 </code>
+                {/* D18.3 — a context slot is a first-class target, and says so. */}
+                <Badge
+                  variant="outline"
+                  className="ml-1.5 py-0 text-[9px] text-muted-foreground"
+                >
+                  {isContext ? "context slot" : "variable"}
+                </Badge>
                 {target.required ? (
                   <Badge
                     variant="outline"
@@ -1185,66 +1259,163 @@ function MappingRows({
                   </Badge>
                 ) : null}
               </div>
+              {/* THE ADD CONTROL. Always an add, never a replace — picking a
+                  second value must never silently drop the first. */}
               <select
-                value={source}
-                disabled={disabled}
-                onChange={(e) =>
-                  setRow(target.name, e.target.value === NOT_FED ? null : e.target.value)
-                }
-                className="h-8 rounded-md border border-border bg-background px-2 text-[12px] text-foreground"
+                value=""
+                disabled={disabled || remaining.length === 0}
+                onChange={(e) => {
+                  if (e.target.value) addSource(target.name, e.target.value);
+                }}
+                className="h-8 rounded-md border border-border bg-background px-2 text-[12px] text-foreground disabled:opacity-50"
                 style={{ fontSize: "14px" }}
-                aria-label={`Source for ${target.name}`}
+                aria-label={`Add a value to ${target.name}`}
               >
-                <option value={NOT_FED}>Not fed (agent default)</option>
-                {offer.values
-                  .filter((v) => !data.pinnedContext.includes(v.name))
-                  .map((v) => (
-                    <option key={v.name} value={v.name}>
-                      {v.name} ({v.kind}{v.guaranteed ? "" : " · optional"})
-                    </option>
-                  ))}
+                <option value="">
+                  {sources.length === 0
+                    ? "Not fed (agent default)"
+                    : remaining.length === 0
+                      ? "Everything is mapped"
+                      : "Add another value…"}
+                </option>
+                {remaining.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.kind}
+                    {v.guaranteed ? "" : " · optional"})
+                  </option>
+                ))}
               </select>
             </div>
-            {entry && offered && !offered.guaranteed ? (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground">
-                <span>If absent:</span>
-                <select
-                  value={entry.when_absent ?? "skip"}
-                  disabled={disabled}
-                  onChange={(e) =>
-                    patchRow(target.name, {
-                      when_absent: e.target.value as ConsumptionEntry["when_absent"],
-                    })
-                  }
-                  className="h-7 rounded-md border border-border bg-background px-1.5 text-[11.5px]"
-                  style={{ fontSize: "14px" }}
-                  aria-label={`When ${entry.target} is absent`}
-                >
-                  <option value="skip">Skip it</option>
-                  <option value="use_default">Use a default</option>
-                  <option value="fail">Fail the run</option>
-                </select>
-                {entry.when_absent === "use_default" ? (
-                  <ProTextarea
-                    wrapperClassName="h-8 min-w-0 flex-1"
-                    value={typeof entry.default === "string" ? entry.default : ""}
-                    disabled={disabled}
-                    onChange={(e) => patchRow(target.name, { default: e.target.value })}
-                    placeholder="Default value"
-                    className="h-8 min-h-8 flex-1 resize-none py-1 text-[12px]"
-                    style={{ fontSize: "14px" }}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-            {structuredAsVariable ? (
-              <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] text-destructive">
-                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                {offered?.kind} is a structured shape — it can only feed a
-                context policy, never a prompt variable. Pick a context policy
-                target or a scalar value.
+
+            {sources.length > 1 ? (
+              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/80">
+                {sources.length} values, joined in this order with a blank line
+                between them.
               </p>
             ) : null}
+
+            {sources.map((entry, index) => {
+              const offered = offer.values.find((v) => v.name === entry.target);
+              const structuredAsVariable =
+                entry.deliver === "variable" &&
+                offered !== undefined &&
+                !SCALAR_VALUE_KINDS.has(offered.kind) &&
+                !MEDIA_VALUE_KINDS.has(offered.kind);
+              const unjoinable =
+                sources.length > 1 &&
+                offered !== undefined &&
+                !SCALAR_VALUE_KINDS.has(offered.kind);
+              return (
+                <div
+                  key={`${entry.target}-${index}`}
+                  className="mt-1.5 rounded-md border border-border/40 bg-card/40 px-2 py-1.5"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {sources.length > 1 ? (
+                      <span className="font-mono text-[10px] text-muted-foreground/70">
+                        {index + 1}.
+                      </span>
+                    ) : null}
+                    <code className="text-[12px] text-foreground">{entry.target}</code>
+                    {offered ? (
+                      <Badge variant="outline" className="py-0 font-mono text-[9px]">
+                        {offered.kind}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="py-0 text-[9px] text-destructive">
+                        no longer offered
+                      </Badge>
+                    )}
+                    <div className="ml-auto flex items-center gap-0.5">
+                      {sources.length > 1 ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            disabled={disabled || index === 0}
+                            aria-label={`Move ${entry.target} earlier`}
+                            onClick={() => moveSource(target.name, index, -1)}
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            disabled={disabled || index === sources.length - 1}
+                            aria-label={`Move ${entry.target} later`}
+                            onClick={() => moveSource(target.name, index, 1)}
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : null}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground"
+                        disabled={disabled}
+                        aria-label={`Remove ${entry.target} from ${target.name}`}
+                        onClick={() => removeSource(target.name, index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  {offered && !offered.guaranteed ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground">
+                      <span>If absent:</span>
+                      <select
+                        value={entry.when_absent ?? "skip"}
+                        disabled={disabled}
+                        onChange={(e) =>
+                          patchSource(target.name, index, {
+                            when_absent: e.target
+                              .value as ConsumptionEntry["when_absent"],
+                          })
+                        }
+                        className="h-7 rounded-md border border-border bg-background px-1.5 text-[11.5px]"
+                        style={{ fontSize: "14px" }}
+                        aria-label={`When ${entry.target} is absent`}
+                      >
+                        <option value="skip">Skip it</option>
+                        <option value="use_default">Use a default</option>
+                        <option value="fail">Fail the run</option>
+                      </select>
+                      {entry.when_absent === "use_default" ? (
+                        <ProTextarea
+                          wrapperClassName="h-8 min-w-0 flex-1"
+                          value={typeof entry.default === "string" ? entry.default : ""}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            patchSource(target.name, index, { default: e.target.value })
+                          }
+                          placeholder="Default value"
+                          className="h-8 min-h-8 flex-1 resize-none py-1 text-[12px]"
+                          style={{ fontSize: "14px" }}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {structuredAsVariable ? (
+                    <p className="mt-1 flex items-start gap-1.5 text-[11.5px] text-destructive">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                      {offered?.kind} is a structured shape — it can only feed a
+                      context slot, never a prompt variable. Map it to a context
+                      slot, or pick a scalar value.
+                    </p>
+                  ) : null}
+                  {unjoinable ? (
+                    <p className="mt-1 flex items-start gap-1.5 text-[11.5px] text-destructive">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                      {offered?.kind} has no text form, so it can&apos;t be joined
+                      with the other values here — give it an input of its own.
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
           </article>
         );
       })}
@@ -1252,8 +1423,7 @@ function MappingRows({
       {/* THE CALM RULE — unconsumed offered values are NORMAL, never warnings. */}
       {unconsumed.length > 0 ? (
         <p className="text-[11.5px] leading-relaxed text-muted-foreground/80">
-          Also available, unused:{" "}
-          {unconsumed.map((v) => v.name).join(" · ")}
+          Also available, unused: {unconsumed.map((v) => v.name).join(" · ")}
         </p>
       ) : null}
       {data.pinnedContext.length > 0 ? (

@@ -9,37 +9,50 @@ import { fetchScheduledTask } from "../redux/tasks/thunks";
 
 export type LoadStatus = "idle" | "loading" | "success" | "not-found" | "error";
 
+type RequestState = {
+  taskId: string;
+  status: Exclude<LoadStatus, "idle" | "loading">;
+  error: string | null;
+};
+
 export function useTaskDetail(taskId: string | null | undefined) {
   const dispatch = useAppDispatch();
   const task = useAppSelector((s) => selectTaskById(s, taskId ?? null));
-  const [status, setStatus] = useState<LoadStatus>("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [requestState, setRequestState] = useState<RequestState | null>(null);
 
   const alreadyLoaded = !!task && task.id === taskId;
+  const status: LoadStatus = !taskId
+    ? "idle"
+    : alreadyLoaded
+      ? "success"
+      : requestState?.taskId === taskId
+        ? requestState.status
+        : "loading";
+  const error =
+    requestState && requestState.taskId === taskId ? requestState.error : null;
 
   useEffect(() => {
-    if (!taskId) {
-      setStatus("idle");
-      return;
-    }
+    if (!taskId) return;
     // Already in the store from a prior navigation/mount — serve it without a
     // re-fetch. Task config changes are user-initiated (and update Redux on
     // save) and the run list has its own Realtime stream, so re-pulling the
     // row on every detail/edit mount was redundant.
-    if (alreadyLoaded) {
-      setStatus("success");
-      setError(null);
-      return;
-    }
-    setStatus("loading");
+    if (alreadyLoaded) return;
+
     dispatch(fetchScheduledTask(taskId))
       .then((found) => {
-        setStatus(found ? "success" : "not-found");
-        setError(null);
+        setRequestState({
+          taskId,
+          status: found ? "success" : "not-found",
+          error: null,
+        });
       })
       .catch((err) => {
-        setStatus("error");
-        setError(err instanceof Error ? err.message : String(err));
+        setRequestState({
+          taskId,
+          status: "error",
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
   }, [dispatch, taskId, alreadyLoaded]);
 

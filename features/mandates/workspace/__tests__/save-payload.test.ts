@@ -16,7 +16,10 @@ describe("buildBindingSavePayload", () => {
 
   it("provisioned mandate re-sends the FULL map every save", () => {
     const map = {
-      topic: { mapType: "offered_value" as const, target: "episode_topic", deliver: "variable" as const },
+      // D18.2 — a target holds an ORDERED LIST of sources.
+      topic: [
+        { mapType: "offered_value" as const, target: "episode_topic", deliver: "variable" as const },
+      ],
     };
     const payload = buildBindingSavePayload({
       holder,

@@ -156,11 +156,18 @@ export function compareStoredContract(
  */
 export function compareConsumptionAgainstOffer(
   offeredValues: readonly { name: string; kind?: string; description?: string }[],
-  consumption: Record<string, { target?: string }>,
+  // D18.2 — a target is fed by an ORDERED LIST of sources (many-to-one). A bare
+  // object is still accepted so a caller holding a raw wire row (single-source,
+  // the pre-2026-08-31 shape) needs no unwrapping of its own.
+  consumption: Record<string, { target?: string } | readonly { target?: string }[]>,
 ): ComparisonResult {
   const offeredByName = new Map(offeredValues.map((v) => [v.name, v]));
   const consumedSources = new Set(
-    Object.entries(consumption).map(([name, entry]) => entry.target || name),
+    Object.entries(consumption).flatMap(([name, entry]) =>
+      (Array.isArray(entry) ? entry : [entry]).map(
+        (source) => source.target || name,
+      ),
+    ),
   );
   const matched: ContractRow[] = [];
   const missing: ContractRow[] = [];
