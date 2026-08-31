@@ -10,6 +10,12 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { AdminUserRef } from "./AdminUserRef";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  adminUserMenuSection,
+  type AdminUserMenuRow,
+} from "./admin-user-menu-section";
+import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type {
   AdminUserAcquisitionRow,
@@ -87,6 +93,9 @@ export function UserAcquisitionTableClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminUserAcquisitionRow | null>(
+    null,
+  );
+  const [clickedRow, setClickedRow] = useState<AdminUserAcquisitionRow | null>(
     null,
   );
   const [journey, setJourney] = useState<AcquisitionJourney | null>(null);
@@ -484,6 +493,60 @@ export function UserAcquisitionTableClient() {
         ))}
       </div>
       <div className="min-h-0 flex-1">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const row = id ? (focused.find((r) => r.row_id === id) ?? null) : null;
+            setClickedRow(row);
+            if (!row) return null;
+            return {
+              content: `${row.display_name}: ${STATE_LABEL[row.identity_state]}, ${row.total_requests} requests`,
+            };
+          }}
+          extraSections={[
+            adminUserMenuSection(
+              clickedRow?.user_id
+                ? ({
+                    id: clickedRow.user_id,
+                    email: clickedRow.email,
+                    displayName: clickedRow.display_name,
+                  } satisfies AdminUserMenuRow)
+                : null,
+              {
+                unavailable: !clickedRow?.user_id
+                  ? {
+                      "admin-user-account": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                      "admin-user-organizations": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                      "admin-user-admin-level": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                      "admin-user-preferences": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                      "admin-user-usage": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                      "admin-user-acquisition": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                      "admin-user-email": unavailableHere(
+                        "an identity that has created an account",
+                      ),
+                    }
+                  : undefined,
+              },
+            ),
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "user-acquisition" }}
           data={focused}
@@ -540,6 +603,7 @@ export function UserAcquisitionTableClient() {
             }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
       {selected ? (
         <SidePanelSurface
