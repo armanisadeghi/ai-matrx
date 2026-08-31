@@ -7,9 +7,10 @@ export interface SpeechPronunciation {
 export interface ParseMarkdownToTextOptions {
   /**
    * Custom Dictionary pronunciation substitutions. Applied FIRST — before the
-   * built-in abbreviation/number expansion — so a user term like "AI" wins over
-   * the generic "AI → Artificial Intelligence" expansion. Pairs should be sorted
-   * longest-first by the caller so multi-word terms replace before substrings.
+   * built-in abbreviation/number normalization — so a user term like "AI" can
+   * supply its own spoken form instead of the generic "A I" readout. Pairs
+   * should be sorted longest-first by the caller so multi-word terms replace
+   * before substrings.
    */
   pronunciations?: SpeechPronunciation[];
 }
