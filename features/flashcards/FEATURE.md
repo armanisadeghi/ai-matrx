@@ -162,6 +162,12 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-31 — The shared spoken-grading boundary retries one transient
+  malformed structured response with the same durable `answer_audio`; only the
+  final failed attempt reaches Error Inspector. FastFire and every other
+  `runSpokenGrader` caller inherit the repair, so one malformed provider answer
+  cannot persist a result-less study attempt.
+
 - 2026-08-31 — FastFire starts microphone capture before creating its durable
   study session, so permission denial or capture startup failure cannot leave an
   orphaned active session. Expected permission refusal stays visible with the

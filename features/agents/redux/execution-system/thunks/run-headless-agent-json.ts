@@ -188,6 +188,14 @@ export interface HeadlessAgentJsonOptions {
     /** Ceiling elapsed. */
     timeout?: string;
   };
+  /**
+   * Defer the no-JSON diagnostic for this attempt because the owning shared
+   * boundary will immediately retry it. This suppresses only terminal
+   * extraction/stream-ended `noJson` captures; transport errors and timeouts
+   * remain loud. A final attempt must omit this flag so repeated malformed
+   * output still reaches Error Inspector.
+   */
+  deferNoJsonCapture?: boolean;
 }
 
 /**
@@ -370,6 +378,8 @@ export interface AdoptedAgentJsonOptions {
   signal?: AbortSignal;
   /** Per-feature user-facing failure copy. */
   failureMessages?: HeadlessAgentJsonOptions["failureMessages"];
+  /** See `deferNoJsonCapture` on `HeadlessAgentJsonOptions`. */
+  deferNoJsonCapture?: HeadlessAgentJsonOptions["deferNoJsonCapture"];
 }
 
 /**
@@ -403,6 +413,7 @@ export async function adoptHeadlessAgentJson(
       msgs,
       expect: opts.expect ?? "json",
       ...(opts.signal ? { signal: opts.signal } : {}),
+      deferNoJsonCapture: opts.deferNoJsonCapture === true,
     });
   } catch (err: unknown) {
     // Same class as the catch in `runHeadlessAgentJson` below — a thrown thing
@@ -565,6 +576,7 @@ async function launchAndWait(
       msgs,
       expect: opts.expect ?? "json",
       ...(opts.signal ? { signal: opts.signal } : {}),
+      deferNoJsonCapture: opts.deferNoJsonCapture === true,
     });
   } catch (err: unknown) {
     // The thrown detail is for US, not for the user: a launch/transport
@@ -730,6 +742,7 @@ async function waitForExtraction(
     expect: "json" | "text";
     /** Stop waiting and settle from whatever landed (see `signal` on the options). */
     signal?: AbortSignal;
+    deferNoJsonCapture: boolean;
   },
 ): Promise<HeadlessAgentJsonResult> {
   const { conversationId, requestId, msgs } = args;
@@ -766,14 +779,16 @@ async function waitForExtraction(
       if (reason === "aborted") {
         return { success: false, data: null, error: message, ...b };
       }
-      reportNoResult(getState, {
-        requestId,
-        conversationId,
-        surfaceKey: args.surfaceKey,
-        agentRef: args.agentRef,
-        reason,
-        message,
-      });
+      if (!args.deferNoJsonCapture || reason === "timeout") {
+        reportNoResult(getState, {
+          requestId,
+          conversationId,
+          surfaceKey: args.surfaceKey,
+          agentRef: args.agentRef,
+          reason,
+          message,
+        });
+      }
       return { success: false, data: null, error: message, ...b };
     }
     const { data } = resolveRunData(getState, requestId, conversationId);

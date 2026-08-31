@@ -90,6 +90,10 @@ export interface SpokenGrade {
 /** The registered structured-content kind emitted by the spoken grader. */
 export const ANSWER_GRADE_KIND = "answer_grade" as const;
 
+const MALFORMED_GRADE_MESSAGE =
+  "The spoken grader finished but produced no structured grade.";
+const SPOKEN_GRADE_ATTEMPTS = 2;
+
 /**
  * Reassemble the normalized grade into the canonical kind payload so every
  * spoken-answer surface renders through the registry's one component.
@@ -258,47 +262,65 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
       return null;
     }
     try {
-      const result = await runHeadlessAgentJson(dispatch, getState, {
-        mandateKey: args.mandateKey,
-        surfaceKey: args.surfaceKey,
-        // Persisted (not ephemeral — that path 404s the v2 gate) but kept out of
-        // the user's normal chats via the system-marked source_feature.
-        sourceFeature: args.sourceFeature,
-        ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
-        // THE OFFERED VALUES — every one of them, by its declared name. The
-        // clip is `answer_audio`, a GUARANTEED media value on the Provision
-        // (`kind="file"`), so it travels as the durable file id like every
-        // other named value. The server's materializer resolves it into the
-        // turn's media block; if it were ever missing the run REFUSES there
-        // instead of grading a silence.
-        variables: {
-          front: args.front,
-          back: args.back,
-          seconds_allowed: args.secondsAllowed,
-          answer_audio: args.responseAudioFileId,
-          ...(args.rubric ? { rubric: args.rubric } : {}),
-        },
-        timeoutMs: 120_000,
-        pollIntervalMs: 200,
-        // Live posture only when a caller asked to watch it — the request then
-        // survives the run for the caller's LiveRunDisplay, and the caller
-        // destroys the instance.
-        ...(args.onConversationCreated
-          ? {
-              displayMode: "direct" as const,
-              keepInstance: true,
-              onConversationCreated: args.onConversationCreated,
-            }
-          : {}),
-      });
-      const grade = coerceSpokenGrade(result.data);
-      if (!grade) {
+      for (let attempt = 1; attempt <= SPOKEN_GRADE_ATTEMPTS; attempt += 1) {
+        const finalAttempt = attempt === SPOKEN_GRADE_ATTEMPTS;
+        const result = await runHeadlessAgentJson(dispatch, getState, {
+          mandateKey: args.mandateKey,
+          surfaceKey: args.surfaceKey,
+          // Persisted (not ephemeral — that path 404s the v2 gate) but kept out of
+          // the user's normal chats via the system-marked source_feature.
+          sourceFeature: args.sourceFeature,
+          ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
+          // THE OFFERED VALUES — every one of them, by its declared name. The
+          // clip is `answer_audio`, a GUARANTEED media value on the Provision
+          // (`kind="file"`), so it travels as the durable file id like every
+          // other named value. The server's materializer resolves it into the
+          // turn's media block; if it were ever missing the run REFUSES there
+          // instead of grading a silence.
+          variables: {
+            front: args.front,
+            back: args.back,
+            seconds_allowed: args.secondsAllowed,
+            answer_audio: args.responseAudioFileId,
+            ...(args.rubric ? { rubric: args.rubric } : {}),
+          },
+          timeoutMs: 120_000,
+          pollIntervalMs: 200,
+          failureMessages: { noJson: MALFORMED_GRADE_MESSAGE },
+          // A transient malformed answer is repaired below. Defer only that
+          // intermediate diagnostic; the final attempt remains loud.
+          ...(!finalAttempt ? { deferNoJsonCapture: true } : {}),
+          // Live posture only when a caller asked to watch it — the request then
+          // survives the run for the caller's LiveRunDisplay, and the caller
+          // destroys the instance.
+          ...(args.onConversationCreated
+            ? {
+                displayMode: "direct" as const,
+                keepInstance: true,
+                onConversationCreated: args.onConversationCreated,
+              }
+            : {}),
+        });
+        const grade = coerceSpokenGrade(result.data);
+        if (grade) return grade;
+
+        const malformedOutput =
+          result.error === MALFORMED_GRADE_MESSAGE ||
+          (result.success && result.data !== null);
+        if (!finalAttempt && malformedOutput) {
+          console.warn(
+            `[grading-core] runSpokenGrader (${args.surfaceKey}) produced malformed structured output; retrying once.`,
+          );
+          continue;
+        }
+
         console.error(
           `[grading-core] runSpokenGrader (${args.surfaceKey}) produced no grade:`,
-          result.error ?? "no structured grade",
+          result.error ?? "invalid structured grade",
         );
+        return null;
       }
-      return grade;
+      return null;
     } catch (err) {
       console.error(
         `[grading-core] runSpokenGrader (${args.surfaceKey}):`,
