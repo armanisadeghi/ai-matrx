@@ -1,9 +1,12 @@
 import {
   createExclusiveOperationGate,
+  parseImagesRecentsOnly,
+  parseImagesSearchQuery,
   parseVisibleImageSelection,
   pruneImageSelectionToVisible,
   selectVisibleCloudImages,
 } from "./images-surface-actions";
+import { SurfaceWriteRefusalError } from "@/features/surfaces/runtime/surface-writeback";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -90,7 +93,21 @@ describe("Images surface action guards", () => {
   it("rejects the whole selection when a post-confirmation id is no longer visible", () => {
     expect(() =>
       parseVisibleImageSelection(["image-a", "now-filtered-out"], visible),
+    ).toThrow(SurfaceWriteRefusalError);
+    expect(() =>
+      parseVisibleImageSelection(["image-a", "now-filtered-out"], visible),
     ).toThrow(/selection was left unchanged/i);
+  });
+
+  it("classifies invalid agent filter values as expected surface refusals", () => {
+    expect(() => parseImagesSearchQuery(42)).toThrow(
+      SurfaceWriteRefusalError,
+    );
+    expect(() => parseImagesRecentsOnly("sometimes")).toThrow(
+      SurfaceWriteRefusalError,
+    );
+    expect(parseImagesSearchQuery("robot")).toBe("robot");
+    expect(parseImagesRecentsOnly("true")).toBe(true);
   });
 
   it("allows only one image resolution until the active operation finishes", () => {

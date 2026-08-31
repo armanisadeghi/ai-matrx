@@ -85,6 +85,8 @@ import {
 import { cn } from "@/lib/utils";
 import {
   createExclusiveOperationGate,
+  parseImagesRecentsOnly,
+  parseImagesSearchQuery,
   parseVisibleImageSelection,
   pruneImageSelectionToVisible,
   selectVisibleCloudImages,
@@ -502,31 +504,14 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
    */
   const buildImagesWriteHandlers = () => ({
     search_query: (value: unknown) => {
-      if (typeof value !== "string") {
-        throw new Error(
-          `search_query expects a string (pass "" to clear the search) — received ${typeof value}.`,
-        );
-      }
-      handleQueryChange(value);
+      handleQueryChange(parseImagesSearchQuery(value));
     },
     recents_only: (value: unknown) => {
       // Booleans arrive parsed; tolerate the exact "true"/"false" strings a
-      // double-encoding model produces, and reject everything else rather
-      // than guessing at truthiness.
-      const next =
-        typeof value === "boolean"
-          ? value
-          : value === "true"
-            ? true
-            : value === "false"
-              ? false
-              : null;
-      if (next === null) {
-        throw new Error(
-          `recents_only expects a boolean (true to show only the last 30 days, false to show the whole library) — received ${typeof value}.`,
-        );
-      }
-      handleRecentsOnlyChange(next);
+      // double-encoding model produces, and refuse everything else rather
+      // than guessing at truthiness or reporting valid input rejection as a
+      // platform defect.
+      handleRecentsOnlyChange(parseImagesRecentsOnly(value));
     },
     image_selection: (value: unknown) => {
       setBulkSelectedIds(

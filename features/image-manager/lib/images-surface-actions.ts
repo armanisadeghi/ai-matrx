@@ -9,6 +9,7 @@
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { CloudFileRecord } from "@/features/files/types";
 import { isImageMime, resolveMime } from "@/features/files/utils/file-types";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 
 type FilterableCloudImage = Pick<
   CloudFileRecord,
@@ -67,6 +68,24 @@ export function pruneImageSelectionToVisible(
   return selectedIds.filter((id) => visibleIds.has(id));
 }
 
+export function parseImagesSearchQuery(value: unknown): string {
+  if (typeof value !== "string") {
+    refuseSurfaceWrite(
+      `search_query expects a string (pass "" to clear the search) — received ${typeof value}.`,
+    );
+  }
+  return value;
+}
+
+export function parseImagesRecentsOnly(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  refuseSurfaceWrite(
+    `recents_only expects a boolean (true to show only the last 30 days, false to show the whole library) — received ${typeof value}.`,
+  );
+}
+
 export function parseVisibleImageSelection(
   value: unknown,
   visibleImages: ReadonlyArray<{ id: string; fileName: string }>,
@@ -76,20 +95,20 @@ export function parseVisibleImageSelection(
     try {
       raw = JSON.parse(raw);
     } catch {
-      throw new Error(
+      refuseSurfaceWrite(
         'image_selection expects an array of image ids, e.g. ["<uuid>", "<uuid>"] — received a string that is not valid JSON.',
       );
     }
   }
   if (!Array.isArray(raw)) {
-    throw new Error(
+    refuseSurfaceWrite(
       `image_selection expects an array of image ids (pass [] to clear the selection) — received ${typeof raw}.`,
     );
   }
 
   const ids = raw.map((entry, index) => {
     if (typeof entry !== "string" || !entry.trim()) {
-      throw new Error(
+      refuseSurfaceWrite(
         `image_selection entry ${index} is not an image id string.`,
       );
     }
@@ -107,7 +126,7 @@ export function parseVisibleImageSelection(
       visibleImages.length > 30
         ? `, …and ${visibleImages.length - 30} more`
         : "";
-    throw new Error(
+    refuseSurfaceWrite(
       `image_selection rejected: ${unknown.length} of the ${ids.length} id(s) you sent are not among the ${visibleImages.length} image(s) currently visible — ${unknown.join(", ")}. ` +
         `The selection was left unchanged. Note that applying search_query or recents_only changes this set, so ids you read before those writes may no longer be visible. ` +
         `Currently selectable: ${live || "(nothing — the search or Recents filter is hiding every image)"}${more}.`,
