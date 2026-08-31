@@ -17780,6 +17780,615 @@
         }
       }
     },
+    "/contentful/public/status": {
+      "get": {
+        "tags": [
+          "Contentful Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_contentful_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentfulServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloudinary/public/status": {
+      "get": {
+        "tags": [
+          "Cloudinary Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_cloudinary_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudinaryServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/activecampaign/public/status": {
+      "get": {
+        "tags": [
+          "ActiveCampaign Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_activecampaign_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveCampaignServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nextiva/public/status": {
+      "get": {
+        "tags": [
+          "Nextiva Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_nextiva_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextivaStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/constant-contact/public/status": {
+      "get": {
+        "tags": [
+          "Constant Contact Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_constant_contact_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConstantContactServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dialpad/public/status": {
+      "get": {
+        "tags": [
+          "Dialpad Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_dialpad_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DialpadStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/omnisend/public/status": {
+      "get": {
+        "tags": [
+          "Omnisend Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_omnisend_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OmnisendServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imgix/public/status": {
+      "get": {
+        "tags": [
+          "imgix Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_imgix_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImgixServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imagekit/public/status": {
+      "get": {
+        "tags": [
+          "ImageKit.io Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_imagekit_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageKitServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anydesk/public/status": {
+      "get": {
+        "tags": [
+          "AnyDesk Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_anydesk_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnyDeskStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moengage/public/status": {
+      "get": {
+        "tags": [
+          "MoEngage Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_moengage_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoEngageServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hive/public/status": {
+      "get": {
+        "tags": [
+          "Hive Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hive_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HiveStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chameleon/public/status": {
+      "get": {
+        "tags": [
+          "Chameleon Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_chameleon_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChameleonServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sprout-social/public/status": {
+      "get": {
+        "tags": [
+          "Sprout Social Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sprout_social_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SproutSocialServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/circle/public/status": {
+      "get": {
+        "tags": [
+          "Circle Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_circle_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CircleServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mighty-networks/public/status": {
+      "get": {
+        "tags": [
+          "Mighty Networks Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mighty_networks_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MightyNetworksServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aha/public/status": {
+      "get": {
+        "tags": [
+          "Aha! Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_aha_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AhaStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mux/public/status": {
+      "get": {
+        "tags": [
+          "Mux Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mux_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MuxServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jwx/public/status": {
+      "get": {
+        "tags": [
+          "JWX Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_jwx_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JwxServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uscreen/public/status": {
+      "get": {
+        "tags": [
+          "Uscreen Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_uscreen_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UscreenServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/thinkific/public/status": {
+      "get": {
+        "tags": [
+          "Thinkific Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_thinkific_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThinkificServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otter-ai/public/status": {
+      "get": {
+        "tags": [
+          "Otter.ai Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_otter_ai_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtterAiStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roadmunk/public/status": {
+      "get": {
+        "tags": [
+          "Roadmunk Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_roadmunk_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoadmunkStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/planable/public/status": {
+      "get": {
+        "tags": [
+          "Planable Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_planable_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanableServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contentstudio/public/status": {
+      "get": {
+        "tags": [
+          "ContentStudio Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_contentstudio_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentStudioServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flock/public/status": {
+      "get": {
+        "tags": [
+          "Flock Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_flock_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlockStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wistia/public/media": {
+      "get": {
+        "tags": [
+          "Wistia Integrations"
+        ],
+        "summary": "Public Media",
+        "operationId": "public_media_wistia_public_media_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WistiaPublicMedia"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workvivo/public/status": {
+      "get": {
+        "tags": [
+          "Workvivo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_workvivo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkvivoStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bynder/public/status": {
+      "get": {
+        "tags": [
+          "Bynder Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_bynder_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BynderServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/goto/public/status": {
       "get": {
         "tags": [
@@ -70575,6 +71184,47 @@
         ],
         "title": "ActivatePageResult"
       },
+      "ActiveCampaignServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "activecampaign_public_service_status",
+            "title": "Kind",
+            "default": "activecampaign_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "activecampaign",
+            "title": "Provider",
+            "default": "activecampaign"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.activecampaign.com/",
+            "title": "Status Page",
+            "default": "https://status.activecampaign.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ActiveCampaignServiceStatus",
+        "description": "Safe aggregate status projection for ActiveCampaign's fixed status page."
+      },
       "ActivePageIdsResponse": {
         "properties": {
           "file_id": {
@@ -75138,6 +75788,56 @@
         ],
         "title": "AgreementRow"
       },
+      "AhaStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "aha_official_service_status",
+            "title": "Kind",
+            "default": "aha_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "aha",
+            "title": "Provider",
+            "default": "aha"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.aha.io",
+            "title": "Status Url",
+            "default": "https://status.aha.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AhaStatusResult",
+        "description": "Safe projection of Aha!'s high-level service status."
+      },
       "AiCatalogReloadSummary": {
         "properties": {
           "endpoints": {
@@ -76510,6 +77210,56 @@
         ],
         "title": "AnthropicCountTokensResponse",
         "description": "Typed success wire returned by Anthropic's count-tokens endpoint."
+      },
+      "AnyDeskStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "anydesk_official_service_status",
+            "title": "Kind",
+            "default": "anydesk_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "anydesk",
+            "title": "Provider",
+            "default": "anydesk"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.anydesk.com",
+            "title": "Status Url",
+            "default": "https://status.anydesk.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AnyDeskStatusResult",
+        "description": "Safe projection of AnyDesk's high-level service status."
       },
       "AppConfigResponse": {
         "properties": {
@@ -87317,6 +88067,47 @@
         ],
         "title": "BulkVerdictResponse"
       },
+      "BynderServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bynder_public_platform_status",
+            "title": "Kind",
+            "default": "bynder_public_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Bynder",
+            "title": "Provider",
+            "default": "Bynder"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.bynder.com/",
+            "title": "Status Page",
+            "default": "https://status.bynder.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BynderServiceStatus",
+        "description": "Safe aggregate status projection for Bynder's fixed status page."
+      },
       "CacheBustResponse": {
         "properties": {
           "cleared": {
@@ -90239,6 +91030,47 @@
         ],
         "title": "CategoryRow"
       },
+      "ChameleonServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "chameleon_public_service_status",
+            "title": "Kind",
+            "default": "chameleon_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "chameleon",
+            "title": "Provider",
+            "default": "chameleon"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.chameleon.io/",
+            "title": "Status Page",
+            "default": "https://status.chameleon.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ChameleonServiceStatus",
+        "description": "Safe aggregate status projection for Chameleon's fixed status page."
+      },
       "ChangeHistoryOut": {
         "properties": {
           "rows": {
@@ -93041,6 +93873,47 @@
         ],
         "title": "ChunkRow"
       },
+      "CircleServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "circle_public_service_status",
+            "title": "Kind",
+            "default": "circle_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "circle",
+            "title": "Provider",
+            "default": "circle"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.circle.so/",
+            "title": "Status Page",
+            "default": "https://status.circle.so/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CircleServiceStatus",
+        "description": "Safe aggregate status projection for Circle's fixed status page."
+      },
       "CitationLookupRequest": {
         "properties": {
           "text": {
@@ -94660,6 +95533,47 @@
         ],
         "title": "CloudflareAccountMetadata",
         "description": "Provider-formatted account metadata from one fixed Cloudflare API read."
+      },
+      "CloudinaryServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cloudinary_public_platform_status",
+            "title": "Kind",
+            "default": "cloudinary_public_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "cloudinary",
+            "title": "Provider",
+            "default": "cloudinary"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.cloudinary.com/",
+            "title": "Status Page",
+            "default": "https://status.cloudinary.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CloudinaryServiceStatus",
+        "description": "Safe aggregate status projection for Cloudinary's fixed status page."
       },
       "ClusterDetailResponse": {
         "properties": {
@@ -100624,6 +101538,47 @@
         ],
         "title": "ConnectorFetchResponse"
       },
+      "ConstantContactServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "constant_contact_public_service_status",
+            "title": "Kind",
+            "default": "constant_contact_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "constant_contact",
+            "title": "Provider",
+            "default": "constant_contact"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.constantcontact.com/",
+            "title": "Status Page",
+            "default": "https://status.constantcontact.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ConstantContactServiceStatus",
+        "description": "Safe aggregate projection for Constant Contact's fixed status page."
+      },
       "ContactCandidateView": {
         "properties": {
           "id": {
@@ -101010,6 +101965,50 @@
         ],
         "title": "ContentSaveRequest"
       },
+      "ContentStudioServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "contentstudio_public_service_status",
+            "title": "Kind",
+            "default": "contentstudio_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "contentstudio",
+            "title": "Provider",
+            "default": "contentstudio"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "operational",
+              "degraded",
+              "under_maintenance"
+            ],
+            "title": "State"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.contentstudio.io",
+            "title": "Status Page",
+            "default": "https://status.contentstudio.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "ContentStudioServiceStatus",
+        "description": "Safe aggregate status projection for ContentStudio's fixed status page."
+      },
       "ContentType": {
         "type": "string",
         "enum": [
@@ -101019,6 +102018,47 @@
           "document"
         ],
         "title": "ContentType"
+      },
+      "ContentfulServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "contentful_public_platform_status",
+            "title": "Kind",
+            "default": "contentful_public_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "contentful",
+            "title": "Provider",
+            "default": "contentful"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.contentfulstatus.com/",
+            "title": "Status Page",
+            "default": "https://www.contentfulstatus.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ContentfulServiceStatus",
+        "description": "Safe aggregate status projection for Contentful's fixed status page."
       },
       "ContextAnchor": {
         "properties": {
@@ -110280,6 +111320,56 @@
           "notes"
         ],
         "title": "DiagnoseResponse"
+      },
+      "DialpadStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dialpad_official_service_status",
+            "title": "Kind",
+            "default": "dialpad_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "dialpad",
+            "title": "Provider",
+            "default": "dialpad"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.dialpad.com",
+            "title": "Status Url",
+            "default": "https://status.dialpad.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "DialpadStatusResult",
+        "description": "Safe projection of Dialpad's high-level service status."
       },
       "DictionaryConfig": {
         "properties": {
@@ -123626,6 +124716,56 @@
         "type": "object",
         "title": "FlattenAnnotationsRequest"
       },
+      "FlockStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "flock_official_service_status",
+            "title": "Kind",
+            "default": "flock_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "flock",
+            "title": "Provider",
+            "default": "flock"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.flock.com",
+            "title": "Status Url",
+            "default": "https://status.flock.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FlockStatusResult",
+        "description": "Safe projection of Flock's high-level service status."
+      },
       "FocalPoint": {
         "properties": {
           "x": {
@@ -128190,6 +129330,56 @@
         "title": "HindsightCostsOut",
         "description": "Platform-wide Hindsight spend — what this system costs to run."
       },
+      "HiveStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hive_official_service_status",
+            "title": "Kind",
+            "default": "hive_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "hive",
+            "title": "Provider",
+            "default": "hive"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.hive.com",
+            "title": "Status Url",
+            "default": "https://status.hive.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HiveStatusResult",
+        "description": "Safe projection of Hive's high-level service status."
+      },
       "HomebrewPublicFormula": {
         "properties": {
           "__kind": {
@@ -129380,6 +130570,47 @@
         ],
         "title": "ImageInpaintRequest"
       },
+      "ImageKitServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "imagekit_public_platform_status",
+            "title": "Kind",
+            "default": "imagekit_public_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ImageKit.io",
+            "title": "Provider",
+            "default": "ImageKit.io"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://imagekitio.statuspage.io/",
+            "title": "Status Page",
+            "default": "https://imagekitio.statuspage.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ImageKitServiceStatus",
+        "description": "Safe aggregate status projection for ImageKit.io's fixed status page."
+      },
       "ImageLora": {
         "properties": {
           "path": {
@@ -129582,6 +130813,47 @@
           "capabilities"
         ],
         "title": "ImageStudioPresetsResponse"
+      },
+      "ImgixServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "imgix_public_platform_status",
+            "title": "Kind",
+            "default": "imgix_public_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "imgix",
+            "title": "Provider",
+            "default": "imgix"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.imgix.com/",
+            "title": "Status Page",
+            "default": "https://status.imgix.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ImgixServiceStatus",
+        "description": "Safe aggregate status projection for imgix's fixed status page."
       },
       "ImpairmentAvailableAttributes": {
         "properties": {
@@ -133500,6 +134772,47 @@
         ],
         "title": "JudgeAccuracyReport",
         "description": "One judge's calibration against human labels, plus its raw counts."
+      },
+      "JwxServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "jwx_public_media_platform_status",
+            "title": "Kind",
+            "default": "jwx_public_media_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "JWX",
+            "title": "Provider",
+            "default": "JWX"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.jwx.com/",
+            "title": "Status Page",
+            "default": "https://status.jwx.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "JwxServiceStatus",
+        "description": "Safe aggregate status projection for JWX's fixed status page."
       },
       "KeyFindingEntry": {
         "properties": {
@@ -145863,6 +147176,47 @@
         ],
         "title": "MicrosoftLifecycleResponse"
       },
+      "MightyNetworksServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mighty_networks_public_service_status",
+            "title": "Kind",
+            "default": "mighty_networks_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mighty_networks",
+            "title": "Provider",
+            "default": "mighty_networks"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mightynetworks.com/",
+            "title": "Status Page",
+            "default": "https://status.mightynetworks.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MightyNetworksServiceStatus",
+        "description": "Safe aggregate status projection for Mighty Networks' fixed status page."
+      },
       "MilanoteStatusResult": {
         "properties": {
           "__kind": {
@@ -146320,6 +147674,47 @@
         ],
         "title": "MixcloudPublicTag",
         "description": "Safe projection of one public Mixcloud tag."
+      },
+      "MoEngageServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "moengage_public_service_status",
+            "title": "Kind",
+            "default": "moengage_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "moengage",
+            "title": "Provider",
+            "default": "moengage"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.moengage.com/",
+            "title": "Status Page",
+            "default": "https://status.moengage.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MoEngageServiceStatus",
+        "description": "Safe aggregate status projection for MoEngage's fixed status page."
       },
       "MockScenario": {
         "properties": {
@@ -147221,6 +148616,47 @@
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
       },
+      "MuxServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mux_public_media_platform_status",
+            "title": "Kind",
+            "default": "mux_public_media_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Mux",
+            "title": "Provider",
+            "default": "Mux"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mux.com/",
+            "title": "Status Page",
+            "default": "https://status.mux.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MuxServiceStatus",
+        "description": "Safe aggregate status projection for Mux's fixed status page."
+      },
       "NWSPublicStation": {
         "properties": {
           "__kind": {
@@ -148010,6 +149446,56 @@
         ],
         "title": "NewsroomSyncResult",
         "description": "Durable result shared by the HTTP route and workflow node."
+      },
+      "NextivaStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nextiva_official_service_status",
+            "title": "Kind",
+            "default": "nextiva_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "nextiva",
+            "title": "Provider",
+            "default": "nextiva"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.nextiva.com",
+            "title": "Status Url",
+            "default": "https://status.nextiva.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "NextivaStatusResult",
+        "description": "Safe projection of Nextiva's high-level service status."
       },
       "NodeAgentChatContext": {
         "properties": {
@@ -150263,6 +151749,47 @@
           "ok"
         ],
         "title": "OkResponse"
+      },
+      "OmnisendServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "omnisend_public_service_status",
+            "title": "Kind",
+            "default": "omnisend_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "omnisend",
+            "title": "Provider",
+            "default": "omnisend"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.omnisend.com/",
+            "title": "Status Page",
+            "default": "https://status.omnisend.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "OmnisendServiceStatus",
+        "description": "Safe aggregate status projection for Omnisend's fixed status page."
       },
       "OnSignInResponse": {
         "properties": {
@@ -153109,6 +154636,56 @@
         ],
         "title": "OsfPublicProject",
         "description": "Safe factual projection of one public OSF project."
+      },
+      "OtterAiStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "otter_ai_official_service_status",
+            "title": "Kind",
+            "default": "otter_ai_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "otter_ai",
+            "title": "Provider",
+            "default": "otter_ai"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.otter.ai/",
+            "title": "Status Url",
+            "default": "https://status.otter.ai/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "OtterAiStatusResult",
+        "description": "Safe projection of Otter.ai's high-level service status."
       },
       "OutletContactCandidate": {
         "properties": {
@@ -160015,6 +161592,47 @@
           "scenario"
         ],
         "title": "PlanSampleRecord"
+      },
+      "PlanableServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "planable_public_service_status",
+            "title": "Kind",
+            "default": "planable_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "planable",
+            "title": "Provider",
+            "default": "planable"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.planable.io",
+            "title": "Status Page",
+            "default": "https://status.planable.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "PlanableServiceStatus",
+        "description": "Safe aggregate status projection for Planable's fixed status page."
       },
       "PlannedPageResult": {
         "properties": {
@@ -176028,6 +177646,56 @@
         ],
         "title": "RichMembersResponse"
       },
+      "RoadmunkStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "roadmunk_official_service_status",
+            "title": "Kind",
+            "default": "roadmunk_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "roadmunk",
+            "title": "Provider",
+            "default": "roadmunk"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.roadmunk.com/",
+            "title": "Status Url",
+            "default": "https://status.roadmunk.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RoadmunkStatusResult",
+        "description": "Safe projection of Roadmunk's high-level service status."
+      },
       "RobotsCheckBody": {
         "properties": {
           "organization_id": {
@@ -188639,6 +190307,47 @@
         "title": "SpreadsheetSpec",
         "description": "Canonical AI-authorable shape for an Excel workbook (.xlsx)."
       },
+      "SproutSocialServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sprout_social_public_service_status",
+            "title": "Kind",
+            "default": "sprout_social_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "sprout_social",
+            "title": "Provider",
+            "default": "sprout_social"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.sproutsocialstatus.com/",
+            "title": "Status Page",
+            "default": "https://www.sproutsocialstatus.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SproutSocialServiceStatus",
+        "description": "Safe aggregate status projection for Sprout Social's fixed status page."
+      },
       "SsnFingerprintRequest": {
         "properties": {
           "organization_id": {
@@ -194864,6 +196573,47 @@
         ],
         "title": "TextPart"
       },
+      "ThinkificServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "thinkific_public_content_platform_status",
+            "title": "Kind",
+            "default": "thinkific_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Thinkific",
+            "title": "Provider",
+            "default": "Thinkific"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.thinkific.com/",
+            "title": "Status Page",
+            "default": "https://status.thinkific.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ThinkificServiceStatus",
+        "description": "Safe aggregate status projection for Thinkific's fixed status page."
+      },
       "ThinkingPart": {
         "properties": {
           "metadata": {
@@ -200991,6 +202741,47 @@
           "updated"
         ],
         "title": "UpdatedCountResponse"
+      },
+      "UscreenServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "uscreen_public_media_platform_status",
+            "title": "Kind",
+            "default": "uscreen_public_media_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Uscreen",
+            "title": "Provider",
+            "default": "Uscreen"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.uscreen.tv/",
+            "title": "Status Page",
+            "default": "https://status.uscreen.tv/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "UscreenServiceStatus",
+        "description": "Safe aggregate status projection for Uscreen's fixed status page."
       },
       "UserAnalysisPreferences": {
         "properties": {
@@ -209317,6 +211108,85 @@
         "title": "WireReplayStepOut",
         "description": "One ARM of a Level-1 wire replay (`hindsight.replay_step`, C-16).\n\nArms of one replay share `replay_group_id`; the control arm (empty `delta`)\nis the baseline every candidate's verdict is read against, so a client must\nrender the group, never a single row."
       },
+      "WistiaPublicMedia": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wistia_public_media",
+            "title": "Kind",
+            "default": "wistia_public_media"
+          },
+          "provider": {
+            "type": "string",
+            "const": "wistia",
+            "title": "Provider",
+            "default": "wistia"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "media_type": {
+            "type": "string",
+            "const": "video",
+            "title": "Media Type",
+            "default": "video"
+          },
+          "oembed_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Oembed Version",
+            "default": "1.0"
+          },
+          "media_id": {
+            "type": "string",
+            "const": "e4a27b971d",
+            "title": "Media Id",
+            "default": "e4a27b971d"
+          },
+          "title": {
+            "type": "string",
+            "const": "Brendan - Make It Clap",
+            "title": "Title",
+            "default": "Brendan - Make It Clap"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "maximum": 86400,
+            "exclusiveMinimum": 0,
+            "title": "Duration Seconds"
+          },
+          "width": {
+            "type": "integer",
+            "maximum": 4096,
+            "exclusiveMinimum": 0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "maximum": 4096,
+            "exclusiveMinimum": 0,
+            "title": "Height"
+          },
+          "media_page": {
+            "type": "string",
+            "const": "https://home.wistia.com/medias/e4a27b971d",
+            "title": "Media Page",
+            "default": "https://home.wistia.com/medias/e4a27b971d"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "duration_seconds",
+          "width",
+          "height"
+        ],
+        "title": "WistiaPublicMedia",
+        "description": "Safe identity and dimensions for Wistia's official sample media."
+      },
       "WoRMSPublicTaxon": {
         "properties": {
           "__kind": {
@@ -209974,6 +211844,56 @@
         ],
         "title": "WorkflowCostRollup",
         "description": "Aggregated cost for one definition across a time window."
+      },
+      "WorkvivoStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "workvivo_official_service_status",
+            "title": "Kind",
+            "default": "workvivo_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "workvivo",
+            "title": "Provider",
+            "default": "workvivo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.workvivo.com",
+            "title": "Status Url",
+            "default": "https://status.workvivo.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WorkvivoStatusResult",
+        "description": "Safe projection of Workvivo's high-level service status."
       },
       "WorldBankPublicDocument": {
         "properties": {
