@@ -29,6 +29,7 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
 }));
 
 import {
+  detectInertMenu,
   resolveApplicationScope,
   resolveActionText,
 } from "../value-resolution";
@@ -46,6 +47,42 @@ function editableRange(
     end,
   } as unknown as SelectionRange;
 }
+
+describe("detectInertMenu", () => {
+  it("accepts a structured application scope without inventing document text", () => {
+    expect(
+      detectInertMenu({
+        scope: {
+          selection: "",
+          text_before: "",
+          text_after: "",
+          content: "",
+          context: {},
+          visible_image_count: 49,
+          recents_only: false,
+        },
+        isEditable: false,
+        hasExtraSections: false,
+      }),
+    ).toMatchObject({ inert: false });
+  });
+
+  it("still rejects a read-only menu with only empty baseline values", () => {
+    expect(
+      detectInertMenu({
+        scope: {
+          selection: "",
+          text_before: "",
+          text_after: "",
+          content: "",
+          context: {},
+        },
+        isEditable: false,
+        hasExtraSections: false,
+      }),
+    ).toMatchObject({ inert: true });
+  });
+});
 
 describe("resolveApplicationScope", () => {
   it("always carries the 5 baselines (empty-floored)", () => {

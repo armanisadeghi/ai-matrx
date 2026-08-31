@@ -323,10 +323,24 @@ export function detectInertMenu(args: {
   const reasons: string[] = [];
   const selection = strOf(args.scope.selection).trim();
   const content = strOf(args.scope.content).trim();
+  // Structured surfaces such as galleries and charts legitimately have no
+  // document text, but their live surface values still make Agents and other
+  // scope-aware actions meaningful. Treat any informative non-baseline value
+  // as an actionable scope instead of falsely reporting an inert menu.
+  const baseline = new Set<string>(
+    BASELINE_VALUE_NAMES as readonly BaselineKey[],
+  );
+  const hasApplicationScope = Object.entries(args.scope).some(
+    ([key, value]) => !baseline.has(key) && !isEmptyValue(value),
+  );
   if (!selection) reasons.push("no selection");
   if (!content) reasons.push("no resolvable content (and no DOM-text fallback)");
   const inert =
-    !args.isEditable && !selection && !content && !args.hasExtraSections;
+    !args.isEditable &&
+    !selection &&
+    !content &&
+    !hasApplicationScope &&
+    !args.hasExtraSections;
   return { inert, reasons };
 }
 

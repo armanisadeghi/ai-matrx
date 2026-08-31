@@ -396,6 +396,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 
 ## Change Log
 
+- `2026-08-31` — **Structured surface scope counts as an actionable menu contract.** The dev-time inert-menu guard now recognizes informative non-baseline application-scope values, so galleries and charts can remain honest about having no rich-document text while their Surface Context and agent actions still operate on live structured values. Empty baseline-only read-only menus continue to fail loudly; focused regressions pin both sides.
+
 - `2026-08-30` — **`contextFilter` deleted end to end.** The menu-gating key had zero consumers since Phase 6.7 replaced slug filtering with the derived requirement gate (`model/requirement-gate.ts`) — it was set by the `/code` builders and then stripped again by `SKIP_MERGE_KEYS` in `value-resolution.ts` / `utils/build-application-scope.ts`, and by `NON_VALUE_KEYS` in the two surface-context windows. All of it is gone: the `options` argument of `buildCodeWorkspaceContextData`, `codeEditorLaunchScope` (its only job was stripping the key — both Monaco menus now pass `getContextData()` straight through), both `SKIP_MERGE_KEYS` entries (`build-application-scope.ts` no longer has the set at all), both `NON_VALUE_KEYS` sets, the `ContextDebugModal` filter, and the demo prose. Scenario panel 4 ("explicit filter API"), which existed only to contrast the two modes, was removed — the demo page is four panels now.
 
 - `2026-08-28` — **Tablet menus keep the 44px touch floor.** Both desktop-renderer density presets now apply `max-lg:min-h-11` to every item, checkbox, and submenu trigger while preserving their existing `lg` desktop density. The contract is source-pinned in `components/MenuContent.responsive-contract.test.ts`.
