@@ -22,6 +22,14 @@ interface SmartVersionFetchState {
   enrichedVersions: EnrichedVersion[];
   loading: boolean;
   progress: { fetched: number; total: number };
+  /**
+   * Versions whose snapshot fetch rejected, and one representative reason.
+   * A per-version failure is survivable — the rest of the timeline still
+   * enriches — but it is never invisible: the consumer renders these, so an
+   * enrichment pass that loaded nothing can't masquerade as "not loaded yet".
+   */
+  failedVersions: number[];
+  failureReason: string | null;
 }
 
 /**
@@ -44,6 +52,8 @@ export function useSmartVersionFetch(
     enrichedVersions: versions.map((v) => ({ ...v, snapshotLoaded: false })),
     loading: false,
     progress: { fetched: 0, total: 0 },
+    failedVersions: [],
+    failureReason: null,
   });
   const fetchedRef = useRef(false);
 
@@ -91,22 +101,37 @@ export function useSmartVersionFetch(
       ...prev,
       loading: true,
       progress: { fetched: targets.length - toFetch.length, total: targets.length },
+      failedVersions: [],
+      failureReason: null,
     }));
 
     // Fetch in batches of 3 to avoid overwhelming the API
     for (let i = 0; i < toFetch.length; i += 3) {
       const batch = toFetch.slice(i, i + 3);
-      await Promise.all(
+      const outcomes = await Promise.all(
         batch.map((version) =>
-          dispatch(fetchAgentVersionSnapshot({ agentId, version })).unwrap().catch(() => {}),
+          dispatch(fetchAgentVersionSnapshot({ agentId, version }))
+            .unwrap()
+            .then(() => null)
+            .catch((err: unknown) => ({
+              version,
+              reason:
+                err instanceof Error ? err.message : "unknown error",
+            })),
         ),
       );
+      const failures = outcomes.filter((o) => o !== null);
       setState((prev) => ({
         ...prev,
         progress: {
           ...prev.progress,
           fetched: prev.progress.fetched + batch.length,
         },
+        failedVersions: [
+          ...prev.failedVersions,
+          ...failures.map((f) => f.version),
+        ],
+        failureReason: prev.failureReason ?? failures[0]?.reason ?? null,
       }));
     }
 
@@ -154,11 +179,29 @@ export function useSmartVersionFetch(
       const toFetch = versionNumbers.filter(
         (vn) => !snapshotRecords.some((r) => r.version === vn),
       );
-      await Promise.all(
+      const outcomes = await Promise.all(
         toFetch.map((version) =>
-          dispatch(fetchAgentVersionSnapshot({ agentId, version })).unwrap().catch(() => {}),
+          dispatch(fetchAgentVersionSnapshot({ agentId, version }))
+            .unwrap()
+            .then(() => null)
+            .catch((err: unknown) => ({
+              version,
+              reason:
+                err instanceof Error ? err.message : "unknown error",
+            })),
         ),
       );
+      const failures = outcomes.filter((o) => o !== null);
+      if (failures.length > 0) {
+        setState((prev) => ({
+          ...prev,
+          failedVersions: [
+            ...prev.failedVersions,
+            ...failures.map((f) => f.version),
+          ],
+          failureReason: prev.failureReason ?? failures[0].reason,
+        }));
+      }
     },
     [agentId, dispatch, snapshotRecords],
   );
@@ -167,6 +210,8 @@ export function useSmartVersionFetch(
     enrichedVersions: state.enrichedVersions,
     loading: state.loading,
     progress: state.progress,
+    failedVersions: state.failedVersions,
+    failureReason: state.failureReason,
     fetchEnrichedHistory,
     fetchGap,
   };

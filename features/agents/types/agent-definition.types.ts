@@ -556,15 +556,27 @@ export interface PersonalCopyResult {
 }
 
 /** Returned by `agx_get_version_snapshot(agent_id, version_number)`. */
+/**
+ * One `agx_get_version_snapshot` row.
+ *
+ * 🚨 Nullability here mirrors the LIVE COLUMNS of `agent.definition_version`,
+ * NOT the generated RPC row: Postgres carries no nullability on a
+ * `RETURNS TABLE` OUT parameter, so Supabase's generator marks every column
+ * non-null. `AgentVersionSnapshotDbProjection` below re-narrows the widened
+ * fields so the generated-contract check still holds without re-importing the
+ * lie. See `parse-output-snapshot.ts` § THE RETURNS-TABLE NULLABILITY LIE.
+ */
 export interface AgentVersionSnapshot {
   version_id: string;
   version_number: number;
   agent_type: string;
   name: string;
-  description: string;
+  /** Nullable column — 424 of 5,584 saved versions carry SQL NULL. */
+  description: string | null;
   messages: AgentDefinition["messages"];
   variable_definitions: AgentDefinition["variableDefinitions"];
-  model_id: string;
+  /** Nullable column — a version saved before a model was chosen has none. */
+  model_id: string | null;
   model_tiers: AgentDefinition["modelTiers"];
   settings: AgentDefinition["settings"];
   output_schema: AgentDefinition["outputSchema"];
@@ -572,17 +584,25 @@ export interface AgentVersionSnapshot {
   custom_tools: AgentDefinition["customTools"];
   context_policies: AgentDefinition["contextPolicies"];
   auto_context_disabled: boolean;
-  category: string;
+  /** Nullable column — 1,595 of 5,584 saved versions carry SQL NULL. */
+  category: string | null;
   tags: string[];
   is_active: boolean;
   changed_at: string;
-  change_note: string;
+  /**
+   * Nullable column, and NULL is the NORMAL case (~79% of rows): the snapshot
+   * trigger writes `current_setting('app.change_note', true)`, which only a
+   * caller that deliberately sets the GUC ever fills in.
+   */
+  change_note: string | null;
   mcp_servers: string[];
   // Versioned config columns (projected by agx_get_version_snapshot since the
   // 2026-06 config-normalization migration; tool_config/skill_config were
   // previously missing from the projection — fixed in the same sweep).
-  tool_config: Record<string, unknown> | null;
-  skill_config: AgentDefinition["skillConfig"] | null;
+  // Both columns are NOT NULL with a `'{}'` default, so the parser resolves the
+  // default rather than surfacing a null the DB cannot produce.
+  tool_config: Record<string, unknown>;
+  skill_config: AgentDefinition["skillConfig"];
   matrx_actions: MatrxDirectivesConfig;
   ui_gates: UiGates;
   default_rag_boost: number;
@@ -632,10 +652,22 @@ type _Check_AgentSearchRow =
 declare const _agentSearchRow: _Check_AgentSearchRow;
 true satisfies typeof _agentSearchRow;
 
+/**
+ * The generated row as Supabase DESCRIBES it — every `RETURNS TABLE` column
+ * non-null. Each key re-narrowed here is a column the live table declares
+ * nullable; the runtime parser follows the table, this shim follows the
+ * generator, and the check below still proves no column was invented or lost.
+ */
 type AgentVersionSnapshotDbProjection = Omit<
   AgentVersionSnapshot,
-  "input_kind"
-> & { input_kind: string };
+  "input_kind" | "description" | "model_id" | "category" | "change_note"
+> & {
+  input_kind: string;
+  description: string;
+  model_id: string;
+  category: string;
+  change_note: string;
+};
 type _Check_AgentVersionSnapshot =
   AgentVersionSnapshotDbProjection extends DbRpcRow<"agx_get_version_snapshot">
     ? true

@@ -594,7 +594,7 @@ export type Database = {
       definition_version: {
         Row: {
           agent_id: string
-          agent_type: string | null
+          agent_type: string
           auto_context_disabled: boolean
           category: string | null
           change_note: string | null
@@ -614,23 +614,23 @@ export type Database = {
           input_contract: Json | null
           input_contract_hash: string | null
           input_kind: string | null
-          is_active: boolean | null
+          is_active: boolean
           matrx_actions: Json
           mcp_servers: string[]
           messages: Json | null
           metadata: Json
           model_id: string | null
           model_tiers: Json | null
-          name: string | null
+          name: string
           organization_id: string
           output_contract_hash: string | null
           output_schema: Json | null
           rag_awareness_mode: string
           settings: Json | null
           skill_config: Json
-          tags: string[] | null
+          tags: string[]
           tool_config: Json
-          tools: string[] | null
+          tools: string[]
           ui_gates: Json
           updated_at: string
           updated_by: string | null
@@ -640,7 +640,7 @@ export type Database = {
         }
         Insert: {
           agent_id: string
-          agent_type?: string | null
+          agent_type: string
           auto_context_disabled?: boolean
           category?: string | null
           change_note?: string | null
@@ -660,23 +660,23 @@ export type Database = {
           input_contract?: Json | null
           input_contract_hash?: string | null
           input_kind?: string | null
-          is_active?: boolean | null
+          is_active: boolean
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
           metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
-          name?: string | null
+          name: string
           organization_id: string
           output_contract_hash?: string | null
           output_schema?: Json | null
           rag_awareness_mode?: string
           settings?: Json | null
           skill_config?: Json
-          tags?: string[] | null
+          tags: string[]
           tool_config?: Json
-          tools?: string[] | null
+          tools: string[]
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
@@ -686,7 +686,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string
-          agent_type?: string | null
+          agent_type?: string
           auto_context_disabled?: boolean
           category?: string | null
           change_note?: string | null
@@ -706,23 +706,23 @@ export type Database = {
           input_contract?: Json | null
           input_contract_hash?: string | null
           input_kind?: string | null
-          is_active?: boolean | null
+          is_active?: boolean
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
           metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
-          name?: string | null
+          name?: string
           organization_id?: string
           output_contract_hash?: string | null
           output_schema?: Json | null
           rag_awareness_mode?: string
           settings?: Json | null
           skill_config?: Json
-          tags?: string[] | null
+          tags?: string[]
           tool_config?: Json
-          tools?: string[] | null
+          tools?: string[]
           ui_gates?: Json
           updated_at?: string
           updated_by?: string | null

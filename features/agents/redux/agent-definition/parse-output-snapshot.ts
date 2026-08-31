@@ -4,6 +4,21 @@
  * Supabase correctly exposes JSON columns as `unknown`. This module validates
  * those values before they enter the typed agent-definition model; it never
  * asserts that a generated RPC row or JSON object already has a domain shape.
+ *
+ * 🚨 THE RETURNS-TABLE NULLABILITY LIE. Supabase's type generator marks EVERY
+ * column of a `RETURNS TABLE` function non-null — Postgres carries no
+ * nullability on an OUT parameter, so the generator has nothing to read. The
+ * generated `agx_get_version_snapshot` row therefore claims `change_note:
+ * string` while `agent.definition_version.change_note` is nullable and is NULL
+ * on ~79% of rows (the snapshot trigger writes
+ * `current_setting('app.change_note', true)`, which is NULL for every ordinary
+ * save). A parser that copies the generated non-null claim turns normal data
+ * into a thrown TypeError and takes the whole surface down with it.
+ *
+ * So: nullability here mirrors the LIVE COLUMN, never the generated row. A
+ * column is `required*` only when the table declares it NOT NULL. When this
+ * parser and the DB disagree, the DB wins — widen the parser (and the
+ * `AgentVersionSnapshot` field) rather than assuming the data is corrupt.
  */
 
 import type {
@@ -302,35 +317,50 @@ function parseModelTiers(raw: unknown): ModelTiers | null {
   return parsed;
 }
 
-function parseNullableRecord(
+/**
+ * Parse a NOT NULL jsonb column that defaults to `'{}'`. A non-object value is
+ * genuinely corrupt and still fails loudly; SQL NULL cannot occur and would be
+ * indistinguishable from the default anyway, so it reads as the default.
+ */
+function parseDefaultedRecord(
   raw: unknown,
   path: string,
-): Record<string, unknown> | null {
-  if (raw === null) return null;
-  if (!isRecord(raw)) fail(path, "null or an object");
+): Record<string, unknown> {
+  if (raw === null || raw === undefined) return {};
+  if (!isRecord(raw)) fail(path, "an object");
   return raw;
 }
 
-function parseSkillConfig(raw: unknown): SkillConfig | null {
-  if (raw === null) return null;
-  if (!isRecord(raw)) fail("skill_config", "null or an object");
-  if (!isStringArray(raw.included)) {
-    fail("skill_config.included", "an array of strings");
-  }
-  if (!isStringArray(raw.listed)) {
-    fail("skill_config.listed", "an array of strings");
-  }
-  if (!isStringArray(raw.forbidden)) {
-    fail("skill_config.forbidden", "an array of strings");
-  }
-  if (typeof raw.disabled !== "boolean") {
-    fail("skill_config.disabled", "a boolean");
-  }
+/**
+ * Parse `skill_config`, the canonical way — this is THE implementation, and
+ * `converters.ts` re-exports it as `parseSkillConfigJson` rather than keeping a
+ * second one.
+ *
+ * The column is NOT NULL with default `'{}'::jsonb`, so a config carrying none
+ * of the four keys is the DB's own default value, not corruption. A parser that
+ * demanded all four threw `skill_config.included must be an array of strings`
+ * on every agent that had never configured skills — while the live-agent path
+ * read the very same column and returned the empty config. Missing or malformed
+ * keys therefore degrade to the empty config, exactly as they always have for a
+ * live agent.
+ */
+export function parseSkillConfig(raw: unknown): SkillConfig {
+  const empty: SkillConfig = {
+    included: [],
+    listed: [],
+    forbidden: [],
+    disabled: false,
+  };
+  if (!isRecord(raw)) return empty;
+  const stringsOrEmpty = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
   return {
-    included: raw.included,
-    listed: raw.listed,
-    forbidden: raw.forbidden,
-    disabled: raw.disabled,
+    included: stringsOrEmpty(raw.included),
+    listed: stringsOrEmpty(raw.listed),
+    forbidden: stringsOrEmpty(raw.forbidden),
+    disabled: raw.disabled === true,
   };
 }
 
@@ -380,12 +410,12 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     version_number: requiredNumber(raw, "version_number"),
     agent_type: requiredString(raw, "agent_type"),
     name: requiredString(raw, "name"),
-    description: requiredString(raw, "description"),
+    description: requiredNullableString(raw, "description"),
     messages: parseAgentMessages(requiredField(raw, "messages")),
     variable_definitions: parseAgentVariableDefinitions(
       requiredField(raw, "variable_definitions"),
     ),
-    model_id: requiredString(raw, "model_id"),
+    model_id: requiredNullableString(raw, "model_id"),
     model_tiers: parseModelTiers(requiredField(raw, "model_tiers")),
     settings: parseAgentSettings(requiredField(raw, "settings"), parseContext),
     output_schema: parseAgentOutputSchema(requiredField(raw, "output_schema")),
@@ -399,13 +429,13 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
       parseContext,
     ),
     auto_context_disabled: requiredBoolean(raw, "auto_context_disabled"),
-    category: requiredString(raw, "category"),
+    category: requiredNullableString(raw, "category"),
     tags: requiredStringArray(raw, "tags"),
     is_active: requiredBoolean(raw, "is_active"),
     changed_at: requiredString(raw, "changed_at"),
-    change_note: requiredString(raw, "change_note"),
+    change_note: requiredNullableString(raw, "change_note"),
     mcp_servers: requiredStringArray(raw, "mcp_servers"),
-    tool_config: parseNullableRecord(
+    tool_config: parseDefaultedRecord(
       requiredField(raw, "tool_config"),
       "tool_config",
     ),

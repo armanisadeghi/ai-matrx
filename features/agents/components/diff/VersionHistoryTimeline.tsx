@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Atom,
   ShieldAlert,
+  AlertTriangle,
 } from "lucide-react";
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
 import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
@@ -48,6 +49,8 @@ export function VersionHistoryTimeline({
     enrichedVersions,
     loading: enrichLoading,
     progress,
+    failedVersions,
+    failureReason,
     fetchEnrichedHistory,
     fetchGap,
   } = useSmartVersionFetch(agentId, versions);
@@ -76,6 +79,20 @@ export function VersionHistoryTimeline({
             fields were modified, added, or removed.
           </p>
         </div>
+
+        {/* A load that ran and failed must never fall back to looking like a
+            load that was never started. */}
+        {failedVersions.length > 0 && (
+          <div className="flex items-start gap-2 max-w-[420px] px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 text-xs text-destructive">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>
+              {failedVersions.length} of {progress.total} snapshot
+              {failedVersions.length !== 1 ? "s" : ""} could not be read
+              {failureReason ? `: ${failureReason}` : "."} Retrying loads the
+              ones that are readable.
+            </span>
+          </div>
+        )}
         <Button
           variant="default"
           size="sm"

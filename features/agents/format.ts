@@ -405,7 +405,8 @@ export interface AgentVersionHistoryRow {
   version_id: string;
   name: string;
   changed_at: string;
-  change_note: string;
+  /** Nullable, and NULL is the normal case — see `AgentVersionHistoryItem`. */
+  change_note: string | null;
   is_current: boolean;
 }
 

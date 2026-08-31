@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   GitCompareArrows,
   History,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
@@ -79,6 +80,12 @@ export function AgentVersionDiffPage({
   const [versions, setVersions] = useState<AgentVersionHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * A snapshot that failed to load. Deliberately NOT the page-level `error`:
+   * the version selectors must stay usable so the reader can pick another
+   * version instead of being stranded on a full-screen error.
+   */
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // Left side (the version being inspected)
@@ -177,8 +184,17 @@ export function AgentVersionDiffPage({
     if (!leftVersion) return;
     if (snapshotRecords.some((r) => r.version === leftVersion)) return;
     setSnapshotLoading(true);
+    setSnapshotError(null);
     dispatch(fetchAgentVersionSnapshot({ agentId, version: leftVersion }))
       .unwrap()
+      // A snapshot that fails to load has to SAY so. Without this the promise
+      // rejected unhandled, the spinner cleared, and the page rendered an empty
+      // diff as if v{n} genuinely had nothing in it.
+      .catch((err) =>
+        setSnapshotError(
+          `Could not load version ${leftVersion}: ${err?.message ?? "unknown error"}`,
+        ),
+      )
       .finally(() => setSnapshotLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leftVersion, agentId]);
@@ -188,8 +204,14 @@ export function AgentVersionDiffPage({
     if (rightVersion === "current") return;
     if (snapshotRecords.some((r) => r.version === rightVersion)) return;
     setRightSnapshotLoading(true);
+    setSnapshotError(null);
     dispatch(fetchAgentVersionSnapshot({ agentId, version: rightVersion }))
       .unwrap()
+      .catch((err) =>
+        setSnapshotError(
+          `Could not load version ${rightVersion}: ${err?.message ?? "unknown error"}`,
+        ),
+      )
       .finally(() => setRightSnapshotLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rightVersion, agentId]);
@@ -653,6 +675,35 @@ export function AgentVersionDiffPage({
             </>
           )}
         </div>
+
+        {/* A snapshot that could not be read says so, in place, with the
+            selectors above still live so another version can be chosen. */}
+        {snapshotError && (
+          <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-destructive/30 bg-destructive/10 text-xs text-destructive">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span className="flex-1">{snapshotError}</span>
+            <CopyButtons
+              size="icon"
+              label="Version snapshot error"
+              human={() =>
+                `An agent version snapshot failed to load.\nAgent ID: ${agentId}\nError on screen: ${snapshotError}`
+              }
+              agent={() => ({
+                kind: "agent-version-snapshot-error",
+                location,
+                description:
+                  "A version snapshot failed to load on the agent version-diff page; the diff for that side is unavailable.",
+                data: {
+                  error_on_screen: snapshotError,
+                  agent_id: agentId,
+                  left_version: leftVersion,
+                  right_version: rightVersion,
+                },
+                attributes: { agent_id: agentId, has_error: true },
+              })}
+            />
+          </div>
+        )}
 
         {/* Compare tab */}
         <TabsContent value="compare" className="flex-1 overflow-hidden mt-0">

@@ -179,7 +179,12 @@ export function AgentComparisonPage({
     }
 
     const versionNum = parseInt(option.value, 10);
-    setter((prev) => ({ ...prev, version: versionNum, snapshotLoading: true }));
+    setter((prev) => ({
+      ...prev,
+      version: versionNum,
+      snapshotLoading: true,
+      loadError: null,
+    }));
 
     if (state.agentId) {
       dispatch(
@@ -189,6 +194,19 @@ export function AgentComparisonPage({
         }),
       )
         .unwrap()
+        // A rejected snapshot has to reach the screen. Without this the promise
+        // rejected unhandled and the side silently kept showing the previously
+        // selected version's data under the new version's label.
+        .catch((err) =>
+          setter((prev) =>
+            prev.agentId === state.agentId && prev.version === versionNum
+              ? {
+                  ...prev,
+                  loadError: `Could not load version ${versionNum}: ${err?.message ?? "unknown error"}`,
+                }
+              : prev,
+          ),
+        )
         .finally(() => setter((prev) => ({ ...prev, snapshotLoading: false })));
     }
   };

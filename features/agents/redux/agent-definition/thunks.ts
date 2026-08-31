@@ -435,19 +435,44 @@ export const fetchFullAgent = createAsyncThunk<void, string, ThunkApi>(
 // Version read thunks
 // ---------------------------------------------------------------------------
 
+/**
+ * One `agx_get_version_history` row.
+ *
+ * Nullability mirrors the LIVE COLUMNS of `agent.definition_version`, not the
+ * generated row — Supabase marks every `RETURNS TABLE` column non-null because
+ * Postgres carries no nullability on an OUT parameter. Consumers must handle
+ * the nulls; they are the normal case for a change note and for every contract
+ * field on a version saved before contracts existed. See
+ * `parse-output-snapshot.ts` § THE RETURNS-TABLE NULLABILITY LIE.
+ */
 export interface AgentVersionHistoryItem {
   version_id: string;
   version_number: number;
   name: string;
   changed_at: string;
+  change_note: string | null;
+  contract_change: string | null;
+  contract_break_declared: string | null;
+  input_contract_hash: string | null;
+  output_contract_hash: string | null;
+}
+/** Same generator-vs-table reconciliation as the snapshot row's shim. */
+type AgentVersionHistoryItemDbProjection = Omit<
+  AgentVersionHistoryItem,
+  | "change_note"
+  | "contract_change"
+  | "contract_break_declared"
+  | "input_contract_hash"
+  | "output_contract_hash"
+> & {
   change_note: string;
   contract_change: string;
   contract_break_declared: string;
   input_contract_hash: string;
   output_contract_hash: string;
-}
+};
 type _Check_AgentVersionHistoryItem =
-  AgentVersionHistoryItem extends DbRpcRow<"agx_get_version_history">
+  AgentVersionHistoryItemDbProjection extends DbRpcRow<"agx_get_version_history">
     ? true
     : false;
 declare const _agentVersionHistoryItem: _Check_AgentVersionHistoryItem;

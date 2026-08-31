@@ -26,7 +26,10 @@ import {
   parseAgentMessages,
   parseAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/parse-messages-variables";
-import { parseAgentOutputSchema } from "@/features/agents/redux/agent-definition/parse-output-snapshot";
+import {
+  parseAgentOutputSchema,
+  parseSkillConfig,
+} from "@/features/agents/redux/agent-definition/parse-output-snapshot";
 import {
   parseAgentContextPolicies,
   parseAgentSettings,
@@ -124,27 +127,12 @@ export type { AgentInsert, AgentUpdate };
 // DB → Frontend
 // ---------------------------------------------------------------------------
 
-/** Defensive parser for the `agent.definition.skill_config` JSONB. Returns the
- * empty default when the column is missing / malformed; the DB CHECK from
- * migration 0095 guarantees the shape when present, so this is mainly
- * about old rows + tests. */
-export function parseSkillConfigJson(raw: unknown): SkillConfig {
-  const empty: SkillConfig = {
-    included: [],
-    listed: [],
-    forbidden: [],
-    disabled: false,
-  };
-  if (!isJsonObject(raw)) return empty;
-  const arrOrEmpty = (v: unknown): string[] =>
-    Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : [];
-  return {
-    included: arrOrEmpty(raw.included),
-    listed: arrOrEmpty(raw.listed),
-    forbidden: arrOrEmpty(raw.forbidden),
-    disabled: typeof raw.disabled === "boolean" ? raw.disabled : false,
-  };
-}
+/**
+ * Re-export of THE skill-config parser. It used to be a second copy here; the
+ * two drifted (the snapshot copy demanded all four keys and threw on the
+ * column's own `'{}'` default), so there is now exactly one implementation.
+ */
+export { parseSkillConfig as parseSkillConfigJson };
 
 /** Read the one frontend-visible flag stored inside `tool_config`. */
 export function parseAgentAutoToolsDisabled(raw: unknown): boolean {
@@ -265,7 +253,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
   // for the structural CHECK constraint. The DB CHECK guarantees the keys we
   // read are arrays / boolean as expected, so the defensive parser only
   // needs to handle null / legacy-row missing-column cases.
-  const skillConfig = parseSkillConfigJson(row.skill_config);
+  const skillConfig = parseSkillConfig(row.skill_config);
 
   return {
     id: row.id,
@@ -544,7 +532,7 @@ export function versionSnapshotRowToAgentDefinition(
     outputSchema: row.output_schema,
     customTools: row.custom_tools ?? [],
     autoToolsDisabled: parseAgentAutoToolsDisabled(row.tool_config),
-    skillConfig: parseSkillConfigJson(row.skill_config),
+    skillConfig: parseSkillConfig(row.skill_config),
     uiGates: parseUiGates(row.ui_gates),
     matrxDirectives: parseMatrxDirectives(row.matrx_actions),
     mcpServers: row.mcp_servers ?? [],
