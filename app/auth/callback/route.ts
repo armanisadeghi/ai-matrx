@@ -55,18 +55,25 @@ function isAuthCookieName(name: string): boolean {
  * apex-wide `.aimatrx.com` span) — a deletion only lands when its Domain
  * attribute matches the original write. The next sign-in attempt then starts
  * from a clean jar instead of looping on the same poisoned state.
+ *
+ * Written as raw appended `Set-Cookie` headers, NOT `response.cookies.set`:
+ * `ResponseCookies` keeps one entry per cookie NAME, so a second set for the
+ * other scope would silently replace the first and one scope's leftovers would
+ * survive. Nothing may call `response.cookies.*` on this response afterwards —
+ * that would re-parse these headers into the one-per-name map and undo the
+ * dual-scope expiry.
  */
 function clearAuthCookies(
   response: NextResponse,
   cookieNames: string[],
 ): void {
+  const expired = "Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
   for (const name of cookieNames) {
-    response.cookies.set(name, "", { path: "/", maxAge: 0 });
-    response.cookies.set(name, "", {
-      path: "/",
-      maxAge: 0,
-      domain: ".aimatrx.com",
-    });
+    response.headers.append("Set-Cookie", `${name}=; ${expired}`);
+    response.headers.append(
+      "Set-Cookie",
+      `${name}=; ${expired}; Domain=.aimatrx.com`,
+    );
   }
 }
 
@@ -109,6 +116,21 @@ export async function GET(request: Request) {
     );
 
     if (code) {
+      // D22 residual fix: only follow x-forwarded-host when it passes the
+      // host allowlist (prod host from NEXT_PUBLIC_SITE_URL, Vercel system
+      // hosts, *.vercel.app previews). On mismatch safeForwardedHost screams
+      // and we fall back to the request's own origin — never a spoofed host.
+      // Computed BEFORE the exchange so every redirect out of this handler —
+      // success and the already-signed-in failure path alike — lands on the
+      // public host whose `.aimatrx.com` cookies the browser holds, never an
+      // internal or deployment host `request.url` may carry behind the proxy.
+      const forwardedHost = safeForwardedHost(
+        request.headers.get("x-forwarded-host"),
+      );
+      const isLocalEnv = process.env.NODE_ENV === "development";
+      const baseUrl =
+        !isLocalEnv && forwardedHost ? `https://${forwardedHost}` : origin;
+
       console.log(`[${timestamp}] Auth callback - Creating Supabase client...`);
       const supabase = await createClient();
       console.log(
@@ -147,7 +169,7 @@ export async function GET(request: Request) {
           console.log(
             `[${timestamp}] Auth callback - exchange failed but a valid session exists; continuing to destination`,
           );
-          return NextResponse.redirect(`${origin}${redirectTo}`);
+          return NextResponse.redirect(`${baseUrl}${redirectTo}`);
         }
 
         if (!verifierArrived) {
@@ -272,24 +294,6 @@ export async function GET(request: Request) {
           `[${timestamp}] Auth callback - LOUD: guest transfer threw — login proceeds, guest data stays orphaned:`,
           guestErr instanceof Error ? guestErr.message : String(guestErr),
         );
-      }
-
-      // D22 residual fix: only follow x-forwarded-host when it passes the
-      // host allowlist (prod host from NEXT_PUBLIC_SITE_URL, Vercel system
-      // hosts, *.vercel.app previews). On mismatch safeForwardedHost screams
-      // and we fall back to the request's own origin — never a spoofed host.
-      const forwardedHost = safeForwardedHost(
-        request.headers.get("x-forwarded-host"),
-      );
-      const isLocalEnv = process.env.NODE_ENV === "development";
-
-      let baseUrl: string;
-      if (isLocalEnv) {
-        baseUrl = origin;
-      } else if (forwardedHost) {
-        baseUrl = `https://${forwardedHost}`;
-      } else {
-        baseUrl = origin;
       }
 
       const finalRedirectTo = redirectTo;
