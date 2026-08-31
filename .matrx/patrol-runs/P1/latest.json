@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T081603Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-31T08:16:18.447Z",
-  "summary": "Three disjoint repair workers are implementing the first ready canonical EntityRef doors.",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-31T08:26:05.074Z",
+  "summary": "Recorded escaped delivery of the exact 11-file P1 candidate before adversarial certification.",
   "source": "20260831T081603Z.json",
-  "eventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969"
+  "eventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049"
 }

@@ -30,6 +30,39 @@
       ],
       "previousEventHash": "b6fd345f686340870d6b43cd12c672e7b91cdfacb9bb4f137f3183b7a14d6389",
       "eventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-31T08:26:04.513Z",
+      "actor": "codex-root",
+      "summary": "Shared checkpoint interrupted the normal certification-before-delivery sequence.",
+      "evidence": [
+        "Owned product diff was committed as fd212230d9 after worker checks but before the second signature."
+      ],
+      "blocker": {
+        "prerequisite": "Record the escaped delivery and independently certify the exact origin/main candidate before reconciliation."
+      },
+      "previousEventHash": "7155eefcaa0bf26948db3f01102cec5c42af08b0b947ee92a067b0c475251969",
+      "eventHash": "98ab19b1b1ef457e76479c0d956b84b3afcf9645957ee2642566fbd375921417"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-31T08:26:05.074Z",
+      "actor": "codex-root",
+      "summary": "Recorded escaped delivery of the exact 11-file P1 candidate before adversarial certification.",
+      "evidence": [
+        "Candidate fd212230d9 is already origin/main; no product bytes were lost or altered after worker verification."
+      ],
+      "escape": {
+        "candidateSha": "fd212230d92ce6819a01a4cb709c893266ce2ee8",
+        "integratedSha": "fd212230d92ce6819a01a4cb709c893266ce2ee8",
+        "release": "main-unreleased",
+        "reason": "shared-checkout checkpoint committed the owned 11-file product diff before independent certification"
+      },
+      "previousEventHash": "98ab19b1b1ef457e76479c0d956b84b3afcf9645957ee2642566fbd375921417",
+      "eventHash": "41df8a3ae5c59a1ca61bde3fe42abe18ea83b77422eeb42dac32abf9200e6049"
     }
   ]
 }
