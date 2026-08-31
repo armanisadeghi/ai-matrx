@@ -68,6 +68,10 @@ interface ReplacementPair {
   replace: string;
 }
 
+function isResultRow(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export const EnhancedSQLEditor = ({
   loading,
   error,
@@ -212,10 +216,8 @@ export const EnhancedSQLEditor = ({
   // result payloads are `autoContext: false` in the manifest so live DB rows
   // reach an agent only through a deliberate binding.
   const getSurfaceScope = () => {
-    const rows = Array.isArray(queryResult)
-      ? (queryResult as Record<string, unknown>[])
-      : null;
-    const firstRow = rows?.[0];
+    const rows = Array.isArray(queryResult) ? queryResult : null;
+    const firstRow = rows?.find(isResultRow);
     return createAdminDatabaseScope({
       console_section: "sql_workbench",
       default_schema: DEFAULT_DATABASE_SCHEMA,

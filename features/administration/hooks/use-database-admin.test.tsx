@@ -8,6 +8,7 @@ jest.mock("@/actions/admin/database", () => ({
   getPermissions: jest.fn(),
 }));
 
+import { parseWorkbenchPersistedState } from "../database-admin/workbench/hooks/useQueryWorkbench";
 import { useDatabaseAdmin } from "./use-database-admin";
 
 describe("useDatabaseAdmin terminal execution", () => {
@@ -35,5 +36,68 @@ describe("useDatabaseAdmin terminal execution", () => {
     expect(hook.current.loading).toBe(false);
     expect(hook.current.error).toBeNull();
     await hook.unmount();
+  });
+});
+
+describe("database workbench persisted boundary", () => {
+  it("reconstructs a valid persisted notebook", () => {
+    expect(
+      parseWorkbenchPersistedState(
+        JSON.stringify({
+          blocks: [{ id: "block-1", label: "Users", query: "SELECT 1" }],
+          variables: [{ id: "var-1", name: "org", value: "abc" }],
+          mergeConfig: {
+            leftBlockId: null,
+            rightBlockId: null,
+            leftKey: null,
+            rightKey: null,
+            mode: "concat",
+            timelineKey: "created_at",
+          },
+        }),
+      ),
+    ).toEqual({
+      blocks: [{ id: "block-1", label: "Users", query: "SELECT 1" }],
+      variables: [{ id: "var-1", name: "org", value: "abc" }],
+      mergeConfig: {
+        leftBlockId: null,
+        rightBlockId: null,
+        leftKey: null,
+        rightKey: null,
+        mode: "concat",
+        timelineKey: "created_at",
+      },
+    });
+  });
+
+  it.each([
+    "not json",
+    JSON.stringify({ blocks: "wrong", variables: [], mergeConfig: {} }),
+    JSON.stringify({
+      blocks: [{ id: "block-1", label: "Users", query: 1 }],
+      variables: [],
+      mergeConfig: {
+        leftBlockId: null,
+        rightBlockId: null,
+        leftKey: null,
+        rightKey: null,
+        mode: "concat",
+        timelineKey: "created_at",
+      },
+    }),
+    JSON.stringify({
+      blocks: [],
+      variables: [],
+      mergeConfig: {
+        leftBlockId: null,
+        rightBlockId: null,
+        leftKey: null,
+        rightKey: null,
+        mode: "invented",
+        timelineKey: "created_at",
+      },
+    }),
+  ])("rejects invalid persisted state without asserting its shape", (raw) => {
+    expect(parseWorkbenchPersistedState(raw)).toBeNull();
   });
 });

@@ -92,7 +92,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
     section: "legacy",
     isDuplicate: true,
     duplicateNote:
-      "Uses execute_admin_query RPC. Primary: Enhanced SQL Editor with cache + cancel + timeout.",
+      "Uses execute_admin_query RPC. Primary: Enhanced SQL Editor with cache and terminal-result locking.",
   },
 
   // ── SQL tools (under /administration/database/*) ──────────────────
@@ -101,7 +101,7 @@ export const databaseToolPages: DatabaseToolPage[] = [
     path: "/administration/database/sql-queries",
     relative: false,
     description:
-      "Enhanced SQL editor with query cache, cancel, and timeout handling.",
+      "Enhanced SQL editor with query cache and terminal-result locking.",
     section: "sql",
   },
   {

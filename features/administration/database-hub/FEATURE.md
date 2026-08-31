@@ -31,9 +31,21 @@ with operational status and the categorized tool registry.
 - SQL execution stays pending until the privileged Server Action returns. The
   editor exposes no client-only Cancel or timeout claim because neither aborts
   the PostgreSQL statement.
+- **One SQL execution path:** the enhanced editor and legacy dashboard call
+  `useDatabaseAdmin.executeQuery`; the notebook calls the same
+  `executeSqlQuery` Server Action directly. Only that action invokes
+  `execute_admin_query`. The surface contract test censuses all three callers
+  and rejects direct client RPCs plus the retired timer/cancel path.
+- Browser storage entering the notebook is reconstructed only after its blocks,
+  variables, and merge configuration pass runtime shape checks. Query result
+  rows are narrowed as plain objects; no assertion promotes unknown data.
 
 ## Change log
 
+- 2026-08-30 — Rule 2026-08-30.2 static recheck: censused all three SQL
+  execution callers onto the terminal Server Action, pinned the retired
+  cancel/timeout path absent, corrected stale catalogue claims, and replaced
+  assertion-based browser/result parsing with runtime narrowing.
 - 2026-08-30 — Removed false client-only SQL cancellation and timeout states;
   execution now reaches its real terminal server result before the UI unlocks.
 - 2026-08-30 — Surface certification repair: canonical context menu, Locate

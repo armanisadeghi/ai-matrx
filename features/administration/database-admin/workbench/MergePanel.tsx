@@ -57,6 +57,14 @@ const MODE_DESCRIPTIONS: Record<JoinMode, string> = {
     "Concat both queries and sort by a shared timestamp column. Great for interleaving events.",
 };
 
+const JOIN_MODES: readonly JoinMode[] = [
+  "concat",
+  "inner",
+  "left",
+  "embed",
+  "timeline",
+];
+
 export function MergePanel({
   blocks,
   config,
@@ -340,9 +348,7 @@ export function MergePanel({
                 Mode
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
-                {(
-                  ["concat", "inner", "left", "embed", "timeline"] as JoinMode[]
-                ).map((mode) => (
+                {JOIN_MODES.map((mode) => (
                   <TooltipProvider key={mode}>
                     <Tooltip>
                       <TooltipTrigger asChild>

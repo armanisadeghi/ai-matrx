@@ -23,6 +23,94 @@ const DEFAULT_MERGE_CONFIG: MergeConfig = {
   timelineKey: "created_at",
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isJoinMode(value: unknown): value is MergeConfig["mode"] {
+  return (
+    value === "concat" ||
+    value === "inner" ||
+    value === "left" ||
+    value === "embed" ||
+    value === "timeline"
+  );
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isPersistedBlock(
+  value: unknown,
+): value is Pick<QueryBlockState, "id" | "label" | "query"> {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    typeof value.query === "string"
+  );
+}
+
+function isVariable(value: unknown): value is Variable {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.value === "string"
+  );
+}
+
+function parseMergeConfig(value: unknown): MergeConfig | null {
+  if (!isRecord(value)) return null;
+  const { leftBlockId, rightBlockId, leftKey, rightKey, mode, timelineKey } =
+    value;
+  if (
+    !isNullableString(leftBlockId) ||
+    !isNullableString(rightBlockId) ||
+    !isNullableString(leftKey) ||
+    !isNullableString(rightKey) ||
+    !isJoinMode(mode) ||
+    typeof timelineKey !== "string"
+  ) {
+    return null;
+  }
+  return {
+    leftBlockId,
+    rightBlockId,
+    leftKey,
+    rightKey,
+    mode,
+    timelineKey,
+  };
+}
+
+export function parseWorkbenchPersistedState(
+  raw: string,
+): WorkbenchPersistedState | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      !isRecord(parsed) ||
+      !Array.isArray(parsed.blocks) ||
+      !parsed.blocks.every(isPersistedBlock) ||
+      !Array.isArray(parsed.variables) ||
+      !parsed.variables.every(isVariable)
+    ) {
+      return null;
+    }
+    const mergeConfig = parseMergeConfig(parsed.mergeConfig);
+    if (!mergeConfig) return null;
+    return {
+      blocks: parsed.blocks,
+      variables: parsed.variables,
+      mergeConfig,
+    };
+  } catch {
+    return null;
+  }
+}
+
 const SAMPLE_BLOCKS: QueryBlockState[] = [
   {
     id: "block-1",
@@ -74,15 +162,8 @@ function coerceErrorMessage(err: unknown): string {
 
 function loadPersisted(): WorkbenchPersistedState | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as WorkbenchPersistedState;
-    if (!parsed || !Array.isArray(parsed.blocks)) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  return raw ? parseWorkbenchPersistedState(raw) : null;
 }
 
 function blocksFromPersisted(

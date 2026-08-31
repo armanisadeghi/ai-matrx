@@ -16,12 +16,15 @@ export type ActionResult<T = unknown> =
 
 function formatSupabaseError(error: unknown): string {
   if (typeof error !== "object" || error === null) return String(error);
-  const e = error as Record<string, unknown>;
   const parts: string[] = [];
-  if (e.message) parts.push(String(e.message));
-  if (e.details) parts.push(`Details: ${e.details}`);
-  if (e.hint) parts.push(`Hint: ${e.hint}`);
-  if (e.code) parts.push(`Error Code: ${e.code}`);
+  const message = Reflect.get(error, "message");
+  const details = Reflect.get(error, "details");
+  const hint = Reflect.get(error, "hint");
+  const code = Reflect.get(error, "code");
+  if (message) parts.push(String(message));
+  if (details) parts.push(`Details: ${details}`);
+  if (hint) parts.push(`Hint: ${hint}`);
+  if (code) parts.push(`Error Code: ${code}`);
   return parts.length > 0 ? parts.join("\n\n") : JSON.stringify(error, null, 2);
 }
 

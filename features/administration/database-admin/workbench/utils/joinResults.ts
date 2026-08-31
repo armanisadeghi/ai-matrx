@@ -16,9 +16,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function arrayOfRows(arr: unknown[]): Row[] {
-  return arr.filter(
-    (item): item is Row => typeof item === "object" && item !== null,
-  );
+  return arr.filter(isPlainObject);
 }
 
 /**
@@ -72,7 +70,7 @@ export function toRows(value: unknown): Row[] {
     }
 
     // Object with no array envelope — treat as a single row
-    return [obj as Row];
+    return [obj];
   }
 
   return [];
@@ -426,8 +424,7 @@ export function mergeResults({
       if (matches && matches.length > 0) {
         stats.matchedLeft += 1;
         if (k !== null) usedRightKeys.add(k);
-        const embedded =
-          matches.length === 1 ? matches[0] : (matches as unknown);
+        const embedded = matches.length === 1 ? matches[0] : matches;
         out.push({ ...lr, [embedKey]: embedded });
       } else {
         stats.unmatchedLeft += 1;
