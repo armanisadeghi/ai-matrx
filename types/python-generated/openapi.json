@@ -182,6 +182,29 @@
         }
       }
     },
+    "/auth/organizations": {
+      "get": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "List My Organizations",
+        "description": "The caller's own organization memberships + durable default. Report-only.\n\nThe client bootstrap for the org-header contract: a bare-JWT SPA calls\nthis (``/auth`` is organization-exempt) and applies the canonical\nresolution order itself — stored selection → this response's\n``default_organization_id`` → sole membership → make the user pick. The\nserver CHOOSES NOTHING here; ``default_organization_id`` is the user's\nown recorded preference, reported only while it is still one of their\nactive memberships. Unauthenticated callers get the empty\n``authenticated: false`` shape rather than a 401 (mirrors ``/whoami``).",
+        "operationId": "list_my_organizations_auth_organizations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -18382,6 +18405,153 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GatherStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simplecast/public/status": {
+      "get": {
+        "tags": [
+          "Simplecast Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_simplecast_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimplecastServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kajabi/public/status": {
+      "get": {
+        "tags": [
+          "Kajabi Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kajabi_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KajabiServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/grain/public/status": {
+      "get": {
+        "tags": [
+          "Grain Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_grain_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrainStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/livestorm/public/status": {
+      "get": {
+        "tags": [
+          "Livestorm Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_livestorm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivestormStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/descript/public/status": {
+      "get": {
+        "tags": [
+          "Descript Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_descript_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DescriptServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lumen5/public/status": {
+      "get": {
+        "tags": [
+          "Lumen5 Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_lumen5_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lumen5ServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/veed/public/status": {
+      "get": {
+        "tags": [
+          "VEED Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_veed_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VeedServiceStatus"
                 }
               }
             }
@@ -67764,7 +67934,7 @@
           "scheduler"
         ],
         "summary": "Patch Task",
-        "description": "Patch a subset of task fields. Only non-None fields are written.",
+        "description": "Patch a subset of task fields, preserving explicit nullable clears.",
         "operationId": "patch_task_scheduler_tasks__task_id__patch",
         "parameters": [
           {
@@ -110720,6 +110890,51 @@
         "title": "DescendUnit",
         "description": "The unit being inspected."
       },
+      "DescriptServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "descript_public_service_status",
+            "title": "Kind",
+            "default": "descript_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "descript",
+            "title": "Provider",
+            "default": "descript"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.descript.com/",
+            "title": "Status Page",
+            "default": "https://status.descript.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DescriptServiceStatus",
+        "description": "Safe aggregate status projection for Descript's fixed status page."
+      },
       "DesktopInstanceSummary": {
         "properties": {
           "id": {
@@ -123916,6 +124131,16 @@
               }
             ],
             "title": "Applied Version Number"
+          },
+          "repo_diff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepoDiffReceiptOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -124696,6 +124921,61 @@
               }
             ],
             "title": "Resource Description"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "node_config_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Config Json"
+          },
+          "repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "unified_diff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unified Diff"
           },
           "replay_verdicts": {
             "additionalProperties": {
@@ -128240,6 +128520,56 @@
         ],
         "title": "GrafanaDashboardSearchResult",
         "description": "Provider-formatted matches from Grafana's fixed read-only search tool."
+      },
+      "GrainStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "grain_official_service_status",
+            "title": "Kind",
+            "default": "grain_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "grain",
+            "title": "Provider",
+            "default": "grain"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://www.grainstatus.com",
+            "title": "Status Url",
+            "default": "https://www.grainstatus.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GrainStatusResult",
+        "description": "Safe projection of Grain's high-level service status."
       },
       "GrantPermissionRequest": {
         "properties": {
@@ -135042,6 +135372,47 @@
         "title": "JwxServiceStatus",
         "description": "Safe aggregate status projection for JWX's fixed status page."
       },
+      "KajabiServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kajabi_public_content_platform_status",
+            "title": "Kind",
+            "default": "kajabi_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kajabi",
+            "title": "Provider",
+            "default": "Kajabi"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.kajabi.com/",
+            "title": "Status Page",
+            "default": "https://status.kajabi.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "KajabiServiceStatus",
+        "description": "Safe aggregate status projection for Kajabi's fixed status page."
+      },
       "KeyFindingEntry": {
         "properties": {
           "label_category": {
@@ -141610,6 +141981,56 @@
         ],
         "title": "LivenessResponse"
       },
+      "LivestormStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "livestorm_official_service_status",
+            "title": "Kind",
+            "default": "livestorm_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "livestorm",
+            "title": "Provider",
+            "default": "livestorm"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.livestorm.co",
+            "title": "Status Url",
+            "default": "https://status.livestorm.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LivestormStatusResult",
+        "description": "Safe projection of Livestorm's high-level service status."
+      },
       "LocalClusterResponse": {
         "properties": {
           "id": {
@@ -142678,6 +143099,47 @@
         ],
         "title": "LucidStatusResult",
         "description": "Safe projection of Lucid Software's high-level service status."
+      },
+      "Lumen5ServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lumen5_public_video_platform_status",
+            "title": "Kind",
+            "default": "lumen5_public_video_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Lumen5",
+            "title": "Provider",
+            "default": "Lumen5"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.lumen5.com/",
+            "title": "Status Page",
+            "default": "https://status.lumen5.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "Lumen5ServiceStatus",
+        "description": "Safe aggregate status projection for Lumen5's fixed status page."
       },
       "MGnifyPublicStudy": {
         "properties": {
@@ -154194,6 +154656,39 @@
         "title": "OrchestraBadge",
         "description": "The catalog-level answer to \"is this agent an Orchestra, and how big?\".\n\nDeliberately smaller than :class:`Orchestra` — a picker needs to *label* an\nagent, not resolve it. Built by one batched associations read for a whole\npage of agents (see ``read_orchestra_badges``), never per row."
       },
+      "OrganizationReport": {
+        "properties": {
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated"
+          },
+          "organizations": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationSummary"
+            },
+            "type": "array",
+            "title": "Organizations"
+          },
+          "default_organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authenticated",
+          "organizations",
+          "default_organization_id"
+        ],
+        "title": "OrganizationReport"
+      },
       "OrganizationSecretContributeRequest": {
         "properties": {
           "organization_id": {
@@ -154768,6 +155263,29 @@
         "additionalProperties": false,
         "type": "object",
         "title": "OrganizationSecretUpdateRequest"
+      },
+      "OrganizationSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "is_personal": {
+            "type": "boolean",
+            "title": "Is Personal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "is_personal"
+        ],
+        "title": "OrganizationSummary"
       },
       "OsfPublicProject": {
         "properties": {
@@ -174844,6 +175362,42 @@
         "title": "ReplyThreadView",
         "description": "The conversation as the agent would see it, plus the verdict on whether\nit may be answered. A refused thread always carries the human-readable\nreason — never a silent empty result."
       },
+      "RepoDiffReceiptOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "filed",
+              "deduped",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "feedback_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "file_path"
+        ],
+        "title": "RepoDiffReceiptOut",
+        "description": "What accepting a repo-artifact finding did with its diff (D8).\n\n``filed`` carries the feedback item id; ``deduped`` means an identical open\nitem already exists (normal — the reviewer may have relayed it at creation);\n``failed`` means the accept stands but the diff was NOT filed (screamed\nserver-side)."
+      },
       "RepositoriesListResponse": {
         "properties": {
           "repositories": {
@@ -186620,6 +187174,51 @@
         ],
         "title": "ShortcutStatusResult",
         "description": "Safe projection of Shortcut's high-level service status."
+      },
+      "SimplecastServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "simplecast_public_service_status",
+            "title": "Kind",
+            "default": "simplecast_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "simplecast",
+            "title": "Provider",
+            "default": "simplecast"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.simplecast.com",
+            "title": "Status Page",
+            "default": "https://status.simplecast.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SimplecastServiceStatus",
+        "description": "Safe aggregate status projection for Simplecast's fixed status page."
       },
       "SimulateProviderRetryRequest": {
         "properties": {
@@ -207697,6 +208296,51 @@
         ],
         "title": "VaultTransferResponse",
         "description": "The sender loses ALL access on success, so this carries confirmation\nrather than a usable item."
+      },
+      "VeedServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "veed_public_service_status",
+            "title": "Kind",
+            "default": "veed_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "veed",
+            "title": "Provider",
+            "default": "veed"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.veed.io/",
+            "title": "Status Page",
+            "default": "https://status.veed.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "VeedServiceStatus",
+        "description": "Safe aggregate status projection for VEED's fixed status page."
       },
       "VerdictRequest": {
         "properties": {

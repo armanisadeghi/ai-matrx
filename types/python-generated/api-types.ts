@@ -72,6 +72,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Organizations
+         * @description The caller's own organization memberships + durable default. Report-only.
+         *
+         *     The client bootstrap for the org-header contract: a bare-JWT SPA calls
+         *     this (``/auth`` is organization-exempt) and applies the canonical
+         *     resolution order itself — stored selection → this response's
+         *     ``default_organization_id`` → sole membership → make the user pick. The
+         *     server CHOOSES NOTHING here; ``default_organization_id`` is the user's
+         *     own recorded preference, reported only while it is still one of their
+         *     active memberships. Unauthenticated callers get the empty
+         *     ``authenticated: false`` shape rather than a 401 (mirrors ``/whoami``).
+         */
+        get: operations["list_my_organizations_auth_organizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -7633,6 +7662,125 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_gather_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/simplecast/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_simplecast_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kajabi/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kajabi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/grain/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_grain_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/livestorm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_livestorm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/descript/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_descript_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lumen5/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lumen5_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/veed/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_veed_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -26608,7 +26756,7 @@ export interface paths {
         head?: never;
         /**
          * Patch Task
-         * @description Patch a subset of task fields. Only non-None fields are written.
+         * @description Patch a subset of task fields, preserving explicit nullable clears.
          */
         patch: operations["patch_task_scheduler_tasks__task_id__patch"];
         trace?: never;
@@ -43736,6 +43884,41 @@ export interface components {
             status?: string | null;
             error?: components["schemas"]["JsonValue"] | null;
         };
+        /**
+         * DescriptServiceStatus
+         * @description Safe aggregate status projection for Descript's fixed status page.
+         */
+        DescriptServiceStatus: {
+            /**
+             * Kind
+             * @default descript_public_service_status
+             * @constant
+             */
+            __kind?: "descript_public_service_status";
+            /**
+             * Provider
+             * @default descript
+             * @constant
+             */
+            provider?: "descript";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.descript.com/
+             * @constant
+             */
+            status_page?: "https://status.descript.com/";
+        };
         /** DesktopInstanceSummary */
         DesktopInstanceSummary: {
             /** Id */
@@ -48941,6 +49124,7 @@ export interface components {
             status: string;
             /** Applied Version Number */
             applied_version_number?: number | null;
+            repo_diff?: components["schemas"]["RepoDiffReceiptOut"] | null;
         };
         /** FindingDraftFixBody */
         FindingDraftFixBody: {
@@ -49240,6 +49424,16 @@ export interface components {
             content?: string | null;
             /** Resource Description */
             resource_description?: string | null;
+            /** Node Id */
+            node_id?: string | null;
+            /** Node Config Json */
+            node_config_json?: string | null;
+            /** Repo */
+            repo?: string | null;
+            /** File Path */
+            file_path?: string | null;
+            /** Unified Diff */
+            unified_diff?: string | null;
             /** Replay Verdicts */
             replay_verdicts?: {
                 [key: string]: number;
@@ -50753,6 +50947,43 @@ export interface components {
              * @default search_dashboards
              */
             tool_name?: string;
+        };
+        /**
+         * GrainStatusResult
+         * @description Safe projection of Grain's high-level service status.
+         */
+        GrainStatusResult: {
+            /**
+             * Kind
+             * @default grain_official_service_status
+             * @constant
+             */
+            __kind?: "grain_official_service_status";
+            /**
+             * Provider
+             * @default grain
+             * @constant
+             */
+            provider?: "grain";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://www.grainstatus.com
+             * @constant
+             */
+            status_url?: "https://www.grainstatus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
@@ -53756,6 +53987,38 @@ export interface components {
              */
             status_page?: "https://status.jwx.com/";
         };
+        /**
+         * KajabiServiceStatus
+         * @description Safe aggregate status projection for Kajabi's fixed status page.
+         */
+        KajabiServiceStatus: {
+            /**
+             * Kind
+             * @default kajabi_public_content_platform_status
+             * @constant
+             */
+            __kind?: "kajabi_public_content_platform_status";
+            /**
+             * Provider
+             * @default Kajabi
+             * @constant
+             */
+            provider?: "Kajabi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.kajabi.com/
+             * @constant
+             */
+            status_page?: "https://status.kajabi.com/";
+        };
         /** KeyFindingEntry */
         KeyFindingEntry: {
             /** Label Category */
@@ -56132,6 +56395,43 @@ export interface components {
             /** Uptime Seconds */
             uptime_seconds: number;
         };
+        /**
+         * LivestormStatusResult
+         * @description Safe projection of Livestorm's high-level service status.
+         */
+        LivestormStatusResult: {
+            /**
+             * Kind
+             * @default livestorm_official_service_status
+             * @constant
+             */
+            __kind?: "livestorm_official_service_status";
+            /**
+             * Provider
+             * @default livestorm
+             * @constant
+             */
+            provider?: "livestorm";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.livestorm.co
+             * @constant
+             */
+            status_url?: "https://status.livestorm.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** LocalClusterResponse */
         LocalClusterResponse: {
             /** Id */
@@ -56491,6 +56791,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * Lumen5ServiceStatus
+         * @description Safe aggregate status projection for Lumen5's fixed status page.
+         */
+        Lumen5ServiceStatus: {
+            /**
+             * Kind
+             * @default lumen5_public_video_platform_status
+             * @constant
+             */
+            __kind?: "lumen5_public_video_platform_status";
+            /**
+             * Provider
+             * @default Lumen5
+             * @constant
+             */
+            provider?: "Lumen5";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.lumen5.com/
+             * @constant
+             */
+            status_page?: "https://status.lumen5.com/";
         };
         /**
          * MGnifyPublicStudy
@@ -61625,6 +61957,15 @@ export interface components {
             /** Member Depth Ceiling */
             member_depth_ceiling?: number | null;
         };
+        /** OrganizationReport */
+        OrganizationReport: {
+            /** Authenticated */
+            authenticated: boolean;
+            /** Organizations */
+            organizations: components["schemas"]["OrganizationSummary"][];
+            /** Default Organization Id */
+            default_organization_id: string | null;
+        };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
             /**
@@ -61792,6 +62133,15 @@ export interface components {
             inject_into_sandbox?: boolean | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** OrganizationSummary */
+        OrganizationSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Personal */
+            is_personal: boolean;
         };
         /**
          * OsfPublicProject
@@ -70281,6 +70631,26 @@ export interface components {
             /** Refusal Reason */
             refusal_reason?: string | null;
         };
+        /**
+         * RepoDiffReceiptOut
+         * @description What accepting a repo-artifact finding did with its diff (D8).
+         *
+         *     ``filed`` carries the feedback item id; ``deduped`` means an identical open
+         *     item already exists (normal — the reviewer may have relayed it at creation);
+         *     ``failed`` means the accept stands but the diff was NOT filed (screamed
+         *     server-side).
+         */
+        RepoDiffReceiptOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "filed" | "deduped" | "failed";
+            /** File Path */
+            file_path: string;
+            /** Feedback Id */
+            feedback_id?: string | null;
+        };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
             /** Repositories */
@@ -75070,6 +75440,41 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * SimplecastServiceStatus
+         * @description Safe aggregate status projection for Simplecast's fixed status page.
+         */
+        SimplecastServiceStatus: {
+            /**
+             * Kind
+             * @default simplecast_public_service_status
+             * @constant
+             */
+            __kind?: "simplecast_public_service_status";
+            /**
+             * Provider
+             * @default simplecast
+             * @constant
+             */
+            provider?: "simplecast";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.simplecast.com
+             * @constant
+             */
+            status_page?: "https://status.simplecast.com";
         };
         /** SimulateProviderRetryRequest */
         SimulateProviderRetryRequest: {
@@ -83701,6 +84106,41 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * VeedServiceStatus
+         * @description Safe aggregate status projection for VEED's fixed status page.
+         */
+        VeedServiceStatus: {
+            /**
+             * Kind
+             * @default veed_public_service_status
+             * @constant
+             */
+            __kind?: "veed_public_service_status";
+            /**
+             * Provider
+             * @default veed
+             * @constant
+             */
+            provider?: "veed";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.veed.io/
+             * @constant
+             */
+            status_page?: "https://status.veed.io/";
+        };
         /** VerdictRequest */
         VerdictRequest: {
             /**
@@ -87303,6 +87743,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WhoamiResponse"];
+                };
+            };
+        };
+    };
+    list_my_organizations_auth_organizations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationReport"];
                 };
             };
         };
@@ -99928,6 +100388,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GatherStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_simplecast_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimplecastServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_kajabi_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KajabiServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_grain_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrainStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_livestorm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LivestormStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_descript_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescriptServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_lumen5_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lumen5ServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_veed_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VeedServiceStatus"];
                 };
             };
         };
