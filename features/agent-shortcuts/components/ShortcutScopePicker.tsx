@@ -46,6 +46,14 @@ export interface ShortcutScopePickerProps {
   onScopeChange: (scope: AgentScope, scopeId?: string) => void;
   disabled?: boolean;
   allowGlobal?: boolean;
+  /**
+   * Restrict the rungs offered, for call sites whose storage genuinely has
+   * fewer. A mandate binding is written for a user, an org or everybody
+   * (`agent.mandate_binding.principal_type`) and has no project or task rung at
+   * all — offering one would be a control that cannot be saved, which is worse
+   * than not offering it. Omitted = every rung (`allowGlobal` still applies).
+   */
+  allowedScopes?: readonly AgentScope[];
   className?: string;
 }
 
@@ -61,6 +69,7 @@ export function ShortcutScopePicker({
   onScopeChange,
   disabled = false,
   allowGlobal = true,
+  allowedScopes,
   className,
 }: ShortcutScopePickerProps) {
   const dispatch = useAppDispatch();
@@ -77,9 +86,11 @@ export function ShortcutScopePicker({
     SCOPE_OPTIONS.find((opt) => opt.value === scope) ?? SCOPE_OPTIONS[0];
   const SelectedIcon = getIconComponent(selectedOption.icon);
 
-  const visibleOptions = allowGlobal
-    ? SCOPE_OPTIONS
-    : SCOPE_OPTIONS.filter((o) => o.value !== AGENT_SCOPES.GLOBAL);
+  const visibleOptions = SCOPE_OPTIONS.filter(
+    (o) =>
+      (allowGlobal || o.value !== AGENT_SCOPES.GLOBAL) &&
+      (allowedScopes === undefined || allowedScopes.includes(o.value)),
+  );
 
   const handleScopeChange = (next: AgentScope) => {
     const option = SCOPE_OPTIONS.find((o) => o.value === next);

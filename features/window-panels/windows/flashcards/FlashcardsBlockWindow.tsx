@@ -64,6 +64,12 @@ export function FlashcardsBlockWindow({
   const { isMobileView, enterMobileView, exitMobileView, mobileStartIndex } =
     useFlashcardMobileViewState(0);
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [clickedCard, setClickedCard] = useState<FlashcardMenuRow | null>(
+    null,
+  );
+  const openItemWindow = useOpenFlashcardItemWindow();
+
   const set = useFlashcardsSet({
     content: content ?? undefined,
     serverData: serverData ?? undefined,
@@ -87,6 +93,33 @@ export function FlashcardsBlockWindow({
     content || serverData || set.flashcards.length > 0,
   );
   const displayTitle = `${title}${set.completeCount > 0 ? ` (${set.completeCount})` : ""}`;
+
+  const flashcardSection = useFlashcardMenuSection({
+    getRow: () => clickedCard,
+    actions: {
+      onOpenItem: (row) =>
+        openItemWindow({
+          front: row.front,
+          back: row.back ?? null,
+          index: row.index,
+          title,
+        }),
+    },
+    unavailable: {
+      "flashcard-flip": "Works on the Study window",
+      "flashcard-study-set": "This set has no separate study session",
+    },
+  });
+  const resolveCardContext = (target: HTMLElement | null) => {
+    const idx = resolveFlashcardGridIndex(gridRef.current, target);
+    const card = idx != null ? set.flashcards[idx] : null;
+    const row: FlashcardMenuRow | null = card
+      ? { front: card.front ?? "", back: card.back ?? null, index: idx! }
+      : null;
+    setClickedCard(row);
+    if (!row) return null;
+    return { [CONTEXT_MENU_ENTITY_KEY]: flashcardEntityRef(row) };
+  };
 
   if (isMobileView && set.flashcards.length > 0) {
     return (
@@ -148,20 +181,28 @@ export function FlashcardsBlockWindow({
         }
       >
         {hasContent ? (
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <FlashcardsSetBody
-              flashcards={set.flashcards}
-              isComplete={set.isComplete}
-              layoutMode={set.layoutMode}
-              hasStreamingCard={set.hasStreamingCard}
-              compact
-            />
-            {set.flashcards.length === 0 && (
-              <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-                No flashcards available yet...
-              </div>
-            )}
-          </div>
+          <NonEditableContextMenu
+            sourceFeature="education-flashcards"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: title }}
+            resolveContextOnOpen={resolveCardContext}
+            extraSections={[flashcardSection]}
+          >
+            <div ref={gridRef} className="min-h-0 flex-1 overflow-y-auto">
+              <FlashcardsSetBody
+                flashcards={set.flashcards}
+                isComplete={set.isComplete}
+                layoutMode={set.layoutMode}
+                hasStreamingCard={set.hasStreamingCard}
+                compact
+              />
+              {set.flashcards.length === 0 && (
+                <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                  No flashcards available yet...
+                </div>
+              )}
+            </div>
+          </NonEditableContextMenu>
         ) : (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
             No flashcard content to display.
