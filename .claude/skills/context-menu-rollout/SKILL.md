@@ -57,6 +57,29 @@ Open [`features/context-menu-v3/SECTIONS.md`](../../../features/context-menu-v3/
 | No builder, but the identity appears on **2+ surfaces** | **Extract** a shared builder (copy the shape of `useKeywordMenuSection`), register it in SECTIONS.md, use it. |
 | No builder, identity is **genuinely page-local** | Inline `extraSections` is correct. Do not register a one-off. |
 
+### 🚨 YOU MAY NOT ASSERT "page-local" WITHOUT RUNNING THE SEARCH
+
+This is the step the first pilot wave got wrong on **every file**, so it is now
+mechanical. "Page-local" is the RARE answer, not the default. Before you write
+it, run the recurrence search and put the result in your report:
+
+```bash
+# the identity's table / type token / row-type name — try more than one spelling
+grep -rl "workflow_run\|WorkflowRun" features app | grep '\.tsx$'
+```
+
+Count only files that **render that identity to a user**. Exclude tests,
+`features/overlays/openers/**` (those are opener hooks), and pure type files.
+
+- **2 or more → EXTRACT and register.** No exceptions, no "but the other one is
+  a window", no "but they show slightly different columns". A window and a
+  table showing the same record are exactly the case the registry exists for.
+- **1 → inline is correct**, and your report states the command and the count.
+
+If every file in your shard came back "page-local", you did not search. Two
+agents in the first wave reported six page-local identities; five of the six
+were wrong — `workflow run` renders on five surfaces, `activity event` on four.
+
 Then, if you adopted an existing builder, do **THE GROWTH STEP** — the most
 valuable thing you will do today:
 
@@ -196,10 +219,10 @@ Per file, five lines. No prose essays.
 ```
 <path>
   identity:  <what a row names>
-  registry:  adopted <builder> | extracted <builder> (registered) | inline (page-local, because …)
+  registry:  adopted <builder> | extracted <builder> (registered) | inline — `<grep you ran>` → N file(s)
   grew:      <actions added to the shared builder>  | none
   disabled:  <items + reason>  | none
-  evidence:  type-check clean · check:context-menu: gone from <population> · commit <sha>
+  evidence:  type-check clean · gone from <population> · grade: wired | shell (<which slot, and why it is honestly empty>) · commit <sha>
 ```
 
 Then, separately: anything you found and did **not** touch.
