@@ -180,7 +180,20 @@ function buildExternalDomainsTop(
     }));
 }
 
-export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
+/**
+ * `view` fixes the screen from the ROUTE — the site's Links section gives each
+ * screen its own URL (`…/seo/[site]/links`, `/external`, `/plan`, `/table`).
+ * Left out (the section root, and the crawl mount, which owns no sub-routes),
+ * the view still comes from `?view=` — the shape every pre-restructure
+ * bookmark speaks.
+ */
+export function LinksInspectionTable({
+  crawlId,
+  view: fixedView,
+}: {
+  crawlId?: string;
+  view?: LinksViewMode;
+}) {
   const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
@@ -193,11 +206,12 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   const viewParam = searchParams.get("view");
   // "plan" (site link compliance) is site-scoped — never a crawl view.
   const view: LinksViewMode =
-    viewParam === "table" ||
+    fixedView ??
+    (viewParam === "table" ||
     viewParam === "external" ||
     (viewParam === "plan" && !crawlId)
       ? viewParam
-      : "graph";
+      : "graph");
   const workspaceTitle = crawlId
     ? "Crawl link edges"
     : view === "external"

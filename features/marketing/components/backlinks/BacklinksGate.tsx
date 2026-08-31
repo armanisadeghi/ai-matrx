@@ -20,6 +20,7 @@ const BacklinksWorkspace = dynamic(
   },
 );
 
-export function BacklinksGate() {
-  return <BacklinksWorkspace />;
+/** `view` fixes the screen from the ROUTE; left out, `?view=` still decides. */
+export function BacklinksGate({ view }: { view?: string } = {}) {
+  return <BacklinksWorkspace view={view} />;
 }

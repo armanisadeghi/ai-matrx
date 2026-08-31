@@ -442,7 +442,16 @@ export function parseBacklinkScheduleWrite(
   return next;
 }
 
-export function BacklinksWorkspace() {
+/**
+ * `view` fixes the screen from the ROUTE — the agency-model tree gives each
+ * backlinks screen its own URL (`…/seo/[site]/backlinks`, `/links`, `/changes`,
+ * `/coverage`, `/domains`, `/anchors`, `/pages`, `/competitors`, `/prospects`,
+ * `/insights`). Left out, the view still comes from `?view=` — the shape the
+ * site header's pills and every pre-restructure bookmark speak.
+ */
+export function BacklinksWorkspace({
+  view: fixedView,
+}: { view?: string } = {}) {
   const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
@@ -494,7 +503,8 @@ export function BacklinksWorkspace() {
     if (updated.version >= siteRef.current.version) siteRef.current = updated;
   };
 
-  const tab = useMarketingSubView("backlinks");
+  const queryTab = useMarketingSubView("backlinks");
+  const tab = fixedView ?? queryTab;
   /**
    * The Prospects tab's controller lives HERE, not inside the tab, because the
    * surface scope below must report the same prospect list the user is looking

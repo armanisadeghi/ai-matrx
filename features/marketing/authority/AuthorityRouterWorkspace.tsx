@@ -51,12 +51,21 @@ import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubVie
 import { useAuthorityRouter } from "./useAuthorityRouter";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
-export function AuthorityRouterWorkspace() {
+/**
+ * `view` fixes the screen from the ROUTE — the agency-model tree gives each
+ * authority screen its own URL (`…/seo/[site]/authority`, `/routes`,
+ * `/evidence`). Left out, the view still comes from `?view=`, the shape the
+ * site header's pills and every pre-restructure bookmark speak.
+ */
+export function AuthorityRouterWorkspace({
+  view: fixedView,
+}: { view?: string } = {}) {
   const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const authority = useAuthorityRouter(site.id);
   const [guidance, setGuidance] = useState("");
-  const view = useMarketingSubView("authority");
+  const queryView = useMarketingSubView("authority");
+  const view = fixedView ?? queryView;
   const [approved, setApproved] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [working, setWorking] = useState<string | null>(null);
