@@ -864,6 +864,11 @@ export const addAudioSessionToThread =
         ref: threadRef(threadId),
         entityType: "studio_session",
         entityId: session.id,
+        // The edge label is the durable, reload-safe title used by the
+        // Resources surface before the transcript slice has hydrated. Every
+        // name-bearing attach must stamp it; otherwise a second session comes
+        // back as the positional "Recording N" stand-in after refresh.
+        label: session.title,
       });
       dispatch(
         assignmentUpserted({
@@ -884,7 +889,8 @@ export const addAudioSessionToThread =
 
 export const setThreadActiveAudioSession =
   (threadId: string, studioSessionId: string) =>
-  async (dispatch: AppDispatch) => {
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const previousId = selectActiveAudioSessionId(threadId)(getState());
     dispatch(
       assignmentActiveSet({
         key: containerKey("thread", threadId),
@@ -900,6 +906,20 @@ export const setThreadActiveAudioSession =
         studioSessionId,
       );
     } catch (err) {
+      // The server refused the switch, so the optimistic selection is a lie.
+      // Put the selector back on the last durable edge instead of leaving the
+      // Audio tab focused on a session a refresh will immediately undo.
+      if (previousId) {
+        dispatch(
+          assignmentActiveSet({
+            key: containerKey("thread", threadId),
+            entityType: "studio_session",
+            entityId: previousId,
+          }),
+        );
+      } else {
+        void dispatch(loadThreadAttachments(threadId));
+      }
       reportWarRoomError("setThreadActiveAudioSession", err, {
         toast: "Couldn't switch the audio session",
       });
@@ -1001,6 +1021,9 @@ export const addNoteToThread =
         ref: threadRef(threadId),
         entityType: "note",
         entityId: note.id,
+        // The association label is what the generic Resources surface and a
+        // cold switcher can show before the note slice has fetched this row.
+        label: note.label,
       });
       dispatch(
         assignmentUpserted({
@@ -1020,7 +1043,9 @@ export const addNoteToThread =
   };
 
 export const setThreadActiveNote =
-  (threadId: string, noteId: string) => async (dispatch: AppDispatch) => {
+  (threadId: string, noteId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const previousId = selectActiveNoteId(threadId)(getState());
     dispatch(
       assignmentActiveSet({
         key: containerKey("thread", threadId),
@@ -1031,6 +1056,17 @@ export const setThreadActiveNote =
     try {
       await assoc.setActiveAssignment(threadRef(threadId), "note", noteId);
     } catch (err) {
+      if (previousId) {
+        dispatch(
+          assignmentActiveSet({
+            key: containerKey("thread", threadId),
+            entityType: "note",
+            entityId: previousId,
+          }),
+        );
+      } else {
+        void dispatch(loadThreadAttachments(threadId));
+      }
       reportWarRoomError("setThreadActiveNote", err, {
         toast: "Couldn't switch the note",
       });

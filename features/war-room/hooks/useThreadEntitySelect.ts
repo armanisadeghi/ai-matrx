@@ -47,6 +47,7 @@ import {
 import {
   addAudioSessionToThread,
   addNoteToThread,
+  attachEntityToThread,
   removeConversationFromRoom,
   removeEntityFromThread,
   setRoomActiveConversation,
@@ -66,22 +67,52 @@ export function useThreadNoteSelectAdapter(
   const noteIds = useAppSelector(selectNoteIdsForThread(threadId));
   const activeId = useAppSelector(selectActiveNoteId(threadId));
   const notesById = useAppSelector(selectNotesMap);
+  const assignments = useAppSelector(
+    selectAssignmentsForContainer("thread", threadId),
+  );
+
+  // Resolve every attached row from its canonical source table, not only the
+  // active note that the editor happens to fetch. Passing a null label is
+  // deliberate: an edge label is an attach-time cache and may predate a
+  // rename; the source row is truth. The edge remains the immediate fallback
+  // while the batched source read is in flight.
+  useEntityTitles(
+    noteIds.map((id) => ({ token: "note", id, label: null })),
+  );
 
   return {
     loading: !loaded,
     items: noteIds.map((id, i) => ({
       id,
-      title: notesById[id]?.label?.trim() || `Note ${i + 1}`,
+      title:
+        notesById[id]?.label?.trim() ||
+        getCachedEntityTitle("note", id) ||
+        assignments
+          .find((row) => row.entity_type === "note" && row.entity_id === id)
+          ?.label?.trim() ||
+        `Note ${i + 1}`,
     })),
     activeId,
     setActive: (id) => dispatch(setThreadActiveNote(threadId, id)),
     createAndAttach: (title) =>
       dispatch(addNoteToThread(threadId, roomId, title)),
     rename: async (id, title) => {
+      const trimmed = title.trim();
       try {
-        const note = await updateNoteApi(id, { label: title.trim() });
+        const note = await updateNoteApi(id, { label: trimmed });
         dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
-        primeEntityTitle("note", id, title);
+        const row = assignments.find(
+          (assignment) =>
+            assignment.entity_type === "note" && assignment.entity_id === id,
+        );
+        const labelSynced = await dispatch(
+          attachEntityToThread(threadId, "note", id, {
+            label: trimmed,
+            makeActive: row?.is_active ?? false,
+          }),
+        );
+        if (!labelSynced) return false;
+        primeEntityTitle("note", id, trimmed);
         return true;
       } catch (err) {
         console.error("[useThreadNoteSelectAdapter] rename failed", {
@@ -105,6 +136,13 @@ export function useThreadAudioSessionSelectAdapter(
   const sessionIds = useAppSelector(selectAudioSessionIdsForThread(threadId));
   const activeId = useAppSelector(selectActiveAudioSessionId(threadId));
   const sessionsById = useAppSelector(selectSessionsById);
+  const assignments = useAppSelector(
+    selectAssignmentsForContainer("thread", threadId),
+  );
+
+  useEntityTitles(
+    sessionIds.map((id) => ({ token: "studio_session", id, label: null })),
+  );
 
   return {
     loading: !loaded,
@@ -112,19 +150,41 @@ export function useThreadAudioSessionSelectAdapter(
       id,
       // Real session title when the studio row is hydrated; positional
       // fallback matches the sessions-drawer vocabulary.
-      title: sessionsById[id]?.title?.trim() || `Recording ${i + 1}`,
+      title:
+        sessionsById[id]?.title?.trim() ||
+        getCachedEntityTitle("studio_session", id) ||
+        assignments
+          .find(
+            (row) =>
+              row.entity_type === "studio_session" && row.entity_id === id,
+          )
+          ?.label?.trim() ||
+        `Recording ${i + 1}`,
     })),
     activeId,
     setActive: (id) => dispatch(setThreadActiveAudioSession(threadId, id)),
     createAndAttach: (title) =>
       dispatch(addAudioSessionToThread(threadId, title)),
     rename: async (id, title) => {
+      const trimmed = title.trim();
       try {
         const session = await dispatch(
-          updateSessionThunk({ id, patch: { title: title.trim() } }),
+          updateSessionThunk({ id, patch: { title: trimmed } }),
         ).unwrap();
         if (!session) return false;
-        primeEntityTitle("studio_session", id, title);
+        const row = assignments.find(
+          (assignment) =>
+            assignment.entity_type === "studio_session" &&
+            assignment.entity_id === id,
+        );
+        const labelSynced = await dispatch(
+          attachEntityToThread(threadId, "studio_session", id, {
+            label: trimmed,
+            makeActive: row?.is_active ?? false,
+          }),
+        );
+        if (!labelSynced) return false;
+        primeEntityTitle("studio_session", id, trimmed);
         return true;
       } catch (err) {
         console.error("[useThreadAudioSessionSelectAdapter] rename failed", {
