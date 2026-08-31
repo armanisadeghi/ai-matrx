@@ -20,6 +20,8 @@ import { DiffViewer } from "@ai-matrx/diff/react";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
 import { configSnapshotJson } from "@/features/admin/applications/config/schema";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
@@ -57,6 +59,9 @@ export function AppConfigHistoryPanel({
   const [restoreTarget, setRestoreTarget] =
     useState<AppConfigHistoryRow | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [clickedRow, setClickedRow] = useState<AppConfigHistoryRow | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +176,53 @@ export function AppConfigHistoryPanel({
           : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live row.`}
       </p>
 
+      {/* No entity: public.app_config_history has no registered
+          EntityTypeToken (nor does app_config), and a superseded snapshot is
+          not something to Attach/Share anyway. No surfaceName: this panel
+          renders inside the config EDITOR, a sub-view of
+          `matrx-admin/applications` that cannot honestly fill that surface's
+          declared scope from here. Mirrors CatalogHistoryPanel. */}
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(element) => {
+          const id = element
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = id
+            ? (entries ?? []).find((r) => String(r.id) === id)
+            : undefined;
+          setClickedRow(row ?? null);
+          if (!row) return null;
+          return {
+            content: [
+              `${app} @ ${row.changed_at} by ${whoLabel(row.changed_by)}`,
+              configSnapshotJson(row),
+            ].join("\n"),
+          };
+        }}
+        extraSections={[
+          {
+            id: "app-config-history-row",
+            label: "This snapshot",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "item",
+                id: "app-config-history-restore",
+                label: "Restore this version",
+                icon: Undo2,
+                disabled: !clickedRow,
+                description: "Overwrite the live config with this snapshot",
+                onSelect: () => {
+                  if (clickedRow) setRestoreTarget(clickedRow);
+                },
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
       <MatrxDataTable
         urlState={{ id: "application-config-history" }}
         data={entries ?? []}
@@ -243,6 +295,7 @@ export function AppConfigHistoryPanel({
           </Button>
         )}
       />
+      </NonEditableContextMenu>
 
       <ConfirmDialog
         open={restoreTarget !== null}

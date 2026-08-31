@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
 import { AppConfigEditor } from "@/features/admin/applications/config/components/AppConfigEditor";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
@@ -44,6 +46,7 @@ export function AppConfigClient({
   const { toast } = useToast();
   const adminEmails = useAdminEmails();
   const [rows, setRows] = useState<AppConfigRow[]>(initialRows);
+  const [clickedRow, setClickedRow] = useState<AppConfigRow | null>(null);
   const [view, setView] = useState<View>(() =>
     initialApp && initialRows.some((row) => row.app === initialApp)
       ? { mode: "edit", app: initialApp }
@@ -218,6 +221,46 @@ export function AppConfigClient({
     >
       <div className="flex h-full flex-col gap-3 p-4">
         <div className="min-h-0 flex-1">
+          {/* No entity: public.app_config has no registered EntityTypeToken
+              (mirrors CatalogsClient — see its note on catalog_entries).
+              Copy/AI act on the raw content only. */}
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id ? rows.find((r) => r.app === id) : undefined;
+              setClickedRow(row ?? null);
+              if (!row) return null;
+              return {
+                content: `${row.app} (schema v${row.schema_version}, min ${row.min_supported_app_version})`,
+              };
+            }}
+            extraSections={[
+              {
+                id: "app-config-row",
+                label: "This application",
+                anchor: "after-compare",
+                items: [
+                  {
+                    kind: "item",
+                    id: "app-config-open",
+                    label: "Edit configuration",
+                    icon: MonitorCog,
+                    disabled: !clickedRow,
+                    description: "Open this application's config editor",
+                    onSelect: () => {
+                      if (clickedRow)
+                        setView({ mode: "edit", app: clickedRow.app });
+                    },
+                  },
+                ] satisfies ContextMenuExtraItem[],
+              },
+            ]}
+          >
           <MatrxDataTable
             urlState={{ id: "application-config" }}
             data={rows}
@@ -273,6 +316,7 @@ export function AppConfigClient({
               }),
             }}
           />
+          </NonEditableContextMenu>
         </div>
       </div>
     </SurfaceRuntimeProvider>
