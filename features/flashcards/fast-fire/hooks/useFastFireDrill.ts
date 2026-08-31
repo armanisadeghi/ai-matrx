@@ -66,6 +66,7 @@ import {
 import { gradeCard } from "../agents/gradeCard.thunk";
 import { reviewSession } from "../agents/reviewSession.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
+import { reviewAfterPendingGrades } from "./pending-grades";
 
 const COUNTDOWN_SECONDS = 3;
 /** SKIP path: the brief beat between cards (buzzer + slice), then the next arms.
@@ -128,6 +129,9 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   // double-grade. This is the structural kill for the "dropped/double card" bug
   // class, independent of the timer's own single-fire guard.
   const closedCardsRef = useRef<Set<string>>(new Set());
+  // Card progression never waits for AI grading, but the session review must
+  // not snapshot Redux until every launched grade reaches a terminal state.
+  const pendingGradesRef = useRef<Set<Promise<unknown>>>(new Set());
 
   const subscribeProgress: UseFastFireDrillResult["subscribeProgress"] = (
     cb,
@@ -270,8 +274,17 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       secondsAllowed: answerSeconds,
       sessionId,
     };
-    void stopCardClip(card.id).then((clip) => {
-      void dispatch(gradeCard({ ...cardSnapshot, clip }));
+    const pendingGrade = stopCardClip(card.id)
+      .then((clip) => dispatch(gradeCard({ ...cardSnapshot, clip })))
+      .catch((error: unknown) => {
+        console.error(
+          `[useFastFireDrill] card ${card.id} grading pipeline failed:`,
+          error,
+        );
+      });
+    pendingGradesRef.current.add(pendingGrade);
+    void pendingGrade.finally(() => {
+      pendingGradesRef.current.delete(pendingGrade);
     });
 
     windowRef.current = null;
@@ -386,9 +399,14 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       }
 
       // 3) Optional holistic review (no-op if no review agent configured).
-      //    Persists its own session_review; the session already stands
-      //    completed, so a failed review is a value-add gap, never a blocker.
-      void dispatch(reviewSession({ sessionId }));
+      //    Card grading stays concurrent during the drill, but the review's
+      //    one Redux snapshot waits for every launched grade to settle. Without
+      //    this barrier the last card(s) can still be grading while Coach sees
+      //    a stale partial deck. The session already stands completed, so a
+      //    failed review remains a value-add gap, never a terminal blocker.
+      await reviewAfterPendingGrades(pendingGradesRef.current, () =>
+        dispatch(reviewSession({ sessionId })),
+      );
 
       if (!cancelled) dispatch(completeDrill());
     })();

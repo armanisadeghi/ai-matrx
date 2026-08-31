@@ -162,6 +162,11 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-31 — **FastFire Coach review waits for every launched card grade to
+  settle before snapshotting Redux.** Card progression remains concurrent, but
+  the terminal batch review can no longer describe a partial deck while the
+  final background grades are still resolving.
+
 - 2026-08-31 — The shared spoken-grading boundary retries one transient
   malformed structured response with the same durable `answer_audio`; only the
   final failed attempt reaches Error Inspector. FastFire and every other
