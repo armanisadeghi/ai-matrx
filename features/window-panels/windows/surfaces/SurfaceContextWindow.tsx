@@ -16,6 +16,8 @@ import { Input } from "@ai-matrx/design-system";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem, ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
@@ -218,6 +220,57 @@ export default function SurfaceContextWindow({
     window.setTimeout(() => setCopied(null), 1200);
   };
 
+  /**
+   * Doors only — this window's own debug tool, not a fork of it. Mirrors the
+   * two buttons already in the detail panel (Copy, Locate) so a right-click
+   * anywhere in this window offers the same thing the UI already does,
+   * instead of leaking through to whatever page it is inspecting.
+   */
+  const [menuKey, setMenuKey] = useState<string | null>(null);
+  const contextItemSection = (
+    key: string | null,
+  ): ContextMenuExtraSection => {
+    const item = key ? (items.find((i) => i.key === key) ?? null) : null;
+    const raw = item ? live.scope[item.key] : undefined;
+    const items_: ContextMenuExtraItem[] = [
+      {
+        kind: "item",
+        id: "surface-context-copy-key",
+        label: "Copy key",
+        icon: Copy,
+        onSelect: () => item && void copyText(item.key, `${item.key}:key`),
+        disabled: !item,
+      },
+      {
+        kind: "item",
+        id: "surface-context-copy-value",
+        label: "Copy value",
+        icon: Copy,
+        onSelect: () =>
+          item && void copyText(displayValue(raw), item.key),
+        disabled: !item || !hasValue(raw),
+      },
+      {
+        kind: "item",
+        id: "surface-context-locate",
+        label: "Locate on page",
+        icon: Crosshair,
+        onSelect: () => {
+          if (!item) return;
+          const found = locateSurfaceValueOnPage(item.key);
+          if (!found) {
+            toast.message("Not anchored on this page", {
+              description:
+                'No element is tagged data-surface-value="' + item.key + '" yet.',
+            });
+          }
+        },
+        disabled: !item,
+      },
+    ];
+    return { id: "surface-context-item", label: "This value", items: items_ };
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -333,6 +386,18 @@ export default function SurfaceContextWindow({
               />
             </div>
           </div>
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: surfaceName }}
+            extraSections={[contextItemSection(menuKey)]}
+            resolveContextOnOpen={(target) => {
+              const el = target?.closest<HTMLElement>("[data-row-id]");
+              const key = el?.getAttribute("data-row-id") ?? null;
+              setMenuKey(key);
+              return { content: key ?? "" };
+            }}
+          >
           <div className="min-h-0 flex-1 overflow-y-auto pb-1">
             {sections.map((section) => (
               <div key={section.key}>
@@ -353,6 +418,7 @@ export default function SurfaceContextWindow({
                     <button
                       key={item.key}
                       type="button"
+                      data-row-id={item.key}
                       onClick={() => setSelectedKey(item.key)}
                       className={cn(
                         "flex w-full min-w-0 items-start gap-2 border-l-2 px-2.5 py-2 text-left transition-colors",
@@ -398,6 +464,7 @@ export default function SurfaceContextWindow({
               </p>
             )}
           </div>
+          </NonEditableContextMenu>
         </div>
       }
       footerLeft={
@@ -513,6 +580,12 @@ export default function SurfaceContextWindow({
         </code>
       }
     >
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: selected?.key ?? surfaceName }}
+        extraSections={[contextItemSection(effectiveSelectedKey)]}
+      >
       {selected ? (
         <div className="flex h-full min-h-0 flex-col">
           <div className="shrink-0 border-b border-border p-4">
@@ -629,6 +702,7 @@ export default function SurfaceContextWindow({
           </div>
         </div>
       )}
+      </NonEditableContextMenu>
       {live.error && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 rounded-md border border-destructive/30 bg-background px-3 py-2 text-xs text-destructive shadow-lg">
           {live.error}

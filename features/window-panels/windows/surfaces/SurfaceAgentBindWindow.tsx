@@ -77,7 +77,7 @@ export function SurfaceAgentBindWindow({
        * "surface" or "agent" identity.
        */}
       <NonEditableContextMenu
-        sourceFeature="surfaces"
+        sourceFeature="admin"
         contentSource={{ type: "raw" }}
         contextData={{ content: surfaceName }}
       >
