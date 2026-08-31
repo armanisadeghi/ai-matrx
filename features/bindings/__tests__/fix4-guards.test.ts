@@ -165,6 +165,11 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     document.body.style.pointerEvents = "none";
     const dialog = document.createElement("div");
     dialog.setAttribute("role", "alertdialog");
+    // `data-state="open"` is what Radix actually stamps on a live layer, and
+    // it is the signal the guard trusts. A bare role with no state and no box
+    // is a MOUNTED-BUT-CLOSED layer, which must NOT block the repair — see the
+    // "PRESENT is not OPEN" cases below.
+    dialog.setAttribute("data-state", "open");
     document.body.appendChild(dialog);
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
     expect(document.body.style.pointerEvents).toBe("none");
@@ -175,6 +180,7 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     document.body.style.pointerEvents = "none";
     const listbox = document.createElement("div");
     listbox.setAttribute("role", "listbox");
+    listbox.setAttribute("data-state", "open");
     document.body.appendChild(listbox);
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
   });
@@ -261,5 +267,47 @@ describe("V1 R2-3 — who can decide for an organization, said before the click"
     // THE REGRESSION: this is the case the picker offered and the server 403'd.
     expect(canBind("member")).toBe(false);
     expect(canBind(undefined)).toBe(false);
+  });
+});
+
+describe("R2-1 follow-up — PRESENT is not OPEN (walk: repaired only 2 of 6 probes)", () => {
+  beforeEach(() => {
+    __resetBodyPointerEventsRepairs();
+    document.body.style.removeProperty("pointer-events");
+    document.body.innerHTML = "";
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    document.body.style.removeProperty("pointer-events");
+    document.body.innerHTML = "";
+  });
+
+  function lockWith(html: string) {
+    document.body.innerHTML = html;
+    document.body.style.pointerEvents = "none";
+  }
+
+  test("THE REGRESSION: a leftover Radix focus guard no longer disqualifies it", () => {
+    // Radix leaves these behind; the first cut treated one as an open layer, so
+    // any page that had EVER opened an overlay silently stopped being guarded.
+    lockWith('<span data-radix-focus-guard tabindex="0"></span>');
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
+  });
+
+  test("a mounted-but-CLOSED dialog does not count as open", () => {
+    lockWith('<div role="dialog" data-state="closed"></div>');
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
+  });
+
+  test("an aria-hidden listbox does not count as open", () => {
+    lockWith('<div role="listbox" aria-hidden="true"></div>');
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
+  });
+
+  test("a genuinely OPEN dialog is still left completely alone", () => {
+    lockWith('<div role="alertdialog" data-state="open"></div>');
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+    expect(document.body.style.pointerEvents).toBe("none");
   });
 });

@@ -46,8 +46,36 @@ const OPEN_LAYER_SELECTOR = [
   '[role="menu"]',
   '[role="listbox"]',
   "[data-radix-popper-content-wrapper]",
-  "[data-radix-focus-guard]",
 ].join(",");
+
+/**
+ * 🚨 PRESENT IS NOT OPEN (independent walk, 2026-08-31: the guard repaired the
+ * body on only 2 of 6 deliberate probes).
+ *
+ * The first cut declined whenever a matching element merely EXISTED in the
+ * document. Two things made that wrong. `[data-radix-focus-guard]` is a
+ * sentinel Radix leaves behind, not a layer, and it was in the list — so on any
+ * page that had ever opened an overlay the guard silently disqualified itself
+ * forever. And a mounted-but-closed dialog or listbox still matches its role
+ * selector while being invisible. Both read as "a layer is open" when nothing
+ * was, which is indistinguishable from a guard that is not armed at all — and
+ * that is precisely how the walk had to describe it.
+ *
+ * So a layer only counts when it is actually RENDERED: Radix marks the open
+ * ones `data-state="open"`, and anything without that stamp must still occupy
+ * space to be believed. A guard whose refusal cannot be distinguished from its
+ * absence is not a guard.
+ */
+function hasOpenLayer(doc: Document): boolean {
+  for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
+    if (el.getAttribute("data-state") === "closed") continue;
+    if (el.getAttribute("aria-hidden") === "true") continue;
+    if (el.getAttribute("data-state") === "open") return true;
+    // No state stamp — believe it only if it is really on screen.
+    if ((el as HTMLElement).getClientRects().length > 0) return true;
+  }
+  return false;
+}
 
 /** How many times this session had to repair the body. Read by the scream. */
 let repairs = 0;
@@ -64,7 +92,7 @@ export function restoreBodyPointerEventsIfOrphaned(
   const body = doc.body;
   if (!body) return false;
   if (body.style.pointerEvents !== "none") return false;
-  if (doc.querySelector(OPEN_LAYER_SELECTOR)) return false;
+  if (hasOpenLayer(doc)) return false;
 
   body.style.removeProperty("pointer-events");
   repairs += 1;
@@ -113,12 +141,20 @@ export function useBodyPointerEventsGuard(): void {
       attributeFilter: ["style"],
       childList: true,
     });
+    // A slow teardown can set the lock a frame or two AFTER the last mutation
+    // this observer sees, and then nothing ever re-checks. A cheap low-rate
+    // sweep closes that window; it reads two properties and does nothing at
+    // all unless the body is actually locked with no layer up.
+    const sweep = setInterval(() => {
+      restoreBodyPointerEventsIfOrphaned();
+    }, 1000);
     // Portals mount into <body>, but a layer can also be removed from deeper in
     // the tree; a pointerdown that lands on nothing is the other symptom, and
     // it costs nothing to re-check then.
     document.addEventListener("pointerdown", schedule, true);
     return () => {
       observer.disconnect();
+      clearInterval(sweep);
       document.removeEventListener("pointerdown", schedule, true);
       if (frame) cancelAnimationFrame(frame);
     };

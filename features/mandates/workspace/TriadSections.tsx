@@ -394,6 +394,9 @@ export function TriadGoalSection({
   // THE MANDATE DOOR — see the note on the Input section's converter run.
   const refine = useHeadlessAgentJson();
   const [refining, setRefining] = useState(false);
+  // The TARGET mandate's own served surface — what the goal writer needs told
+  // about the job being refined. Never re-derived here (see `refineValues`).
+  const targetSurface = useMandateInputSurface(data.mandate.mandate_key);
 
   const save = async () => {
     if (!draft.trim()) {
@@ -431,9 +434,47 @@ export function TriadGoalSection({
    * than sending an empty string dressed as an answer.
    */
   const refineValues = useMemo(() => {
-    const described = parseDraftInputs(
-      (data.mandate as { draft_inputs?: unknown }).draft_inputs,
-    );
+    /**
+     * 🚨 THE TARGET'S INPUTS COME FROM ITS SERVED SURFACE, NOT FROM ONE COLUMN
+     * (found by an independent walk of Arman's flow, 2026-08-31).
+     *
+     * This read `draft_inputs` alone and sent *"This job describes no inputs
+     * yet."* for `education.classes_guidance` — a mandate with SEVEN declared
+     * inputs printed on the same screen three inches away. The refined goal
+     * then opened, correctly and uselessly, with *"there is nothing in your
+     * method yet… the rulebook I was handed contains no rules."* The AI was not
+     * wrong; it was told the truth about the wrong thing.
+     *
+     * A mandate can declare inputs FOUR ways — a Provision, the promoted
+     * contract columns, its own described inputs, or the bound Holder's
+     * variables — and the INPUT section right above renders all four. Reading
+     * one of them is the exact defect `input-surface.ts` was written to end:
+     * *"NEVER re-derive a surface here."* The served surface is the one thing
+     * that knows all four, so it is what gets sent, and when it has not been
+     * read the caller says so rather than asserting an absence it never
+     * checked — "not read yet" and "declares nothing" must never look alike.
+     */
+    const servedInputs =
+      targetSurface.status === "ready" ? targetSurface.surface.inputs : [];
+    const inputsText =
+      targetSurface.status === "loading"
+        ? "(this job's inputs are still being read)"
+        : targetSurface.status === "error"
+          ? `(this job's inputs could not be read: ${targetSurface.message})`
+          : servedInputs.length > 0
+            ? servedInputs
+                .map((i) =>
+                  [
+                    i.label && i.label !== i.name ? `${i.label} (${i.name})` : i.name,
+                    i.kind ? `[${i.kind}]` : "",
+                    i.sourcing === "require" ? "— required" : "",
+                    i.help ? `— ${i.help}` : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                )
+                .join("\n")
+            : "This job declares no inputs.";
     const outputs = [
       data.mandate.output_kind
         ? `Output kind: ${data.mandate.output_kind}`
@@ -453,19 +494,10 @@ export function TriadGoalSection({
       ]
         .filter(Boolean)
         .join("\n"),
-      inputs:
-        described.length > 0
-          ? described
-              .map((i) =>
-                [i.description, i.name ? `(${i.name})` : "", i.kind ? `[${i.kind}]` : ""]
-                  .filter(Boolean)
-                  .join(" "),
-              )
-              .join("\n")
-          : "This job describes no inputs yet.",
+      inputs: inputsText,
       outputs,
     };
-  }, [data.mandate, data.contract.requiredOutputKeys, goal]);
+  }, [data.mandate, data.contract.requiredOutputKeys, goal, targetSurface]);
 
   const runRefine = async (variables: Record<string, string>) => {
     setRefining(true);
