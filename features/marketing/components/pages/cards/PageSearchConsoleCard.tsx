@@ -43,6 +43,15 @@ import type { MarketingPage } from "@/features/marketing/types";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import { useGscKeywordValueByText } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
+import { useQueryClient } from "@tanstack/react-query";
 
 function formatCtr(ctr: number | null): string {
   return ctr === null ? "—" : `${(ctr * 100).toFixed(2)}%`;
@@ -67,7 +76,10 @@ function orderWithTarget(
 
 export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
+  const queryClient = useQueryClient();
   const [range, setRange] = useState<GscRangeKey>("28d");
+  // State, not a ref: the keyword menu section below reads it directly.
+  const [clickedRow, setClickedRow] = useState<PageQueryStat | null>(null);
   const days = gscRangeDays(range);
   const totals = usePageSearchTotals(page.id, days);
   const queries = usePageQueryStats(site.id, page.id, days);
@@ -83,6 +95,31 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     site.id,
     rows.map((row) => row.query),
   );
+  // KI-026's own row-actions family, same as every other keyword surface
+  // (WatchlistTab, GscDimensionTable, DigResultsTable, …).
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId: site.id,
+    onChanged: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", site.id],
+      }),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId: site.id,
+    siteName: site.name,
+    surfaces: keywordSurfaces,
+    getRow: (): KeywordMenuRow | null => {
+      const row = clickedRow;
+      if (!row) return null;
+      const value = keywordValues.data.get(normalizeKeywordPhrase(row.query));
+      return {
+        phrase: row.query,
+        keywordId: value?.keyword_id ?? null,
+        currentLevel: value?.value_band ?? null,
+        levelIsRuling: value?.value_source === "override",
+      };
+    },
+  });
   const truncated = Boolean(totals.data?.truncated || queries.data?.truncated);
   const isLoading = totals.isLoading || queries.isLoading;
   const isError = totals.isError || queries.isError;
@@ -289,6 +326,33 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
           </Badge>
         </div>
         <div className="p-2">
+          {keywordSurfaces.isOpen ? (
+            <div className="mb-2 shrink-0">{keywordSurfaces.node}</div>
+          ) : null}
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id ? (rows.find((r) => r.query === id) ?? null) : null;
+              setClickedRow(row);
+              if (!row) return null;
+              const value = keywordValues.data.get(
+                normalizeKeywordPhrase(row.query),
+              );
+              return {
+                content: `${row.query} — ${row.clicks} clicks · ${row.impressions} impressions`,
+                [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+                  phrase: row.query,
+                  keywordId: value?.keyword_id ?? null,
+                }),
+              };
+            }}
+            extraSections={[keywordMenuSection]}
+          >
           <MatrxDataTable
             urlState={{ id: "page-search-console" }}
             data={rows}
@@ -302,6 +366,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
                 "No query-level Search Console rows are stored for this page in the selected range.",
             }}
           />
+          </NonEditableContextMenu>
         </div>
         <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
           Site sync last completed {formatDate(site.gsc_synced_at)}. Sync runs
