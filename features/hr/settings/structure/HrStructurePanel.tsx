@@ -43,7 +43,7 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Info, ListTree, Loader2, MapPin, Plus, Save, Users } from "lucide-react";
+import { ExternalLink, Info, ListTree, Loader2, MapPin, Plus, Save, Users } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -61,15 +61,56 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 import { upsertHrStructure } from "../../service";
 import { isHrDenied } from "../../types";
 import type { HrDepartment, HrJobTitle, HrLocation, HrResult } from "../../types";
-import { hrPeopleHref } from "../../routes";
+import { hrPeopleHref, hrStructureFocusHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrJurisdiction } from "../types";
+
+/**
+ * ONE right-click section shape for all three structure tables (department,
+ * location, job title) — each is page-local (verified: none of the three
+ * types render anywhere else in `features/hr`), so this stays inline rather
+ * than a registered builder.
+ */
+function structureRowMenuSection(
+  row: { id: string; name: string } | null,
+  noun: string,
+  orgRef: string | null,
+  peopleHref: string | null,
+): ContextMenuExtraSection {
+  return {
+    id: "hr-structure-row",
+    label: `This ${noun}`,
+    anchor: "after-compare",
+    items: [
+      {
+        kind: "link",
+        id: "hr-structure-edit",
+        label: `Edit ${noun}`,
+        icon: ExternalLink,
+        href: row ? hrStructureFocusHref(row.id, orgRef) : "#",
+        disabled: !row,
+        description: !row ? `Right-click a ${noun} to edit it` : undefined,
+      },
+      {
+        kind: "link",
+        id: "hr-structure-people",
+        label: "See who's assigned",
+        icon: Users,
+        href: peopleHref ?? "#",
+        disabled: !row || !peopleHref,
+        description: !row ? `Right-click a ${noun} first` : undefined,
+      },
+    ],
+  };
+}
 
 /** The nine EEO-1 job categories. Fixed by the EEOC — not an org's to invent. */
 const EEO1_JOB_CATEGORIES = [
@@ -365,6 +406,7 @@ function DepartmentsSection({
   onSaved: () => void;
 }) {
   const [creating, setCreating] = useState(false);
+  const [clickedRow, setClickedRow] = useState<HrDepartment | null>(null);
   const byId = new Map(departments.map((department) => [department.id, department]));
 
   const columns: MatrxColumnDef<HrDepartment>[] = [
@@ -453,39 +495,60 @@ function DepartmentsSection({
       ) : null}
 
       <div className="p-4">
-        <MatrxDataTable
-          data={departments}
-          columns={columns}
-          getRowId={(row) => row.id}
-          pageSize={25}
-          selectedId={focus}
-          urlState={{ id: "hr-departments" }}
-          toolbar={{ search: true, searchPlaceholder: "Search departments" }}
-          emptyState={{
-            title: "No departments yet",
-            description:
-              "Nobody can be assigned to a department until one exists. Add the first one here — and the rest as the org grows.",
-            action: (
-              <NewRowButton
-                label="New department"
-                disabled={creating || !organizationId}
-                onClick={() => setCreating(true)}
-              />
-            ),
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = (id && departments.find((d) => d.id === id)) || null;
+            setClickedRow(row);
+            if (!row) return null;
+            return { content: `${row.name}${row.code ? ` (${row.code})` : ""}` };
           }}
-          detail={{
-            title: (row) => row.name,
-            render: (row) => (
-              <DepartmentEditor
-                department={row}
-                departments={departments}
-                organizationId={organizationId}
-                orgRef={orgRef}
-                onSaved={onSaved}
-              />
+          extraSections={[
+            structureRowMenuSection(
+              clickedRow,
+              "department",
+              orgRef,
+              clickedRow ? hrPeopleHref({ org: orgRef, departmentId: clickedRow.id }) : null,
             ),
-          }}
-        />
+          ]}
+        >
+          <MatrxDataTable
+            data={departments}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pageSize={25}
+            selectedId={focus}
+            urlState={{ id: "hr-departments" }}
+            toolbar={{ search: true, searchPlaceholder: "Search departments" }}
+            emptyState={{
+              title: "No departments yet",
+              description:
+                "Nobody can be assigned to a department until one exists. Add the first one here — and the rest as the org grows.",
+              action: (
+                <NewRowButton
+                  label="New department"
+                  disabled={creating || !organizationId}
+                  onClick={() => setCreating(true)}
+                />
+              ),
+            }}
+            detail={{
+              title: (row) => row.name,
+              render: (row) => (
+                <DepartmentEditor
+                  department={row}
+                  departments={departments}
+                  organizationId={organizationId}
+                  orgRef={orgRef}
+                  onSaved={onSaved}
+                />
+              ),
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </section>
   );
@@ -687,6 +750,7 @@ function LocationsSection({
   onSaved: () => void;
 }) {
   const [creating, setCreating] = useState(false);
+  const [clickedRow, setClickedRow] = useState<HrLocation | null>(null);
 
   const columns: MatrxColumnDef<HrLocation>[] = [
     {
@@ -777,39 +841,60 @@ function LocationsSection({
       ) : null}
 
       <div className="p-4">
-        <MatrxDataTable
-          data={locations}
-          columns={columns}
-          getRowId={(row) => row.id}
-          pageSize={25}
-          selectedId={focus}
-          urlState={{ id: "hr-locations" }}
-          toolbar={{ search: true, searchPlaceholder: "Search locations" }}
-          emptyState={{
-            title: "No locations yet",
-            description:
-              "Nothing can be scheduled or stamped until at least one exists — a punch has no rules to be checked against without a location.",
-            action: (
-              <NewRowButton
-                label="New location"
-                disabled={creating || !organizationId}
-                onClick={() => setCreating(true)}
-              />
-            ),
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = (id && locations.find((l) => l.id === id)) || null;
+            setClickedRow(row);
+            if (!row) return null;
+            return { content: `${row.name} (${row.tz})` };
           }}
-          detail={{
-            title: (row) => row.name,
-            render: (row) => (
-              <LocationEditor
-                location={row}
-                jurisdictions={jurisdictions}
-                organizationId={organizationId}
-                orgRef={orgRef}
-                onSaved={onSaved}
-              />
+          extraSections={[
+            structureRowMenuSection(
+              clickedRow,
+              "location",
+              orgRef,
+              clickedRow ? hrPeopleHref({ org: orgRef, locationId: clickedRow.id }) : null,
             ),
-          }}
-        />
+          ]}
+        >
+          <MatrxDataTable
+            data={locations}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pageSize={25}
+            selectedId={focus}
+            urlState={{ id: "hr-locations" }}
+            toolbar={{ search: true, searchPlaceholder: "Search locations" }}
+            emptyState={{
+              title: "No locations yet",
+              description:
+                "Nothing can be scheduled or stamped until at least one exists — a punch has no rules to be checked against without a location.",
+              action: (
+                <NewRowButton
+                  label="New location"
+                  disabled={creating || !organizationId}
+                  onClick={() => setCreating(true)}
+                />
+              ),
+            }}
+            detail={{
+              title: (row) => row.name,
+              render: (row) => (
+                <LocationEditor
+                  location={row}
+                  jurisdictions={jurisdictions}
+                  organizationId={organizationId}
+                  orgRef={orgRef}
+                  onSaved={onSaved}
+                />
+              ),
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </section>
   );
@@ -1056,6 +1141,7 @@ function JobTitlesSection({
   onSaved: () => void;
 }) {
   const [creating, setCreating] = useState(false);
+  const [clickedRow, setClickedRow] = useState<HrJobTitle | null>(null);
 
   const columns: MatrxColumnDef<HrJobTitle>[] = [
     {
@@ -1167,38 +1253,59 @@ function JobTitlesSection({
       ) : null}
 
       <div className="p-4">
-        <MatrxDataTable
-          data={jobTitles}
-          columns={columns}
-          getRowId={(row) => row.id}
-          pageSize={25}
-          selectedId={focus}
-          urlState={{ id: "hr-job-titles" }}
-          toolbar={{ search: true, searchPlaceholder: "Search job titles" }}
-          emptyState={{
-            title: "No job titles yet",
-            description:
-              "Setup deliberately does not create one, because a made-up title on a real person is worse than none. Add the ones this org actually uses.",
-            action: (
-              <NewRowButton
-                label="New job title"
-                disabled={creating || !organizationId}
-                onClick={() => setCreating(true)}
-              />
-            ),
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = (id && jobTitles.find((j) => j.id === id)) || null;
+            setClickedRow(row);
+            if (!row) return null;
+            return { content: row.title };
           }}
-          detail={{
-            title: (row) => row.title,
-            render: (row) => (
-              <JobTitleEditor
-                jobTitle={row}
-                organizationId={organizationId}
-                orgRef={orgRef}
-                onSaved={onSaved}
-              />
+          extraSections={[
+            structureRowMenuSection(
+              clickedRow ? { id: clickedRow.id, name: clickedRow.title } : null,
+              "job title",
+              orgRef,
+              clickedRow ? hrPeopleHref({ org: orgRef, jobTitleId: clickedRow.id }) : null,
             ),
-          }}
-        />
+          ]}
+        >
+          <MatrxDataTable
+            data={jobTitles}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pageSize={25}
+            selectedId={focus}
+            urlState={{ id: "hr-job-titles" }}
+            toolbar={{ search: true, searchPlaceholder: "Search job titles" }}
+            emptyState={{
+              title: "No job titles yet",
+              description:
+                "Setup deliberately does not create one, because a made-up title on a real person is worse than none. Add the ones this org actually uses.",
+              action: (
+                <NewRowButton
+                  label="New job title"
+                  disabled={creating || !organizationId}
+                  onClick={() => setCreating(true)}
+                />
+              ),
+            }}
+            detail={{
+              title: (row) => row.title,
+              render: (row) => (
+                <JobTitleEditor
+                  jobTitle={row}
+                  organizationId={organizationId}
+                  orgRef={orgRef}
+                  onSaved={onSaved}
+                />
+              ),
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </section>
   );

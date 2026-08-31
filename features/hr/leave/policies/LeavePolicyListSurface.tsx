@@ -29,6 +29,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { HrSettingsShell } from "@/features/hr/settings/HrSettingsShell";
@@ -42,6 +43,7 @@ import {
   leavePolicyHref,
 } from "../manager/routes";
 import { ACCRUAL_METHOD_LABEL, LEAVE_KIND_LABEL } from "./policy-form";
+import { leavePolicyMenuContent, leavePolicyMenuSection } from "./leave-policy-menu";
 
 /**
  * The accrual summary cell. This is FORMATTING of values the server sent, not arithmetic:
@@ -82,6 +84,7 @@ export function LeavePolicyListSurface() {
   const [error, setError] = useState<HrDenied | HrFailed | null>(null);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [clickedPolicy, setClickedPolicy] = useState<LeavePolicy | null>(null);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -247,34 +250,48 @@ export function LeavePolicyListSurface() {
           ) : null}
         </div>
 
-        <MatrxDataTable<LeavePolicy>
-          data={list?.policies ?? []}
-          columns={columns}
-          getRowId={(row) => row.id}
-          isLoading={loading}
-          pageSize={25}
-          emptyState={{
-            title: "No leave policies yet",
-            description: canWrite
-              ? "Nobody can request time off until at least one policy exists and somebody is enrolled in it."
-              : "Leave policies are configured by whoever runs HR for this employer.",
-            action: canWrite ? (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => router.push(leavePolicyHref(LEAVE_POLICY_NEW, orgRef))}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create the first policy
-              </Button>
-            ) : undefined,
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const policy = (id && (list?.policies ?? []).find((p) => p.id === id)) || null;
+            setClickedPolicy(policy);
+            if (!policy) return null;
+            return { content: leavePolicyMenuContent(policy) };
           }}
-          rowActions={(row) => (
-            <Button asChild size="sm" variant="ghost">
-              <Link href={leavePolicyHref(row.id, orgRef)}>Open</Link>
-            </Button>
-          )}
-        />
+          extraSections={[leavePolicyMenuSection(clickedPolicy, orgRef)]}
+        >
+          <MatrxDataTable<LeavePolicy>
+            data={list?.policies ?? []}
+            columns={columns}
+            getRowId={(row) => row.id}
+            isLoading={loading}
+            pageSize={25}
+            emptyState={{
+              title: "No leave policies yet",
+              description: canWrite
+                ? "Nobody can request time off until at least one policy exists and somebody is enrolled in it."
+                : "Leave policies are configured by whoever runs HR for this employer.",
+              action: canWrite ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => router.push(leavePolicyHref(LEAVE_POLICY_NEW, orgRef))}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create the first policy
+                </Button>
+              ) : undefined,
+            }}
+            rowActions={(row) => (
+              <Button asChild size="sm" variant="ghost">
+                <Link href={leavePolicyHref(row.id, orgRef)}>Open</Link>
+              </Button>
+            )}
+          />
+        </NonEditableContextMenu>
       </div>
     </HrSettingsShell>
   );

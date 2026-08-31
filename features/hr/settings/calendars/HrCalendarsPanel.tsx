@@ -19,7 +19,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, CalendarPlus, CopyPlus, Flag, Loader2, Save } from "lucide-react";
+import { CalendarDays, CalendarPlus, CopyPlus, Flag, Loader2, PencilLine, Save } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -37,6 +37,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import { upsertHrStructure } from "../../service";
 import { isHrDenied } from "../../types";
@@ -107,6 +108,7 @@ function CalendarsSection({
 }) {
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [clickedCalendar, setClickedCalendar] = useState<HrHolidayCalendar | null>(null);
 
   const columns: MatrxColumnDef<HrHolidayCalendar>[] = [
     {
@@ -199,32 +201,69 @@ function CalendarsSection({
         </Button>
       </header>
       <div className="p-4">
-        <MatrxDataTable
-          data={calendars}
-          columns={columns}
-          getRowId={(row) => row.id}
-          pageSize={10}
-          selectedId={selectedId}
-          onSelectedIdChange={(id) => id && onSelect(id)}
-          urlState={{ id: "hr-holiday-calendars" }}
-          toolbar={{ search: true, searchPlaceholder: "Search calendars" }}
-          emptyState={{
-            title: "No holiday calendars yet",
-            description:
-              "Setup does not create one, so nothing is a holiday here until you say so. Start from the federal set on the next panel.",
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = (id && calendars.find((c) => c.id === id)) || null;
+            setClickedCalendar(row);
+            if (!row) return null;
+            return {
+              content: `${row.name} — ${row.holidays.length} holiday${row.holidays.length === 1 ? "" : "s"}`,
+            };
           }}
-          detail={{
-            title: (row) => row.name,
-            render: (row) => (
-              <CalendarEditor
-                calendar={row}
-                jurisdictions={jurisdictions}
-                organizationId={organizationId}
-                onSaved={onSaved}
-              />
-            ),
-          }}
-        />
+          extraSections={[
+            {
+              id: "hr-calendar-row",
+              label: "This calendar",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "item",
+                  id: "hr-calendar-edit",
+                  label: "Edit calendar",
+                  icon: PencilLine,
+                  disabled: !clickedCalendar,
+                  description: !clickedCalendar
+                    ? "Right-click a calendar to edit it"
+                    : undefined,
+                  onSelect: () => {
+                    if (clickedCalendar) onSelect(clickedCalendar.id);
+                  },
+                },
+              ],
+            },
+          ]}
+        >
+          <MatrxDataTable
+            data={calendars}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pageSize={10}
+            selectedId={selectedId}
+            onSelectedIdChange={(id) => id && onSelect(id)}
+            urlState={{ id: "hr-holiday-calendars" }}
+            toolbar={{ search: true, searchPlaceholder: "Search calendars" }}
+            emptyState={{
+              title: "No holiday calendars yet",
+              description:
+                "Setup does not create one, so nothing is a holiday here until you say so. Start from the federal set on the next panel.",
+            }}
+            detail={{
+              title: (row) => row.name,
+              render: (row) => (
+                <CalendarEditor
+                  calendar={row}
+                  jurisdictions={jurisdictions}
+                  organizationId={organizationId}
+                  onSaved={onSaved}
+                />
+              ),
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </section>
   );
@@ -535,19 +574,42 @@ function HolidaysSection({
         </div>
       </header>
       <div className="p-4">
-        <MatrxDataTable
-          data={calendar.holidays}
-          columns={columns}
-          getRowId={(row) => row.id}
-          pageSize={25}
-          urlState={{ id: "hr-holidays" }}
-          toolbar={{ search: true, searchPlaceholder: "Search holidays" }}
-          emptyState={{
-            title: "No holidays on this calendar",
-            description:
-              "Import the federal set to start, then add, remove and pay-flag them to match what this employer actually observes.",
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = id ? calendar.holidays.find((h) => h.id === id) : null;
+            if (!row) return null;
+            return {
+              content: [
+                row.name,
+                `Observed: ${row.observed_on}`,
+                row.actual_on && row.actual_on !== row.observed_on
+                  ? `Actual: ${row.actual_on}`
+                  : "",
+                row.is_paid ? "Paid" : "Unpaid",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            };
           }}
-        />
+        >
+          <MatrxDataTable
+            data={calendar.holidays}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pageSize={25}
+            urlState={{ id: "hr-holidays" }}
+            toolbar={{ search: true, searchPlaceholder: "Search holidays" }}
+            emptyState={{
+              title: "No holidays on this calendar",
+              description:
+                "Import the federal set to start, then add, remove and pay-flag them to match what this employer actually observes.",
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </section>
   );

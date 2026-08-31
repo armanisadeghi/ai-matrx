@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { HrSettingsShell } from "@/features/hr/settings/HrSettingsShell";
@@ -43,6 +44,12 @@ import { fetchHrDirectory } from "@/features/hr/service";
 import { hrEmployeeHref } from "@/features/hr/routes";
 import { isHrDenied } from "@/features/hr/types";
 import type { HrDenied, HrDirectoryRow, HrFailed } from "@/features/hr/types";
+import {
+  hrDirectoryRowTarget,
+  hrPersonMenuContent,
+  hrPersonMenuSection,
+  leaveBalanceRowTarget,
+} from "@/features/hr/people/hr-person-menu";
 
 import {
   enrollInLeavePolicy,
@@ -96,6 +103,8 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
   const [busy, setBusy] = useState(false);
   const [skips, setSkips] = useState<LeaveEnrollSkip[] | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
+  const [clickedRosterRow, setClickedRosterRow] = useState<LeaveBalanceRow | null>(null);
+  const [clickedCandidate, setClickedCandidate] = useState<HrDirectoryRow | null>(null);
 
   const load = useCallback(
     async (signal: AbortSignal) => {
@@ -343,18 +352,41 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
             <Users className="h-4 w-4 text-muted-foreground" />
             On this policy now
           </h2>
-          <MatrxDataTable<LeaveBalanceRow>
-            data={roster}
-            columns={rosterColumns}
-            getRowId={(row) => `${row.employmentId ?? "unknown"}-${row.policyId ?? policyId}`}
-            isLoading={loading}
-            pageSize={25}
-            emptyState={{
-              title: "Nobody is enrolled yet",
-              description:
-                "Until somebody is enrolled, this policy earns nobody anything and nobody can request against it.",
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+              const row =
+                (id &&
+                  roster.find(
+                    (r) => `${r.employmentId ?? "unknown"}-${r.policyId ?? policyId}` === id,
+                  )) ||
+                null;
+              setClickedRosterRow(row);
+              if (!row) return null;
+              return { content: hrPersonMenuContent(leaveBalanceRowTarget(row, orgRef)) };
             }}
-          />
+            extraSections={[
+              hrPersonMenuSection(
+                clickedRosterRow ? leaveBalanceRowTarget(clickedRosterRow, orgRef) : null,
+              ),
+            ]}
+          >
+            <MatrxDataTable<LeaveBalanceRow>
+              data={roster}
+              columns={rosterColumns}
+              getRowId={(row) => `${row.employmentId ?? "unknown"}-${row.policyId ?? policyId}`}
+              isLoading={loading}
+              pageSize={25}
+              emptyState={{
+                title: "Nobody is enrolled yet",
+                description:
+                  "Until somebody is enrolled, this policy earns nobody anything and nobody can request against it.",
+              }}
+            />
+          </NonEditableContextMenu>
         </section>
 
         {/* ── Adding people ────────────────────────────────────────────── */}
@@ -445,23 +477,44 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
               </div>
             ) : null}
 
-            <MatrxDataTable<HrDirectoryRow>
-              data={candidates}
-              columns={candidateColumns}
-              getRowId={(row) => row.employment_id ?? row.employee_id}
-              isLoading={loading}
-              pageSize={25}
-              emptyState={{
-                title: "Everyone active is already on this policy",
-                description:
-                  "People without a live spell are not listed — an enrolment needs one.",
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+                const row =
+                  (id &&
+                    candidates.find((r) => (r.employment_id ?? r.employee_id) === id)) ||
+                  null;
+                setClickedCandidate(row);
+                if (!row) return null;
+                return { content: hrPersonMenuContent(hrDirectoryRowTarget(row, orgRef)) };
               }}
-              selection={{
-                selectedIds,
-                onSelectedIdsChange: setSelectedIds,
-                noun: "person",
-              }}
-            />
+              extraSections={[
+                hrPersonMenuSection(
+                  clickedCandidate ? hrDirectoryRowTarget(clickedCandidate, orgRef) : null,
+                ),
+              ]}
+            >
+              <MatrxDataTable<HrDirectoryRow>
+                data={candidates}
+                columns={candidateColumns}
+                getRowId={(row) => row.employment_id ?? row.employee_id}
+                isLoading={loading}
+                pageSize={25}
+                emptyState={{
+                  title: "Everyone active is already on this policy",
+                  description:
+                    "People without a live spell are not listed — an enrolment needs one.",
+                }}
+                selection={{
+                  selectedIds,
+                  onSelectedIdsChange: setSelectedIds,
+                  noun: "person",
+                }}
+              />
+            </NonEditableContextMenu>
           </section>
         ) : null}
       </div>

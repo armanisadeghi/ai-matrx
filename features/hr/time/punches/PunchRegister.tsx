@@ -34,6 +34,7 @@ import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { hrTimePeriodsHref, hrTimesheetHref } from "@/features/hr/routes";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
@@ -48,6 +49,7 @@ import {
   PUNCH_KIND_LABELS,
   PUNCH_SOURCE_LABELS,
 } from "../shared/vocabulary";
+import { punchMenuContent, punchMenuSection } from "../shared/punch-menu";
 import { PunchCorrectionDialog, type PunchCorrectionMode } from "./PunchCorrectionDialog";
 import { PunchRegisterScopePicker } from "./PunchRegisterScopePicker";
 import { downloadPunchRegisterCsv, punchRegisterToCsv } from "./registerCsv";
@@ -85,6 +87,7 @@ export function PunchRegister({
     null,
   );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [clickedPunch, setClickedPunch] = useState<PunchRow | null>(null);
 
   const register = useHrTimeQuery<Paged<PunchRow>>(
     (signal) =>
@@ -180,38 +183,63 @@ export function PunchRegister({
           </div>
 
           <div className="min-h-0 flex-1">
-            <MatrxDataTable<PunchRow>
-              data={rows}
-              columns={punchColumns(orgRef)}
-              getRowId={(row) => row.id}
-              isLoading={register.loading}
-              isFetching={register.refreshing}
-              query={{
-                mode: "controlled",
-                state: query,
-                totalItems: register.data?.totalRows ?? 0,
-                onStateChange: setQuery,
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+                const punch = (id && rows.find((r) => r.id === id)) || null;
+                setClickedPunch(punch);
+                if (!punch) return null;
+                return { content: punchMenuContent(punch) };
               }}
-              pageSize={prefs.pageSize}
-              selection={
-                canEdit
-                  ? {
-                      selectedIds,
-                      onSelectedIdsChange: setSelectedIds,
-                      noun: "punch",
-                      // A correction on an already-voided punch is not a thing — the record is closed.
-                      isRowSelectable: (row) => row.voidedAt === null,
-                    }
-                  : undefined
-              }
-              mobileCardsBreakpoint="lg"
-              mobileCards={(row) => <MobilePunchRow punch={row} />}
-              emptyState={{
-                title: "No punches match these filters",
-                description:
-                  "Widen the date range or clear a filter. An empty register is not the same as nobody clocking in.",
-              }}
-            />
+              extraSections={[
+                punchMenuSection(
+                  clickedPunch,
+                  orgRef,
+                  canEdit
+                    ? {
+                        onCorrect: (punch) => setCorrecting({ punches: [punch], mode: "correct" }),
+                        onVoid: (punch) => setCorrecting({ punches: [punch], mode: "void" }),
+                      }
+                    : {},
+                ),
+              ]}
+            >
+              <MatrxDataTable<PunchRow>
+                data={rows}
+                columns={punchColumns(orgRef)}
+                getRowId={(row) => row.id}
+                isLoading={register.loading}
+                isFetching={register.refreshing}
+                query={{
+                  mode: "controlled",
+                  state: query,
+                  totalItems: register.data?.totalRows ?? 0,
+                  onStateChange: setQuery,
+                }}
+                pageSize={prefs.pageSize}
+                selection={
+                  canEdit
+                    ? {
+                        selectedIds,
+                        onSelectedIdsChange: setSelectedIds,
+                        noun: "punch",
+                        // A correction on an already-voided punch is not a thing — the record is closed.
+                        isRowSelectable: (row) => row.voidedAt === null,
+                      }
+                    : undefined
+                }
+                mobileCardsBreakpoint="lg"
+                mobileCards={(row) => <MobilePunchRow punch={row} />}
+                emptyState={{
+                  title: "No punches match these filters",
+                  description:
+                    "Widen the date range or clear a filter. An empty register is not the same as nobody clocking in.",
+                }}
+              />
+            </NonEditableContextMenu>
           </div>
         </>
       </HrTimeReadState>
