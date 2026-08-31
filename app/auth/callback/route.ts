@@ -77,6 +77,46 @@ function clearAuthCookies(
   }
 }
 
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * THE STALE-TAB ANNIHILATOR. A failed exchange usually means the tab that
+ * started sign-in is running a stale bundle or carrying poisoned state — and a
+ * plain 307 back to /login re-enters the SAME stale document, so the loop
+ * survives every deploy. Instead of a redirect, the failure returns this tiny
+ * page, which (1) tells the browser to drop its cached copies of this origin
+ * (`Clear-Site-Data: "cache"` — best-effort, honored by Chrome and modern
+ * WebKit), and (2) performs a FULL-DOCUMENT `location.replace` to /login with
+ * a cache-busting param, so the next attempt runs the current bundle. Only the
+ * failing tab is touched — every healthy session everywhere is unaffected.
+ */
+function staleTabRefreshResponse(loginUrl: string): NextResponse {
+  const busted = `${loginUrl}${loginUrl.includes("?") ? "&" : "?"}fresh=${Date.now()}`;
+  const attrUrl = escapeHtmlAttr(busted);
+  const html =
+    `<!DOCTYPE html><html><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<title>Refreshing sign-in</title>` +
+    `<meta http-equiv="refresh" content="0;url=${attrUrl}"></head>` +
+    `<body><p>Refreshing sign-in…</p>` +
+    `<p><a href="${attrUrl}">Continue to sign in</a></p>` +
+    `<script>window.location.replace(${JSON.stringify(busted)});</script>` +
+    `</body></html>`;
+  return new NextResponse(html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Clear-Site-Data": '"cache"',
+    },
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const timestamp = new Date().toISOString();
@@ -144,7 +184,12 @@ export async function GET(request: Request) {
       // exchange dies client-side with zero server trace, forever, on every
       // retry. Accept a verifier under ANY historical `sb-*-code-verifier`
       // name by presenting it to the client under the current name.
-      const verifierAliasFrom = jar.has(CODE_VERIFIER_COOKIE)
+      // An EMPTY verifier cookie is as broken as an absent one — supabase-js
+      // fails the exchange client-side on it with the generic error and zero
+      // server trace — so presence means a NON-EMPTY value, never `has()`.
+      const currentVerifierValue = jar.get(CODE_VERIFIER_COOKIE)?.value ?? "";
+      const verifierUsable = currentVerifierValue.length > 0;
+      const verifierAliasFrom = verifierUsable
         ? null
         : (jar
             .getAll()
@@ -167,6 +212,15 @@ export async function GET(request: Request) {
           getAll: () =>
             jar
               .getAll()
+              // An empty current-name verifier must not shadow the aliased
+              // historical one — drop it from the view entirely.
+              .filter(
+                (cookie) =>
+                  !(
+                    cookie.name === CODE_VERIFIER_COOKIE &&
+                    cookie.value.length === 0
+                  ),
+              )
               .map((cookie) =>
                 cookie.name === verifierAliasFrom
                   ? { name: CODE_VERIFIER_COOKIE, value: cookie.value }
@@ -205,8 +259,7 @@ export async function GET(request: Request) {
           .getAll()
           .map(({ name }) => name)
           .filter(isAuthCookieName);
-        const verifierArrived =
-          jar.has(CODE_VERIFIER_COOKIE) || verifierAliasFrom !== null;
+        const verifierArrived = verifierUsable || verifierAliasFrom !== null;
 
         console.error(
           `[${timestamp}] Auth callback - LOUD: code exchange failed ` +
@@ -251,13 +304,27 @@ export async function GET(request: Request) {
                 })`,
             },
           )}`;
-          const response = NextResponse.redirect(loginUrl);
+          const response = staleTabRefreshResponse(loginUrl);
           clearAuthCookies(response, authCookieNames);
           return response;
         }
 
-        const loginUrl = `${origin}${preserveAuthDestination("/login", { redirectTo }, { error: "Authentication failed. Please try again." })}`;
-        return NextResponse.redirect(loginUrl);
+        // The verifier WAS usable and the exchange still failed. Say which
+        // failure, on screen — this branch was previously mute, and a mute
+        // branch cost hours during the 2026-08-31 outage. Codes and lengths
+        // only, never cookie values.
+        const loginUrl = `${origin}${preserveAuthDestination(
+          "/login",
+          { redirectTo },
+          {
+            error:
+              "Authentication failed. Please try again. " +
+              `(diagnostic: exchange rejected — ${error.code ?? error.name ?? "unknown"}` +
+              `${error.status ? ` status ${error.status}` : ""}` +
+              `${verifierAliasFrom ? `; verifier via ${verifierAliasFrom}` : `; verifier length ${currentVerifierValue.length}`})`,
+          },
+        )}`;
+        return staleTabRefreshResponse(loginUrl);
       }
 
       console.log(
