@@ -72,6 +72,7 @@ import {
   trimSizeLine,
 } from "./labels";
 import { BookPreview } from "./BookPreview";
+import { OrderFlow } from "./OrderFlow";
 import { BulkTierTable, MobilePriceBar, PricePanel } from "./PricePanel";
 import {
   AwaitingCredentialsCard,
@@ -1070,6 +1071,15 @@ export default function LuluPricingDemoPage() {
           </Button>
         </aside>
       </div>
+
+      <OrderFlow
+        podPackageId={podPackageId}
+        pageCount={selection.pageCount}
+        quantity={quantity}
+        shippingLevel={shippingLevel}
+        destination={destination}
+        disabled={previewOnly}
+      />
 
       <MobilePriceBar state={priceState} quantity={quantity} />
     </div>
