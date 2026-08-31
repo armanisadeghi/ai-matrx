@@ -33,6 +33,11 @@ import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/th
 import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
+import {
+  noSuchMandateFailure,
+  notAnAddressFailure,
+  readMandateAddress,
+} from "@/features/mandates/mandate-address";
 import { buildRow, type MandateRow } from "./mandate-health";
 import { MandateDetailView } from "./MandateDetailPanel";
 import {
@@ -191,8 +196,12 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
               </div>
             ) : !row ? (
+              // Same class as the workspace's own wrong-address state (V2-6):
+              // say what the address IS, never imply a mandate that was.
               <p className="text-xs text-muted-foreground">
-                No mandate row matches {mandateKey}.
+                {readMandateAddress(mandateKey) === "not-an-address"
+                  ? notAnAddressFailure(mandateKey).message
+                  : noSuchMandateFailure(mandateKey).message}
               </p>
             ) : (
               <>
