@@ -7,6 +7,11 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     pathname.startsWith("/dashboard/") ||
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
+    // Agent authoring is an account workspace. The public acquisition page is
+    // `/agents`, but builders must never mount their data clients as `anon`.
+    /^\/agents\/(?:new\/(?:builder|customizer|instant|tabs)|[^/]+\/build)(?:\/|$)/.test(
+      pathname,
+    ) ||
     pathname === "/hr" ||
     pathname.startsWith("/hr/") ||
     // The departed-member portal needs a signed-in person: consent to disclose your own income

@@ -70,6 +70,8 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 - The admin layout and `agent.review_queue` super-admin RLS gate the review surface.
 - Messaging keeps its participant access and real-time/unread machinery; Agent Review adds no parallel permissions or message store.
 - The data path is direct `supabase-js`; no Next.js database proxy.
+- Queue and registry reads use `runWithSessionRetry`; session loss stops before
+  the three complete-list queries can reach PostgREST as `anon`.
 - `Agent Review First Pass` is the active recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser and stops before claiming work when that persistent profile is not signed in as an admin. Canonical credential locations are documented in the shared skill; secrets never enter automation text or queue evidence.
 - Every transition to `ready_for_human` requires recorded verifier identity, verification time, and `assignment.state='awaiting_review'`. The rollout returned all 16 legacy rows missing that evidence to `submitted`, then validated the database constraint.
 - The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
@@ -77,6 +79,7 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 
 ## Change log
 
+- 2026-08-31 — Put the review queue, taxonomy, and repository list reads behind the canonical session-retry boundary so an expired admin session cannot fan out anonymous permission errors.
 - 2026-08-30 — Wired the five workflow count cards to the canonical URL-backed table status filter, including the combined Changes statuses and active-card state; switching to Ready for you or All activity clears that workflow-card filter.
 - 2026-08-26 — Rebuilt both surfaces against the live agent-first pages: real emitters on the list and the item workspace, a working triage write target, a feedback-draft write target, and a separate `matrx-admin/agent-review-item` surface. The old manifest still described the retired human-first page (pending/changes_requested statuses, an archived toggle, per-row feedback drafts) and claimed an emitter in a file that never existed.
 - 2026-08-25 — Widened detail-page messages to 80% of the transcript, removed redundant review-thread helper copy, and promoted Original target to the same heading treatment as Your review.

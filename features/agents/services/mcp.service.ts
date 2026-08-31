@@ -8,13 +8,16 @@ import type {
   McpCatalogEntry,
   McpServerConfigEntry,
 } from "@/features/agents/types/mcp.types";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 
 // ---------------------------------------------------------------------------
 // Catalog
 // ---------------------------------------------------------------------------
 
 export async function fetchMcpCatalog(): Promise<McpCatalogEntry[]> {
-  const { data, error } = await supabase.rpc("get_mcp_catalog_for_user");
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase.rpc("get_mcp_catalog_for_user"),
+  );
 
   if (error) throw new Error(`Failed to fetch MCP catalog: ${error.message}`);
   if (!data) return [];
@@ -60,7 +63,8 @@ export async function fetchMcpServerConfigs(
   serverId: string,
 ): Promise<McpServerConfigEntry[]> {
   const { data, error } = await supabase
-    .schema("tool").from("mcp_config")
+    .schema("tool")
+    .from("mcp_config")
     .select("*")
     .eq("server_id", serverId)
     .order("is_default", { ascending: false });

@@ -9,6 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { TablesUpdate } from "@/types/database.types";
 import { isUuid } from "@/features/scopes/utils/slugify";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
@@ -134,15 +135,17 @@ export const listSystemContextItems = createAsyncThunk(
   "contextItems/listSystem",
   async () => {
     // VIEW LAW: system context items are intentionally global public facts with no owner or scope dimension.
-    const { data, error } = await contextDb(supabase)
-      .from("system_context_item")
-      .select(
-        "id, key, display_name, description, item_class, value_type, sensitivity, sort_order",
-      )
-      .eq("is_active", true)
-      .is("deleted_at", null)
-      .order("sort_order", { ascending: true })
-      .order("key", { ascending: true });
+    const { data, error } = await runWithSessionRetry(() =>
+      contextDb(supabase)
+        .from("system_context_item")
+        .select(
+          "id, key, display_name, description, item_class, value_type, sensitivity, sort_order",
+        )
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true })
+        .order("key", { ascending: true }),
+    );
     if (error) throw error;
     const items: ContextItem[] = (data ?? []).map((r) => ({
       id: r.id,

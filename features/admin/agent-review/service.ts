@@ -8,6 +8,7 @@ import type {
   ReviewStatus,
 } from "@/features/admin/agent-review/types";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 
 /**
  * The board shows a true count per filter value, so the queue is a list treated
@@ -18,13 +19,24 @@ export async function loadReviewQueue(): Promise<ReviewQueueRow[]> {
   const supabase = createClient();
   return readAllRows<ReviewQueueRow>(
     ({ from, to }) =>
-      supabase
-        .schema("agent")
-        .from("review_queue")
-        .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .range(from, to),
+      runWithSessionRetry(() =>
+        supabase
+          .schema("agent")
+          .from("review_queue")
+          .select("*", { count: "exact" })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to),
+      ).then((result) => ({
+        data: result.data,
+        count:
+          "count" in result && typeof result.count === "number"
+            ? result.count
+            : null,
+        error: result.error
+          ? { message: result.error.message ?? "Review queue read failed" }
+          : null,
+      })),
     { label: "agent.review_queue" },
   );
 }
@@ -43,9 +55,7 @@ export async function updateReviewQueueRow(
   if (error) throw operationFailed("save this review update", error);
 }
 
-export async function loadReviewQueueItem(
-  id: string,
-): Promise<ReviewQueueRow> {
+export async function loadReviewQueueItem(id: string): Promise<ReviewQueueRow> {
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
@@ -92,13 +102,14 @@ export async function recordHumanReviewAction({
     .select("organization_id")
     .eq("id", row.conversation_id)
     .single();
-  if (conversationError) throw operationFailed("send your review feedback", conversationError);
+  if (conversationError)
+    throw operationFailed("send your review feedback", conversationError);
   const organizationId = await ensureOrgId(conversation.organization_id);
   const message =
     trimmed ||
     (status === "approved"
       ? "Approved. Complete the follow-through and archive this review."
-      : REVIEW_ACTION_DEFAULTS[status] ?? status);
+      : (REVIEW_ACTION_DEFAULTS[status] ?? status));
 
   const { error: messageError } = await supabase
     .schema("communication")
@@ -119,7 +130,8 @@ export async function recordHumanReviewAction({
         review_queue_id: row.id,
       },
     });
-  if (messageError) throw operationFailed("send your review feedback", messageError);
+  if (messageError)
+    throw operationFailed("send your review feedback", messageError);
 
   await updateReviewQueueRow(row.id, {
     status,

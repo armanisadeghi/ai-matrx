@@ -107,8 +107,8 @@ sales page after signing in.
   [`protected-routes.ts`](./protected-routes.ts) is the shared proxy policy.
   A guest must see the sign-in experience, never a database, mandate, or
   permissions error from inside the product. Container workspaces such as
-  `/projects/**` and `/tasks/**` are protected even when their top-level module
-  landing has public acquisition content elsewhere.
+  `/projects/**`, `/tasks/**`, and agent builders are protected even when their
+  top-level module landing has public acquisition content elsewhere.
 - **Session loss clears client authority before cleanup.**
   [`AuthSessionWatcher.tsx`](../../components/layout/AuthSessionWatcher.tsx)
   dispatches `clearUserAuth()` on `SIGNED_OUT` or a booted tab's empty
@@ -153,6 +153,11 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-31** — Protected agent-builder routes before render and moved their
+  MCP catalog and system-context reads behind `runWithSessionRetry`; a guest or
+  expired session now stops at the auth boundary instead of fanning anonymous
+  permission errors through the builder.
 
 - **2026-08-31** — ROOT CAUSE FIX for the mobile Google OAuth outage: the
   auth-authority cutover renamed the cookie mid-day and the legacy rename

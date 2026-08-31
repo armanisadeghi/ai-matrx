@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 
 export type TaxonomyNodeRow =
   Database["platform"]["Tables"]["taxonomy_node"]["Row"];
@@ -49,23 +50,45 @@ export async function loadReviewRegistry(): Promise<ReviewRegistry> {
   const [nodes, repos] = await Promise.all([
     readAllRows<TaxonomyNodeRow>(
       ({ from, to }) =>
-        supabase
-          .schema("platform")
-          .from("taxonomy_node")
-          .select("*", { count: "exact" })
-          .order("id", { ascending: true })
-          .range(from, to),
+        runWithSessionRetry(() =>
+          supabase
+            .schema("platform")
+            .from("taxonomy_node")
+            .select("*", { count: "exact" })
+            .order("id", { ascending: true })
+            .range(from, to),
+        ).then((result) => ({
+          data: result.data,
+          count:
+            "count" in result && typeof result.count === "number"
+              ? result.count
+              : null,
+          error: result.error
+            ? { message: result.error.message ?? "Taxonomy read failed" }
+            : null,
+        })),
       { label: "platform.taxonomy_node" },
     ),
     readAllRows<RepoRow>(
       ({ from, to }) =>
-        supabase
-          .schema("platform")
-          .from("repo")
-          .select("*", { count: "exact" })
-          .eq("is_active", true)
-          .order("slug", { ascending: true })
-          .range(from, to),
+        runWithSessionRetry(() =>
+          supabase
+            .schema("platform")
+            .from("repo")
+            .select("*", { count: "exact" })
+            .eq("is_active", true)
+            .order("slug", { ascending: true })
+            .range(from, to),
+        ).then((result) => ({
+          data: result.data,
+          count:
+            "count" in result && typeof result.count === "number"
+              ? result.count
+              : null,
+          error: result.error
+            ? { message: result.error.message ?? "Repository read failed" }
+            : null,
+        })),
       { label: "platform.repo" },
     ),
   ]);
