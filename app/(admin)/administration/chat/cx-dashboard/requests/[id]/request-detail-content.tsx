@@ -44,6 +44,13 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+import {
+  cxApiRequestMenuTarget,
+  cxToolCallMenuTarget,
+  cxUserRequestMenuTarget,
+  useCxRowMenu,
+} from "@/features/cx-dashboard/components/cx-row-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 type Detail = {
   user_request: CxUserRequest;
@@ -154,6 +161,20 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
     ur.total_duration_ms,
   );
 
+  const pageRowMenu = useCxRowMenu({
+    rows: () => [ur],
+    toTarget: cxUserRequestMenuTarget,
+    label: "This request",
+  });
+  const apiRequestRowMenu = useCxRowMenu({
+    rows: () => requests,
+    toTarget: cxApiRequestMenuTarget,
+  });
+  const toolCallRowMenu = useCxRowMenu({
+    rows: () => tool_calls,
+    toTarget: cxToolCallMenuTarget,
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
@@ -210,6 +231,14 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
       isEditable={false}
     >
       <div className="p-4 space-y-4">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={pageRowMenu.resolveContextOnOpen}
+          extraSections={pageRowMenu.sections}
+        >
+        <div data-row-id={ur.id} className="space-y-4">
         {/* Header */}
         <div className="flex items-start gap-3">
           <Button
@@ -371,6 +400,8 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             </div>
           </div>
         )}
+        </div>
+        </NonEditableContextMenu>
 
         {/* API Requests (iterations) */}
         <div className="border border-border rounded-md bg-card">
@@ -384,6 +415,13 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             <CxEmptyState title="No API requests found" />
           ) : (
             <div className="p-2">
+              <NonEditableContextMenu
+                sourceFeature="admin"
+                contentSource={{ type: "raw" }}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={apiRequestRowMenu.resolveContextOnOpen}
+                extraSections={apiRequestRowMenu.sections}
+              >
               <MatrxDataTable
                 urlState={{ id: "cx-request-tools" }}
                 data={requests}
@@ -414,6 +452,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                 }}
                 detail={{ title: (r) => `Iteration ${r.iteration}` }}
               />
+              </NonEditableContextMenu>
             </div>
           )}
         </div>
@@ -427,9 +466,16 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                 Tool Calls ({tool_calls.length})
               </h3>
             </div>
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={toolCallRowMenu.resolveContextOnOpen}
+              extraSections={toolCallRowMenu.sections}
+            >
             <div className="divide-y divide-border/50">
               {tool_calls.map((tc) => (
-                <div key={tc.id} className="p-3">
+                <div key={tc.id} data-row-id={tc.id} className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-mono text-xs font-medium">
                       {tc.tool_name}
@@ -495,6 +541,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                 </div>
               ))}
             </div>
+            </NonEditableContextMenu>
           </div>
         )}
 

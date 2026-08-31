@@ -13,6 +13,11 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import {
+  cxUserRequestMenuTarget,
+  useCxRowMenu,
+} from "@/features/cx-dashboard/components/cx-row-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
   formatDate,
   formatCost,
   formatTokens,
@@ -47,6 +52,11 @@ const requestDuration = (r: CxUserRequest) =>
 
 export function RequestsContent({ result }: Props) {
   const router = useRouter();
+
+  const rowMenu = useCxRowMenu({
+    rows: () => result.data,
+    toTarget: cxUserRequestMenuTarget,
+  });
 
   const exportData = useMemo(
     () =>
@@ -282,6 +292,13 @@ export function RequestsContent({ result }: Props) {
         </h2>
 
         <div className="min-h-0 flex-1">
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+            extraSections={rowMenu.sections}
+          >
           <MatrxDataTable
             urlState={{ id: "cx-requests" }}
             data={result.data}
@@ -337,6 +354,7 @@ export function RequestsContent({ result }: Props) {
               title: (r) => r.conversation_title ?? "Untitled request",
             }}
           />
+          </NonEditableContextMenu>
         </div>
 
         {/* Server-side pagination over the full result set (table shows one fetched page) */}

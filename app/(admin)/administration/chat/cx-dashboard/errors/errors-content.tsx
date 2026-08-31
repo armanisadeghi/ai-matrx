@@ -14,6 +14,12 @@ import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import {
+  cxToolCallMenuTarget,
+  cxUserRequestMenuTarget,
+  useCxRowMenu,
+} from "@/features/cx-dashboard/components/cx-row-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
   formatDate,
   formatCost,
   formatTokens,
@@ -53,6 +59,16 @@ const ISSUE_LABELS: Record<RequestIssue, string> = {
 
 export function ErrorsContent({ errors }: { errors: ErrorsData }) {
   const router = useRouter();
+
+  const requestRowMenu = useCxRowMenu({
+    rows: () => errors.error_requests,
+    toTarget: cxUserRequestMenuTarget,
+    label: "This problem request",
+  });
+  const toolCallRowMenu = useCxRowMenu({
+    rows: () => errors.error_tool_calls,
+    toTarget: cxToolCallMenuTarget,
+  });
 
   const pendingCount = errors.error_requests.filter(
     (r) => r.status === "pending",
@@ -341,6 +357,13 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
               <AlertTriangle className="h-3.5 w-3.5" />
               Problem Requests ({errors.error_requests.length})
             </h3>
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={requestRowMenu.resolveContextOnOpen}
+              extraSections={requestRowMenu.sections}
+            >
             <MatrxDataTable
               urlState={{ id: "cx-problem-requests" }}
               data={errors.error_requests}
@@ -394,6 +417,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 ),
               }}
             />
+            </NonEditableContextMenu>
           </section>
         )}
 
@@ -404,6 +428,13 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
               <Wrench className="h-3.5 w-3.5" />
               Tool Call Errors ({errors.error_tool_calls.length})
             </h3>
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={toolCallRowMenu.resolveContextOnOpen}
+              extraSections={toolCallRowMenu.sections}
+            >
             <MatrxDataTable
               urlState={{ id: "cx-tool-call-errors" }}
               data={errors.error_tool_calls}
@@ -459,6 +490,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 ),
               }}
             />
+            </NonEditableContextMenu>
           </section>
         )}
 

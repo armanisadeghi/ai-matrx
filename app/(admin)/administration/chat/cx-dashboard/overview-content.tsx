@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   MessageSquare,
@@ -50,6 +51,11 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+} from "@/features/context-menu-v3/types";
 
 const COLORS = [
   "hsl(215, 70%, 55%)",
@@ -110,6 +116,29 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
   const router = useRouter();
+  const [clickedTool, setClickedTool] = useState<ToolUsageRow | null>(null);
+
+  const toolUsageContent = (r: ToolUsageRow) =>
+    [
+      `Tool: ${r.tool_name}`,
+      `Calls: ${r.count} · Errors: ${r.error_count}`,
+      `Avg duration: ${formatDuration(r.avg_duration_ms)}`,
+      `Cost: ${formatCost(r.total_cost)}`,
+    ].join("\n");
+
+  const toolUsageItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "cx-tool-copy-name",
+      label: "Copy tool name",
+      icon: Hash,
+      disabled: !clickedTool,
+      onSelect: () => {
+        if (!clickedTool) return;
+        void navigator.clipboard.writeText(clickedTool.tool_name);
+      },
+    },
+  ];
 
   const costChartConfig: ChartConfig = {
     cost: { label: "Cost", color: "hsl(215, 70%, 55%)" },
@@ -360,6 +389,33 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
             <h3 className="text-xs font-medium text-muted-foreground">
               Tool Usage
             </h3>
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id
+                  ? (kpis.tool_usage.find((r) => r.tool_name === id) ?? null)
+                  : null;
+                setClickedTool(row);
+                if (!row) return null;
+                return {
+                  content: toolUsageContent(row),
+                  [CONTEXT_MENU_ENTITY_KEY]: null,
+                };
+              }}
+              extraSections={[
+                {
+                  id: "cx-tool-usage-row",
+                  label: "This tool",
+                  anchor: "after-compare",
+                  items: toolUsageItems,
+                },
+              ]}
+            >
             <MatrxDataTable
               urlState={{ id: "cx-overview-requests" }}
               data={kpis.tool_usage}
@@ -385,6 +441,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
               }}
               detail={{ title: (r) => r.tool_name }}
             />
+            </NonEditableContextMenu>
           </div>
         )}
 
