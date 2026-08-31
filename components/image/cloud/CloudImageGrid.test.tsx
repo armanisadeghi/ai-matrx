@@ -37,4 +37,24 @@ describe("CloudImageGrid", () => {
 
     expect(html).toContain("Select cover.png for bulk actions");
   });
+
+  it("keeps zero-byte image rows terminal without invoking the media renderer", () => {
+    const html = renderToStaticMarkup(
+      <CloudImageGrid
+        files={[{ ...file, fileSize: 0 }]}
+        density="cozy"
+        resolvingId={null}
+        selectionMode="none"
+        isSelected={() => false}
+        bulkSelectedIds={[]}
+        onToggleBulkSelected={jest.fn()}
+        onTileClick={jest.fn()}
+        onShowMetadata={jest.fn()}
+      />,
+    );
+
+    expect(html).toContain("cover.png is empty and cannot be previewed");
+    expect(html).toContain("disabled");
+    expect(html).not.toContain('data-media-thumbnail="true"');
+  });
 });

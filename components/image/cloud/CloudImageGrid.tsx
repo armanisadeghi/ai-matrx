@@ -4,8 +4,11 @@ import React from "react";
 import { Check, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { MediaThumbnail } from "@ai-matrx/media/react";
 import type { CloudFileRecord } from "@/features/files/types";
+import {
+  CloudImageThumbnail,
+  isCloudImagePreviewable,
+} from "@/components/image/cloud/CloudImageThumbnail";
 
 export type CloudImageViewMode = "cozy" | "compact";
 
@@ -52,6 +55,7 @@ export function CloudImageGrid({
         const selected = isSelected(file.id);
         const bulkSelected = bulkSelectedIds.includes(file.id);
         const resolving = resolvingId === file.id;
+        const previewable = isCloudImagePreviewable(file);
         const isBrowse = selectionMode === "none";
         return (
           <div
@@ -69,23 +73,20 @@ export function CloudImageGrid({
             <button
               type="button"
               onClick={() => onTileClick(file)}
-              disabled={resolving}
+              disabled={resolving || !previewable}
               className="absolute inset-0 focus:outline-none"
               aria-label={
-                isBrowse
+                !previewable
+                  ? `${file.fileName} is empty and cannot be previewed`
+                  : isBrowse
                   ? `Open ${file.fileName}`
                   : selected
                     ? `Deselect ${file.fileName}`
                     : `Select ${file.fileName}`
               }
             >
-              <MediaThumbnail
-                mediaRef={{
-                  file_id: file.id,
-                  mime_type: file.mimeType ?? undefined,
-                }}
-                fileName={file.fileName}
-                mimeType={file.mimeType}
+              <CloudImageThumbnail
+                file={file}
                 iconSize={iconSize}
                 className="absolute inset-0"
               />

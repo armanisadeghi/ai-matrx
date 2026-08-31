@@ -3,8 +3,11 @@
 import { Check, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { MediaThumbnail } from "@ai-matrx/media/react";
 import type { CloudFileRecord } from "@/features/files/types";
+import {
+  CloudImageThumbnail,
+  isCloudImagePreviewable,
+} from "@/components/image/cloud/CloudImageThumbnail";
 
 export interface CloudImageListProps {
   files: CloudFileRecord[];
@@ -33,6 +36,7 @@ export function CloudImageList({
         const selected = isSelected(file.id);
         const bulkSelected = bulkSelectedIds.includes(file.id);
         const resolving = resolvingId === file.id;
+        const previewable = isCloudImagePreviewable(file);
         const isBrowse = selectionMode === "none";
         const updatedAt = file.updatedAt ? new Date(file.updatedAt) : null;
         const sizeLabel = formatFileSize(file.fileSize);
@@ -55,13 +59,15 @@ export function CloudImageList({
             <button
               type="button"
               onClick={() => onTileClick(file)}
-              disabled={resolving}
+              disabled={resolving || !previewable}
               className={cn(
                 "flex flex-1 min-w-0 items-center gap-3 text-left focus:outline-none rounded-sm focus:ring-2 focus:ring-primary/40",
                 resolving && "opacity-60 cursor-wait",
               )}
               aria-label={
-                isBrowse
+                !previewable
+                  ? `${file.fileName} is empty and cannot be previewed`
+                  : isBrowse
                   ? `Open ${file.fileName}`
                   : selected
                     ? `Deselect ${file.fileName}`
@@ -69,13 +75,8 @@ export function CloudImageList({
               }
             >
               <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-sm bg-muted/40">
-                <MediaThumbnail
-                  mediaRef={{
-                    file_id: file.id,
-                    mime_type: file.mimeType ?? undefined,
-                  }}
-                  fileName={file.fileName}
-                  mimeType={file.mimeType}
+                <CloudImageThumbnail
+                  file={file}
                   iconSize={20}
                   className="absolute inset-0"
                 />
