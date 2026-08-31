@@ -26,7 +26,7 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
   FolderInput,
@@ -78,6 +78,10 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import {
+  createExclusiveOperationGate,
+  parseVisibleImageSelection,
+} from "@/features/image-manager/lib/images-surface-actions";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -209,6 +213,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const [query, setQuery] = useState("");
   const [showRecentsOnly, setShowRecentsOnly] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const resolutionGateRef = useRef(createExclusiveOperationGate());
   const [metadataFile, setMetadataFile] = useState<CloudFileRecord | null>(
     null,
   );
@@ -269,6 +274,11 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         return bTs - aTs;
       });
   }, [allFiles, query, showRecentsOnly]);
+  // applySurfaceWrite resolves a handler before the ask-confirmation dialog.
+  // Read the post-confirmation render here so a filter changed while that
+  // dialog was open cannot authorize a now-hidden image id.
+  const visibleImageFilesRef = useRef(imageFiles);
+  visibleImageFilesRef.current = imageFiles;
 
   useEffect(() => {
     const visibleIds = new Set(imageFiles.map((file) => file.id));
@@ -387,6 +397,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     // also fired N signed-URL requests on every single click. Both are
     // gone: one click, one resolve, one image.
     if (selectionMode === "none") {
+      if (!resolutionGateRef.current.tryStart(file.id)) return;
       try {
         setResolvingId(file.id);
         const resolved = await resolveCloudFileUrl(store, file.id);
@@ -401,7 +412,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
           err instanceof Error ? err.message : "Could not load that image";
         toast.error(message);
       } finally {
-        setResolvingId(null);
+        resolutionGateRef.current.finish(file.id);
+        setResolvingId(resolutionGateRef.current.activeId);
       }
       return;
     }
@@ -416,6 +428,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
       } as ImageSource);
       return;
     }
+    if (!resolutionGateRef.current.tryStart(file.id)) return;
     try {
       setResolvingId(file.id);
       if (selectionMode === "single") {
@@ -428,7 +441,8 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         err instanceof Error ? err.message : "Could not load that image";
       toast.error(message);
     } finally {
-      setResolvingId(null);
+      resolutionGateRef.current.finish(file.id);
+      setResolvingId(resolutionGateRef.current.activeId);
     }
   };
 
@@ -482,59 +496,6 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
    * rendered set is a superset of what the agent saw, so the cap can never
    * cause a false rejection of an id the agent legitimately read.
    */
-  const parseImageSelection = (value: unknown): string[] => {
-    let raw = value;
-    if (typeof raw === "string") {
-      try {
-        raw = JSON.parse(raw);
-      } catch {
-        throw new Error(
-          'image_selection expects an array of image ids, e.g. ["<uuid>", "<uuid>"] — received a string that is not valid JSON.',
-        );
-      }
-    }
-    if (!Array.isArray(raw)) {
-      throw new Error(
-        `image_selection expects an array of image ids (pass [] to clear the selection) — received ${typeof raw}.`,
-      );
-    }
-    const ids = raw.map((entry, index) => {
-      if (typeof entry !== "string" || !entry.trim()) {
-        throw new Error(
-          `image_selection entry ${index} is not an image id string.`,
-        );
-      }
-      return entry.trim();
-    });
-
-    // Validate the WHOLE list before touching state — a partly-applied
-    // selection would be worse than a rejected one.
-    const visibleIds = new Set(imageFiles.map((file) => file.id));
-    const unknown = ids.filter((id) => !visibleIds.has(id));
-    if (unknown.length > 0) {
-      // Hand back what IS selectable, not just what was wrong. An agent that
-      // narrowed the library earlier in the same run is holding the scope
-      // snapshot from launch time, so its `visible_image_ids` is stale the
-      // instant search_query or recents_only lands — the common cause of
-      // getting here. Listing the live rows lets it fix the call in one step
-      // instead of guessing which of its cached ids survived the filter.
-      const live = imageFiles
-        .slice(0, 30)
-        .map((file) => `${file.id} (${file.fileName})`)
-        .join(", ");
-      const more =
-        imageFiles.length > 30 ? `, …and ${imageFiles.length - 30} more` : "";
-      throw new Error(
-        `image_selection rejected: ${unknown.length} of the ${ids.length} id(s) you sent are not among the ${imageFiles.length} image(s) currently visible — ${unknown.join(", ")}. ` +
-          `The selection was left unchanged. Note that applying search_query or recents_only changes this set, so ids you read before those writes may no longer be visible. ` +
-          `Currently selectable: ${live || "(nothing — the search or Recents filter is hiding every image)"}${more}.`,
-      );
-    }
-    // De-duplicate, keeping first-seen order: a selection is a set, so the
-    // same id twice is the same selection, not a different one.
-    return Array.from(new Set(ids));
-  };
-
   const buildImagesWriteHandlers = () => ({
     search_query: (value: unknown) => {
       if (typeof value !== "string") {
@@ -564,7 +525,9 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
       setShowRecentsOnly(next);
     },
     image_selection: (value: unknown) => {
-      setBulkSelectedIds(parseImageSelection(value));
+      setBulkSelectedIds(
+        parseVisibleImageSelection(value, visibleImageFilesRef.current),
+      );
     },
   });
 

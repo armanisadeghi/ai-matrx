@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CloudImagesTab } from "@/components/image/cloud/CloudImagesTab";
 
 const mockFiles = {
-  treeStatus: "success",
+  treeStatus: "loaded",
   allFiles: [] as Array<{
     id: string;
     fileName: string;
@@ -81,7 +81,7 @@ jest.mock("@/components/image/shared/ImageGrid", () => ({
 
 describe("CloudImagesTab", () => {
   beforeEach(() => {
-    mockFiles.treeStatus = "success";
+    mockFiles.treeStatus = "loaded";
     mockFiles.allFiles = [];
   });
 
