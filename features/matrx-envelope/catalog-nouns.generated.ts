@@ -209,6 +209,102 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "workbench.heatmap_saves",
   "title_column": "title"
  },
+ "hr_asset": {
+  "table": "hr.asset",
+  "title_column": "name"
+ },
+ "hr_candidate": {
+  "table": "hr.candidate",
+  "title_column": "preferred_name"
+ },
+ "hr_careers_portal": {
+  "table": "hr.careers_portal",
+  "title_column": "display_name"
+ },
+ "hr_checklist_template": {
+  "table": "hr.checklist_template",
+  "title_column": "name"
+ },
+ "hr_course": {
+  "table": "hr.course",
+  "title_column": "title"
+ },
+ "hr_crew": {
+  "table": "hr.crew",
+  "title_column": "name"
+ },
+ "hr_deduction_code": {
+  "table": "hr.deduction_code",
+  "title_column": "name"
+ },
+ "hr_department": {
+  "table": "hr.department",
+  "title_column": "name"
+ },
+ "hr_earning_code": {
+  "table": "hr.earning_code",
+  "title_column": "name"
+ },
+ "hr_employee": {
+  "table": "hr.employee",
+  "title_column": "display_name"
+ },
+ "hr_holiday_calendar": {
+  "table": "hr.holiday_calendar",
+  "title_column": "name"
+ },
+ "hr_interview_kit": {
+  "table": "hr.interview_kit",
+  "title_column": "name"
+ },
+ "hr_job_title": {
+  "table": "hr.job_title",
+  "title_column": "title"
+ },
+ "hr_jurisdiction": {
+  "table": "hr.jurisdiction",
+  "title_column": "name"
+ },
+ "hr_jurisdiction_rule_class": {
+  "table": "hr.jurisdiction_rule_class",
+  "title_column": "label"
+ },
+ "hr_leave_policy": {
+  "table": "hr.leave_policy",
+  "title_column": "name"
+ },
+ "hr_location": {
+  "table": "hr.location",
+  "title_column": "name"
+ },
+ "hr_pay_group": {
+  "table": "hr.pay_group",
+  "title_column": "name"
+ },
+ "hr_posting": {
+  "table": "hr.posting",
+  "title_column": "title"
+ },
+ "hr_record_class": {
+  "table": "hr.record_class",
+  "title_column": "label"
+ },
+ "hr_requisition": {
+  "table": "hr.requisition",
+  "title_column": "requisition_number"
+ },
+ "hr_schedule": {
+  "table": "hr.schedule",
+  "title_column": "name"
+ },
+ "hr_schedule_template": {
+  "table": "hr.schedule_template",
+  "title_column": "name"
+ },
+ "hr_survey": {
+  "table": "hr.survey",
+  "title_column": "name"
+ },
  "item_mastery": {
   "table": "education.item_mastery",
   "title_column": null
@@ -844,8 +940,16 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Agent Card",
   "family": "Other"
  },
- "agent_provision": {
-  "label": "Mandate Provision",
+ "agent_exemplar": {
+  "label": "Agent Test Case",
+  "family": "Other"
+ },
+ "agent_mandate_note": {
+  "label": "Mandate Note",
+  "family": "Other"
+ },
+ "agent_prompt_remediation": {
+  "label": "Agent Prompt Remediation",
   "family": "Other"
  },
  "agent_run": {
@@ -1052,6 +1156,206 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Comment",
   "family": "Other"
  },
+ "commerce_asset_allocation": {
+  "label": "Asset Allocation",
+  "family": "Other"
+ },
+ "commerce_asset_grading": {
+  "label": "Asset Grading",
+  "family": "Other"
+ },
+ "commerce_asset_identifier": {
+  "label": "Asset Identifier",
+  "family": "Other"
+ },
+ "commerce_asset_lot_event": {
+  "label": "Asset Lot Event",
+  "family": "Other"
+ },
+ "commerce_asset_mandate_result": {
+  "label": "Asset Mandate Result",
+  "family": "Other"
+ },
+ "commerce_asset_price_factor": {
+  "label": "Asset Price Factor",
+  "family": "Other"
+ },
+ "commerce_asset_reshoot_request": {
+  "label": "Asset Reshoot Request",
+  "family": "Other"
+ },
+ "commerce_asset_review": {
+  "label": "Asset Review",
+  "family": "Other"
+ },
+ "commerce_asset_unknown": {
+  "label": "Asset Unknown",
+  "family": "Other"
+ },
+ "commerce_cloud_sync_connection": {
+  "label": "Cloud Sync Connection",
+  "family": "Other"
+ },
+ "commerce_ebay_business_policy": {
+  "label": "eBay Business Policy",
+  "family": "Other"
+ },
+ "commerce_ebay_category": {
+  "label": "eBay Category",
+  "family": "Other"
+ },
+ "commerce_ebay_category_aspect": {
+  "label": "eBay Category Aspect",
+  "family": "Other"
+ },
+ "commerce_ebay_category_tree": {
+  "label": "eBay Category Tree",
+  "family": "Other"
+ },
+ "commerce_ebay_custom_policy": {
+  "label": "eBay Custom Policy",
+  "family": "Other"
+ },
+ "commerce_ebay_inventory_item": {
+  "label": "eBay Inventory Item",
+  "family": "Other"
+ },
+ "commerce_ebay_inventory_item_group": {
+  "label": "eBay Inventory Item Group",
+  "family": "Other"
+ },
+ "commerce_ebay_inventory_item_group_member": {
+  "label": "eBay Inventory Item Group Member",
+  "family": "Other"
+ },
+ "commerce_ebay_inventory_location": {
+  "label": "eBay Inventory Location",
+  "family": "Other"
+ },
+ "commerce_ebay_listing": {
+  "label": "eBay Listing",
+  "family": "Other"
+ },
+ "commerce_ebay_marketplace_policy": {
+  "label": "eBay Marketplace Policy",
+  "family": "Other"
+ },
+ "commerce_ebay_media_asset": {
+  "label": "eBay Media Asset",
+  "family": "Other"
+ },
+ "commerce_ebay_notification_destination": {
+  "label": "eBay Notification Destination",
+  "family": "Other"
+ },
+ "commerce_ebay_notification_event": {
+  "label": "eBay Notification Event",
+  "family": "Other"
+ },
+ "commerce_ebay_notification_subscription": {
+  "label": "eBay Notification Subscription",
+  "family": "Other"
+ },
+ "commerce_ebay_notification_topic": {
+  "label": "eBay Notification Topic",
+  "family": "Other"
+ },
+ "commerce_ebay_offer": {
+  "label": "eBay Offer",
+  "family": "Other"
+ },
+ "commerce_ebay_order": {
+  "label": "eBay Order",
+  "family": "Other"
+ },
+ "commerce_ebay_order_line_item": {
+  "label": "eBay Order Line Item",
+  "family": "Other"
+ },
+ "commerce_ebay_shipping_fulfillment": {
+  "label": "eBay Shipping Fulfillment",
+  "family": "Other"
+ },
+ "commerce_ebay_store_category": {
+  "label": "eBay Store Category",
+  "family": "Other"
+ },
+ "commerce_human_correction": {
+  "label": "Human Correction",
+  "family": "Other"
+ },
+ "commerce_intake_artifact": {
+  "label": "Intake Artifact",
+  "family": "Other"
+ },
+ "commerce_intake_asset": {
+  "label": "Intake Asset",
+  "family": "Other"
+ },
+ "commerce_intake_batch": {
+  "label": "Intake Batch",
+  "family": "Other"
+ },
+ "commerce_label_batch": {
+  "label": "Label Batch",
+  "family": "Other"
+ },
+ "commerce_label_code": {
+  "label": "Label Code",
+  "family": "Other"
+ },
+ "commerce_marketplace_account": {
+  "label": "Marketplace Account",
+  "family": "Other"
+ },
+ "commerce_marketplace_account_deletion_audit": {
+  "label": "Marketplace Account Deletion Audit",
+  "family": "Other"
+ },
+ "commerce_marketplace_api_call": {
+  "label": "Marketplace API Call",
+  "family": "Other"
+ },
+ "commerce_marketplace_rate_budget": {
+  "label": "Marketplace Rate Budget",
+  "family": "Other"
+ },
+ "commerce_marketplace_site": {
+  "label": "Marketplace Site",
+  "family": "Other"
+ },
+ "commerce_marketplace_sync_run": {
+  "label": "Marketplace Sync Run",
+  "family": "Other"
+ },
+ "commerce_prediction_outcome": {
+  "label": "Prediction Outcome",
+  "family": "Other"
+ },
+ "commerce_print_order": {
+  "label": "Print Order",
+  "family": "Other"
+ },
+ "commerce_product": {
+  "label": "Product",
+  "family": "Other"
+ },
+ "commerce_product_channel_ref": {
+  "label": "Product Channel Reference",
+  "family": "Other"
+ },
+ "commerce_product_media": {
+  "label": "Product Media",
+  "family": "Other"
+ },
+ "commerce_product_variant": {
+  "label": "Product Variant",
+  "family": "Other"
+ },
+ "commerce_recall_audit": {
+  "label": "Recall Audit",
+  "family": "Other"
+ },
  "comparison_set": {
   "label": "Comparison Set",
   "family": "Other"
@@ -1184,6 +1488,22 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Sending Policy",
   "family": "Other"
  },
+ "custom_entity_definition": {
+  "label": "Custom Object",
+  "family": "Other"
+ },
+ "custom_field_definition": {
+  "label": "Custom Field",
+  "family": "Other"
+ },
+ "custom_field_target": {
+  "label": "Custom Field Target",
+  "family": "Other"
+ },
+ "custom_record": {
+  "label": "Custom Record",
+  "family": "Other"
+ },
  "data_store": {
   "label": "Data Store",
   "family": "Other"
@@ -1214,6 +1534,54 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "domain_classification": {
   "label": "Domain Classification",
+  "family": "Other"
+ },
+ "esign_campaign": {
+  "label": "Signature campaign",
+  "family": "Other"
+ },
+ "esign_campaign_member": {
+  "label": "Campaign member",
+  "family": "Other"
+ },
+ "esign_consent_disclosure": {
+  "label": "E-sign consent disclosure",
+  "family": "Other"
+ },
+ "esign_envelope": {
+  "label": "Signature envelope",
+  "family": "Other"
+ },
+ "esign_envelope_certificate": {
+  "label": "Completion certificate",
+  "family": "Other"
+ },
+ "esign_envelope_document": {
+  "label": "Envelope document",
+  "family": "Other"
+ },
+ "esign_envelope_event": {
+  "label": "Envelope event",
+  "family": "Other"
+ },
+ "esign_envelope_external_ref": {
+  "label": "Envelope external reference",
+  "family": "Other"
+ },
+ "esign_envelope_signer": {
+  "label": "Envelope signer",
+  "family": "Other"
+ },
+ "esign_provider": {
+  "label": "E-sign provider",
+  "family": "Other"
+ },
+ "esign_provider_binding": {
+  "label": "E-sign provider binding",
+  "family": "Other"
+ },
+ "esign_signing_key": {
+  "label": "E-sign certificate signing key",
   "family": "Other"
  },
  "fc_card": {
@@ -1324,6 +1692,530 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Hindsight Review",
   "family": "Other"
  },
+ "hr_access_audit": {
+  "label": "Access audit",
+  "family": "Other"
+ },
+ "hr_access_role": {
+  "label": "HR access role",
+  "family": "Other"
+ },
+ "hr_accommodation_request": {
+  "label": "Accommodation request",
+  "family": "Other"
+ },
+ "hr_ai_evidence": {
+  "label": "AI evidence",
+  "family": "Other"
+ },
+ "hr_alert_routing_rule": {
+  "label": "Alert routing rule",
+  "family": "Other"
+ },
+ "hr_application": {
+  "label": "Application",
+  "family": "Other"
+ },
+ "hr_approval_authority": {
+  "label": "Approval authority",
+  "family": "Other"
+ },
+ "hr_approval_delegation": {
+  "label": "Approval delegation",
+  "family": "Other"
+ },
+ "hr_asset": {
+  "label": "Asset",
+  "family": "Other"
+ },
+ "hr_asset_assignment": {
+  "label": "Asset assignment",
+  "family": "Other"
+ },
+ "hr_attendance_exception": {
+  "label": "Attendance exception",
+  "family": "Other"
+ },
+ "hr_auto_close_rule": {
+  "label": "Auto-close rule",
+  "family": "Other"
+ },
+ "hr_availability": {
+  "label": "Availability",
+  "family": "Other"
+ },
+ "hr_background_check": {
+  "label": "Background check",
+  "family": "Other"
+ },
+ "hr_benefits_event": {
+  "label": "Benefits event",
+  "family": "Other"
+ },
+ "hr_calculation_snapshot": {
+  "label": "Calculation snapshot",
+  "family": "Other"
+ },
+ "hr_candidate": {
+  "label": "Candidate",
+  "family": "Other"
+ },
+ "hr_candidate_conversion": {
+  "label": "Candidate conversion",
+  "family": "Other"
+ },
+ "hr_candidate_message": {
+  "label": "Candidate message",
+  "family": "Other"
+ },
+ "hr_careers_portal": {
+  "label": "Careers portal",
+  "family": "Other"
+ },
+ "hr_checklist_item": {
+  "label": "Checklist item",
+  "family": "Other"
+ },
+ "hr_checklist_run": {
+  "label": "Checklist run",
+  "family": "Other"
+ },
+ "hr_checklist_template": {
+  "label": "Checklist template",
+  "family": "Other"
+ },
+ "hr_checklist_template_item": {
+  "label": "Checklist template item",
+  "family": "Other"
+ },
+ "hr_compensation": {
+  "label": "Compensation record",
+  "family": "Other"
+ },
+ "hr_corrective_action": {
+  "label": "Corrective action",
+  "family": "Other"
+ },
+ "hr_course": {
+  "label": "Course",
+  "family": "Other"
+ },
+ "hr_course_version": {
+  "label": "Course version",
+  "family": "Other"
+ },
+ "hr_credential": {
+  "label": "Credential",
+  "family": "Other"
+ },
+ "hr_crew": {
+  "label": "Crew",
+  "family": "Other"
+ },
+ "hr_deduction_code": {
+  "label": "Deduction code",
+  "family": "Other"
+ },
+ "hr_department": {
+  "label": "Department",
+  "family": "Other"
+ },
+ "hr_derived_grant": {
+  "label": "Derived grant",
+  "family": "Other"
+ },
+ "hr_disposition_event": {
+  "label": "Disposition event",
+  "family": "Other"
+ },
+ "hr_earning_code": {
+  "label": "Earning code",
+  "family": "Other"
+ },
+ "hr_eeo_response": {
+  "label": "EEO self-identification response",
+  "family": "Other"
+ },
+ "hr_emergency_contact": {
+  "label": "Emergency contact",
+  "family": "Other"
+ },
+ "hr_employee": {
+  "label": "Employee",
+  "family": "Other"
+ },
+ "hr_employee_private": {
+  "label": "Employee private record",
+  "family": "Other"
+ },
+ "hr_employer_profile": {
+  "label": "Employer profile",
+  "family": "Other"
+ },
+ "hr_employment": {
+  "label": "Employment spell",
+  "family": "Other"
+ },
+ "hr_employment_pin": {
+  "label": "Employment PIN",
+  "family": "Other"
+ },
+ "hr_engagement": {
+  "label": "Engagement",
+  "family": "Other"
+ },
+ "hr_establishment": {
+  "label": "Establishment",
+  "family": "Other"
+ },
+ "hr_external_identity": {
+  "label": "External identity",
+  "family": "Other"
+ },
+ "hr_field_policy": {
+  "label": "Self-service field policy",
+  "family": "Other"
+ },
+ "hr_holiday": {
+  "label": "Holiday",
+  "family": "Other"
+ },
+ "hr_holiday_calendar": {
+  "label": "Holiday calendar",
+  "family": "Other"
+ },
+ "hr_i9": {
+  "label": "Form I-9",
+  "family": "Other"
+ },
+ "hr_i9_document": {
+  "label": "I-9 document",
+  "family": "Other"
+ },
+ "hr_incident": {
+  "label": "Incident",
+  "family": "Other"
+ },
+ "hr_incident_party": {
+  "label": "Incident party",
+  "family": "Other"
+ },
+ "hr_interview": {
+  "label": "Interview",
+  "family": "Other"
+ },
+ "hr_interview_kit": {
+  "label": "Interview kit",
+  "family": "Other"
+ },
+ "hr_job_title": {
+  "label": "Job title",
+  "family": "Other"
+ },
+ "hr_jurisdiction": {
+  "label": "Jurisdiction",
+  "family": "Other"
+ },
+ "hr_jurisdiction_rule": {
+  "label": "Jurisdiction rule",
+  "family": "Other"
+ },
+ "hr_jurisdiction_rule_class": {
+  "label": "Jurisdiction rule class",
+  "family": "Other"
+ },
+ "hr_jurisdiction_rule_org_decision": {
+  "label": "Jurisdiction rule org decision",
+  "family": "Other"
+ },
+ "hr_jurisdiction_rule_test": {
+  "label": "Jurisdiction rule fixture",
+  "family": "Other"
+ },
+ "hr_kiosk_device": {
+  "label": "Kiosk device",
+  "family": "Other"
+ },
+ "hr_kiosk_session": {
+  "label": "Kiosk session",
+  "family": "Other"
+ },
+ "hr_labor_target": {
+  "label": "Labor target",
+  "family": "Other"
+ },
+ "hr_leave_case": {
+  "label": "Leave case",
+  "family": "Other"
+ },
+ "hr_leave_enrollment": {
+  "label": "Leave enrollment",
+  "family": "Other"
+ },
+ "hr_leave_ledger": {
+  "label": "Leave ledger entry",
+  "family": "Other"
+ },
+ "hr_leave_policy": {
+  "label": "Leave policy",
+  "family": "Other"
+ },
+ "hr_leave_request": {
+  "label": "Leave request",
+  "family": "Other"
+ },
+ "hr_legal_hold": {
+  "label": "Legal hold",
+  "family": "Other"
+ },
+ "hr_legal_hold_item": {
+  "label": "Legal hold item",
+  "family": "Other"
+ },
+ "hr_location": {
+  "label": "Location",
+  "family": "Other"
+ },
+ "hr_new_hire_report": {
+  "label": "New hire report",
+  "family": "Other"
+ },
+ "hr_offer": {
+  "label": "Offer",
+  "family": "Other"
+ },
+ "hr_opening": {
+  "label": "Opening",
+  "family": "Other"
+ },
+ "hr_overtime_alert": {
+  "label": "Overtime alert",
+  "family": "Other"
+ },
+ "hr_overtime_alert_rule": {
+  "label": "Overtime alert rule",
+  "family": "Other"
+ },
+ "hr_overtime_preapproval": {
+  "label": "Overtime pre-approval",
+  "family": "Other"
+ },
+ "hr_pay_group": {
+  "label": "Pay group",
+  "family": "Other"
+ },
+ "hr_pay_period": {
+  "label": "Pay period",
+  "family": "Other"
+ },
+ "hr_pay_period_employment": {
+  "label": "Pay period timesheet",
+  "family": "Other"
+ },
+ "hr_payroll_export": {
+  "label": "Payroll export",
+  "family": "Other"
+ },
+ "hr_payroll_export_line": {
+  "label": "Payroll export line",
+  "family": "Other"
+ },
+ "hr_position_assignment": {
+  "label": "Position assignment",
+  "family": "Other"
+ },
+ "hr_posting": {
+  "label": "Job posting",
+  "family": "Other"
+ },
+ "hr_posting_publication": {
+  "label": "Posting publication",
+  "family": "Other"
+ },
+ "hr_provider_binding": {
+  "label": "Provider binding",
+  "family": "Other"
+ },
+ "hr_provider_event": {
+  "label": "Provider seam event",
+  "family": "Other"
+ },
+ "hr_provisioning_result": {
+  "label": "Provisioning result",
+  "family": "Other"
+ },
+ "hr_punch": {
+  "label": "Punch",
+  "family": "Other"
+ },
+ "hr_recalculation_batch": {
+  "label": "Recalculation batch",
+  "family": "Other"
+ },
+ "hr_record_class": {
+  "label": "Record class",
+  "family": "Other"
+ },
+ "hr_records_request": {
+  "label": "Records request",
+  "family": "Other"
+ },
+ "hr_reference_check": {
+  "label": "Reference check",
+  "family": "Other"
+ },
+ "hr_reporting_line": {
+  "label": "Reporting line",
+  "family": "Other"
+ },
+ "hr_requisition": {
+  "label": "Requisition",
+  "family": "Other"
+ },
+ "hr_restricted_note": {
+  "label": "Restricted note",
+  "family": "Other"
+ },
+ "hr_retention_rule": {
+  "label": "Retention rule",
+  "family": "Other"
+ },
+ "hr_role_assignment": {
+  "label": "HR role assignment",
+  "family": "Other"
+ },
+ "hr_schedule": {
+  "label": "Schedule",
+  "family": "Other"
+ },
+ "hr_schedule_change": {
+  "label": "Schedule change",
+  "family": "Other"
+ },
+ "hr_schedule_guidance": {
+  "label": "Schedule guidance",
+  "family": "Other"
+ },
+ "hr_schedule_template": {
+  "label": "Schedule template",
+  "family": "Other"
+ },
+ "hr_schedule_template_shift": {
+  "label": "Schedule template shift",
+  "family": "Other"
+ },
+ "hr_scorecard": {
+  "label": "Scorecard",
+  "family": "Other"
+ },
+ "hr_separation": {
+  "label": "Separation",
+  "family": "Other"
+ },
+ "hr_shift": {
+  "label": "Shift",
+  "family": "Other"
+ },
+ "hr_shift_claim": {
+  "label": "Shift claim",
+  "family": "Other"
+ },
+ "hr_staffing_requirement": {
+  "label": "Staffing requirement",
+  "family": "Other"
+ },
+ "hr_survey": {
+  "label": "Survey",
+  "family": "Other"
+ },
+ "hr_survey_invitation": {
+  "label": "Survey invitation",
+  "family": "Other"
+ },
+ "hr_survey_question": {
+  "label": "Survey question",
+  "family": "Other"
+ },
+ "hr_survey_response": {
+  "label": "Survey response",
+  "family": "Other"
+ },
+ "hr_tax_registration": {
+  "label": "Tax registration",
+  "family": "Other"
+ },
+ "hr_tax_withholding": {
+  "label": "Tax withholding certificate",
+  "family": "Other"
+ },
+ "hr_time_adjustment": {
+  "label": "Time adjustment",
+  "family": "Other"
+ },
+ "hr_training_assignment": {
+  "label": "Training assignment",
+  "family": "Other"
+ },
+ "hr_training_attempt": {
+  "label": "Training attempt",
+  "family": "Other"
+ },
+ "hr_transcript_entry": {
+  "label": "Transcript entry",
+  "family": "Other"
+ },
+ "hr_verification_letter_request": {
+  "label": "Verification letter request",
+  "family": "Other"
+ },
+ "hr_work_interval": {
+  "label": "Work interval",
+  "family": "Other"
+ },
+ "hr_workflow_binding": {
+  "label": "HR Workflow Binding",
+  "family": "Other"
+ },
+ "hr_workflow_decision": {
+  "label": "HR Workflow Decision",
+  "family": "Other"
+ },
+ "hr_workflow_definition": {
+  "label": "HR Workflow Definition",
+  "family": "Other"
+ },
+ "hr_workflow_event": {
+  "label": "HR Workflow Event",
+  "family": "Other"
+ },
+ "hr_workflow_failure": {
+  "label": "HR Workflow Failure",
+  "family": "Other"
+ },
+ "hr_workflow_flow_type": {
+  "label": "HR Workflow Flow Type",
+  "family": "Other"
+ },
+ "hr_workflow_instance": {
+  "label": "HR Workflow Instance",
+  "family": "Other"
+ },
+ "hr_workflow_step": {
+  "label": "HR Workflow Step",
+  "family": "Other"
+ },
+ "hr_workflow_step_definition": {
+  "label": "HR Workflow Step Definition",
+  "family": "Other"
+ },
+ "hr_workweek": {
+  "label": "Workweek",
+  "family": "Other"
+ },
+ "iam_api_key": {
+  "label": "API Key",
+  "family": "Other"
+ },
  "industry_curator": {
   "label": "Industry Curator",
   "family": "Other"
@@ -1405,15 +2297,15 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Other"
  },
  "mandate": {
-  "label": "Mandate",
+  "label": "Mandate Definition (new)",
   "family": "Other"
  },
  "mandate_binding": {
-  "label": "Mandate Binding",
+  "label": "Mandate Binding (new)",
   "family": "Other"
  },
- "mandate_exemplar": {
-  "label": "Mandate Exemplar",
+ "mandate_treatment": {
+  "label": "Mandate Treatment (new)",
   "family": "Other"
  },
  "marketing_initiative": {
@@ -1448,6 +2340,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Notification",
   "family": "Other"
  },
+ "notification_channel_preference": {
+  "label": "Notification Channel Preference",
+  "family": "Other"
+ },
+ "notification_event_override": {
+  "label": "Notification Event Override",
+  "family": "Other"
+ },
  "notification_event_type": {
   "label": "Notification Event Type",
   "family": "Other"
@@ -1458,6 +2358,18 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "ops_issue_event": {
   "label": "Ops Issue Event",
+  "family": "Other"
+ },
+ "ops_proof_check": {
+  "label": "Proof Check",
+  "family": "Other"
+ },
+ "ops_proof_run": {
+  "label": "Proof Run",
+  "family": "Other"
+ },
+ "ops_proof_scenario": {
+  "label": "Proof Scenario",
   "family": "Other"
  },
  "organization": {
@@ -1528,8 +2440,32 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Plan Vertical Profile",
   "family": "Other"
  },
+ "platform_actor_session": {
+  "label": "Actor session",
+  "family": "Other"
+ },
+ "platform_actor_token": {
+  "label": "Actor token",
+  "family": "Other"
+ },
+ "platform_actor_token_event": {
+  "label": "Actor token event",
+  "family": "Other"
+ },
+ "platform_continued_access": {
+  "label": "Continued Access",
+  "family": "Other"
+ },
  "platform_outcome_event": {
   "label": "Outcome Event",
+  "family": "Other"
+ },
+ "platform_outsider_consumer": {
+  "label": "Outsider consumer",
+  "family": "Other"
+ },
+ "platform_saved_view": {
+  "label": "Saved view",
   "family": "Other"
  },
  "podcast_race": {
@@ -1542,6 +2478,30 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "processed_document_page": {
   "label": "Processed document page",
+  "family": "Other"
+ },
+ "product_capture_file": {
+  "label": "Product Capture File",
+  "family": "Other"
+ },
+ "product_capture_item": {
+  "label": "Product Capture Item",
+  "family": "Other"
+ },
+ "product_capture_payload": {
+  "label": "Product Capture Payload",
+  "family": "Other"
+ },
+ "product_capture_product": {
+  "label": "Product Capture Product",
+  "family": "Other"
+ },
+ "product_capture_question": {
+  "label": "Product Capture Question",
+  "family": "Other"
+ },
+ "provision": {
+  "label": "Mandate Provision (new)",
   "family": "Other"
  },
  "purpose": {
@@ -1598,6 +2558,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "research_topic": {
   "label": "Research Topic",
+  "family": "Other"
+ },
+ "route_manifest_entry": {
+  "label": "Route Manifest Entry",
   "family": "Other"
  },
  "sandbox_instance": {
@@ -1696,6 +2660,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Site Geo Area",
   "family": "Other"
  },
+ "seo_site_keyword_offering": {
+  "label": "Site Keyword Offering",
+  "family": "Other"
+ },
+ "seo_site_offering_value": {
+  "label": "Site Offering Value",
+  "family": "Other"
+ },
  "seo_site_value_combo": {
   "label": "Site Value Combination",
   "family": "Other"
@@ -1726,6 +2698,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "shared_canvas_item": {
   "label": "Shared Canvas Item",
+  "family": "Other"
+ },
+ "short_link": {
+  "label": "Short Link",
   "family": "Other"
  },
  "sms_consent": {
@@ -1808,12 +2784,24 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Study Plan Day",
   "family": "Other"
  },
+ "study_reminder_context": {
+  "label": "Study Reminder Context",
+  "family": "Other"
+ },
+ "study_reminder_delivery": {
+  "label": "Study Reminder Delivery",
+  "family": "Other"
+ },
  "study_session": {
   "label": "Study Session",
   "family": "Other"
  },
  "surface": {
   "label": "UI Surface",
+  "family": "Other"
+ },
+ "system_context_item": {
+  "label": "System Context Item",
   "family": "Other"
  },
  "system_error": {
@@ -1968,6 +2956,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Brand Asset",
   "family": "Other"
  },
+ "web_brand_offering": {
+  "label": "Brand Offering",
+  "family": "Other"
+ },
  "web_business_fact": {
   "label": "Business Fact",
   "family": "Other"
@@ -2020,6 +3012,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Location Listing",
   "family": "Other"
  },
+ "web_offering_template": {
+  "label": "Offering Template",
+  "family": "Other"
+ },
  "web_page": {
   "label": "Canonical Page",
   "family": "Other"
@@ -2064,6 +3060,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Site Item Config",
   "family": "Other"
  },
+ "web_site_offering": {
+  "label": "Site Offering",
+  "family": "Other"
+ },
  "web_sitemap": {
   "label": "Sitemap",
   "family": "Other"
@@ -2094,6 +3094,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "workflow_checkpoint": {
   "label": "Workflow Checkpoint",
+  "family": "Other"
+ },
+ "workflow_comparison": {
+  "label": "Workflow Comparison",
   "family": "Other"
  },
  "workflow_definition_version": {
@@ -2196,6 +3200,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Agent Variable",
   "family": "Derived shapes"
  },
+ "url": {
+  "label": "Url",
+  "family": "Derived shapes"
+ },
  "transcript_segment": {
   "label": "Transcript Segment",
   "family": "Derived shapes"
@@ -2247,4 +3255,19 @@ export const CATALOG_ALIASES: Record<string, string> = {
  "table": "dataset",
  "transcript_session": "studio_session",
  "war_room_thread": "thread"
+} as const;
+
+/**
+ * THE DIRECTIVE⇄KIND SEAM: directive slug → the content-IR kind ONE of its
+ * items IS. Server-DERIVED (`ShapeSpec.item_kind`), never authored — a shape
+ * whose item model is a KindModel appears here the moment it registers, with no
+ * edit on either side. This is what makes the envelope system and the kind
+ * system ONE system: the directive owns the action, the kind owns the display.
+ *
+ * An ABSENT slug has no kind — honest, not unknown; the consumer falls to the
+ * generic structured viewer. Read through
+ * `features/content-ir/directives/itemKind.ts`, never directly.
+ */
+export const DIRECTIVE_ITEM_KINDS: Record<string, string> = {
+ "directive_v1_action_create_agent_definition": "agent_definition"
 } as const;

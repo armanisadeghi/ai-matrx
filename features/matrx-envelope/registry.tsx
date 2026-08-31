@@ -87,6 +87,13 @@ const PlanNodePatchRenderer = dynamic(
     import("@/features/matrx-envelope/directives/planTree/PlanNodePatchRenderer"),
   { ssr: false, loading: () => null },
 );
+const SideEffectDirectiveCard = dynamic(
+  () =>
+    import(
+      "@/features/matrx-envelope/directives/sideEffect/SideEffectDirectiveCard"
+    ),
+  { ssr: false, loading: () => null },
+);
 
 export interface DirectiveRendererProps {
   /** The decoded two-key shell — slug, class, noun, items, position law. */
@@ -333,3 +340,28 @@ registerDirectiveRenderer("action", ContextGroomRenderer, "context_groom");
 // applies with ZERO frontend edits.
 registerDirectiveRenderer("action", PlanTreeRenderer, "plan_tree");
 registerDirectiveRenderer("action", PlanNodePatchRenderer, "plan_node_patch");
+
+/**
+ * THE SIDE-EFFECT FLOOR — the prefix rule doing the real work.
+ *
+ * One card for every `create` / `update` / `delete` / `action` shape the server
+ * can register (56 today), so a person is never asked to approve a write they
+ * cannot identify. Registered LAST and by CLASS, so every exact-slug renderer
+ * above still wins: `plan_tree` keeps its bespoke card, and a shape that needs
+ * something richer than the generic card simply registers by name.
+ *
+ * Before this, an unregistered side effect fell all the way to
+ * `EnvelopeFallbackCard` — a title and an Apply button. That card remains the
+ * genuine floor for a class nothing registers at all (and for a registered
+ * renderer that must degrade), which is a different and still necessary job.
+ *
+ * Why the card can be generic at all: the ITEM carries the specificity. Its
+ * kind comes from THE DIRECTIVE⇄KIND SEAM (`directives/itemKind.ts`), so the
+ * panel renders each item through the kind system's own component. The
+ * directive layer owns the ACTION; the kind system owns the DISPLAY. That is
+ * what makes these one system rather than two.
+ */
+registerDirectiveRenderer("create", SideEffectDirectiveCard);
+registerDirectiveRenderer("update", SideEffectDirectiveCard);
+registerDirectiveRenderer("delete", SideEffectDirectiveCard);
+registerDirectiveRenderer("action", SideEffectDirectiveCard);

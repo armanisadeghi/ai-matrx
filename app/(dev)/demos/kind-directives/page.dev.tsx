@@ -21,6 +21,7 @@
  */
 
 import MarkdownStream from "@/components/MarkdownStream";
+import AGENT_DEFINITION_ITEM from "./agent-definition-item.json";
 
 interface Row {
   title: string;
@@ -89,7 +90,41 @@ const ROWS: Row[] = [
     }),
   },
   {
-    title: "6 · Not a directive — must stay raw",
+    title: "6 · Write · a KIND-BACKED item (THE DIRECTIVE⇄KIND SEAM)",
+    note:
+      "The real Masterwork Conductor — a 17.7k-char system prompt, 3 variables, 4 tools. " +
+      "The card must NAME it and show facts; View must open the panel and render it through " +
+      "the agent_definition kind's OWN component. Nothing here registers this slug.",
+    markdown: fence({
+      __kind: "directive_v1_action_create_agent_definition",
+      items: [AGENT_DEFINITION_ITEM],
+    }),
+  },
+  {
+    title: "7 · Write · MANY items, no item kind (the generic ladder)",
+    note:
+      "No registered kind for these items, so titles come from the catalog's own title_column " +
+      "and the panel falls to the generic structured viewer. Folds after 3 rows.",
+    markdown: fence({
+      __kind: "directive_v1_create_task",
+      items: [
+        { title: "Draft the launch note", description: "One page, plain language." },
+        { title: "Review pricing page", description: "Check the tier table." },
+        { title: "Schedule the demo", description: "Tuesday, 30 minutes." },
+        { title: "Update the changelog", description: "Since v0.4.1500." },
+      ],
+    }),
+  },
+  {
+    title: "8 · Delete · the class must be unmistakable before approval",
+    note: "A destructive write reads as destructive at a glance — class icon, named target, Apply.",
+    markdown: fence({
+      __kind: "directive_v1_delete_task",
+      items: [{ id: "00000000-0000-4000-8000-000000000009", title: "Old onboarding checklist" }],
+    }),
+  },
+  {
+    title: "9 · Not a directive — must stay raw",
     note: "An ordinary kind instance in a matrx fence is NOT a directive. The reserved prefix is what keeps the namespaces disjoint.",
     markdown: fence({ __kind: "flashcard_set", cards: [] }),
   },
@@ -104,8 +139,8 @@ export default function KindDirectivesDemoPage() {
             Kind Directives — live render proof
           </h1>
           <p className="text-sm text-muted-foreground">
-            Real fences through the real pipeline. Rows 1–5 must render as chips
-            or cards; row 6 must stay raw.
+            Real fences through the real pipeline. Rows 1–8 must render as chips
+            or cards; row 9 must stay raw.
           </p>
         </header>
 

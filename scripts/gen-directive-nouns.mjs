@@ -77,6 +77,19 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = ${JSON.s
 
 /** Legacy wire noun → canonical entity token (server-published). */
 export const CATALOG_ALIASES: Record<string, string> = ${JSON.stringify(catalog.aliases ?? {}, null, 1)} as const;
+
+/**
+ * THE DIRECTIVE⇄KIND SEAM: directive slug → the content-IR kind ONE of its
+ * items IS. Server-DERIVED (\`ShapeSpec.item_kind\`), never authored — a shape
+ * whose item model is a KindModel appears here the moment it registers, with no
+ * edit on either side. This is what makes the envelope system and the kind
+ * system ONE system: the directive owns the action, the kind owns the display.
+ *
+ * An ABSENT slug has no kind — honest, not unknown; the consumer falls to the
+ * generic structured viewer. Read through
+ * \`features/content-ir/directives/itemKind.ts\`, never directly.
+ */
+export const DIRECTIVE_ITEM_KINDS: Record<string, string> = ${JSON.stringify(catalog.item_kinds ?? {}, null, 1)} as const;
 `;
 
 writeFileSync(OUT, body, "utf-8");

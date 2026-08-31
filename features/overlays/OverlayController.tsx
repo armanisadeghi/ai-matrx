@@ -661,6 +661,11 @@ const StructuredValueWindow = lazyOverlay(
     import("@/features/window-panels/windows/structured-value/StructuredValueWindow"),
   { ssr: false },
 );
+const DirectiveItemWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/directive-item/DirectiveItemWindow"),
+  { ssr: false },
+);
 const ConvertToShapeWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/content-ir/ConvertToShapeWindow"),
@@ -1961,6 +1966,9 @@ export default function OverlayController() {
     ),
     structuredValueWindow: useAppSelector((s) =>
       selectOpenInstances(s, "structuredValueWindow"),
+    ),
+    directiveItemWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "directiveItemWindow"),
     ),
     extractionCellEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "extractionCellEditorWindow"),
@@ -5260,6 +5268,41 @@ export default function OverlayController() {
             value={data?.value}
             title={typeof data?.title === "string" ? data.title : null}
             subtitle={typeof data?.subtitle === "string" ? data.subtitle : null}
+          />
+        );
+      })}
+
+      {/* directiveItemWindow — multi-instance (read two proposed items side by side) */}
+      {instancesById.directiveItemWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const item =
+          data?.item && typeof data.item === "object" && !Array.isArray(data.item)
+            ? (data.item as Record<string, unknown>)
+            : {};
+        return (
+          <DirectiveItemWindow
+            key={inst.instanceId}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : inst.instanceId
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "directiveItemWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            item={item}
+            itemKind={
+              typeof data?.itemKind === "string" ? data.itemKind : null
+            }
+            title={typeof data?.title === "string" ? data.title : "Item"}
+            subtitle={
+              typeof data?.subtitle === "string" ? data.subtitle : null
+            }
           />
         );
       })}

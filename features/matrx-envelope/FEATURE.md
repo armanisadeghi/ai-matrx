@@ -74,6 +74,14 @@ render through the SAME live chip renderer.
   `buildDirectiveOutputSchema` (mirrors aidream's schema-gen; pins `__kind` `const` and
   FIRST). **Every receipt's identity field is `directive` and it carries the SLUG** — one
   field, one name for the thing.
+- `directives/sideEffect/SideEffectDirectiveCard.tsx` — **the card for every `create` /
+  `update` / `delete` / `action` shape**, registered by CLASS so all 56 registered shapes
+  (and every future one) get it with zero edits. Names the write from the catalog, names
+  each item from the noun's `title_column`, shows scalar facts, folds past 3 rows, and
+  offers Copy + Apply. `View` opens `directiveItemWindow`. Never returns `null` — an empty
+  batch is a stated line.
+- `directives/sideEffect/classIcon.ts` — the icon, **class first** (create/update/delete/action):
+  on a card whose job is authorizing a write, a delete that looks like a create is a trap.
 - `state/proposedDirectivesSlice.ts` — the per-conversation inbox of agent-proposed actions
   (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
 - `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
@@ -141,6 +149,25 @@ render through the SAME live chip renderer.
   and record resolvers return `"heading\nbody"`, so both chips print the first line and keep
   the full value in the tooltip.
 
+## 🚨 THE DIRECTIVE⇄KIND SEAM — the item is a kind, so the kind system draws it
+
+**Arman, 2026-08-26:** the envelope / Matrx-Actions system and the Shape (kind) system are
+**ONE system with several methods inside it.** They meet at the ITEM.
+
+A directive is a container; its items are the payload. `features/content-ir/directives/itemKind.ts`
+resolves `slug → item kind` from the **server-derived** map in `catalog-nouns.generated.ts`
+(aidream `ShapeSpec.item_kind` → the catalog manifest). `asKindInstance` stamps `__kind`
+first — added, never overwritten — so the item is an ordinary kind instance on the wire.
+
+**What this buys, and why there is no directive-specific rendering code for it:** the
+side-effect card hands each item to `DirectiveItemWindow`, which renders it through
+`DbKindComponent` — the kind pipeline's own renderer. An `agent_definition` proposal
+therefore shows the real agent card, drawn by the same component that draws an agent
+everywhere else. **The directive layer owns the ACTION; the kind system owns the DISPLAY.**
+
+A slug with **no** item kind falls to `StructuredValueView`, THE FLOOR — honest, because the
+item genuinely has no registered kind. Never invent one.
+
 ## A REGISTERED RENDERER MUST NEVER RETURN `null`
 
 `MatrxEnvelopeBlock` step 2 renders a found renderer's output **verbatim** — so a
@@ -151,7 +178,11 @@ cannot save it: a renderer *was* found. **Degrade to
 never to nothing. That card is also **THE PREFIX FLOOR**: a slug whose class nothing
 claims lands there, named from the catalog ("Create Agent · Agents"), with an Apply button
 when the class is a side effect. A shape this frontend has never heard of is still legible
-and still actionable.
+and still actionable. **Since 2026-08-26 the four SIDE-EFFECT classes no longer reach it** —
+`SideEffectDirectiveCard` claims them, because "named and never dropped" was never enough
+for a write: it asked a person to approve a potentially destructive action with no idea what
+it would do. The floor's real job — the never-`null` degrade target, and the truly unclaimed
+class (`validation`) — is unchanged.
 
 Cost of learning this (2026-07-26): `plan_tree` items addressed by plain-text
 `site` (instead of `site_id`) parsed to an empty list → `return null` → a 70KB
@@ -228,6 +259,13 @@ silently drops items the server would have happily applied.
   composers (notes, tasks, comments).
 
 ## Change Log
+
+- 2026-08-26 — **THE DIRECTIVE⇄KIND SEAM + the side-effect card.** `itemKind.ts` /
+  `itemSummary.ts`, `SideEffectDirectiveCard` registered for all four side-effect classes,
+  and `DirectiveItemWindow` (Pretty = the item's own kind component, Raw = JSON, plus
+  CopyButtons). Replaces "a name and a blind Apply button" for all 56 registered shapes.
+  Tests: `__tests__/side-effect-directive-card.test.tsx` (15, against the real 22KB
+  Masterwork Conductor item). Demo rows 6–8 on `/demos/kind-directives`.
 
 - 2026-08-30 — **Reference copy fences emit minified JSON.** The shared
   `buildReferenceFence` serializer now writes the two-key directive shell on one line, so

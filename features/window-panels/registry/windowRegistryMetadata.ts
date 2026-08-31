@@ -1532,6 +1532,20 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── One item of a PENDING directive, read before you approve the write ─────
+  // Ephemeral on purpose: the item is a proposal that lives in a message, not a
+  // record — restoring it into a later session would resurrect an approval
+  // prompt for a write whose conversation has moved on.
+  {
+    slug: "directive-item-window",
+    overlayId: "directiveItemWindow",
+    kind: "window",
+    label: "Proposed item",
+    defaultData: { item: null, itemKind: null, title: null, subtitle: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Convert JSON to Shape ─────────────────────────────────────────────────
   {
     slug: "convert-to-shape-window",

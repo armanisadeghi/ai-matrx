@@ -600,6 +600,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  directiveItemWindow: {
+    label: "Proposed item",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   structuredListManagerV1Window: {
     label: "Picklists — v1",
     instanceMode: "singleton",

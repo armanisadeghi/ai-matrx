@@ -62,10 +62,27 @@ describe("directive renderer resolution", () => {
     // MatrxEnvelopeBlock turns this into EnvelopeFallbackCard: named by class
     // and noun, with an Apply button when the class is a side effect. Never
     // null, never silent, never a dropped message block.
-    expect(getDirectiveRenderer(at("directive_v1_delete_task", "delete"))).toBeNull();
+    //
+    // 2026-08-26: the SIDE-EFFECT classes no longer reach this floor —
+    // `create`/`update`/`delete`/`action` are claimed by SideEffectDirectiveCard
+    // (registry.tsx § THE SIDE-EFFECT FLOOR), because "named and never dropped"
+    // was not enough for a write: a person was being asked to approve a
+    // destructive action with no idea what it would do. `validation` is the
+    // honest remaining case — a class with no renderer at all.
     expect(
       getDirectiveRenderer(at("directive_v1_validation_regex", "validation")),
     ).toBeNull();
+  });
+
+  it("gives EVERY side-effect class a card, through the prefix rule", () => {
+    // One registration per class covers all 56 registered shapes and every
+    // shape the server adds later, with zero frontend edits — the same promise
+    // the `reference` class registration makes for its 419 nouns.
+    for (const directiveClass of ["create", "update", "delete", "action"] as const) {
+      expect(
+        getDirectiveRenderer(at(`directive_v1_${directiveClass}_never_seen_before`, directiveClass)),
+      ).not.toBeNull();
+    }
   });
 
   it("refuses a registration whose slug the grammar could not parse back", () => {
