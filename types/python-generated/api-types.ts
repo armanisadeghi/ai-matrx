@@ -8471,6 +8471,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seven-shifts/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_seven_shifts_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lucky-orange/public/status": {
         parameters: {
             query?: never;
@@ -8480,6 +8497,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_lucky_orange_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/logrocket/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_logrocket_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8514,6 +8548,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_readme_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/acquia/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_acquia_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29241,6 +29292,35 @@ export interface components {
              * Format: uuid
              */
             leave_policy_id: string;
+        };
+        /** AcquiaServiceStatus */
+        AcquiaServiceStatus: {
+            /**
+             * Kind
+             * @default acquia_public_content_platform_status
+             * @constant
+             */
+            __kind?: "acquia_public_content_platform_status";
+            /**
+             * Provider
+             * @default Acquia
+             * @constant
+             */
+            provider?: "Acquia";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.acquia.com
+             * @constant
+             */
+            status_page?: "https://status.acquia.com";
         };
         /** ActionEventFacts */
         ActionEventFacts: {
@@ -59346,6 +59426,38 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** LogRocketServiceStatus */
+        LogRocketServiceStatus: {
+            /**
+             * Kind
+             * @default logrocket_public_service_status
+             * @constant
+             */
+            __kind?: "logrocket_public_service_status";
+            /**
+             * Provider
+             * @default logrocket
+             * @constant
+             */
+            provider?: "logrocket";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.logrocket.com
+             * @constant
+             */
+            status_page?: "https://status.logrocket.com";
+        };
         /**
          * LoomVideoResult
          * @description Safe bounded projection of one public Loom video.
@@ -78394,6 +78506,43 @@ export interface components {
              * @default
              */
             guidance?: string;
+        };
+        /**
+         * SevenShiftsServiceStatus
+         * @description Safe aggregate status projection for 7shifts' fixed status page.
+         */
+        SevenShiftsServiceStatus: {
+            /**
+             * Kind
+             * @default seven_shifts_official_restaurant_workforce_platform_status
+             * @constant
+             */
+            __kind?: "seven_shifts_official_restaurant_workforce_platform_status";
+            /**
+             * Provider
+             * @default 7shifts
+             * @constant
+             */
+            provider?: "7shifts";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.7shifts.com/
+             * @constant
+             */
+            status_page?: "https://status.7shifts.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * ShadowSweepIn
@@ -105414,6 +105563,26 @@ export interface operations {
             };
         };
     };
+    public_status_seven_shifts_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SevenShiftsServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_lucky_orange_public_status_get: {
         parameters: {
             query?: never;
@@ -105430,6 +105599,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LuckyOrangeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_logrocket_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogRocketServiceStatus"];
                 };
             };
         };
@@ -105470,6 +105659,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReadMeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_acquia_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcquiaServiceStatus"];
                 };
             };
         };
