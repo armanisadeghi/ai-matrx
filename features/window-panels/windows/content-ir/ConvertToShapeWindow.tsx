@@ -171,6 +171,8 @@ function ConvertToShapeWindowContent({
        * Preview-only surface for a Shape that doesn't exist yet (the creator
        * mints it on Continue), so there is no entity to attach — raw content
        * is the JSON sample itself. Copy/Export/AI still resolve from it.
+       * context-menu-exempt: surfaceName — no registered ui_surface for this preview
+       * context-menu-exempt: entity — the Shape does not exist until the creator runs
        */}
       <NonEditableContextMenu
         sourceFeature="internal"
