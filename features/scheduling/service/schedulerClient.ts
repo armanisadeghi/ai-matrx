@@ -41,6 +41,12 @@ import type {
   ValidateCronResponse,
 } from "./schedulerApi.types";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 
 // ── Base URL + auth ────────────────────────────────────────────────────────
 
@@ -58,10 +64,14 @@ async function authHeaders(): Promise<HeadersInit> {
       "Not authenticated — cannot reach aidream /scheduler endpoints",
     );
   }
-  return {
+  const store = getStoreSingleton();
+  const organizationId = requireOrganizationContext(
+    store ? selectOrganizationId(store.getState()) : null,
+  );
+  return applyOrganizationContextHeader({
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
-  };
+  }, organizationId);
 }
 
 async function request<T>(
