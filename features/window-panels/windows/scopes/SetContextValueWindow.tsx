@@ -7,6 +7,7 @@ import {
   type PostSaveAction,
 } from "@/features/scopes/actions/quick-assign/SetContextValueCore";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface SetContextValueWindowProps {
   isOpen: boolean;
@@ -66,27 +67,33 @@ function SetContextValueWindowInner({
     typeof window !== "undefined" ? window.innerHeight - viewportPad : 900;
 
   return (
-    <WindowPanel
-      title="Set Context Value"
-      id={windowId}
-      overlayId={OVERLAY_ID}
-      minWidth={560}
-      minHeight={480}
-      width="90vw"
-      height="85dvh"
-      maxWidth={maxWidth}
-      maxHeight={maxHeight}
-      position="center"
-      onClose={onClose}
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: initialContent }}
     >
-      <div className="h-full min-h-0 p-3">
-        <SetContextValueCore
-          initialContent={initialContent}
-          initialEditorMode={initialEditorMode}
-          onSaved={handleSaved}
-          onCancel={onClose}
-        />
-      </div>
-    </WindowPanel>
+      <WindowPanel
+        title="Set Context Value"
+        id={windowId}
+        overlayId={OVERLAY_ID}
+        minWidth={560}
+        minHeight={480}
+        width="90vw"
+        height="85dvh"
+        maxWidth={maxWidth}
+        maxHeight={maxHeight}
+        position="center"
+        onClose={onClose}
+      >
+        <div className="h-full min-h-0 p-3">
+          <SetContextValueCore
+            initialContent={initialContent}
+            initialEditorMode={initialEditorMode}
+            onSaved={handleSaved}
+            onCancel={onClose}
+          />
+        </div>
+      </WindowPanel>
+    </NonEditableContextMenu>
   );
 }

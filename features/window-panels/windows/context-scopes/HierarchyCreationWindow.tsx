@@ -12,6 +12,7 @@ import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface HierarchyCreationWindowData {
   entityType?: "organization" | "project" | "task";
@@ -97,6 +98,11 @@ export default function HierarchyCreationWindow({
   if (!isOpen || !entityType) return null;
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: `${getTitle()}\n${name}` }}
+    >
     <WindowPanel
       title={getTitle()}
       onClose={onClose}
@@ -166,5 +172,6 @@ export default function HierarchyCreationWindow({
         </div>
       </div>
     </WindowPanel>
+    </NonEditableContextMenu>
   );
 }

@@ -13,6 +13,7 @@ import {
   selectScopeTypeById,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeForm } from "@/features/agent-context/components/scope-admin/ScopeForm";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface ScopeEditWindowData {
   /** Existing scope to edit. Omit to create a new scope. */
@@ -80,34 +81,45 @@ function ScopeEditWindowInner({
   const loading = !scopeType || (!!scopeId && !editingScope);
 
   return (
-    <WindowPanel
-      title={title}
-      id="scope-edit-window"
-      overlayId={OVERLAY_ID}
-      onClose={onClose}
-      position="center"
-      width={460}
-      height={460}
-      minWidth={340}
-      minHeight={340}
-      maxWidth={680}
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: editingScope?.name ?? title }}
+      entity={
+        editingScope
+          ? { type: "scope", id: editingScope.id, title: editingScope.name }
+          : undefined
+      }
     >
-      <div className="h-full overflow-y-auto p-4">
-        {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <ScopeForm
-            organizationId={organizationId}
-            scopeType={scopeType}
-            editingScope={editingScope}
-            parentScopeId={parentScopeId}
-            onDone={onClose}
-            onCancel={onClose}
-          />
-        )}
-      </div>
-    </WindowPanel>
+      <WindowPanel
+        title={title}
+        id="scope-edit-window"
+        overlayId={OVERLAY_ID}
+        onClose={onClose}
+        position="center"
+        width={460}
+        height={460}
+        minWidth={340}
+        minHeight={340}
+        maxWidth={680}
+      >
+        <div className="h-full overflow-y-auto p-4">
+          {loading ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <ScopeForm
+              organizationId={organizationId}
+              scopeType={scopeType}
+              editingScope={editingScope}
+              parentScopeId={parentScopeId}
+              onDone={onClose}
+              onCancel={onClose}
+            />
+          )}
+        </div>
+      </WindowPanel>
+    </NonEditableContextMenu>
   );
 }

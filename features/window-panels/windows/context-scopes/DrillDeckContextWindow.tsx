@@ -2,6 +2,7 @@
 
 import { ActiveDrillDeck } from "@/features/scopes/components/active-context/drill-deck/ActiveDrillDeck";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface DrillDeckContextWindowProps {
   isOpen: boolean;
@@ -19,19 +20,25 @@ export function DrillDeckContextWindow({
   if (!isOpen) return null;
 
   return (
-    <WindowPanel
-      id="drill-deck-context-window"
-      title="Working Context"
-      onClose={onClose}
-      minWidth={300}
-      minHeight={360}
-      width={380}
-      height={560}
-      position="center"
-      overlayId="drillDeckContextWindow"
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "Working Context" }}
     >
-      <ActiveDrillDeck className="h-full rounded-none border-0" />
-    </WindowPanel>
+      <WindowPanel
+        id="drill-deck-context-window"
+        title="Working Context"
+        onClose={onClose}
+        minWidth={300}
+        minHeight={360}
+        width={380}
+        height={560}
+        position="center"
+        overlayId="drillDeckContextWindow"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      >
+        <ActiveDrillDeck className="h-full rounded-none border-0" />
+      </WindowPanel>
+    </NonEditableContextMenu>
   );
 }

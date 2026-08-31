@@ -32,6 +32,7 @@ import { EmbedSiteFrame } from "@/features/window-panels/components/EmbedSiteFra
 import { cn } from "@/lib/utils";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
 import { emitCuratedIconPickerEvent } from "./callbacks";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface CuratedIconPickerWindowProps {
   isOpen: boolean;
@@ -104,6 +105,11 @@ export function CuratedIconPickerWindow({
   };
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "Icon gallery" }}
+    >
     <WindowPanel
       title="Icon gallery"
       id={`curated-icon-picker-${instanceId}`}
@@ -219,6 +225,7 @@ export function CuratedIconPickerWindow({
         )}
       </div>
     </WindowPanel>
+    </NonEditableContextMenu>
   );
 }
 

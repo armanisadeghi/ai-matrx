@@ -32,6 +32,7 @@ import {
   selectQuickTasksSelectedTaskId,
   selectQuickTasksSearchQuery,
 } from "@/features/tasks/redux/quickTasksWindowSlice";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface QuickTasksWindowProps {
   isOpen: boolean;
@@ -136,20 +137,26 @@ export default function QuickTasksWindow({
         surfaceName={QUICK_TASKS_SURFACE_NAME}
         getScope={getScope}
       >
-        <WindowPanel
-          title="Quick Tasks"
-          width={850}
-          height={650}
-          sidebar={<QuickTasksSidebar />}
-          sidebarDefaultSize={300}
-          sidebarMinSize={225}
-          sidebarClassName="bg-muted/10 border-r"
-          urlSyncKey="quick_tasks"
-          onClose={onClose}
-          overlayId="quickTasksWindow"
+        <NonEditableContextMenu
+          sourceFeature="tasks"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "Quick Tasks" }}
         >
-          <QuickTasksMain surfaceDraftRef={draftRef} />
-        </WindowPanel>
+          <WindowPanel
+            title="Quick Tasks"
+            width={850}
+            height={650}
+            sidebar={<QuickTasksSidebar />}
+            sidebarDefaultSize={300}
+            sidebarMinSize={225}
+            sidebarClassName="bg-muted/10 border-r"
+            urlSyncKey="quick_tasks"
+            onClose={onClose}
+            overlayId="quickTasksWindow"
+          >
+            <QuickTasksMain surfaceDraftRef={draftRef} />
+          </WindowPanel>
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </QuickTasksWorkspaceProvider>
   );

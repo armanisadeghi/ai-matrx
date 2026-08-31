@@ -25,6 +25,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { StudioView } from "@/features/transcript-studio/components/StudioView";
 import { selectActiveSessionId } from "@/features/transcript-studio/redux/selectors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const OVERLAY_ID = "transcriptStudioWindow";
 const WINDOW_ID = "transcript-studio-window";
@@ -54,23 +55,29 @@ export function TranscriptStudioWindow({
   );
 
   return (
-    <WindowPanel
-      title={title}
-      minWidth={760}
-      minHeight={440}
-      id={id}
-      overlayId={OVERLAY_ID}
-      onCollectData={collectData}
-      {...windowProps}
+    <NonEditableContextMenu
+      sourceFeature="transcription"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: title }}
     >
-      <StudioView
-        config={{
-          containerVariant: "window",
-          showSidebar: true,
-          showSettings: true,
-          initialSessionId: initialActiveSessionId ?? null,
-        }}
-      />
-    </WindowPanel>
+      <WindowPanel
+        title={title}
+        minWidth={760}
+        minHeight={440}
+        id={id}
+        overlayId={OVERLAY_ID}
+        onCollectData={collectData}
+        {...windowProps}
+      >
+        <StudioView
+          config={{
+            containerVariant: "window",
+            showSidebar: true,
+            showSettings: true,
+            initialSessionId: initialActiveSessionId ?? null,
+          }}
+        />
+      </WindowPanel>
+    </NonEditableContextMenu>
   );
 }
