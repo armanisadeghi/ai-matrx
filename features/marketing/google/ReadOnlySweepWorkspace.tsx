@@ -28,6 +28,7 @@ import {
 } from "@/features/marketing/google/hooks";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import { isGoogleConnectionReachableByUser } from "@/features/marketing/google/service";
+import { resolveGoogleActionOrganizationId } from "@/features/marketing/google/action-organization";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import {
   GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
@@ -35,6 +36,7 @@ import {
   GOOGLE_SCOPE,
 } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsSuperAdmin,
@@ -159,7 +161,10 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   };
 
   const operationOrganizationId = (connection: GoogleConnectionSummary) =>
-    connection.organization_id ?? activeOrganizationId;
+    resolveGoogleActionOrganizationId(
+      connection.organization_id,
+      activeOrganizationId,
+    );
 
   const allDisclosuresAccepted = SWEEP_CAPABILITIES.every(
     (capability) => accepted[capability],
@@ -219,11 +224,13 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await calendar.mutateAsync({
         connectionId: connection.id,
-        organizationId: operationOrganizationId(connection),
+        organizationId: await operationOrganizationId(connection),
         days: 14,
       });
     } catch (error) {
-      showReadError("Calendar agenda", error);
+      if (!isOrganizationSelectionCancelled(error)) {
+        showReadError("Calendar agenda", error);
+      }
     }
   };
 
@@ -233,10 +240,12 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await tasks.mutateAsync({
         connectionId: connection.id,
-        organizationId: operationOrganizationId(connection),
+        organizationId: await operationOrganizationId(connection),
       });
     } catch (error) {
-      showReadError("Google Tasks", error);
+      if (!isOrganizationSelectionCancelled(error)) {
+        showReadError("Google Tasks", error);
+      }
     }
   };
 
@@ -246,13 +255,15 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await youtube.mutateAsync({
         connectionId: connection.id,
-        organizationId: operationOrganizationId(connection),
+        organizationId: await operationOrganizationId(connection),
         channelId: youtubeChannelId,
         startDate: isoDate(29),
         endDate: isoDate(0),
       });
     } catch (error) {
-      showReadError("YouTube Analytics", error);
+      if (!isOrganizationSelectionCancelled(error)) {
+        showReadError("YouTube Analytics", error);
+      }
     }
   };
 
@@ -262,10 +273,12 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     try {
       await tagManager.mutateAsync({
         connectionId: connection.id,
-        organizationId: operationOrganizationId(connection),
+        organizationId: await operationOrganizationId(connection),
       });
     } catch (error) {
-      showReadError("Tag Manager", error);
+      if (!isOrganizationSelectionCancelled(error)) {
+        showReadError("Tag Manager", error);
+      }
     }
   };
 
