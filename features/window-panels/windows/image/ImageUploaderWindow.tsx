@@ -26,6 +26,8 @@ import {
 } from "@/features/surfaces/manifests/image-uploader.manifest";
 import { emitImageUploaderEvent } from "./callbacks";
 import type { AssetPreset } from "@/features/files/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { toast } from "@/lib/toast";
 
 /**
  * Flatten the asset's variant map to `{ variantKey: url }`, dropping variants
@@ -183,36 +185,79 @@ export default function ImageUploaderWindow({
                     </button>
                 }
             >
-                <div className="flex flex-col gap-3 p-4 overflow-auto h-full">
-                    {description && (
-                        <p
-                            className="text-xs text-muted-foreground"
-                            data-surface-value="uploader_description"
-                        >
-                            {description}
-                        </p>
-                    )}
-                    <ImageAssetUploader
-                        onComplete={handleComplete}
-                        onError={setLastError}
-                        preset={preset}
-                        folder={folder}
-                        currentUrl={currentUrl ?? null}
-                        allowUrlPaste={allowUrlPaste}
-                        label={title ?? "Image"}
-                    />
-                    {result && (
-                        <div className="rounded-lg bg-muted/30 border border-border p-3 text-xs">
-                            <p className="font-medium mb-1">Primary URL</p>
+                {/*
+                 * Before upload there is no file entity yet — contentSource
+                 * stays "raw". Once `result` lands, entity/extraSections
+                 * light up "Copy image URL" and Attach To for the real file.
+                 */}
+                <NonEditableContextMenu
+                    sourceFeature="files"
+                    contentSource={{ type: "raw" }}
+                    contextData={{ content: result?.primary_url ?? "" }}
+                    entity={
+                        result?.file_id
+                            ? {
+                                  type: "file",
+                                  id: result.file_id,
+                                  title: title ?? "Uploaded image",
+                                  resourceType: "file",
+                              }
+                            : undefined
+                    }
+                    extraSections={
+                        result?.primary_url
+                            ? [
+                                  {
+                                      id: "image-uploader",
+                                      items: [
+                                          {
+                                              kind: "item",
+                                              id: "copy-url",
+                                              label: "Copy image URL",
+                                              onSelect: () => {
+                                                  navigator.clipboard
+                                                      .writeText(result.primary_url ?? "")
+                                                      .then(() => toast.success("URL copied"))
+                                                      .catch(() => toast.error("Copy failed"));
+                                              },
+                                          },
+                                      ],
+                                  },
+                              ]
+                            : []
+                    }
+                >
+                    <div className="flex flex-col gap-3 p-4 overflow-auto h-full">
+                        {description && (
                             <p
-                                className="font-mono text-[11px] break-all text-muted-foreground"
-                                data-surface-value="result_primary_url"
+                                className="text-xs text-muted-foreground"
+                                data-surface-value="uploader_description"
                             >
-                                {result.primary_url}
+                                {description}
                             </p>
-                        </div>
-                    )}
-                </div>
+                        )}
+                        <ImageAssetUploader
+                            onComplete={handleComplete}
+                            onError={setLastError}
+                            preset={preset}
+                            folder={folder}
+                            currentUrl={currentUrl ?? null}
+                            allowUrlPaste={allowUrlPaste}
+                            label={title ?? "Image"}
+                        />
+                        {result && (
+                            <div className="rounded-lg bg-muted/30 border border-border p-3 text-xs">
+                                <p className="font-medium mb-1">Primary URL</p>
+                                <p
+                                    className="font-mono text-[11px] break-all text-muted-foreground"
+                                    data-surface-value="result_primary_url"
+                                >
+                                    {result.primary_url}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </NonEditableContextMenu>
             </WindowPanel>
         </SurfaceRuntimeProvider>
     );
