@@ -43,6 +43,11 @@ import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 // until the user's first audio engagement. See providers/AudioSystemHost.tsx.
 import { AudioSystemHost } from "@/providers/AudioSystemHost";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
+// THE ONE @ai-matrx/realtime mount. Every channel the app opens belongs to the
+// single RealtimeManager this provider builds — a second mount anywhere would
+// build a second manager with its own channels and its own write ledger.
+// See providers/RealtimeHost.tsx.
+import { RealtimeHost } from "@/providers/RealtimeHost";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
 
@@ -142,6 +147,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                   <ModuleHeaderProvider>
                       <SelectedImagesProvider>
                             <RequestRecoveryProvider>
+                              <RealtimeHost>
                               <MediaHostProvider>
                               {/* ONE audio mount — the whole audio system
                                 (devices, recording engine, TTS output,
@@ -220,6 +226,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                     openFilePreview(fileId); */}
                               </React.Fragment>
                               </MediaHostProvider>
+                              </RealtimeHost>
                             </RequestRecoveryProvider>
                       </SelectedImagesProvider>
                   </ModuleHeaderProvider>
