@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api/typed-client";
+import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
 import type { components } from "@/types/python-generated/api-types";
 import type { PodcastSpeaker } from "./types";
 import type { VoiceProvider } from "./voiceCatalog";
@@ -48,7 +49,8 @@ export function usePodcastCastPreview(
     key: string;
     preview: PodcastCastPreview | null;
     error: string | null;
-  }>({ key: "", preview: null, error: null });
+    orgRequired: boolean;
+  }>({ key: "", preview: null, error: null, orgRequired: false });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -58,13 +60,28 @@ export function usePodcastCastPreview(
       query: { host_count: hostCount, show_id: showId },
     })
       .then(({ data }) =>
-        setResult({ key: requestKey, preview: normalizePreview(data), error: null }),
+        setResult({
+          key: requestKey,
+          preview: normalizePreview(data),
+          error: null,
+          orgRequired: false,
+        }),
       )
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
+        if (isOrganizationRequiredError(cause)) {
+          setResult({
+            key: requestKey,
+            preview: null,
+            error: null,
+            orgRequired: true,
+          });
+          return;
+        }
         setResult({
           key: requestKey,
           preview: null,
+          orgRequired: false,
           error:
             cause instanceof Error
               ? cause.message
@@ -81,6 +98,7 @@ export function usePodcastCastPreview(
     preview: current?.preview ?? null,
     loading: current === null,
     error: current?.error ?? null,
+    orgRequired: current?.orgRequired ?? false,
     reload: () => setReloadKey((key) => key + 1),
   };
 }

@@ -33,6 +33,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { getEnrollment, listEnrollments } from "../api";
 import type { Finding } from "../types";
@@ -68,6 +72,15 @@ function EnrolledWorkspace({
         <Skeleton className="hidden h-full w-64 2xl:block" />
         <Skeleton className="h-full flex-1" />
         <Skeleton className="hidden h-full w-[26rem] 2xl:block" />
+      </div>
+    );
+  }
+  if (detail.isError && isOrganizationRequiredError(detail.error)) {
+    return (
+      <div className="flex h-full items-start justify-center overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+2rem)]">
+        <div className="w-full max-w-lg">
+          <OrganizationRequiredNotice description="The review workspace reads this agent's reviews from one organization. Pick one below and it loads automatically." />
+        </div>
       </div>
     );
   }
@@ -196,6 +209,15 @@ export function ImprovementWorkspace({
     return (
       <div className="h-full p-4 pt-[calc(var(--shell-header-h)+1rem)]">
         <Skeleton className="h-full" />
+      </div>
+    );
+  }
+  if (enrollments.isError && isOrganizationRequiredError(enrollments.error)) {
+    return (
+      <div className="flex h-full items-start justify-center overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+2rem)]">
+        <div className="w-full max-w-lg">
+          <OrganizationRequiredNotice description="Review status is read per organization. Pick one below and it loads automatically." />
+        </div>
       </div>
     );
   }

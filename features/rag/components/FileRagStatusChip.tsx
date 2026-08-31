@@ -109,8 +109,22 @@ export function FileRagStatusChip({
   showActions = false,
   className,
 }: FileRagStatusChipProps) {
-  const { status, isLoading } = useFileRagStatus(fileId);
+  const { status, isLoading, organizationRequired } = useFileRagStatus(fileId);
   const actions = useFileRagActions(fileId);
+
+  // Nothing was read, so every lifecycle state below would be a guess. The chip
+  // is too small to host the organization picker, so it says why it is blank
+  // and leaves the fix to the header's organization switcher.
+  if (organizationRequired) {
+    return (
+      <span
+        className={cn(PILL, "text-muted-foreground", className)}
+        title="Choose an organization in the header to see this file's Knowledge status."
+      >
+        Needs an organization
+      </span>
+    );
+  }
 
   if (isLoading && !status) {
     return (

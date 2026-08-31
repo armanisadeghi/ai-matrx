@@ -15,6 +15,10 @@ import {
   type OutletContactCandidate,
   type OutletContactExtraction,
 } from "../../outreach-contacts/service";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { SectionCard } from "./SectionCard";
 
 interface Props {
@@ -46,7 +50,7 @@ function confidenceVariant(
 
 export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
   const [data, setData] = useState<OutletContactExtraction | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [selected, setSelected] = useState<SelectedByCandidate>({});
@@ -59,7 +63,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
       setData(next);
       setSelected(initialSelection(next.candidates ?? []));
     } catch (cause) {
-      setError(extractErrorMessage(cause));
+      setError(cause);
     } finally {
       setLoading(false);
     }
@@ -74,7 +78,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
         setSelected(initialSelection(next.candidates ?? []));
       })
       .catch((cause) => {
-        if (!cancelled) setError(extractErrorMessage(cause));
+        if (!cancelled) setError(cause);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -163,14 +167,17 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
         </p>
       )}
 
-      {error && (
-        <div className="flex items-center justify-between gap-2 py-2 text-xs text-destructive">
-          <span>{error}</span>
-          <Button variant="outline" size="sm" onClick={() => void load()}>
-            Retry
-          </Button>
-        </div>
-      )}
+      {error != null &&
+        (isOrganizationRequiredError(error) ? (
+          <OrganizationRequiredNotice compact />
+        ) : (
+          <div className="flex items-center justify-between gap-2 py-2 text-xs text-destructive">
+            <span>{extractErrorMessage(error)}</span>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              Retry
+            </Button>
+          </div>
+        ))}
 
       {!loading && !error && data && candidates.length === 0 && (
         <div className="space-y-1 py-3 text-center text-xs text-muted-foreground">

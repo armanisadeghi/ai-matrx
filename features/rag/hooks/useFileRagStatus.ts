@@ -29,6 +29,7 @@ import {
   type FileRagStatus,
 } from "@/features/rag/api/rag-jobs";
 import { subscribeToFileRagJob } from "@/features/rag/hooks/rag-job-realtime";
+import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 /** Match the `detail` shape `useFileIngest.ts` dispatches for this event. */
 const PROCESSED_EVENT = "cloud-files:document-processed";
@@ -45,6 +46,8 @@ export interface UseFileRagStatusResult {
   status: FileRagStatus | null;
   isLoading: boolean;
   error: string | null;
+  /** No organization is selected yet — the request never reached the server. */
+  organizationRequired: boolean;
   refetch: () => void;
 }
 
@@ -62,6 +65,8 @@ export function useFileRagStatus(
     queryFn: ({ signal }) => fetchFileRagStatus(fileId as string, signal),
     enabled,
     staleTime: 5_000,
+    // Retrying without an organization fails identically every time.
+    retry: (count, err) => !isOrganizationRequiredError(err) && count < 3,
     refetchInterval: (q) => {
       const state = q.state.data?.state;
       // Non-terminal: slow safety net only (realtime is the primary path).
@@ -105,10 +110,16 @@ export function useFileRagStatus(
     wasCompletedRef.current = completed;
   }, [completed, fileId, dispatch]);
 
+  const organizationRequired = isOrganizationRequiredError(query.error);
+
   return {
     status: query.data ?? null,
     isLoading: query.isLoading,
-    error: query.error ? (query.error as Error).message : null,
+    error:
+      query.error && !organizationRequired
+        ? (query.error as Error).message
+        : null,
+    organizationRequired,
     refetch: () => void query.refetch(),
   };
 }

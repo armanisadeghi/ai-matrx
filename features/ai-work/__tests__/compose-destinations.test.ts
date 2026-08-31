@@ -30,6 +30,7 @@ const READY_AVAILABLE: ManagedCapability = {
   nativeResume: true,
   nativeFork: true,
   reason: null,
+  organizationRequired: false,
 };
 
 const READY_UNAVAILABLE: ManagedCapability = {
@@ -38,6 +39,7 @@ const READY_UNAVAILABLE: ManagedCapability = {
   nativeResume: false,
   nativeFork: false,
   reason: "The hosted image is not released.",
+  organizationRequired: false,
 };
 
 describe("destinationAvailability", () => {

@@ -35,6 +35,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useSendingIdentity } from "@/features/crm/sending-identities/hooks";
 import { sendingIdentityChecklist } from "@/features/crm/sending-identities/sendingIdentityChecklist";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
@@ -123,6 +124,7 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
     events,
     loading,
     error,
+    organizationRequired,
     busy,
     notice,
     checkDomain,
@@ -205,6 +207,14 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
         <Skeleton className="h-24 w-full rounded-lg" />
         <Skeleton className="h-40 w-full rounded-lg" />
         <Skeleton className="h-40 w-full rounded-lg" />
+      </div>
+    );
+  }
+
+  if (organizationRequired && !identity) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 pt-[calc(var(--shell-header-h)+1rem)]">
+        <OrganizationRequiredNotice />
       </div>
     );
   }

@@ -141,10 +141,19 @@ export function memoizedRegionEnvelope(
   // caching it froze a pre-warm parse as this source's permanent answer
   // (2026-08-29 audit, crack #17: the "renders after you come back" class).
   // Once the cold fetch lands, the next split re-parses and caches resolved.
+  //
+  // 🚨 `unverified` BELONGS IN THIS LIST. When the kernel split `raw` into
+  // `raw` (checked and failed) + `unverified` (no schema was available), this
+  // guard kept testing only `raw` — so the exact envelopes it exists to
+  // protect stopped matching it and started being cached permanently. Every
+  // kind whose schema cannot be reconstructed degrades to `unverified`, which
+  // is precisely "the schema is still unknown". Any future state that means
+  // "we could not check this yet" goes here too.
   const rootKind = envelope.root.kind;
   const schemaStillUnknown =
     envelope.root.kindState === "pending_schema" ||
-    (envelope.root.kindState === "raw" &&
+    ((envelope.root.kindState === "raw" ||
+      envelope.root.kindState === "unverified") &&
       !!rootKind &&
       kindRegistry.getSchema(rootKind) === undefined);
   if (!schemaStillUnknown) {

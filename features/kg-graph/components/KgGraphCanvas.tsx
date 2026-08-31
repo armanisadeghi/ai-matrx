@@ -46,6 +46,10 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { fetchKgGraph } from "../service/kgGraphService";
 import {
@@ -119,6 +123,7 @@ export function KgGraphCanvas({
     "loading",
   );
   const [error, setError] = useState<string | null>(null);
+  const [orgRequired, setOrgRequired] = useState(false);
   const [kindFilter, setKindFilter] = useState<string>(ALL_KINDS);
   const [selected, setSelected] = useState<GraphNode | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -158,6 +163,7 @@ export function KgGraphCanvas({
     const controller = new AbortController();
     setStatus("loading");
     setError(null);
+    setOrgRequired(false);
     setSelected(null);
     fetchKgGraph(
       {
@@ -178,6 +184,7 @@ export function KgGraphCanvas({
       })
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
+        setOrgRequired(isOrganizationRequiredError(e));
         setError(e instanceof Error ? e.message : "Failed to load graph");
         setStatus("error");
       });
@@ -582,6 +589,12 @@ export function KgGraphCanvas({
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <Network className="h-8 w-8 animate-pulse text-primary" />
                   <span className="text-sm">Building graph…</span>
+                </div>
+              </div>
+            ) : status === "error" && orgRequired ? (
+              <div className="absolute inset-0 flex items-center justify-center p-6">
+                <div className="w-full max-w-sm">
+                  <OrganizationRequiredNotice description="The knowledge graph is built from one organization's corpus. Pick one below and the graph loads automatically." />
                 </div>
               </div>
             ) : status === "error" ? (

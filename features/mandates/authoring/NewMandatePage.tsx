@@ -44,10 +44,17 @@ export function NewMandatePage() {
   /** The server's refusal, verbatim — the key validator's words are the copy. */
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const ready =
-    label.trim().length > 0 && mandateKey.trim().length > 0 && goal.trim().length > 0;
+  const missing = [
+    label.trim().length === 0 ? "a name (the top field)" : null,
+    mandateKey.trim().length === 0 ? "the key" : null,
+    goal.trim().length === 0 ? "the goal" : null,
+  ].filter(Boolean) as string[];
 
   const create = async () => {
+    if (missing.length > 0) {
+      setServerError(`Not yet — this mandate still needs ${missing.join(", ")}.`);
+      return;
+    }
     setCreating(true);
     setServerError(null);
     try {
@@ -75,14 +82,19 @@ export function NewMandatePage() {
       <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-2 sm:px-6">
         {/* Identity — a name people read, a key code calls. */}
         <header className="space-y-2">
-          <Input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="What this job is called — e.g. Goal writer"
-            className="h-10 border-none bg-transparent px-1 text-lg font-semibold tracking-tight shadow-none focus-visible:ring-0"
-            autoFocus
-            aria-label="Mandate name"
-          />
+          <div className="space-y-1 px-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+              Name
+            </span>
+            <Input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="What this job is called — e.g. Goal writer"
+              className="h-10 text-lg font-semibold tracking-tight"
+              autoFocus
+              aria-label="Mandate name"
+            />
+          </div>
           <div className="flex flex-wrap items-center gap-2 px-1">
             <Input
               value={mandateKey}
@@ -139,7 +151,7 @@ export function NewMandatePage() {
 
         <div className="flex items-center gap-3 pt-2">
           <Button
-            disabled={!ready || creating || pending}
+            disabled={creating || pending}
             onClick={() => void create()}
             className="gap-1.5"
           >
@@ -151,7 +163,9 @@ export function NewMandatePage() {
             {creating ? "Creating…" : "Create mandate"}
           </Button>
           <span className="text-[11.5px] text-muted-foreground/70">
-            No agent needed yet — bind one whenever it exists.
+            {missing.length > 0
+              ? `Still needs ${missing.join(", ")}.`
+              : "No agent needed yet — bind one whenever it exists."}
           </span>
         </div>
       </div>

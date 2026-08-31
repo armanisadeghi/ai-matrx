@@ -24,6 +24,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
   fetchDerivativeChunks,
@@ -340,6 +344,7 @@ export function ChunksOnPage({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgRequired, setOrgRequired] = useState(false);
   // Raising the cap is how "Show all" works — the copy/export payloads then
   // genuinely cover every row rather than the first page of them.
   const [limit, setLimit] = useState(50);
@@ -348,6 +353,7 @@ export function ChunksOnPage({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setOrgRequired(false);
     apiGet(
       buildPath("/rag/library/{processed_document_id}/chunks", {
         processed_document_id: documentId,
@@ -360,11 +366,15 @@ export function ChunksOnPage({
         setTotal(typeof data.total === "number" ? data.total : 0);
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(
-            err?.message ??
-              `Failed to load ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
-          );
+        if (cancelled) return;
+        if (isOrganizationRequiredError(err)) {
+          setOrgRequired(true);
+          return;
+        }
+        setError(
+          err?.message ??
+            `Failed to load ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
+        );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -380,6 +390,14 @@ export function ChunksOnPage({
     pageNumber,
     total,
   };
+
+  if (orgRequired) {
+    return (
+      <div className="p-3">
+        <OrganizationRequiredNotice />
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="h-full">
@@ -455,6 +473,7 @@ export function DerivativeChunkList({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [orgRequired, setOrgRequired] = useState(false);
   // Same show-all contract as ChunksOnPage: raising the cap is what makes a
   // whole-list copy actually whole.
   const [effectiveLimit, setEffectiveLimit] = useState(limit);
@@ -468,6 +487,7 @@ export function DerivativeChunkList({
     const ac = new AbortController();
     setLoading(true);
     setError(null);
+    setOrgRequired(false);
     fetchDerivativeChunks(derivativeId, {
       limit: effectiveLimit,
       signal: ac.signal,
@@ -479,6 +499,10 @@ export function DerivativeChunkList({
       })
       .catch((err) => {
         if (cancelled || ac.signal.aborted) return;
+        if (isOrganizationRequiredError(err)) {
+          setOrgRequired(true);
+          return;
+        }
         setError(err instanceof Error ? err.message : "Failed to load results");
       })
       .finally(() => {
@@ -490,6 +514,9 @@ export function DerivativeChunkList({
     };
   }, [derivativeId, effectiveLimit]);
 
+  if (orgRequired) {
+    return <OrganizationRequiredNotice />;
+  }
   if (loading) {
     return (
       <div className="space-y-2 p-0.5">

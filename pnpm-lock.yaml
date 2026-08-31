@@ -31,7 +31,7 @@ importers:
         version: 0.10.0
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.8.1(react@19.2.7)
+        version: 0.9.0(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
         version: 0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
@@ -850,8 +850,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.8.1':
-    resolution: {integrity: sha512-9dWoBSeIGAHys5ga58fiHFmBTCda9vgRaJgFzFsDorWIb6cUGYsCkQ4mIbfJXRh6tUbkfXTZOgg1pvVqgk0pNw==}
+  '@ai-matrx/content-ir-react@0.9.0':
+    resolution: {integrity: sha512-8G6tFmpJUNIcYw3eKP3JwrlumXOyKuSdn7cOBzaKnfxxOK3yA1a4gFi+0KXZjmuOSMSTkvxdKzT3D6MR4iOGLA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13155,7 +13155,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.7(react@19.2.7)
 
-  '@ai-matrx/content-ir-react@0.8.1(react@19.2.7)':
+  '@ai-matrx/content-ir-react@0.9.0(react@19.2.7)':
     dependencies:
       '@ai-matrx/content-ir': 0.10.0
       react: 19.2.7

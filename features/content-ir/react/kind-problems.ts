@@ -103,6 +103,17 @@ export function collectKindProblems(
         severity: "warning",
       });
     }
+    // `unverified` is NOT a defect in the payload — no schema was ever
+    // registered, so nothing was checked. It IS a defect in the SHAPE, and
+    // saying so is the difference between a screen that explains itself and
+    // one that quietly implies the data is bad.
+    if (root.kindState === "unverified" && root.kind) {
+      problems.push({
+        code: "schema_unavailable",
+        message: `No field schema is registered for "${root.kind}", so this payload could not be checked. The data is shown as it arrived — this is a gap in the shape, not in the content.`,
+        severity: "warning",
+      });
+    }
     problems.push(...residueProblems(root.residue, ""));
     if (envelope.nodeIndex) {
       for (const [pathKey, node] of Object.entries(envelope.nodeIndex)) {

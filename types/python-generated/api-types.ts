@@ -6678,6 +6678,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lulu/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Orders
+         * @description This organization's print orders, newest first.
+         */
+        get: operations["list_orders_lulu_orders_get"];
+        put?: never;
+        /**
+         * Create Order
+         * @description Capture the live quote + plan markup, open Stripe Checkout, return its URL.
+         */
+        post: operations["create_order_lulu_orders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Order */
+        get: operations["read_order_lulu_orders__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/orders/{order_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Order
+         * @description Cancel inside the production-delay window; refunds a paid order.
+         *
+         *     Outside the window Lulu refuses, and its reason is surfaced verbatim.
+         */
+        post: operations["cancel_order_lulu_orders__order_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lulu/webhooks/incoming": {
         parameters: {
             query?: never;
@@ -6695,6 +6758,30 @@ export interface paths {
          *     bytes — re-serializing parsed JSON changes the digest.
          */
         post: operations["incoming_webhook_lulu_webhooks_incoming_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lulu/webhooks/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stripe Webhook
+         * @description Stripe → the print lane. Signature-authenticated; only print_order events act.
+         *
+         *     Mounted beside the Lulu receiver (outside the auth gate) because Stripe
+         *     calls it, not a signed-in human. A handler failure answers 500 so Stripe
+         *     redelivers — that retry IS the fulfilment durability story.
+         */
+        post: operations["stripe_webhook_lulu_webhooks_stripe_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7781,6 +7868,193 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_veed_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/linkfire/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_linkfire_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feature-fm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_feature_fm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buttondown/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_buttondown_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prismic/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_prismic_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contentstack/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_contentstack_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hygraph/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hygraph_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/builder-io/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_builder_io_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/visme/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_visme_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/beautiful-ai/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_beautiful_ai_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prezi/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_prezi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/polly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_polly_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15765,6 +16039,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32567,6 +32865,43 @@ export interface components {
              */
             summary?: string;
         };
+        /**
+         * BeautifulAIStatusResult
+         * @description Safe projection of Beautiful.ai's high-level service status.
+         */
+        BeautifulAIStatusResult: {
+            /**
+             * Kind
+             * @default beautiful_ai_official_service_status
+             * @constant
+             */
+            __kind?: "beautiful_ai_official_service_status";
+            /**
+             * Provider
+             * @default beautiful_ai
+             * @constant
+             */
+            provider?: "beautiful_ai";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.beautiful.ai/
+             * @constant
+             */
+            status_url?: "https://status.beautiful.ai/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** BgRemoveParams */
         BgRemoveParams: {
             /**
@@ -34838,6 +35173,38 @@ export interface components {
              */
             variant_count?: number;
         };
+        /**
+         * BuilderIoServiceStatus
+         * @description Safe aggregate status projection for Builder.io's fixed status page.
+         */
+        BuilderIoServiceStatus: {
+            /**
+             * Kind
+             * @default builder_io_public_content_platform_status
+             * @constant
+             */
+            __kind?: "builder_io_public_content_platform_status";
+            /**
+             * Provider
+             * @default Builder.io
+             * @constant
+             */
+            provider?: "Builder.io";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.builder.io
+             * @constant
+             */
+            status_page?: "https://status.builder.io";
+        };
         /** BuiltinPromptCatalogResponse */
         BuiltinPromptCatalogResponse: {
             /** Builtins */
@@ -35274,6 +35641,41 @@ export interface components {
             succeeded: string[];
             /** Failed */
             failed: components["schemas"]["BulkVerdictFailure"][];
+        };
+        /**
+         * ButtondownServiceStatus
+         * @description Safe aggregate status projection for Buttondown's fixed status page.
+         */
+        ButtondownServiceStatus: {
+            /**
+             * Kind
+             * @default buttondown_public_service_status
+             * @constant
+             */
+            __kind?: "buttondown_public_service_status";
+            /**
+             * Provider
+             * @default buttondown
+             * @constant
+             */
+            provider?: "buttondown";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.buttondown.com/
+             * @constant
+             */
+            status_page?: "https://status.buttondown.com/";
         };
         /**
          * BynderServiceStatus
@@ -40499,6 +40901,38 @@ export interface components {
             status_page?: "https://www.contentfulstatus.com/";
         };
         /**
+         * ContentstackServiceStatus
+         * @description Safe aggregate status projection for Contentstack's fixed status page.
+         */
+        ContentstackServiceStatus: {
+            /**
+             * Kind
+             * @default contentstack_public_content_platform_status
+             * @constant
+             */
+            __kind?: "contentstack_public_content_platform_status";
+            /**
+             * Provider
+             * @default Contentstack
+             * @constant
+             */
+            provider?: "Contentstack";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.contentstack.com
+             * @constant
+             */
+            status_page?: "https://status.contentstack.com";
+        };
+        /**
          * ContextAnchor
          * @description Stable identity of the durable entity whose saved context owns a run.
          */
@@ -41269,7 +41703,7 @@ export interface components {
             /** Currency */
             currency?: string | null;
             /** Line Item Costs */
-            line_item_costs?: components["schemas"]["PrintLineItemCost"][];
+            line_item_costs?: components["schemas"]["PrintLineItemCost"][] | null;
             shipping_cost?: components["schemas"]["PrintCostGroup"] | null;
             fulfillment_cost?: components["schemas"]["PrintCostGroup"] | null;
             /** Fees */
@@ -44076,6 +44510,33 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -48176,6 +48637,41 @@ export interface components {
             count: number;
         };
         /**
+         * FeatureFmServiceStatus
+         * @description Safe aggregate status projection for Feature.fm's fixed status page.
+         */
+        FeatureFmServiceStatus: {
+            /**
+             * Kind
+             * @default feature_fm_public_service_status
+             * @constant
+             */
+            __kind?: "feature_fm_public_service_status";
+            /**
+             * Provider
+             * @default feature_fm
+             * @constant
+             */
+            provider?: "feature_fm";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.feature.fm
+             * @constant
+             */
+            status_page?: "https://status.feature.fm";
+        };
+        /**
          * FederalRegisterPublicDocument
          * @description Safe bounded projection of one public Federal Register document.
          */
@@ -51763,6 +52259,38 @@ export interface components {
             detected_at: string;
             /** Adapter Version */
             adapter_version?: string | null;
+        };
+        /**
+         * HygraphServiceStatus
+         * @description Safe aggregate status projection for Hygraph's fixed status page.
+         */
+        HygraphServiceStatus: {
+            /**
+             * Kind
+             * @default hygraph_public_content_platform_status
+             * @constant
+             */
+            __kind?: "hygraph_public_content_platform_status";
+            /**
+             * Provider
+             * @default Hygraph
+             * @constant
+             */
+            provider?: "Hygraph";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.hygraph.com/
+             * @constant
+             */
+            status_page?: "https://status.hygraph.com/";
         };
         /**
          * INaturalistPublicObservation
@@ -56155,6 +56683,41 @@ export interface components {
             source_url: string;
             /** Source Id */
             source_id: string;
+        };
+        /**
+         * LinkfireServiceStatus
+         * @description Safe aggregate status projection for Linkfire's fixed status page.
+         */
+        LinkfireServiceStatus: {
+            /**
+             * Kind
+             * @default linkfire_public_service_status
+             * @constant
+             */
+            __kind?: "linkfire_public_service_status";
+            /**
+             * Provider
+             * @default linkfire
+             * @constant
+             */
+            provider?: "linkfire";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.linkfire.com
+             * @constant
+             */
+            status_page?: "https://status.linkfire.com";
         };
         /** ListConversationsResponse */
         ListConversationsResponse: {
@@ -65789,6 +66352,43 @@ export interface components {
             /** Pokeapi Url */
             pokeapi_url: string;
         };
+        /**
+         * PollyStatusResult
+         * @description Safe projection of Polly's high-level service status.
+         */
+        PollyStatusResult: {
+            /**
+             * Kind
+             * @default polly_official_service_status
+             * @constant
+             */
+            __kind?: "polly_official_service_status";
+            /**
+             * Provider
+             * @default polly
+             * @constant
+             */
+            provider?: "polly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.polly.ai
+             * @constant
+             */
+            status_url?: "https://status.polly.ai";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** Position */
         Position: {
             /** X */
@@ -66075,6 +66675,43 @@ export interface components {
             background_color?: string;
         };
         /**
+         * PreziStatusResult
+         * @description Safe projection of Prezi's high-level service status.
+         */
+        PreziStatusResult: {
+            /**
+             * Kind
+             * @default prezi_official_service_status
+             * @constant
+             */
+            __kind?: "prezi_official_service_status";
+            /**
+             * Provider
+             * @default prezi
+             * @constant
+             */
+            provider?: "prezi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.prezi.com
+             * @constant
+             */
+            status_url?: "https://status.prezi.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * PrincipalIn
          * @description The owning scope a call operates on. ``user`` == the authenticated
          *     actor, always.
@@ -66245,7 +66882,7 @@ export interface components {
          */
         PrintJobCosts: {
             /** Line Item Costs */
-            line_item_costs?: components["schemas"]["PrintLineItemCost"][];
+            line_item_costs?: components["schemas"]["PrintLineItemCost"][] | null;
             shipping_cost?: components["schemas"]["PrintCostGroup"] | null;
             /** Total Cost Excl Tax */
             total_cost_excl_tax?: string | null;
@@ -66327,7 +66964,7 @@ export interface components {
             /** Tracking Id */
             tracking_id?: string | null;
             /** Tracking Urls */
-            tracking_urls?: string[];
+            tracking_urls?: string[] | null;
         };
         /**
          * PrintJobLineItemStatus
@@ -66493,6 +67130,71 @@ export interface components {
             total_tax?: string | null;
         };
         /**
+         * PrintOrderCheckout
+         * @description What order creation returns: the row id and where to send the buyer.
+         */
+        PrintOrderCheckout: {
+            /** Order Id */
+            order_id: string;
+            /** Checkout Url */
+            checkout_url: string;
+            /** Currency */
+            currency: string;
+            /** Lulu Total Incl Tax */
+            lulu_total_incl_tax: string;
+            /** Markup Percent */
+            markup_percent: string;
+            /** Charge Amount Cents */
+            charge_amount_cents: number;
+        };
+        /**
+         * PrintOrderCreateRequest
+         * @description Body of ``POST /lulu/orders`` — quote, capture, and start checkout.
+         */
+        PrintOrderCreateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Title */
+            title: string;
+            /** Pod Package Id */
+            pod_package_id: string;
+            /** Page Count */
+            page_count: number;
+            /** Quantity */
+            quantity: number;
+            /** Interior Source Url */
+            interior_source_url: string;
+            /** Cover Source Url */
+            cover_source_url: string;
+            /** Contact Email */
+            contact_email: string;
+            shipping_address: components["schemas"]["PrintJobShippingAddress"];
+            /**
+             * Shipping Level
+             * @enum {string}
+             */
+            shipping_level: "MAIL" | "PRIORITY_MAIL" | "GROUND_HD" | "GROUND_BUS" | "GROUND" | "EXPEDITED" | "EXPRESS";
+            /** Production Delay */
+            production_delay?: number | null;
+            /** Success Url */
+            success_url: string;
+            /** Cancel Url */
+            cancel_url: string;
+        };
+        /**
          * PrintShippingAddress
          * @description Lulu requires a real address to compute tax and shipping.
          */
@@ -66583,6 +67285,38 @@ export interface components {
             last_win_at?: string | null;
             /** Summary */
             summary: string;
+        };
+        /**
+         * PrismicServiceStatus
+         * @description Safe aggregate status projection for Prismic's fixed status page.
+         */
+        PrismicServiceStatus: {
+            /**
+             * Kind
+             * @default prismic_public_content_platform_status
+             * @constant
+             */
+            __kind?: "prismic_public_content_platform_status";
+            /**
+             * Provider
+             * @default Prismic
+             * @constant
+             */
+            provider?: "Prismic";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.prismic.io/
+             * @constant
+             */
+            status_page?: "https://status.prismic.io/";
         };
         /** ProcessBlocksRequest */
         ProcessBlocksRequest: {
@@ -84686,6 +85420,43 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /**
+         * VismeStatusResult
+         * @description Safe projection of Visme's high-level service status.
+         */
+        VismeStatusResult: {
+            /**
+             * Kind
+             * @default visme_official_service_status
+             * @constant
+             */
+            __kind?: "visme_official_service_status";
+            /**
+             * Provider
+             * @default visme
+             * @constant
+             */
+            provider?: "visme";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.visme.co
+             * @constant
+             */
+            status_url?: "https://status.visme.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** VoiceShare */
         VoiceShare: {
             /** Key */
@@ -99221,6 +99992,127 @@ export interface operations {
             };
         };
     };
+    list_orders_lulu_orders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    create_order_lulu_orders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrintOrderCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintOrderCheckout"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_order_lulu_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_order_lulu_orders__order_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     incoming_webhook_lulu_webhooks_incoming_post: {
         parameters: {
             query?: never;
@@ -99239,6 +100131,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookReceipt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stripe_webhook_lulu_webhooks_stripe_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Stripe-Signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -100528,6 +101453,226 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VeedServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_linkfire_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkfireServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_feature_fm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFmServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_buttondown_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ButtondownServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_prismic_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrismicServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_contentstack_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentstackServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_hygraph_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HygraphServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_builder_io_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuilderIoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_visme_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VismeStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_beautiful_ai_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeautifulAIStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_prezi_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreziStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_polly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PollyStatusResult"];
                 };
             };
         };
@@ -113637,6 +114782,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

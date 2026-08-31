@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
 import * as Api from "./service";
 import type {
   ConnectableMailbox,
@@ -24,6 +25,7 @@ export function useSendingIdentities() {
   const [policy, setPolicy] = useState<SendingPolicyView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [organizationRequired, setOrganizationRequired] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   const reload = useCallback(() => setReloadToken((n) => n + 1), []);
@@ -32,6 +34,7 @@ export function useSendingIdentities() {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setOrganizationRequired(false);
     Promise.all([Api.listSendingIdentities(), Api.getSendingPolicy()])
       .then(([rows, orgPolicy]) => {
         if (cancelled) return;
@@ -41,6 +44,7 @@ export function useSendingIdentities() {
       })
       .catch((err) => {
         if (cancelled) return;
+        setOrganizationRequired(isOrganizationRequiredError(err));
         setError(extractErrorMessage(err));
         setLoading(false);
       });
@@ -49,7 +53,7 @@ export function useSendingIdentities() {
     };
   }, [reloadToken]);
 
-  return { identities, policy, loading, error, reload };
+  return { identities, policy, loading, error, organizationRequired, reload };
 }
 
 export function useConnectableMailboxes(enabled: boolean) {
@@ -91,12 +95,14 @@ export function useSendingIdentity(identityId: string) {
   /** Which one-click fix is currently running, so its button can show it. */
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [organizationRequired, setOrganizationRequired] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setOrganizationRequired(false);
     Promise.all([Api.getSendingIdentity(identityId), Api.listSendingEvents(identityId, 100)])
       .then(([detail, rows]) => {
         if (cancelled) return;
@@ -106,6 +112,7 @@ export function useSendingIdentity(identityId: string) {
       })
       .catch((err) => {
         if (cancelled) return;
+        setOrganizationRequired(isOrganizationRequiredError(err));
         setError(extractErrorMessage(err));
         setLoading(false);
       });
@@ -147,6 +154,7 @@ export function useSendingIdentity(identityId: string) {
     events,
     loading,
     error,
+    organizationRequired,
     busy,
     notice,
     clearNotice: useCallback(() => setNotice(null), []),

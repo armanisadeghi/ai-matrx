@@ -44,6 +44,10 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@ai-matrx/design-system";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import type { components } from "@/types/python-generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { computeMatches } from "@/features/notes/utils/findMatches";
@@ -565,6 +569,7 @@ function PageContent({
   const [page, setPage] = useState<ApiFullPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgRequired, setOrgRequired] = useState(false);
   const [tab, setTab] = useState<"cleaned" | "raw">("cleaned");
   const [activeMatch, setActiveMatch] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -576,6 +581,7 @@ function PageContent({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setOrgRequired(false);
     apiGet(
       buildPath("/rag/library/{processed_document_id}/page/{page_index}", {
         processed_document_id: documentId,
@@ -586,7 +592,12 @@ function PageContent({
         if (!cancelled && data) setPage(data);
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message ?? "Failed to load page");
+        if (cancelled) return;
+        if (isOrganizationRequiredError(err)) {
+          setOrgRequired(true);
+          return;
+        }
+        setError(err?.message ?? "Failed to load page");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -712,6 +723,7 @@ function PageContent({
             Loading page…
           </div>
         )}
+        {orgRequired && <OrganizationRequiredNotice />}
         {error && (
           <div className="text-sm text-destructive">
             <strong>Error:</strong> {error}

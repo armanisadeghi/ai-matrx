@@ -8,6 +8,7 @@
 import { applyIrKindRoute } from "../react/kind-route";
 import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
+import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { flashcardsServerDataFromEnvelope } from "../kinds/flashcard-set";
@@ -63,6 +64,12 @@ describe("applyIrKindRoute", () => {
     // The envelope preserves the kind (so a late registration can upgrade
     // via repaint), and the generic floor acknowledges it as a kind without
     // pretending that a registered component exists.
+    //
+    // THE COLD-VERDICT RULE requires a SETTLED resolver before any negative
+    // verdict is legitimate — an empty ingest is how a test declares "the
+    // list loaded and this kind genuinely is not in it", which is the only
+    // state in which "unregistered" is an honest thing to say.
+    componentRegistry.replaceDbRows([]);
     const envelope = envelopeFor(
       JSON.stringify({ __kind: "not_registered_anywhere", a: 1 }),
     );

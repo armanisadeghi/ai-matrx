@@ -70,6 +70,10 @@ import {
   readSiteResearchTopicId,
   recordSiteResearchTopic,
 } from "../setup/draft";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
 import { useSitePipeline } from "../hooks/useSitePipeline";
@@ -788,6 +792,14 @@ export function ContentPlanWorkbench({
         {site && !site.brand_id ? (
           <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             No brand assigned — set one in Marketing → Sites.
+          </div>
+        ) : null}
+        {isOrganizationRequiredError(reality.error) ? (
+          <div className="border-b border-border px-3 py-2">
+            <OrganizationRequiredNotice
+              title="Choose an organization to run the reality check"
+              description="The plan-vs-reality comparison needs to know which organization to work in. Pick one below and it runs automatically."
+            />
           </div>
         ) : null}
 

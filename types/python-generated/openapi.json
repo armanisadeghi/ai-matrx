@@ -17165,6 +17165,162 @@
         }
       }
     },
+    "/lulu/orders": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "List Orders",
+        "description": "This organization's print orders, newest first.",
+        "operationId": "list_orders_lulu_orders_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Orders Lulu Orders Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Create Order",
+        "description": "Capture the live quote + plan markup, open Stripe Checkout, return its URL.",
+        "operationId": "create_order_lulu_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrintOrderCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintOrderCheckout"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Read Order",
+        "operationId": "read_order_lulu_orders__order_id__get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Read Order Lulu Orders  Order Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/orders/{order_id}/cancel": {
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Cancel Order",
+        "description": "Cancel inside the production-delay window; refunds a paid order.\n\nOutside the window Lulu refuses, and its reason is surfaced verbatim.",
+        "operationId": "cancel_order_lulu_orders__order_id__cancel_post",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel Order Lulu Orders  Order Id  Cancel Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/lulu/webhooks/incoming": {
       "post": {
         "tags": [
@@ -17198,6 +17354,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WebhookReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lulu/webhooks/stripe": {
+      "post": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Stripe Webhook",
+        "description": "Stripe → the print lane. Signature-authenticated; only print_order events act.\n\nMounted beside the Lulu receiver (outside the auth gate) because Stripe\ncalls it, not a signed-in human. A handler failure answers 500 so Stripe\nredelivers — that retry IS the fulfilment durability story.",
+        "operationId": "stripe_webhook_lulu_webhooks_stripe_post",
+        "parameters": [
+          {
+            "name": "Stripe-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stripe-Signature"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Stripe Webhook Lulu Webhooks Stripe Post"
                 }
               }
             }
@@ -18552,6 +18760,237 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VeedServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/linkfire/public/status": {
+      "get": {
+        "tags": [
+          "Linkfire Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_linkfire_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkfireServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feature-fm/public/status": {
+      "get": {
+        "tags": [
+          "Feature.fm Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_feature_fm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFmServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buttondown/public/status": {
+      "get": {
+        "tags": [
+          "Buttondown Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_buttondown_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ButtondownServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prismic/public/status": {
+      "get": {
+        "tags": [
+          "Prismic Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_prismic_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrismicServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contentstack/public/status": {
+      "get": {
+        "tags": [
+          "Contentstack Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_contentstack_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentstackServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hygraph/public/status": {
+      "get": {
+        "tags": [
+          "Hygraph Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hygraph_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HygraphServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builder-io/public/status": {
+      "get": {
+        "tags": [
+          "Builder.io Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_builder_io_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuilderIoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visme/public/status": {
+      "get": {
+        "tags": [
+          "Visme Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_visme_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VismeStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/beautiful-ai/public/status": {
+      "get": {
+        "tags": [
+          "Beautiful.ai Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_beautiful_ai_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeautifulAIStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prezi/public/status": {
+      "get": {
+        "tags": [
+          "Prezi Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_prezi_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreziStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/polly/public/status": {
+      "get": {
+        "tags": [
+          "Polly Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_polly_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PollyStatusResult"
                 }
               }
             }
@@ -37895,6 +38334,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -81997,6 +82496,56 @@
         "title": "BeatProfile",
         "description": "What this journalist covers. Every field is evidence-backed or NULL."
       },
+      "BeautifulAIStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "beautiful_ai_official_service_status",
+            "title": "Kind",
+            "default": "beautiful_ai_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "beautiful_ai",
+            "title": "Provider",
+            "default": "beautiful_ai"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.beautiful.ai/",
+            "title": "Status Url",
+            "default": "https://status.beautiful.ai/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "BeautifulAIStatusResult",
+        "description": "Safe projection of Beautiful.ai's high-level service status."
+      },
       "BgRemoveParams": {
         "properties": {
           "model": {
@@ -87308,6 +87857,47 @@
         "title": "BuildMasterworkRequest",
         "description": "Build one Rulebook into a working Masterwork (agents + workflow).\n\nThe ONE button a non-technical expert presses on /masterwork/[id]. The\nbuilder reuses the generic Rulebook Auditor for every section, authors the\nMasterwork-specific agents (persona from the rulebook's source.author), and creates\na workflow stamped with the rulebook id + version it was built from."
       },
+      "BuilderIoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "builder_io_public_content_platform_status",
+            "title": "Kind",
+            "default": "builder_io_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Builder.io",
+            "title": "Provider",
+            "default": "Builder.io"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.builder.io",
+            "title": "Status Page",
+            "default": "https://status.builder.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BuilderIoServiceStatus",
+        "description": "Safe aggregate status projection for Builder.io's fixed status page."
+      },
       "BuiltinPromptCatalogResponse": {
         "properties": {
           "builtins": {
@@ -88320,6 +88910,51 @@
           "failed"
         ],
         "title": "BulkVerdictResponse"
+      },
+      "ButtondownServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "buttondown_public_service_status",
+            "title": "Kind",
+            "default": "buttondown_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "buttondown",
+            "title": "Provider",
+            "default": "buttondown"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.buttondown.com/",
+            "title": "Status Page",
+            "default": "https://status.buttondown.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ButtondownServiceStatus",
+        "description": "Safe aggregate status projection for Buttondown's fixed status page."
       },
       "BynderServiceStatus": {
         "properties": {
@@ -102358,6 +102993,47 @@
         "title": "ContentfulServiceStatus",
         "description": "Safe aggregate status projection for Contentful's fixed status page."
       },
+      "ContentstackServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "contentstack_public_content_platform_status",
+            "title": "Kind",
+            "default": "contentstack_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Contentstack",
+            "title": "Provider",
+            "default": "Contentstack"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.contentstack.com",
+            "title": "Status Page",
+            "default": "https://status.contentstack.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ContentstackServiceStatus",
+        "description": "Safe aggregate status projection for Contentstack's fixed status page."
+      },
       "ContextAnchor": {
         "properties": {
           "resource_type": {
@@ -104272,10 +104948,17 @@
             "title": "Currency"
           },
           "line_item_costs": {
-            "items": {
-              "$ref": "#/components/schemas/PrintLineItemCost"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PrintLineItemCost"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Line Item Costs"
           },
           "shipping_cost": {
@@ -111329,6 +112012,61 @@
         ],
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -121619,6 +122357,51 @@
         ],
         "title": "FaultDomainCount"
       },
+      "FeatureFmServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "feature_fm_public_service_status",
+            "title": "Kind",
+            "default": "feature_fm_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "feature_fm",
+            "title": "Provider",
+            "default": "feature_fm"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.feature.fm",
+            "title": "Status Page",
+            "default": "https://status.feature.fm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FeatureFmServiceStatus",
+        "description": "Safe aggregate status projection for Feature.fm's fixed status page."
+      },
       "FederalRegisterPublicDocument": {
         "properties": {
           "__kind": {
@@ -130300,6 +131083,47 @@
           "detected_at"
         ],
         "title": "HumanRequiredSignal"
+      },
+      "HygraphServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hygraph_public_content_platform_status",
+            "title": "Kind",
+            "default": "hygraph_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Hygraph",
+            "title": "Provider",
+            "default": "Hygraph"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.hygraph.com/",
+            "title": "Status Page",
+            "default": "https://status.hygraph.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "HygraphServiceStatus",
+        "description": "Safe aggregate status projection for Hygraph's fixed status page."
       },
       "INaturalistPublicObservation": {
         "properties": {
@@ -141422,6 +142246,51 @@
           "source_id"
         ],
         "title": "LinkExplorerItem"
+      },
+      "LinkfireServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "linkfire_public_service_status",
+            "title": "Kind",
+            "default": "linkfire_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "linkfire",
+            "title": "Provider",
+            "default": "linkfire"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.linkfire.com",
+            "title": "Status Page",
+            "default": "https://status.linkfire.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LinkfireServiceStatus",
+        "description": "Safe aggregate status projection for Linkfire's fixed status page."
       },
       "ListConversationsResponse": {
         "properties": {
@@ -163446,6 +164315,56 @@
         "title": "PokeAPIPublicSpecies",
         "description": "Safe factual projection for one public PokéAPI species record."
       },
+      "PollyStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "polly_official_service_status",
+            "title": "Kind",
+            "default": "polly_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "polly",
+            "title": "Provider",
+            "default": "polly"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.polly.ai",
+            "title": "Status Url",
+            "default": "https://status.polly.ai"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PollyStatusResult",
+        "description": "Safe projection of Polly's high-level service status."
+      },
       "Position": {
         "properties": {
           "x": {
@@ -164047,6 +164966,56 @@
         "title": "PreviewVariantSpec",
         "description": "One target render for POST /assets/preview.\n\nMirrors ``ImageHandler.StudioRenderSpec`` — every field is reachable\nby the renderer. The discriminated union on ``position`` lets the FE\npass either a named anchor (including the smart-crop modes\n``entropy`` / ``attention``) or a continuous focal point."
       },
+      "PreziStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "prezi_official_service_status",
+            "title": "Kind",
+            "default": "prezi_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "prezi",
+            "title": "Provider",
+            "default": "prezi"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.prezi.com",
+            "title": "Status Url",
+            "default": "https://status.prezi.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PreziStatusResult",
+        "description": "Safe projection of Prezi's high-level service status."
+      },
       "PrincipalIn": {
         "properties": {
           "type": {
@@ -164546,10 +165515,17 @@
       "PrintJobCosts": {
         "properties": {
           "line_item_costs": {
-            "items": {
-              "$ref": "#/components/schemas/PrintLineItemCost"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PrintLineItemCost"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Line Item Costs"
           },
           "shipping_cost": {
@@ -164859,10 +165835,17 @@
             "title": "Tracking Id"
           },
           "tracking_urls": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Tracking Urls"
           }
         },
@@ -165367,6 +166350,186 @@
         "title": "PrintLineItemCost",
         "description": "Lulu's per-line cost breakdown. All money is a decimal string."
       },
+      "PrintOrderCheckout": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "checkout_url": {
+            "type": "string",
+            "title": "Checkout Url"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "lulu_total_incl_tax": {
+            "type": "string",
+            "title": "Lulu Total Incl Tax"
+          },
+          "markup_percent": {
+            "type": "string",
+            "title": "Markup Percent"
+          },
+          "charge_amount_cents": {
+            "type": "integer",
+            "title": "Charge Amount Cents"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "order_id",
+          "checkout_url",
+          "currency",
+          "lulu_total_incl_tax",
+          "markup_percent",
+          "charge_amount_cents"
+        ],
+        "title": "PrintOrderCheckout",
+        "description": "What order creation returns: the row id and where to send the buyer."
+      },
+      "PrintOrderCreateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "pod_package_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "title": "Pod Package Id"
+          },
+          "page_count": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 1,
+            "title": "Page Count"
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Quantity"
+          },
+          "interior_source_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 12,
+            "title": "Interior Source Url"
+          },
+          "cover_source_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 12,
+            "title": "Cover Source Url"
+          },
+          "contact_email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Contact Email"
+          },
+          "shipping_address": {
+            "$ref": "#/components/schemas/PrintJobShippingAddress"
+          },
+          "shipping_level": {
+            "type": "string",
+            "enum": [
+              "MAIL",
+              "PRIORITY_MAIL",
+              "GROUND_HD",
+              "GROUND_BUS",
+              "GROUND",
+              "EXPEDITED",
+              "EXPRESS"
+            ],
+            "title": "Shipping Level"
+          },
+          "production_delay": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2880,
+                "minimum": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Production Delay"
+          },
+          "success_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Success Url"
+          },
+          "cancel_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Cancel Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "pod_package_id",
+          "page_count",
+          "quantity",
+          "interior_source_url",
+          "cover_source_url",
+          "contact_email",
+          "shipping_address",
+          "shipping_level",
+          "success_url",
+          "cancel_url"
+        ],
+        "title": "PrintOrderCreateRequest",
+        "description": "Body of ``POST /lulu/orders`` — quote, capture, and start checkout."
+      },
       "PrintShippingAddress": {
         "properties": {
           "street1": {
@@ -165595,6 +166758,47 @@
         ],
         "title": "PriorRelationship",
         "description": "What we already know about this domain, in the user's own CRM.\n\nPresent ONLY when a `crm.party` already exists for the captured domain. A\ncapture with no prior relationship simply omits it — an empty relationship\nobject rendered as \"0 interactions\" reads like a record we hold, and we hold\nnone."
+      },
+      "PrismicServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "prismic_public_content_platform_status",
+            "title": "Kind",
+            "default": "prismic_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Prismic",
+            "title": "Provider",
+            "default": "Prismic"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.prismic.io/",
+            "title": "Status Page",
+            "default": "https://status.prismic.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PrismicServiceStatus",
+        "description": "Safe aggregate status projection for Prismic's fixed status page."
       },
       "ProcessBlocksRequest": {
         "properties": {
@@ -209537,6 +210741,56 @@
         ],
         "title": "VisionMediaUploadResponse",
         "description": "Response payload for ``POST /media/upload``."
+      },
+      "VismeStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "visme_official_service_status",
+            "title": "Kind",
+            "default": "visme_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "visme",
+            "title": "Provider",
+            "default": "visme"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.visme.co",
+            "title": "Status Url",
+            "default": "https://status.visme.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "VismeStatusResult",
+        "description": "Safe projection of Visme's high-level service status."
       },
       "VoiceShare": {
         "properties": {

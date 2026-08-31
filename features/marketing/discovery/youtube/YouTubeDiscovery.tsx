@@ -40,6 +40,10 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { youTubeWatchUrl } from "@/lib/media/youtube";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { YouTubeVideoPreviewDialog } from "./YouTubeVideoPreview";
 import {
   formatYouTubeCount,
@@ -149,6 +153,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [orgRequired, setOrgRequired] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -175,6 +180,10 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
         }
       } catch (caught) {
         if (!active) return;
+        if (isOrganizationRequiredError(caught)) {
+          setOrgRequired(true);
+          return;
+        }
         setHistoryError(
           caught instanceof Error
             ? caught.message
@@ -525,6 +534,15 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
               to exclude a word.
             </p>
           </form>
+
+          {orgRequired && (
+            <div className="mb-7">
+              <OrganizationRequiredNotice
+                title="Choose an organization to search YouTube"
+                description="YouTube discovery saves every search to an organization. Pick one below and this screen picks up automatically."
+              />
+            </div>
+          )}
 
           {error && (
             <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-200">

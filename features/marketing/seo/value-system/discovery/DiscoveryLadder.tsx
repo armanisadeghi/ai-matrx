@@ -36,6 +36,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
+import {
   DISCOVERY_STEP_ORDER,
   getDiscoveryStatus,
   type DiscoveryStepKey,
@@ -170,6 +174,14 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
         <Loader2 className="h-4 w-4 animate-spin" /> Reading the ladder's server
         state…
       </div>
+    );
+  }
+  if (isOrganizationRequiredError(status.error)) {
+    return (
+      <OrganizationRequiredNotice
+        title="Choose an organization to run business discovery"
+        description="The discovery ladder reads and rules results inside an organization. Pick one below and the ladder loads automatically."
+      />
     );
   }
   if (status.isError) {

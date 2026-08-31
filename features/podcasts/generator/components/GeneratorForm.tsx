@@ -102,6 +102,7 @@ import {
   type SpeakerDraft,
 } from "../voices";
 import { useVoices } from "../useVoices";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { usePodcastCastPreview } from "../usePodcastCastPreview";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
@@ -901,26 +902,33 @@ export function GeneratorForm({
             />
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-3">
-            <SpeakerCastEditor
-              hostCount={hostCount}
-              drafts={speakerDrafts}
-              onChange={(i, patch) =>
-                setSpeakerDrafts((d) => ({ ...d, [i]: { ...d[i], ...patch } }))
-              }
-              defaults={castPreview.preview?.speakers ?? []}
-              voices={
-                castPreview.preview
-                  ? voicesForProvider(voices, castPreview.preview.provider)
-                  : []
-              }
-              provider={castPreview.preview?.provider ?? null}
-              loading={voicesLoading || castPreview.loading}
-              error={castPreview.error ?? voicesError}
-              onReload={() => {
-                castPreview.reload();
-                reloadVoices();
-              }}
-            />
+            {castPreview.orgRequired ? (
+              <OrganizationRequiredNotice
+                title="Choose an organization to pick the cast"
+                description="The server picks the voice cast per organization. Pick one below and the hosts load automatically."
+              />
+            ) : (
+              <SpeakerCastEditor
+                hostCount={hostCount}
+                drafts={speakerDrafts}
+                onChange={(i, patch) =>
+                  setSpeakerDrafts((d) => ({ ...d, [i]: { ...d[i], ...patch } }))
+                }
+                defaults={castPreview.preview?.speakers ?? []}
+                voices={
+                  castPreview.preview
+                    ? voicesForProvider(voices, castPreview.preview.provider)
+                    : []
+                }
+                provider={castPreview.preview?.provider ?? null}
+                loading={voicesLoading || castPreview.loading}
+                error={castPreview.error ?? voicesError}
+                onReload={() => {
+                  castPreview.reload();
+                  reloadVoices();
+                }}
+              />
+            )}
           </CollapsibleContent>
         </Collapsible>
       </section>

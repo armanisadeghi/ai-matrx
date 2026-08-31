@@ -13,6 +13,7 @@
  */
 
 import { apiGet } from "@/lib/api/typed-client";
+import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 export type ManagedCapability = {
   state: "loading" | "ready" | "error";
@@ -20,6 +21,8 @@ export type ManagedCapability = {
   nativeResume: boolean;
   nativeFork: boolean;
   reason: string | null;
+  /** The call never left the browser: no organization is selected yet. */
+  organizationRequired: boolean;
 };
 
 export const INITIAL_CAPABILITY: ManagedCapability = {
@@ -28,6 +31,7 @@ export const INITIAL_CAPABILITY: ManagedCapability = {
   nativeResume: false,
   nativeFork: false,
   reason: null,
+  organizationRequired: false,
 };
 
 export async function readManagedCapability(): Promise<ManagedCapability> {
@@ -39,6 +43,7 @@ export async function readManagedCapability(): Promise<ManagedCapability> {
       nativeResume: data.native_resume,
       nativeFork: data.native_fork,
       reason: data.reason ?? null,
+      organizationRequired: false,
     };
   } catch (capabilityError) {
     return {
@@ -50,6 +55,7 @@ export async function readManagedCapability(): Promise<ManagedCapability> {
         capabilityError instanceof Error
           ? capabilityError.message
           : "Capability check failed",
+      organizationRequired: isOrganizationRequiredError(capabilityError),
     };
   }
 }

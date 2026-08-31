@@ -33,6 +33,7 @@ import { getAssetForFile } from "@/features/files/api/assets";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { extractErrorMessage } from "@/utils/errors";
+import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
 // eslint-disable-next-line no-restricted-imports
 import type { Asset, AssetVariant } from "@/features/files/types";
 
@@ -135,6 +136,8 @@ export interface UseFileAssetResult {
   primaryUrl: string | null;
   isLoading: boolean;
   error: string | null;
+  /** The error is specifically "no organization selected" — offer the picker, not a retry. */
+  orgRequired: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -147,15 +150,18 @@ export function useFileAsset(
   const [asset, setAsset] = useState<Asset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgRequired, setOrgRequired] = useState(false);
 
   const doFetch = useCallback(async () => {
     if (!fileId || !enabled) return;
     setIsLoading(true);
     setError(null);
+    setOrgRequired(false);
     try {
       const data = await fetchAssetForFile(fileId, userId);
       setAsset(data);
     } catch (err) {
+      setOrgRequired(isOrganizationRequiredError(err));
       setError(extractErrorMessage(err));
       setAsset(null);
     } finally {
@@ -193,6 +199,7 @@ export function useFileAsset(
     primaryUrl,
     isLoading,
     error,
+    orgRequired,
     refresh,
   };
 }

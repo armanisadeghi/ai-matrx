@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { isOrganizationRequiredError } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   fetchDocument,
   fetchDocumentChunks,
@@ -27,6 +28,8 @@ export interface FetchState<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
+  /** No organization is selected yet — render <OrganizationRequiredNotice />, not an error. */
+  organizationRequired: boolean;
   refetch: () => void;
 }
 
@@ -37,6 +40,7 @@ function useFetch<T>(
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(!!key);
   const [error, setError] = useState<string | null>(null);
+  const [organizationRequired, setOrganizationRequired] = useState(false);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -44,11 +48,13 @@ function useFetch<T>(
       setData(null);
       setLoading(false);
       setError(null);
+      setOrganizationRequired(false);
       return undefined;
     }
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setOrganizationRequired(false);
     loader()
       .then((d) => {
         if (cancelled) return;
@@ -57,6 +63,11 @@ function useFetch<T>(
       })
       .catch((err) => {
         if (cancelled) return;
+        if (isOrganizationRequiredError(err)) {
+          setOrganizationRequired(true);
+          setLoading(false);
+          return;
+        }
         setError(extractErrorMessage(err) || "Request failed");
         setLoading(false);
       });
@@ -66,7 +77,13 @@ function useFetch<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, tick]);
 
-  return { data, loading, error, refetch: () => setTick((t) => t + 1) };
+  return {
+    data,
+    loading,
+    error,
+    organizationRequired,
+    refetch: () => setTick((t) => t + 1),
+  };
 }
 
 export function useDocument(docId: string | null): FetchState<DocumentDetail> {

@@ -44,6 +44,10 @@ import {
   rejectCandidate,
   type ContactCandidateView,
 } from "../../enrichment/service";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { SectionCard } from "./SectionCard";
 
 interface Props {
@@ -71,7 +75,7 @@ function verificationLabel(candidate: ContactCandidateView): {
 
 export function ContactCandidatesCard({ partyId, onChanged }: Props) {
   const [rows, setRows] = useState<ContactCandidateView[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [finding, setFinding] = useState(false);
@@ -82,7 +86,7 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
     try {
       setRows(await fetchContactCandidates(partyId));
     } catch (cause) {
-      setError(extractErrorMessage(cause));
+      setError(cause);
     } finally {
       setLoading(false);
     }
@@ -209,14 +213,17 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
         </p>
       )}
 
-      {error && (
-        <div className="flex items-center justify-between gap-2 py-2 text-xs text-destructive">
-          <span>{error}</span>
-          <Button variant="outline" size="sm" onClick={() => void load()}>
-            Retry
-          </Button>
-        </div>
-      )}
+      {error != null &&
+        (isOrganizationRequiredError(error) ? (
+          <OrganizationRequiredNotice compact />
+        ) : (
+          <div className="flex items-center justify-between gap-2 py-2 text-xs text-destructive">
+            <span>{extractErrorMessage(error)}</span>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              Retry
+            </Button>
+          </div>
+        ))}
 
       {!loading && !error && rows?.length === 0 && (
         <p className="py-3 text-center text-xs text-muted-foreground">

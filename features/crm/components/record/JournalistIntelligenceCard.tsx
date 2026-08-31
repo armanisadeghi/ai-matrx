@@ -30,6 +30,10 @@ import {
   type ActivityVerdict,
   type BeatProfile,
 } from "../../enrichment/service";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { SectionCard } from "./SectionCard";
 
 interface Props {
@@ -102,16 +106,19 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const [checking, setChecking] = useState(false);
   const [deriving, setDeriving] = useState(false);
   const [unreachable, setUnreachable] = useState(false);
+  const [orgRequired, setOrgRequired] = useState(false);
 
   const loadBeat = useCallback(async () => {
     try {
       setBeat(await fetchJournalistBeat(partyId));
       setUnreachable(false);
-    } catch {
+      setOrgRequired(false);
+    } catch (cause) {
       // A missing beat profile is the normal state and deserves no toast — but
       // "we could not ask" must NOT read as "there is nothing to know". They
       // look identical to a user and only one of them is their problem.
       setBeat(null);
+      setOrgRequired(isOrganizationRequiredError(cause));
       setUnreachable(true);
     }
   }, [partyId]);
@@ -229,7 +236,9 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
             </Button>
           </div>
 
-          {!beat && unreachable && (
+          {!beat && orgRequired && <OrganizationRequiredNotice compact />}
+
+          {!beat && unreachable && !orgRequired && (
             <p className="text-xs text-muted-foreground">
               We could not reach the service that works this out just now, so we
               cannot say whether we know their beat. Try again shortly.

@@ -55,6 +55,7 @@ import { CleanedMarkdownPane } from "@/features/rag/components/documents/panes/C
 import { PdfPane } from "@/features/rag/components/documents/panes/PdfPane";
 import { RawTextPane } from "@/features/rag/components/documents/panes/RawTextPane";
 import { LineageBreadcrumbs } from "@/features/rag/components/documents/LineageBreadcrumbs";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   useDocument,
   useDocumentChunks,
@@ -125,6 +126,19 @@ export function DocumentViewer({
       defaultView: "split",
     });
   }, [openDiff, page.data, activePageIndex]);
+
+  if (
+    doc.organizationRequired ||
+    lineage.organizationRequired ||
+    chunks.organizationRequired ||
+    page.organizationRequired
+  ) {
+    return (
+      <div className="h-full overflow-auto bg-background p-4">
+        <OrganizationRequiredNotice />
+      </div>
+    );
+  }
 
   const desktopLayout = (
     <ResizablePanelGroup orientation="horizontal">

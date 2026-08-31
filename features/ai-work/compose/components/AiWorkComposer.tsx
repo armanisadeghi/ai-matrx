@@ -44,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { RunSkillPicker } from "@/features/agents/components/inputs/smart-input/RunSkillPicker";
@@ -167,6 +168,7 @@ function ComposerBody({
     ready: false,
   });
 
+  const organizationId = useAppSelector(selectOrganizationId);
   const [destination, setDestination] = useState<WorkDestinationId>("ai-matrx");
   const [capability, setCapability] =
     useState<ManagedCapability>(INITIAL_CAPABILITY);
@@ -189,6 +191,7 @@ function ComposerBody({
   const skillIds = skillSettings?.addedSkills ?? [];
 
   // ── Live destination capability. One reader, shared with /work/connections.
+  //    Keyed on the active organization so choosing one re-runs the read.
   useEffect(() => {
     let cancelled = false;
     void readManagedCapability().then((next) => {
@@ -204,7 +207,7 @@ function ComposerBody({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [organizationId]);
 
   // ── Reopen a saved request into the form.
   useEffect(() => {

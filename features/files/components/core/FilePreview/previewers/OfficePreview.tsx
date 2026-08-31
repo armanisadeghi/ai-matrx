@@ -64,6 +64,10 @@ import {
 } from "@/features/files/hooks/office-extraction-cache";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { extractErrorMessage } from "@/utils/errors";
+import {
+  OrganizationRequiredNotice,
+  isOrganizationRequiredError,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 
 const PdfPreview = lazy(() => import("./PdfPreview"));
 
@@ -167,6 +171,7 @@ export function OfficePreview({
     mode: ViewMode;
     pdfRef: OfficeFileRef | null;
     pdfError: string | null;
+    orgRequired: boolean;
     page: number;
   }>(() => ({
     fileId,
@@ -175,6 +180,7 @@ export function OfficePreview({
     mode: deck ? "visual" : "text",
     pdfRef: peekOfficePdf(fileId),
     pdfError: null,
+    orgRequired: false,
     page: 1,
   }));
   if (state.fileId !== fileId) {
@@ -185,6 +191,7 @@ export function OfficePreview({
       mode: deck ? "visual" : "text",
       pdfRef: peekOfficePdf(fileId),
       pdfError: null,
+      orgRequired: false,
       page: 1,
     });
   }
@@ -235,6 +242,7 @@ export function OfficePreview({
           s.fileId === fileId
             ? {
                 ...s,
+                orgRequired: isOrganizationRequiredError(err),
                 error:
                   extractErrorMessage(err) || "Failed to read this document",
               }
@@ -267,6 +275,7 @@ export function OfficePreview({
           s.fileId === fileId
             ? {
                 ...s,
+                orgRequired: isOrganizationRequiredError(err),
                 pdfError:
                   extractErrorMessage(err) ||
                   "Couldn't render this document visually",
@@ -283,6 +292,7 @@ export function OfficePreview({
   const error = state.fileId === fileId ? state.error : null;
   const pdfRef = state.fileId === fileId ? state.pdfRef : null;
   const pdfError = state.fileId === fileId ? state.pdfError : null;
+  const orgRequired = state.fileId === fileId ? state.orgRequired : false;
 
   useEffect(() => {
     // The full-res first-slide variant is produced independently during
@@ -327,6 +337,18 @@ export function OfficePreview({
       /* non-secure contexts can't write to the clipboard */
     }
   }, [extraction]);
+
+  if (orgRequired) {
+    return (
+      <div className={cn("h-full w-full overflow-auto", className)}>
+        <OrganizationRequiredNotice
+          title="Choose an organization to open this document"
+          description="Document conversion runs per organization. Pick one below and this document opens automatically."
+          compact
+        />
+      </div>
+    );
+  }
 
   // A hard extraction failure only blocks the TEXT mode — the visual mode
   // renders from the PDF derivative and may still work (and vice versa).

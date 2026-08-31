@@ -32,6 +32,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { CapabilityGate } from "@/features/entitlements/components/CapabilityGate";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useSendingIdentities } from "@/features/crm/sending-identities/hooks";
 import { setSendingPolicy } from "@/features/crm/sending-identities/service";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
@@ -159,7 +160,8 @@ function IdentityRow({ identity }: { identity: SendingIdentityView }) {
 
 export function SendingIdentitiesPage() {
   const router = useRouter();
-  const { identities, policy, loading, error, reload } = useSendingIdentities();
+  const { identities, policy, loading, error, organizationRequired, reload } =
+    useSendingIdentities();
   const [connectOpen, setConnectOpen] = useState(false);
   const [togglingPolicy, setTogglingPolicy] = useState(false);
   const [policyError, setPolicyError] = useState<string | null>(null);
@@ -270,6 +272,8 @@ export function SendingIdentitiesPage() {
               <Skeleton key={index} className="h-24 w-full rounded-lg" />
             ))}
           </div>
+        ) : organizationRequired ? (
+          <OrganizationRequiredNotice />
         ) : error ? (
           <Card className="border-destructive/40">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">

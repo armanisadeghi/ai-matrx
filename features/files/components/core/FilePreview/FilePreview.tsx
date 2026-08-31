@@ -22,6 +22,7 @@ import { buildPdfExtractorHref } from "@/features/pdf/surfaces/hrefs";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -109,6 +110,7 @@ export function FilePreview({
     asset,
     primaryVariant,
     isLoading: assetLoading,
+    orgRequired: assetOrgRequired,
   } = useFileAsset(useAssetForPreview ? fileId : null);
   const { resolution: previewResolution } = useMediaResolution(
     !useAssetForPreview && fileId ? { file_id: fileId } : null,
@@ -372,6 +374,17 @@ export function FilePreview({
             : undefined,
         }}
       />
+    );
+  }
+
+  if (assetOrgRequired && !url) {
+    return (
+      <div className={cn("h-full w-full overflow-auto", className)}>
+        <OrganizationRequiredNotice
+          title="Choose an organization to preview this file"
+          description="File previews are served per organization. Pick one below and the preview loads automatically."
+        />
+      </div>
     );
   }
 

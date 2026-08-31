@@ -13,6 +13,9 @@ import {
   ServerCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
   INITIAL_CAPABILITY,
@@ -143,21 +146,25 @@ export function AiWorkConnections() {
   });
   const [capability, setCapability] =
     useState<ManagedCapability>(INITIAL_CAPABILITY);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const refreshManagedCapability = () => {
     setCapability(INITIAL_CAPABILITY);
     void readManagedCapability().then(setCapability);
   };
 
+  // Keyed on the active organization so choosing one in the inline notice
+  // re-runs the read instead of leaving a dead card.
   useEffect(() => {
     let cancelled = false;
+    setCapability(INITIAL_CAPABILITY);
     void readManagedCapability().then((next) => {
       if (!cancelled) setCapability(next);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [organizationId]);
 
   return (
     <div className="h-full overflow-y-auto px-4 py-5 scrollbar-thin sm:px-6">
@@ -372,7 +379,14 @@ export function AiWorkConnections() {
                 <h2 className="text-sm font-semibold text-foreground">
                   Start a Claude Code session
                 </h2>
-                {capability.state === "loading" ? (
+                {capability.organizationRequired ? (
+                  <div className="mt-1">
+                    <OrganizationRequiredNotice
+                      compact
+                      description="Starting a managed Claude Code session needs to know which organization to work in. Pick one below and this checks again automatically."
+                    />
+                  </div>
+                ) : capability.state === "loading" ? (
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Checking the live backend capability…

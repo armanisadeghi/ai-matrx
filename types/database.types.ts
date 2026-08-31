@@ -14077,6 +14077,129 @@ export type Database = {
           },
         ]
       }
+      print_order: {
+        Row: {
+          charge_amount_cents: number
+          contact_email: string
+          cover_file_id: string | null
+          cover_source_url: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          id: string
+          interior_file_id: string | null
+          interior_source_url: string
+          lulu_print_job_id: string | null
+          lulu_quote: Json
+          lulu_status: string | null
+          lulu_total_incl_tax: number
+          markup_percent: number
+          metadata: Json
+          organization_id: string
+          page_count: number
+          paid_at: string | null
+          placed_at: string | null
+          pod_package_id: string
+          production_delay_minutes: number
+          quantity: number
+          refunded_at: string | null
+          shipping_address: Json
+          shipping_level: string
+          status: string
+          status_message: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
+          title: string
+          tracking: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          charge_amount_cents: number
+          contact_email: string
+          cover_file_id?: string | null
+          cover_source_url: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          interior_file_id?: string | null
+          interior_source_url: string
+          lulu_print_job_id?: string | null
+          lulu_quote: Json
+          lulu_status?: string | null
+          lulu_total_incl_tax: number
+          markup_percent: number
+          metadata?: Json
+          organization_id: string
+          page_count: number
+          paid_at?: string | null
+          placed_at?: string | null
+          pod_package_id: string
+          production_delay_minutes?: number
+          quantity: number
+          refunded_at?: string | null
+          shipping_address: Json
+          shipping_level: string
+          status?: string
+          status_message?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          title: string
+          tracking?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          charge_amount_cents?: number
+          contact_email?: string
+          cover_file_id?: string | null
+          cover_source_url?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          interior_file_id?: string | null
+          interior_source_url?: string
+          lulu_print_job_id?: string | null
+          lulu_quote?: Json
+          lulu_status?: string | null
+          lulu_total_incl_tax?: number
+          markup_percent?: number
+          metadata?: Json
+          organization_id?: string
+          page_count?: number
+          paid_at?: string | null
+          placed_at?: string | null
+          pod_package_id?: string
+          production_delay_minutes?: number
+          quantity?: number
+          refunded_at?: string | null
+          shipping_address?: Json
+          shipping_level?: string
+          status?: string
+          status_message?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          title?: string
+          tracking?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       product: {
         Row: {
           attributes: Json

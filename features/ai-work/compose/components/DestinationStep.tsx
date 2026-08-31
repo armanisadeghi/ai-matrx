@@ -14,6 +14,7 @@ import { CircleDot, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ManagedCapability } from "@/features/ai-work/lib/managedClaudeCapability";
 import type { LocalRuntimeCapability } from "@/features/ai-work/lib/matrxLocalRuntime";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   WORK_DESTINATIONS,
   destinationAvailability,
@@ -31,6 +32,12 @@ export function DestinationStep({
   localCapability?: LocalRuntimeCapability;
   onChange: (id: WorkDestinationId) => void;
 }) {
+  if (capability.organizationRequired) {
+    return (
+      <OrganizationRequiredNotice description="Choosing where this work runs needs to know which organization to work in. Pick one below and the destinations load automatically." />
+    );
+  }
+
   return (
     <ul className="flex flex-col gap-2">
       {WORK_DESTINATIONS.map((destination) => {
