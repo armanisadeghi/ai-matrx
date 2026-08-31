@@ -56,7 +56,20 @@ export interface ServedInput {
   help: string;
   placeholder: string;
   options: string[];
-  origin: "field" | "variable";
+  /**
+   * WHERE THE DECLARATION CAME FROM. A workflow surface answers `field` or
+   * `variable`; a MANDATE surface (`GET /mandates/{key}/input-surface`) adds
+   * the three sources a mandate can declare from — its Provision, its own
+   * described inputs, or the bound Holder's declarations. The reader is always
+   * told which, because a surface whose provenance is invisible is a surface
+   * nobody can trust.
+   */
+  origin:
+    | "field"
+    | "variable"
+    | "provision"
+    | "mandate_input"
+    | "holder";
   nodeId: string | null;
   /** The input's own value contract (drives the derived-default component). */
   jsonSchema: Record<string, unknown>;
@@ -104,6 +117,14 @@ function str(v: unknown, fallback = ""): string {
 
 const SOURCING: ReadonlySet<string> = new Set(["ask", "require", "optional"]);
 
+const ORIGINS: ReadonlySet<string> = new Set([
+  "field",
+  "variable",
+  "provision",
+  "mandate_input",
+  "holder",
+]);
+
 /**
  * Parse ONE served input. Tolerant about presentation (labels, help), strict
  * about identity: an entry with no `name` or no `kind` is not an input and is
@@ -130,7 +151,9 @@ export function parseServedInput(raw: unknown): ServedInput | null {
     options: Array.isArray(raw.options)
       ? raw.options.filter((o): o is string => typeof o === "string")
       : [],
-    origin: raw.origin === "variable" ? "variable" : "field",
+    origin: ORIGINS.has(str(raw.origin))
+      ? (raw.origin as ServedInput["origin"])
+      : "field",
     nodeId: typeof raw.node_id === "string" ? raw.node_id : null,
     jsonSchema: isRecord(raw.json_schema) ? raw.json_schema : {},
     required: raw.required === true || sourcing !== "optional",

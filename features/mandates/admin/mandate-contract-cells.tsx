@@ -37,6 +37,43 @@ const CONTRACT_BADGE_CLASS =
  * loaded yet we say so and name the key — never "user text only", which would
  * be the same lie with a shorter render path.
  */
+/** The shared chip row — one anatomy for every input declaration, so a
+ * described input and an offered value can never render as two visual
+ * species. */
+function ChipRow({
+  items,
+  maxChips,
+  title,
+  mono = true,
+  trailing = "+ user text",
+}: {
+  items: readonly string[];
+  maxChips: number;
+  title: string;
+  mono?: boolean;
+  trailing?: string;
+}) {
+  const shown = items.slice(0, maxChips);
+  const hidden = items.length - shown.length;
+  return (
+    <div className="flex flex-wrap items-center gap-1" title={title}>
+      {shown.map((name) => (
+        <Badge
+          key={name}
+          variant="outline"
+          className={mono ? `${CONTRACT_BADGE_CLASS} font-mono` : CONTRACT_BADGE_CLASS}
+        >
+          {name}
+        </Badge>
+      ))}
+      {hidden > 0 && (
+        <span className="text-[10px] text-muted-foreground">+{hidden}</span>
+      )}
+      <span className="text-[10px] text-muted-foreground">{trailing}</span>
+    </div>
+  );
+}
+
 export function MandateInputsCell({
   row,
   maxChips = 4,
@@ -63,10 +100,34 @@ export function MandateInputsCell({
         </span>
       );
     }
+    // 🚨 THE THIRD AND FOURTH DECLARATIONS (2026-08-31). A mandate a PERSON
+    // authored has neither a contract nor a Provision — it has its own
+    // described inputs, and once bound, a Holder that declares real variables.
+    // Both were invisible here, so every user-authored mandate read "user text
+    // only" no matter how completely it was specified and bound.
+    if (row.draftInputDescriptions.length > 0) {
+      return (
+        <ChipRow
+          items={row.draftInputDescriptions}
+          maxChips={maxChips}
+          mono={false}
+          title={`This job's own described inputs: ${row.draftInputDescriptions.join(", ")} — described, not yet formalized as typed values.`}
+        />
+      );
+    }
+    if (row.holderDeclarations.length > 0) {
+      return (
+        <ChipRow
+          items={row.holderDeclarations}
+          maxChips={maxChips}
+          title={`Declared by ${row.agentName}, the agent that fulfils this job: ${row.holderDeclarations.join(", ")}.`}
+        />
+      );
+    }
     return (
       <span
         className="text-xs text-muted-foreground"
-        title="This mandate declares no required variables and no Provision — it runs on the user's message alone."
+        title="No required variables, no Provision, no described inputs, and nothing declared by the agent that fulfils this job — it runs on the user's message alone."
       >
         user text only
       </span>

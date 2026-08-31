@@ -90,6 +90,20 @@ export interface MandateRow {
   requiredVariables: string[];
   /** The Provision that IS this mandate's input declaration, when it has one. */
   provisionKey: string | null;
+  /**
+   * THE MANDATE'S OWN described inputs (`mandate.definition.draft_inputs`) —
+   * what a person wrote when they authored this job. A third real input
+   * declaration beside the contract and the Provision, and the ONLY one a
+   * user-authored mandate has. Read it before concluding a mandate has no
+   * inputs.
+   */
+  draftInputDescriptions: string[];
+  /**
+   * THE BOUND HOLDER'S own declared variables + context policy keys — the
+   * fourth real source. An agent that declares `topic` accepts `topic`,
+   * whether or not any code ever declared the mandate.
+   */
+  holderDeclarations: string[];
   requiredContextPolicyKeys: string[];
   /** The MANDATE's own Context Policy gate (`agent.mandate.auto_context_disabled`). */
   contextGateClosed: boolean;
@@ -112,6 +126,46 @@ export interface MandateRow {
   isEnabled: boolean;
   isPlaceholder: boolean;
   updatedAt: string | null;
+}
+
+/** The mandate's own described inputs — the declaration a person wrote. */
+export function draftInputDescriptions(mandate: MandateDefinitionRow): string[] {
+  const raw: unknown = (mandate as { draft_inputs?: unknown }).draft_inputs;
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const record = item as Record<string, unknown>;
+    const description =
+      typeof record.description === "string" ? record.description.trim() : "";
+    const name = typeof record.name === "string" ? record.name.trim() : "";
+    if (description || name) out.push(description || name);
+  }
+  return out;
+}
+
+/**
+ * THE FOUR INPUT DECLARATIONS, strongest first — and the ONE place that may
+ * conclude "user text only".
+ */
+function inputSummaryOf(
+  mandate: MandateDefinitionRow,
+  requiredVariables: string[],
+  agentId: string | null,
+  data: MandateConsoleData,
+): string {
+  if (requiredVariables.length > 0) return requiredVariables.join(", ");
+  const provisionKey = parseMandateWave1(mandate).provisionKey;
+  if (provisionKey) return provisionKey;
+  const described = draftInputDescriptions(mandate);
+  if (described.length > 0) return described.join(", ");
+  const agent = agentId ? data.agentsById[agentId] : undefined;
+  const declared = [
+    ...(agent?.variableNames ?? []),
+    ...(agent?.contextPolicyKeys ?? []),
+  ];
+  if (declared.length > 0) return declared.join(", ");
+  return "user text only";
 }
 
 export function buildRow(
@@ -227,17 +281,26 @@ export function buildRow(
     outputKind: mandate.output_kind ?? "text",
     requiredVariables: contract.requiredVariables,
     provisionKey: parseMandateWave1(mandate).provisionKey,
+    draftInputDescriptions: draftInputDescriptions(mandate),
+    holderDeclarations: agentId
+      ? [
+          ...(data.agentsById[agentId]?.variableNames ?? []),
+          ...(data.agentsById[agentId]?.contextPolicyKeys ?? []),
+        ]
+      : [],
     requiredContextPolicyKeys: contract.requiredContextPolicyKeys,
     contextGateClosed,
     holderContextClosed,
     contextClosedEffective: holderContextClosed || contextGateClosed,
     requiredOutputKeys: contract.requiredOutputKeys,
-    // "user text only" is the truth ONLY when there is no Provision either —
-    // required_variables is stripped for every provisioned mandate.
-    inputSummary:
-      contract.requiredVariables.length > 0
-        ? contract.requiredVariables.join(", ")
-        : (parseMandateWave1(mandate).provisionKey ?? "user text only"),
+    // 🚨 "user text only" is the truth ONLY when all FOUR input declarations
+    // are empty. Three of them were invisible here until 2026-08-31: the
+    // Provision (required_variables is stripped once one exists), the
+    // mandate's OWN described inputs (the only declaration a user-authored
+    // mandate has), and the bound Holder's declared variables. Arman authored
+    // a mandate with five described inputs and a bound, mapped agent, and this
+    // field still said "user text only".
+    inputSummary: inputSummaryOf(mandate, contract.requiredVariables, agentId, data),
     outputSummary:
       mandate.output_kind ??
       (contract.requiredOutputKeys.length > 0

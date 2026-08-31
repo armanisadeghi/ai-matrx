@@ -7944,6 +7944,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mailersend/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mailersend_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buttercms/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_buttercms_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/prismic/public/status": {
         parameters: {
             query?: never;
@@ -8055,6 +8089,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_airmeet_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bizzabo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bizzabo_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -16090,30 +16141,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -33307,6 +33334,43 @@ export interface components {
             /** Html Url */
             html_url: string;
         };
+        /**
+         * BizzaboStatusResult
+         * @description Safe projection of Bizzabo's high-level service status.
+         */
+        BizzaboStatusResult: {
+            /**
+             * Kind
+             * @default bizzabo_official_service_status
+             * @constant
+             */
+            __kind?: "bizzabo_official_service_status";
+            /**
+             * Provider
+             * @default bizzabo
+             * @constant
+             */
+            provider?: "bizzabo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.bizzabo.com
+             * @constant
+             */
+            status_url?: "https://status.bizzabo.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** BlockStageRequest */
         BlockStageRequest: {
             /**
@@ -35729,6 +35793,38 @@ export interface components {
             succeeded: string[];
             /** Failed */
             failed: components["schemas"]["BulkVerdictFailure"][];
+        };
+        /**
+         * ButterCmsServiceStatus
+         * @description Safe aggregate status projection for ButterCMS's fixed status page.
+         */
+        ButterCmsServiceStatus: {
+            /**
+             * Kind
+             * @default buttercms_public_content_platform_status
+             * @constant
+             */
+            __kind?: "buttercms_public_content_platform_status";
+            /**
+             * Provider
+             * @default ButterCMS
+             * @constant
+             */
+            provider?: "ButterCMS";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.buttercms.com
+             * @constant
+             */
+            status_page?: "https://status.buttercms.com";
         };
         /**
          * ButtondownServiceStatus
@@ -44598,33 +44694,6 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -57579,6 +57648,41 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.mailerlite.com/";
+        };
+        /**
+         * MailerSendServiceStatus
+         * @description Safe aggregate status projection for MailerSend's fixed status page.
+         */
+        MailerSendServiceStatus: {
+            /**
+             * Kind
+             * @default mailersend_public_service_status
+             * @constant
+             */
+            __kind?: "mailersend_public_service_status";
+            /**
+             * Provider
+             * @default mailersend
+             * @constant
+             */
+            provider?: "mailersend";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.mailersend.com/
+             * @constant
+             */
+            status_page?: "https://status.mailersend.com/";
         };
         /**
          * MailjetServiceStatus
@@ -101745,6 +101849,46 @@ export interface operations {
             };
         };
     };
+    public_status_mailersend_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailerSendServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_buttercms_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ButterCmsServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_prismic_public_status_get: {
         parameters: {
             query?: never;
@@ -101881,6 +102025,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AirmeetStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_bizzabo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizzaboStatusResult"];
                 };
             };
         };
@@ -115050,41 +115214,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

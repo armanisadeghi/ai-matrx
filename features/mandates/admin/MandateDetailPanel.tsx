@@ -30,7 +30,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectLiveAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -1383,13 +1384,50 @@ function MandateEditor({
     };
   }, [agentId, useLatest]);
 
+  // 🚨 THE DEAD SELECT (found live by Arman, 2026-08-31; the fix is the class,
+  // not the instance).
+  //
+  // He picked an agent here and NOTHING HAPPENED. The mechanism: this editor
+  // treated `builtinAgentsById` — the console's own copy of the system-agent
+  // catalogue, which is EMPTY until `fetchAgentsListFull()` lands and drops
+  // any agent that copy does not hold — as a VETO on the selection. An id it
+  // did not hold was nulled out (`selectableAgentId`), the trigger reverted to
+  // "Select a system agent", and Save answered "Choose a system agent before
+  // saving this mandate" — blaming the admin for a list that had not loaded.
+  //
+  // THE RULE now: the dropdown is the authority on WHAT WAS PICKED; the
+  // catalogue only DESCRIBES it. A pick is always reflected, and every refusal
+  // is in words, on the page, naming the remedy — never a silent revert.
+  const liveAgents = useAppSelector(selectLiveAgents);
+  const pickedAgent = agentId
+    ? (liveAgents.find((candidate) => candidate.id === agentId) ?? null)
+    : null;
+  const catalogueLoaded = builtinAgentsById.size > 0;
+  const pickedIsSystem = agentId ? builtinAgentsById.has(agentId) : false;
+  const pickedName =
+    (agentId ? builtinAgentsById.get(agentId) : undefined) ??
+    pickedAgent?.name ??
+    (agentId ? "the selected agent" : null);
+
+  /** Why this pick cannot be saved — in words, or null when it can. */
+  const refusal: string | null = (() => {
+    if (!agentId) return null;
+    if (pickedIsSystem) return null;
+    if (!catalogueLoaded) {
+      return "The system-agent catalogue has not loaded yet, so this pick cannot be checked. It resolves on its own in a moment — try Save again then.";
+    }
+    return `${pickedName} is not a system agent. A mandate's default runs for EVERY user, so its pin must be a system agent — use "Duplicate & customize" above to make a system twin of it, or pick a system agent here.`;
+  })();
+
   const save = async () => {
     if (!agentId) {
       toast.error("Pick an agent first.");
       return;
     }
-    if (!builtinAgentsById.has(agentId)) {
-      toast.error("Choose a system agent before saving this mandate.");
+    if (refusal) {
+      // The same words that are already on the page — never a shorter, vaguer
+      // toast that leaves the reader with nothing to do.
+      toast.error(refusal);
       return;
     }
     if (!useLatest && !versionId) {
@@ -1400,17 +1438,17 @@ function MandateEditor({
     // one-click remedies perform, and gets the same variable check.
     await requestRebind({
       agentId,
-      agentName: builtinAgentsById.get(agentId) ?? "the selected agent",
+      agentName: pickedName ?? "the selected agent",
       versionId: useLatest ? null : versionId,
       useLatest,
       successMessage: `${mandate.mandate_key} rebound.`,
     });
   };
 
-  const selectableAgentId =
-    agentId && builtinAgentsById.has(agentId) ? agentId : null;
-  const selectedAgentName = selectableAgentId
-    ? (builtinAgentsById.get(selectableAgentId) ?? "Selected system agent")
+  // The trigger always shows WHAT IS PICKED. An unknown-to-the-catalogue pick
+  // shows its id rather than pretending nothing was chosen.
+  const selectedAgentName = agentId
+    ? (pickedName ?? agentId)
     : "Select a system agent";
 
   return (
@@ -1425,16 +1463,24 @@ function MandateEditor({
         <AgentListDropdown
           consumerId={`agent-mandate-rebind-${mandate.id}`}
           onSelect={setAgentId}
-          activeAgentId={selectableAgentId}
+          activeAgentId={agentId}
           label={selectedAgentName}
           initialTab="system"
           visibleTabs={["system"]}
           systemTabLabel="System"
           resolveAgentHref={(agent) => agentHref(agent.id, agent.agentType)}
-          showPinnedAgent={Boolean(selectableAgentId)}
+          showPinnedAgent={Boolean(agentId)}
           contentSide="left"
           className="h-9 w-full"
         />
+        {/* EVERY REFUSAL IN WORDS, on the page — the pick is never silently
+            discarded, and the remedy is always named. */}
+        {refusal ? (
+          <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {refusal}
+          </p>
+        ) : null}
       </div>
       <label className="flex items-center gap-2 text-sm">
         <Switch checked={useLatest} onCheckedChange={setUseLatest} />

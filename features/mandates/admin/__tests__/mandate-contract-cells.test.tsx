@@ -63,6 +63,8 @@ const row: MandateRow = {
   outputKind: LONG_OUTPUT_KIND,
   requiredVariables: [],
   provisionKey: null,
+  draftInputDescriptions: [],
+  holderDeclarations: [],
   requiredContextPolicyKeys: [],
   contextGateClosed: false,
   holderContextClosed: false,
@@ -133,5 +135,51 @@ describe("MandateInputsCell reads the Provision, not required_variables", () => 
   it("still says user text only when there is genuinely no input declaration", () => {
     const html = renderToStaticMarkup(<MandateInputsCell row={row} />);
     expect(html).toContain("user text only");
+  });
+
+  /**
+   * THE SECOND HALF OF THE SAME LIE (found live by Arman, 2026-08-31). He
+   * authored a mandate at /administration/mandates/new with five described
+   * inputs, picked an output kind and bound an agent — and this cell still
+   * said "user text only", because a user-authored mandate has neither a
+   * contract nor a Provision. Both cases below FAIL against the pre-fix cell.
+   */
+  it("renders the mandate's OWN described inputs instead of claiming user text only", () => {
+    const described: MandateRow = {
+      ...row,
+      draftInputDescriptions: [
+        "Task overview",
+        "Inputs",
+        "Outputs",
+        "System prompt",
+        "Full agent object",
+      ],
+    };
+    const html = renderToStaticMarkup(<MandateInputsCell row={described} />);
+    expect(html).toContain("Task overview");
+    expect(html).toContain("System prompt");
+    expect(html).not.toContain("user text only");
+  });
+
+  it("falls back to what the BOUND AGENT declares before it claims user text only", () => {
+    const held: MandateRow = {
+      ...row,
+      holderDeclarations: ["topic", "tone", "workspace_context"],
+    };
+    const html = renderToStaticMarkup(<MandateInputsCell row={held} />);
+    expect(html).toContain("topic");
+    expect(html).toContain("workspace_context");
+    expect(html).not.toContain("user text only");
+  });
+
+  it("prefers the mandate's own described inputs over the agent's declarations", () => {
+    const both: MandateRow = {
+      ...row,
+      draftInputDescriptions: ["Task overview"],
+      holderDeclarations: ["topic"],
+    };
+    const html = renderToStaticMarkup(<MandateInputsCell row={both} />);
+    expect(html).toContain("Task overview");
+    expect(html).not.toContain("topic");
   });
 });

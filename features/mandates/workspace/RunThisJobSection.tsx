@@ -50,11 +50,9 @@ import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSele
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import {
-  MEDIA_VALUE_KINDS,
-  SCALAR_VALUE_KINDS,
-  type OfferedValue,
-} from "../provision-shapes";
+import { MEDIA_VALUE_KINDS, SCALAR_VALUE_KINDS } from "../provision-shapes";
+import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
+import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
 import { Section } from "./Section";
 import {
   readMandateRunHolder,
@@ -64,18 +62,41 @@ import {
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
-/** One fillable input. `offered` is the Provision's declaration when there is
- * one; a legacy contract-only mandate supplies the name alone. */
+/**
+ * One fillable input, derived from THE SERVED SURFACE
+ * (`GET /mandates/{key}/input-surface` — `../input-surface.ts`).
+ *
+ * 🚨 THIS FORM NO LONGER DERIVES ITS OWN FIELDS. Until 2026-08-31 it read the
+ * Provision's offer, or failing that the mandate's promoted
+ * `required_variables` — both CODE declarations. A mandate a person authored
+ * has neither, so this section offered one anonymous text box and said "This
+ * job declares no inputs" while the mandate's own described inputs and the
+ * bound agent's real variables sat unread. The server now answers that
+ * question, once, for every consumer.
+ */
 interface RunField {
   name: string;
   kind: string;
-  /** Guaranteed values are what the real call site always supplies. */
+  /** `require`/`ask` — a value the job needs before it can run. */
   required: boolean;
   description: string;
   /** Structured kinds are typed as JSON, so the value stays structured on the
    * wire instead of collapsing into a text blob. */
   structured: boolean;
+  /** Where the declaration came from — shown, because a field whose origin is
+   * invisible is a field nobody can judge. */
+  origin: ServedInput["origin"];
+  /** The platform delivers this on every run: visible, never typed. */
+  pinned: boolean;
 }
+
+const ORIGIN_LABEL: Record<ServedInput["origin"], string> = {
+  provision: "offered by this job",
+  mandate_input: "this job's own input",
+  holder: "the agent's own",
+  variable: "declared variable",
+  field: "declared",
+};
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -91,23 +112,19 @@ function componentForKind(kind: string): VariableCustomComponent | undefined {
   return undefined;
 }
 
-function fieldsFromOffer(
-  values: readonly OfferedValue[],
-  pinnedContext: readonly string[],
-): RunField[] {
-  return values
-    // Pinned context is delivered by the platform on every launch — it is not
-    // the caller's to type, and offering it would invite a hand-mapped value
-    // that the real call site never sends.
-    .filter((value) => !pinnedContext.includes(value.name))
-    .map((value) => ({
-      name: value.name,
-      kind: value.kind,
-      required: value.guaranteed,
-      description: value.description,
-      structured:
-        !SCALAR_VALUE_KINDS.has(value.kind) && !MEDIA_VALUE_KINDS.has(value.kind),
-    }));
+/** The served surface → this form's fields. A one-to-one read, no derivation:
+ * platform-pinned entries stay VISIBLE (the golden rule) but are never typed. */
+function fieldsFromSurface(inputs: readonly ServedInput[]): RunField[] {
+  return inputs.map((input) => ({
+    name: input.name,
+    kind: input.kind,
+    required: input.sourcing !== "optional" && !input.pinned,
+    description: input.help || (input.label !== input.name ? input.label : ""),
+    structured:
+      !SCALAR_VALUE_KINDS.has(input.kind) && !MEDIA_VALUE_KINDS.has(input.kind),
+    origin: input.origin,
+    pinned: input.pinned,
+  }));
 }
 
 function isBlank(value: unknown): boolean {
@@ -141,20 +158,17 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
   const [userInput, setUserInput] = useState("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MandateTestResponse | null>(null);
+  // THE SERVED SURFACE — asked before the super-admin gate because a hook may
+  // never sit behind an early return. It is one authenticated GET; a
+  // non-admin's request simply never renders anything.
+  const surfaceState = useMandateInputSurface(data.mandate.mandate_key);
 
-  // The gate is the FIRST thing, before any field derivation: the endpoint is
-  // require_super_admin, so for everyone else this section does not exist.
+  // The gate: the endpoint is require_super_admin, so for everyone else this
+  // section does not exist.
   if (!isSuperAdmin) return null;
 
-  const fields: RunField[] = data.offer
-    ? fieldsFromOffer(data.offer.values, data.pinnedContext)
-    : data.contract.requiredVariables.map((name) => ({
-        name,
-        kind: "text",
-        required: true,
-        description: "",
-        structured: false,
-      }));
+  const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
+  const fields: RunField[] = surface ? fieldsFromSurface(surface.inputs) : [];
 
   function currentValue(field: RunField): unknown {
     return field.name in values ? values[field.name] : "";
@@ -165,6 +179,10 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
   function buildVariables(): JsonObject | null {
     const out: JsonObject = {};
     for (const field of fields) {
+      // A platform-pinned value is delivered server-side and stamped there;
+      // echoing it back would be this client claiming a source it may not
+      // claim (INPUT-SURFACE.md § THE source=human INVARIANT).
+      if (field.pinned) continue;
       const raw = currentValue(field);
       if (isBlank(raw)) {
         if (field.required) {
@@ -247,9 +265,31 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
         mandate right now — the Holder above, agent or workflow.
       </p>
 
-      {fields.length === 0 ? (
+      {/* WHAT THE SERVER COULD NOT READ, in its own words — never swallowed
+          into a shorter, calmer, wrong sentence. */}
+      {surface && surface.notes.length > 0 ? (
+        <ul className="space-y-1">
+          {surface.notes.map((note) => (
+            <li key={note} className="text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
+              {note}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {surfaceState.status === "loading" ? (
         <p className="text-[12px] text-muted-foreground">
-          This job declares no inputs — run it as-is, or type a message below.
+          Reading this job&apos;s inputs…
+        </p>
+      ) : surfaceState.status === "error" ? (
+        <p className="text-[12px] text-destructive">
+          This job&apos;s inputs could not be read: {surfaceState.message}
+        </p>
+      ) : fields.length === 0 ? (
+        <p className="text-[12px] text-muted-foreground">
+          {surface && isUserTextOnly(surface)
+            ? "Nothing is declared for this job — not in code, not on the mandate, not by the agent that fulfils it. Run it as-is, or type a message below."
+            : "No input is fillable here right now — see above."}
         </p>
       ) : (
         <div className="space-y-2">
@@ -262,7 +302,11 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
                 <Badge variant="outline" className="py-0 font-mono text-[10px]">
                   {field.kind}
                 </Badge>
-                {field.required ? (
+                {field.pinned ? (
+                  <Badge variant="outline" className="py-0 text-[10px] text-muted-foreground">
+                    delivered automatically
+                  </Badge>
+                ) : field.required ? (
                   <Badge variant="outline" className="py-0 text-[10px]">
                     required
                   </Badge>
@@ -274,8 +318,16 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
                     optional
                   </Badge>
                 )}
+                <span className="text-[10px] text-muted-foreground/70">
+                  {ORIGIN_LABEL[field.origin]}
+                </span>
               </div>
-              {field.structured ? (
+              {field.pinned ? (
+                <p className="text-[11.5px] text-muted-foreground">
+                  {field.description ||
+                    "The platform supplies this on every run — it is not yours to type."}
+                </p>
+              ) : field.structured ? (
                 <Textarea
                   value={typeof currentValue(field) === "string" ? (currentValue(field) as string) : ""}
                   onChange={(event) =>

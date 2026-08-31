@@ -54,6 +54,19 @@ const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;
 export type { MandateBindingRow, MandateDefinitionRow, MandateDefinitionUpdate };
 
 
+/** The `name`/`key` strings out of a jsonb declaration array, defensively —
+ * the column is jsonb, so any element may be junk. */
+function namesOf(raw: unknown, key: "name" | "key"): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const value = (item as Record<string, unknown>)[key];
+    if (typeof value === "string" && value) out.push(value);
+  }
+  return out;
+}
+
 export interface MandateAgentInfo {
   id: string;
   name: string;
@@ -67,6 +80,18 @@ export interface MandateAgentInfo {
    * state the combined effect honestly — a Mandate gate only NARROWS, so the
    * effective value is `agent OR mandate`, never the mandate alone. */
   autoContextDisabled: boolean;
+  /**
+   * THE HOLDER'S OWN INPUT DECLARATION — the names it actually accepts.
+   *
+   * Carried because a mandate a person authored has no code declaration and no
+   * Provision, so before 2026-08-31 every console cell about such a mandate
+   * said "user text only" while the agent bound to it declared real variables.
+   * The agent's declarations are a real, honest input source (THE-MODEL's
+   * intelligence-first half); the console reads them from the same by-id load
+   * it already makes, never a second query.
+   */
+  variableNames: string[];
+  contextPolicyKeys: string[];
 }
 
 export interface MandateVersionInfo {
@@ -164,7 +189,9 @@ export async function fetchMandateConsoleData(
     const { data, error } = await supabase
       .schema("agent")
       .from("definition")
-      .select("id, name, version, is_archived, agent_type, auto_context_disabled")
+      .select(
+        "id, name, version, is_archived, agent_type, auto_context_disabled, variable_definitions, context_policies",
+      )
       .in("id", [...agentIds]);
     if (error) throw error;
     for (const row of data ?? []) {
@@ -175,6 +202,8 @@ export async function fetchMandateConsoleData(
         isArchived: Boolean(row.is_archived),
         agentType: row.agent_type,
         autoContextDisabled: row.auto_context_disabled === true,
+        variableNames: namesOf(row.variable_definitions, "name"),
+        contextPolicyKeys: namesOf(row.context_policies, "key"),
       };
     }
   }

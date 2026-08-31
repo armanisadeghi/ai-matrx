@@ -51,6 +51,7 @@ import {
   type DraftInput,
 } from "../authoring/service";
 import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
+import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { Section } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
@@ -206,9 +207,12 @@ export function TriadInputSection({
             </div>
           </div>
         ) : (
-          <p className="text-[13px] text-muted-foreground">
-            User text only — nothing declared, nothing offered.
-          </p>
+          // 🚨 "User text only" is a MEASURED answer, never a fallback. The
+          // served input surface is the one thing that knows all four
+          // declarations (Provision · contract · this mandate's described
+          // inputs · the bound Holder's own variables), so this branch asks it
+          // rather than concluding "nothing" from the two it can see locally.
+          <HolderDeclaredInputs mandateKey={data.mandate.mandate_key} />
         )}
 
         {authoring && !data.offer && !editing ? (
@@ -253,6 +257,73 @@ export function TriadInputSection({
         ) : null}
       </div>
     </Section>
+  );
+}
+
+/**
+ * THE LAST RESORT of the Input section — and the only place allowed to say
+ * "user text only".
+ *
+ * Before 2026-08-31 this branch was a bare sentence: "User text only —
+ * nothing declared, nothing offered." It was false for every mandate whose
+ * bound agent declares variables, which is most of them. The served surface
+ * (`GET /mandates/{key}/input-surface`) is the one reader that knows all four
+ * declarations, so the sentence is now its answer, not our assumption.
+ */
+function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
+  const state = useMandateInputSurface(mandateKey);
+  if (state.status === "loading") {
+    return (
+      <p className="text-[13px] text-muted-foreground">Reading this job&apos;s inputs…</p>
+    );
+  }
+  if (state.status === "error") {
+    return (
+      <p className="text-[13px] text-destructive">
+        This job&apos;s inputs could not be read: {state.message}
+      </p>
+    );
+  }
+  const { surface } = state;
+  if (isUserTextOnly(surface)) {
+    return (
+      <p className="text-[13px] text-muted-foreground">
+        User text only — nothing declared in code, on this job, or by the agent
+        that fulfils it.
+      </p>
+    );
+  }
+  if (surface.inputs.length === 0) {
+    return (
+      <ul className="space-y-1">
+        {surface.notes.map((note) => (
+          <li key={note} className="text-[12.5px] text-amber-700 dark:text-amber-400">
+            {note}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[11px] text-muted-foreground">
+        Declared by{" "}
+        {surface.holderName ?? "the agent that fulfils this job"} — this job has
+        no Provision of its own, so what the Holder accepts IS its input
+        surface.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {surface.inputs.map((input) => (
+          <code
+            key={input.name}
+            className="rounded bg-muted px-1.5 py-0.5 text-[11px]"
+            title={input.help || undefined}
+          >
+            {input.name}
+          </code>
+        ))}
+      </div>
+    </div>
   );
 }
 
