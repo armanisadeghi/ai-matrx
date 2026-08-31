@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260831T083803Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-31T08:38:25.028Z",
-  "summary": "Three disjoint workers are repairing remaining ready peek, code-folder, quiz-session, and opener-backed references.",
+  "state": "certified",
+  "updatedAt": "2026-08-31T08:59:35.820Z",
+  "summary": "Corrected five-file wave 2 candidate independently certified",
   "source": "20260831T083803Z.json",
-  "eventHash": "9defbef6d17e250a419f7f05cf48d50a09771dc2150b5ba5ad35762407ba8103"
+  "eventHash": "ab326b1e713e6710eac64fa3b420d4dfb227f418ae106dcd166afae1e9683a52"
 }
