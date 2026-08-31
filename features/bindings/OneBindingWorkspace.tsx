@@ -108,8 +108,6 @@ import {
 } from "./ScopeHolderBar";
 import { applySuggestions, seedAutoBinds, sourcesFor } from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
-import { BatchMode } from "./batch/BatchMode";
-import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
 

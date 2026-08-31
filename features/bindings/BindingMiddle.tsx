@@ -55,6 +55,7 @@ import {
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
+import { sourceLabelsFor } from "./words";
 
 /** The one source kind that can be absent, and so the one that answers for it. */
 type OfferedSource = Extract<ConsumptionEntry, { mapType: "offered_value" }>;
@@ -94,6 +95,59 @@ export function BindingMiddle({
   autoBound,
   disabled = false,
 }: BindingMiddleProps) {
+  if (targets.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {targets.map((target) => (
+        <BindingMiddleRow
+          key={target.name}
+          holderKind={holderKind}
+          target={target}
+          isContext={contextKeys.has(target.name)}
+          offered={offered}
+          pinnedContext={pinnedContext}
+          value={value}
+          onChange={onChange}
+          autoBound={autoBound}
+          disabled={disabled}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * ONE HOLDER INPUT'S FULL CARD — the shared row, the example, the absence
+ * answer, the per-row problems, the many-to-one strip and "also feed this
+ * input…".
+ *
+ * 🚨 Exported because BATCH MODE's Advanced popover opens THIS, not a reduced
+ * copy of it (P17: "an Advanced popover that opens the full card"). One card,
+ * two modes: a person who learns the match in one place has learned it in the
+ * other, and a fix lands in both.
+ */
+export function BindingMiddleRow({
+  holderKind,
+  target,
+  isContext,
+  offered,
+  pinnedContext,
+  value,
+  onChange,
+  autoBound,
+  disabled = false,
+}: {
+  holderKind: "agent" | "workflow";
+  target: BindingTarget;
+  isContext: boolean;
+  offered: readonly OfferedValue[];
+  pinnedContext: readonly string[];
+  value: ConsumptionMap;
+  onChange: (next: ConsumptionMap) => void;
+  autoBound: ReadonlySet<string>;
+  disabled?: boolean;
+}) {
   const offeredByName = new Map(offered.map((v) => [v.name, v]));
   const pinned = new Set(pinnedContext);
   // Pinned context arrives on its own; mapping it again would deliver it twice.
@@ -101,189 +155,170 @@ export function BindingMiddle({
   // picker's list, not the inventory.
   const selectable = offered.filter((v) => !pinned.has(v.name));
   const selectableSurfaceValues = offeredValuesToSurfaceValues(selectable);
+  const sourceLabels = sourceLabelsFor(holderKind);
 
-  // THE FOUR SOURCES, IN THIS DOMAIN'S WORDS. A job binding consumes an OFFERED
-  // value, not a surface value, and a workflow holder has no "agent" default —
-  // the mechanic is the shared one, the nouns are ours.
-  const sourceLabels = {
-    agent_default:
-      holderKind === "workflow" ? "Holder Default" : "Agent Default",
-    surface_value: "Offered Value",
-    direct_value: "Direct Value",
-    prompt_user: "Prompt User",
-  };
+  const sources = sourcesFor(value, target.name);
+  const deliver: ConsumptionEntry["deliver"] = isContext
+    ? "context"
+    : "variable";
+  const remaining = selectable.filter(
+    (v) =>
+      !sources.some(
+        (entry) => isOfferedSource(entry) && entry.target === v.name,
+      ),
+  );
 
-  if (targets.length === 0) return null;
+  // The SAME pre-flight the save runs, narrowed to this row — so the
+  // problem is printed where it was caused, never as a list at the bottom.
+  // A source still waiting for its pick is NOT "consumes something this
+  // job does not offer": it is an unfinished choice, and it gets its own
+  // sentence below rather than a confusing one from the pre-flight.
+  const chosen = sources.filter(
+    (entry) => !isOfferedSource(entry) || entry.target !== "",
+  );
+  const awaitingPick = sources.length > chosen.length;
+  const rowProblems = consumptionMapProblems(
+    { values: offered },
+    chosen.length > 0 ? { [target.name]: chosen } : {},
+  );
+  const unfedRequired =
+    target.required === true &&
+    sources.length === 0 &&
+    !hasHolderDefault(target.defaultValue);
 
   return (
-    <div className="space-y-3">
-      {targets.map((target) => {
-        const sources = sourcesFor(value, target.name);
-        const isContext = contextKeys.has(target.name);
-        const deliver: ConsumptionEntry["deliver"] = isContext
-          ? "context"
-          : "variable";
-        const remaining = selectable.filter(
-          (v) =>
-            !sources.some(
-              (entry) => isOfferedSource(entry) && entry.target === v.name,
-            ),
-        );
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+        <Badge
+          variant="outline"
+          className="py-0 text-[9px] text-muted-foreground"
+        >
+          {isContext ? "context slot" : "variable"}
+        </Badge>
+        {autoBound.has(target.name) && sources.length === 1 ? (
+          <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground">
+            <Zap className="h-2.5 w-2.5" />
+            Chosen for you — this job offers a value named exactly like this
+            input. Switch to Agent Default to ignore it on purpose.
+          </span>
+        ) : null}
+      </div>
 
-        // The SAME pre-flight the save runs, narrowed to this row — so the
-        // problem is printed where it was caused, never as a list at the bottom.
-        // A source still waiting for its pick is NOT "consumes something this
-        // job does not offer": it is an unfinished choice, and it gets its own
-        // sentence below rather than a confusing one from the pre-flight.
-        const chosen = sources.filter(
-          (entry) => !isOfferedSource(entry) || entry.target !== "",
-        );
-        const awaitingPick = sources.length > chosen.length;
-        const rowProblems = consumptionMapProblems(
-          { values: offered },
-          chosen.length > 0 ? { [target.name]: chosen } : {},
-        );
-        const unfedRequired =
-          target.required === true &&
-          sources.length === 0 &&
-          !hasHolderDefault(target.defaultValue);
+      {/* THE SHARED ROW, VERBATIM. */}
+      <SurfaceVariableBinding
+        target={target}
+        mapping={mappingForRow(sources)}
+        availableSurfaceValues={selectableSurfaceValues}
+        disabled={disabled}
+        sourceLabels={sourceLabels}
+        valueFieldLabel="Offered value"
+        onChange={(next) =>
+          onChange(
+            applyRowMapping({
+              map: value,
+              targetName: target.name,
+              mapping: next,
+              offeredByName,
+              deliver,
+            }),
+          )
+        }
+      />
 
-        return (
-          <div key={target.name} className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-              <Badge
-                variant="outline"
-                className="py-0 text-[9px] text-muted-foreground"
-              >
-                {isContext ? "context slot" : "variable"}
-              </Badge>
-              {autoBound.has(target.name) && sources.length === 1 ? (
-                <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground">
-                  <Zap className="h-2.5 w-2.5" />
-                  Chosen for you — this job offers a value named exactly like
-                  this input. Switch to Agent Default to ignore it on purpose.
-                </span>
-              ) : null}
-            </div>
-
-            {/* THE SHARED ROW, VERBATIM. */}
-            <SurfaceVariableBinding
-              target={target}
-              mapping={mappingForRow(sources)}
-              availableSurfaceValues={selectableSurfaceValues}
-              disabled={disabled}
-              sourceLabels={sourceLabels}
-              valueFieldLabel="Offered value"
-              onChange={(next) =>
-                onChange(
-                  applyRowMapping({
-                    map: value,
-                    targetName: target.name,
-                    mapping: next,
-                    offeredByName,
-                    deliver,
-                  }),
-                )
-              }
-            />
-
-            {/* P9 — a source that is not guaranteed must declare what happens
+      {/* P9 — a source that is not guaranteed must declare what happens
                 when it is absent. The shared row carries a Required toggle but
                 no absence answer (a surface value's absence is the surface's
                 problem; an offered value's is the binding's), so source 0 gets
                 its control HERE — sources 1..n get the same one in the strip
                 below. `skip` is pre-answered on selection; this makes the
                 answer visible and changeable instead of merely stored. */}
-            {/* P5 / D2 — the chosen value's own example, right under the pick.
+      {/* P5 / D2 — the chosen value's own example, right under the pick.
                 "Looks like", not "Right now": this is a STATIC illustration the
                 provision declared, and calling it the current value would be a
                 sentence the screen cannot keep. */}
-            {sources[0] && isOfferedSource(sources[0])
-              ? (() => {
-                  const example = offeredByName.get(sources[0].target)?.example;
-                  return example ? (
-                    <p className="px-0.5 text-[11px] leading-snug text-muted-foreground">
-                      <span className="text-muted-foreground/60">Looks like: </span>
-                      <span className="font-mono">{example}</span>
-                    </p>
-                  ) : null;
-                })()
-              : null}
-
-            {sources[0] && isOfferedSource(sources[0]) && sources[0].target !== "" ? (
-              <AbsenceControl
-                entry={sources[0]}
-                offered={offeredByName.get(sources[0].target)}
-                disabled={disabled}
-                onPatch={(patch) =>
-                  onChange(patchSourceAt(value, target.name, 0, patch))
-                }
-              />
-            ) : null}
-
-            {awaitingPick ? (
-              <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Pick which offered value feeds this input, or switch back to the
-                holder&apos;s own default.
+      {sources[0] && isOfferedSource(sources[0])
+        ? (() => {
+            const example = offeredByName.get(sources[0].target)?.example;
+            return example ? (
+              <p className="px-0.5 text-[11px] leading-snug text-muted-foreground">
+                <span className="text-muted-foreground/60">Looks like: </span>
+                <span className="font-mono">{example}</span>
               </p>
-            ) : null}
+            ) : null;
+          })()
+        : null}
 
-            {rowProblems.map((problem) => (
-              <p
-                key={problem}
-                className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-destructive"
-              >
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {problem}
-              </p>
-            ))}
+      {sources[0] && isOfferedSource(sources[0]) && sources[0].target !== "" ? (
+        <AbsenceControl
+          entry={sources[0]}
+          offered={offeredByName.get(sources[0].target)}
+          disabled={disabled}
+          onPatch={(patch) =>
+            onChange(patchSourceAt(value, target.name, 0, patch))
+          }
+        />
+      ) : null}
 
-            {unfedRequired ? (
-              <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                This input is required and nothing feeds it, and the holder has
-                no default of its own — pick an offered value, or give the
-                holder a default in the builder.
-              </p>
-            ) : null}
+      {awaitingPick ? (
+        <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          Pick which offered value feeds this input, or switch back to the
+          holder&apos;s own default.
+        </p>
+      ) : null}
 
-            {/* D18.2 — the extra sources joined into this same input. */}
-            <ExtraSources
-              targetName={target.name}
-              sources={sources}
-              offeredByName={offeredByName}
-              disabled={disabled}
-              onMove={(index, delta) =>
-                onChange(moveSource(value, target.name, index, delta))
-              }
-              onRemove={(index) =>
-                onChange(removeSourceAt(value, target.name, index))
-              }
-              onPatch={(index, patch) =>
-                onChange(patchSourceAt(value, target.name, index, patch))
-              }
-            />
+      {rowProblems.map((problem) => (
+        <p
+          key={problem}
+          className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-destructive"
+        >
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {problem}
+        </p>
+      ))}
 
-            <AddAnotherSource
-              targetName={target.name}
-              targetLabel={target.label ?? formatVariableDisplayName(target.name)}
-              remaining={remaining}
-              hasSources={sources.length > 0}
-              disabled={disabled}
-              onAdd={(sourceName) => {
-                onChange(
-                  addSource(value, target.name, {
-                    sourceName,
-                    offered: offeredByName.get(sourceName),
-                    deliver,
-                  }),
-                );
-              }}
-            />
-          </div>
-        );
-      })}
+      {unfedRequired ? (
+        <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          This input is required and nothing feeds it, and the holder has no
+          default of its own — pick an offered value, or give the holder a
+          default in the builder.
+        </p>
+      ) : null}
+
+      {/* D18.2 — the extra sources joined into this same input. */}
+      <ExtraSources
+        targetName={target.name}
+        sources={sources}
+        offeredByName={offeredByName}
+        disabled={disabled}
+        onMove={(index, delta) =>
+          onChange(moveSource(value, target.name, index, delta))
+        }
+        onRemove={(index) =>
+          onChange(removeSourceAt(value, target.name, index))
+        }
+        onPatch={(index, patch) =>
+          onChange(patchSourceAt(value, target.name, index, patch))
+        }
+      />
+
+      <AddAnotherSource
+        targetName={target.name}
+        targetLabel={target.label ?? formatVariableDisplayName(target.name)}
+        remaining={remaining}
+        hasSources={sources.length > 0}
+        disabled={disabled}
+        onAdd={(sourceName) => {
+          onChange(
+            addSource(value, target.name, {
+              sourceName,
+              offered: offeredByName.get(sourceName),
+              deliver,
+            }),
+          );
+        }}
+      />
     </div>
   );
 }
@@ -318,8 +353,8 @@ function ExtraSources({
   return (
     <div className="space-y-1.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        {sources.length} sources feed this input. They are joined in this
-        order, separated by a blank line — the first one is the row above.
+        {sources.length} sources feed this input. They are joined in this order,
+        separated by a blank line — the first one is the row above.
       </p>
       {sources.map((entry, index) => {
         // A joined source is any of the three stored kinds — an offered value,
@@ -352,7 +387,10 @@ function ExtraSources({
               </span>
               {isOfferedSource(entry) ? (
                 offered ? (
-                  <Badge variant="outline" className="py-0 font-mono text-[9px]">
+                  <Badge
+                    variant="outline"
+                    className="py-0 font-mono text-[9px]"
+                  >
                     {offered.kind}
                   </Badge>
                 ) : (
@@ -364,7 +402,10 @@ function ExtraSources({
                   </Badge>
                 )
               ) : (
-                <Badge variant="outline" className="py-0 text-[9px] text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="py-0 text-[9px] text-muted-foreground"
+                >
                   {entry.mapType === "direct_value"
                     ? "fixed value"
                     : "asked at run time"}
@@ -443,7 +484,8 @@ function AbsenceControl({
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2 px-0.5 text-[11.5px] text-muted-foreground">
       <span>
-        {formatVariableDisplayName(entry.target)} is not always there. If absent:
+        {formatVariableDisplayName(entry.target)} is not always there. If
+        absent:
       </span>
       <Select
         value={entry.when_absent ?? "skip"}
@@ -505,16 +547,14 @@ function AddAnotherSource({
   return (
     <div className="flex items-center gap-1.5 px-0.5">
       <Plus className="h-3 w-3 text-muted-foreground" />
-      <Select
-        value=""
-        disabled={disabled}
-        onValueChange={(v) => v && onAdd(v)}
-      >
+      <Select value="" disabled={disabled} onValueChange={(v) => v && onAdd(v)}>
         <SelectTrigger
           className="h-7 w-[280px] text-[11.5px]"
           aria-label={`Add another value to ${targetName}`}
         >
-          <SelectValue placeholder={`Also feed ${targetLabel} another value…`} />
+          <SelectValue
+            placeholder={`Also feed ${targetLabel} another value…`}
+          />
         </SelectTrigger>
         <SelectContent>
           {remaining.map((v) => (

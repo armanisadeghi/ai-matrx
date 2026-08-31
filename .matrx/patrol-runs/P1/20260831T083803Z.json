@@ -30,6 +30,60 @@
       ],
       "previousEventHash": "07242000f4bf17b28b5d1758805d5b2f5fc3afae8059d7d68efc2bba721ee707",
       "eventHash": "9defbef6d17e250a419f7f05cf48d50a09771dc2150b5ba5ad35762407ba8103"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-31T08:48:05.837Z",
+      "actor": "p1-controller",
+      "summary": "Five-file wave 2 candidate pushed for independent certification",
+      "evidence": [
+        "candidate:243417e81215e8e69b3a7ceac44af287bfbd4823",
+        "detector:45-to-36",
+        "branch:origin/patrol/p1-20260831-wave2"
+      ],
+      "previousEventHash": "9defbef6d17e250a419f7f05cf48d50a09771dc2150b5ba5ad35762407ba8103",
+      "eventHash": "3ae4d05cc669394ed2792fc0987f6c0245e2a20f68e656b1ca8b646d9a89a26a"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-31T08:53:32.421Z",
+      "actor": "p1-certifier-wave2",
+      "summary": "Rejected exact candidate because the skill-row key handler intercepted the nested peek button",
+      "evidence": [
+        "candidate:243417e81215e8e69b3a7ceac44af287bfbd4823",
+        "RunSkillPicker SkillRowItem ancestor role=button handles bubbled Enter/Space from EntityRef peek",
+        "Other checks passed: type-check, detector delta 45-to-36, diff-check, EntityRef 6-of-6"
+      ],
+      "previousEventHash": "3ae4d05cc669394ed2792fc0987f6c0245e2a20f68e656b1ca8b646d9a89a26a",
+      "eventHash": "a70edf3b2937f12f8f3b673aa1b15cd067dd0139436b40e3da861df0b7a54756"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-31T08:53:32.993Z",
+      "actor": "codex-root",
+      "summary": "Correcting the rejected nested-interactive keyboard path before recertification",
+      "evidence": [
+        "Add currentTarget guard so only the skill row itself handles Enter or Space"
+      ],
+      "previousEventHash": "a70edf3b2937f12f8f3b673aa1b15cd067dd0139436b40e3da861df0b7a54756",
+      "eventHash": "1822e621f73db6b3e238b5af36b106b2c5c85d3f5749d9e943a3bc821e8bc5c0"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-31T08:55:01.125Z",
+      "actor": "p1-controller",
+      "summary": "Corrected wave 2 candidate pushed for fresh independent certification",
+      "evidence": [
+        "candidate:44a351bc6086d3091c2e4fc9182f90d6d82b7a93",
+        "supersedes:243417e81215e8e69b3a7ceac44af287bfbd4823",
+        "branch:origin/patrol/p1-20260831-wave2-corrected"
+      ],
+      "previousEventHash": "1822e621f73db6b3e238b5af36b106b2c5c85d3f5749d9e943a3bc821e8bc5c0",
+      "eventHash": "b5e6ac07eed56cbacfefd8ee17ed2d4ef9b9f8472bdfd099b46c200aec1f971b"
     }
   ]
 }

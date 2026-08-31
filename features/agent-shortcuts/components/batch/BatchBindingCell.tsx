@@ -147,6 +147,7 @@ export function InlineBindingEditor({
   valueFieldLabel,
   showSourceLabel = false,
   valuePlaceholder,
+  advancedContent,
 }: {
   target: BindingTarget;
   mapping: ValueMapping | undefined;
@@ -172,6 +173,14 @@ export function InlineBindingEditor({
   showSourceLabel?: boolean;
   /** Placeholder for the value picker ("Pick value…" by default). */
   valuePlaceholder?: string;
+  /**
+   * What Advanced opens. Omit for the shared binding card, which is the whole
+   * of a shortcut's mapping. A call site whose domain has MORE on the card —
+   * the one binding UI's many-to-one strip, absence answer and per-row
+   * problems — passes its own full card so Advanced is never a reduced copy of
+   * the screen it belongs to.
+   */
+  advancedContent?: React.ReactNode;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
@@ -339,24 +348,29 @@ export function InlineBindingEditor({
             <SlidersHorizontal className="h-3.5 w-3.5" />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 p-0">
+        <PopoverContent
+          align="end"
+          className={cn("p-0", advancedContent ? "w-[26rem]" : "w-80")}
+        >
           {surfaceName && (
             <div className="px-3 py-2 border-b border-border">
-              <p className="text-[11px] text-muted-foreground font-mono truncate">
+              <p className="text-[11px] text-muted-foreground truncate">
                 {surfaceName}
               </p>
             </div>
           )}
-          <div className="p-3">
-            <SurfaceVariableBinding
-              target={target}
-              mapping={mapping}
-              availableSurfaceValues={availableSurfaceValues}
-              disabled={disabled}
-              sourceLabels={sourceLabels}
-              valueFieldLabel={valueFieldLabel}
-              onChange={onChange}
-            />
+          <div className="max-h-[70vh] overflow-y-auto p-3">
+            {advancedContent ?? (
+              <SurfaceVariableBinding
+                target={target}
+                mapping={mapping}
+                availableSurfaceValues={availableSurfaceValues}
+                disabled={disabled}
+                sourceLabels={sourceLabels}
+                valueFieldLabel={valueFieldLabel}
+                onChange={onChange}
+              />
+            )}
           </div>
         </PopoverContent>
       </Popover>
