@@ -107,6 +107,19 @@ export function OfferedInventoryColumn({
                     {value.description}
                   </p>
                 ) : null}
+                {/* P5 / D2 — THE REAL THING ON THE SCREEN. A description tells
+                    you what a value MEANS; one example tells you what it IS,
+                    and choosing where a value should land is much easier with
+                    both. Static, declared with the provision, never read at run
+                    time — so it is labelled as an example and can never be
+                    mistaken for the value this run will carry. Absent means the
+                    declaration gave none: say nothing, never invent one. */}
+                {value.example ? (
+                  <p className="mt-1 truncate text-[10.5px] leading-snug text-muted-foreground/80">
+                    <span className="text-muted-foreground/60">Looks like: </span>
+                    <span className="font-mono">{value.example}</span>
+                  </p>
+                ) : null}
                 {isPinned ? (
                   <p className="mt-1 flex items-start gap-1 text-[10.5px] leading-snug text-muted-foreground">
                     <Lock className="mt-0.5 h-2.5 w-2.5 shrink-0" />

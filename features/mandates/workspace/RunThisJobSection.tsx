@@ -96,6 +96,9 @@ const ORIGIN_LABEL: Record<ServedInput["origin"], string> = {
   holder: "the agent's own",
   variable: "declared variable",
   field: "declared",
+  // The BINDING asks this one — a `prompt_user` source in the winning binding's
+  // map is served as a real field, so the form says who is asking.
+  binding_prompt: "asked by the binding",
 };
 
 function describeError(error: unknown): string {

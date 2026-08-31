@@ -18,8 +18,8 @@ import {
   applyRowMapping,
   buildEntry,
   mappingForRow,
+  applySuggestions,
   moveSource,
-  refusalForMapping,
   removeSourceAt,
   seedAutoBinds,
   setSources,
@@ -47,6 +47,14 @@ const STRUCTURED: OfferedValue = {
   lazy: false,
   description: "Everything known about the session.",
 };
+
+/** The offered-value NAMES a target is fed from, in order — the only reader a
+ * test needs, and it never touches a branch that has no `target`. */
+function sourceNames(map: ConsumptionMap, target: string): string[] {
+  return sourcesFor(map, target).map((entry) =>
+    entry.mapType === "offered_value" ? entry.target : `<${entry.mapType}>`,
+  );
+}
 
 const OFFERED = new Map<string, OfferedValue>([
   [GUARANTEED.name, GUARANTEED],
@@ -109,7 +117,7 @@ describe("many-to-one (D18.2)", () => {
       offered: OPTIONAL,
       deliver: "variable",
     });
-    expect(sourcesFor(map, "working_text").map((e) => e.target)).toEqual([
+    expect(sourceNames(map, "working_text")).toEqual([
       "cleaned_transcript",
       "session_title",
     ]);
@@ -128,7 +136,7 @@ describe("many-to-one (D18.2)", () => {
       deliver: "variable",
     });
     map = moveSource(map, "working_text", 1, -1);
-    expect(sourcesFor(map, "working_text").map((e) => e.target)).toEqual([
+    expect(sourceNames(map, "working_text")).toEqual([
       "session_title",
       "cleaned_transcript",
     ]);
@@ -195,8 +203,7 @@ describe("the codec the shared row talks through", () => {
       offeredByName: OFFERED,
       deliver: "variable",
     });
-    map = result.map;
-    expect(result.refusal).toBeNull();
+    map = result;
     expect(sourcesFor(map, "working_text")).toEqual([
       {
         mapType: "offered_value",
@@ -228,48 +235,143 @@ describe("the codec the shared row talks through", () => {
       offeredByName: OFFERED,
       deliver: "variable",
     });
-    expect(result.refusal).toBeNull();
-    expect(sourcesFor(result.map, "working_text")).toEqual([]);
+    expect(sourcesFor(result, "working_text")).toEqual([]);
   });
 });
 
-describe("the refusal — what a job binding cannot carry today", () => {
-  const cases: [ValueMapping, boolean][] = [
-    [{ mapType: "surface_value", target: "a" }, false],
-    [{ mapType: "unmapped" }, false],
-    [{ mapType: "direct_value", target: "hello" }, true],
-    [{ mapType: "prompt_user", prompt: "which one?" }, true],
+describe("all four sources store — the stopgap is gone", () => {
+  const cases: [string, ValueMapping, ConsumptionMap["x"]][] = [
+    [
+      "a fixed literal is the binding's own content",
+      { mapType: "direct_value", target: "hello" },
+      [{ mapType: "direct_value", target: "hello", deliver: "variable" }],
+    ],
+    [
+      "asking the person is a stored source, not a refusal",
+      { mapType: "prompt_user", prompt: "Which report tone?", required: true },
+      [
+        {
+          mapType: "prompt_user",
+          prompt: "Which report tone?",
+          deliver: "variable",
+          required: true,
+        },
+      ],
+    ],
+    [
+      "the holder's own default is ABSENCE, never an entry",
+      { mapType: "unmapped" },
+      [],
+    ],
   ];
 
-  it.each(cases)("%p refuses: %p", (mapping, refuses) => {
-    expect(refusalForMapping(mapping) !== null).toBe(refuses);
-  });
-
-  it("names the remedy, never just the problem", () => {
-    const refusal = refusalForMapping({
-      mapType: "direct_value",
-      target: "hello",
+  it.each(cases)("%s", (_name, mapping, expected) => {
+    const map = applyRowMapping({
+      map: {},
+      targetName: "report_tone",
+      mapping,
+      offeredByName: OFFERED,
+      deliver: "variable",
     });
-    expect(refusal).toContain("described input");
+    expect(sourcesFor(map, "report_tone")).toEqual(expected);
   });
 
-  it("does not write anything when it refuses", () => {
-    const map = setSources({}, "working_text", [
+  it("stamps the TARGET's channel on a literal, so a context slot can take one", () => {
+    const map = applyRowMapping({
+      map: {},
+      targetName: "session_context",
+      mapping: { mapType: "direct_value", target: "fixed" },
+      offeredByName: OFFERED,
+      deliver: "context",
+    });
+    expect(sourcesFor(map, "session_context")[0].deliver).toBe("context");
+  });
+
+  it("keeps the joined extras when only source 0 changes", () => {
+    let map = applyRowMapping({
+      map: {},
+      targetName: "working_text",
+      mapping: { mapType: "surface_value", target: GUARANTEED.name },
+      offeredByName: OFFERED,
+      deliver: "variable",
+    });
+    map = addSource(map, "working_text", {
+      sourceName: OPTIONAL.name,
+      offered: OPTIONAL,
+      deliver: "variable",
+    });
+    map = applyRowMapping({
+      map,
+      targetName: "working_text",
+      mapping: { mapType: "direct_value", target: "a literal instead" },
+      offeredByName: OFFERED,
+      deliver: "variable",
+    });
+    expect(sourceNames(map, "working_text")).toEqual([
+      "<direct_value>",
+      "session_title",
+    ]);
+  });
+});
+
+describe("the AI map's accept (P11) — proposed, never applied blind", () => {
+  it("fills the manual editor, combinations and all, in the proposal's order", () => {
+    const map = applySuggestions({
+      map: {},
+      suggestions: [
+        {
+          target: "working_text",
+          mapping: { mapType: "surface_value", target: GUARANTEED.name },
+          alsoFrom: [OPTIONAL.name],
+        },
+      ],
+      targetNames: ["working_text"],
+      offeredByName: OFFERED,
+      deliverFor: () => "variable",
+    });
+    expect(sourceNames(map, "working_text")).toEqual([
+      "cleaned_transcript",
+      "session_title",
+    ]);
+    // D18.2 — the joined source declares its absence answer like any other.
+    expect(sourcesFor(map, "working_text")[1]).toMatchObject({
+      when_absent: "skip",
+    });
+  });
+
+  it("refuses a target the holder does not have — the model never invents a row", () => {
+    const map = applySuggestions({
+      map: {},
+      suggestions: [
+        {
+          target: "invented_input",
+          mapping: { mapType: "surface_value", target: GUARANTEED.name },
+          alsoFrom: [],
+        },
+      ],
+      targetNames: ["working_text"],
+      offeredByName: OFFERED,
+      deliverFor: () => "variable",
+    });
+    expect(map).toEqual({});
+  });
+
+  it("never wipes what is already mapped for a target it says nothing about", () => {
+    const stored = setSources({}, "working_text", [
       buildEntry({
         sourceName: GUARANTEED.name,
         offered: GUARANTEED,
         deliver: "variable",
       }),
     ]);
-    const result = applyRowMapping({
-      map,
-      targetName: "working_text",
-      mapping: { mapType: "direct_value", target: "hello" },
+    const map = applySuggestions({
+      map: stored,
+      suggestions: [],
+      targetNames: ["working_text"],
       offeredByName: OFFERED,
-      deliver: "variable",
+      deliverFor: () => "variable",
     });
-    expect(result.refusal).not.toBeNull();
-    expect(result.map).toBe(map);
+    expect(map).toEqual(stored);
   });
 });
 
@@ -301,9 +403,9 @@ describe("the productive empty state (P4)", () => {
       deliverFor: () => "variable",
     });
     expect(seeded.autoBound.size).toBe(0);
-    expect(sourcesFor(seeded.map, "cleaned_transcript")[0].target).toBe(
+    expect(sourceNames(seeded.map, "cleaned_transcript")).toEqual([
       "session_title",
-    );
+    ]);
   });
 
   it("seeds a context slot on the context channel", () => {

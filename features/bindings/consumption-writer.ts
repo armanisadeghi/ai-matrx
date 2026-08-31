@@ -4,29 +4,38 @@
 //
 // Every edit the one binding UI makes to a draft map goes through a function in
 // this file. Nothing else in `features/bindings/` constructs a ConsumptionEntry
-// or mutates a ConsumptionMap. That is deliberate: the map's SHAPE is still
-// moving (D18.2 landed many-to-one on 2026-08-31; direct literals and
-// ask-the-user are not expressible yet — see THE REFUSAL below), and a shape
-// change must be one file's worth of work, never a sweep through the UI.
+// or mutates a ConsumptionMap. That is deliberate: the map's SHAPE keeps moving
+// (D18.2 landed many-to-one on 2026-08-31; the two missing sources landed the
+// same day), and a shape change must be one file's worth of work, never a sweep
+// through the UI. It has been exactly that twice now.
 //
 // The shape written here is the CURRENT one, verbatim from
 // `features/mandates/provision-shapes.ts`:
 //
 //   ConsumptionMap = Record<holderInputName, ConsumptionEntry[]>
-//   ConsumptionEntry = { mapType: "offered_value"; target: offeredValueName;
-//                        deliver: "variable" | "context";
-//                        when_absent?; default?; required? }
+//   ConsumptionEntry = the offered_value | direct_value | prompt_user branches
+//                      of the shared `ValueMapping`, each carrying `deliver`.
 //
-// ── THE REFUSAL ──────────────────────────────────────────────────────────────
-// The shared row component offers four sources. A mandate binding can carry
-// TWO of them today, because the server's consumption-map validator accepts
-// `offered_value` (and legacy `code_value`) and nothing else — aidream
-// `services/mandates/provisions.py`: "mapType {..!r} is not valid in a
-// consumption map — consume offered values (mapType 'offered_value')". So a
-// Direct Value or Prompt User pick cannot be stored, and this module answers
-// with a refusal IN DOMAIN WORDS instead of writing something the save would
-// 422 on. When the server learns those two branches, `refusalForMapping`
-// returns null for them and the UI gains both with no other edit.
+// ── THE FOUR SOURCES ─────────────────────────────────────────────────────────
+// The shared row component offers `Holder Default | Offered Value | Direct
+// Value | Prompt User`, and a job binding now carries all four for real:
+//
+//   · Holder Default — ABSENCE from the map. There is nothing to store: a job
+//     binding has no auto-name-match pass to suppress, so an explicit
+//     suppression marker would be a stored fact with no reader.
+//   · Offered Value  — `offered_value`, the job's own offer.
+//   · Direct Value   — `direct_value`, a literal written on the binding.
+//   · Prompt User    — `prompt_user`. The mandate's input surface serves that
+//     target as a real named field, so the run form asks the question and the
+//     answer arrives under the holder input's own name.
+//
+// 🚨 THE STOPGAP THAT WAS HERE IS GONE. Until 2026-08-31 the server's
+// consumption-map validator accepted `offered_value` and nothing else, so this
+// module answered a Direct Value or Prompt User pick with `refusalForMapping`
+// — a stand-in that screamed in domain words instead of writing something the
+// save would 422 on. `aidream/services/mandates/provisions.py` now validates
+// AND materializes all three, so the stand-in is DELETED, not disabled: no
+// flag, no dead branch, no second path.
 
 import type { ValueMapping } from "@/features/surfaces/types";
 import {
@@ -34,6 +43,9 @@ import {
   type ConsumptionMap,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
+
+/** The one source kind that names something the JOB offers. */
+type OfferedSource = Extract<ConsumptionEntry, { mapType: "offered_value" }>;
 
 /** The ordered sources feeding one holder input — [] when nothing feeds it. */
 export function sourcesFor(
@@ -69,8 +81,8 @@ export function buildEntry({
   sourceName: string;
   offered: OfferedValue | undefined;
   deliver: ConsumptionEntry["deliver"];
-}): ConsumptionEntry {
-  const entry: ConsumptionEntry = {
+}): OfferedSource {
+  const entry: OfferedSource = {
     mapType: "offered_value",
     target: sourceName,
     deliver,
@@ -94,7 +106,12 @@ export function addSource(
   },
 ): ConsumptionMap {
   const current = sourcesFor(map, targetName);
-  if (current.some((entry) => entry.target === sourceName)) return map;
+  if (
+    current.some(
+      (entry) => entry.mapType === "offered_value" && entry.target === sourceName,
+    )
+  )
+    return map;
   return setSources(map, targetName, [
     ...current,
     buildEntry({ sourceName, offered, deliver }),
@@ -140,15 +157,24 @@ export function moveSource(
   return setSources(map, targetName, current);
 }
 
-export function patchSourceAt(
+/**
+ * Patch fields ON THE SOURCE AT `index`, within its own branch.
+ *
+ * A patch never changes what KIND of source this is — swapping an offered value
+ * for a literal is a different pick, made through the row, not a field edit. So
+ * the patch is typed to the source's own branch and applied to it, which is
+ * what keeps `{...entry, ...patch}` from producing a shape no branch has.
+ */
+export function patchSourceAt<E extends ConsumptionEntry>(
   map: ConsumptionMap,
   targetName: string,
   index: number,
-  patch: Partial<ConsumptionEntry>,
+  patch: Partial<E>,
 ): ConsumptionMap {
   const current = [...sourcesFor(map, targetName)];
-  if (!current[index]) return map;
-  current[index] = { ...current[index], ...patch };
+  const existing = current[index];
+  if (!existing) return map;
+  current[index] = { ...existing, ...patch } as ConsumptionEntry;
   return setSources(map, targetName, current);
 }
 
@@ -156,18 +182,31 @@ export function patchSourceAt(
 
 /**
  * The shared row renders ONE `ValueMapping`. A mandate input may be fed by
- * SEVERAL offered values (D18.2), so the row owns source **0** and the strip
- * beneath it owns the rest.
+ * SEVERAL sources (D18.2), so the row owns source **0** and the strip beneath
+ * it owns the rest.
  *
  * `surface_value` is the branch the row's "offered value" mode uses — the row's
  * picker, its absence control and its Required toggle all read it. The wire
- * shape stays `offered_value`; this is a display translation, not storage.
+ * shape stays `offered_value`; that is a display translation, not storage. The
+ * other two travel through unchanged, because the row's Direct Value and Prompt
+ * User modes ARE the stored shapes.
  */
 export function mappingForRow(
   sources: readonly ConsumptionEntry[],
 ): ValueMapping | undefined {
   const first = sources[0];
   if (!first) return undefined;
+  if (first.mapType === "direct_value") {
+    return { mapType: "direct_value", target: first.target };
+  }
+  if (first.mapType === "prompt_user") {
+    return {
+      mapType: "prompt_user",
+      prompt: first.prompt,
+      defaultValue: first.defaultValue,
+      required: first.required === true,
+    };
+  }
   return {
     mapType: "surface_value",
     target: first.target,
@@ -175,34 +214,74 @@ export function mappingForRow(
   };
 }
 
-/** Why this row-component pick cannot be stored on a job binding — or null. */
-export function refusalForMapping(mapping: ValueMapping | null): string | null {
-  if (mapping === null) return null;
-  switch (mapping.mapType) {
-    case "surface_value":
-    case "unmapped":
-    case "offered_value":
-      return null;
-    case "direct_value":
-      return (
-        "A fixed literal can't be stored on a job binding yet — a binding " +
-        "delivers the values the job offers. Add the literal as a described " +
-        "input on the job above, then map it here."
-      );
-    case "prompt_user":
-      return (
-        "Asking the person at launch isn't something a job binding can carry " +
-        "yet — a binding delivers the values the job offers. Describe it as an " +
-        "input on the job above and the run form will ask for it."
-      );
-    default:
-      return null;
+/**
+ * One source, as the shared row just described it — or null when the row means
+ * "the holder's own default", which is absence and not an entry.
+ *
+ * THE ONE CONSTRUCTOR for the two sources that are the binding's own content.
+ * `deliver` is stamped from the TARGET, never from the pick, because the
+ * channel is a property of the input being fed and every source feeding one
+ * input must agree on it (the server refuses a target whose sources disagree).
+ */
+export function entryFromRowMapping({
+  mapping,
+  offeredByName,
+  deliver,
+  existing,
+}: {
+  mapping: ValueMapping | null;
+  offeredByName: ReadonlyMap<string, OfferedValue>;
+  deliver: ConsumptionEntry["deliver"];
+  /** The source this replaces, so an unrelated edit keeps its absence answer. */
+  existing?: ConsumptionEntry;
+}): ConsumptionEntry | null {
+  if (mapping === null || mapping.mapType === "unmapped") return null;
+
+  if (mapping.mapType === "direct_value") {
+    return { mapType: "direct_value", target: mapping.target ?? "", deliver };
   }
+  if (mapping.mapType === "prompt_user") {
+    const entry: Extract<ConsumptionEntry, { mapType: "prompt_user" }> = {
+      mapType: "prompt_user",
+      prompt: mapping.prompt,
+      deliver,
+    };
+    if (mapping.required === true) entry.required = true;
+    if (mapping.defaultValue !== undefined && mapping.defaultValue !== null) {
+      entry.defaultValue = mapping.defaultValue;
+    }
+    return entry;
+  }
+
+  const sourceName =
+    mapping.mapType === "surface_value" || mapping.mapType === "offered_value"
+      ? mapping.target
+      : "";
+  if (!sourceName) {
+    // The picker opened with nothing chosen — hold an empty target rather than
+    // silently reverting the mode, so the row stays where the person put it and
+    // says what it is still waiting for.
+    return { mapType: "offered_value", target: "", deliver };
+  }
+  const base: OfferedSource =
+    existing && existing.mapType === "offered_value" && existing.target === sourceName
+      ? existing
+      : buildEntry({
+          sourceName,
+          offered: offeredByName.get(sourceName),
+          deliver,
+        });
+  const next: OfferedSource = { ...base, target: sourceName, deliver };
+  if (mapping.required === true) next.required = true;
+  else delete next.required;
+  return next;
 }
 
 /**
  * Apply what the shared row just produced for source 0 of one holder input.
- * Returns the next map, or a refusal naming why nothing changed — never both.
+ *
+ * Returns the next map. There is no refusal branch any more — every source the
+ * row can produce is a source a job binding can store.
  */
 export function applyRowMapping({
   map,
@@ -216,57 +295,85 @@ export function applyRowMapping({
   mapping: ValueMapping | null;
   offeredByName: ReadonlyMap<string, OfferedValue>;
   deliver: ConsumptionEntry["deliver"];
-}): { map: ConsumptionMap; refusal: string | null } {
-  const refusal = refusalForMapping(mapping);
-  if (refusal) return { map, refusal };
-
+}): ConsumptionMap {
+  const current = sourcesFor(map, targetName);
+  const next = entryFromRowMapping({
+    mapping,
+    offeredByName,
+    deliver,
+    existing: current[0],
+  });
   // "Holder default" (the row's `unmapped`) and a cleared row both mean: this
   // input is fed by nothing. On a job binding that is simply ABSENCE from the
-  // map — there is no auto-name-match pass to suppress, so an explicit
-  // suppression marker would be a stored fact with no reader.
-  if (mapping === null || mapping.mapType === "unmapped") {
-    return { map: setSources(map, targetName, []), refusal: null };
-  }
+  // map, so the WHOLE target goes — including any joined extras, which existed
+  // only to be joined onto a source that is now gone.
+  if (next === null) return setSources(map, targetName, []);
+  return setSources(map, targetName, [next, ...current.slice(1)]);
+}
 
-  const sourceName =
-    mapping.mapType === "surface_value" || mapping.mapType === "offered_value"
-      ? mapping.target
-      : "";
-  const required =
-    (mapping.mapType === "surface_value" ||
-      mapping.mapType === "offered_value") &&
-    mapping.required === true;
+// ── THE AI MAP'S ACCEPT (P11) ────────────────────────────────────────────────
 
-  const current = sourcesFor(map, targetName);
-  if (!sourceName) {
-    // The picker opened with nothing chosen — keep the row on "offered value"
-    // by holding an empty target rather than silently reverting the mode.
-    const held: ConsumptionEntry = {
-      mapType: "offered_value",
-      target: "",
+/**
+ * Turn an accepted AI proposal into a draft map — through this seam, like every
+ * other edit.
+ *
+ * NEVER APPLIED BLIND: this runs only after a person pressed "Use this
+ * configuration", and what it produces fills the MANUAL editor, which the host
+ * then switches to. Every line stays editable before anything is saved.
+ *
+ * Two rules the proposal does not get to break:
+ *   · a target the holder does not have is not a target (the parser already
+ *     discarded and reported those; this is the second gate, because a stale
+ *     `targets` list is the one way an invention could still land);
+ *   · D18.2 combinations arrive as `alsoFrom` and are appended in the proposal's
+ *     order, which IS the order they will be joined in.
+ *
+ * Returns the untouched map when the proposal maps nothing, so accepting a
+ * policies-only answer can never wipe what is already there.
+ */
+export function applySuggestions({
+  map,
+  suggestions,
+  targetNames,
+  offeredByName,
+  deliverFor,
+}: {
+  map: ConsumptionMap;
+  suggestions: readonly {
+    target: string;
+    mapping: ValueMapping;
+    alsoFrom: string[];
+  }[];
+  targetNames: readonly string[];
+  offeredByName: ReadonlyMap<string, OfferedValue>;
+  deliverFor: (targetName: string) => ConsumptionEntry["deliver"];
+}): ConsumptionMap {
+  const known = new Set(targetNames);
+  let next = map;
+  for (const suggestion of suggestions) {
+    if (!known.has(suggestion.target)) continue;
+    const deliver = deliverFor(suggestion.target);
+    const first = entryFromRowMapping({
+      mapping: suggestion.mapping,
+      offeredByName,
       deliver,
-    };
-    return {
-      map: setSources(map, targetName, [held, ...current.slice(1)]),
-      refusal: null,
-    };
+    });
+    if (first === null) {
+      // The proposal said "leave this on the holder's own default" — that is a
+      // real decision, and absence is how it is stored.
+      next = setSources(next, suggestion.target, []);
+      continue;
+    }
+    next = setSources(next, suggestion.target, [first]);
+    for (const also of suggestion.alsoFrom) {
+      next = addSource(next, suggestion.target, {
+        sourceName: also,
+        offered: offeredByName.get(also),
+        deliver,
+      });
+    }
   }
-
-  const existing = current[0];
-  const offered = offeredByName.get(sourceName);
-  const base =
-    existing && existing.target === sourceName
-      ? existing
-      : buildEntry({ sourceName, offered, deliver });
-
-  const next: ConsumptionEntry = { ...base, target: sourceName, deliver };
-  if (required) next.required = true;
-  else delete next.required;
-
-  return {
-    map: setSources(map, targetName, [next, ...current.slice(1)]),
-    refusal: null,
-  };
+  return next;
 }
 
 // ── The productive empty state (P4) ──────────────────────────────────────────

@@ -50,6 +50,17 @@ export function DraftInputsEditor({
             className="h-8 w-32 font-mono text-[11.5px] max-sm:hidden"
             aria-label={`Input ${index + 1} name (optional)`}
           />
+          {/* D2 — one example, so whoever binds this job later can SEE what
+              this input carries instead of guessing from its description
+              (UI-STANDARD P5). Optional like name and kind: an illustration
+              nothing reads at run time. */}
+          <Input
+            value={item.example ?? ""}
+            onChange={(e) => update(index, { example: e.target.value || undefined })}
+            placeholder="example — optional"
+            className="h-8 w-40 text-[11.5px] max-lg:hidden"
+            aria-label={`Input ${index + 1} example (optional)`}
+          />
           <Input
             value={item.kind ?? ""}
             onChange={(e) => update(index, { kind: e.target.value || undefined })}
@@ -80,7 +91,8 @@ export function DraftInputsEditor({
         </Button>
         {items.length > 0 ? (
           <span className="text-[11px] text-muted-foreground/70">
-            Names and kinds can wait — descriptions are enough to create.
+            Names and kinds can wait — descriptions are enough to create. An
+            example shows whoever binds this job what the value looks like.
           </span>
         ) : null}
       </div>

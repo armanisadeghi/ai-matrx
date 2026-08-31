@@ -40,7 +40,7 @@ describe("the frozen shape — reading", () => {
       topic: { mapType: "offered_value", target: "task_overview", deliver: "variable" },
     });
     expect(map.topic).toHaveLength(1);
-    expect(map.topic[0].target).toBe("task_overview");
+    expect(map.topic[0]).toMatchObject({ target: "task_overview" });
     expect(map.topic[0].deliver).toBe("variable");
   });
 
@@ -52,7 +52,9 @@ describe("the frozen shape — reading", () => {
         { mapType: "offered_value", target: "outputs", deliver: "variable", when_absent: "skip" },
       ],
     });
-    expect(map.topic.map((s) => s.target)).toEqual([
+    expect(
+      map.topic.map((s) => (s.mapType === "offered_value" ? s.target : s.mapType)),
+    ).toEqual([
       "task_overview",
       "inputs",
       "outputs",
@@ -63,12 +65,44 @@ describe("the frozen shape — reading", () => {
     const map = parseConsumptionMap({
       task_overview: [{ mapType: "offered_value", deliver: "variable" }],
     });
-    expect(map.task_overview[0].target).toBe("task_overview");
+    expect(map.task_overview[0]).toMatchObject({ target: "task_overview" });
   });
 
   it("drops a target whose every source is junk — it feeds nothing", () => {
+    // A `prompt_user` with NO QUESTION is junk (a blank box nobody can answer),
+    // and 7 is not an entry at all. Neither survives, so the target does not.
     const map = parseConsumptionMap({ topic: [{ mapType: "prompt_user" }, 7] });
     expect(map.topic).toBeUndefined();
+  });
+
+  it("reads the two sources that landed with the server, 2026-08-31", () => {
+    const map = parseConsumptionMap({
+      report_tone: { mapType: "direct_value", target: "formal", deliver: "variable" },
+      audience: {
+        mapType: "prompt_user",
+        prompt: "Who is this for?",
+        required: true,
+        deliver: "variable",
+      },
+    });
+    expect(map.report_tone).toEqual([
+      { mapType: "direct_value", target: "formal", deliver: "variable" },
+    ]);
+    expect(map.audience).toEqual([
+      {
+        mapType: "prompt_user",
+        prompt: "Who is this for?",
+        deliver: "variable",
+        required: true,
+      },
+    ]);
+  });
+
+  it("drops a fixed value with nothing in it — it feeds nothing", () => {
+    const map = parseConsumptionMap({
+      report_tone: { mapType: "direct_value", target: null },
+    });
+    expect(map.report_tone).toBeUndefined();
   });
 
   it("sourcesFor answers [] for an unmapped target, never undefined", () => {

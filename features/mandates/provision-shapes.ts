@@ -90,6 +90,24 @@ export interface OfferedValue {
   /** Lazy values ship as a reference until actually consumed. */
   lazy: boolean;
   description: string;
+  /**
+   * 🚨 D2 (Arman, 2026-08-31) — ONE STATIC EXAMPLE of what this value looks
+   * like, declared once with the provision (or with a described input).
+   *
+   * UI-STANDARD P5 ("the real current value is on the screen") was the single
+   * mechanic the mandate side could not do AT ALL, because an offered value
+   * carried no value field by construction — so a person choosing where a
+   * value should land chose from prose alone. This is the static half of the
+   * fix, and static is the point: it works in admin where no live page exists
+   * and it costs nothing at run time.
+   *
+   * It is an ILLUSTRATION, never a default and never a fallback. Nothing reads
+   * it at run time on either side of the wire, so it can never leak into an
+   * answer. Absent or `""` means none was declared — say nothing, never invent
+   * one. (Optional so a declaration that has no example stays a two-line
+   * literal; every reader treats absent and empty identically.)
+   */
+  example?: string;
 }
 
 /** Runtime-validate `agent.provision.offered_values` (ingress validation —
@@ -118,6 +136,7 @@ export function parseOfferedValues(raw: Json | unknown): OfferedValue[] {
         lazy: entry.lazy === true,
         description:
           typeof entry.description === "string" ? entry.description : "",
+        example: typeof entry.example === "string" ? entry.example : "",
       });
     } else {
       console.error(
@@ -404,6 +423,13 @@ export interface BindingWave1Fields {
   /** An optional pin to one `workflow.definition_version`. */
   holderVersionId: string | null;
   consumptionMap: ConsumptionMap;
+  /**
+   * P14 — the binding's stored answer to "run without stopping to ask".
+   * `null` is a REAL third answer ("this binding has no opinion; the layer
+   * below decides"), never a synonym for false — collapsing the two is exactly
+   * the auto-run inversion, in which a binding could never say "run it".
+   */
+  autoRun: boolean | null;
 }
 
 /** Narrow the wave-1 binding columns off a full `select("*")` row. */
@@ -414,6 +440,7 @@ export function parseBindingWave1(row: object | null): BindingWave1Fields {
       holderId: null,
       holderVersionId: null,
       consumptionMap: {},
+      autoRun: null,
     };
   }
   const raw: Record<string, unknown> = { ...row };
@@ -427,6 +454,7 @@ export function parseBindingWave1(row: object | null): BindingWave1Fields {
     holderId: uuidish(raw.holder_id),
     holderVersionId: uuidish(raw.holder_version_id),
     consumptionMap: parseConsumptionMap(raw.consumption_map),
+    autoRun: typeof raw.auto_run === "boolean" ? raw.auto_run : null,
   };
 }
 

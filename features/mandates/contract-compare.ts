@@ -154,19 +154,44 @@ export function compareStoredContract(
  * offered-but-unconsumed (informational — calmly available). Policy arrays are
  * unused. The server's bind-time verdict remains the authority.
  */
+/** The minimum a stored consumption source exposes to this comparison. */
+export interface ConsumptionSourceLike {
+  mapType?: string;
+  target?: unknown;
+}
+
 export function compareConsumptionAgainstOffer(
   offeredValues: readonly { name: string; kind?: string; description?: string }[],
   // D18.2 — a target is fed by an ORDERED LIST of sources (many-to-one). A bare
   // object is still accepted so a caller holding a raw wire row (single-source,
   // the pre-2026-08-31 shape) needs no unwrapping of its own.
-  consumption: Record<string, { target?: string } | readonly { target?: string }[]>,
+  consumption: Record<
+    string,
+    ConsumptionSourceLike | readonly ConsumptionSourceLike[]
+  >,
 ): ComparisonResult {
   const offeredByName = new Map(offeredValues.map((v) => [v.name, v]));
   const consumedSources = new Set(
     Object.entries(consumption).flatMap(([name, entry]) =>
-      (Array.isArray(entry) ? entry : [entry]).map(
-        (source) => source.target || name,
-      ),
+      (Array.isArray(entry) ? entry : [entry])
+        // 🚨 ONLY AN OFFERED SOURCE CONSUMES THE OFFER. A binding also stores a
+        // fixed literal (`direct_value`, whose `target` IS the literal) and a
+        // question for the person (`prompt_user`, which has no target at all).
+        // Reading either as an offered-value name reported the input as
+        // "consumes something this job does not offer" — a health failure on a
+        // perfectly valid binding. An entry with no mapType is the pre-2026-08-31
+        // single-source shape, which was always an offered value.
+        .filter(
+          (source: ConsumptionSourceLike) =>
+            source.mapType === undefined ||
+            source.mapType === "offered_value" ||
+            source.mapType === "code_value",
+        )
+        .map((source: ConsumptionSourceLike) =>
+          typeof source.target === "string" && source.target
+            ? source.target
+            : name,
+        ),
     ),
   );
   const matched: ContractRow[] = [];

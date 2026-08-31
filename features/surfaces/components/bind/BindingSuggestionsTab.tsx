@@ -25,6 +25,7 @@ import {
   describeSuggestion,
   parseMapperResult,
   suggestionsToMappings,
+  type BindingSuggestion,
   type MapperAgentInfo,
   type MapperProposal,
 } from "@/features/surfaces/utils/binding-suggestions";
@@ -38,6 +39,32 @@ import type {
 import { cn } from "@/lib/utils";
 
 export const BINDING_MAPPER_MANDATE_KEY = "surfaces_client.binding_mapper";
+
+/**
+ * THE DOMAIN'S NOUNS. The mechanic is one; the words belong to whoever hosts
+ * it. A surface binding maps what a PAGE supplies; a job binding maps what a
+ * JOB OFFERS — and "page value" on a mandate screen is simply wrong, in exactly
+ * the way "shortcut" was wrong there. Same prop pattern the shared row already
+ * uses for its four source labels (`SurfaceVariableBinding.sourceLabels`), so
+ * this is a fifth call site, never a fifth component.
+ */
+export interface SuggestionWords {
+  /** What the left-hand inventory is, singular ("page value" / "offered value"). */
+  sourceNoun: string;
+  /** What supplies it ("this page" / "this job"). */
+  supplierNoun: string;
+  /** The heading over the write-policy block. */
+  actionsHeading: string;
+  /** The intro sentence, before the run. */
+  intro: (agentName: string) => string;
+}
+
+const SURFACE_WORDS: SuggestionWords = {
+  sourceNoun: "page value",
+  supplierNoun: "this page",
+  actionsHeading: "Page actions this agent could drive",
+  intro: () => "",
+};
 
 const CONFIDENCE_DOT: Record<string, string> = {
   high: "bg-emerald-500",
@@ -54,12 +81,27 @@ export interface BindingSuggestionsTabProps {
   /** Agent input names (variables + context policies) — the valid targets. */
   targetNames: readonly string[];
   disabled?: boolean;
+  /** Domain wording. Omit for the surface wording. */
+  words?: SuggestionWords;
+  /**
+   * D18.2 — may the proposal combine SEVERAL values into one input (joined in
+   * order with a blank line)? A mandate consumption map can store that; a
+   * surface binding cannot, and every extra the model proposes is discarded
+   * and reported rather than silently dropped.
+   */
+  manyToOne?: boolean;
   /**
    * Accept the proposal: mappings replace the editor's current map; policy
    * suggestions merge into the binding's write-policy overrides. The host
    * switches to the manual tab so the user reviews/edits before saving.
    */
-  onAccept: (mappings: ValueMappingMap, writePolicies: WritePolicyMap) => void;
+  onAccept: (
+    mappings: ValueMappingMap,
+    writePolicies: WritePolicyMap,
+    /** The validated suggestions themselves — a host that can store more than
+     * one source per input reads the combinations off these. */
+    suggestions: readonly BindingSuggestion[],
+  ) => void;
 }
 
 export function BindingSuggestionsTab({
@@ -69,6 +111,8 @@ export function BindingSuggestionsTab({
   writeTargets,
   targetNames,
   disabled = false,
+  words = SURFACE_WORDS,
+  manyToOne = false,
   onAccept,
 }: BindingSuggestionsTabProps) {
   const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
@@ -118,6 +162,11 @@ export function BindingSuggestionsTab({
           agent,
           surfaceValues: availableSurfaceValues,
           writeTargets,
+          // The call site's own rule, in the model's words — the mapper reads
+          // it and answers with one value or an ordered combination.
+          combinationRule: manyToOne
+            ? "Several values MAY be joined into one input: answer with an ordered surface_values list (2 or more names, most important first) when an input genuinely wants more than one of them."
+            : "Exactly one value per input — never return surface_values.",
         }),
       });
       const parsed = parseMapperResult({
@@ -125,6 +174,8 @@ export function BindingSuggestionsTab({
         validTargets,
         validSurfaceValues: valueNames,
         validWriteTargets: writeTargetNames,
+        sourceNoun: words.sourceNoun,
+        allowManyToOne: manyToOne,
       });
       if (!parsed) {
         setRunError(
@@ -147,14 +198,19 @@ export function BindingSuggestionsTab({
     // A proposal can survive validation with zero mappings (only policy
     // entries). Accepting must never wipe already-seeded mappings with an
     // empty map — the host only overwrites when there is something to apply.
-    onAccept(suggestionsToMappings(proposal.suggestions), policies);
+    onAccept(
+      suggestionsToMappings(proposal.suggestions),
+      policies,
+      proposal.suggestions,
+    );
   };
 
   if (unavailable) {
     return (
       <p className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
         The AI mapping helper is not available right now
-        {mandateError ? ` (${mandateError})` : ""}. Map values manually below.
+        {mandateError ? ` (${mandateError})` : ""}. Map values manually
+        instead — nothing here is blocked by it.
       </p>
     );
   }
@@ -164,9 +220,14 @@ export function BindingSuggestionsTab({
       {!proposal && (
         <div className="rounded-md border border-border bg-card px-3 py-3 space-y-2">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            The mapping helper reads what this page can supply, what this page
-            can do, and what <span className="font-medium text-foreground">{agent.name}</span>{" "}
-            needs — then proposes the full configuration for you to review.
+            {words.intro(agent.name) || (
+              <>
+                The mapping helper reads what {words.supplierNoun} can supply,
+                what {words.supplierNoun} can do, and what{" "}
+                <span className="font-medium text-foreground">{agent.name}</span>{" "}
+                needs — then proposes the full configuration for you to review.
+              </>
+            )}
           </p>
           <Button
             type="button"
@@ -177,7 +238,8 @@ export function BindingSuggestionsTab({
             {running ? (
               <>
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Analyzing {availableSurfaceValues.length} page values ×{" "}
+                Analyzing {availableSurfaceValues.length} {words.sourceNoun}
+                {availableSurfaceValues.length === 1 ? "" : "s"} ×{" "}
                 {targetNames.length} inputs
                 {streamedChars > 0 ? ` — writing (${streamedChars})` : "…"}
               </>
@@ -239,7 +301,7 @@ export function BindingSuggestionsTab({
           {proposal.writePolicies.length > 0 && (
             <div className="space-y-1">
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Page actions this agent could drive
+                {words.actionsHeading}
               </p>
               {proposal.writePolicies.map((p) => (
                 <div
@@ -271,7 +333,8 @@ export function BindingSuggestionsTab({
               <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
               Skipped {proposal.discarded.length} suggestion
               {proposal.discarded.length === 1 ? "" : "s"} that named things
-              this page or agent does not have: {proposal.discarded.join("; ")}
+              {words.supplierNoun} or this agent does not have:{" "}
+              {proposal.discarded.join("; ")}
             </p>
           )}
 

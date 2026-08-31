@@ -46,6 +46,13 @@ export function buildMapperVariables(args: {
   agent: MapperAgentInfo;
   surfaceValues: SurfaceValue[];
   writeTargets: readonly SurfaceWriteTarget[];
+  /**
+   * D18.2 — the call site's own rule about combining values, in the words the
+   * mapper reads. A surface binding stores one value per input; a mandate
+   * consumption map stores an ordered list. The mapper is ONE agent serving
+   * both, so the rule is an input, never a second agent.
+   */
+  combinationRule?: string;
 }): Record<string, string> {
   const values = args.surfaceValues.map((v) => ({
     name: v.name,
@@ -92,6 +99,9 @@ export function buildMapperVariables(args: {
     agent_name: args.agent.name,
     agent_description: args.agent.description ?? "",
     agent_contract_json: JSON.stringify(contract),
+    combination_rule:
+      args.combinationRule ??
+      "Exactly one value per input — never return surface_values.",
   };
 }
 
@@ -149,6 +159,9 @@ export function parseMapperResult(args: {
   validTargets: ReadonlySet<string>;
   validSurfaceValues: ReadonlySet<string>;
   validWriteTargets: ReadonlySet<string>;
+  /** The domain's word for one offered/declared value, for the discard report
+   * ("page value" on a surface, "offered value" on a job). */
+  sourceNoun?: string;
   /**
    * D18.2 — may several values feed ONE input (joined with a blank line)?
    * A mandate consumption map says yes; a surface binding says no, and every
@@ -162,6 +175,7 @@ export function parseMapperResult(args: {
   if (!root || typeof root !== "object" || Array.isArray(root)) return null;
   const obj = root as Record<string, unknown>;
 
+  const sourceNoun = args.sourceNoun ?? "page value";
   const discarded: string[] = [];
   const suggestions: BindingSuggestion[] = [];
   const seen = new Set<string>();
@@ -198,13 +212,13 @@ export function parseMapperResult(args: {
         if (args.validSurfaceValues.has(name)) known.push(name);
         else
           discarded.push(
-            `"${target}" pointed at unknown page value "${name}"`,
+            `"${target}" pointed at "${name}", which is not a ${sourceNoun} here`,
           );
       }
       const sv = known[0] ?? null;
       if (!sv) {
         if (proposed.length === 0) {
-          discarded.push(`"${target}" named no page value to take`);
+          discarded.push(`"${target}" named no ${sourceNoun} to take`);
         }
         continue;
       }
@@ -264,7 +278,7 @@ export function parseMapperResult(args: {
     const p = entry as Record<string, unknown>;
     const target = typeof p.target === "string" ? p.target : null;
     if (!target || !args.validWriteTargets.has(target)) {
-      if (target) discarded.push(`"${target}" is not one of this page's actions`);
+      if (target) discarded.push(`"${target}" is not one of the actions available here`);
       continue;
     }
     if (!isSurfaceWritePolicy(p.policy)) continue;
@@ -302,7 +316,7 @@ export function describeSuggestion(s: BindingSuggestion): string {
         ? // D18.2 — say the whole combination and the order, because the order
           // IS the delivered text.
           `From ${[s.mapping.target, ...s.alsoFrom].map((n) => `"${n}"`).join(" + ")}, joined in that order`
-        : `From page value "${s.mapping.target}"${s.mapping.required ? " (required)" : ""}`;
+        : `From "${s.mapping.target}"${s.mapping.required ? " (required)" : ""}`;
     case "direct_value":
       return `Fixed value: ${typeof s.mapping.target === "string" ? `"${s.mapping.target}"` : JSON.stringify(s.mapping.target)}`;
     case "prompt_user":

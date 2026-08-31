@@ -25,8 +25,11 @@
 //   · D18.3 the channel. A context slot is a first-class target and says so.
 //   · P4 the productive empty state — a row seeded by the name match says it was
 //     seeded, so an automatic decision is visible before it is saved.
-//   · P7 per-row refusals in domain words, on the row that caused them, from
+//   · P7 per-row problems in domain words, on the row that caused them, from
 //     `consumptionMapProblems` — the same pre-flight the save uses.
+//   · ALL FOUR SOURCES, for real. Holder Default (absence), Offered Value,
+//     Direct Value and Prompt User all store now; the stand-in that refused the
+//     last two while the server could not carry them is deleted.
 
 import { AlertTriangle, ArrowDown, ArrowUp, Plus, X, Zap } from "lucide-react";
 
@@ -45,11 +48,16 @@ import { SurfaceVariableBinding } from "@/features/surfaces/admin/columns/Surfac
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import {
   consumptionMapProblems,
+  describeSource,
+  isOfferedSource,
   type ConsumptionEntry,
   type ConsumptionMap,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
+
+/** The one source kind that can be absent, and so the one that answers for it. */
+type OfferedSource = Extract<ConsumptionEntry, { mapType: "offered_value" }>;
 import {
   addSource,
   applyRowMapping,
@@ -72,9 +80,6 @@ export interface BindingMiddleProps {
   onChange: (next: ConsumptionMap) => void;
   /** Inputs seeded by the exact-name match this session (P4). */
   autoBound: ReadonlySet<string>;
-  /** Row → why the last pick could not be stored. Owned by the workspace. */
-  refusals: Readonly<Record<string, string>>;
-  onRefusal: (targetName: string, refusal: string | null) => void;
   disabled?: boolean;
 }
 
@@ -87,8 +92,6 @@ export function BindingMiddle({
   value,
   onChange,
   autoBound,
-  refusals,
-  onRefusal,
   disabled = false,
 }: BindingMiddleProps) {
   const offeredByName = new Map(offered.map((v) => [v.name, v]));
@@ -121,7 +124,10 @@ export function BindingMiddle({
           ? "context"
           : "variable";
         const remaining = selectable.filter(
-          (v) => !sources.some((entry) => entry.target === v.name),
+          (v) =>
+            !sources.some(
+              (entry) => isOfferedSource(entry) && entry.target === v.name,
+            ),
         );
 
         // The SAME pre-flight the save runs, narrowed to this row — so the
@@ -129,7 +135,9 @@ export function BindingMiddle({
         // A source still waiting for its pick is NOT "consumes something this
         // job does not offer": it is an unfinished choice, and it gets its own
         // sentence below rather than a confusing one from the pre-flight.
-        const chosen = sources.filter((entry) => entry.target !== "");
+        const chosen = sources.filter(
+          (entry) => !isOfferedSource(entry) || entry.target !== "",
+        );
         const awaitingPick = sources.length > chosen.length;
         const rowProblems = consumptionMapProblems(
           { values: offered },
@@ -166,17 +174,17 @@ export function BindingMiddle({
               disabled={disabled}
               sourceLabels={sourceLabels}
               valueFieldLabel="Offered value"
-              onChange={(next) => {
-                const result = applyRowMapping({
-                  map: value,
-                  targetName: target.name,
-                  mapping: next,
-                  offeredByName,
-                  deliver,
-                });
-                onRefusal(target.name, result.refusal);
-                if (!result.refusal) onChange(result.map);
-              }}
+              onChange={(next) =>
+                onChange(
+                  applyRowMapping({
+                    map: value,
+                    targetName: target.name,
+                    mapping: next,
+                    offeredByName,
+                    deliver,
+                  }),
+                )
+              }
             />
 
             {/* P9 — a source that is not guaranteed must declare what happens
@@ -186,7 +194,23 @@ export function BindingMiddle({
                 its control HERE — sources 1..n get the same one in the strip
                 below. `skip` is pre-answered on selection; this makes the
                 answer visible and changeable instead of merely stored. */}
-            {sources[0] && sources[0].target !== "" ? (
+            {/* P5 / D2 — the chosen value's own example, right under the pick.
+                "Looks like", not "Right now": this is a STATIC illustration the
+                provision declared, and calling it the current value would be a
+                sentence the screen cannot keep. */}
+            {sources[0] && isOfferedSource(sources[0])
+              ? (() => {
+                  const example = offeredByName.get(sources[0].target)?.example;
+                  return example ? (
+                    <p className="px-0.5 text-[11px] leading-snug text-muted-foreground">
+                      <span className="text-muted-foreground/60">Looks like: </span>
+                      <span className="font-mono">{example}</span>
+                    </p>
+                  ) : null;
+                })()
+              : null}
+
+            {sources[0] && isOfferedSource(sources[0]) && sources[0].target !== "" ? (
               <AbsenceControl
                 entry={sources[0]}
                 offered={offeredByName.get(sources[0].target)}
@@ -195,14 +219,6 @@ export function BindingMiddle({
                   onChange(patchSourceAt(value, target.name, 0, patch))
                 }
               />
-            ) : null}
-
-            {/* Why the last pick could not be stored — in words, with a remedy. */}
-            {refusals[target.name] ? (
-              <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {refusals[target.name]}
-              </p>
             ) : null}
 
             {awaitingPick ? (
@@ -256,7 +272,6 @@ export function BindingMiddle({
               hasSources={sources.length > 0}
               disabled={disabled}
               onAdd={(sourceName) => {
-                onRefusal(target.name, null);
                 onChange(
                   addSource(value, target.name, {
                     sourceName,
@@ -296,42 +311,63 @@ function ExtraSources({
   disabled: boolean;
   onMove: (index: number, delta: number) => void;
   onRemove: (index: number) => void;
-  onPatch: (index: number, patch: Partial<ConsumptionEntry>) => void;
+  onPatch: (index: number, patch: Partial<OfferedSource>) => void;
 }) {
   if (sources.length <= 1) return null;
 
   return (
     <div className="space-y-1.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        {sources.length} values feed this input. They are joined in this order,
-        separated by a blank line — the first one is the row above.
+        {sources.length} sources feed this input. They are joined in this
+        order, separated by a blank line — the first one is the row above.
       </p>
       {sources.map((entry, index) => {
-        const offered = offeredByName.get(entry.target);
+        // A joined source is any of the three stored kinds — an offered value,
+        // a literal, or an answer the person will give. It is named in the
+        // reader's words by the ONE describer, so the strip, the rail and the
+        // auto-run bar can never call the same entry different things.
+        const offered = isOfferedSource(entry)
+          ? offeredByName.get(entry.target)
+          : undefined;
+        const handle = isOfferedSource(entry)
+          ? entry.target || "this source"
+          : entry.mapType === "direct_value"
+            ? "the fixed value"
+            : "the question";
         return (
           <div
-            key={`${entry.target}-${index}`}
+            key={`${entry.mapType}-${isOfferedSource(entry) ? entry.target : index}-${index}`}
             className="rounded-md border border-border/50 bg-card px-2 py-1.5"
           >
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-mono text-[10px] text-muted-foreground">
                 {index + 1}.
               </span>
-              <span className="text-[12px] text-foreground">
-                {offered
-                  ? formatVariableDisplayName(entry.target)
-                  : entry.target || "nothing chosen"}
+              <span className="min-w-0 text-[12px] leading-snug text-foreground">
+                {isOfferedSource(entry)
+                  ? entry.target
+                    ? formatVariableDisplayName(entry.target)
+                    : "nothing chosen"
+                  : describeSource(entry)}
               </span>
-              {offered ? (
-                <Badge variant="outline" className="py-0 font-mono text-[9px]">
-                  {offered.kind}
-                </Badge>
+              {isOfferedSource(entry) ? (
+                offered ? (
+                  <Badge variant="outline" className="py-0 font-mono text-[9px]">
+                    {offered.kind}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="py-0 text-[9px] text-destructive"
+                  >
+                    no longer offered
+                  </Badge>
+                )
               ) : (
-                <Badge
-                  variant="outline"
-                  className="py-0 text-[9px] text-destructive"
-                >
-                  no longer offered
+                <Badge variant="outline" className="py-0 text-[9px] text-muted-foreground">
+                  {entry.mapType === "direct_value"
+                    ? "fixed value"
+                    : "asked at run time"}
                 </Badge>
               )}
               <div className="ml-auto flex items-center gap-0.5">
@@ -340,7 +376,7 @@ function ExtraSources({
                   size="sm"
                   className="h-6 w-6 p-0"
                   disabled={disabled || index === 0}
-                  aria-label={`Move ${entry.target} earlier in ${targetName}`}
+                  aria-label={`Move ${handle} earlier in ${targetName}`}
                   onClick={() => onMove(index, -1)}
                 >
                   <ArrowUp className="h-3 w-3" />
@@ -350,7 +386,7 @@ function ExtraSources({
                   size="sm"
                   className="h-6 w-6 p-0"
                   disabled={disabled || index === sources.length - 1}
-                  aria-label={`Move ${entry.target} later in ${targetName}`}
+                  aria-label={`Move ${handle} later in ${targetName}`}
                   onClick={() => onMove(index, 1)}
                 >
                   <ArrowDown className="h-3 w-3" />
@@ -360,20 +396,24 @@ function ExtraSources({
                   size="sm"
                   className="h-6 w-6 p-0 text-muted-foreground"
                   disabled={disabled}
-                  aria-label={`Remove ${entry.target} from ${targetName}`}
+                  aria-label={`Remove ${handle} from ${targetName}`}
                   onClick={() => onRemove(index)}
                 >
                   <X className="h-3 w-3" />
                 </Button>
               </div>
             </div>
-            {/* P9 — a source that is not guaranteed declares its absence answer. */}
-            <AbsenceControl
-              entry={entry}
-              offered={offered}
-              disabled={disabled}
-              onPatch={(patch) => onPatch(index, patch)}
-            />
+            {/* P9 — a source that is not guaranteed declares its absence answer.
+                Only an OFFERED value can be absent: a literal is always there,
+                and an unanswered question is the run form's business. */}
+            {isOfferedSource(entry) ? (
+              <AbsenceControl
+                entry={entry}
+                offered={offered}
+                disabled={disabled}
+                onPatch={(patch) => onPatch(index, patch)}
+              />
+            ) : null}
           </div>
         );
       })}
@@ -394,10 +434,10 @@ function AbsenceControl({
   disabled,
   onPatch,
 }: {
-  entry: ConsumptionEntry;
+  entry: OfferedSource;
   offered: OfferedValue | undefined;
   disabled: boolean;
-  onPatch: (patch: Partial<ConsumptionEntry>) => void;
+  onPatch: (patch: Partial<OfferedSource>) => void;
 }) {
   if (!offered || offered.guaranteed) return null;
   return (
@@ -409,7 +449,7 @@ function AbsenceControl({
         value={entry.when_absent ?? "skip"}
         disabled={disabled}
         onValueChange={(v) =>
-          onPatch({ when_absent: v as ConsumptionEntry["when_absent"] })
+          onPatch({ when_absent: v as OfferedSource["when_absent"] })
         }
       >
         <SelectTrigger

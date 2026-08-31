@@ -60,11 +60,24 @@ export interface SavePayloadArgs {
   capturedOverrides: JsonObject | undefined;
   /** The binding's STORED config_overrides as loaded (the wipe-guard fallback). */
   storedOverrides: JsonObject | null;
+  /**
+   * P14 — "run instantly", as the screen may offer it. Passed straight through:
+   * the screen only ever hands `true` here when the live eligibility fact says
+   * the mapping leaves nothing to ask, and the server re-checks it anyway. Null
+   * = this binding has no opinion.
+   */
+  autoRun?: boolean | null;
 }
 
 export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingInput {
-  const { holder, hasOffer, consumptionMap, capturedOverrides, storedOverrides } =
-    args;
+  const {
+    holder,
+    hasOffer,
+    consumptionMap,
+    capturedOverrides,
+    storedOverrides,
+    autoRun = null,
+  } = args;
 
   const configOverridesFor = () =>
     capturedOverrides !== undefined
@@ -85,6 +98,7 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
       agentVersionId: null,
       configOverrides: configOverridesFor(),
       consumptionMap: hasOffer ? consumptionMap : undefined,
+      autoRun,
     };
   }
 
@@ -108,5 +122,6 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
     // (undefined), not an empty map — bindings.py 422s on any non-None map
     // when there is nothing to consume from.
     consumptionMap: hasOffer ? consumptionMap : undefined,
+    autoRun,
   };
 }

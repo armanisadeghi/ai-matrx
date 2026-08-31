@@ -242,6 +242,9 @@ export function servedInputsFromSections(raw: unknown): ServedInput[] {
         default: property.default ?? null,
         label: str(property.title) || name,
         help: str(property.description),
+        // The pre-input-surface backend declares no examples; "" is the honest
+        // answer, and every reader treats it as "none declared".
+        example: "",
         placeholder: "",
         options: Array.isArray(property.enum)
           ? property.enum.filter((o): o is string => typeof o === "string")

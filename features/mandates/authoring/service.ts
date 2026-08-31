@@ -23,6 +23,16 @@ export interface DraftInput {
   description: string;
   kind?: string;
   required?: boolean;
+  /**
+   * D2 — ONE EXAMPLE of what this input's value looks like. It rides onto the
+   * job's OFFER (`offer_for` → `described_offered_values`), which is what makes
+   * it visible on the binding screen at the moment somebody decides where this
+   * value should land (UI-STANDARD P5).
+   *
+   * An illustration, never a default: nothing reads it at run time on either
+   * side of the wire, so it can never become an answer.
+   */
+  example?: string;
 }
 
 export interface CreateMandateInput {
@@ -127,6 +137,9 @@ export function parseDraftInputs(raw: unknown): DraftInput[] {
       ...(typeof record.name === "string" && record.name ? { name: record.name } : {}),
       ...(typeof record.kind === "string" && record.kind ? { kind: record.kind } : {}),
       ...(typeof record.required === "boolean" ? { required: record.required } : {}),
+      ...(typeof record.example === "string" && record.example
+        ? { example: record.example }
+        : {}),
     });
   }
   return items;

@@ -265,6 +265,15 @@ export interface MandateBindingInput {
    * `when_absent`; structured kinds may only ride context.
    */
   consumptionMap?: ConsumptionMap | null;
+  /**
+   * P14 — "run instantly". `true` only when the mapping leaves NOTHING to ask
+   * (`evaluateBindingAutoRun` over the draft), `false` when the person turned
+   * it off, `null`/omitted when this binding has no opinion and the layer below
+   * decides. The server re-checks it and refuses an ineligible `true` down to
+   * `false` — the promise is a fact about the mapping, never a preference, on
+   * both sides of the wire.
+   */
+  autoRun?: boolean | null;
 }
 
 export interface MandateBindingPrincipalInput {
@@ -297,10 +306,33 @@ function consumptionMapForApi(
   const out: Record<string, JsonObject | JsonObject[]> = {};
   for (const [name, sources] of Object.entries(map)) {
     const wires = sources.map((entry) => {
+      const deliver = entry.deliver ?? "variable";
+      // THE THREE STORED SOURCES, each emitting only the fields its own branch
+      // owns — a `target` on a prompt or a `prompt` on a literal would be a
+      // field with no reader, and the server's discriminated union refuses it.
+      if (entry.mapType === "direct_value") {
+        return {
+          mapType: "direct_value",
+          target: entry.target as JsonValue,
+          deliver,
+        } satisfies JsonObject;
+      }
+      if (entry.mapType === "prompt_user") {
+        const wire: JsonObject = {
+          mapType: "prompt_user",
+          prompt: entry.prompt,
+          deliver,
+        };
+        if (entry.required === true) wire.required = true;
+        if (entry.defaultValue !== undefined && entry.defaultValue !== null) {
+          wire.defaultValue = entry.defaultValue as JsonValue;
+        }
+        return wire;
+      }
       const wire: JsonObject = {
         mapType: entry.mapType,
         target: entry.target,
-        deliver: entry.deliver ?? "variable",
+        deliver,
       };
       if (entry.required === true) wire.required = true;
       if (entry.when_absent) wire.when_absent = entry.when_absent;
@@ -375,6 +407,7 @@ export async function putMandateBinding(
         agent_id: isWorkflow ? null : input.agentId,
         agent_version_id: isWorkflow ? null : (input.agentVersionId ?? null),
         holder_id: isWorkflow ? (input.holderId ?? null) : null,
+        auto_run: input.autoRun ?? null,
         holder_version_id: isWorkflow ? (input.holderVersionId ?? null) : null,
         use_latest: isWorkflow
           ? (input.useLatest ?? input.holderVersionId == null)

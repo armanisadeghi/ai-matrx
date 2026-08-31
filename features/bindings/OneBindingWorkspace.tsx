@@ -70,11 +70,16 @@ import {
 } from "@/features/mandates/output-contract";
 import {
   consumptionMapProblems,
+  isOfferedSource,
   parseBindingWave1,
   type ConsumptionEntry,
   type ConsumptionMap,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
+import {
+  BindingSuggestionsTab,
+  type SuggestionWords,
+} from "@/features/surfaces/components/bind/BindingSuggestionsTab";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import { parseDraftInputs } from "@/features/mandates/authoring/service";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
@@ -90,6 +95,7 @@ import type {
   MandateWorkspaceData,
 } from "@/features/mandates/workspace/useMandateWorkspaceData";
 
+import { AutoRunBar } from "./AutoRunBar";
 import { BindingMiddle } from "./BindingMiddle";
 import { HolderInputsColumn } from "./HolderInputsColumn";
 import { OfferedInventoryColumn } from "./OfferedInventoryColumn";
@@ -99,8 +105,23 @@ import {
   type BindingRung,
   type HolderDraft,
 } from "./ScopeHolderBar";
-import { seedAutoBinds, sourcesFor } from "./consumption-writer";
+import { applySuggestions, seedAutoBinds, sourcesFor } from "./consumption-writer";
+import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
+
+/**
+ * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
+ * panel's, verbatim; the words are this domain's, because "page value" is
+ * exactly as wrong on a job as "shortcut" was — and a screen that calls a thing
+ * by the wrong name is lying about what it is.
+ */
+const MANDATE_MAP_WORDS: SuggestionWords = {
+  sourceNoun: "offered value",
+  supplierNoun: "this job",
+  actionsHeading: "What this job's holder could drive",
+  intro: (agentName) =>
+    `The mapping helper reads what this job offers and what ${agentName} needs, then proposes the whole match for you to review. Several offered values may feed one input — it can propose that too.`,
+};
 
 export interface OneBindingWorkspaceProps {
   data: MandateWorkspaceData;
@@ -116,7 +137,7 @@ export interface OneBindingWorkspaceProps {
 /**
  * The rung lives OUT here, above the draft, because it is the one choice that
  * must survive changing which binding is being edited. Everything else —
- * holder, map, refusals — is seeded from the stored row, so the draft is keyed
+ * holder, map, auto-run — is seeded from the stored row, so the draft is keyed
  * by that row's identity and REMOUNTS when it moves. Re-seeding half a dozen
  * useStates from an effect is the cascading-render defect; a key is the whole
  * fix, and it also guarantees the org answer never starts from the user
@@ -189,7 +210,10 @@ function BindingDraft({
   const [draftMap, setDraftMap] = useState<ConsumptionMap>(
     () => parseBindingWave1(binding).consumptionMap,
   );
-  const [refusals, setRefusals] = useState<Record<string, string>>({});
+  const [autoRun, setAutoRun] = useState<boolean | null>(
+    () => parseBindingWave1(binding).autoRun,
+  );
+  const [mapTab, setMapTab] = useState<"ai" | "manual">("manual");
   const [autoBound, setAutoBound] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -249,6 +273,9 @@ function BindingDraft({
             false),
       lazy: false,
       description: input.label !== input.name ? input.label : input.help,
+      // D2 — the author's own example, served with the input (never re-derived
+      // here; the server is the one place that knows the declaration).
+      example: input.example,
     }));
     if (values.length === 0) return null;
     return {
@@ -455,14 +482,13 @@ function BindingDraft({
   // an invalid map — it gets its own words, on its own row and here, instead of
   // the pre-flight's "consumes something this job does not offer".
   const awaitingPick = Object.values(draftMap).some((sources) =>
-    sources.some((entry) => entry.target === ""),
+    sources.some((entry) => isOfferedSource(entry) && entry.target === ""),
   );
   const mapProblems =
     offer && holderChosen
       ? consumptionMapProblems(offer, withoutUnpicked(draftMap))
       : [];
   const rungReady = rung !== "org" || Boolean(organizationId);
-  const refusalCount = Object.values(refusals).filter(Boolean).length;
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
   const saveRefusal = !holderChosen
@@ -478,9 +504,7 @@ function BindingDraft({
           : awaitingPick
             ? "One input is still waiting for you to pick which offered value feeds it."
             : mapProblems.length > 0
-            ? "Fix the mapping problems named on the rows above."
-            : refusalCount > 0
-              ? "One of your picks can't be stored on a job binding — see the rows above."
+              ? "Fix the mapping problems named on the rows above."
               : null;
 
   const storedAgentId = binding ? agentHolderOfBinding(binding).holderId : null;
@@ -508,6 +532,10 @@ function BindingDraft({
       // An unfinished pick never reaches the wire — Save is refused while one
       // stands, so this is a belt on top of the braces, not a silent drop.
       consumptionMap: withoutUnpicked(draftMap),
+      // P14 — the promise travels only when it is still true. The bar keeps
+      // the fact live, the server re-checks it, and `null` means this binding
+      // has no opinion (which is not the same as "no").
+      autoRun,
       capturedOverrides:
         captured === undefined
           ? undefined
@@ -616,6 +644,10 @@ function BindingDraft({
     const out = new Map<string, string[]>();
     for (const [targetName, sources] of Object.entries(draftMap)) {
       for (const entry of sources) {
+        // Only an OFFERED source consumes something from the rail. A literal
+        // and a question are the binding's own content — counting them here
+        // would mark an offered value "in use" that nothing is using.
+        if (!isOfferedSource(entry)) continue;
         const list = out.get(entry.target) ?? [];
         list.push(targetName);
         out.set(entry.target, list);
@@ -633,6 +665,57 @@ function BindingDraft({
   }, [draftMap, holderInputs.targets]);
 
   const disabled = busy || rebindChecking;
+
+  // ── THE AI MAP (P11/P12) — the SAME tab the surface bind panel uses ───────
+  //
+  // The mapper is one platform agent (`surfaces_client.binding_mapper`) reading
+  // one contract: what is on offer, and what the holder needs. A job's offered
+  // values ARE that first half — `offeredValuesToSurfaceValues` is the one
+  // translation, and the same one the manual picker already goes through, so
+  // both tabs propose from a single inventory.
+  //
+  // The holder contract is built from `holderInputs.targets`, not from the
+  // agent payload, so a WORKFLOW holder gets the same assist an agent does —
+  // its served run form is a contract like any other.
+  const offeredSurfaceValues = useMemo(
+    () => offeredValuesToSurfaceValues(offeredValues),
+    [offeredValues],
+  );
+  const mapperVariableDefinitions = useMemo(
+    () =>
+      holderInputs.targets
+        .filter((t) => !holderInputs.contextKeys.has(t.name))
+        .map((t) => ({
+          name: t.name,
+          helpText: t.description ?? "",
+          required: t.required ?? false,
+          defaultValue: t.defaultValue ?? null,
+        })),
+    [holderInputs.targets, holderInputs.contextKeys],
+  );
+  const mapperContextPolicies = useMemo(
+    () =>
+      holderInputs.targets
+        .filter((t) => holderInputs.contextKeys.has(t.name))
+        .map((t) => ({
+          key: t.name,
+          // The mapper reads only key/label/description; `type` is the slot's
+          // content-object type, which a BindingTarget does not carry (both
+          // holder types funnel through `useHolderInputs`). "text" is the
+          // catalogue's neutral slot type and the mapper never branches on it.
+          type: "text" as const,
+          label: t.label ?? t.name,
+          description: t.description ?? "",
+        })),
+    [holderInputs.targets, holderInputs.contextKeys],
+  );
+  // The tab is OFFERED only when it has both halves to reason over. Anything
+  // less and it would be a control that runs and answers nothing — absent is
+  // the honest state, and the manual editor is always there.
+  const canProposeMap =
+    holderInputs.status === "ready" &&
+    holderInputs.targets.length > 0 &&
+    offeredValues.length > 0;
 
   return (
     <div className="space-y-3">
@@ -719,7 +802,7 @@ function BindingDraft({
 
         <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
           <header className="shrink-0 border-b border-border px-3 py-2">
-            <div className="flex items-baseline gap-2">
+            <div className="flex flex-wrap items-baseline gap-2">
               <h3 className="text-[12.5px] font-semibold text-foreground">
                 The match
               </h3>
@@ -727,6 +810,33 @@ function BindingDraft({
                 <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
                   {holderInputs.targets.length} inputs
                 </span>
+              ) : null}
+              {/* P11 — the two tabs sit in the middle panel's own header, the
+                  way the surface bind panel puts them over its mapping section.
+                  AI map PROPOSES into this same editor; it never applies. */}
+              {canProposeMap ? (
+                <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
+                  {(
+                    [
+                      ["ai", "AI map"],
+                      ["manual", "Map manually"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setMapTab(key)}
+                      className={cn(
+                        "rounded px-2 py-0.5 text-[10.5px] transition-colors",
+                        mapTab === key
+                          ? "bg-primary/10 font-medium text-primary"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
             </div>
             <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
@@ -743,26 +853,61 @@ function BindingDraft({
               hasOffer={offeredValues.length > 0}
               targetCount={holderInputs.targets.length}
             >
-              <BindingMiddle
-                holderKind={holder.kind}
-                targets={holderInputs.targets}
-                contextKeys={holderInputs.contextKeys}
-                offered={offeredValues}
-                pinnedContext={data.pinnedContext}
-                value={draftMap}
-                onChange={setDraftMap}
-                autoBound={autoBound}
-                refusals={refusals}
-                onRefusal={(name, refusal) =>
-                  setRefusals((prev) => {
-                    const next = { ...prev };
-                    if (refusal) next[name] = refusal;
-                    else delete next[name];
-                    return next;
-                  })
-                }
-                disabled={disabled}
-              />
+              {mapTab === "ai" && canProposeMap ? (
+                <BindingSuggestionsTab
+                  surfaceName={data.mandate.mandate_key}
+                  agent={{
+                    name:
+                      (agentId ? data.agentsById[agentId]?.name : null) ??
+                      "the bound agent",
+                    description: null,
+                    variableDefinitions: mapperVariableDefinitions,
+                    contextPolicies: mapperContextPolicies,
+                  }}
+                  availableSurfaceValues={offeredSurfaceValues}
+                  writeTargets={[]}
+                  targetNames={holderInputs.targets.map((t) => t.name)}
+                  disabled={disabled}
+                  manyToOne
+                  words={MANDATE_MAP_WORDS}
+                  onAccept={(_mappings, _policies, suggestions) => {
+                    // P11 — accepting FILLS the manual editor and switches to
+                    // it. Nothing is saved, nothing is applied blind: every
+                    // line is still editable, and the same pre-flight that
+                    // gates Save re-runs over the result on the way in.
+                    setDraftMap((current) =>
+                      applySuggestions({
+                        map: current,
+                        suggestions,
+                        targetNames: holderInputs.targets.map((t) => t.name),
+                        offeredByName: new Map(
+                          offeredValues.map((v) => [v.name, v]),
+                        ),
+                        deliverFor: (name) =>
+                          holderInputs.contextKeys.has(name)
+                            ? "context"
+                            : "variable",
+                      }),
+                    );
+                    setMapTab("manual");
+                    toast.success(
+                      "Filled in below — change any line before you save.",
+                    );
+                  }}
+                />
+              ) : (
+                <BindingMiddle
+                  holderKind={holder.kind}
+                  targets={holderInputs.targets}
+                  contextKeys={holderInputs.contextKeys}
+                  offered={offeredValues}
+                  pinnedContext={data.pinnedContext}
+                  value={draftMap}
+                  onChange={setDraftMap}
+                  autoBound={autoBound}
+                  disabled={disabled}
+                />
+              )}
             </MiddleBody>
           </div>
         </section>
@@ -776,6 +921,19 @@ function BindingDraft({
           </div>
         </div>
       </div>
+
+      {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
+          meaningful once something is actually mapped: before that the bar
+          would be a control about a promise nobody has made yet. */}
+      {holderChosen && holderInputs.targets.length > 0 ? (
+        <AutoRunBar
+          targets={holderInputs.targets}
+          map={draftMap}
+          value={autoRun}
+          onChange={setAutoRun}
+          disabled={disabled}
+        />
+      ) : null}
 
       {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
       {holder.kind === "agent" && agentId ? (
@@ -935,7 +1093,9 @@ function MiddleBody({
 function withoutUnpicked(map: ConsumptionMap): ConsumptionMap {
   const out: ConsumptionMap = {};
   for (const [name, sources] of Object.entries(map)) {
-    const chosen = sources.filter((entry) => entry.target !== "");
+    const chosen = sources.filter(
+      (entry) => !isOfferedSource(entry) || entry.target !== "",
+    );
     if (chosen.length > 0) out[name] = chosen;
   }
   return out;
