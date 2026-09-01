@@ -11,16 +11,13 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { InlineMediaRef } from "@ai-matrx/media/react";
-import { useMediaResolution } from "@ai-matrx/media/core";
-import type { FileSource } from "@/features/files/handler/types";
 import type { MediaRef } from "@/features/files/types";
 import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import { useOpenImageViewerWindow } from "@/features/overlays/openers/imageViewer";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { cn } from "@/lib/utils";
 
 import type { ToolRendererProps } from "../../types";
+import { ResultMedia } from "../../result-fields/ResultMedia";
 import { ResultValue } from "../../result-fields/ResultValue";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
 import {
@@ -41,12 +38,6 @@ interface CloudBrowserRunCardProps {
   compact?: boolean;
 }
 
-function mediaSource(media: MediaRef): FileSource | null {
-  if (media.file_id) return { kind: "file_id", fileId: media.file_id };
-  if (media.url) return { kind: "external_url", url: media.url };
-  return null;
-}
-
 function ScreenshotPreview({
   media,
   index,
@@ -54,32 +45,15 @@ function ScreenshotPreview({
   media: MediaRef;
   index: number;
 }) {
-  const openImageViewer = useOpenImageViewerWindow();
-  const resolvedUrl = useMediaResolution(media).resolution?.src ?? null;
   const label = `Cloud Browser screenshot ${index + 1}`;
 
   return (
     <div className="mt-2 overflow-hidden rounded-lg border border-border/60 bg-muted/20">
-      <InlineMediaRef
-        ref={{ ...media }}
-        as="img"
-        size="fill"
-        fit="contain"
-        rounded="lg"
+      <ResultMedia
+        mediaRef={media}
         alt={label}
-        fallback="skeleton"
-        onClick={() => {
-          if (!resolvedUrl) return;
-          openImageViewer({
-            images: [resolvedUrl],
-            alts: [label],
-            title: "Cloud Browser screenshot",
-          });
-        }}
-        className={cn(
-          "max-h-80 w-full bg-muted/20 object-contain transition-opacity",
-          resolvedUrl && "cursor-zoom-in hover:opacity-95",
-        )}
+        density="full"
+        className="w-full max-w-none rounded-none border-0 bg-transparent"
       />
     </div>
   );

@@ -163,6 +163,8 @@ lives there and every tool gets it for free:
 - Canonical `image_ref_list` / `media_ref_list` envelopes and plain attachment arrays render as
   media/file collections, never tables of nested transport metadata. Every owned attachment's
   **Open** action targets `/files/f/{file_id}`, the in-app viewer; raw byte URLs never become the door.
+- Purpose-built renderers reuse `ResultMedia` / `ResultFile` for owned output. Custom preview chrome
+  never replaces the canonical **Open** door with a lightbox or direct byte URL.
 - **Third-party URLs keep their `UrlChip`** — that IS the useful rendering for those. So does a
   bare `/share/<token>` carrying neither an identity nor a type: it is as likely a shared
   conversation as a file, and guessing wrong is worse than a link.
@@ -293,6 +295,8 @@ The consolidation (Phases 1–10) eliminated six legacy homes for tool UI:
 Historical planning and analysis docs from the pre-consolidation era have been archived at `docs/archive/tool-call-legacy/`.
 
 ## Change log
+
+- `2026-09-01` — codex: **Cloud Browser screenshot results keep the canonical Files door.** The purpose-built run card now composes `ResultMedia`, so an owned screenshot renders inline and its **Open** action reaches `/files/f/{file_id}` instead of replacing that door with a lightbox-only click. Guard: `renderers/cloud-browser/CloudBrowserRunCard.test.tsx`.
 
 - `2026-08-31` — codex: **Tool-result attachment collections render and open canonically.** `detectResultShape` promotes `image_ref_list`, `media_ref_list`, and homogeneous media/file arrays into one attachment-list shape; `ResultValue` renders every attachment while retaining envelope metadata, and owned `ResultMedia` now exposes **Open** to `/files/f/{file_id}`. Guards: `shape-our-files.test.ts` and `result-media-open.test.tsx`.
 
