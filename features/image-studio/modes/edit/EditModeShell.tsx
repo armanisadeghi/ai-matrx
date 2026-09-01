@@ -61,6 +61,7 @@ import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectFileName } from "@/features/files/redux/selectors";
 import { renameFile } from "@/features/files/redux/thunks";
 import { fileHandler } from "@/features/files/handler/handler";
+import { loadAiResultBlob } from "./load-ai-result-blob";
 import { FileVersionsList } from "@/features/files/components/core/FileVersions/FileVersionsList";
 import { addAssetVariants } from "@/features/files/api/assets";
 import type { AssetPreset } from "@/features/files/types";
@@ -310,21 +311,10 @@ export function EditModeShell({
       // the result's file_id (always a fresh URL); fall back to the op's
       // returned URL, which is fresh enough immediately post-op.
       try {
-        let blob: Blob;
-        if (newFileId) {
-          const resolved = await fileHandler.resolve({
-            kind: "file_id",
-            fileId: newFileId,
-          });
-          const fetchUrl = resolved.url ?? newUrl;
-          const res = await fetch(fetchUrl, { mode: "cors" });
-          if (!res.ok) throw new Error(`Fetch ${fetchUrl} → ${res.status}`);
-          blob = await res.blob();
-        } else {
-          const res = await fetch(newUrl, { mode: "cors" });
-          if (!res.ok) throw new Error(`Fetch ${newUrl} → ${res.status}`);
-          blob = await res.blob();
-        }
+        const blob = await loadAiResultBlob({
+          fileId: newFileId,
+          url: newUrl,
+        });
         await saveEditedImage({
           blob,
           filename: newName,
