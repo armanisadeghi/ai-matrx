@@ -21,6 +21,7 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 import { isKnownThirdPartyNoise } from "@/lib/console-noise";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
+import { isStructuredConsoleMirrorActive } from "./structuredConsoleMirror";
 
 let installed = false;
 /** Guards against capturing a console.error that fires from inside capture. */
@@ -253,6 +254,7 @@ export function installGlobalErrorCapture(): void {
     const originalError = console.error.bind(console);
     console.error = (...args: unknown[]) => {
       originalError(...args);
+      if (isStructuredConsoleMirrorActive()) return;
       if (inConsoleCapture) return; // never recurse into our own capture
       try {
         if (isKnownThirdPartyNoise(args)) return;

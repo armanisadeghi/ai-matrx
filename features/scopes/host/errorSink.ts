@@ -10,10 +10,14 @@
 
 import type { ErrorSink } from "@ai-matrx/associations";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { mirrorCapturedErrorToConsole } from "@/lib/diagnostics/structuredConsoleMirror";
 
 export const associationsErrorSink: ErrorSink = (event) => {
   // Keep the pre-extraction console scream — dev tools and tests watch it.
-  console.error(`[associations] ${event.code}: ${event.message}`, event.context);
+  mirrorCapturedErrorToConsole(
+    `[associations] ${event.code}: ${event.message}`,
+    event.context,
+  );
   try {
     captureError({
       source: "associations",

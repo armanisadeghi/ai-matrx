@@ -10,6 +10,10 @@ import {
   isOpaqueCrossOriginScriptError,
   serializeForErrorCapture,
 } from "./globalErrorCapture";
+import {
+  isStructuredConsoleMirrorActive,
+  mirrorCapturedErrorToConsole,
+} from "./structuredConsoleMirror";
 
 describe("global console error serialization", () => {
   beforeEach(() => {
@@ -74,6 +78,22 @@ describe("global console error serialization", () => {
       source: "console-error",
       message: "plain console failure",
     });
+  });
+
+  it("marks deliberate console mirrors of already-captured incidents", () => {
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {
+        expect(isStructuredConsoleMirrorActive()).toBe(true);
+      });
+
+    mirrorCapturedErrorToConsole("[associations] transport_failure", {
+      transient: true,
+    });
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    expect(isStructuredConsoleMirrorActive()).toBe(false);
+    consoleError.mockRestore();
   });
 
   it("recognizes Next's successful RSC-to-document navigation fallback", () => {
