@@ -70,6 +70,7 @@ import {
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 
 type BusyAction =
   | "connect-files"
@@ -249,13 +250,7 @@ export function GoogleWorkspaceReviewWorkspace({
   const chooseFile = () => {
     if (!activeConnection) return;
     void run("pick-file", async () => {
-      const accessToken = await google.signIn(
-        [...GOOGLE_WORKSPACE_FILE_SCOPES],
-        activeConnection.account_email ?? undefined,
-      );
-      if (!accessToken) {
-        throw new Error("Google did not provide access for file selection.");
-      }
+      const accessToken = await getGoogleDrivePickerToken(activeConnection);
       setPickerSessionConnectionId(activeConnection.id);
       const picked = await pickGoogleWorkspaceFile(accessToken, {
         initialQuery: pickerInitialQuery,
