@@ -165,13 +165,17 @@ export function pickSpokenFrontVariables(
   const h = hash(cardId);
   // Decorrelate the picks by shifting the hash per dimension.
   const energy = pick(ENERGY_CUES, h);
-  const anticipation = pick(ANTICIPATION_CUES, h >> 3);
+  // `hash()` returns an unsigned 32-bit integer. Keep every decorrelated lane
+  // unsigned too: `>>` reinterprets hashes above 0x7fffffff as negative and a
+  // negative remainder becomes an invalid array index. That silently turned
+  // guaranteed TTS offer values into `undefined` for real cards.
+  const anticipation = pick(ANTICIPATION_CUES, h >>> 3);
   const remaining = total - index - 1;
   const milestone = index > 0 ? milestonePhrase(remaining) : null;
   const leadIn =
     index === 0
-      ? pick(FIRST_CARD_PHRASES, h >> 5)
-      : (milestone ?? `${energy} ${pick(LEAD_IN_PHRASES, h >> 5)}`);
+      ? pick(FIRST_CARD_PHRASES, h >>> 5)
+      : (milestone ?? `${energy} ${pick(LEAD_IN_PHRASES, h >>> 5)}`);
 
   // Fill-in-the-blank fronts ("… is the ___.") must be spoken as "blank", never
   // the literal "underscore" the TTS engine would read from the raw glyphs.
@@ -180,9 +184,9 @@ export function pickSpokenFrontVariables(
 
   return {
     content,
-    sample_context: pick(SAMPLE_CONTEXTS, h >> 7),
-    speaker_profile: pick(SPEAKER_PROFILES, h >> 11),
-    directors_notes: pick(DIRECTORS_NOTES, h >> 13),
-    scene: pick(SCENES, h >> 17),
+    sample_context: pick(SAMPLE_CONTEXTS, h >>> 7),
+    speaker_profile: pick(SPEAKER_PROFILES, h >>> 11),
+    directors_notes: pick(DIRECTORS_NOTES, h >>> 13),
+    scene: pick(SCENES, h >>> 17),
   };
 }

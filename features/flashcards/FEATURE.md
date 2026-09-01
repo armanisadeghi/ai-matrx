@@ -162,6 +162,11 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-09-01 — FastFire spoken-front variation selection keeps its FNV-1a
+  hash unsigned while decorrelating each style lane. Cards whose hash has the
+  high bit set can no longer index the variation banks with negative numbers
+  and silently omit guaranteed TTS offer values.
+
 - 2026-09-01 — FastFire's local QA audio fixture now preloads and sequences real bounded spoken answers through the production capture/grading path instead of untranscribable oscillator tones.
 
 - 2026-08-31 — **FastFire Coach review waits for every launched card grade to
