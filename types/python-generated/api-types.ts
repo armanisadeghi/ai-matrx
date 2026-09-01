@@ -9253,6 +9253,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webinarjam/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_webinarjam_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crowdcast/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_crowdcast_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/socio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_socio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9466,6 +9517,108 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_unbounce_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/landingi/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_landingi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/duda/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_duda_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ucraft/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ucraft_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signable/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_signable_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/boldsign/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_boldsign_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signwell/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_signwell_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -36545,6 +36698,35 @@ export interface components {
              */
             folder?: string;
         };
+        /** BoldSignServiceStatus */
+        BoldSignServiceStatus: {
+            /**
+             * Kind
+             * @default boldsign_public_document_signing_status
+             * @constant
+             */
+            __kind?: "boldsign_public_document_signing_status";
+            /**
+             * Provider
+             * @default BoldSign
+             * @constant
+             */
+            provider?: "BoldSign";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.boldsign.com
+             * @constant
+             */
+            status_page?: "https://status.boldsign.com";
+        };
         /**
          * BookWyrmInstanceStatistics
          * @description Safe factual projection of the fixed public BookWyrm instance.
@@ -45976,6 +46158,40 @@ export interface components {
             /** Matches */
             matches?: components["schemas"]["CrossTopicSourceMatch"][];
         };
+        /** CrowdcastServiceStatus */
+        CrowdcastServiceStatus: {
+            /**
+             * Kind
+             * @default crowdcast_official_webinar_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "crowdcast_official_webinar_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Crowdcast
+             * @constant
+             */
+            provider?: "Crowdcast";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.crowdcast.io/
+             * @constant
+             */
+            status_page?: "https://status.crowdcast.io/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * CrystallizationRefusal
          * @description A pass that produced no proposal, and exactly why.
@@ -49745,6 +49961,38 @@ export interface components {
              * Format: uri
              */
             license_url: string;
+        };
+        /** DudaServiceStatus */
+        DudaServiceStatus: {
+            /**
+             * Kind
+             * @default duda_public_service_status
+             * @constant
+             */
+            __kind?: "duda_public_service_status";
+            /**
+             * Provider
+             * @default Duda
+             * @constant
+             */
+            provider?: "Duda";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.duda.co
+             * @constant
+             */
+            status_page?: "https://status.duda.co";
         };
         /**
          * DumpResource
@@ -60523,6 +60771,38 @@ export interface components {
              * @default false
              */
             debug?: boolean;
+        };
+        /** LandingiServiceStatus */
+        LandingiServiceStatus: {
+            /**
+             * Kind
+             * @default landingi_public_service_status
+             * @constant
+             */
+            __kind?: "landingi_public_service_status";
+            /**
+             * Provider
+             * @default Landingi
+             * @constant
+             */
+            provider?: "Landingi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.landingi.com
+             * @constant
+             */
+            status_page?: "https://status.landingi.com";
         };
         /** LandscapeBrief */
         LandscapeBrief: {
@@ -82342,6 +82622,64 @@ export interface components {
              */
             status_page?: "https://status.signnow.com";
         };
+        /** SignWellServiceStatus */
+        SignWellServiceStatus: {
+            /**
+             * Kind
+             * @default signwell_public_document_signing_status
+             * @constant
+             */
+            __kind?: "signwell_public_document_signing_status";
+            /**
+             * Provider
+             * @default SignWell
+             * @constant
+             */
+            provider?: "SignWell";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.signwell.com
+             * @constant
+             */
+            status_page?: "https://status.signwell.com";
+        };
+        /** SignableServiceStatus */
+        SignableServiceStatus: {
+            /**
+             * Kind
+             * @default signable_public_document_signing_status
+             * @constant
+             */
+            __kind?: "signable_public_document_signing_status";
+            /**
+             * Provider
+             * @default Signable
+             * @constant
+             */
+            provider?: "Signable";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.signable.co.uk
+             * @constant
+             */
+            status_page?: "https://status.signable.co.uk";
+        };
         /**
          * SimplecastServiceStatus
          * @description Safe aggregate status projection for Simplecast's fixed status page.
@@ -83565,6 +83903,40 @@ export interface components {
             value: string;
         } & {
             [key: string]: unknown;
+        };
+        /** SocioServiceStatus */
+        SocioServiceStatus: {
+            /**
+             * Kind
+             * @default socio_official_event_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "socio_official_event_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Socio
+             * @constant
+             */
+            provider?: "Socio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.socio.events
+             * @constant
+             */
+            status_page?: "https://status.socio.events";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * SoundCloudTrackResult
@@ -89384,6 +89756,38 @@ export interface components {
              */
             status_page?: "https://status.uxcam.com";
         };
+        /** UcraftServiceStatus */
+        UcraftServiceStatus: {
+            /**
+             * Kind
+             * @default ucraft_public_service_status
+             * @constant
+             */
+            __kind?: "ucraft_public_service_status";
+            /**
+             * Provider
+             * @default Ucraft
+             * @constant
+             */
+            provider?: "Ucraft";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.ucraft.com
+             * @constant
+             */
+            status_page?: "https://status.ucraft.com";
+        };
         /** UmbracoServiceStatus */
         UmbracoServiceStatus: {
             /**
@@ -93162,6 +93566,40 @@ export interface components {
             url: string;
             /** Topics */
             topics?: "PRINT_JOB_STATUS_CHANGED"[];
+        };
+        /** WebinarJamServiceStatus */
+        WebinarJamServiceStatus: {
+            /**
+             * Kind
+             * @default webinarjam_official_webinar_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "webinarjam_official_webinar_collaboration_platform_status";
+            /**
+             * Provider
+             * @default WebinarJam
+             * @constant
+             */
+            provider?: "WebinarJam";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.webinarjam.com
+             * @constant
+             */
+            status_page?: "https://status.webinarjam.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** WebpageInputPart */
         WebpageInputPart: {
@@ -110321,6 +110759,66 @@ export interface operations {
             };
         };
     };
+    public_status_webinarjam_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebinarJamServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_crowdcast_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrowdcastServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_socio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SocioServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -110577,6 +111075,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnbounceServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_landingi_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandingiServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_duda_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DudaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_ucraft_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UcraftServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_signable_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignableServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_boldsign_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoldSignServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_signwell_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignWellServiceStatus"];
                 };
             };
         };

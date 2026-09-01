@@ -20461,6 +20461,69 @@
         }
       }
     },
+    "/webinarjam/public/status": {
+      "get": {
+        "tags": [
+          "WebinarJam Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_webinarjam_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebinarJamServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crowdcast/public/status": {
+      "get": {
+        "tags": [
+          "Crowdcast Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_crowdcast_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrowdcastServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/socio/public/status": {
+      "get": {
+        "tags": [
+          "Socio Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_socio_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocioServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -20727,6 +20790,132 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UnbounceServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/landingi/public/status": {
+      "get": {
+        "tags": [
+          "Landingi Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_landingi_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandingiServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/duda/public/status": {
+      "get": {
+        "tags": [
+          "Duda Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_duda_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DudaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ucraft/public/status": {
+      "get": {
+        "tags": [
+          "Ucraft Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_ucraft_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UcraftServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/signable/public/status": {
+      "get": {
+        "tags": [
+          "Signable Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_signable_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignableServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/boldsign/public/status": {
+      "get": {
+        "tags": [
+          "BoldSign Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_boldsign_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoldSignServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/signwell/public/status": {
+      "get": {
+        "tags": [
+          "SignWell Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_signwell_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignWellServiceStatus"
                 }
               }
             }
@@ -87891,6 +88080,46 @@
         ],
         "title": "Body_upload_vision_master_media_upload_post"
       },
+      "BoldSignServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "boldsign_public_document_signing_status",
+            "title": "Kind",
+            "default": "boldsign_public_document_signing_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "BoldSign",
+            "title": "Provider",
+            "default": "BoldSign"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.boldsign.com",
+            "title": "Status Page",
+            "default": "https://status.boldsign.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BoldSignServiceStatus"
+      },
       "BookWyrmInstanceStatistics": {
         "properties": {
           "__kind": {
@@ -111485,6 +111714,55 @@
         "type": "object",
         "title": "CrossTopicSourceMatchResponse"
       },
+      "CrowdcastServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "crowdcast_official_webinar_collaboration_platform_status",
+            "title": "Kind",
+            "default": "crowdcast_official_webinar_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Crowdcast",
+            "title": "Provider",
+            "default": "Crowdcast"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.crowdcast.io/",
+            "title": "Status Page",
+            "default": "https://status.crowdcast.io/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CrowdcastServiceStatus"
+      },
       "CrystallizationRefusal": {
         "properties": {
           "reason": {
@@ -120619,6 +120897,50 @@
         ],
         "title": "DryadPublicDataset",
         "description": "Safe factual projection of one published public Dryad dataset."
+      },
+      "DudaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "duda_public_service_status",
+            "title": "Kind",
+            "default": "duda_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Duda",
+            "title": "Provider",
+            "default": "Duda"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.duda.co",
+            "title": "Status Page",
+            "default": "https://status.duda.co"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DudaServiceStatus"
       },
       "DumpResource": {
         "properties": {
@@ -145796,6 +146118,50 @@
         },
         "type": "object",
         "title": "LabelRequest"
+      },
+      "LandingiServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "landingi_public_service_status",
+            "title": "Kind",
+            "default": "landingi_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Landingi",
+            "title": "Provider",
+            "default": "Landingi"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.landingi.com",
+            "title": "Status Page",
+            "default": "https://status.landingi.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LandingiServiceStatus"
       },
       "LandscapeBrief": {
         "properties": {
@@ -196529,6 +196895,86 @@
         "title": "SignNowServiceStatus",
         "description": "Safe aggregate status projection for SignNow's fixed status page."
       },
+      "SignWellServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "signwell_public_document_signing_status",
+            "title": "Kind",
+            "default": "signwell_public_document_signing_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SignWell",
+            "title": "Provider",
+            "default": "SignWell"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.signwell.com",
+            "title": "Status Page",
+            "default": "https://status.signwell.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SignWellServiceStatus"
+      },
+      "SignableServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "signable_public_document_signing_status",
+            "title": "Kind",
+            "default": "signable_public_document_signing_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Signable",
+            "title": "Provider",
+            "default": "Signable"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.signable.co.uk",
+            "title": "Status Page",
+            "default": "https://status.signable.co.uk"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SignableServiceStatus"
+      },
       "SimplecastServiceStatus": {
         "properties": {
           "__kind": {
@@ -199240,6 +199686,55 @@
           "value"
         ],
         "title": "SnapshotValueResourceRefInput"
+      },
+      "SocioServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "socio_official_event_collaboration_platform_status",
+            "title": "Kind",
+            "default": "socio_official_event_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Socio",
+            "title": "Provider",
+            "default": "Socio"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.socio.events",
+            "title": "Status Page",
+            "default": "https://status.socio.events"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SocioServiceStatus"
       },
       "SoundCloudTrackResult": {
         "properties": {
@@ -212776,6 +213271,50 @@
         ],
         "title": "UXCamServiceStatus"
       },
+      "UcraftServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ucraft_public_service_status",
+            "title": "Kind",
+            "default": "ucraft_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Ucraft",
+            "title": "Provider",
+            "default": "Ucraft"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.ucraft.com",
+            "title": "Status Page",
+            "default": "https://status.ucraft.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "UcraftServiceStatus"
+      },
       "UmbracoServiceStatus": {
         "properties": {
           "__kind": {
@@ -222053,6 +222592,55 @@
         ],
         "title": "WebhookSubscriptionRequest",
         "description": "Body of ``POST /lulu/webhooks/subscription`` — admin-only, one call."
+      },
+      "WebinarJamServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "webinarjam_official_webinar_collaboration_platform_status",
+            "title": "Kind",
+            "default": "webinarjam_official_webinar_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "WebinarJam",
+            "title": "Provider",
+            "default": "WebinarJam"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.webinarjam.com",
+            "title": "Status Page",
+            "default": "https://status.webinarjam.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WebinarJamServiceStatus"
       },
       "WebpageInputPart": {
         "properties": {
