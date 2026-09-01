@@ -1051,6 +1051,7 @@ export const uploadFiles = createAsyncThunk<
   // index to `skipIndices` and we drop that file from the queue.
   const overrides = arg.filenameOverrides ?? {};
   const skipSet = new Set(arg.skipIndices ?? []);
+  const forceNewCopySet = new Set(arg.forceNewCopyIndices ?? []);
 
   // Reserve override target names in `existingNames` BEFORE the loop
   // runs, so two overrides into the same path can't both win and so
@@ -1106,6 +1107,13 @@ export const uploadFiles = createAsyncThunk<
             changeSummary: arg.changeSummary,
             metadata: arg.metadata,
             options: arg.options,
+            ...(forceNewCopySet.has(index)
+              ? {
+                  intent: "force_new_copy" as const,
+                  reason:
+                    "User selected Make a copy in the duplicate upload dialog",
+                }
+              : {}),
           },
           (ev) =>
             dispatch(

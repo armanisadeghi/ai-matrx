@@ -63,6 +63,15 @@ export interface UploadFileParams {
    * field alongside `metadata_json`.
    */
   options?: UploadOptions;
+  /** Strict dedup intent. Omitted preserves the legacy upload behavior. */
+  intent?: "create" | "alias_existing" | "force_new_copy";
+  /** Required by the backend when `intent` is `force_new_copy`. */
+  reason?: string;
+}
+
+function appendUploadIntent(form: FormData, params: UploadFileParams): void {
+  if (params.intent) form.append("intent", params.intent);
+  if (params.reason) form.append("reason", params.reason);
 }
 
 /** Mirrors the backend `options_json` envelope. Extend as new opts land. */
@@ -89,6 +98,7 @@ export async function uploadFile(
     form.append("metadata_json", JSON.stringify(params.metadata));
   if (params.options)
     form.append("options_json", JSON.stringify(params.options));
+  appendUploadIntent(form, params);
 
   // Non-progress multipart POST with a JSON response → typed client. Response
   // (FileUploadResponse) is DERIVED from the contract, not asserted.
@@ -112,6 +122,7 @@ export async function uploadFileWithProgress(
     form.append("metadata_json", JSON.stringify(params.metadata));
   if (params.options)
     form.append("options_json", JSON.stringify(params.options));
+  appendUploadIntent(form, params);
 
   // Raw client: XHR progress upload — the typed client is JSON-only and has
   // no progress-capable multipart verb.
