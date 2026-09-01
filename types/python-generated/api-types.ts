@@ -9576,6 +9576,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hireez/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hireez_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spark-hire/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_spark_hire_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10112,6 +10146,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_chargebee_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recurly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_recurly_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hiver/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hiver_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -57775,6 +57843,40 @@ export interface components {
             /** By Enrollment */
             by_enrollment?: components["schemas"]["EnrollmentCostRow"][];
         };
+        /** HireEZServiceStatus */
+        HireEZServiceStatus: {
+            /**
+             * Kind
+             * @default hireez_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "hireez_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default HireEZ
+             * @constant
+             */
+            provider?: "HireEZ";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.hireez.com
+             * @constant
+             */
+            status_page?: "https://status.hireez.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** HireVueServiceStatus */
         HireVueServiceStatus: {
             /**
@@ -57845,6 +57947,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** HiverServiceStatus */
+        HiverServiceStatus: {
+            /**
+             * Kind
+             * @default hiver_public_service_status
+             * @constant
+             */
+            __kind?: "hiver_public_service_status";
+            /**
+             * Provider
+             * @default Hiver
+             * @constant
+             */
+            provider?: "Hiver";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.hiverhq.com
+             * @constant
+             */
+            status_page?: "https://status.hiverhq.com";
         };
         /**
          * HomebrewPublicFormula
@@ -77963,6 +78097,38 @@ export interface components {
              */
             fallback?: boolean;
         };
+        /** RecurlyServiceStatus */
+        RecurlyServiceStatus: {
+            /**
+             * Kind
+             * @default recurly_public_service_status
+             * @constant
+             */
+            __kind?: "recurly_public_service_status";
+            /**
+             * Provider
+             * @default Recurly
+             * @constant
+             */
+            provider?: "Recurly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.recurly.com/
+             * @constant
+             */
+            status_page?: "https://status.recurly.com/";
+        };
         /** RedactPatternRequest */
         RedactPatternRequest: {
             /** Output Mode */
@@ -86098,6 +86264,40 @@ export interface components {
             is_stale?: boolean | null;
             /** Scrape Status */
             scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch") | null;
+        };
+        /** SparkHireServiceStatus */
+        SparkHireServiceStatus: {
+            /**
+             * Kind
+             * @default spark_hire_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "spark_hire_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Spark Hire
+             * @constant
+             */
+            provider?: "Spark Hire";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.sparkhire.com
+             * @constant
+             */
+            status_page?: "https://status.sparkhire.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * SpeakerSpec
@@ -113153,6 +113353,46 @@ export interface operations {
             };
         };
     };
+    public_status_hireez_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HireEZServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_spark_hire_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SparkHireServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -113789,6 +114029,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChargebeeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_recurly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurlyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_hiver_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HiverServiceStatus"];
                 };
             };
         };
