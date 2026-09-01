@@ -56,6 +56,15 @@ describe("parseApiErrorBody", () => {
 
     expect(shouldCaptureStreamFailure(error)).toBe(false);
   });
+
+  test("does not file the heartbeat recovery trigger as a red system error", () => {
+    const error = new Error(
+      "No server activity for 30000ms — stream considered dead",
+    );
+    error.name = "HeartbeatTimeoutError";
+
+    expect(shouldCaptureStreamFailure(error)).toBe(false);
+  });
 });
 
 describe("classifyUnprocessableError", () => {

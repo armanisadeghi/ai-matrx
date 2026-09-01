@@ -155,6 +155,13 @@ export function parseApiErrorBody(body: unknown): ParsedApiErrorBody {
 }
 
 export function shouldCaptureStreamFailure(error: unknown): boolean {
+  // Heartbeat expiry is the transport monitor's recovery trigger, not proof
+  // that the detached server run failed. The catch below immediately starts
+  // the canonical durable-operation reconnect. Filing the trigger itself as a
+  // red system_error turns successful self-healing into a production incident.
+  if (error instanceof Error && error.name === "HeartbeatTimeoutError") {
+    return false;
+  }
   return !(
     error instanceof ExpectedRequestConflictError ||
     isRecordUnavailableError(error)
