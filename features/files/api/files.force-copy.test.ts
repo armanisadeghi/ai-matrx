@@ -1,9 +1,12 @@
 import { uploadFileWithProgress } from "./files";
-import { uploadWithProgress } from "@/lib/python-client";
 
 jest.mock("@/lib/python-client", () => ({
   uploadWithProgress: jest.fn(),
 }));
+
+const mockUploadWithProgress: jest.Mock = jest.requireMock(
+  "@/lib/python-client",
+).uploadWithProgress;
 
 jest.mock("@/lib/api/typed-client", () => ({
   apiDelete: jest.fn(),
@@ -14,12 +17,8 @@ jest.mock("@/lib/api/typed-client", () => ({
   withQuery: jest.fn(),
 }));
 
-const mockedUpload = uploadWithProgress as jest.MockedFunction<
-  typeof uploadWithProgress
->;
-
 it("sends strict force-new-copy intent and reason in multipart", async () => {
-  mockedUpload.mockResolvedValue({
+  mockUploadWithProgress.mockResolvedValue({
     data: { file_id: "copy-2", file_path: "copy (1).txt" },
     meta: { requestId: "req-1", status: 200, serverRequestId: null },
   });
@@ -35,7 +34,7 @@ it("sends strict force-new-copy intent and reason in multipart", async () => {
     jest.fn(),
   );
 
-  const form = mockedUpload.mock.calls[0]?.[1] as FormData;
+  const form = mockUploadWithProgress.mock.calls[0]?.[1] as FormData;
   expect(form.get("intent")).toBe("force_new_copy");
   expect(form.get("reason")).toBe(
     "User selected Make a copy in the duplicate upload dialog",
