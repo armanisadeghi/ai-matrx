@@ -9236,6 +9236,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/demio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_demio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9432,6 +9449,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_memberful_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/unbounce/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_unbounce_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opentext/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_opentext_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -47392,6 +47443,40 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DemioServiceStatus */
+        DemioServiceStatus: {
+            /**
+             * Kind
+             * @default demio_official_webinar_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "demio_official_webinar_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Demio
+             * @constant
+             */
+            provider?: "Demio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.demio.com
+             * @constant
+             */
+            status_page?: "https://status.demio.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * DemodeskStatusResult
          * @description Safe projection of Demodesk's high-level service status.
@@ -67431,6 +67516,35 @@ export interface components {
             checks_inconclusive: number;
             /** Viewer Page */
             viewer_page: string;
+        };
+        /** OpenTextServiceStatus */
+        OpenTextServiceStatus: {
+            /**
+             * Kind
+             * @default opentext_public_document_platform_status
+             * @constant
+             */
+            __kind?: "opentext_public_document_platform_status";
+            /**
+             * Provider
+             * @default OpenText
+             * @constant
+             */
+            provider?: "OpenText";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.opentext.com
+             * @constant
+             */
+            status_page?: "https://status.opentext.com";
         };
         /**
          * OpenVSXExtension
@@ -89304,6 +89418,38 @@ export interface components {
             /** Unarchived */
             unarchived: boolean;
         };
+        /** UnbounceServiceStatus */
+        UnbounceServiceStatus: {
+            /**
+             * Kind
+             * @default unbounce_public_service_status
+             * @constant
+             */
+            __kind?: "unbounce_public_service_status";
+            /**
+             * Provider
+             * @default Unbounce
+             * @constant
+             */
+            provider?: "Unbounce";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.unbounce.com
+             * @constant
+             */
+            status_page?: "https://status.unbounce.com";
+        };
         /** UnderstudyRefreshRequest */
         UnderstudyRefreshRequest: {
             /**
@@ -110155,6 +110301,26 @@ export interface operations {
             };
         };
     };
+    public_status_demio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemioServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -110391,6 +110557,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberfulServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_unbounce_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnbounceServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_opentext_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenTextServiceStatus"];
                 };
             };
         };
