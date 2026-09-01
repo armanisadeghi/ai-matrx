@@ -2,10 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsAuthenticated,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import {
   connectGoogle,
   disconnectGoogle,
+  filterGoogleConnectionInventoryForUser,
   getYouTubeChannelPreview,
   getGoogleAdsCustomers,
   getGoogleAdsReport,
@@ -24,6 +29,8 @@ export const googleConnectionKeys = {
 
 export function useGoogleConnectionInventory() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const userId = useAppSelector(selectUserId);
+  const organizationIds = useAppSelector(selectOrganizationIds);
   return useQuery({
     queryKey: googleConnectionKeys.inventory,
     queryFn: ({ signal }) => listGoogleConnectionInventory(signal),
@@ -31,6 +38,12 @@ export function useGoogleConnectionInventory() {
     // Core routes can mount before the Redux auth slice hydrates, so do not
     // issue the inventory read until the caller has an authenticated identity.
     enabled: isAuthenticated,
+    select: (inventory) =>
+      filterGoogleConnectionInventoryForUser(
+        inventory,
+        userId,
+        organizationIds,
+      ),
     staleTime: 30_000,
   });
 }

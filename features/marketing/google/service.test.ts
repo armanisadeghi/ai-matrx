@@ -1,5 +1,6 @@
 import {
   connectionResource,
+  filterGoogleConnectionInventoryForUser,
   isGoogleConnectionReachableByUser,
   isStaleGoogleConnectionSelection,
   type GoogleConnectionPurpose,
@@ -30,6 +31,64 @@ const baseResource = {
 };
 
 describe("Google OAuth connection resources", () => {
+  it("removes admin-visible foreign connections and their resources from picker inventory", () => {
+    const connection = {
+      id: "owned-connection",
+      owner_type: "user" as const,
+      owner_user_id: "reviewer",
+      organization_id: null,
+      provider: "google" as const,
+      provider_subject: "subject-owned",
+      account_email: "reviewer@example.com",
+      account_name: null,
+      scopes: [GOOGLE_SCOPE.driveFile],
+      status: "connected" as const,
+      last_verified_at: null,
+      last_error: null,
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-09-01T00:00:00Z",
+      metadata: {},
+      credential_present: true,
+      credential_stable: true,
+      health: "connected" as const,
+    };
+    const foreign = {
+      ...connection,
+      id: "foreign-connection",
+      owner_user_id: "other-user",
+      provider_subject: "subject-foreign",
+      account_email: "other@example.com",
+    };
+    const inventory = filterGoogleConnectionInventoryForUser(
+      {
+        connections: [foreign, connection],
+        resources: [
+          {
+            ...baseResource,
+            id: "foreign-resource",
+            connection_id: foreign.id,
+            resource_type: "google_document" as const,
+          },
+          {
+            ...baseResource,
+            id: "owned-resource",
+            connection_id: connection.id,
+            resource_type: "google_document" as const,
+          },
+        ],
+      },
+      "reviewer",
+      [],
+    );
+
+    expect(inventory.connections.map((row) => row.id)).toEqual([
+      "owned-connection",
+    ]);
+    expect(inventory.resources.map((row) => row.id)).toEqual([
+      "owned-resource",
+    ]);
+  });
+
   it("excludes admin-visible Google connections the caller cannot reach", () => {
     const connection = {
       id: "connection-1",
