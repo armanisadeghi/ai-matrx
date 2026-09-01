@@ -42,6 +42,7 @@ import {
   useUpdateBrandAsset,
 } from "@/features/marketing/data/hooks";
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
+import { proxiedExternalImageUrl } from "@/lib/media/external-image";
 import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -68,10 +69,16 @@ function isImageCdnUrl(url: string): boolean {
 
 function assetPreviewUrl(asset: BrandAsset): string | null {
   if (!asset.source_url) return null;
-  return /\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(asset.source_url) ||
-    isImageCdnUrl(asset.source_url)
-    ? secureImageUrl(asset.source_url)
-    : null;
+  if (
+    !/\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(asset.source_url) &&
+    !isImageCdnUrl(asset.source_url)
+  ) {
+    return null;
+  }
+  // These are source-only records, not owned files. Fetch through the existing
+  // bounded/SSRF-guarded proxy so provider hotlink and cross-origin policies do
+  // not turn confirmed brand-library tiles into blank boxes.
+  return proxiedExternalImageUrl(secureImageUrl(asset.source_url));
 }
 
 function assetColorValue(asset: BrandAsset): string | null {
