@@ -154,6 +154,8 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-08-31** — Public auth sync treats `AuthSessionMissingError` during server validation as the expected session-loss path: it clears client authority and enters guest mode without emitting a production console error; unrelated validation failures remain loud.
+
 - **2026-08-31** — Protected agent-builder routes before render and moved their
   MCP catalog and system-context reads behind `runWithSessionRetry`; a guest or
   expired session now stops at the auth boundary instead of fanning anonymous

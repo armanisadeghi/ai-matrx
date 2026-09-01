@@ -15,6 +15,23 @@ import { getFingerprint } from "@/lib/services/fingerprint-service";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
 import { rememberValidatedAccount } from "@/utils/auth/remembered-account";
 
+type AuthValidationError = {
+  name?: unknown;
+};
+
+/**
+ * A session can disappear between the local session read and server
+ * validation. Supabase reports that normal sign-out/expiry race as an error,
+ * but the correct application outcome is simply the guest path below.
+ */
+export function isExpectedMissingAuthSession(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as AuthValidationError).name === "AuthSessionMissingError"
+  );
+}
+
 /**
  * Syncs authentication state to Redux for ALL public routes.
  *
@@ -64,7 +81,7 @@ export function usePublicAuthSync() {
             data: { user: validatedUser },
             error: userError,
           } = await supabase.auth.getUser();
-          if (userError) {
+          if (userError && !isExpectedMissingAuthSession(userError)) {
             console.error("Auth validation error:", userError);
           }
           user = validatedUser;

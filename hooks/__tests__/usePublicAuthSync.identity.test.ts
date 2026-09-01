@@ -90,3 +90,34 @@ describe("identity reconciliation", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 });
+
+describe("auth validation reporting", () => {
+  it("classifies a session lost during validation as expected lifecycle", async () => {
+    const { isExpectedMissingAuthSession } = await import(
+      "@/hooks/usePublicAuthSync"
+    );
+    expect(
+      isExpectedMissingAuthSession({
+        name: "AuthSessionMissingError",
+        message: "Auth session missing!",
+        status: 400,
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps unrelated validation failures reportable", async () => {
+    const { isExpectedMissingAuthSession } = await import(
+      "@/hooks/usePublicAuthSync"
+    );
+    expect(
+      isExpectedMissingAuthSession({
+        name: "AuthApiError",
+        message: "upstream unavailable",
+        status: 503,
+      }),
+    ).toBe(false);
+    expect(isExpectedMissingAuthSession(new Error("storage unavailable"))).toBe(
+      false,
+    );
+  });
+});
