@@ -9389,6 +9389,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/personio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_personio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lever/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lever_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/greenhouse/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_greenhouse_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gem/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_gem_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9738,6 +9806,91 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_baremetrics_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pipedream/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pipedream_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rudderstack/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_rudderstack_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gorgias/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_gorgias_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groove/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_groove_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zight/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_zight_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -55368,6 +55521,40 @@ export interface components {
              */
             status_page?: "https://status.geckoboard.com";
         };
+        /** GemServiceStatus */
+        GemServiceStatus: {
+            /**
+             * Kind
+             * @default gem_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "gem_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Gem
+             * @constant
+             */
+            provider?: "Gem";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.gem.com
+             * @constant
+             */
+            status_page?: "https://status.gem.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * GenerateImageRequest
          * @description Wire shape of POST /images/generate (matches the FE client's
@@ -56176,6 +56363,38 @@ export interface components {
              */
             access_mode?: "read_only";
         };
+        /** GorgiasServiceStatus */
+        GorgiasServiceStatus: {
+            /**
+             * Kind
+             * @default gorgias_public_service_status
+             * @constant
+             */
+            __kind?: "gorgias_public_service_status";
+            /**
+             * Provider
+             * @default Gorgias
+             * @constant
+             */
+            provider?: "Gorgias";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.gorgias.com
+             * @constant
+             */
+            status_page?: "https://status.gorgias.com";
+        };
         /**
          * GrafanaDashboardSearchRequest
          * @description One bounded dashboard title/tag query; no arbitrary MCP arguments.
@@ -56351,6 +56570,72 @@ export interface components {
             edges: components["schemas"]["GraphEdge"][];
             /** Truncated */
             truncated: boolean;
+        };
+        /** GreenhouseServiceStatus */
+        GreenhouseServiceStatus: {
+            /**
+             * Kind
+             * @default greenhouse_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "greenhouse_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Greenhouse
+             * @constant
+             */
+            provider?: "Greenhouse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.greenhouse.io
+             * @constant
+             */
+            status_page?: "https://status.greenhouse.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** GrooveServiceStatus */
+        GrooveServiceStatus: {
+            /**
+             * Kind
+             * @default groove_public_service_status
+             * @constant
+             */
+            __kind?: "groove_public_service_status";
+            /**
+             * Provider
+             * @default Groove
+             * @constant
+             */
+            provider?: "Groove";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.groovehq.com
+             * @constant
+             */
+            status_page?: "https://status.groovehq.com";
         };
         /** GscDailyPoint */
         GscDailyPoint: {
@@ -61718,6 +62003,40 @@ export interface components {
              * @constant
              */
             instance_page?: "https://lemmy.world/";
+        };
+        /** LeverServiceStatus */
+        LeverServiceStatus: {
+            /**
+             * Kind
+             * @default lever_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "lever_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Lever
+             * @constant
+             */
+            provider?: "Lever";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.lever.co
+             * @constant
+             */
+            status_page?: "https://status.lever.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** LibraryCatalogItemOut */
         LibraryCatalogItemOut: {
@@ -71234,6 +71553,40 @@ export interface components {
              */
             force?: boolean;
         };
+        /** PersonioServiceStatus */
+        PersonioServiceStatus: {
+            /**
+             * Kind
+             * @default personio_official_hr_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "personio_official_hr_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Personio
+             * @constant
+             */
+            provider?: "Personio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.personio.de
+             * @constant
+             */
+            status_page?: "https://status.personio.de";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** PicklistBinding */
         PicklistBinding: {
             /**
@@ -71455,6 +71808,38 @@ export interface components {
          * @enum {string}
          */
         PipeRequest: "code" | "human" | "ai" | "human_then_ai" | "ai_then_human" | "any";
+        /** PipedreamServiceStatus */
+        PipedreamServiceStatus: {
+            /**
+             * Kind
+             * @default pipedream_public_service_status
+             * @constant
+             */
+            __kind?: "pipedream_public_service_status";
+            /**
+             * Provider
+             * @default Pipedream
+             * @constant
+             */
+            provider?: "Pipedream";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.pipedream.com
+             * @constant
+             */
+            status_page?: "https://status.pipedream.com";
+        };
         /** PipelineProgress */
         PipelineProgress: {
             /**
@@ -79688,6 +80073,38 @@ export interface components {
             total_downloads: number;
             /** Version Downloads */
             version_downloads: number;
+        };
+        /** RudderStackServiceStatus */
+        RudderStackServiceStatus: {
+            /**
+             * Kind
+             * @default rudderstack_public_service_status
+             * @constant
+             */
+            __kind?: "rudderstack_public_service_status";
+            /**
+             * Provider
+             * @default RudderStack
+             * @constant
+             */
+            provider?: "RudderStack";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.rudderstack.com
+             * @constant
+             */
+            status_page?: "https://status.rudderstack.com";
         };
         /**
          * RuleApplied
@@ -95737,6 +96154,35 @@ export interface components {
             /** Record Page */
             record_page: string;
         };
+        /** ZightServiceStatus */
+        ZightServiceStatus: {
+            /**
+             * Kind
+             * @default zight_public_content_capture_status
+             * @constant
+             */
+            __kind?: "zight_public_content_capture_status";
+            /**
+             * Provider
+             * @default Zight
+             * @constant
+             */
+            provider?: "Zight";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.zight.com
+             * @constant
+             */
+            status_page?: "https://status.zight.com";
+        };
         /** ZoteroCreator */
         ZoteroCreator: {
             /** Creator Type */
@@ -111649,6 +112095,86 @@ export interface operations {
             };
         };
     };
+    public_status_personio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonioServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_lever_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeverServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_greenhouse_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GreenhouseServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_gem_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GemServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -112065,6 +112591,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BaremetricsServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pipedream_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipedreamServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_rudderstack_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RudderStackServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_gorgias_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GorgiasServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_groove_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrooveServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_zight_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZightServiceStatus"];
                 };
             };
         };

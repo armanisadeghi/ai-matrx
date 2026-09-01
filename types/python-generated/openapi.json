@@ -20629,6 +20629,90 @@
         }
       }
     },
+    "/personio/public/status": {
+      "get": {
+        "tags": [
+          "Personio Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_personio_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonioServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lever/public/status": {
+      "get": {
+        "tags": [
+          "Lever Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_lever_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeverServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/greenhouse/public/status": {
+      "get": {
+        "tags": [
+          "Greenhouse Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_greenhouse_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GreenhouseServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gem/public/status": {
+      "get": {
+        "tags": [
+          "Gem Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_gem_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GemServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21063,6 +21147,111 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BaremetricsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipedream/public/status": {
+      "get": {
+        "tags": [
+          "Pipedream Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pipedream_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipedreamServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rudderstack/public/status": {
+      "get": {
+        "tags": [
+          "RudderStack Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rudderstack_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RudderStackServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gorgias/public/status": {
+      "get": {
+        "tags": [
+          "Gorgias Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_gorgias_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GorgiasServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groove/public/status": {
+      "get": {
+        "tags": [
+          "Groove Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_groove_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrooveServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zight/public/status": {
+      "get": {
+        "tags": [
+          "Zight Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_zight_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZightServiceStatus"
                 }
               }
             }
@@ -133350,6 +133539,55 @@
         ],
         "title": "GeckoboardServiceStatus"
       },
+      "GemServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "gem_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "gem_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Gem",
+            "title": "Provider",
+            "default": "Gem"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.gem.com",
+            "title": "Status Page",
+            "default": "https://status.gem.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GemServiceStatus"
+      },
       "GenerateImageRequest": {
         "properties": {
           "organization_id": {
@@ -135317,6 +135555,50 @@
         ],
         "title": "GoogleTasksPreview"
       },
+      "GorgiasServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "gorgias_public_service_status",
+            "title": "Kind",
+            "default": "gorgias_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Gorgias",
+            "title": "Provider",
+            "default": "Gorgias"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.gorgias.com",
+            "title": "Status Page",
+            "default": "https://status.gorgias.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "GorgiasServiceStatus"
+      },
       "GrafanaDashboardSearchRequest": {
         "properties": {
           "query": {
@@ -135620,6 +135902,99 @@
           "truncated"
         ],
         "title": "GraphPayload"
+      },
+      "GreenhouseServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "greenhouse_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "greenhouse_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Greenhouse",
+            "title": "Provider",
+            "default": "Greenhouse"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.greenhouse.io",
+            "title": "Status Page",
+            "default": "https://status.greenhouse.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GreenhouseServiceStatus"
+      },
+      "GrooveServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "groove_public_service_status",
+            "title": "Kind",
+            "default": "groove_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Groove",
+            "title": "Provider",
+            "default": "Groove"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.groovehq.com",
+            "title": "Status Page",
+            "default": "https://status.groovehq.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "GrooveServiceStatus"
       },
       "GscDailyPoint": {
         "properties": {
@@ -147839,6 +148214,55 @@
         ],
         "title": "LemmyInstanceStatistics",
         "description": "Safe factual projection of the fixed public Lemmy instance."
+      },
+      "LeverServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lever_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "lever_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Lever",
+            "title": "Provider",
+            "default": "Lever"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.lever.co",
+            "title": "Status Page",
+            "default": "https://status.lever.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LeverServiceStatus"
       },
       "LibraryCatalogItemOut": {
         "properties": {
@@ -169621,6 +170045,55 @@
         "type": "object",
         "title": "PersonalizeRunBody"
       },
+      "PersonioServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "personio_official_hr_collaboration_platform_status",
+            "title": "Kind",
+            "default": "personio_official_hr_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Personio",
+            "title": "Provider",
+            "default": "Personio"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.personio.de",
+            "title": "Status Page",
+            "default": "https://status.personio.de"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PersonioServiceStatus"
+      },
       "PicklistBinding": {
         "properties": {
           "listId": {
@@ -170256,6 +170729,50 @@
         ],
         "title": "PipeRequest",
         "description": "What a loop's policy ASKS for at a stage.\n\n``HUMAN_THEN_AI`` is the vision's decision-point primitive: ask the human,\nand if they do not answer within ``escalate_after_seconds``, ask the AI. This\nmodule records the request and the escalation deadline; the ESCALATION SWEEP\nitself is G-HUMAN-TIMEOUT and is deliberately not implemented here."
+      },
+      "PipedreamServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pipedream_public_service_status",
+            "title": "Kind",
+            "default": "pipedream_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pipedream",
+            "title": "Provider",
+            "default": "Pipedream"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pipedream.com",
+            "title": "Status Page",
+            "default": "https://status.pipedream.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PipedreamServiceStatus"
       },
       "PipelineProgress": {
         "properties": {
@@ -189399,6 +189916,50 @@
         ],
         "title": "RubyGemsPublicGem",
         "description": "Safe bounded projection of one public RubyGems.org gem."
+      },
+      "RudderStackServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rudderstack_public_service_status",
+            "title": "Kind",
+            "default": "rudderstack_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "RudderStack",
+            "title": "Provider",
+            "default": "RudderStack"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rudderstack.com",
+            "title": "Status Page",
+            "default": "https://status.rudderstack.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "RudderStackServiceStatus"
       },
       "RuleApplied": {
         "properties": {
@@ -226876,6 +227437,46 @@
         ],
         "title": "ZenodoPublicRecord",
         "description": "Safe bounded projection of one public Zenodo record."
+      },
+      "ZightServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zight_public_content_capture_status",
+            "title": "Kind",
+            "default": "zight_public_content_capture_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Zight",
+            "title": "Provider",
+            "default": "Zight"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.zight.com",
+            "title": "Status Page",
+            "default": "https://status.zight.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ZightServiceStatus"
       },
       "ZoteroCreator": {
         "properties": {
