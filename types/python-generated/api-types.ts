@@ -9304,6 +9304,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/certain/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_certain_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spotme/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_spotme_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/swoogo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_swoogo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9568,6 +9619,125 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_ucraft_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ecwid/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ecwid_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/volusion/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_volusion_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/heap/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_heap_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contentsquare/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_contentsquare_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/synccom/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_synccom_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/qwilr/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_qwilr_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proposify/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_proposify_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -40287,6 +40457,40 @@ export interface components {
              */
             is_active?: boolean;
         };
+        /** CertainServiceStatus */
+        CertainServiceStatus: {
+            /**
+             * Kind
+             * @default certain_official_event_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "certain_official_event_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Certain
+             * @constant
+             */
+            provider?: "Certain";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.certain.com
+             * @constant
+             */
+            status_page?: "https://status.certain.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * ChameleonServiceStatus
          * @description Safe aggregate status projection for Chameleon's fixed status page.
@@ -44476,6 +44680,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://www.contentfulstatus.com/";
+        };
+        /** ContentsquareServiceStatus */
+        ContentsquareServiceStatus: {
+            /**
+             * Kind
+             * @default contentsquare_public_service_status
+             * @constant
+             */
+            __kind?: "contentsquare_public_service_status";
+            /**
+             * Provider
+             * @default Contentsquare
+             * @constant
+             */
+            provider?: "Contentsquare";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.contentsquare.com
+             * @constant
+             */
+            status_page?: "https://status.contentsquare.com";
         };
         /**
          * ContentstackServiceStatus
@@ -50184,6 +50420,38 @@ export interface components {
              * @default https://api.ebay.com/oauth/api_scope
              */
             scope?: string;
+        };
+        /** EcwidServiceStatus */
+        EcwidServiceStatus: {
+            /**
+             * Kind
+             * @default ecwid_public_service_status
+             * @constant
+             */
+            __kind?: "ecwid_public_service_status";
+            /**
+             * Provider
+             * @default Ecwid
+             * @constant
+             */
+            provider?: "Ecwid";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.ecwid.com
+             * @constant
+             */
+            status_page?: "https://status.ecwid.com";
         };
         /**
          * EdgeDef
@@ -56345,6 +56613,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** HeapServiceStatus */
+        HeapServiceStatus: {
+            /**
+             * Kind
+             * @default heap_public_service_status
+             * @constant
+             */
+            __kind?: "heap_public_service_status";
+            /**
+             * Provider
+             * @default Heap
+             * @constant
+             */
+            provider?: "Heap";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.heap.io
+             * @constant
+             */
+            status_page?: "https://status.heap.io";
         };
         /**
          * HeldOutOutcome
@@ -74288,6 +74588,35 @@ export interface components {
              */
             label?: string;
         };
+        /** ProposifyServiceStatus */
+        ProposifyServiceStatus: {
+            /**
+             * Kind
+             * @default proposify_public_document_proposal_status
+             * @constant
+             */
+            __kind?: "proposify_public_document_proposal_status";
+            /**
+             * Provider
+             * @default Proposify
+             * @constant
+             */
+            provider?: "Proposify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.proposify.com
+             * @constant
+             */
+            status_page?: "https://status.proposify.com";
+        };
         /**
          * ProspectCaptureBody
          * @description One page, captured from wherever the user (or their agent) is standing.
@@ -75297,6 +75626,35 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** QwilrServiceStatus */
+        QwilrServiceStatus: {
+            /**
+             * Kind
+             * @default qwilr_public_document_proposal_status
+             * @constant
+             */
+            __kind?: "qwilr_public_document_proposal_status";
+            /**
+             * Provider
+             * @default Qwilr
+             * @constant
+             */
+            provider?: "Qwilr";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.qwilr.com
+             * @constant
+             */
+            status_page?: "https://status.qwilr.com";
         };
         /**
          * RCSBPDBPublicEntry
@@ -84477,6 +84835,40 @@ export interface components {
             /** Plans */
             plans: components["schemas"]["PlanRecord"][];
         };
+        /** SpotMeServiceStatus */
+        SpotMeServiceStatus: {
+            /**
+             * Kind
+             * @default spotme_official_event_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "spotme_official_event_collaboration_platform_status";
+            /**
+             * Provider
+             * @default SpotMe
+             * @constant
+             */
+            provider?: "SpotMe";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.spotme.com
+             * @constant
+             */
+            status_page?: "https://status.spotme.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * SpotifyPublicMetadata
          * @description Safe projection of one public Spotify oEmbed response.
@@ -86168,6 +86560,40 @@ export interface components {
             /** Limit */
             limit: number;
         };
+        /** SwoogoServiceStatus */
+        SwoogoServiceStatus: {
+            /**
+             * Kind
+             * @default swoogo_official_event_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "swoogo_official_event_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Swoogo
+             * @constant
+             */
+            provider?: "Swoogo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://www.swoogostatus.com
+             * @constant
+             */
+            status_page?: "https://www.swoogostatus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SyncClustersRequest */
         SyncClustersRequest: {
             /**
@@ -86185,6 +86611,35 @@ export interface components {
              * @description Cap each court's pull at N clusters. None = pull everything. Useful for smoke-testing a sync before committing to a full run.
              */
             limit_per_court?: number | null;
+        };
+        /** SyncComServiceStatus */
+        SyncComServiceStatus: {
+            /**
+             * Kind
+             * @default synccom_public_cloud_file_status
+             * @constant
+             */
+            __kind?: "synccom_public_cloud_file_status";
+            /**
+             * Provider
+             * @default Sync.com
+             * @constant
+             */
+            provider?: "Sync.com";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.sync.com
+             * @constant
+             */
+            status_page?: "https://status.sync.com";
         };
         /** SyncOpinionsRequest */
         SyncOpinionsRequest: {
@@ -92903,6 +93358,38 @@ export interface components {
              * @default false
              */
             is_brand?: boolean;
+        };
+        /** VolusionServiceStatus */
+        VolusionServiceStatus: {
+            /**
+             * Kind
+             * @default volusion_public_service_status
+             * @constant
+             */
+            __kind?: "volusion_public_service_status";
+            /**
+             * Provider
+             * @default Volusion
+             * @constant
+             */
+            provider?: "Volusion";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.volusion.com
+             * @constant
+             */
+            status_page?: "https://status.volusion.com";
         };
         /** WaitForCommand */
         WaitForCommand: {
@@ -110819,6 +111306,66 @@ export interface operations {
             };
         };
     };
+    public_status_certain_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertainServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_spotme_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpotMeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_swoogo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwoogoServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -111135,6 +111682,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UcraftServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_ecwid_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EcwidServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_volusion_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VolusionServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_heap_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeapServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_contentsquare_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentsquareServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_synccom_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncComServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_qwilr_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QwilrServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_proposify_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposifyServiceStatus"];
                 };
             };
         };
