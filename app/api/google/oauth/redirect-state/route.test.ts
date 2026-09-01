@@ -50,11 +50,14 @@ describe("Google OAuth redirect state route", () => {
     const cookieValue = minted.cookies.get(
       "mx_google_oauth_redirect_state",
     )?.value;
+    if (!cookieValue) {
+      throw new Error("Expected Google OAuth redirect state cookie to be minted.");
+    }
     const validate = request(
       "PUT",
       { state: body.state },
       "https://www.aimatrx.com",
-      `mx_google_oauth_redirect_state=${cookieValue ?? ""}`,
+      `mx_google_oauth_redirect_state=${cookieValue}`,
     );
     const response = await PUT(validate);
     expect(response.status).toBe(200);

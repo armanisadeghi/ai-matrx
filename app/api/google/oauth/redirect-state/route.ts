@@ -49,8 +49,12 @@ export async function PUT(request: NextRequest) {
   }
   const body = (await request.json()) as { state?: unknown };
   const state = typeof body.state === "string" ? body.state : "";
-  const expected = request.cookies.get(COOKIE_NAME)?.value ?? "";
-  const valid = Boolean(state && expected && stateMatches(expected, state));
+  const expectedCookie = request.cookies.get(COOKIE_NAME);
+  const valid = Boolean(
+    state &&
+      expectedCookie &&
+      stateMatches(expectedCookie.value, state),
+  );
   const response = NextResponse.json(
     valid
       ? { valid: true }
