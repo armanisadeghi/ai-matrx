@@ -58,6 +58,7 @@ import {
 import type { SelectedGoogleFile } from "@/features/google-workspace/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { materializeGoogleDriveFiles } from "@/features/google-workspace/import/materializeGoogleDriveFile";
+import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
 
 const WINDOW_ID = "google-connect-window";
@@ -186,14 +187,7 @@ function GoogleConnectWindowBody({
   const chooseFile = () =>
     void run("pick", async () => {
       if (!connection) return;
-      const accessToken = await google.signIn(
-        [...GOOGLE_WORKSPACE_FILE_SCOPES],
-        connection.account_email ?? undefined,
-        { interactive: true },
-      );
-      if (!accessToken) {
-        throw new Error("Google did not grant access to choose a file.");
-      }
+      const accessToken = await getGoogleDrivePickerToken(connection);
       if (mode === "drive-import") {
         const picked = await pickGoogleDriveFiles(accessToken);
         if (!picked?.length) return;
