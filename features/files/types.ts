@@ -845,6 +845,13 @@ export interface UploadFilesArg {
    * those files. Indices reference the original `files` array.
    */
   skipIndices?: number[];
+  /**
+   * Indices whose duplicate-dialog decision was explicitly "Make a copy".
+   * The upload keeps its unique display name and sends the backend's strict
+   * `force_new_copy` intent so checksum-identical bytes create a distinct,
+   * durable row linked through `duplicate_of_file_id`.
+   */
+  forceNewCopyIndices?: number[];
 }
 
 export interface RenameFileArg {

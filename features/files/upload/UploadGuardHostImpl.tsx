@@ -16,7 +16,7 @@
  *   2. Scan against Redux `filesById` for content / name conflicts in
  *      the target folder.
  *   3. If any conflicts → mount the dialog, await the user's choices.
- *   4. Translate decisions into `filenameOverrides` + `skipIndices`
+ *   4. Translate decisions into per-file overwrite/skip/force-copy intent
  *      and dispatch `uploadFiles`.
  *   5. Resolve the original `requestUpload(...)` promise with the
  *      result.
@@ -172,6 +172,7 @@ export default function UploadGuardHostImpl() {
       // Translate decisions into thunk overrides + aliased-file mapping.
       const filenameOverrides: Record<number, string> = {};
       const skipIndices: number[] = [];
+      const forceNewCopyIndices: number[] = [];
       const aliased: Array<{ inputIndex: number; existingFileId: string }> =
         [];
       const decisionById = new Map(decisions.map((d) => [d.id, d.action]));
@@ -194,10 +195,12 @@ export default function UploadGuardHostImpl() {
           // Overwrite — upload to the EXISTING file's exact name so
           // the backend version-bumps in place.
           filenameOverrides[c.index] = c.match.existing.fileName;
+        } else if (action === "copy") {
+          // A unique optimistic name is not a durable copy: checksum dedup
+          // otherwise returns the original row id. Carry the user's explicit
+          // intent all the way to the strict backend upload path.
+          forceNewCopyIndices.push(c.index);
         }
-        // "copy" — leave entry untouched; the thunk's auto " (1)"
-        // rename takes care of the unique name. The future BE flip
-        // will additionally stamp `intent: "force_new_copy"` here.
       }
 
       // Close the dialog before awaiting the upload so the UI
@@ -211,6 +214,10 @@ export default function UploadGuardHostImpl() {
           ...filenameOverrides,
         },
         skipIndices: [...(cur.arg.skipIndices ?? []), ...skipIndices],
+        forceNewCopyIndices: [
+          ...(cur.arg.forceNewCopyIndices ?? []),
+          ...forceNewCopyIndices,
+        ],
       };
 
       // If every file was skipped or aliased there's nothing to
