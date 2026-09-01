@@ -19,6 +19,9 @@ Cross-repo system of record: `/Users/armanisadeghi/code/common-docs/systems/plat
 - **One-shot / imperative (most callers):** `brokeredFetch({ audience: "anthropic", tierPolicy: "none", model }, "/v1/messages", { method: "POST", body })` — returns raw `Response`, stream the body freely.
 - **Realtime / native:** `const t = await resolveBrokeredTransport({ audience: "openai_realtime", tierPolicy: "none", model }); if (t.mode === "native_ephemeral") connect(t.endpoint, t.token)`.
 - **Component-lifetime freshness:** `useBrokeredCredential(req)`.
+- **Google Picker:** `getGoogleDrivePickerToken(connection)` requests
+  `google_drive_picker` with `connection:<uuid>` plus `drive.file`; the vault refresh token stays
+  server-side and only the short-lived native token enters memory.
 
 ## Invariants (violating any is a defect)
 
@@ -35,5 +38,6 @@ Demo page: `/demos/token-broker` (dev builds) — mint per audience/tier, cache 
 
 ## Change Log
 
+- 2026-09-01 — Added the `google_drive_picker` consumer used by both Workspace Picker and Files Drive import; it is connection-bound and `drive.file`-only.
 - 2026-08-15 — Added `cartesia_tts` (native ephemeral); `lib/cartesia/accessToken.ts` now consumes the broker and the duplicate Next.js token minter is removed.
 - 2026-07-12 — Created: full client primitive (types/client/cache/transport/hooks) + demo page; audiences live: `openai_realtime` (native), `anthropic` (proxied).

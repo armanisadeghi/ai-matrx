@@ -18,7 +18,10 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 ## Authorization contract
 
 - Docs, Sheets, and Files import use `drive.file`, never an account-wide Drive scope. The user explicitly selects each item through Google Picker before AI Matrx can register, operate on, or import it.
-- The browser Picker token is short-lived, memory-only, restricted to the requested identity plus `drive.file` scopes, and tied to the connected account with `login_hint`.
+- The browser Picker token is short-lived and memory-only. `drivePickerToken.ts` requests the
+  `google_drive_picker` broker audience with one `connection:<uuid>` and exactly `drive.file`;
+  aidream verifies connection ownership and refreshes the vault credential. Picker never relies on
+  a second GIS popup or exposes the refresh token.
 - The durable refresh token is encrypted in aidream's canonical user secrets vault and is never persisted in the browser.
 - Gmail is incremental and uses only `gmail.send`. The product cannot read, search, delete, or organize Gmail.
 - Gmail sending requires visible recipients, subject, body, and an unchecked user confirmation immediately before the send action.
@@ -141,6 +144,9 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-01: Routed Picker and Drive import through the connection-bound token broker audience,
+  eliminating the second browser OAuth popup that could silently return no token in isolated
+  sessions while preserving the exact `drive.file` boundary.
 - 2026-08-28: Replaced first-row Google account resolution with one reusable
   identity selector and separate remembered Workspace/Gmail choices. Chat
   attachments and Picker resources now stay scoped to the account shown;
