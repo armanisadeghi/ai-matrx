@@ -8,6 +8,7 @@
 
 import { after, NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
+import { parseCookieHeader } from "@ai-matrx/data/db";
 import {
   AUTH_COOKIE_NAME,
   LEGACY_AUTH_COOKIE_NAME,
@@ -173,6 +174,31 @@ export async function GET(request: Request) {
 
       const [jar, requestHeaders] = await Promise.all([cookies(), headers()]);
 
+      // 🚨 THE DUPLICATE-PRESERVING VIEW (@ai-matrx/data 0.8.0). `cookies()`
+      // keys its jar by NAME, so two same-name auth cookies at two Domain
+      // scopes have ALREADY collapsed to one — survivor = whichever the
+      // browser sent last, a coin flip between the session and anonymous.
+      // That is the split-jar outage class, and this door was the last one
+      // still blind to it: the code exchange and the "already signed in"
+      // `getUser()` recovery below both read the jar.
+      //
+      // We feed the RAW header through `cookieStore.getAll` rather than the
+      // door's `cookieHeader` option on purpose: `cookieHeader` REPLACES the
+      // host view outright, which would silently discard the verifier alias
+      // below (the 2026-08-31 mobile-outage fix). The package reconciles
+      // whatever `getAll` returns — duplicates included — so routing the raw
+      // entries through our own view keeps BOTH repairs.
+      const rawCookieEntries = parseCookieHeader(requestHeaders.get("cookie"));
+      const requestCookieEntries: { name: string; value: string }[] =
+        rawCookieEntries.length > 0 ? rawCookieEntries : jar.getAll();
+
+      /** First NON-EMPTY value for a name — the same non-empty-wins rule the
+       *  package's `authCookie.reconcile` applies, for our own lookups. */
+      const cookieValue = (name: string): string =>
+        requestCookieEntries.find(
+          (cookie) => cookie.name === name && cookie.value.length > 0,
+        )?.value ?? "";
+
       // THE CUTOVER-COMPAT SHIM — root cause of the 2026-08-31 mobile outage.
       // The auth-authority cutover renamed the cookie (`sb-matrx-auth` →
       // `sb-matrx-auth-v2`) mid-day, and the legacy rename migration covers the
@@ -187,12 +213,11 @@ export async function GET(request: Request) {
       // An EMPTY verifier cookie is as broken as an absent one — supabase-js
       // fails the exchange client-side on it with the generic error and zero
       // server trace — so presence means a NON-EMPTY value, never `has()`.
-      const currentVerifierValue = jar.get(CODE_VERIFIER_COOKIE)?.value ?? "";
+      const currentVerifierValue = cookieValue(CODE_VERIFIER_COOKIE);
       const verifierUsable = currentVerifierValue.length > 0;
       const verifierAliasFrom = verifierUsable
         ? null
-        : (jar
-            .getAll()
+        : (requestCookieEntries
             .find(
               ({ name, value }) =>
                 name !== CODE_VERIFIER_COOKIE &&
@@ -210,8 +235,7 @@ export async function GET(request: Request) {
       const supabase = supabaseNext.serverClient({
         cookieStore: {
           getAll: () =>
-            jar
-              .getAll()
+            requestCookieEntries
               // An empty current-name verifier must not shadow the aliased
               // historical one — drop it from the view entirely.
               .filter(
@@ -254,9 +278,10 @@ export async function GET(request: Request) {
 
       if (error) {
         // Diagnose before reporting: which auth cookies actually arrived?
-        // Names only — never log cookie values.
-        const authCookieNames = jar
-          .getAll()
+        // Names only — never log cookie values. Read from the raw header view,
+        // not `cookies()`: a name listed TWICE here is the split jar itself,
+        // and the collapsed jar is precisely what hides it.
+        const authCookieNames = requestCookieEntries
           .map(({ name }) => name)
           .filter(isAuthCookieName);
         const verifierArrived = verifierUsable || verifierAliasFrom !== null;
@@ -305,7 +330,9 @@ export async function GET(request: Request) {
             },
           )}`;
           const response = staleTabRefreshResponse(loginUrl);
-          clearAuthCookies(response, authCookieNames);
+          // The heal is per NAME — a name that arrived twice (the split jar)
+          // still needs exactly one dual-scope expiry pair.
+          clearAuthCookies(response, [...new Set(authCookieNames)]);
           return response;
         }
 

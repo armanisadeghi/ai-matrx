@@ -15,6 +15,7 @@
  */
 
 import { headers } from "next/headers";
+import { SPLIT_COOKIE_JAR_HEADER } from "@ai-matrx/data/next";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import SessionIntegrityBanner from "./SessionIntegrityBanner";
 
@@ -25,7 +26,10 @@ export default async function SessionIntegrityGate() {
   const headersList = await headers();
   return (
     <SessionIntegrityBanner
-      splitCookieJar={headersList.get("x-matrx-split-jar") === "1"}
+      // The header NAME comes from the package that stamps it (0.8.2 exported
+      // it for exactly this) — a literal here silently reads `false` forever
+      // the day the package renames it.
+      splitCookieJar={headersList.get(SPLIT_COOKIE_JAR_HEADER) === "1"}
     />
   );
 }

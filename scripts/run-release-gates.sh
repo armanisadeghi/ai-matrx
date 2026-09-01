@@ -132,6 +132,7 @@ if $STRICT; then
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Scraper single transport boundary|pnpm check:scraper-routing"
         "Authentication destinations and gates|pnpm check:auth-destinations"
+        "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -349,6 +350,7 @@ else
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"
         "Scraper single transport boundary|pnpm check:scraper-routing"
         "Authentication destinations and gates|pnpm check:auth-destinations"
+        "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
