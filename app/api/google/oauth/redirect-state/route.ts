@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { GOOGLE_OAUTH_REDIRECT_STATE_COOKIE } from "@/providers/google-provider/oauthRedirect";
 
-const COOKIE_NAME = "mx_google_oauth_redirect_state";
 const MAX_AGE_SECONDS = 10 * 60;
 
 function sameOrigin(request: NextRequest): boolean {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     { state, redirectUri: request.nextUrl.origin },
     { headers: { "Cache-Control": "no-store" } },
   );
-  response.cookies.set(COOKIE_NAME, state, {
+  response.cookies.set(GOOGLE_OAUTH_REDIRECT_STATE_COOKIE, state, {
     httpOnly: true,
     sameSite: "lax",
     secure: request.nextUrl.protocol === "https:",
@@ -49,11 +49,11 @@ export async function PUT(request: NextRequest) {
   }
   const body = (await request.json()) as { state?: unknown };
   const state = typeof body.state === "string" ? body.state : "";
-  const expectedCookie = request.cookies.get(COOKIE_NAME);
+  const expectedCookie = request.cookies.get(
+    GOOGLE_OAUTH_REDIRECT_STATE_COOKIE,
+  );
   const valid = Boolean(
-    state &&
-      expectedCookie &&
-      stateMatches(expectedCookie.value, state),
+    state && expectedCookie && stateMatches(expectedCookie.value, state),
   );
   const response = NextResponse.json(
     valid
@@ -67,6 +67,6 @@ export async function PUT(request: NextRequest) {
       headers: { "Cache-Control": "no-store" },
     },
   );
-  response.cookies.delete(COOKIE_NAME);
+  response.cookies.delete(GOOGLE_OAUTH_REDIRECT_STATE_COOKIE);
   return response;
 }

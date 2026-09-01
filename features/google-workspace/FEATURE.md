@@ -23,7 +23,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   aidream verifies connection ownership and refreshes the vault credential. Picker never relies on
   a second GIS popup or exposes the refresh token.
 - The durable refresh token is encrypted in aidream's canonical user secrets vault and is never persisted in the browser.
-- When GIS popup consent cannot be controlled, the shared connect panel offers an explicit same-tab redirect-code fallback. It uses the current registered origin as the callback, binds the request to a one-time HttpOnly `SameSite=Lax` state cookie plus bounded session metadata, exchanges the code through the same aidream endpoint and scope contract, and stores neither codes nor tokens in browser storage.
+- When GIS popup consent cannot be controlled, the shared connect panel offers an explicit same-tab redirect-code fallback. It uses the current registered origin as the callback, binds the request to a one-time HttpOnly `SameSite=Lax` state cookie plus bounded session metadata, and bypasses the root Supabase recovery-code redirect only while that cookie is present. The callback exchanges the code through the same aidream endpoint and scope contract and stores neither codes nor tokens in browser storage.
 - Gmail is incremental and uses only `gmail.send`. The product cannot read, search, delete, or organize Gmail.
 - Gmail sending requires visible recipients, subject, body, and an unchecked user confirmation immediately before the send action.
 - Google Workspace content is not persisted by these endpoints and is not used to train generalized AI models.
@@ -151,6 +151,7 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-01: Distinguished the state-bound Google root callback from Supabase recovery codes in the shared proxy, so same-tab consent reaches its verifier instead of being misrouted to `/auth/callback`.
 - 2026-09-01: Added a secure same-tab GIS redirect-code fallback for browser environments that cannot control Google's consent popup. The exact registered origin callback validates one-time server and session state, then converges on the canonical aidream exchange without broadening scopes or persisting credentials in the browser.
 - 2026-09-01: Gated every Google connect and incremental-consent action on GIS readiness so an
   immediate click opens no red error toast while the shared script is still loading.

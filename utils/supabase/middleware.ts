@@ -16,6 +16,23 @@ import {
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
 import { routeRequiresAuthentication } from "@/utils/auth/protected-routes";
+import { GOOGLE_OAUTH_REDIRECT_STATE_COOKIE } from "@/providers/google-provider/oauthRedirect";
+
+/**
+ * Google redirect-code consent returns to the registered root callback with
+ * the same `code` parameter Supabase recovery links use. The one-time HttpOnly
+ * state cookie is the unambiguous signal that this request belongs to Google;
+ * its value is validated and consumed by the callback surface itself.
+ */
+export function isGoogleOAuthRedirectCallback(request: NextRequest): boolean {
+  if (request.nextUrl.pathname !== "/") return false;
+  const search = request.nextUrl.searchParams;
+  return Boolean(
+    search.get("state") &&
+    (search.get("code") || search.get("error")) &&
+    request.cookies.has(GOOGLE_OAUTH_REDIRECT_STATE_COOKIE),
+  );
+}
 
 export async function updateSession(
   request: NextRequest,
@@ -32,7 +49,11 @@ export async function updateSession(
 
   // Supabase recovery links sometimes land on Site URL (/) when redirect_to is
   // not allowlisted — forward auth params to the routes that exchange them.
-  if (code && (pathname === "/" || pathname === "")) {
+  if (
+    code &&
+    (pathname === "/" || pathname === "") &&
+    !isGoogleOAuthRedirectCallback(request)
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/callback";
     if (!url.searchParams.has("redirectTo")) {

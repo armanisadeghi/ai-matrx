@@ -4,6 +4,7 @@ import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME, LEGACY_AUTH_COOKIE_NAME } from "./authCookie";
 import { updateSession } from "./middleware";
+import { GOOGLE_OAUTH_REDIRECT_STATE_COOKIE } from "@/providers/google-provider/oauthRedirect";
 
 jest.mock("@supabase/ssr", () => ({
   ...jest.requireActual("@supabase/ssr"),
@@ -113,5 +114,33 @@ describe("Supabase proxy session continuity", () => {
       "refreshed-session",
     );
     expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("leaves a state-bound Google code on the registered root callback", async () => {
+    mockedCreateServerClient.mockImplementation(() => ({
+      auth: { getUser: async () => ({ data: { user: { id: "east-user" } } }) },
+    }));
+
+    const response = await updateSession(
+      request(
+        "/?code=google-code&state=google-state",
+        `${AUTH_COOKIE_NAME}=east-session; ${GOOGLE_OAUTH_REDIRECT_STATE_COOKIE}=google-state`,
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("x-pathname")).toBe("/");
+  });
+
+  it("still routes an unbound root code through the Supabase callback", async () => {
+    const response = await updateSession(
+      request("/?code=supabase-code", `${AUTH_COOKIE_NAME}=east-session`),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toContain(
+      "/auth/callback?code=supabase-code",
+    );
   });
 });

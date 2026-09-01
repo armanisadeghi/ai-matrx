@@ -1,4 +1,6 @@
 const REDIRECT_PENDING_PREFIX = "mx-google-oauth-redirect:";
+export const GOOGLE_OAUTH_REDIRECT_STATE_COOKIE =
+  "mx_google_oauth_redirect_state";
 export const GOOGLE_OAUTH_REDIRECT_TTL_MS = 10 * 60 * 1_000;
 
 export type GoogleRedirectOwner =
