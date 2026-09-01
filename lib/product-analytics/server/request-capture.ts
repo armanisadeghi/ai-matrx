@@ -119,13 +119,23 @@ export function applyAcquisitionCookie(
     hostname === "aimatrx.com" || hostname.endsWith(".aimatrx.com")
       ? ".aimatrx.com"
       : undefined;
-  response.cookies.set(ACQUISITION_VISITOR_COOKIE, capture.visitorId, {
-    httpOnly: false,
-    sameSite: "lax",
-    secure: request.nextUrl.protocol === "https:",
-    path: "/",
-    maxAge: COOKIE_MAX_AGE_SECONDS,
-    domain: sharedDomain,
-  });
+  // 🚨 RAW APPEND, NOT `response.cookies.set`. This runs LAST in `proxy.ts`, on
+  // the response the auth pass already finished with — and `ResponseCookies.set`
+  // re-parses the WHOLE `Set-Cookie` list into its one-entry-per-NAME map and
+  // rewrites it, silently discarding raw appended headers even for unrelated
+  // cookie names. That is not theoretical: on 2026-09-01 this call destroyed
+  // every split-auth-cookie-jar expiry `@ai-matrx/data/next` had just written,
+  // so `www` healed nothing while `manage` (which was not setting a visitor
+  // cookie) healed correctly — proven with `curl` against production. Appending
+  // is strictly additive and can never eat another header.
+  const parts = [
+    `${ACQUISITION_VISITOR_COOKIE}=${encodeURIComponent(capture.visitorId)}`,
+    "Path=/",
+    `Max-Age=${COOKIE_MAX_AGE_SECONDS}`,
+    "SameSite=Lax",
+  ];
+  if (sharedDomain) parts.push(`Domain=${sharedDomain}`);
+  if (request.nextUrl.protocol === "https:") parts.push("Secure");
+  response.headers.append("Set-Cookie", parts.join("; "));
   return response;
 }

@@ -261,6 +261,16 @@ async function routeRequest(request: NextRequest) {
         for (const cookie of sessionResponse.cookies.getAll()) {
           rewritten.cookies.set(cookie);
         }
+        // `sessionResponse.cookies.getAll()` cannot see raw appended
+        // `Set-Cookie` headers that target a scope the one-entry-per-NAME map
+        // has no room for — the split-auth-jar expiries. Carry them across
+        // verbatim, or this rewrite silently drops the heal (the class that
+        // cost two production walks on 2026-09-01).
+        for (const raw of sessionResponse.headers.getSetCookie()) {
+          if (!rewritten.headers.getSetCookie().includes(raw)) {
+            rewritten.headers.append("Set-Cookie", raw);
+          }
+        }
         return rewritten;
       }
     }
