@@ -62,6 +62,29 @@ export function isGoogleConnectionReachableByUser(
   );
 }
 
+/**
+ * Super-admin RLS intentionally exposes other owners' integration rows for
+ * administration. Product pickers are user actions, so their inventory must
+ * remove those rows before capability selection; otherwise a foreign row can
+ * look eligible and fail only after the broker enforces ownership.
+ */
+export function filterGoogleConnectionInventoryForUser(
+  inventory: GoogleConnectionInventory,
+  userId: string | null,
+  organizationIds: readonly string[],
+): GoogleConnectionInventory {
+  const connections = inventory.connections.filter((connection) =>
+    isGoogleConnectionReachableByUser(connection, userId, organizationIds),
+  );
+  const connectionIds = new Set(connections.map((connection) => connection.id));
+  return {
+    connections,
+    resources: inventory.resources.filter((resource) =>
+      connectionIds.has(resource.connection_id),
+    ),
+  };
+}
+
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
 // vault item id and a key name). Reading them is what lets the UI tell the
 // truth about a connection's health without a server round-trip.

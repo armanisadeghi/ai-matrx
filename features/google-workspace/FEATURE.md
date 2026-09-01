@@ -120,6 +120,10 @@ attachment it cannot open. Server half:
   remembers separate Workspace and Gmail-send connection UUIDs only; tokens
   remain memory-only or in aidream's vault. A missing/disconnected preference
   falls back to an eligible account without hiding the selector.
+- Product pickers filter the RLS-visible inventory to connections owned by the
+  signed-in user or one of their organizations before capability selection.
+  Super-admin visibility must never make another user's credential appear as a
+  selectable Google account; broker ownership remains the final enforcement.
 - File and email verification controls are collapsed under **Test the file
   connection** and **Test the email connection**. They prove the grants; they
   are not the page's primary account-management workflow.
@@ -144,6 +148,9 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-01: Filtered the shared Google UI inventory by caller reachability so
+  super-admin visibility cannot route Files import, Chat attachments, exports,
+  or reviewed Gmail through another user's otherwise eligible credential.
 - 2026-09-01: Routed Picker and Drive import through the connection-bound token broker audience,
   eliminating the second browser OAuth popup that could silently return no token in isolated
   sessions while preserving the exact `drive.file` boundary.
