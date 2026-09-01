@@ -41,13 +41,6 @@ import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 interface SessionIntegrityBannerProps {
   /**
-   * What the SERVER resolved for the request that rendered this document.
-   * `false` for a genuine guest, and `false` for a signed-in person whose
-   * cookies the server could not read — the client half below tells them
-   * apart.
-   */
-  serverAuthenticated: boolean;
-  /**
    * The proxy saw the same auth cookie at two Domain scopes on this request
    * (`MiddlewareSession.splitCookieJar`). Authoritative: when this is true the
    * cause is named rather than inferred, and the response already healed it.
@@ -56,20 +49,15 @@ interface SessionIntegrityBannerProps {
 }
 
 export default function SessionIntegrityBanner({
-  serverAuthenticated,
   splitCookieJar,
 }: SessionIntegrityBannerProps) {
+  // Only rendered when the SERVER resolved nobody (the gate returns null
+  // otherwise), so the only question left is whether this tab has a session.
   const [clientHasSession, setClientHasSession] = useState(false);
   const loginHref = useLoginHref();
   const router = useRouter();
 
   useEffect(() => {
-    // Only worth asking when the server came back empty — for a signed-in
-    // server render there is no split to find.
-    if (serverAuthenticated) {
-      setClientHasSession(false);
-      return;
-    }
     let live = true;
     // getSession() re-reads the cookie store; no network round-trip.
     void supabase.auth.getSession().then(({ data }) => {
@@ -78,10 +66,9 @@ export default function SessionIntegrityBanner({
     return () => {
       live = false;
     };
-  }, [serverAuthenticated]);
+  }, []);
 
-  const split = !serverAuthenticated && clientHasSession;
-  if (!split) return null;
+  if (!clientHasSession) return null;
 
   return (
     <div className="px-3 pt-3">

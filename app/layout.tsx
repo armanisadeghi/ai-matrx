@@ -27,6 +27,8 @@ interface RootLayoutProps {
   children: React.ReactNode;
 }
 
+import SessionIntegrityGate from "@/features/shell/components/SessionIntegrityGate";
+
 export default async function RootLayout({ children }: RootLayoutProps) {
   // Phase 3: server-read theme cookie so the very first HTML frame has the
   // correct class on <html>. Previously the inline `SyncBootScript` was the
@@ -87,6 +89,11 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             was a leftover from the removed PostHogProvider (useSearchParams).
             Routes that want streaming declare their own loading.tsx/Suspense
             BELOW their existence checks. */}
+        {/* THE HONEST-SCREEN MOUNT — exactly one, at the root, so every route
+            group inherits it. Mounting it per-shell is how the first attempt
+            covered `(core)` and missed everything else. Renders nothing unless
+            the server resolved nobody while this tab still holds a session. */}
+        <SessionIntegrityGate />
         {children}
         <UserAcquisitionCapture />
         <Toaster />

@@ -16,5 +16,9 @@ export async function createClient() {
   return supabaseNext.serverClient({
     cookieStore,
     host: requestHeaders.get("host"),
+    // The RAW header: `cookies()` has already collapsed two same-name cookies
+    // at two Domain scopes into one, keeping whichever the browser sent last
+    // — a coin flip between the session and anonymous.
+    cookieHeader: requestHeaders.get("cookie"),
   });
 }

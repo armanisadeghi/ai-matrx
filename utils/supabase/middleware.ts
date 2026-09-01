@@ -55,6 +55,8 @@ export async function updateSession(
   const session = await supabaseNext.middlewareSession({
     host: request.headers.get("host"),
     requestCookies: request.cookies,
+    // See utils/supabase/server.ts — `request.cookies` cannot see a split jar.
+    cookieHeader: request.headers.get("cookie"),
     createResponse: () => NextResponse.next({ request }),
     createRedirect: (url) => NextResponse.redirect(url),
   });

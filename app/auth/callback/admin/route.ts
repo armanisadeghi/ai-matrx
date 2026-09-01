@@ -143,6 +143,7 @@ export async function GET(request: NextRequest) {
         response.cookies.set(name, value, options);
       },
       host: request.headers.get("host"),
+      cookieHeader: request.headers.get("cookie"),
     });
 
     const { data: sessionData, error: verifyError } =
