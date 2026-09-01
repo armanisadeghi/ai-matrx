@@ -165,6 +165,13 @@ export async function fetchSurfaceConfigBundle(
   surfaceName: string,
 ): Promise<SurfaceConfigBundle> {
   const client = sb();
+  // `mandate.definition` is authenticated-only. Establish the caller before
+  // loading a mandate-backed default; a genuine guest still receives the
+  // public surface config, but cannot and need not resolve an executable
+  // Holder. This also prevents session-hydration gaps from reaching PostgREST
+  // as anon and reporting a permission failure.
+  const { data: auth, error: authError } = await client.auth.getUser();
+  const uid = authError ? null : (auth.user?.id ?? null);
   const [rolesRes, prefsRes, configRes] = await Promise.all([
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     client
@@ -201,7 +208,7 @@ export async function fetchSurfaceConfigBundle(
     .map((r) => r.mandate_key)
     .filter((k): k is string => !!k);
   const mandatePins =
-    mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
+    uid && mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
 
   // 🚨 THE USER TIER IS PERSONAL — filter it to the CURRENT user explicitly.
   // RLS breadth is NOT a personal-tier filter: a platform admin can read
@@ -211,8 +218,6 @@ export async function fetchSurfaceConfigBundle(
   // blend of OTHER PEOPLE's choices (observed: another user's voice + a
   // third user's speed in the Listening settings, 2026-08-28). A missing
   // session keeps only tier rows with no user_id (global/org).
-  const { data: sessionData } = await client.auth.getSession();
-  const uid = sessionData.session?.user?.id ?? null;
   const isMineOrShared = (row: { user_id: string | null }) =>
     row.user_id === null || row.user_id === uid;
 
