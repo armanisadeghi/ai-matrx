@@ -9644,6 +9644,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pinpoint/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pinpoint_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10256,6 +10273,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tawkto/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tawkto_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10316,6 +10350,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_paperlesspost_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/robohash/avatar/{seed}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Avatar */
+        get: operations["avatar_robohash_avatar__seed__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -72838,6 +72889,40 @@ export interface components {
             /** Public Read */
             public_read?: boolean | null;
         };
+        /** PinpointServiceStatus */
+        PinpointServiceStatus: {
+            /**
+             * Kind
+             * @default pinpoint_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "pinpoint_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Pinpoint
+             * @constant
+             */
+            provider?: "Pinpoint";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.pinpoint.support
+             * @constant
+             */
+            status_page?: "https://status.pinpoint.support";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * Pipe
          * @description The three pipes. A stage attempt is carried by exactly one of them.
@@ -80884,6 +80969,43 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** RoboHashAvatar */
+        RoboHashAvatar: {
+            /**
+             * Kind
+             * @default robohash_avatar_png
+             * @constant
+             */
+            __kind?: "robohash_avatar_png";
+            /**
+             * Provider
+             * @default RoboHash
+             * @constant
+             */
+            provider?: "RoboHash";
+            /** Seed */
+            seed: string;
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @default image/png
+             * @constant
+             */
+            media_type?: "image/png";
+            /** Png Base64 */
+            png_base64: string;
         };
         /** RobotsCheckBody */
         RobotsCheckBody: {
@@ -89410,6 +89532,38 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** TawkToServiceStatus */
+        TawkToServiceStatus: {
+            /**
+             * Kind
+             * @default tawk_to_public_service_status
+             * @constant
+             */
+            __kind?: "tawk_to_public_service_status";
+            /**
+             * Provider
+             * @default tawk.to
+             * @constant
+             */
+            provider?: "tawk.to";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.tawk.to
+             * @constant
+             */
+            status_page?: "https://status.tawk.to";
         };
         /** TeamsChatMessageResponse */
         TeamsChatMessageResponse: {
@@ -113633,6 +113787,26 @@ export interface operations {
             };
         };
     };
+    public_status_pinpoint_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PinpointServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -114353,6 +114527,26 @@ export interface operations {
             };
         };
     };
+    public_status_tawkto_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TawkToServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -114429,6 +114623,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaperlessPostServiceStatus"];
+                };
+            };
+        };
+    };
+    avatar_robohash_avatar__seed__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                seed: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoboHashAvatar"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

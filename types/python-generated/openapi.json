@@ -20944,6 +20944,27 @@
         }
       }
     },
+    "/pinpoint/public/status": {
+      "get": {
+        "tags": [
+          "Pinpoint Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pinpoint_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PinpointServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21700,6 +21721,27 @@
         }
       }
     },
+    "/tawkto/public/status": {
+      "get": {
+        "tags": [
+          "tawk.to Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tawkto_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TawkToServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -21777,6 +21819,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaperlessPostServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robohash/avatar/{seed}": {
+      "get": {
+        "tags": [
+          "RoboHash Integrations"
+        ],
+        "summary": "Avatar",
+        "operationId": "avatar_robohash_avatar__seed__get",
+        "parameters": [
+          {
+            "name": "seed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Seed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoboHashAvatar"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -172108,6 +172192,55 @@
         "type": "object",
         "title": "PicklistUpdate"
       },
+      "PinpointServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pinpoint_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "pinpoint_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pinpoint",
+            "title": "Provider",
+            "default": "Pinpoint"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pinpoint.support",
+            "title": "Status Page",
+            "default": "https://status.pinpoint.support"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PinpointServiceStatus"
+      },
       "Pipe": {
         "type": "string",
         "enum": [
@@ -190660,6 +190793,55 @@
         ],
         "title": "RoadmunkStatusResult",
         "description": "Safe projection of Roadmunk's high-level service status."
+      },
+      "RoboHashAvatar": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "robohash_avatar_png",
+            "title": "Kind",
+            "default": "robohash_avatar_png"
+          },
+          "provider": {
+            "type": "string",
+            "const": "RoboHash",
+            "title": "Provider",
+            "default": "RoboHash"
+          },
+          "seed": {
+            "type": "string",
+            "title": "Seed"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "const": "image/png",
+            "title": "Media Type",
+            "default": "image/png"
+          },
+          "png_base64": {
+            "type": "string",
+            "title": "Png Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seed",
+          "png_base64"
+        ],
+        "title": "RoboHashAvatar"
       },
       "RobotsCheckBody": {
         "properties": {
@@ -210250,6 +210432,50 @@
         ],
         "title": "TaskResponse",
         "description": "Single sch_task row (plain, without children)."
+      },
+      "TawkToServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tawk_to_public_service_status",
+            "title": "Kind",
+            "default": "tawk_to_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "tawk.to",
+            "title": "Provider",
+            "default": "tawk.to"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tawk.to",
+            "title": "Status Page",
+            "default": "https://status.tawk.to"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TawkToServiceStatus"
       },
       "TeamsChatMessageResponse": {
         "properties": {
