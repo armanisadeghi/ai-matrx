@@ -10,7 +10,7 @@
 
 **Status:** Active — the cockpit is shipped (Stage⇄Grid, instrument projector, density dial, live meter, kind accent-rails, metric chips, parked-thread rail; Waves 1–8 + the UI bake-off consolidation). The **unified `platform.associations` cutover is LIVE** (2026-06-25, merged): the app reads the `workspace.war_rooms` / `workspace.threads` base tables through association edges only — no legacy FK columns, no dual-write — see Data model. **Owner route group:** `(core)`.
 
-**Last updated:** 2026-08-31 (reload-safe Note/Audio identity controls)
+**Last updated:** 2026-09-01 (resource identity dedupe)
 
 ---
 
@@ -82,7 +82,11 @@ SECURITY-DEFINER RPCs; `assoc_for_targets` batch-reads many containers in one
 round-trip). The Redux bucket `assignmentsByContainer` + its selectors/reducers
 are unchanged; hydration (`service/readApi.ts`) carries the REAL edge label +
 metadata so `is_active`/`position`/`pinned` and titles survive a reload. Three
-further edge kinds:
+Hydration **deduplicates by canonical `(entity_type, entity_id)`**, with a
+direct thread edge winning over the same anchor-inherited entity. Later real
+edge upserts replace any synthetic hydrated row by that same semantic identity;
+a rename or attach never creates a second selector/resource row. Three further
+edge kinds:
 - **Thread→room membership** — the reversed edge `thread → war_room` (`{membership:true}`).
   The mobility mechanism (and the basis for a future Unassigned holding area); kept
   in sync with `tile.session_id`, which stays the RLS source **until it is dropped post-deploy**.
@@ -170,6 +174,12 @@ The deeper **transcription working-state Redux migration** (Wave 0) — lifting 
 Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the list shows every thread with a live status word; click a row → the full-route thread detail replaces the list; back restores the list; new/restored threads open in detail. Verify this at phone and desktop widths. **Grid mode:** grid re-flows at 1/2/3/8/12; the **density dial** packs/loosens it; double-click a card → full thread detail. **Projector:** set the whole room to one view, then clear it (saved per-tile tabs untouched). Pin/park + restore (list section + Grid tray). Task (name/subtask/attachment/comment, persists), Notes (Text/Matrx-Split/Preview + single-layer in the All view; type → autosave → reload), Audio (embedded `CleanupPad`: record on a real mic → transcript persists → auto-clean appears in the Clean pane immediately, all on the tile's `war_room` session; New Session adds another; reload restores both panes), Files (Upload a file or attach an existing one → it lists with an image preview / type icon + open link; New document opens the editor in a new tab and links it; Add document picks an existing `udt_documents` row; remove detaches the link only; reload restores all rows), Agent (the real Scribe Agent+ panel: pick/switch the assistant agent, open and edit the working document, talk to the agent by text or voice — record a turn and choose send / transcribe via the action sheet, auto-voice reads replies aloud; record into the SAME session in the Audio tab and the agent sees those recordings as context), Context (session org/scope → threads inherit → reload persists; never mutates global). Expand opens each tab's full UI. Editable session + thread titles.
 
 ## Change Log
+
+- 2026-09-01 — **Thread resources have one row per semantic entity.** Hydration
+  collapses direct + anchor-inherited duplicates with the direct edge winning,
+  and `assignmentUpserted` replaces synthetic rows by `(entity_type, entity_id)`
+  while removing stale duplicates. Notes/Audio renames no longer grow their
+  switchers or emit duplicate React keys; regressions cover both boundaries.
 
 - 2026-08-31 — **Q9 static repair: Note/Audio identity survives a cold reload.** The thread adapters now batch-resolve every attached note/session title from its source table instead of hydrating only the active editor row and rendering inactive entries as `Note N` / `Recording N`. New and renamed rows stamp the edge label too, keeping Resources coherent; refused active-edge writes restore the previous selection. Focused regression: `hooks/useThreadEntitySelect.test.tsx`.
 - 2026-08-29 — C9 adoption: `BottomSheet`/`TabbedBottomSheet`, `EditableLabel`, `SegmentedControl`, `ScoreRing`, and `useScrollFade` now import from `@ai-matrx/design-system` 0.2.0 (npm); the local originals under `components/official/` and `components/ui/segmented-control.tsx` are deleted. Behavior identical (verbatim ports; host keeps the glass/pb-safe/matrx-scroll-fade CSS contracts in `app/globals.css`).

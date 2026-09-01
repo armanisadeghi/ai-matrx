@@ -39,12 +39,25 @@ export function mapThreadContentsToAssignments(
   threadId: string,
   modules: ThreadContentModule[],
 ): WarRoomAssignment[] {
+  // A thread may inherit an entity from its anchor and also attach that same
+  // entity directly. It is one resource, not two selector rows. Prefer the
+  // direct edge because only it carries thread-local label/active metadata.
+  const modulesByEntity = new Map<string, ThreadContentModule>();
+  for (const contentModule of modules) {
+    const entityType = sourceToEntity(contentModule.module_type);
+    const key = `${entityType}:${contentModule.module_id}`;
+    const existing = modulesByEntity.get(key);
+    if (!existing || contentModule.origin === "thread") {
+      modulesByEntity.set(key, contentModule);
+    }
+  }
+
   const activeSeen = new Set<string>();
   const out: WarRoomAssignment[] = [];
 
-  modules.forEach((module, index) => {
-    const entityType = sourceToEntity(module.module_type);
-    const md = module.metadata;
+  [...modulesByEntity.values()].forEach((contentModule, index) => {
+    const entityType = sourceToEntity(contentModule.module_type);
+    const md = contentModule.metadata;
     const hasRealMeta = isPlainObject(md);
 
     const isSingleActive = SINGLE_ACTIVE_ENTITY_TYPES.has(entityType);
@@ -61,21 +74,25 @@ export function mapThreadContentsToAssignments(
 
     const metadata: Json = {
       ...(hasRealMeta ? md : {}),
-      origin: module.origin,
-      anchor_type: module.anchor_type,
-      anchor_id: module.anchor_id,
+      origin: contentModule.origin,
+      anchor_type: contentModule.anchor_type,
+      anchor_id: contentModule.anchor_id,
       via: "thread_contents",
     };
 
     out.push({
-      id: syntheticAssignmentId(threadId, module.module_type, module.module_id),
+      id: syntheticAssignmentId(
+        threadId,
+        contentModule.module_type,
+        contentModule.module_id,
+      ),
       container_type: "thread",
       container_id: threadId,
       entity_type: entityType,
-      entity_id: module.module_id,
+      entity_id: contentModule.module_id,
       position,
       is_active: isActive,
-      label: module.label ?? null,
+      label: contentModule.label ?? null,
       metadata,
       created_by: null,
       created_at: null,

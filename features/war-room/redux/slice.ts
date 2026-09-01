@@ -199,16 +199,28 @@ const warRoomSlice = createSlice({
     ) {
       const { key, assignment } = action.payload;
       const list = state.assignmentsByContainer[key] ?? [];
+      const sameEntity = (candidate: WarRoomAssignment) =>
+        candidate.entity_type === assignment.entity_type &&
+        candidate.entity_id === assignment.entity_id;
       if (
         assignment.is_active &&
         SINGLE_ACTIVE_ENTITY_TYPES.has(assignment.entity_type)
       ) {
         demoteSiblings(list, assignment.entity_type, assignment.id);
       }
-      const idx = list.findIndex((a) => a.id === assignment.id);
-      if (idx >= 0) list[idx] = assignment;
-      else list.push(assignment);
-      state.assignmentsByContainer[key] = list;
+      const idx = list.findIndex(
+        (candidate) => candidate.id === assignment.id || sameEntity(candidate),
+      );
+      if (idx >= 0) {
+        list[idx] = assignment;
+        state.assignmentsByContainer[key] = list.filter(
+          (candidate, candidateIndex) =>
+            candidateIndex === idx || !sameEntity(candidate),
+        );
+      } else {
+        list.push(assignment);
+        state.assignmentsByContainer[key] = list;
+      }
     },
     assignmentRemoved(
       state,

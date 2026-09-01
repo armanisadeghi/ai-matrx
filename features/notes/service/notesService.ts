@@ -150,6 +150,26 @@ export async function assignHomelessNotesToPersonalOrg(): Promise<{
  * Automatically generates label from content if label is missing or is "New Note"
  * IMPORTANT: Checks for existing empty notes and reuses them to prevent duplicates
  */
+export function emptyNoteReuseUpdates(
+  existingNote: Note,
+  input: CreateNoteInput,
+): UpdateNoteInput {
+  const updates: UpdateNoteInput = {};
+  const requestedLabel = input.label?.trim();
+  if (
+    requestedLabel &&
+    requestedLabel.toLowerCase() !== "new note" &&
+    existingNote.label !== requestedLabel
+  ) {
+    updates.label = requestedLabel;
+  }
+  const targetFolder = input.folder_name || "Draft";
+  if (existingNote.folder_name !== targetFolder) {
+    updates.folder_name = targetFolder;
+  }
+  return updates;
+}
+
 export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
   const userId = requireUserId();
 
@@ -170,9 +190,11 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
         existingEmptyNote.id,
       );
 
-      // If it's in a different folder, move it to the target folder
-      if (existingEmptyNote.folder_name !== targetFolder) {
-        return updateNote(existingEmptyNote.id, { folder_name: targetFolder });
+      // Reuse must preserve the caller's explicit name. Returning the generic
+      // empty row unchanged made the war-room "+ New" dialog ignore its input.
+      const reuseUpdates = emptyNoteReuseUpdates(existingEmptyNote, input);
+      if (Object.keys(reuseUpdates).length > 0) {
+        return updateNote(existingEmptyNote.id, reuseUpdates);
       }
 
       // Already in the right folder, just return it
