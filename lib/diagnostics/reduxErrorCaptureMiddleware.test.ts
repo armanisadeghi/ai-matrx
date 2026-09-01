@@ -50,4 +50,17 @@ describe("reduxErrorCaptureMiddleware stream ownership", () => {
       }),
     ).toBe(false);
   });
+
+  it("treats an unavailable session as a lifecycle pause, not an incident", () => {
+    const action = {
+      type: "notes/fetchNotesList/rejected",
+      error: { name: "SessionUnavailableError", message: "Your session expired" },
+    };
+    const next = jest.fn();
+
+    reduxErrorCaptureMiddleware({} as never)(next)(action);
+
+    expect(next).toHaveBeenCalledWith(action);
+    expect(getSnapshot()).toHaveLength(0);
+  });
 });

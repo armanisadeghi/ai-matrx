@@ -12,6 +12,7 @@
  *   - `meta.aborted` (the request was cancelled / superseded)
  *   - `meta.condition` (the thunk's `condition` returned false — never ran)
  *   - AbortError / ConditionError by name
+ *   - SessionUnavailableError (an expected auth-lifecycle pause)
  *
  * `relation` is the thunk name (the action type minus `/rejected`) so an admin
  * can downgrade a whole slice or a single thunk by `relation` in
@@ -89,6 +90,7 @@ export const reduxErrorCaptureMiddleware: Middleware =
         if (a.error?.name === "AbortError" || a.error?.name === "ConditionError") {
           return result;
         }
+        if (a.error?.name === "SessionUnavailableError") return result;
         if (isStreamWrapperDuplicate(a)) return result;
         captureError({
           source: "redux-rejected",

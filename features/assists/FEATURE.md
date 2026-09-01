@@ -242,6 +242,8 @@ an assist is personal and addressed to one person by design.
 
 ## Change Log
 
+- 2026-09-01 — **Expired sessions remain lifecycle pauses after the retry.** `listMyPendingAssists` preserves an unrecoverable `PGRST301` as `SessionUnavailableError`; the Redux capture boundary ignores that named pause while continuing to capture genuine assist failures.
+
 - 2026-08-27 — **Presentable-assist reads recover the transient anonymous PostgREST boundary.** `listMyPendingAssists` now uses the shared one-shot `runWithSessionRetry` primitive, so a request that reaches the authenticated-only RPC without its browser session re-resolves and retries exactly once; real authenticated permission failures remain faults. A forcing service test pins the 401/42501 recovery sequence.
 
 - 2026-08-25 — **Presentable-assist reads wait for the authenticated Supabase session.** The dock and page strip require auth readiness plus an access token before calling `list_my_presentable_assists`; an idempotent migration restores that RPC's authenticated-only execute grant without widening it to anon.

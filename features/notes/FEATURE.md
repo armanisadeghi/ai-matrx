@@ -56,7 +56,10 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 **Auth boundary:** Realtime catch-up reads and already-queued change payloads run
 only while the subscribing user still matches `userAuth.id`; a stale callback
 after logout or an account switch tears down its channel before dispatching
-authenticated thunks, mutating the store, or resolving editor identity.
+authenticated thunks, mutating the store, or resolving editor identity. Initial
+list hydration also verifies the live Supabase user before its notes read and
+again before association hydration; an expired session pauses at that boundary
+instead of fanning out through both services.
 
 ### Flow 1 — Create / edit a note
 
@@ -142,6 +145,8 @@ authenticated thunks, mutating the store, or resolving editor identity.
 ---
 
 ## Change log
+
+- `2026-09-01` — **Expired `/notes` sessions stop at one lifecycle boundary.** List hydration verifies live Supabase identity around the notes read, retries the shared `PGRST301` session spelling once through `@ai-matrx/data`, and refuses association hydration after logout/account switch. An unrecoverable expiry returns the list to idle and is classified as an auth pause, not three independent incidents.
 
 - `2026-08-30` — **Floating document outline with click-to-jump.** Per-instance `outlineOpen` flag (`setInstanceOutlineOpen` / `selectInstanceOutlineOpen`), toggled from the `/notes` header (`ListTapButton` in `NotesView`) and `NoteViewControls` (`ListTree` — covers the Notes window). `NoteContentEditor` lazily mounts `NoteOutlinePanel.tsx` — a page-local, draggable/resizable `WindowPanel` (inline `onClose`, no overlay entry, `mobilePresentationOverride="drawer"`, compact/tall one-click shape presets via `updateWindowRect`) that MUST stay behind its `dynamic({ssr:false})` boundary. Headings come from `utils/noteOutline.ts` (O(lines), fence-aware, guarded by `noteOutline.test.ts`) parsed on a 400ms debounce — never per keystroke. Jumps: plain/split measure the heading's offset via a transient mirror (`utils/textareaMeasure.ts`, built only on click; split's syncScroll carries the preview); preview/TUI modes find the rendered heading (**visible elements only** — TUI keeps a hidden twin of the whole document) and scroll ONLY its nearest scrollable ancestor — never `scrollIntoView` (cascades into the page shell) and never `behavior:"smooth"` (the preview stack cancels smooth animations mid-flight, verified live; smooth = no jump at all).
 - `2026-08-30` — **Queued realtime payloads cannot cross an auth transition.** `handlePayload` now verifies that `userAuth.id` still matches the channel's subscribing user before any store mutation or follow-up RPC; a payload queued before logout/account switch tears down the stale channel instead of calling editor identity lookup as `anon`. The existing stale-`SUBSCRIBED` guard remains the catch-up boundary; the payload guard closes the later callback race.

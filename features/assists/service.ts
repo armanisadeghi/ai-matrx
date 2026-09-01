@@ -12,7 +12,11 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { runWithSessionRetry } from "@/lib/supabase/authRetry";
+import {
+  isMissingSessionError,
+  runWithSessionRetry,
+  SessionUnavailableError,
+} from "@/lib/supabase/authRetry";
 import type { Json } from "@/types/database.types";
 import {
   toAssist,
@@ -91,6 +95,7 @@ export async function listMyPendingAssists(userId: string): Promise<Assist[]> {
       .rpc("list_my_presentable_assists", { p_limit: 50 }),
   );
   if (error) {
+    if (isMissingSessionError(error)) throw new SessionUnavailableError();
     throw new Error(`[assists] list failed: ${error.message}`);
   }
   // The RPC is auth.uid()-scoped. Keep the explicit argument in this browser

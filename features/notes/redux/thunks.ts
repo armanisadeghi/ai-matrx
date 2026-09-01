@@ -18,6 +18,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { TablesUpdate } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import {
+  isMissingSessionError,
+  runWithSessionRetry,
+  SessionUnavailableError,
+} from "@/lib/supabase/authRetry";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -69,8 +74,15 @@ import { serverMatchesAttempt } from "../utils/saveVerification";
 function getUserId(getState: () => unknown): string {
   const state = getState() as RootState;
   const userId = state.userAuth.id;
-  if (!userId) throw new Error("User is not authenticated");
+  if (!userId) throw new SessionUnavailableError();
   return userId;
+}
+
+async function assertCurrentNotesUser(expectedUserId: string): Promise<void> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || data.session?.user.id !== expectedUserId) {
+    throw new SessionUnavailableError();
+  }
 }
 
 function dispatchCustomEvent(name: string, detail?: unknown): void {
@@ -95,42 +107,57 @@ export const fetchNotesList = createAsyncThunk<void, void>(
 
     dispatch(setListStatus("loading"));
 
-    const { data, error } = await supabase
-      .schema("workbench")
-      .from("notes")
-      .select(
-        "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
-      )
-      .eq("created_by", userId)
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: false });
+    try {
+      await assertCurrentNotesUser(userId);
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase
+          .schema("workbench")
+          .from("notes")
+          .select(
+            "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
+          )
+          .eq("created_by", userId)
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false }),
+      );
 
-    if (error) {
-      dispatch(setListError(error.message));
-      dispatch(setListStatus("error"));
+      if (error) {
+        if (isMissingSessionError(error)) throw new SessionUnavailableError();
+        dispatch(setListError(error.message ?? "Failed to load notes"));
+        dispatch(setListStatus("error"));
+        throw error;
+      }
+
+      // Redux identity can disappear while the notes query is in flight.
+      // Recheck immediately before the association package's synchronous
+      // requireUserId boundary so a logout cannot fan out into extra captures.
+      await assertCurrentNotesUser(userId);
+      const notes = await hydrateNoteContextLinks(data ?? []);
+
+      // ONE dispatch for the whole page. A per-note dispatch loop notified
+      // every store subscriber (and re-ran every sorted list selector) once
+      // per note — O(N²·log N) on /notes entry, a main-thread freeze on large
+      // collections (2026-07 freeze class — see FEATURE.md § Realtime echo
+      // doctrine).
+      dispatch(
+        upsertNotesFromServer({
+          upserts: notes.map((note) => ({
+            note: { ...note, created_by: userId },
+            fetchStatus: "list" as const,
+          })),
+        }),
+      );
+
+      console.log("[Track Quick Notes] 6c, thunks.ts — fetchNotesList complete", {
+        notesCount: notes.length,
+      });
+      dispatch(setListStatus("loaded"));
+    } catch (error) {
+      if (error instanceof SessionUnavailableError) {
+        dispatch(setListStatus("idle"));
+      }
       throw error;
     }
-
-    const notes = await hydrateNoteContextLinks(data ?? []);
-
-    // ONE dispatch for the whole page. A per-note dispatch loop notified
-    // every store subscriber (and re-ran every sorted list selector) once
-    // per note — O(N²·log N) on /notes entry, a main-thread freeze on large
-    // collections (2026-07 freeze class — see FEATURE.md § Realtime echo
-    // doctrine).
-    dispatch(
-      upsertNotesFromServer({
-        upserts: notes.map((note) => ({
-          note: { ...note, created_by: userId },
-          fetchStatus: "list" as const,
-        })),
-      }),
-    );
-
-    console.log("[Track Quick Notes] 6c, thunks.ts — fetchNotesList complete", {
-      notesCount: notes.length,
-    });
-    dispatch(setListStatus("loaded"));
   },
 );
 

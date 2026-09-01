@@ -1,4 +1,5 @@
 import { listMyPendingAssists } from "./service";
+import { SessionUnavailableError } from "@/lib/supabase/authRetry";
 import { createClient, supabase } from "@/utils/supabase/client";
 
 jest.mock("@/utils/supabase/client", () => ({
@@ -42,5 +43,21 @@ describe("listMyPendingAssists authenticated boundary", () => {
     expect(schema).toHaveBeenCalledWith("platform");
     expect(rpc).toHaveBeenCalledTimes(2);
     expect(supabase.auth.getSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("preserves an unrecoverable expired-JWT result as a lifecycle pause", async () => {
+    const rpc = jest.fn(async () => ({
+      data: null,
+      error: { code: "PGRST301", message: "JWT expired" },
+      status: 401,
+    }));
+    jest.mocked(createClient).mockReturnValue({
+      schema: () => ({ rpc }),
+    } as never);
+
+    await expect(listMyPendingAssists("user-1")).rejects.toBeInstanceOf(
+      SessionUnavailableError,
+    );
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 });
