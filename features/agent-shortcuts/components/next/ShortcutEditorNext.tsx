@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Trash2, Zap } from "lucide-react";
+import { AlertTriangle, Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,8 @@ import {
 // fork this file carried omitted `defaultValue`, hiding agent defaults from
 // the shared binding rows.
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+// THE ONE PRE-FLIGHT (FIX-11), through this editor's own pure rule.
+import { shortcutSaveRefusals } from "@/features/agent-shortcuts/save-refusal";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
@@ -226,19 +228,28 @@ export function ShortcutEditorNext({
   const crud = useAgentShortcutCrud({ scope: "user" });
   const [busy, setBusy] = useState(false);
 
-  const validate = (): string | null => {
-    if (!form.label.trim()) return "Label is required";
-    if (!form.categoryId) return "Pick a category";
-    if (!form.surfaceName) return "Pick a surface";
-    return null;
-  };
+  /**
+   * 🚨 WHY SAVE CANNOT ACT — derived, printed BESIDE the button, never a toast
+   * (FIX-11, W10-1). The rule itself lives in `save-refusal.ts` so it can be
+   * proven; this screen only renders it. See that file for what was wrong.
+   */
+  const saveRefusals = useMemo(
+    () =>
+      shortcutSaveRefusals({
+        label: form.label,
+        categoryId: form.categoryId,
+        surfaceName: form.surfaceName,
+        valueMappings: form.valueMappings,
+        targets: targets.map((t) => ({ name: t.name, label: t.label })),
+      }),
+    [form.label, form.categoryId, form.surfaceName, form.valueMappings, targets],
+  );
+  const saveRefusal = saveRefusals.length > 0;
 
   const onSave = async () => {
-    const err = validate();
-    if (err) {
-      toast.error(err);
-      return;
-    }
+    // Belt on top of the braces: the button is disabled while a refusal
+    // stands, so this can only fire on a shortcut that may be written.
+    if (saveRefusal) return;
     setBusy(true);
     try {
       if (isNew) {
@@ -417,8 +428,24 @@ export function ShortcutEditorNext({
         </div>
       </div>
 
-      {/* Sticky footer */}
-      <footer className="shrink-0 px-6 py-3 border-t border-border bg-background flex items-center gap-2">
+      {/* Sticky footer. The refusal rides INSIDE it, above the buttons, so the
+          reason and the disabled control are read together — a refusal that
+          scrolls away from its button is a refusal nobody can act on. */}
+      <footer className="shrink-0 px-6 py-3 border-t border-border bg-background">
+        {saveRefusals.length > 0 ? (
+          <ul
+            data-testid="shortcut-save-refusal"
+            className="mb-2 space-y-1 text-[11.5px] leading-relaxed text-muted-foreground"
+          >
+            {saveRefusals.map((reason) => (
+              <li key={reason} className="flex items-start gap-1.5">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{reason}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <div className="flex items-center gap-2">
         {!isNew && (
           <Button
             variant="ghost"
@@ -441,7 +468,7 @@ export function ShortcutEditorNext({
           </Button>
           <Button
             onClick={() => void onSave()}
-            disabled={busy}
+            disabled={busy || saveRefusal}
             className="h-9 gap-1.5 text-sm min-w-[120px]"
           >
             {busy ? (
@@ -451,6 +478,7 @@ export function ShortcutEditorNext({
             )}
             {isNew ? "Create shortcut" : "Save"}
           </Button>
+        </div>
         </div>
       </footer>
     </div>

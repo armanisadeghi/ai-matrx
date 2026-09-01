@@ -171,6 +171,19 @@ A structured component (like Card — with title + description fields) flips one
 - **Category names normalize once at the API-to-Redux boundary.** `categoryRowToDef` maps a missing legacy `label` to `Unnamed category`; `compareCategoryOrder` remains total for stale pre-normalized state. Category surfaces never call string methods on unchecked wire values.
 - **Direct-open routes validate UUIDs before querying.** Reserved segments such as `new` have static routes; malformed `[shortcutId]` values never reach `mandate.vw_shortcut.id`. A non-id segment answers **"is not a shortcut id … no shortcut at this address"** with only a Back control — never the missing-record sentence, which claims a shortcut exists and failed to open. Every tab of the system-agents hub also has a real alias route under `/shortcuts/<slug>` so `[shortcutId]` cannot swallow a tab deep link (`shortcuts/tab-aliases.test.ts` reads the hub nav and fails on a tab that lacks one).
 - 🚨 **GLOBAL MEANS NO TENANT OR PERSON OWNER — ON THE WIRE, ALWAYS.** Storage homes global rows in the SYSTEM organization (the column is NOT NULL), and its trigger may stamp the acting admin into `created_by`, but every client read — `matchesScope`, `resolveRowScope`, `selectGlobalCategories`, `selectGlobalShortcuts`, the `CategoryTree` / `DuplicateCategoryModal` ownership badges, the `ShortcutEditorNext` / `BatchShortcutsEditor` category pickers, `format.ts` — defines global as both `organizationId === null` and `userId === null`. Anything that hands a row to the client applies `toGlobalOwnershipWire` / `toGlobalOwnershipRecord` (`lib/organizations/globalOwnership.ts`) first, clearing both ownership projections for system-org rows, and anything that writes a read record back applies `fromGlobalOwnershipRecord`. Skipping either half is not cosmetic: it hides globals as tenant- or person-owned rows.
+- 🚨 **EVERY WRITER OF A MAPPING RUNS THE ONE PRE-FLIGHT** (FIX-11, 2026-09-01). A
+  shortcut whose mapping asks the person a question with NO WORDS is
+  unanswerable, and until this rule it saved cleanly and toasted success. The
+  judge is `consumptionMapProblems` in `features/mandates/provision-shapes.ts`
+  — the same one the mandate binding UI runs — reached for this map shape
+  through `valueMappingsProblems`. It is enforced in TWO places, and both are
+  required: the editors derive their refusal and DISABLE the control with the
+  sentence beside it (`save-refusal.ts` for `ShortcutEditorNext`, `rowAttention`
+  → `applyRefusal` for `BatchShortcutsEditor`), and the ONE write seam
+  `packShortcutMappingColumns` THROWS, so a path that never grew a UI gate (the
+  bulk apply, the pasted JSON draft, the link modal) still cannot reach the
+  wire. Never add a mapping writer that bypasses the seam. Guard:
+  `features/mandates/__tests__/one-preflight-every-writer.test.ts`.
 - **`scopeMappings` targets variable NAMES, not indexes.** Renaming a variable on the agent is a breaking change for every pinned shortcut using that mapping.
 - **Shortcuts can trigger Workflows** instead of a single agent (`features/workflows/` — currently broken per CLAUDE.md, out of scope).
 - **Shortcuts can ship their own source code** for custom rendering — they're not limited to variable bindings. See [`features/tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md).
@@ -200,6 +213,7 @@ See `features/agents/migration/MASTER-PLAN.md`.
 
 ## Change log
 
+- `2026-09-01` — **FIX-11: every writer of a mapping runs the ONE pre-flight, and the control is honest.** A UI walker found the editor storing a Prompt-User mapping with a BLANK question — `PATCH … 200`, success toast, and a run form that would ask nothing. A census found NINE client writers of a `prompt_user`-capable mapping and exactly one that checked (the mandate batch grid). Closed in three layers: the judge (`consumptionMapProblems`) no longer requires an offer, so it can run everywhere; the editors DISABLE Save/Apply with the sentence beside it (`save-refusal.ts`, `rowAttention().problems`); and the ONE write seam `packShortcutMappingColumns` throws, so the bulk apply, the pasted JSON draft and the link modal are covered without a UI of their own. Guard `features/mandates/__tests__/one-preflight-every-writer.test.ts` was reverted layer-by-layer and reproduced 7 failing before the fix, 13 passing after.
 - `2026-08-31` — Made the system organization the global shortcut discriminator and treated `created_by` as audit: system-org rows now clear both organization and person ownership on the client wire, so a global shortcut created through the UI cannot be misclassified as that admin's personal shortcut.
 - `2026-08-31` — Normalized missing legacy category names at `categoryRowToDef` and made shared category ordering null-safe, preventing one malformed row from crashing every category surface.
 

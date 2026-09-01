@@ -41,6 +41,9 @@ import type { Json, Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { ensureSharedWithOrg } from "@/utils/permissions/service";
+// THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
+// to store in a mapping, for every system that stores one.
+import { assertMappingsAreAnswerable } from "@/features/mandates/provision-shapes";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -218,6 +221,12 @@ export function buildSurfaceBindingPayload(args: {
   autoRun?: boolean;
 }): SurfaceBindingPayload {
   const { valueMappings, writePolicies, autoRun } = args;
+  // 🚨 FIX-11 (W10-1) — THE ONE PRE-FLIGHT, AT THE ONE SHAPE SEAM. Four bind
+  // UIs (this panel, the admin binding column, the agent surfaces panel, the
+  // bulk editor) reach the wire through this builder and NONE of them looked at
+  // what they were storing, so a mapping that asks the person a question with
+  // no words saved cleanly and asked nothing at run time.
+  assertMappingsAreAnswerable(valueMappings);
   return {
     value_mappings: valueMappings,
     ...(writePolicies && Object.keys(writePolicies).length > 0

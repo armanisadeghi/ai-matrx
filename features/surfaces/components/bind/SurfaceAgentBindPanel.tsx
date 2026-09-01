@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, Link2, Zap } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Link2, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -37,6 +37,8 @@ import { BindingSuggestionsTab } from "@/features/surfaces/components/bind/Bindi
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+// THE ONE PRE-FLIGHT (FIX-11) — the same judge every mapping writer runs.
+import { valueMappingsProblems } from "@/features/mandates/provision-shapes";
 import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
@@ -407,6 +409,21 @@ export function SurfaceAgentBindPanel({
 
   // ── Step 2: scope + mappings ────────────────────────────────────────────
   const agentReady = executionPayload.isReady;
+  /**
+   * 🚨 WHY SAVE CANNOT ACT — the ONE pre-flight, on the control (FIX-11, W10-1).
+   *
+   * This panel had no reading of what it was about to store at all: a mapping
+   * that asks the person a question with no words saved cleanly and asked
+   * nothing at run time. The write seam refuses it now too, but a refusal a
+   * person only meets AFTER pressing Save is a screen that lied on the way in.
+   */
+  const saveRefusals = useMemo(
+    () =>
+      valueMappingsProblems(mappings, {
+        targets: targets.map((t) => ({ name: t.name, label: t.label })),
+      }),
+    [mappings, targets],
+  );
   const agentName = agent?.name ?? "Agent";
   const agentLocked = lockAgent && !!initialAgentId;
 
@@ -567,7 +584,20 @@ export function SurfaceAgentBindPanel({
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-border px-4 py-2.5 flex items-center justify-end gap-2">
+      <div className="shrink-0 border-t border-border px-4 py-2.5 flex flex-wrap items-center justify-end gap-2">
+        {saveRefusals.length > 0 ? (
+          <ul
+            data-testid="surface-bind-save-refusal"
+            className="mr-auto min-w-0 space-y-1 text-[11px] leading-relaxed text-muted-foreground"
+          >
+            {saveRefusals.map((reason) => (
+              <li key={reason} className="flex items-start gap-1.5">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{reason}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {onCancel && (
           <Button
             type="button"
@@ -583,7 +613,7 @@ export function SurfaceAgentBindPanel({
           type="button"
           size="sm"
           onClick={() => void handleSave()}
-          disabled={busy || !agentReady}
+          disabled={busy || !agentReady || saveRefusals.length > 0}
         >
           {busy ? (
             <>

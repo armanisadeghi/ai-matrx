@@ -377,7 +377,9 @@ function BindingDraft({
   const offerSourceLine = offerPending
     ? "Reading what this job offers…"
     : data.provisionKey
-      ? `Declared by the ${data.provisionKey} provision — the call site supplies these every launch.`
+      ? // W10-2 — the provision's key is a SLUG; it rides the mono chip beside
+        // this sentence, never inside it.
+        `The call site supplies these every launch — declared by the provision`
       : offer
         ? "This job's own described inputs. They ARE its provision."
         : surfaceState.status === "error"
@@ -575,13 +577,21 @@ function BindingDraft({
   const awaitingPick = Object.values(draftMap).some((sources) =>
     sources.some((entry) => isOfferedSource(entry) && entry.target === ""),
   );
-  const mapProblems =
-    offer && holderChosen
-      ? consumptionMapProblems(offer, withoutUnpicked(draftMap), {
-          // R5-1: the refusal names the input the way its own row does.
-          targets: holderInputs.targets,
-        })
-      : [];
+  // 🚨 FIX-11 / W10-1 — THE PRE-FLIGHT RUNS WHETHER OR NOT THERE IS AN OFFER.
+  // This read `offer && holderChosen ? … : []`, so on a job that describes
+  // nothing (no offer at all) the whole pre-flight was skipped — while the ROW
+  // one line above kept printing its own copy of the very same refusal, because
+  // `BindingMiddle` runs it against the sources alone. The screen therefore
+  // stated the problem and Save wrote it anyway, which is the exact shape H1
+  // closed in batch mode and left open here. A null offer now means "not known"
+  // rather than "skip everything": the shape rules (a question with no words,
+  // a structured literal joined with something else) are true either way.
+  const mapProblems = holderChosen
+    ? consumptionMapProblems(offer, withoutUnpicked(draftMap), {
+        // R5-1: the refusal names the input the way its own row does.
+        targets: holderInputs.targets,
+      })
+    : [];
   // 🚨 H1, at its class and in BOTH modes (P17 — batch is the middle
   // transposed, so a map that cannot be written in one may not be written in
   // the other). A required input nothing feeds, on a holder with no default of
@@ -1266,6 +1276,7 @@ function BindingDraft({
                   consumedBy={consumedBy}
                   pinnedContext={data.pinnedContext}
                   sourceLine={offerSourceLine}
+                  sourceSlug={offerPending ? null : (data.provisionKey ?? null)}
                   status={offerPending ? "loading" : "ready"}
                 />
               </div>

@@ -512,6 +512,17 @@ export function BatchShortcutsEditor({
     if (requiredUnmapped > 0) {
       return `${requiredUnmapped} required variable ${requiredUnmapped === 1 ? "binding is" : "bindings are"} still unmapped. Fix the red cells first.`;
     }
+    // 🚨 FIX-11 (W10-1) — every OTHER way a mapping can be unwritable, in the
+    // pre-flight's own words. This gate used to see one shape of problem, so a
+    // question with no words was applied to every row in the batch.
+    const problems = pending.flatMap(
+      (r) => rowAttention(ctx, r, targets).problems,
+    );
+    if (problems.length > 0) {
+      return problems.length === 1
+        ? `${problems[0]}.`
+        : `${problems.length} inputs in this batch are set up in a way a run could not honour — the first is: ${problems[0]}.`;
+    }
     return null;
   }, [rows, appliedKeys, ctx, targets]);
 

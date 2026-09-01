@@ -35,8 +35,11 @@ export interface OfferedInventoryColumnProps {
   consumedBy: ReadonlyMap<string, string[]>;
   /** Values the platform delivers automatically — shown, never hidden (P8). */
   pinnedContext: readonly string[];
-  /** One sentence naming where this inventory came from. */
+  /** One sentence naming where this inventory came from. PROSE ONLY — a
+   * provision's key is a slug and rides `sourceSlug`'s mono chip (W10-2). */
   sourceLine: string;
+  /** The provision key behind the sentence, when there is one. */
+  sourceSlug?: string | null;
   /** Honest words for an offer that is still loading or genuinely empty. */
   status?: "loading" | "ready";
   emptyRemedy?: string;
@@ -47,6 +50,7 @@ export function OfferedInventoryColumn({
   consumedBy,
   pinnedContext,
   sourceLine,
+  sourceSlug = null,
   status = "ready",
   emptyRemedy,
 }: OfferedInventoryColumnProps) {
@@ -75,6 +79,11 @@ export function OfferedInventoryColumn({
         </div>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           {sourceLine}
+          {sourceSlug ? (
+            <code className="ml-1 rounded bg-muted px-1 py-px font-mono text-[10.5px]">
+              {sourceSlug}
+            </code>
+          ) : null}
         </p>
         {/* P1 — the rail is CAPPED so both inventories stay on screen together
             (V2 G4: 27 values used to stretch the workspace to 4,502px). A

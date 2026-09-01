@@ -36,8 +36,13 @@ export interface SelectablePlace {
   mandateKey: string;
   /** Whether the chosen rung already answers this job. */
   answeredHere: boolean;
-  /** What the job declares, in words — the price, before the work. */
+  /** What the job declares, in words — the price, before the work. PROSE ONLY:
+   * 🚨 W10-2 — this used to read `provision seo_page_writer`, a raw snake_case
+   * slug in a plain muted span, one line under the mono chip that carries the
+   * job's own key correctly. Slugs live in mono chips; prose speaks labels. */
   priceLine: string;
+  /** The provision's key, when there is one — rendered as its own mono chip. */
+  priceSlug?: string | null;
   /** Set when this holder cannot fulfil this job (the requirement gate). */
   blocked: string | null;
 }
@@ -273,8 +278,13 @@ function PlaceRowItem({
           </p>
         ) : null}
       </div>
-      <span className="shrink-0 text-[10px] text-muted-foreground">
+      <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
         {place.priceLine}
+        {place.priceSlug ? (
+          <code className="rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">
+            {place.priceSlug}
+          </code>
+        ) : null}
       </span>
     </div>
   );

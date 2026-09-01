@@ -576,6 +576,18 @@ export interface PreflightTarget {
  */
 export interface PreflightContext {
   targets?: readonly PreflightTarget[];
+  /**
+   * How many DELIVERY CHANNELS the storing system has (FIX-11).
+   *
+   * A mandate input can be fed as a variable OR as a context slot, so two of
+   * these sentences are about picking the right one, and a third refuses a
+   * target whose sources disagree. A SURFACE/shortcut binding has exactly one
+   * channel — the named variable — so those three rules are not truths about it
+   * and must not be spoken at it. Default is the mandate's world, because that
+   * is where this pre-flight was born; the shortcut/surface writers pass
+   * `"variable-only"`.
+   */
+  channels?: "variable-and-context" | "variable-only";
 }
 
 /**
@@ -593,13 +605,30 @@ export interface PreflightContext {
  * and an offered value are named by `displayLabelForKey`, a kind by
  * `kindPhrase`. The keys keep their honest home — the mono sub-line the offered
  * rail and the row header already print them on.
+ *
+ * 🚨 `offer` MAY BE NULL, AND THAT IS THE FIX-11 CLASS (W10-1). It used to be
+ * required, so `OneBindingWorkspace` ran the whole pre-flight only when it had
+ * an offer in hand (`offer && holderChosen ? … : []`) — and a job that
+ * describes nothing has no offer at all. On those jobs the rows still printed
+ * "…asks the person for this input but has no question" (the row runs its own
+ * copy of this against `{ values: [] }`), while Save sat ENABLED beside the
+ * warning and wrote it. Half these rules never needed the offer: a question
+ * with no words is unanswerable whatever the job offers. So the offer is now
+ * OPTIONAL, and `null` means exactly one thing — "what this job offers is not
+ * known here" — which silences the four sentences that must look a value up
+ * and NOTHING else. Never pass `{ values: [] }` to mean "unknown": that is the
+ * claim that the job offers nothing, and it turns every source into
+ * "…which this job does not offer".
  */
 export function consumptionMapProblems(
-  offer: OfferLike,
+  offer: OfferLike | null,
   map: ConsumptionMap,
   context: PreflightContext = {},
 ): string[] {
-  const offered = new Map(offer.values.map((v) => [v.name, v]));
+  const offerKnown = offer !== null;
+  const offered = new Map((offer?.values ?? []).map((v) => [v.name, v]));
+  const twoChannels = (context.channels ?? "variable-and-context") !==
+    "variable-only";
   const targetLabels = new Map(
     (context.targets ?? []).map((t) => [t.name, displayLabelForKey(t.name, t.label)]),
   );
@@ -626,7 +655,7 @@ export function consumptionMapProblems(
           problems.push(
             `“${inputName(name)}” has a structured fixed value, which has no text form — it can't be joined with other values; give it an input of its own`,
           );
-        } else if (structured && sourceChannel(entry) === "variable") {
+        } else if (structured && twoChannels && sourceChannel(entry) === "variable") {
           problems.push(
             `“${inputName(name)}” has a structured fixed value — deliver it as context, never as a blob variable`,
           );
@@ -641,6 +670,10 @@ export function consumptionMapProblems(
         }
         continue;
       }
+      // ── Everything below LOOKS THE SOURCE UP IN THE OFFER. With no offer in
+      // hand there is nothing true to say about it, and saying it anyway is how
+      // a screen lies — so these four sentences are simply not spoken.
+      if (!offerKnown) continue;
       const source = entry.target || name;
       const value = offered.get(source);
       if (!value) {
@@ -682,11 +715,108 @@ export function consumptionMapProblems(
         );
       }
     }
-    if (channels.size > 1) {
+    if (twoChannels && channels.size > 1) {
       problems.push(
         `“${inputName(name)}” has sources going to different places — everything feeding one input lands the same way`,
       );
     }
   }
   return problems;
+}
+
+/**
+ * 🚨 THE SAME PRE-FLIGHT, FOR THE OTHER MAP SHAPE (FIX-11, W10-1).
+ *
+ * A mandate binding stores `Record<input, ConsumptionEntry[]>`; a surface /
+ * shortcut binding stores `Record<input, ValueMapping>` — ONE source per input
+ * instead of an ordered list. Two shapes, but the SAME row component writes
+ * both (`SurfaceVariableBinding`), so a person can produce the same broken
+ * state either side: pick **Prompt User**, leave the question blank, save.
+ *
+ * The mandate side refused that. The shortcut editor stored it silently and
+ * toasted success — a run form would then have asked a question with no words,
+ * which nobody can answer. The class is "every writer that persists a mapping
+ * runs the one pre-flight", and the way to keep that true is for there to
+ * literally be one: this adapts the single-source shape onto the many-source
+ * one and hands it to `consumptionMapProblems`. No second sentence writer.
+ *
+ * Two deliberate arguments:
+ *   · `offer = null` — a surface binding's values are declared by the SURFACE,
+ *     not by a mandate's offer, and this function is not the reader of that.
+ *     Null means "not known here", which silences exactly the four sentences
+ *     that need it and no others.
+ *   · `channels: "variable-only"` — a surface binding has one delivery channel,
+ *     so the two "deliver it as context" sentences and the "sources going to
+ *     different places" sentence are not truths about it.
+ */
+export function valueMappingsProblems(
+  mappings: Readonly<Record<string, ValueMapping>> | null | undefined,
+  context: Omit<PreflightContext, "channels"> = {},
+): string[] {
+  if (!mappings) return [];
+  const map: ConsumptionMap = {};
+  for (const [target, mapping] of Object.entries(mappings)) {
+    const entry = consumptionEntryFromValueMapping(target, mapping);
+    if (entry) map[target] = [entry];
+  }
+  return consumptionMapProblems(null, map, {
+    ...context,
+    channels: "variable-only",
+  });
+}
+
+/**
+ * One stored `ValueMapping` as the consumption shape, or null when it is not a
+ * source at all (`unmapped` is the explicit "leave it to the agent's default",
+ * which is absence on the mandate side and has nothing to check).
+ */
+function consumptionEntryFromValueMapping(
+  target: string,
+  mapping: ValueMapping,
+): ConsumptionEntry | null {
+  switch (mapping.mapType) {
+    case "prompt_user":
+      return {
+        mapType: "prompt_user",
+        prompt: mapping.prompt,
+        defaultValue: mapping.defaultValue,
+        required: mapping.required,
+        deliver: "variable",
+      };
+    case "direct_value":
+      return { mapType: "direct_value", target: mapping.target, deliver: "variable" };
+    case "surface_value":
+    case "offered_value":
+      return { mapType: "offered_value", target: mapping.target || target, deliver: "variable" };
+    default:
+      return null;
+  }
+}
+
+/**
+ * 🚨 THE LAST LINE, AT THE WRITE SEAM (FIX-11, W10-1).
+ *
+ * The honest-disable belongs on the control a person meets — but a UI gate only
+ * guards the UI that has it, and the census behind this fix found NINE writers
+ * of a `prompt_user`-capable mapping and ONE that checked. So the two shape
+ * seams every one of those writers funnels through (`packShortcutMappingColumns`
+ * for a shortcut, `buildSurfaceBindingPayload` for a surface binding) call this,
+ * and a mapping nobody could answer never reaches the wire — from a screen that
+ * forgot to gate, from a pasted JSON draft, from a bulk apply.
+ *
+ * It THROWS rather than dropping the entry: a silent repair here would be the
+ * same defect wearing a helpful face, and the person would never learn that the
+ * question they left blank is gone.
+ */
+export function assertMappingsAreAnswerable(
+  mappings: Readonly<Record<string, ValueMapping>> | null | undefined,
+  context: Omit<PreflightContext, "channels"> = {},
+): void {
+  const problems = valueMappingsProblems(mappings, context);
+  if (problems.length === 0) return;
+  throw new Error(
+    problems.length === 1
+      ? `This can't be saved yet — ${problems[0]}.`
+      : `This can't be saved yet — ${problems.length} of its inputs are set up in a way a run could not honour: ${problems.join("; ")}.`,
+  );
 }

@@ -64,7 +64,14 @@ Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
    `displayLabelForKey` and a kind by `kindPhrase` — never the raw key or slug,
    which keep their mono sub-line. Callers pass their own `targets` so an
    author-written label wins; `mandate-screen-vocabulary.test.ts` drives all ten
-   sentences and fails on any snake_case.
+   sentences and fails on any snake_case. **And it runs on EVERY writer, whether
+   or not the job offers anything** (FIX-11): the workspace used to gate the
+   whole pre-flight on `offer && holderChosen`, so on a job that describes
+   nothing the row printed its warning and Save wrote it anyway. `offer` may now
+   be `null` — meaning "not known here", which silences only the four sentences
+   that must look a value up — and the same judge reads the surface/shortcut map
+   shape through `valueMappingsProblems`. Guard:
+   `features/mandates/__tests__/one-preflight-every-writer.test.ts`.
 2. **A copied mapping is reconciled against THAT place** — keep · re-bind on a
    name match · clear and go red (`reconcileCopiedTarget`, the same function the
    shortcut cell calls). An extra source of a many-to-one target is never

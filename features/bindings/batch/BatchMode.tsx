@@ -39,6 +39,7 @@ import {
   contractOfMandate,
   type MandateBindingRow,
 } from "@/lib/supabase/mandateStorage";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { parseMandateContract } from "@/features/mandates/contract";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
 import {
@@ -410,7 +411,8 @@ export function BatchMode({
           key: row.mandate_key,
           mandateId: row.id,
           mandateKey: row.mandate_key,
-          label: row.label ?? row.mandate_key,
+          // W10-2 — prose speaks a name; the key rides the mono sub-line.
+          label: mandateDisplayName(row.mandate_key, row.label),
           kind: bindingAt(row.mandate_key) ? "update" : "create",
           offeredCount: offer.status === "ready" ? offer.offered.length : null,
         };
@@ -430,14 +432,17 @@ export function BatchMode({
           : 0;
         return {
           key: row.mandate_key,
-          label: row.label ?? row.mandate_key,
+          label: mandateDisplayName(row.mandate_key, row.label),
           mandateKey: row.mandate_key,
           answeredHere: Boolean(bindingAt(row.mandate_key)),
+          // W10-2 — the price is PROSE; a provision key is a slug and travels
+          // in its own mono chip beside it, never inside the sentence.
           priceLine: wave1.provisionKey
-            ? `provision ${wave1.provisionKey}`
+            ? "provision"
             : described > 0
               ? `describes ${described}`
               : "describes nothing",
+          priceSlug: wave1.provisionKey ?? null,
           blocked: null,
         };
       }),

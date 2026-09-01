@@ -47,6 +47,9 @@ import {
   writePoliciesOfShortcutRow,
   SHORTCUT_WRITE_POLICIES_ON_TREATMENT,
 } from "@/lib/supabase/shortcutStorage";
+// THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
+// to store in a mapping, for every system that stores one.
+import { assertMappingsAreAnswerable } from "@/features/mandates/provision-shapes";
 
 // ---------------------------------------------------------------------------
 // Supabase row types
@@ -169,6 +172,12 @@ export function packShortcutMappingColumns(
   valueMappings: ValueMappingMap | null,
   writePolicies: WritePolicyMap | null,
 ): Record<string, unknown> {
+  // 🚨 FIX-11 (W10-1) — THE ONE PRE-FLIGHT, AT THE ONE WRITE SEAM. A shortcut
+  // whose mapping asks the person a question with no words is unanswerable, and
+  // until this line every shortcut writer stored it and toasted success. The
+  // editors refuse it on the control now; this refuses it on the wire, for the
+  // bulk apply, the pasted JSON draft, and whatever is written next.
+  assertMappingsAreAnswerable(valueMappings);
   if (SHORTCUT_WRITE_POLICIES_ON_TREATMENT) {
     return {
       value_mappings: valueMappings,

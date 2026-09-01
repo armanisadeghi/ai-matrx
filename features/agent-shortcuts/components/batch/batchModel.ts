@@ -26,6 +26,8 @@ import type {
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
+// THE ONE PRE-FLIGHT (FIX-11) — the same judge the mandate grids run.
+import { valueMappingsProblems } from "@/features/mandates/provision-shapes";
 import {
   RESULT_DISPLAY_META,
   type ResultDisplayMode,
@@ -676,6 +678,15 @@ export interface RowAttention {
   unmapped: number;
   /** Of the unmapped, how many are on required targets. */
   requiredUnmapped: number;
+  /**
+   * 🚨 FIX-11 (W10-1) — WHAT THIS GATE COULD NOT SEE. This attention read was
+   * hard-restricted to `mapType === "surface_value" && !m.target`, so the
+   * disabled-Apply gate above it was structurally blind to every other way a
+   * mapping can be unwritable — a question with no words most of all. The
+   * sentences come from the ONE pre-flight now, so a rule added there is a rule
+   * this grid keeps, without anyone remembering to come here.
+   */
+  problems: readonly string[];
 }
 
 export function rowAttention(
@@ -693,5 +704,8 @@ export function rowAttention(
       if (t.required) requiredUnmapped += 1;
     }
   }
-  return { unmapped, requiredUnmapped };
+  const problems = valueMappingsProblems(assembled, {
+    targets: targets.map((t) => ({ name: t.name, label: t.label })),
+  });
+  return { unmapped, requiredUnmapped, problems };
 }
