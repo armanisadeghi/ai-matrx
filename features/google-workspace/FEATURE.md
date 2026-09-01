@@ -23,6 +23,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   aidream verifies connection ownership and refreshes the vault credential. Picker never relies on
   a second GIS popup or exposes the refresh token.
 - The durable refresh token is encrypted in aidream's canonical user secrets vault and is never persisted in the browser.
+- When GIS popup consent cannot be controlled, the shared connect panel offers an explicit same-tab redirect-code fallback. It uses the current registered origin as the callback, binds the request to a one-time HttpOnly `SameSite=Lax` state cookie plus bounded session metadata, exchanges the code through the same aidream endpoint and scope contract, and stores neither codes nor tokens in browser storage.
 - Gmail is incremental and uses only `gmail.send`. The product cannot read, search, delete, or organize Gmail.
 - Gmail sending requires visible recipients, subject, body, and an unchecked user confirmation immediately before the send action.
 - Google Workspace content is not persisted by these endpoints and is not used to train generalized AI models.
@@ -30,7 +31,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 
 ## Data and API flow
 
-1. The browser receives an authorization code from Google Identity Services.
+1. The browser receives an authorization code from Google Identity Services through the normal popup or the explicit same-tab redirect fallback; both paths request the same bounded scopes.
 2. The browser sends that one-time code directly to aidream `/api/google-integrations/exchange` with the signed-in user's Supabase JWT.
 3. aidream stores the refresh token in the canonical vault and safe connection metadata in `users.integration_connections`.
 4. For Workspace operations, Google Picker returns one Doc/Sheet id. aidream validates it through `drive.file` and stores only safe metadata in `users.integration_connection_resources` as `google_document` or `google_spreadsheet`.
@@ -150,6 +151,7 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-01: Added a secure same-tab GIS redirect-code fallback for browser environments that cannot control Google's consent popup. The exact registered origin callback validates one-time server and session state, then converges on the canonical aidream exchange without broadening scopes or persisting credentials in the browser.
 - 2026-09-01: Gated every Google connect and incremental-consent action on GIS readiness so an
   immediate click opens no red error toast while the shared script is still loading.
 - 2026-09-01: Filtered the shared Google UI inventory by caller reachability so

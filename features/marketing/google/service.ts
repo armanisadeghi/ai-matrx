@@ -233,10 +233,12 @@ function backendBase(): string {
  */
 function organizationContextHeaders(
   base: Record<string, string>,
+  organizationIdOverride?: string,
 ): Record<string, string> {
   const store = getStoreSingleton();
   const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
+    organizationIdOverride ??
+      (store ? selectOrganizationId(store.getState()) : null),
   );
   return applyOrganizationContextHeader(base, organizationId);
 }
@@ -245,6 +247,7 @@ export async function postGoogleBackend(
   path: string,
   body: Record<string, unknown>,
   fallback: string,
+  organizationIdOverride?: string,
 ): Promise<Response> {
   const supabase = createClient();
   const {
@@ -253,10 +256,13 @@ export async function postGoogleBackend(
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
-    headers: organizationContextHeaders({
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    }),
+    headers: organizationContextHeaders(
+      {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      organizationIdOverride,
+    ),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -272,6 +278,10 @@ export async function connectGoogle(
   code: string,
   owner: GoogleConnectionOwner,
   connectionPurpose: GoogleConnectionPurpose = "general",
+  options?: {
+    redirectUri?: string;
+    organizationContextId?: string;
+  },
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (!clientId) {
@@ -285,10 +295,11 @@ export async function connectGoogle(
       owner_type: owner.type,
       organization_id:
         owner.type === "organization" ? owner.organizationId : null,
-      redirect_uri: window.location.origin,
+      redirect_uri: options?.redirectUri ?? window.location.origin,
       connection_purpose: connectionPurpose,
     },
     "Unable to connect Google.",
+    options?.organizationContextId,
   );
   const body = (await response.json()) as { connection_id?: unknown };
   if (typeof body.connection_id !== "string") {

@@ -61,6 +61,8 @@ import { extractErrorMessage } from "@/utils/errors";
 import { materializeGoogleDriveFiles } from "@/features/google-workspace/import/materializeGoogleDriveFile";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 const WINDOW_ID = "google-connect-window";
 const OVERLAY_ID = "googleConnectWindow" as const;
@@ -96,6 +98,7 @@ function GoogleConnectWindowBody({
   initialConnectionId,
 }: GoogleConnectWindowProps) {
   const google = useGoogleAPI();
+  const organizationContextId = useAppSelector(selectOrganizationId);
   const connectGoogle = useConnectGoogle();
   const inventory = useGoogleConnectionInventory();
   const [busy, setBusy] = useState<string | null>(null);
@@ -166,6 +169,21 @@ function GoogleConnectWindowBody({
       selectConnection(result.connectionId);
       await inventory.refetch();
       toast.success("Google connected.");
+    });
+
+  const connectInThisTab = () =>
+    void run("connect-redirect", async () => {
+      if (!organizationContextId) {
+        throw new Error("Choose an organization before connecting Google.");
+      }
+      await google.startAuthorizationCodeRedirect(
+        [...GOOGLE_WORKSPACE_FILE_SCOPES],
+        {
+          returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          owner: { type: "user" },
+          organizationContextId,
+        },
+      );
     });
 
   const enableSending = () =>
@@ -323,6 +341,16 @@ function GoogleConnectWindowBody({
                   ? "Loading Google…"
                   : "Connect Google"}
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={connectInThisTab}
+              disabled={authorizationActionDisabled}
+            >
+              {busy === "connect-redirect"
+                ? "Opening Google…"
+                : "Continue with Google in this tab"}
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -342,6 +370,18 @@ function GoogleConnectWindowBody({
             >
               <Plus className="mr-1.5 h-4 w-4" />
               {busy === "connect" ? "Connecting…" : "Add another account"}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={connectInThisTab}
+              disabled={authorizationActionDisabled}
+              className="self-start"
+            >
+              {busy === "connect-redirect"
+                ? "Opening Google…"
+                : "Reconnect in this tab"}
             </Button>
 
             <Button

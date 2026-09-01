@@ -13,6 +13,11 @@ import type {
   GooglePickerNamespace,
   GooglePlatformApi,
 } from "@/lib/googlePicker";
+import {
+  buildGoogleOAuthRedirectPending,
+  storeGoogleOAuthRedirectPending,
+} from "./oauthRedirect";
+import type { GoogleOAuthRedirectStartOptions } from "./oauthRedirect";
 
 export class GoogleAuthorizationCancelledError extends Error {
   constructor() {
@@ -63,7 +68,7 @@ interface TokenClientConfig {
   login_hint?: string;
 }
 
-interface CodeClientConfig {
+interface PopupCodeClientConfig {
   client_id: string;
   scope: string;
   ux_mode: "popup";
@@ -75,6 +80,20 @@ interface CodeClientConfig {
   prompt?: "consent" | "select_account";
   login_hint?: string;
 }
+
+interface RedirectCodeClientConfig {
+  client_id: string;
+  scope: string;
+  ux_mode: "redirect";
+  redirect_uri: string;
+  state: string;
+  select_account: boolean;
+  include_granted_scopes?: boolean;
+  prompt?: "consent" | "select_account";
+  login_hint?: string;
+}
+
+type CodeClientConfig = PopupCodeClientConfig | RedirectCodeClientConfig;
 
 export interface GoogleAuthorizationCodeOptions {
   /** Re-display consent for a user-facing verification walkthrough. */
@@ -126,6 +145,10 @@ interface GoogleAPIContextType {
     loginHint?: string,
     options?: GoogleAuthorizationCodeOptions,
   ) => Promise<string>;
+  startAuthorizationCodeRedirect: (
+    scopesToRequest: string[],
+    options: GoogleOAuthRedirectStartOptions,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
   requestScopes: (scopes: string[]) => Promise<boolean>;
@@ -390,6 +413,76 @@ export default function GoogleAPIProvider({
     });
   };
 
+  const startAuthorizationCodeRedirect = async (
+    scopesToRequest: string[],
+    options: GoogleOAuthRedirectStartOptions,
+  ): Promise<void> => {
+    if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
+      throw new Error("Google authorization is still loading.");
+    }
+    if (!clientId) {
+      throw new Error("Google client ID is not configured.");
+    }
+    if (authInProgress) {
+      throw new Error("A Google authorization window is already open.");
+    }
+
+    resetError();
+    setAuthInProgress(true);
+    try {
+      const response = await fetch("/api/google/oauth/redirect-state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const body = (await response.json()) as {
+        state?: unknown;
+        redirectUri?: unknown;
+        error?: unknown;
+      };
+      if (
+        !response.ok ||
+        typeof body.state !== "string" ||
+        typeof body.redirectUri !== "string"
+      ) {
+        throw new Error(
+          typeof body.error === "string"
+            ? body.error
+            : "Google redirect authorization could not start.",
+        );
+      }
+      const redirectUri = new URL(body.redirectUri);
+      if (
+        redirectUri.origin !== window.location.origin ||
+        redirectUri.pathname !== "/"
+      ) {
+        throw new Error(
+          "Google authorization returned an invalid callback origin.",
+        );
+      }
+      const pending = buildGoogleOAuthRedirectPending(
+        body.state,
+        options,
+        window.location.origin,
+      );
+      storeGoogleOAuthRedirectPending(window.sessionStorage, pending);
+      const client = window.google.accounts.oauth2.initCodeClient({
+        client_id: clientId,
+        scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(" "),
+        ux_mode: "redirect",
+        redirect_uri: body.redirectUri,
+        state: body.state,
+        select_account: true,
+        include_granted_scopes: false,
+        ...(options.forceConsent ? { prompt: "consent" as const } : {}),
+        ...(options.loginHint ? { login_hint: options.loginHint } : {}),
+      });
+      client.requestCode();
+    } catch (cause) {
+      setAuthInProgress(false);
+      throw cause;
+    }
+  };
+
   const signOut = async () => {
     if (!isGoogleLoaded || !window.google?.accounts) {
       setError("Google auth not initialized.");
@@ -486,6 +579,7 @@ export default function GoogleAPIProvider({
         token,
         signIn,
         requestAuthorizationCode,
+        startAuthorizationCodeRedirect,
         signOut,
         getGrantedScopes,
         requestScopes,

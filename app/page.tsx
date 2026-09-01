@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { LandingCTAs } from "@/features/landing/components/LandingCTAs";
 import { AuthAwareButton } from "@/features/landing/components/AuthAwareButton";
 import { PublicFooter } from "@/components/matrx/PublicFooter";
+import { GoogleOAuthRedirectCallback } from "@/providers/google-provider/GoogleOAuthRedirectCallback";
 
 // Enhanced metadata for SEO
 export const metadata: Metadata = {
@@ -35,7 +36,29 @@ export const metadata: Metadata = {
 };
 
 // Server-side rendered landing page
-export default function LandingPage() {
+interface LandingPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function first(value: string | string[] | undefined): string | null {
+  return typeof value === "string" ? value : (value?.[0] ?? null);
+}
+
+export default async function LandingPage({ searchParams }: LandingPageProps) {
+  const query = await searchParams;
+  const state = first(query.state);
+  const code = first(query.code);
+  const providerError = first(query.error);
+  if (state && (code || providerError)) {
+    return (
+      <GoogleOAuthRedirectCallback
+        code={code}
+        state={state}
+        providerError={providerError}
+        providerErrorDescription={first(query.error_description)}
+      />
+    );
+  }
   return (
     <div className="min-h-dvh bg-background text-foreground flex flex-col">
       <main className="flex-1 relative overflow-hidden">

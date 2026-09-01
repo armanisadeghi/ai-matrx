@@ -105,6 +105,7 @@ import { GlobalAuthSync } from "@/features/auth/components/GlobalAuthSync";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
+import { GoogleOAuthRedirectNotice } from "@/providers/google-provider/GoogleOAuthRedirectNotice";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
@@ -163,6 +164,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 <DeferredSingletonWrapper />
                                 <ServerToggleQueryReset />
                                 <LoopbackApiAccessSync />
+                                <GoogleOAuthRedirectNotice />
                                 <ExtensionBridgeSubscriber />
                                 <GlobalTaskShortcut />
                                 <CreateTaskFromSourceDialog />
