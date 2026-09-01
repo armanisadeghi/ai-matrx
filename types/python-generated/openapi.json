@@ -20902,6 +20902,48 @@
         }
       }
     },
+    "/coderpad/public/status": {
+      "get": {
+        "tags": [
+          "CoderPad Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_coderpad_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoderPadServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/codesignal/public/status": {
+      "get": {
+        "tags": [
+          "CodeSignal Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_codesignal_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeSignalServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21609,6 +21651,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HiverServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/freeagent/public/status": {
+      "get": {
+        "tags": [
+          "FreeAgent Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_freeagent_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeAgentServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/molin/public/status": {
+      "get": {
+        "tags": [
+          "Molin AI Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_molin_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MolinServiceStatus"
                 }
               }
             }
@@ -104545,6 +104629,55 @@
         ],
         "title": "CodeResultPart"
       },
+      "CodeSignalServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "codesignal_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "codesignal_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CodeSignal",
+            "title": "Provider",
+            "default": "CodeSignal"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.codesignal.com",
+            "title": "Status Page",
+            "default": "https://status.codesignal.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CodeSignalServiceStatus"
+      },
       "CodeTruthCallSite": {
         "properties": {
           "source_file": {
@@ -104822,6 +104955,55 @@
         ],
         "title": "CodebergPublicRepository",
         "description": "Safe projection of one public Codeberg repository."
+      },
+      "CoderPadServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "coderpad_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "coderpad_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CoderPad",
+            "title": "Provider",
+            "default": "CoderPad"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.coderpad.io",
+            "title": "Status Page",
+            "default": "https://status.coderpad.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CoderPadServiceStatus"
       },
       "CodingSessionBridgeRestRequest": {
         "properties": {
@@ -133756,6 +133938,50 @@
         "title": "FramerServiceStatus",
         "description": "Safe aggregate status projection for Framer's fixed status page."
       },
+      "FreeAgentServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "freeagent_public_service_status",
+            "title": "Kind",
+            "default": "freeagent_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "FreeAgent",
+            "title": "Provider",
+            "default": "FreeAgent"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.freeagent.com",
+            "title": "Status Page",
+            "default": "https://status.freeagent.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FreeAgentServiceStatus"
+      },
       "FreshBooksServiceStatus": {
         "properties": {
           "__kind": {
@@ -158990,6 +159216,50 @@
         ],
         "title": "ModrinthPublicProject",
         "description": "Safe bounded projection of one public Modrinth project."
+      },
+      "MolinServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "molin_ai_public_service_status",
+            "title": "Kind",
+            "default": "molin_ai_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Molin AI",
+            "title": "Provider",
+            "default": "Molin AI"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://molin.statuspage.io",
+            "title": "Status Page",
+            "default": "https://molin.statuspage.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MolinServiceStatus"
       },
       "MoodlePublicConfigResult": {
         "properties": {

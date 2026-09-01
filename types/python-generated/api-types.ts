@@ -9610,6 +9610,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coderpad/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_coderpad_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/codesignal/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_codesignal_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10180,6 +10214,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_hiver_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/freeagent/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_freeagent_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/molin/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_molin_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43767,6 +43835,40 @@ export interface components {
              */
             outcome?: string;
         };
+        /** CodeSignalServiceStatus */
+        CodeSignalServiceStatus: {
+            /**
+             * Kind
+             * @default codesignal_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "codesignal_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default CodeSignal
+             * @constant
+             */
+            provider?: "CodeSignal";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.codesignal.com
+             * @constant
+             */
+            status_page?: "https://status.codesignal.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * CodeTruthCallSite
          * @description WHERE a mandate's runner is invoked. Locations only.
@@ -43908,6 +44010,40 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** CoderPadServiceStatus */
+        CoderPadServiceStatus: {
+            /**
+             * Kind
+             * @default coderpad_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "coderpad_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default CoderPad
+             * @constant
+             */
+            provider?: "CoderPad";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.coderpad.io
+             * @constant
+             */
+            status_page?: "https://status.coderpad.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
@@ -55769,6 +55905,38 @@ export interface components {
              */
             status_page?: "https://www.framerstatus.com/";
         };
+        /** FreeAgentServiceStatus */
+        FreeAgentServiceStatus: {
+            /**
+             * Kind
+             * @default freeagent_public_service_status
+             * @constant
+             */
+            __kind?: "freeagent_public_service_status";
+            /**
+             * Provider
+             * @default FreeAgent
+             * @constant
+             */
+            provider?: "FreeAgent";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.freeagent.com
+             * @constant
+             */
+            status_page?: "https://status.freeagent.com";
+        };
         /** FreshBooksServiceStatus */
         FreshBooksServiceStatus: {
             /**
@@ -66988,6 +67156,38 @@ export interface components {
             published_at: string;
             /** Updated At */
             updated_at: string;
+        };
+        /** MolinServiceStatus */
+        MolinServiceStatus: {
+            /**
+             * Kind
+             * @default molin_ai_public_service_status
+             * @constant
+             */
+            __kind?: "molin_ai_public_service_status";
+            /**
+             * Provider
+             * @default Molin AI
+             * @constant
+             */
+            provider?: "Molin AI";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://molin.statuspage.io
+             * @constant
+             */
+            status_page?: "https://molin.statuspage.io";
         };
         /**
          * MoodlePublicConfigResult
@@ -113393,6 +113593,46 @@ export interface operations {
             };
         };
     };
+    public_status_coderpad_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoderPadServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_codesignal_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSignalServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -114069,6 +114309,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HiverServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_freeagent_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeAgentServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_molin_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MolinServiceStatus"];
                 };
             };
         };
