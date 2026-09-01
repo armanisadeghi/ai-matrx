@@ -96,7 +96,9 @@ state is the pitch plus a one-click connect, never an error and never a dead row
 `GoogleConnectWindow`, a floating panel that connects, enables sending, and runs
 Picker over whatever the user was doing. Call it from anywhere Google is needed.
 It is NOT a second implementation — it calls the same `useConnectGoogle` and
-`registerSelectedGoogleFile` the settings surface calls.
+`registerSelectedGoogleFile` the settings surface calls. Every authorization
+action stays visibly disabled until Google Identity Services is ready; provider
+readiness is never surfaced as a user error.
 
 🚨 **An attached file travels as the reserved `__google_files` CONTEXT key, never
 as a `content[]` resource block** (`attach/googleFileContext.ts`; the key must
@@ -148,6 +150,8 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-09-01: Gated every Google connect and incremental-consent action on GIS readiness so an
+  immediate click opens no red error toast while the shared script is still loading.
 - 2026-09-01: Filtered the shared Google UI inventory by caller reachability so
   super-admin visibility cannot route Files import, Chat attachments, exports,
   or reviewed Gmail through another user's otherwise eligible credential.

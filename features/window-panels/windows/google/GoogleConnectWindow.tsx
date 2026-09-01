@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { GoogleDrive } from "@/components/icons/brand-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { isGoogleAuthorizationActionDisabled } from "./authorizationReadiness";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -119,6 +120,10 @@ function GoogleConnectWindowBody({
 
   const canSend = Boolean(connection?.scopes.includes(GOOGLE_SCOPE.gmailSend));
 
+  const authorizationActionDisabled = isGoogleAuthorizationActionDisabled(
+    google.isGoogleLoaded,
+    busy,
+  );
   const files = useMemo(() => {
     const rows = inventory.data?.resources ?? [];
     return rows.filter(
@@ -307,8 +312,16 @@ function GoogleConnectWindowBody({
                 Nothing else in your Drive.
               </span>
             </p>
-            <Button size="sm" onClick={connect} disabled={busy === "connect"}>
-              {busy === "connect" ? "Connecting…" : "Connect Google"}
+            <Button
+              size="sm"
+              onClick={connect}
+              disabled={authorizationActionDisabled}
+            >
+              {busy === "connect"
+                ? "Connecting…"
+                : !google.isGoogleLoaded
+                  ? "Loading Google…"
+                  : "Connect Google"}
             </Button>
           </div>
         ) : (
@@ -324,7 +337,7 @@ function GoogleConnectWindowBody({
               size="sm"
               variant="ghost"
               onClick={connect}
-              disabled={busy !== null}
+              disabled={authorizationActionDisabled}
               className="self-start"
             >
               <Plus className="mr-1.5 h-4 w-4" />
@@ -404,7 +417,7 @@ function GoogleConnectWindowBody({
                   size="sm"
                   variant="outline"
                   onClick={enableSending}
-                  disabled={busy === "send"}
+                  disabled={authorizationActionDisabled}
                 >
                   {busy === "send" ? "Enabling…" : "Enable email sending"}
                 </Button>
