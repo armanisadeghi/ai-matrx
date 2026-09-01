@@ -34,7 +34,7 @@ importers:
         version: 0.10.0(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
-        version: 0.8.4(@supabase/supabase-js@2.108.2)(react@19.2.7)
+        version: 0.8.5(@supabase/supabase-js@2.108.2)(react@19.2.7)
       '@ai-matrx/design-system':
         specifier: latest
         version: 0.4.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -49,7 +49,7 @@ importers:
         version: 0.7.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/media':
         specifier: latest
-        version: 0.4.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.4.5(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/print':
         specifier: latest
         version: 0.4.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -863,8 +863,8 @@ packages:
     resolution: {integrity: sha512-BIlXpLGA7hM+/DMBJur2dZw71/kDH87DI/5FBmO87OvfA/c8bVv700lvmcWTJsSfE/lNt0ppOGNm1CcYVOEmwQ==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/data@0.8.4':
-    resolution: {integrity: sha512-5GBZH/yHS03S/yyGXsuTJSNnkLTjl3ErPwTruY6SGwWC32w9/ytaUVemWESFpbDwYgXqya3Ry3IFYnsid0n0nA==}
+  '@ai-matrx/data@0.8.5':
+    resolution: {integrity: sha512-rJHT4HFyWntU8aIuv0Lv6cps8AdqTVFHII/4trdcnszesAHctMXJKjnzwdvYygMwYf/B0Y/m5KOeYAA8taQkLQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -903,8 +903,8 @@ packages:
     peerDependencies:
       react: 19.2.7
 
-  '@ai-matrx/media@0.4.4':
-    resolution: {integrity: sha512-lyUt4+z2PKpS7nwNI5V6JAIpTeeBfgqfZ0jZg000EMKCiz6jaLiup+x5dvlDEFG6h1oKvzq3nC5ZpHAvUBzDIQ==}
+  '@ai-matrx/media@0.4.5':
+    resolution: {integrity: sha512-9Ra1qt5KI3YpP1s6RFd5na0+eSUCeE9MRxiERC6ibRO5oF3Rg5Ay8aBPtPiziclEfG4m+UWoM/OfV7aUw5pODA==}
     engines: {node: '>=20'}
     peerDependencies:
       next: '>=14.0.0'
@@ -13143,7 +13143,7 @@ snapshots:
 
   '@ai-matrx/agents@0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)':
     dependencies:
-      '@ai-matrx/data': 0.8.4(@supabase/supabase-js@2.108.2)(react@19.2.7)
+      '@ai-matrx/data': 0.8.5(@supabase/supabase-js@2.108.2)(react@19.2.7)
     optionalDependencies:
       react: 19.2.7
     transitivePeerDependencies:
@@ -13180,7 +13180,7 @@ snapshots:
     dependencies:
       ajv: 8.20.0
 
-  '@ai-matrx/data@0.8.4(@supabase/supabase-js@2.108.2)(react@19.2.7)':
+  '@ai-matrx/data@0.8.5(@supabase/supabase-js@2.108.2)(react@19.2.7)':
     dependencies:
       '@ai-matrx/realtime': 0.2.1(react@19.2.7)
       '@supabase/ssr': 0.12.0(@supabase/supabase-js@2.108.2)
@@ -13236,7 +13236,7 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@ai-matrx/media@0.4.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/media@0.4.5(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/associations': 0.7.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7

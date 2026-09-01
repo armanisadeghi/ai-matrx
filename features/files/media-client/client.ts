@@ -63,6 +63,7 @@ import {
 import {
   getCached,
   hydrateFromIdb,
+  invalidate,
   setCached,
 } from "@/features/files/hooks/blob-cache";
 import { requestUpload } from "@/features/files/upload/UploadGuardHost";
@@ -290,7 +291,12 @@ export const mediaFilesClient: MatrxFilesClient<DurableSrc> =
     fetchImpl: filesFetch,
     diagnostics,
     metadata,
-    blobCache: { get: getCached, hydrate: hydrateFromIdb, set: setCached },
+    blobCache: {
+      get: getCached,
+      hydrate: hydrateFromIdb,
+      set: setCached,
+      invalidate,
+    },
     largeUploadTransport,
     uploadMany,
   });

@@ -54,7 +54,9 @@ in the same change.
    `MediaThumbnail`, and picker thumbnails all consume that same asset/variant identity; HEIC/HEIF
    never binds its original bytes to `<img>`. A successful upload seeds the original bytes under
    its new file ID before the local preview is retired. Never call a file URL endpoint directly
-   from image or thumbnail UI.
+   from image or thumbnail UI. A revoked blob-backed element delegates one bounded re-read to
+   `@ai-matrx/data/files` through `recoverBlobLoadError`; the host cache supplies only its existing
+   per-file `invalidate` identity door and never implements retry policy.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
@@ -108,6 +110,11 @@ in the same change.
 and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
+
+- **2026-09-01 — Newly persisted private media self-heals a revoked first object URL.** The
+  package-owned element recovery asks data/files to invalidate only that file and re-read its
+  durable ref once; a second failure is terminal and reaches Error Inspector. The host's blob
+  cache wiring now exposes its existing `invalidate(fileId)` door without adding host policy.
 
 - **2026-09-01 — Make a copy creates a durable duplicate row.** The duplicate dialog carries a
   per-file `force_new_copy` decision through the thunk and multipart API; checksum-identical bytes
