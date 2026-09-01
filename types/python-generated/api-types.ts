@@ -9066,6 +9066,244 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/upcloud/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_upcloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudsigma/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_cloudsigma_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudways/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_cloudways_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nexcess/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_nexcess_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pressidium/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pressidium_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/easy-agile/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_easy_agile_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/structure-cloud/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_structure_cloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/replicon/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_replicon_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statuscake/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_statuscake_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rollbar/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_rollbar_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/airbrake/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_airbrake_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scout-apm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_scout_apm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incident-io/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_incident_io_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tempo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tempo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/axiom/public/status": {
         parameters: {
             query?: never;
@@ -32514,6 +32752,38 @@ export interface components {
              */
             status_page?: "https://status.air.inc";
         };
+        /** AirbrakeServiceStatus */
+        AirbrakeServiceStatus: {
+            /**
+             * Kind
+             * @default airbrake_public_service_status
+             * @constant
+             */
+            __kind?: "airbrake_public_service_status";
+            /**
+             * Provider
+             * @default Airbrake
+             * @constant
+             */
+            provider?: "Airbrake";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.airbrake.io
+             * @constant
+             */
+            status_page?: "https://status.airbrake.io";
+        };
         /**
          * AircallServiceStatus
          * @description Safe aggregate status projection for Aircall's fixed status page.
@@ -41014,6 +41284,35 @@ export interface components {
              */
             status_page?: "https://status.cloudcannon.com";
         };
+        /** CloudSigmaServiceStatus */
+        CloudSigmaServiceStatus: {
+            /**
+             * Kind
+             * @default cloudsigma_public_cloud_status
+             * @constant
+             */
+            __kind?: "cloudsigma_public_cloud_status";
+            /**
+             * Provider
+             * @default CloudSigma
+             * @constant
+             */
+            provider?: "CloudSigma";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.cloudsigma.com
+             * @constant
+             */
+            status_page?: "https://status.cloudsigma.com";
+        };
         /**
          * CloudTalkServiceStatus
          * @description Safe aggregate status projection for CloudTalk's fixed status page.
@@ -41099,6 +41398,35 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.cloudinary.com/";
+        };
+        /** CloudwaysServiceStatus */
+        CloudwaysServiceStatus: {
+            /**
+             * Kind
+             * @default cloudways_public_content_hosting_status
+             * @constant
+             */
+            __kind?: "cloudways_public_content_hosting_status";
+            /**
+             * Provider
+             * @default Cloudways
+             * @constant
+             */
+            provider?: "Cloudways";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.cloudways.com
+             * @constant
+             */
+            status_page?: "https://status.cloudways.com";
         };
         /** ClusterDetailResponse */
         ClusterDetailResponse: {
@@ -49149,6 +49477,40 @@ export interface components {
             /** Amount */
             amount?: string | null;
         };
+        /** EasyAgileServiceStatus */
+        EasyAgileServiceStatus: {
+            /**
+             * Kind
+             * @default easy_agile_official_project_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "easy_agile_official_project_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Easy Agile
+             * @constant
+             */
+            provider?: "Easy Agile";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.easyagile.com
+             * @constant
+             */
+            status_page?: "https://status.easyagile.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** EbayAccountDeletionAcknowledgement */
         EbayAccountDeletionAcknowledgement: {
             /** Status */
@@ -56730,6 +57092,38 @@ export interface components {
             injection_id: string;
             /** Status */
             status: string;
+        };
+        /** IncidentIoServiceStatus */
+        IncidentIoServiceStatus: {
+            /**
+             * Kind
+             * @default incident_io_public_service_status
+             * @constant
+             */
+            __kind?: "incident_io_public_service_status";
+            /**
+             * Provider
+             * @default incident.io
+             * @constant
+             */
+            provider?: "incident.io";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.incident.io/
+             * @constant
+             */
+            status_page?: "https://status.incident.io/";
         };
         /**
          * IncompleteFact
@@ -64943,6 +65337,35 @@ export interface components {
             /** Blocked Reason */
             blocked_reason?: string | null;
         };
+        /** NexcessServiceStatus */
+        NexcessServiceStatus: {
+            /**
+             * Kind
+             * @default nexcess_public_content_hosting_status
+             * @constant
+             */
+            __kind?: "nexcess_public_content_hosting_status";
+            /**
+             * Provider
+             * @default Nexcess Server Status
+             * @constant
+             */
+            provider?: "Nexcess Server Status";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.nexcess.net
+             * @constant
+             */
+            status_page?: "https://status.nexcess.net";
+        };
         /**
          * NextivaStatusResult
          * @description Safe projection of Nextiva's high-level service status.
@@ -71261,6 +71684,35 @@ export interface components {
             /** File Path */
             file_path: string;
         };
+        /** PressidiumServiceStatus */
+        PressidiumServiceStatus: {
+            /**
+             * Kind
+             * @default pressidium_public_content_hosting_status
+             * @constant
+             */
+            __kind?: "pressidium_public_content_hosting_status";
+            /**
+             * Provider
+             * @default Pressidium
+             * @constant
+             */
+            provider?: "Pressidium";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.pressidium.com
+             * @constant
+             */
+            status_page?: "https://status.pressidium.com";
+        };
         /**
          * PreviewFiresRequest
          * @description Preview next-fire times for any trigger config, not just cron.
@@ -76055,6 +76507,40 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** RepliconServiceStatus */
+        RepliconServiceStatus: {
+            /**
+             * Kind
+             * @default replicon_official_workforce_platform_status
+             * @constant
+             */
+            __kind?: "replicon_official_workforce_platform_status";
+            /**
+             * Provider
+             * @default Replicon
+             * @constant
+             */
+            provider?: "Replicon";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.replicon.com
+             * @constant
+             */
+            status_page?: "https://status.replicon.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** ReplyDraftBody */
         ReplyDraftBody: {
             /**
@@ -77555,6 +78041,38 @@ export interface components {
             roles: {
                 [key: string]: components["schemas"]["RoleBinding"];
             };
+        };
+        /** RollbarServiceStatus */
+        RollbarServiceStatus: {
+            /**
+             * Kind
+             * @default rollbar_public_service_status
+             * @constant
+             */
+            __kind?: "rollbar_public_service_status";
+            /**
+             * Provider
+             * @default Rollbar
+             * @constant
+             */
+            provider?: "Rollbar";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.rollbar.com/
+             * @constant
+             */
+            status_page?: "https://status.rollbar.com/";
         };
         /**
          * RollupPoint
@@ -79103,6 +79621,38 @@ export interface components {
         ScoreSourcesRequest: {
             /** Source Ids */
             source_ids?: string[] | null;
+        };
+        /** ScoutApmServiceStatus */
+        ScoutApmServiceStatus: {
+            /**
+             * Kind
+             * @default scout_apm_public_service_status
+             * @constant
+             */
+            __kind?: "scout_apm_public_service_status";
+            /**
+             * Provider
+             * @default Scout APM
+             * @constant
+             */
+            provider?: "Scout APM";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.scoutapm.com
+             * @constant
+             */
+            status_page?: "https://status.scoutapm.com";
         };
         /** ScrapeManyRequest */
         ScrapeManyRequest: {
@@ -83611,6 +84161,38 @@ export interface components {
             combined_rating: components["schemas"]["CombinedRatingOut"];
             compensation: components["schemas"]["CompensationOut"];
         };
+        /** StatusCakeServiceStatus */
+        StatusCakeServiceStatus: {
+            /**
+             * Kind
+             * @default statuscake_public_service_status
+             * @constant
+             */
+            __kind?: "statuscake_public_service_status";
+            /**
+             * Provider
+             * @default StatusCake
+             * @constant
+             */
+            provider?: "StatusCake";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.statuscake.com
+             * @constant
+             */
+            status_page?: "https://status.statuscake.com";
+        };
         /** StatusResponse */
         StatusResponse: {
             /** Status */
@@ -83998,6 +84580,40 @@ export interface components {
             missing_required_keys?: string[];
             /** Degraded Reason */
             degraded_reason?: string | null;
+        };
+        /** StructureCloudServiceStatus */
+        StructureCloudServiceStatus: {
+            /**
+             * Kind
+             * @default structure_cloud_official_project_portfolio_platform_status
+             * @constant
+             */
+            __kind?: "structure_cloud_official_project_portfolio_platform_status";
+            /**
+             * Provider
+             * @default Structure Cloud
+             * @constant
+             */
+            provider?: "Structure Cloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.structure.app/
+             * @constant
+             */
+            status_page?: "https://status.structure.app/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** StructuredDataBlockReport */
         StructuredDataBlockReport: {
@@ -85797,6 +86413,40 @@ export interface components {
             message?: string;
             /** Available */
             available?: string[];
+        };
+        /** TempoServiceStatus */
+        TempoServiceStatus: {
+            /**
+             * Kind
+             * @default tempo_official_productivity_platform_status
+             * @constant
+             */
+            __kind?: "tempo_official_productivity_platform_status";
+            /**
+             * Provider
+             * @default Tempo
+             * @constant
+             */
+            provider?: "Tempo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.tempo.io/
+             * @constant
+             */
+            status_page?: "https://status.tempo.io/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * TerraformRegistryPublicModuleVersion
@@ -88206,6 +88856,35 @@ export interface components {
              * Format: date-time
              */
             record_updated_at: string;
+        };
+        /** UpCloudServiceStatus */
+        UpCloudServiceStatus: {
+            /**
+             * Kind
+             * @default upcloud_public_cloud_status
+             * @constant
+             */
+            __kind?: "upcloud_public_cloud_status";
+            /**
+             * Provider
+             * @default UpCloud
+             * @constant
+             */
+            provider?: "UpCloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.upcloud.com
+             * @constant
+             */
+            status_page?: "https://status.upcloud.com";
         };
         /**
          * UpdateAgentInput
@@ -108688,6 +109367,286 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinodeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_upcloud_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpCloudServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_cloudsigma_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudSigmaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_cloudways_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudwaysServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_nexcess_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NexcessServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pressidium_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PressidiumServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_easy_agile_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EasyAgileServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_structure_cloud_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StructureCloudServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_replicon_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepliconServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_statuscake_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusCakeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_rollbar_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RollbarServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_airbrake_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirbrakeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_scout_apm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoutApmServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_incident_io_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentIoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tempo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TempoServiceStatus"];
                 };
             };
         };

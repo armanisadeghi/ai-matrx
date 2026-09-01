@@ -20230,6 +20230,300 @@
         }
       }
     },
+    "/upcloud/public/status": {
+      "get": {
+        "tags": [
+          "UpCloud Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_upcloud_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpCloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloudsigma/public/status": {
+      "get": {
+        "tags": [
+          "CloudSigma Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_cloudsigma_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudSigmaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloudways/public/status": {
+      "get": {
+        "tags": [
+          "Cloudways Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_cloudways_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudwaysServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nexcess/public/status": {
+      "get": {
+        "tags": [
+          "Nexcess Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_nexcess_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NexcessServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pressidium/public/status": {
+      "get": {
+        "tags": [
+          "Pressidium Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pressidium_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PressidiumServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/easy-agile/public/status": {
+      "get": {
+        "tags": [
+          "Easy Agile Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_easy_agile_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EasyAgileServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/structure-cloud/public/status": {
+      "get": {
+        "tags": [
+          "Structure Cloud Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_structure_cloud_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructureCloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/replicon/public/status": {
+      "get": {
+        "tags": [
+          "Replicon Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_replicon_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepliconServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statuscake/public/status": {
+      "get": {
+        "tags": [
+          "StatusCake Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_statuscake_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusCakeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rollbar/public/status": {
+      "get": {
+        "tags": [
+          "Rollbar Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rollbar_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RollbarServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/airbrake/public/status": {
+      "get": {
+        "tags": [
+          "Airbrake Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_airbrake_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirbrakeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scout-apm/public/status": {
+      "get": {
+        "tags": [
+          "Scout APM Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_scout_apm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoutApmServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-io/public/status": {
+      "get": {
+        "tags": [
+          "incident.io Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_incident_io_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentIoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tempo/public/status": {
+      "get": {
+        "tags": [
+          "Tempo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tempo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TempoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/axiom/public/status": {
       "get": {
         "tags": [
@@ -79663,6 +79957,50 @@
         "title": "AirServiceStatus",
         "description": "Safe aggregate status projection for Air's fixed status page."
       },
+      "AirbrakeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "airbrake_public_service_status",
+            "title": "Kind",
+            "default": "airbrake_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Airbrake",
+            "title": "Provider",
+            "default": "Airbrake"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.airbrake.io",
+            "title": "Status Page",
+            "default": "https://status.airbrake.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AirbrakeServiceStatus"
+      },
       "AircallServiceStatus": {
         "properties": {
           "__kind": {
@@ -99801,6 +100139,46 @@
         "title": "CloudCannonServiceStatus",
         "description": "Safe aggregate status projection for CloudCannon's fixed status page."
       },
+      "CloudSigmaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cloudsigma_public_cloud_status",
+            "title": "Kind",
+            "default": "cloudsigma_public_cloud_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CloudSigma",
+            "title": "Provider",
+            "default": "CloudSigma"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.cloudsigma.com",
+            "title": "Status Page",
+            "default": "https://status.cloudsigma.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CloudSigmaServiceStatus"
+      },
       "CloudTalkServiceStatus": {
         "properties": {
           "__kind": {
@@ -99922,6 +100300,46 @@
         ],
         "title": "CloudinaryServiceStatus",
         "description": "Safe aggregate status projection for Cloudinary's fixed status page."
+      },
+      "CloudwaysServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cloudways_public_content_hosting_status",
+            "title": "Kind",
+            "default": "cloudways_public_content_hosting_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Cloudways",
+            "title": "Provider",
+            "default": "Cloudways"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.cloudways.com",
+            "title": "Status Page",
+            "default": "https://status.cloudways.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CloudwaysServiceStatus"
       },
       "ClusterDetailResponse": {
         "properties": {
@@ -120013,6 +120431,55 @@
         ],
         "title": "EarningCodeTotal"
       },
+      "EasyAgileServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "easy_agile_official_project_collaboration_platform_status",
+            "title": "Kind",
+            "default": "easy_agile_official_project_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Easy Agile",
+            "title": "Provider",
+            "default": "Easy Agile"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.easyagile.com",
+            "title": "Status Page",
+            "default": "https://status.easyagile.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "EasyAgileServiceStatus"
+      },
       "EbayAccountDeletionAcknowledgement": {
         "properties": {
           "status": {
@@ -137480,6 +137947,50 @@
           "status"
         ],
         "title": "InboxMutationResponse"
+      },
+      "IncidentIoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "incident_io_public_service_status",
+            "title": "Kind",
+            "default": "incident_io_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "incident.io",
+            "title": "Provider",
+            "default": "incident.io"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.incident.io/",
+            "title": "Status Page",
+            "default": "https://status.incident.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "IncidentIoServiceStatus"
       },
       "IncompleteFact": {
         "properties": {
@@ -156797,6 +157308,46 @@
         "title": "NewsroomSyncResult",
         "description": "Durable result shared by the HTTP route and workflow node."
       },
+      "NexcessServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nexcess_public_content_hosting_status",
+            "title": "Kind",
+            "default": "nexcess_public_content_hosting_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Nexcess Server Status",
+            "title": "Provider",
+            "default": "Nexcess Server Status"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.nexcess.net",
+            "title": "Status Page",
+            "default": "https://status.nexcess.net"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "NexcessServiceStatus"
+      },
       "NextivaStatusResult": {
         "properties": {
           "__kind": {
@@ -170881,6 +171432,46 @@
         ],
         "title": "PresignedUploadResponse"
       },
+      "PressidiumServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pressidium_public_content_hosting_status",
+            "title": "Kind",
+            "default": "pressidium_public_content_hosting_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pressidium",
+            "title": "Provider",
+            "default": "Pressidium"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pressidium.com",
+            "title": "Status Page",
+            "default": "https://status.pressidium.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PressidiumServiceStatus"
+      },
       "PreviewFiresRequest": {
         "properties": {
           "trigger_type": {
@@ -182632,6 +183223,55 @@
         "title": "ReplayRunResult",
         "description": "Outcome of a replay DISPATCH. ``queued`` means the row was created and\nthe mirror-host worker will execute it — no verdict yet by construction\n(the client re-reads the replay row for the terminal result)."
       },
+      "RepliconServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "replicon_official_workforce_platform_status",
+            "title": "Kind",
+            "default": "replicon_official_workforce_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Replicon",
+            "title": "Provider",
+            "default": "Replicon"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.replicon.com",
+            "title": "Status Page",
+            "default": "https://status.replicon.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RepliconServiceStatus"
+      },
       "ReplyDraftBody": {
         "properties": {
           "organization_id": {
@@ -186360,6 +187000,50 @@
         "title": "RolesReadyPayload",
         "description": "Every role's binding for a session — the v3 room's tab manifest.\n\n``conversation_id`` is stable per role, per session, across runs: it is the\nordinary agent conversation the person's stage tab talks to."
       },
+      "RollbarServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rollbar_public_service_status",
+            "title": "Kind",
+            "default": "rollbar_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Rollbar",
+            "title": "Provider",
+            "default": "Rollbar"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rollbar.com/",
+            "title": "Status Page",
+            "default": "https://status.rollbar.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "RollbarServiceStatus"
+      },
       "RollupPoint": {
         "properties": {
           "captured_at": {
@@ -189956,6 +190640,50 @@
         "type": "object",
         "title": "ScoreSourcesRequest",
         "description": "Trigger the config-driven PRE-READ scoring over a topic's sources.\n\n``source_ids=None`` scores every included source on the topic; otherwise only\nthe given sources are (re)scored. Always recomputes from the current keyword-\nrank + authority data — so a user hits this after tuning the scoring config to\nre-rank their sources without re-running the whole pipeline."
+      },
+      "ScoutApmServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "scout_apm_public_service_status",
+            "title": "Kind",
+            "default": "scout_apm_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Scout APM",
+            "title": "Provider",
+            "default": "Scout APM"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.scoutapm.com",
+            "title": "Status Page",
+            "default": "https://status.scoutapm.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ScoutApmServiceStatus"
       },
       "ScrapeManyRequest": {
         "properties": {
@@ -200512,6 +201240,50 @@
         ],
         "title": "StatelessResultOut"
       },
+      "StatusCakeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "statuscake_public_service_status",
+            "title": "Kind",
+            "default": "statuscake_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "StatusCake",
+            "title": "Provider",
+            "default": "StatusCake"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.statuscake.com",
+            "title": "Status Page",
+            "default": "https://status.statuscake.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "StatusCakeServiceStatus"
+      },
       "StatusResponse": {
         "properties": {
           "status": {
@@ -201364,6 +202136,55 @@
           "checked"
         ],
         "title": "StructuralVerdict"
+      },
+      "StructureCloudServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "structure_cloud_official_project_portfolio_platform_status",
+            "title": "Kind",
+            "default": "structure_cloud_official_project_portfolio_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Structure Cloud",
+            "title": "Provider",
+            "default": "Structure Cloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.structure.app/",
+            "title": "Status Page",
+            "default": "https://status.structure.app/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "StructureCloudServiceStatus"
       },
       "StructuredDataBlockReport": {
         "properties": {
@@ -205662,6 +206483,55 @@
         ],
         "title": "TemplateVerdict",
         "description": "Whether this template can render, in the author's language."
+      },
+      "TempoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tempo_official_productivity_platform_status",
+            "title": "Kind",
+            "default": "tempo_official_productivity_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tempo",
+            "title": "Provider",
+            "default": "Tempo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tempo.io/",
+            "title": "Status Page",
+            "default": "https://status.tempo.io/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TempoServiceStatus"
       },
       "TerraformRegistryPublicModuleVersion": {
         "properties": {
@@ -211322,6 +212192,46 @@
         ],
         "title": "UnpaywallStatusResult",
         "description": "Safe bounded projection of one public Unpaywall DOI record."
+      },
+      "UpCloudServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "upcloud_public_cloud_status",
+            "title": "Kind",
+            "default": "upcloud_public_cloud_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "UpCloud",
+            "title": "Provider",
+            "default": "UpCloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.upcloud.com",
+            "title": "Status Page",
+            "default": "https://status.upcloud.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "UpCloudServiceStatus"
       },
       "UpdateAgentInput": {
         "properties": {
